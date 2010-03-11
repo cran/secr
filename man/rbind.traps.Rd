@@ -1,0 +1,40 @@
+\name{rbind.traps}
+\alias{rbind.traps}
+
+\title{ Combine traps Objects }
+
+\description{
+Form a single \code{traps} object from two or more existing \code{traps} objects.
+}
+
+\usage{
+\method{rbind}{traps}(..., renumber = TRUE)
+}
+\arguments{
+  \item{\dots}{ one or more \code{traps} objects }
+  \item{renumber}{ logical for whether row names in the new object should be set to the row indices }
+}
+
+\details{
+  An attempt to combine objects will fail if they conflict in their \code{usage} or \code{covariates} attributes.
+}
+
+\value{
+An object of class \code{traps} with number of rows equal to the sum of the rows in the input objects.
+}
+
+\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
+
+\seealso{ \code{\link{traps}}, \code{\link{subset.traps}} }
+
+\examples{
+
+## nested hollow grids
+hollow1 <- make.grid(nx = 8, ny = 8, hollow = TRUE)
+hollow2 <- shift(make.grid(nx = 6, ny = 6, hollow = TRUE), 
+    c(20, 20))
+nested <- rbind (hollow1, hollow2)
+plot(nested, gridlines = FALSE, lab = TRUE)
+}
+
+\keyword{ manip }
