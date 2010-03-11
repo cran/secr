@@ -1,0 +1,62 @@
+############################################################################################
+## package 'secr' 
+## split.capthist.R
+## last changed 2009 06 11 2009 07 10 2009 10 05
+############################################################################################
+
+split.capthist <- function (x, f, drop = FALSE, prefix='S', ...) {
+  if (!inherits(x, 'capthist')) stop ('argument to split.capthist does not have class capthist')
+  if (inherits(x, 'list')) stop ('split not suitable for multi-session capthist')
+  options(warn=-1)
+  f <- factor(f)
+  if (any(!is.na(as.numeric(levels(f))))) f <- factor(paste (prefix,f,sep=''))
+  options(warn=0)
+  f <- as.factor(f)
+  out <- list()
+  for (i in levels(f)) {
+    temp <- subset (x, subset = f == i, ...)
+    session(temp) <- i
+    if (!drop | (nrow(temp)>0))
+      out[[i]] <- temp
+  }
+  class (out) <- c('list', 'capthist')
+  out
+}
+############################################################################################
+
+extract.estimates <- function (x, simplify = FALSE) {
+## compile a dataframe (simplify = T) or list of data.frames of session-specific real parameter estimates
+## from a list of separate secr model fits
+   if (!is.list(x) | !inherits(x[[1]], 'secr')) stop('require list of secr fits')
+   temp <- lapply(x, predict)
+   temp <- lapply(temp, function(x) x[,-1])  ## drop unwanted 'link' column
+   temp <- lapply(temp, function(x) {x$Parameter <- row.names(x); x})
+   sessions <- names(temp)
+   nsessions <- length(temp)
+   parnames <- row.names(temp[[1]])
+   nrealpar <- nrow(temp[[1]])
+   temp2 <- data.frame(abind(temp, along = 1), row.names = NULL, stringsAsFactors=F)
+   temp2[,1:4] <- sapply(temp2[,1:4], as.numeric)
+   temp2$Session <- rep(sessions, rep(nrealpar, nsessions))
+   if (simplify) {
+       temp3 <- temp2[order(temp2$Parameter, temp2$Session), c('Parameter','Session','estimate', 'SE.estimate', 'lcl', 'ucl')]
+       row.names(temp3) <- NULL
+   }
+   else {
+      temp3 <- split(temp2[order(temp2$Session), c('Session','estimate', 'SE.estimate', 'lcl', 'ucl')], 
+          temp2$Parameter)
+      temp3 <- lapply(temp3, function(x) {row.names(x) <- NULL; x})
+   }
+   temp3
+}
+############################################################################################
+
+# extract.estimates(revi)$density
+
+
+# f1 <- c(rep('A', 30), rep('B', nrow(captdata)-30))
+# spltcpt <- split.capthist(captdata, f= f1)
+# lapply(spltcpt, summary)
+# sessionfits <- lapply(spltcpt, secr.fit)
+# extract.estimates (sessionfits)
+

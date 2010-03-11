@@ -1,0 +1,68 @@
+Version 1.3.0 beta 2010-03-11
+
+ovensong -- new acoustic dataset (Dawson & Efford J Appl Ecol; see also 'secr-sound.pdf')
+New detector types 'count', 'signal' ('polygon' and 'transect' under development)
+New detection functions 'binary signal strength', 'signal strength', 'signal strength spherical'
+Finite mixture models for heterogeneity in detection parameters (use 'h2' in model formula) 
+Documentation via Sweave vignettes: secr-overview.pdf, secr-sound.pdf, secr-finitemixtures.pdf
+secr.fit -- Improved handling of structural relationships scaleg0 and scalesigma
+secr.fit 'start' argument may be a previously fitted nested model
+secr.fit default initial value algorithm uses 'RPSV' instead of 'dbar'
+secr.fit new pre-defined covariate term T for time trend in detection parameter model formula
+ellipse.secr -- new function for confidence ellipses of fitted parameters
+LLsurface.secr -- new function to plot log-likelihood surface for 2 dimensions at a time
+attenuationplot  -- new function for acoustic models
+Various other interface bugs fixed
+
+Version 1.2.11 2009-12-22
+
+Bug fix for session names not in alphanumeric sequence
+
+Version 1.2.10 2009-10-21
+
+large models -- more robust memory allocation in external C code (malloc)
+new example datasets -- 'possum' and 'ovenbird'
+confint.secr -- improved profile likelihood confidence intervals, both beta and real parameters
+secr.fit -- detects non-finite values of real parameters during maximization & terminates (cf stepmax in nlm)
+sim.capthist -- time-varying detection parameters
+sim.resight -- new function
+secr.fit -- experimental and undocumented mark-resight
+
+Version 1.2.9 2009-10-05
+
+split.traps -- new method
+print.traps -- now displays component name if list
+secr.fit -- new argument details$minprob; new default 1e-50 may affect likelihood
+print.capthist -- new argument 'condense' for condensed printing of proximity data
+verify.mask -- fixed bug with mask lists
+verify.capthist -- additional checks for missing or badly coded data
+
+Version 1.2.8 2009-09-30 and later
+
+Further changes to external C code for non-Windows platforms (now expected to work)
+Minor editting of documentation files
+Improved handling of multi-session capthist objects (2009 10 01)
+Restore output of dAICc in AIC.secr (2009 10 02)
+
+Version 1.2.7 2009-09-29
+
+External C code re-written to conform to ISO C99 for use on non-Windows platforms
+External C code now relies on R math functions dpois, dbinom
+make.capthist -- new argument 'sortrows'
+print.secr -- minor changes
+secr.fit -- secr version number recorded in secr object
+secr.fit -- optional check of input data with 'verify' 
+verify (new) -- function to check data in capthist objects
+ip.secr (new) -- density estimated by simulation and inverse prediction
+collate -- minor bug fixed
+plot.secr -- confidence limits of detection function by delta method
+vcov.secr -- new option for covariances between real parameters
+
+Version 1.2.6 2009-09-10
+
+Simulation functions (sim.popn, sim.capthist, simulate, sim.secr) use R random number generators and seeds.
+New S3 method simulate.secr and function sim.secr for simulating from a fitted secr model
+New S3 methods deviance and df.residual
+secr.make.newdata is now exported (previously internal)
+Additional components in secr object returned by secr.fit: design, D, start
+Bugs fixed in secr.make.newdata, secr.fit and make.capthist

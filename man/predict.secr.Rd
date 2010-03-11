@@ -1,0 +1,75 @@
+\name{predict.secr}
+\alias{predict.secr}
+
+\title{ SECR Model Predictions }
+
+\description{
+Evaluate a spatially explicit capture--recapture model. That is, compute the 'real' parameters corresponding to the 'beta' parameters of a fitted model for arbitrary levels of any variables in the linear predictor.
+}
+
+\usage{
+\method{predict}{secr}(object, newdata = NULL, se.fit = TRUE, alpha = 0.05, 
+    savenew = FALSE, scaled = FALSE, \dots)
+}
+
+\arguments{
+  \item{object}{ \code{secr} object output from \code{secr.fit} }
+  \item{newdata}{ optional dataframe of values at which to evaluate model }
+  \item{se.fit}{ logical for whether output should include SE and confidence intervals }
+  \item{alpha}{ alpha level for confidence intervals }
+  \item{savenew}{ logical for whether newdata should be saved }
+  \item{scaled}{ logical for scaling of sigma and g0 (see Details) }
+  \item{\dots}{ other arguments }
+}
+\details{
+The variables in the various linear predictors are described in \link{secr models} and listed for the particular model in the \code{vars} component of \code{object}.
+
+Optional \code{newdata} should be a dataframe with a column for each of the variables in the model (see 'vars' component of \code{object}).  If \code{newdata} is missing then a dataframe is constructed automatically.  Default \code{newdata} are for a naive animal on the first occasion; numeric covariates are set to zero and factor covariates to their base (first) level. 
+
+Standard errors are by the delta method (Lebreton et al. 1992).  Confidence intervals are backtransformed from the link scale.
+
+The argument \code{scaled} applies only to the detection parameters g0
+and sigma, and only to models fitted with \code{scalesigma} or
+\code{scaleg0} switched on. If \code{scaled} is TRUE then each estimate is multiplied by
+its scale factor (1/D^0.5 and 1/sigma^2 respectively).
+
+The value of \code{newdata} is optionally saved as an attribute.
+}
+
+\value{
+  When \code{se.fit} = FALSE, a dataframe identical to \code{newdata} except for the addition of one column for each 'real' parameter. Otherwise, a list with one component for each row in \code{newdata}. Each component is a dataframe with one row for each 'real' parameter (density, g0, sigma, b) and columns as below
+
+\tabular{ll}{
+link        \tab link function \cr 
+estimate    \tab estimate of real parameter \cr
+SE.estimate \tab standard error of the estimate \cr
+lcl         \tab lower 100(1--alpha)\% confidence limit \cr
+ucl         \tab upper 100(1--alpha)\% confidence limit \cr
+}
+
+When \code{newdata} has only one row, the structure of the list is 'dissolved' and the return value is one data frame.
+}
+\references{ 
+Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling survival and testing biological hypotheses using marked animals: a unified approach with case studies. \emph{Ecological Monographs} \bold{62}, 67--118. }
+
+\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
+
+\seealso{ \code{\link{secr.fit}} }
+
+\examples{
+
+## load previously fitted secr model with trap response
+## and extract estimates of 'real' parameters for both
+## naive (b = 0) and previously captured (b = 1) animals
+
+data(secrdemo)
+predict (secrdemo.b, newdata = data.frame(b=0:1))
+
+temp <- predict (secrdemo.b, newdata = data.frame(b=0:1), 
+    save = TRUE)
+attr(temp, 'newdata')
+
+}
+
+\keyword{ models }
+

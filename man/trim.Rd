@@ -1,0 +1,57 @@
+\name{trim}
+\Rdversion{1.1}
+\alias{trim}
+\alias{trim.default}
+\alias{trim.secr}
+
+\title{
+Drop Unwanted List Components
+}
+
+\description{
+
+Drop unwanted components from a \code{list} object, usually to save space.
+
+}
+
+\usage{
+
+\method{trim}{default}(object, drop, keep)
+\method{trim}{secr}(object, drop = c("mask", "design", "design0", "D"), 
+    keep = NULL)
+
+}
+
+\arguments{ 
+    \item{object}{ a list object }
+    \item{drop}{ vector identifying components to be dropped } 
+    \item{keep}{ vector identifying components to be kept } 
+} 
+
+\details{ 
+
+\code{drop} may be a character vector of names or a numeric vector of
+indices. If both \code{drop} and \code{keep} are given then the action
+is conservative, dropping only components in \code{drop} and not in
+\code{keep}. 
+
+}
+
+\value{
+a list retaining selected components.
+}
+
+\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
+
+\examples{
+
+data(secrdemo)
+names(secrdemo.0)
+names(trim(secrdemo.0))
+object.size(secrdemo.0)
+object.size(trim(secrdemo.0))
+
+}
+
+\keyword{ manip }
+

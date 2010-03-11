@@ -1,0 +1,40 @@
+\name{covariates}
+\alias{covariates}
+\alias{covariates<-}
+
+\title{ Covariates Attribute }
+
+\description{
+  Extract or replace covariates
+}
+
+\usage{
+covariates(object, ...)
+covariates(object) <- value
+}
+
+\arguments{
+  \item{object}{ an object of class \code{traps}, \code{popn}, \code{capthist}, or \code{mask} }
+  \item{value}{ a dataframe of covariates }
+  \item{\dots}{ other arguments (not used) }
+}
+
+\details{
+  For replacement, the number of rows of \code{value} must match exactly the number of rows in \code{object}.
+}
+
+\value{
+  covariates(object) returns the dataframe of covariates associated with \code{object}. \code{covariates(object)} may be NULL.
+}
+
+\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
+
+\examples{
+temptrap <- make.grid(nx = 6, ny = 8)
+covariates (temptrap) <- data.frame(halfnhalf = 
+    factor(rep(c('left','right'),c(24,24))) )
+summary(covariates(temptrap))
+}
+
+\keyword{ manip }
+

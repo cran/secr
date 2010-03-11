@@ -1,0 +1,14 @@
+citHeader("To cite package 'secr' in publications use:")
+desc <- packageDescription("secr")
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", desc$Date)
+vers <- paste("R package version", desc$Version)
+citEntry(entry="Manual",
+title = "secr: Spatially Explicit Capture-Recapture Models",
+author = personList(as.person("Murray Efford")),
+year = year,
+note = vers,
+textVersion =
+paste("Efford MG (",
+year,
+"). secr: Spatially Explicit Capture-Recapture Models. ",
+vers, ".", sep=""))
