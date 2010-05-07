@@ -18,8 +18,8 @@ row per animal and one column per occasion (i.e. dim(capthist) = c(nc,
 noccasions)); each element is either zero (no detection) or a detector
 number. For other detectors ('proximity', 'count', 'signal' etc.),
 \code{capthist} is an array of values and dim(capthist) = c(nc,
-noccasions, ntraps); values maybe binary (\{--1, 0, 1\}), integer or
-real depending on the detector type.
+noccasions, ntraps); values maybe binary (\{--1, 0, 1\}) or integer
+depending on the detector type.
 
 Deaths during the experiment are represented as negative values. 
 
@@ -62,9 +62,9 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{traps}}, \code{\link{secr.fit}},
-\code{\link{make.capthist}}, \code{\link{sim.capthist}},
-\code{\link{subset.capthist}}, \code{\link{rbind.capthist}},
-\code{\link{MS.capthist}},
+\code{\link{read.capthist}}, \code{\link{make.capthist}},
+\code{\link{sim.capthist}}, \code{\link{subset.capthist}},
+\code{\link{rbind.capthist}}, \code{\link{MS.capthist}},
 \code{\link{reduce.capthist}}, \code{\link{mask}} }
 
-\keyword{ models }
+\keyword{ classes }

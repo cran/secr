@@ -25,7 +25,7 @@ Results are potentially complex and depend upon the analysis (see below). Option
 
 \tabular{ll}{
 call           \tab the function call \cr
-time           \tab date and time of completion \cr
+time           \tab date and time fitting started \cr
 N animals      \tab number of distinct animals detected \cr
 N captures     \tab number of detections \cr
 N occasions    \tab number of sampling occasions \cr

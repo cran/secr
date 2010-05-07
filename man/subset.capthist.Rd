@@ -20,7 +20,8 @@
   \item{traps}{ vector of subscripts to select detectors (traps) }
   \item{sessions}{ vector of subscripts to select sessions }
   \item{cutval}{ new threshold for signal strength }
-  \item{dropnull}{ logical for whether null (all-zero) capture histories should be dropped }
+  \item{dropnull}{ logical for whether null (all-zero) capture histories
+  and occasions with no detections should be dropped }
   \item{dropunused}{ logical for whether never-used detectors should be dropped }
   \item{renumber}{ logical for whether row.names should be replaced with sequence number in new \code{capthist} }
   \item{f}{ factor or object that may be coerced to a factor }

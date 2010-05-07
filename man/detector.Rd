@@ -21,10 +21,12 @@ detector(object) <- value
 
 \details{
 
-Valid detector types in version 1.3 are 'single', 'multi', 'proximity', 
-'count', 'quadratbinary', 'quadratcount' and 'signal'. The detector type is 
+Valid detector types in version 1.4 are 'single', 'multi', 'proximity', 
+'count', 'signal', 'quadratbinary', 'quadratcount', 'polygon', and
+'transect' (the last four are undocumented in 1.4.0). The detector type is 
 stored as an attribute of a \code{traps} object.  Detector types are 
-mostly described by Efford et al. (2009a,b). 
+mostly described by Efford et al. (2009a,b). See also the documentation
+files 'secr-overview' and 'secr-sound'. 
 
 }
 
@@ -35,7 +37,7 @@ mostly described by Efford et al. (2009a,b).
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ 
-  \code{\link{traps}}
+  \code{\link{traps}}, \code{\link{RShowDoc}}
 }
 
 \references{

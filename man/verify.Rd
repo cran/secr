@@ -100,7 +100,7 @@ posted when no errors are found.
 
 \examples{
 
-data(captdata)
+data(secrdemo)
 verify(captdata)
 
 ## create null (complete) usage matrix, and mess it up

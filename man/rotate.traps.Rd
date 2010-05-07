@@ -23,7 +23,7 @@ An object of class \code{traps} with the location of each detector rotated about
 }
 
 \details{
-May be used with \code{\link{rbind.traps}} and \code{\link{shift.traps}} to create complex geometries.
+May be used with \code{flip.traps}, \code{\link{rbind.traps}} and \code{\link{shift.traps}} to create complex geometries.
 }
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }

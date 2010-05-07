@@ -9,7 +9,7 @@
 
 \usage{
 \method{plot}{mask}(x, border = 20, add = F, covariate = NULL, axes = F,
-    dots = T, col = "grey", ppoly = T, polycol = "red", \dots)
+    dots = T, col = "grey", breaks = 12, ppoly = T, polycol = "red", \dots)
 }
 
 \arguments{
@@ -18,7 +18,8 @@
   \item{add}{ logical for adding mask points to an existing plot }
   \item{covariate}{ name (as character string in quotes) or column number of a covariate to use for colouring }
   \item{axes}{ logical for plotting axes }
-  \item{dots}{ logical for plotting mask points as dots, rather than as \code{image} plot }
+  \item{dots}{ logical for plotting mask points as dots, rather than as square pixels }
+  \item{breaks}{ number of levels to use when cutting continuous covariate for plotting }
   \item{col}{ colour(s) to use for plotting }
   \item{ppoly}{ logical for whether the bounding polygon should be plotted (applies only if mask type = 'polygon') }
   \item{polycol}{ colour for outline of polygon (\code{ppoly} = TRUE) }
@@ -27,7 +28,15 @@
 }
 
 \details{
-The argument \code{dots} selects between two distinct types of plot; see \code{\link{image}} for more on image plots. If using a \code{covariate} to colour points, the \code{col} argument should be a colour vector of length > 1; the default is \code{heat.colors(12)}.
+
+The argument \code{dots} selects between two distinct types of plot. If
+using a covariate to colour points, the \code{col} argument should be a
+colour vector of length equal to the number of levels.
+
+Border lines around pixels are drawn in the current foreground colour
+(par('fg')). Set this to NA with \code{par(fg=NA)} to eliminate borders,
+but remember to reset it when you've finished.
+
 }
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
@@ -50,8 +59,11 @@ tempmask <- subset(tempmask, pdot(tempmask,temptrap)>0.001)
 covariates (tempmask) <- data.frame(circle = 
     exp(-(tempmask$x^2 + tempmask$y^2)/10000) )
 
+par(fg='white')
 plot (tempmask, covariate = 'circle', dots = FALSE, axes = TRUE, 
-    add = TRUE, col = terrain.colors(256))
+    add = TRUE, breaks = 8, col = terrain.colors(8))
+par(fg='black')
+
 plot (temptrap, add = TRUE)
 
 ## add a legend
@@ -59,12 +71,11 @@ plot (temptrap, add = TRUE)
 par(cex = 0.9)
 covrange <- range(covariates(tempmask)$circle)
 step <- diff(covrange)/8
-colourlev <- terrain.colors(256)[seq(1,256,(256-1)/8)]
+colourlev <- terrain.colors(9)
 zlev <- formatC(seq(covrange[1],covrange[2],step), format='f', 
     digits=2, width=4)
 legend (x = 'topright', fill = colourlev, legend = zlev, 
     y.intersp = 0.8, title = 'Covariate')
-
 title('Colour mask points with p.(X) > 0.001')
 mtext(side=3,line=-1, 'g0 = 0.2, sigma = 20, nocc = 5')
 

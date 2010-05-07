@@ -33,37 +33,50 @@
 ## 2010 03 03 LLsurface.secr
 ## 2010 03 04 new starting values for pmix
 ##
-
+## 2010 03 24 numxy format for trap labels in make.grid
+## 2010 03 26 tweak to replacement of 'session' in multisession object
+## 2010 03 30 tidy up plot.capthist
+## 2010 03 30 predict.secr returns NULL when fit is NULL
+## 2010 04 08 extend detector.default to NULL objects
+## 2010 04 11 read.mask added SS option for SPACECAP
+## 2010 04 24 plot.mask revised
+## 2010 04 26 traps<- fixed for multisession capthist list
+## 2010 04 26 centred option for secr.fit
+## 2010 04 27 version 1.4
+## 2010 04 30 scrapped read.captures
+## 2010 05 02 usage may be separated by commas in read.traps
+## 2010 05 03 bugfix in subset.capthist for 'multi' data
 ## This version incorporating signal strength and count detectors (but incomplete)
 ############################################################################################
 
 # Following code may be used at some stage during debugging,
 # not for production version
-# source ('d:\\density secr 1.3\\secr\\R\\methods.R')
-# source ('d:\\density secr 1.3\\secr\\R\\autoini.R')
-# source ('d:\\density secr 1.3\\secr\\R\\functions.R')
-# source ('d:\\density secr 1.3\\secr\\R\\D.designdata.R')
-# source ('d:\\density secr 1.3\\secr\\R\\logmultinom.R')
-# source ('d:\\density secr 1.3\\secr\\R\\secr.make.newdata.R')
-# source ('d:\\density secr 1.3\\secr\\R\\secr.design.MS.R')
-# source ('d:\\density secr 1.3\\secr\\R\\plot.secr.R')
-# source ('d:\\density secr 1.3\\secr\\R\\sim.capthist.R')
-# source ('d:\\density secr 1.3\\secr\\R\\esa.R')
-# source ('d:\\density secr 1.3\\secr\\R\\derivedMS.R')
-# source ('d:\\density secr 1.3\\secr\\R\\score.test.R')
-# source ('d:\\density secr 1.3\\secr\\R\\pdot.R')
-# source ('d:\\density secr 1.3\\secr\\R\\RPSV.R')
-# source ('d:\\density secr 1.3\\secr\\R\\dbar.R')
-# source ('d:\\density secr 1.3\\secr\\R\\model.average.R')
-# source ('d:\\density secr 1.3\\secr\\R\\deviance.R')
-# source ('d:\\density secr 1.3\\secr\\R\\sim.secr.R')
-# source ('d:\\density secr 1.3\\secr\\R\\confint.secr.R')
-# source ('d:\\density secr 1.3\\secr\\R\\verify.R')
-# source ('d:\\density secr 1.3\\secr\\R\\secr.cellprob.R')
-# source ('d:\\density secr 1.3\\secr\\R\\reduce.capthist.R')
-# source ('d:\\density secr 1.3\\secr\\R\\write.capthist.R')
-# source ('d:\\density secr 1.3\\secr\\R\\write.traps.R')
-# source ('d:\\density secr 1.3\\secr\\R\\LLsurface.secr.R')
+# source ('d:\\density secr 1.4\\secr\\R\\methods.R')
+# source ('d:\\density secr 1.4\\secr\\R\\autoini.R')
+# source ('d:\\density secr 1.4\\secr\\R\\functions.R')
+# source ('d:\\density secr 1.4\\secr\\R\\D.designdata.R')
+# source ('d:\\density secr 1.4\\secr\\R\\logmultinom.R')
+# source ('d:\\density secr 1.4\\secr\\R\\secr.make.newdata.R')
+# source ('d:\\density secr 1.4\\secr\\R\\secr.design.MS.R')
+# source ('d:\\density secr 1.4\\secr\\R\\plot.secr.R')
+# source ('d:\\density secr 1.4\\secr\\R\\sim.capthist.R')
+# source ('d:\\density secr 1.4\\secr\\R\\esa.R')
+# source ('d:\\density secr 1.4\\secr\\R\\derivedMS.R')
+# source ('d:\\density secr 1.4\\secr\\R\\score.test.R')
+# source ('d:\\density secr 1.4\\secr\\R\\pdot.R')
+# source ('d:\\density secr 1.4\\secr\\R\\RPSV.R')
+# source ('d:\\density secr 1.4\\secr\\R\\dbar.R')
+# source ('d:\\density secr 1.4\\secr\\R\\model.average.R')
+# source ('d:\\density secr 1.4\\secr\\R\\deviance.R')
+# source ('d:\\density secr 1.4\\secr\\R\\sim.secr.R')
+# source ('d:\\density secr 1.4\\secr\\R\\confint.secr.R')
+# source ('d:\\density secr 1.4\\secr\\R\\verify.R')
+# source ('d:\\density secr 1.4\\secr\\R\\secr.cellprob.R')
+# source ('d:\\density secr 1.4\\secr\\R\\reduce.capthist.R')
+# source ('d:\\density secr 1.4\\secr\\R\\write.capthist.R')
+# source ('d:\\density secr 1.4\\secr\\R\\write.traps.R')
+# source ('d:\\density secr 1.4\\secr\\R\\LLsurface.secr.R')
+# source ('d:\\density secr 1.4\\secr\\R\\make.capthist.R')
 #
 ############################################################################################
 # Global variables in namespace
@@ -122,7 +135,9 @@ traps.default <- function (object, ...)       {
         class(temp) <- c('list', 'traps')
         temp
     }
-    else attr(object,'traps')
+    else{
+        attr(object,'traps')
+    }
 }
 
 detector.default <- function (object, ...)    {
@@ -130,7 +145,10 @@ detector.default <- function (object, ...)    {
     if (inherits(object, 'list')) {
         detector.default (object[[1]], ...)
     }
-    else attr(object,'detector')
+    else {
+        if (is.null(object)) NULL
+        else attr(object,'detector')
+    }
 }
 
 ## traps object
@@ -243,7 +261,8 @@ trap <- function (object, names = TRUE) {
         else
             values <- 1:nrow(traps(object))
         if (detector(traps(object)) %in% c('single','multi')) {
-            values[object[abs(object)>0]]
+##            values[object[abs(object)>0]]
+            values[abs(object[abs(object)>0])]   ## fixed 2010 04 01
         }
         else {
             apo <- aperm(object,c(3,1,2))
@@ -410,12 +429,14 @@ rotate.default <- function (object, degrees, centrexy=NULL, ...) {
 ##    else
 
     object <- as.matrix(object)
-
+    if (dim(object)[2] <2) stop ('require at least 2 columns')
     if (abs(degrees)>0) {
         if (is.null(centrexy)) centrexy <- c(0,0)
         theta <- 2*pi*degrees/360 # convert to radians
-
-        t(apply (object,1,rotatefn))
+        temp <- t(apply (object,1,rotatefn))
+        if (!is.null(dimnames(object)[[2]]))
+            dimnames(temp)[[2]] <- dimnames(object)[[2]][1:2]
+        temp
     } else object[,1:2]
 }
 ############################################################################################
@@ -527,12 +548,24 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 'traps<-' <- function (object, value) {
     if (!is(value,'traps')) stop ("'traps' object required for replacement")
 
-    structure (object, traps = value)
+    ## MODIFIED 2010 04 27
+    if (inherits(object, 'list')) {
+        nsess <- length(object)
+        temp <- vector(mode='list', nsess)
+        if (nsess != length(value)) stop ('replacement value wrong length')
+        for (i in 1:nsess) temp[[i]] <- `traps<-`(object[[i]], value[[i]])
+        class(temp) <- c('list', 'traps')
+        temp
+    }
+    else {
+        structure (object, traps = value)
+    }
 }
 
 'session<-' <- function (object, value) {
     if (inherits(object, 'list')) {
        if (length(value) != length(object)) stop ('invalid replacement value for sessions')
+       for (i in 1:length(object)) session(object[[i]]) <- value[i]   ## 2010 03 26
        structure (object, names = as.character(value))
     }
     else {
@@ -567,8 +600,8 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detec
 
     grid <- expand.grid (x=(0:(nx-1))*spacex + originxy[1], y=(0:(ny-1))*spacey + originxy[2])
 
-    if (! ID %in% c('numx','numy', 'numxb', 'numyb', 'alphax','alphay'))
-        stop ('ID should be one of numx, numy, numxb, numyb, alphax, alphay')
+    if (! ID %in% c('numx','numy', 'numxb', 'numyb', 'alphax','alphay', 'xy'))
+        stop ('ID should be one of numx, numy, numxb, numyb, alphax, alphay', 'xy')
 
 if (ID %in% c('alphax','alphay')) {
   n <- max(nx,ny)/25 + 1
@@ -597,6 +630,14 @@ if (ID %in% c('alphax','alphay')) {
         colA <- 1:nx
         rowA <- ll[1:ny]
         row.names(grid) <- apply(expand.grid(colA, rowA), 1, function(x) paste(rev(x), sep='', collapse=''))
+    }
+
+    ## added 2010 03 24
+    if (ID == 'xy') {
+        leadingzero <- function (x) formatC(x, width=max(nchar(x)), flag="0")
+        colA <- leadingzero(1:nx)
+        rowA <- leadingzero(1:ny)
+        row.names(grid) <- apply(expand.grid(colA, rowA), 1, function(x) paste(x, sep='', collapse=''))
     }
 
     if (hollow) {
@@ -772,7 +813,8 @@ flip.traps <- function (object, lr=F, tb=F, ...) {
 }
 ############################################################################################
 
-read.traps <- function (file=NULL, data=NULL, detector='multi', ...)
+read.traps <- function (file = NULL, data = NULL, detector = 'multi', ...)
+## possibly add sortrows argument, but risk breaking covariates, polygon etc.
 {
 
     # count.fields(file, sep = "", quote = "\"'", skip = 0, blank.lines.skip = TRUE, comment.char = "#")
@@ -822,6 +864,7 @@ read.traps <- function (file=NULL, data=NULL, detector='multi', ...)
             temp <- split (data[,c('x','y','polyID')], data$polyID)
             data <- as.data.frame(abind(lapply(temp, close), along=1), force.array=F)
         }
+
         traps <- data[,c('x','y')]
         class(traps)    <- c('traps', 'data.frame')
         if ('polyID' %in% names(data))
@@ -843,6 +886,7 @@ read.traps <- function (file=NULL, data=NULL, detector='multi', ...)
             splitfield <- matrix(unlist(strsplit(as.character(temp2),'/')),byrow=T, nr=nrow(traps))   # before '/'
             used <- gsub(' ','', splitfield[,1])     # remove blanks
             used <- gsub('//t','', used)   # remove tabs
+            used <- gsub(',','', used)   # remove commas
             nocc <- max(nchar(used))
             if (any(nchar(used) != nocc)) stop ('Usage fields suggest varying number of occasions')
             if (nocc>0) {
@@ -856,6 +900,7 @@ read.traps <- function (file=NULL, data=NULL, detector='multi', ...)
             }
         }
     }
+
     attr(traps,'spacex') <- min(dist(unique(traps$x)))
     attr(traps,'spacey') <- min(dist(unique(traps$y)))
     traps
@@ -1202,205 +1247,11 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
 ## capture data
 ####################################
 
-read.captures <- function (file, ...)
-{
-    read.table (file, as.is=T, ...)
-}
-############################################################################################
-
-make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
-    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01)
-
-# captures is a dataframe with the structure:
-# fmt = 'trapID'
-#   column 1	Session
-#   column 2	AnimalID
-#   column 3	Occasion
-#   column 4	TrapID
-#   column 5    Signal    (optional)
-
-# fmt = 'XY'
-#   column 1	Session
-#   column 2	AnimalID
-#   column 3	Occasion
-#   column 4	x
-#   column 5	y
-#   column 6    Signal    (optional)
-
-{
-    session <- captures[,1]
-    sessionlevels <- unique(session)  ## retains order
-    session <- factor(session, levels=sessionlevels)
-
-    MS <- bysession & ( length(sessionlevels) > 1)
-
-    if (MS) {  # recursive call of make.capthist
-        capturelist <- split (captures, session)
-        nsession <- length(capturelist)
-        traplist <- inherits(traps, 'list')
-        occvector <- length(noccasions)>1
-        if (traplist & (length(traps) != nsession))
-            stop ('traps list does not match capture sessions')
-        if (occvector & (length(noccasions) != nsession))
-            stop ('noccasions does not match capture sessions')
-
-        capthist <- vector('list', nsession)
-        for (i in 1:nsession) {
-            if (traplist)  trps <- traps[[i]] else trps <- traps
-            if (occvector) nocc <- noccasions[i] else nocc <- noccasions
-
-            capthist[[i]]  <- make.capthist (
-                captures = capturelist[[i]],
-                traps = trps,
-                fmt = fmt,
-                noccasions = nocc,
-                covnames = covnames,
-                bysession = bysession,
-                sortrows = sortrows,
-                cutval = cutval)
-
-        }
-        names(capthist) <- levels(session)
-        class(capthist) <- c('list','capthist')
-        capthist
-    }
-
-    else ## single-session call
-    {
-        if (!(fmt %in% c('trapID','XY'))) stop ('Capture format not recognised')
-        if (fmt!='trapID') {
-          if (ncol(captures)<5) stop ('Too few columns in capture matrix')
-          if (detector(traps)=='polygon') {
-              captTrap <- xyinpoly(captures[,4:5], traps)
-              if (any(captTrap==0)) {
-                  captTrap <- captTrap[captTrap>0]
-                  captures <- captures[captTrap>0,]
-                  warning ('detections with coordinates outside polygon(s) were dropped')
-              }
-          }
-          else if (detector(traps)=='transect') {
-              captTrap <- xyontransect(captures[,4:5], traps, tol)
-              if (any(captTrap==0)) {
-                  captTrap <- captTrap[captTrap>0]
-                  captures <- captures[captTrap>0,]
-                  warning ('detections with coordinates not on any transect were dropped')
-              }
-          }
-          else {
-              trapID    <- interaction(traps$x, traps$y)
-              captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
-              if (any(is.na(captTrap))) stop ('Failed to match some capture locations to detector sites')
-          }
-        }
-        else {
-          if (detector(traps) %in% c('polygon', 'transect'))
-              stop ('use fmt XY to input detections from polygons or transects')
-          captTrap <- match(captures[,4], row.names(traps))
-        }
-
-        #  if (bysession & ( length(levels(session)) > 1)) {
-        #    captures[,2] <- interaction(session, captures[,2], drop = TRUE)
-        #  }
-
-        nocc      <- max(abs(captures[,3]))
-        nocc      <- ifelse (is.null(noccasions), nocc, noccasions)
-
-        if (is.null(detector(traps)))
-            stop ("require a detector type e.g. detector(traps) <- 'multi'")
-        if (is.null(cutval) && detector(traps)=='signal')
-            stop ("Missing cutval (signal threshold) for signal data")
-
-        wout <- NULL
-        ID   <- NULL
-
-        uniqueID <- unique(captures[,2])
-        captID <- as.numeric(factor(captures[,2], levels=uniqueID))
-        nID    <- length(uniqueID)
-
-        if (detector(traps) %in% c('proximity', 'quadratbinary','signal', 'count',
-            'quadratcount','polygon','transect')) {
-            w <- array (0, dim=c(nID, nocc, ndetector(traps)))
-            dimnames(w) <- list(1:nID, 1:nocc, 1:ndetector(traps))
-            temp <- table (captID, abs(captures[,3]), captTrap)
-            d <- dimnames(temp)
-            d <- lapply(d, as.numeric)
-            w[d[[1]], d[[2]], d[[3]]] <- temp    ## NOT WORKING
-        }
-        else {
-            w     <- matrix(nr=nID, nc=nocc)
-            w[,]  <- 0
-
-            ## adjusted 2009 08 13 to ensure first occurrence selected when more than one per occasion
-            indices <- cbind(captID, abs(captures[,3]))
-            values <- captTrap * sign(captures[,3])
-            ord <- order (captID, 1:length(captID), decreasing=TRUE)
-            w[indices[ord,, drop=F]] <- values[ord]    ## drop=F is critical to ensure retains dim2
-        }
-
-        wout <- abind(wout, w, along=1)
-        dimnames(wout)[[1]] <- uniqueID
-        dimnames(wout)[[2]] <- 1:nocc
-
-        ## optional row sort 2009 09 26
-        if (sortrows) {
-            roworder <- order (uniqueID)
-            if (length(dim(wout))==3)
-                wout[,,] <- wout[roworder,,]
-            else
-                wout[,] <- wout[roworder,]
-            dimnames(wout)[[1]] <- dimnames(wout)[[1]][roworder]
-        }
-
-        ## code to input permanent individual covariates if these are present
-        zi <- NULL
-        startcol <- ifelse (fmt=='trapID', 5, 6)
-        if (detector(traps) %in% c('signal')) startcol <- startcol+1
-        if (ncol(captures) >= startcol)
-            zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
-        if (!is.null(zi)) {
-            # find first match of ID with positive value for each covar
-            temp <- zi[1:length(uniqueID),,drop=FALSE]
-            temp[,] <- NA
-
-            for (j in 1:ncol(zi)) {
-                nonmissing <- function(x) x[!is.na(x)][1]
-                ## levels=uniqueID to retain sort order
-                tempj <- split(zi[,j], factor(captures[,2], levels=uniqueID))
-                tempj2 <- sapply(tempj, nonmissing)
-                temp[,j] <- factor(tempj2)
-                rownames(temp) <- names(tempj)          ## 2010 02 26
-            }
-            if (is.null(covnames)) names(temp) <- names(zi)
-            else {
-                if (ncol(temp) != length(covnames)) stop('Number of covariate names does not match')
-                names(temp) <- covnames
-            }
-            if (sortrows) temp <- temp[roworder,,drop = FALSE]   ## added 'FALSE' 2010 02 24
-            attr(wout,'covariates') <- temp
-        }
-        else attr(wout,'covariates') <- data.frame()
-
-        class (wout) <- 'capthist'
-        traps(wout) <- traps
-        if (detector(traps) %in% c('polygon','transect')) {
-            xy <- captures[order(captures[,2],captures[,3],captTrap),4:5]
-            names(xy) <- c('x','y')
-            attr(wout,'detectedXY') <- xy
-        }
-        if (detector(traps) == 'signal') {
-            if (is.null(cutval)) stop ('Missing value for signal threshold')
-            if (fmt=='XY')
-                attr(wout, 'signal') <- captures[,6]
-            else
-                attr(wout, 'signal') <- captures[,5]
-            attr(wout, 'cutval')   <- cutval
-        }
-
-        session(wout)  <- as.character(captures[1,1])
-        wout
-    }   ## end of single-session call
-}
-############################################################################################
+## scrapped 2010 04 30
+## read.captures <- function (file, ...)
+## {
+##     read.table (file, as.is=T, ...)
+## }
 
 discreteN <- function (n, N) {
     tN <- trunc(N)
@@ -1625,7 +1476,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         #################################
         ## prepare to drop null histories
         if (dropnull) {
-            if (detector %in% c('quadratbinary', 'quadratcount', 'proximity', 'count','polygon','transect')) {
+            if (detector %in% c('quadratbinary', 'quadratcount', 'proximity', 'count',
+                                'polygon','transect')) {
                 nonnull <- apply(abs(x[,occasions, traps, drop=F]),1,sum) > 0
             }
             else if (detector == 'signal') {
@@ -1674,10 +1526,15 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
                 if (dim3)
                     temp <- temp[,OK2,,drop=F]
                 else
-                    temp <- matrix(temp[,OK2,drop=F], nr=nrow)
+#                   temp <- matrix(temp[,OK2,drop=F], nr=nrow)
+# bugfix 2010 05 03
+# avoids loss of dimnames
+# not sure why was wrapped in matrix()...
+                    temp <- temp[,OK2,drop=F]
             }
             else
-                warning (paste('No detections on occasion(s) : ', paste((1:nocc)[apply(abs(temp),2,sum) ==0]),'\n  '))
+                warning (paste('No detections on occasion(s) : ',
+                    paste((1:nocc)[apply(abs(temp),2,sum) ==0]),'\n  '))
             nocc <- dim(temp)[2]  # refresh
         }
 
@@ -1825,14 +1682,21 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
         sortrows = sortrows)
     else { # strip attributes, but why bother?
         cat('Session = ', session(x), '\n')
-        if (condense & (detector(traps(x)) %in% c('proximity', 'count','quadratbinary','quadratcount','signal'))) {
+        if (condense & (detector(traps(x)) %in% c('proximity', 'count','quadratbinary',
+                 'quadratcount','signal'))) {
             temp <- apply(x, 3, function(y) y[apply(abs(y),1,sum)>0,, drop=F])
             trapnames <- rownames(traps(x))
             traps <- trapnames[rep(1:length(temp), sapply(temp, nrow))]
             detections <- as.matrix(abind(temp, along=1))
-            temp <- data.frame(AnimalID = rownames(detections), Trap = traps, detections, stringsAsFactors = FALSE, row.names=NULL)
+            temp <- data.frame(AnimalID = rownames(detections), Trap = traps, detections,
+                stringsAsFactors = FALSE, row.names=NULL)
             names(temp)[3:ncol(temp)] <- 1:(ncol(temp)-2)
-            if (sortrows) temp <- temp[order(temp[,1]), ]
+            if (sortrows) {
+                lab <- temp$AnimalID
+                if (suppressWarnings( all(!is.na(as.numeric(lab)))))
+                    lab <- as.numeric(lab)
+                temp <- temp[order(lab, temp$Trap ), ]
+            }
             rownames(temp) <- 1:nrow(temp)
             print(temp)
             invisible (temp)
@@ -1841,8 +1705,11 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
             temp <- array (x, dim=dim(x))
             dimnames(temp) <- dimnames(x)
             if (sortrows) {
-                if (length(dim(x)) == 3) temp <- temp[order(dimnames(temp)[[1]]),,]
-                else temp <- temp[order(dimnames(temp)[[1]]),]
+                lab <- dimnames(temp)[[1]]
+                if (suppressWarnings( all(!is.na(as.numeric(lab)))))
+                    lab <- as.numeric(lab)
+                if (length(dim(x)) == 3) temp <- temp[order(lab),,]
+                else temp <- temp[order(lab),]
             }
             print.default(temp,...)
             invisible(temp)
@@ -1865,7 +1732,7 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
    labpar = list(cex=0.7, col='black'),
    ...)
 
-    # suggest include optional session label 2009 02 13
+    # reorganised 2010-03-30
     # see also version in d:\single sample with stems=F, mst=F 2009 02 22
 
 {
@@ -1879,31 +1746,6 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             cappar = cappar, trkpar = trkpar, labpar = labpar, ...)
     }
     else {
-
-        traps <- traps(x)
-        detectr <- detector(traps)
-        nocc <- ncol(x)
-
-## REVISE FOLLOWING IF ADD MPLOT OPTION
-        if ((nocc == 1) & ! (detectr=='signal')) rad <- 0
-
-        cappar <- replacedefaults (list(cex=1.3, pch=16, col='blue'), cappar)
-        trkpar <- replacedefaults (list(col='blue', lwd=1), trkpar)
-        labpar <- replacedefaults (list(cex=0.7, col='black'), labpar)
-
-        if (!add) plot(traps, hidetr=hidetraps, ...)
-        initialpar <- par(cappar)
-
-        if (is.null(icolours)) icolours <- topo.colors((nrow(x)+1)*1.5)
-        ## if (is.null(icolours)) icolours <- terrain.colors((nrow(x)+1)*1.5)
-        ## if (is.null(icolours)) icolours <- heat.colors((nrow(x)+1))
-        ## if (is.null(icolours)) icolours <- rainbow((nrow(x)+1))
-
-        if (varycol) {
-            if (randcol) icolours <- sample(icolours)
-            palette(icolours)
-            icol <- 0
-        }
 
         plotprox <- function (x) {
             x <- abs(x)   # do not distinguish deads for now
@@ -1919,7 +1761,6 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             if (varycol) par(col=icol)    ## override 2009 10 02
             points (traps$x[x]+dx, traps$y[x]-dy)
         }
-
         plotpolygoncapt <- function (xy) {
             # some dupl points will be over plotted - could increase rad for
             # captures after first at a trap on a given day
@@ -1931,7 +1772,6 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             if (varycol) par(col=icol)    ## override 2009 10 02
             points (xy$x, xy$y)
         }
-
         plotcapt <- function (x) {
             x <- abs(x)   # do not distinguish deads for now
             dx <- (cos((1:nocc) * 2 * pi / nocc) * rad)
@@ -1940,8 +1780,6 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             x0 <- x>0
             x1 <- x0 & !(occ2)
             x2 <- x0 & occ2
-
-
             x[!x0] <- 1   # fool into keeping length..
             usesplit <- !is.null(splitocc) & (sum(x2)>0)
             if (varycol) icol <<- icol+1
@@ -1967,13 +1805,11 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
               par(col=col2)
               points ((traps$x[x]+dx)[x2], (traps$y[x]-dy)[x2])
             }
-
         }
-
         labcapt <- function (n) {
-
             if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity', 'count','signal','polygon','transect') )
             {
+                warning ('labels not implemented for this detector type')
             }
             else {
                 t1 <- abs(x[n,])
@@ -1987,14 +1823,12 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
                 text (traps$x[t1]+dx+laboffset[1], traps$y[t1]-dy+laboffsety, row.names(x)[n])
             }
         }
-
         labhead <- function (n, df) {
                 par(labpar)
                 if (varycol) par(col=n)   # override
                 laboffsety <- ifelse (length(laboffset)==2, laboffset[2], laboffset[1])
                 text (head(df[[n]],1)$x++laboffset[1], head(df[[n]],1)$y+laboffsety, row.names(x)[n])
         }
-
         ncapt <- function (x) {
             if (detectr %in% c('proximity', 'count','quadratbinary','quadratcount')) {
                temp <- t(apply (x,c(2,3),sum)) # capts/trap/day)
@@ -2034,6 +1868,29 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             points (traps[df$trap,'x']+dx, traps[df$trap,'y']-dy, col = greycol)
         }
 
+        ###########
+        ## MAINLINE
+
+        traps <- traps(x)
+        detectr <- detector(traps)
+        nocc <- ncol(x)
+        nanimal <- nrow(x)
+
+        cappar <- replacedefaults (list(cex=1.3, pch=16, col='blue'), cappar)
+        trkpar <- replacedefaults (list(col='blue', lwd=1), trkpar)
+        labpar <- replacedefaults (list(cex=0.7, col='black'), labpar)
+        initialpar <- par(cappar)
+        if (is.null(icolours)) icolours <- topo.colors((nanimal+1)*1.5)
+        if (varycol) {
+            if (randcol) icolours <- sample(icolours)
+            palette(icolours)
+            icol <- 0
+        }
+        if ((nocc == 1) & ! (detectr=='signal')) rad <- 0
+
+
+        if (!add) plot(traps, hidetr=hidetraps, ...)
+
         if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity', 'count') )
         {
             w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
@@ -2052,48 +1909,47 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             .localstuff$i <- 0
             temp <- data.frame(ID=animalID(x), occ=occasion(x), trap=trap(x), signal=signal(x))
             lsignal <- split(temp, animalID(x))
-            lapply(lsignal, plotsignal, minsignal = min(temp$signal), maxsignal = max(temp$signal), n=nrow(x))
+            lapply(lsignal, plotsignal, minsignal = min(temp$signal), maxsignal = max(temp$signal), n=nanimal)
         }
-        else  {
+        else  {   ## single, multi-catch traps
             apply( x, 1, plotcapt )
         }
 
         if (lab1cap) {
             if ( detectr %in% c('polygon','transect') ) {
                 lxy <- split (xy(x), animalID(x))
-                sapply(1:nrow(x), labhead, df=lxy)
+                sapply(1:nanimal, labhead, df=lxy)
             }
-            else sapply(1:nrow(x), labcapt)
+            else sapply(1:nanimal, labcapt)
         }
 
         if (ncap) { ncapt(x)}
 
-        par(initialpar)   # restore
-
+        ####################################################
+        ## Titles
         if (is.logical(title)) {
             txt <- ifelse (is.null(session(x)), paste(deparse(substitute(x)), collapse=''), session(x))
             title <- ifelse(title, txt, '')
         }
-
         if (title != '') {
             par(col='black')
             mtext(side=3,line=1.2, text = title, cex=0.7)
         }
-
         if (is.logical(subtitle)) {
             if(detectr %in% c('single','multi')) nd <- sum(abs(x)>0)
             else nd <- sum(abs(x))
             subtitle <- ifelse(subtitle, paste(
                 nocc, 'occasions,' ,
                 nd, 'detections,',
-                nrow(x), 'animals'), '')
+                nanimal, 'animals'), '')
         }
-
         if (subtitle != '') {
             par(col='black')
             mtext(text = subtitle, side=3,line=0.2, cex=0.7)
         }
+        ####################################################
 
+        par(initialpar)   # restore
         invisible(sum(abs(x)>0))
     }
 }
@@ -2164,28 +2020,39 @@ summary.capthist <- function(object, ...) {
                 counts [7,] <- apply(object[,,drop=F],2, function(x) length(unique(x[x!=0])))
             }
         }
+        if (!is.null(traps)) {
+            if (!is.null(usage(traps)))
+                counts[8,] <- apply(usage(traps),2,function(x) sum(x>0))
+            else
+                counts[8,] <- rep(ndetector(traps),nocc)
+        }
 
-        if (!is.null(usage(traps)))
-            counts[8,] <- apply(usage(traps),2,function(x) sum(x>0))
-        else
-            counts[8,] <- rep(ndetector(traps),nocc)
         counts <- as.data.frame(counts)
         dimnames(counts) <- list(c('n','u','f','M(t+1)','losses','detections','detectors visited','detectors used'), 1:nocc)
         counts$Total <- apply(counts, 1, sum)
         counts$Total[4] <- counts[4, nocc]
 
-        if (-diff(counts$Total[1:2]) > 1)
-            PSV <- RPSV(object)
-        else
+        if (is.null(traps)) {
+            trapsum <- NULL
+            signalsummary <- NULL
             PSV <- NULL
-
-        if (length(dim(object)) == 2)
-            dbar <- dbar(object)
-        else
             dbar <- NULL
+        }
+        else {
 
-        trapsum <- summary(traps)
-        if (detector == 'signal') signalsummary <- summary(signal(object))
+            if (-diff(counts$Total[1:2]) > 1)
+                PSV <- RPSV(object)
+            else
+                PSV <- NULL
+
+            if (length(dim(object)) == 2)
+                dbar <- dbar(object)
+            else
+                dbar <- NULL
+
+            trapsum <- summary(traps)
+            if (detector == 'signal') signalsummary <- summary(signal(object))
+        }
 
         temp <- list (
             detector = detector,
@@ -2392,9 +2259,18 @@ rbind.mask <- function (...) {
 }
 ############################################################################################
 
-read.mask <- function (file, spacing=NULL, ...)
+read.mask <- function (file, spacing = NULL, ...)
+## SS for 'state-space' from SPACECAP 2010-04-11
 {
-    mask <- read.table (file, ...)
+    fl <- nchar(file)
+    SS <- tolower(substring(file,fl-3,fl)) == '.csv'
+    if (SS) {
+        mask <- read.csv (file)
+        if ('HABITAT' %in% names(mask))
+            mask <- mask[mask$HABITAT == 1,]
+    }
+    else
+        mask <- read.table (file, ...)
     if (!('x' %in% names(mask)) | !('y' %in% names(mask)))
       names(mask)[1:2] <- c('x','y')  # assume coords in first two columns
     mask <- mask[,c('x','y')]
@@ -2437,7 +2313,7 @@ print.mask <- function(x, ...) {
 ###############################################################################
 
 plot.mask <- function(x, border=20, add=F, covariate=NULL,
-                     axes=F, dots=T, col='grey', ppoly=T, polycol='red', ...)
+                     axes=F, dots=T, col='grey', breaks = 12, ppoly=T, polycol='red', ...)
 {
     buff <- c(-border,+border)
     if (!add)
@@ -2447,20 +2323,29 @@ plot.mask <- function(x, border=20, add=F, covariate=NULL,
         axes=axes, type='n', ...)
 
     if (is.null(covariate))
-        points (x$x, x$y, col=col, pch=16, cex=0.4)
+        covfactor <- factor(1)
     else {
-        if (length(col)==1) col <- heat.colors(12)   # default set
-        if (dots)
-            points (x$x, x$y, col = as.numeric(covariates(x)[,covariate]),
-                pch = 16, cex = 0.4)
-        else {
-            ux <- sort(unique(x$x))
-            uy <- sort(unique(x$y))
-            temp <- matrix(nc = length(ux), nr = length(uy))
-            temp[cbind(match(x$y,uy), match (x$x,ux))] <- as.numeric(covariates(x)[, covariate])
-            image(ux, uy, z = temp, col = col,
-                add=add, axes=axes, xlab='', ylab='')
+        if (is.factor(covariates(x)[,covariate]))
+            covfactor <- covariates(x)[,covariate]
+        else
+            covfactor <- cut ( covariates(x)[,covariate], breaks = breaks)
+    }
+    ncol <- length(levels(covfactor))
+    if (length(col) < ncol)
+    col <- heat.colors(ncol)   # default set
+    cols <- col[as.numeric(covfactor)]
+
+    if (dots) {
+        points (x$x, x$y, col = cols, pch = 16, cex = 0.4)
+    }
+    else {
+        pixelsize <- attr(x,'spacing')
+        dx <- c(-0.5, -0.5, +0.5, +0.5) * pixelsize
+        dy <- c(-0.5, +0.5, +0.5, -0.5) * pixelsize
+        plotpixel <- function (xy) {
+        polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1)
         }
+        apply(cbind(x,as.numeric(covfactor)),1,plotpixel)
     }
 
     if ((attr(x,'type')=='polygon') & ppoly)
@@ -2594,15 +2479,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     defaultdetails <- list(distribution = 'poisson', scalesigma = FALSE,
         scaleg0 = FALSE, hessian = 'auto', trace = TRUE, LLonly = FALSE,
-        cellprob = FALSE, binomN = 1, cutval = 0,
+        cellprob = FALSE, centred = FALSE, binomN = 1, cutval = 0,
         minprob = 1e-50, tx = 'identity')
     if (!is.null(attr(capthist,'cutval')))
         defaultdetails$cutval <- attr(capthist,'cutval')
     details <- replace (defaultdetails, names(details), details)
     if (!is.null(trace)) details$trace <- trace   ## 2010 02 27
     if (details$LLonly)  details$trace <- FALSE
-
-
 
     #################################################
     ## NEW multi-session capthist object 12/2/09
@@ -2679,6 +2562,33 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     nonID <- !is.null(Tm)   ## were marked animals recorded if unidentified?
     if (!is.null(q) & CL) stop ('mark-resight incompatible with CL')
+
+    #################################################
+    ## optional centring of traps and mask 2010 04 27
+    if (details$centred) {
+        centre <- function (xy, dxy) {
+            xy[,] <- sweep(xy, MAR=2, FUN='-', STATS=dxy)
+            xy
+        }
+        if (MS) {
+            nsess <- length(traps(capthist))
+            offsetxy <- lapply(traps(capthist), function(xy) apply(xy, 2, mean))
+            for (i in 1:nsess) {
+                temptraps <- centre(traps(capthist[[i]]), offsetxy[[i]])
+                traps(capthist[[i]]) <- temptraps
+                mask[[i]] <- centre(mask[[i]], offsetxy[[i]])
+                attr(mask[[i]], 'meanSD')[1,1:2] <- attr(mask[[i]], 'meanSD')[1,1:2] - offsetxy[[i]]
+                attr(mask[[i]], 'boundingbox') <- centre(attr(mask[[i]], 'boundingbox'), offsetxy[[i]])
+            }
+        }
+        else {
+            offsetxy <- apply(traps(capthist), 2, mean)
+            traps(capthist) <- shift(traps(capthist), -offsetxy)
+            mask <- shift.traps(mask, -offsetxy)
+            attr(mask, 'meanSD')[1,1:2] <- attr(mask, 'meanSD')[1,1:2] - offsetxy
+            attr(mask, 'boundingbox') <- centre(attr(mask, 'boundingbox'), offsetxy)
+        }
+    }
 
     #################################################
     ## Use input formula to override defaults
@@ -2855,7 +2765,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     else {
 
         start3 <- list(D=NA, g0=NA, sigma=NA)
-##        nocc <- ifelse (MS, ncol(capthist[[1]]), ncol(capthist))
 
           if (!(detectfn %in% c(9,10,11)) && !anypoly && !anytrans) {  ## not for signal attenuation
             memo('Finding initial parameter values...', details$trace)
@@ -3135,6 +3044,11 @@ trim.secr <- function (object, drop = c('mask','design','design0','D'), keep = N
 predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     savenew = FALSE, scaled = FALSE, ...) {
 
+    if (is.null(object$fit)) {
+        warning ('Null fit passed to predict.secr')
+        return(NULL)
+
+    }
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
     ## allow for fixed beta parameters 2009 10 19
     fb <- object$details$fixedbeta

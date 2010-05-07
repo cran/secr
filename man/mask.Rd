@@ -22,7 +22,7 @@ be evaluated by summing over grid cells. Fourthly, the x-y coordinates
 of the mask and any habitat covariates may be used to build spatial
 models of density. For example, a continuous or categorical habitat
 covariate 'cover' measured at each point on the mask might be used in a
-formula for density such as D = \eqn{\sim}{~}cover.
+formula for density such as D \eqn{\sim}{~}cover.
 
 In relation to the first purpose, the definition of 'negligible' is
 fluid. Any probability less than 0.01 seems OK in the sense of not
@@ -55,5 +55,5 @@ Attributes other than \code{covariates} are generated automatically by \code{mak
 
 \seealso{ \code{\link{make.mask}}, \code{\link{read.mask}}, \code{\link{secr.fit}}, \code{\link{secr density models}} }
 
-\keyword{ models }
+\keyword{ classes }
 

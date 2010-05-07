@@ -30,7 +30,8 @@ replaces the \code{traps} attribute of a \code{capthist} object.
 An object of class \code{traps} holds detector (trap) locations as a
 data frame of x-y coordinates. Trap identifiers are used as row names.
 The required attribute 'detector' records the type of detector
-('single', 'multi' or 'proximity'). 
+('single', 'multi' or 'proximity' etc.; see \code{\link{detector}} for
+more).
 
 Other possible attributes of a \code{traps} object are trap-specific
 covariates (\code{covariates}) and a matrix of binary (0/1) codes
@@ -80,5 +81,5 @@ plot (temptr, add = TRUE,
     detpar = list (pch = 16, col = 'green', cex = 2))  
 }
 
-\keyword{ models }
+\keyword{ classes }
 

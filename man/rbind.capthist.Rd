@@ -15,7 +15,7 @@ MS.capthist(...)
 \arguments{
 \item{\dots}{ one or more simple \code{capthist} objects (i.e., single-session) }
 \item{renumber}{ assign new composite individual ID: sourceobject.oldID }
-\item{pool}{ list of indices }
+\item{pool}{ list of vectors of indices }
 }
 
 \details{
@@ -41,8 +41,13 @@ session. Compatibility is not required.
 
 \value{
 
-An object of class \code{capthist} with number of rows equal to the sum
-of the rows in the input objects.}
+For \code{rbind.capthist}, an object of class \code{capthist} with
+number of rows equal to the sum of the rows in the input objects.
+
+For \code{MS.capthist}, a multi-session object of class \code{capthist}
+with number sessions equal to the number of objects in \dots.
+
+}
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 

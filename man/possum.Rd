@@ -86,7 +86,7 @@ Bulletin} \bold{33}, 731--738.
 
 setwd('d:\\density communication\\webtest\\foxton\\')
 possumtraps <- read.traps(file = 'foxtraps.txt', detector = 'single')
-temp <- read.captures('foxton.txt', colClasses=c('character',
+temp <- read.table('foxton.txt', colClasses=c('character',
     'character', 'numeric', 'character'))
 ## drop within-day duplicates of animal 5861
 temp <- temp[-c(184,186),]
@@ -99,7 +99,6 @@ possummask <- make.mask(possumtraps, buffer = 300, type='pdot',
 possum.model.1 <- secr.fit(possumCH, mask = possummask)
 ## fit learned trap response model
 possum.model.1b <- secr.fit(possumCH, mask = possummask, model = list(g0~b))
-
 }
 
 require (graphics)

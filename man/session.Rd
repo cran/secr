@@ -71,7 +71,7 @@ Pollock, K. H. (1982) A capture-recapture design robust to unequal probability o
 }
 
 \examples{
-  data(captdata)
+  data(secrdemo)
   session(captdata)
 }
 

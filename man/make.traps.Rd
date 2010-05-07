@@ -65,8 +65,12 @@ clockwise in sequence from the bottom-left corner. Other values of
      numyb \tab row-dominant boustrophedonical numeric sequence \cr
      alphax \tab column-dominant alphanumeric \cr
      alphay \tab row-dominant alphanumeric \cr
+     xy \tab combine column (x) and row(y) numbers \cr     
   }
 
+  'xy' adds leading zeros as needed to give a string of constant length with
+  no blanks.
+  
 \code{make.circle} generates coordinates for n traps in a circle centred
 on \code{originxy}. If \code{spacing} is specified then it overrides the
 \code{radius} setting; the radius is adjusted to provide the requested
