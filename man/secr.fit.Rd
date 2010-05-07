@@ -17,8 +17,9 @@ likelihood. Data must have been assembled as an object of class
 secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     mask = NULL, buffer = 100, CL = FALSE, detectfn = NULL,
     start = NULL, link = list(), fixed = list(),
-    timecov = NULL, sessioncov = NULL, groups = NULL, dframe = NULL,
-    details = list(), method = 'Newton-Raphson', verify = TRUE, trace = NULL, ...)
+    timecov = NULL, sessioncov = NULL, groups = NULL,
+    dframe = NULL, details = list(), method = 'Newton-Raphson',
+    verify = TRUE, trace = NULL, ...)
 }
 
 \arguments{
@@ -49,11 +50,12 @@ likelihood depends on the detector type ('multi' or 'proximity') of the
 '\code{traps}' attribute of \code{capthist} (Borchers and Efford 2008,
 Efford, Borchers and Byrom 2009, Efford, Dawson and Borchers 2009). The
 'multi' form of the likelihood is also used, with a warning, when
-detector type = 'single' (see Efford et al. 2009). Default \code{model}
+detector type = 'single' (see Efford et al. 2009). The default \code{model}
 is null (constant density and detection probability). The set of
 variables available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B), group (g), and others that appear
-in the \code{covariates} of the input data. See \link{secr models} for
+in the \code{covariates} of the input data. See \link{secr models} and
+\url{../doc/secr-overview.pdf} for
 more on defining models.
 
 The length of \code{timecov} should equal the number of sampling
@@ -93,6 +95,12 @@ evaluation of the log likelihood at the 'start' values.
 \code{details$scaleg0} = TRUE causes g0 to be scaled by
 \eqn{\mathrm{sigma}^{-2}}{sigma^-2}. The corresponding 'real' parameters
 are marked with an asterisk in output (e.g. g0*).
+
+\code{details$centred} = TRUE causes coordinates of both traps and mask
+to be centred on the centroid of the traps, computed separately for each
+session in the case of multi-session data. This may be necessary to
+overcome numerical problems when x- or y-coordinates are large
+numbers. The default (1.4.0) is not to centre coordinates.
 
 If \code{method} = 'Newton-Raphson' then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood; otherwise
@@ -162,6 +170,11 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 \note{
 
+One system of units is used throughout \pkg{secr}. Distances are in metres and
+areas are in hectares (ha). The unit of density is animals per
+hectare. 1 ha = 10000 m^2 = 0.01 km^2. To convert density to animals /
+km^2, multiply by 100.
+  
 \code{print}, \code{AIC}, \code{vcov}, and \code{predict} methods
 are provided. \code{derived} is used to compute the derived parameters
 'esa' (effective sampling area) and 'D' (density) for models fitted by

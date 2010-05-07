@@ -39,7 +39,7 @@ signal(object) <- value
 \details{
 
 These functions extract data on detections, ignoring occasions when an
-animal was not detected. 
+animal was not detected.
 
 \code{trap} returns polygon or transect numbers if \code{traps(object)}
 has detector type 'polygon' or 'transect'.
@@ -47,7 +47,7 @@ has detector type 'polygon' or 'transect'.
 Replacement values must precisely match \code{object} in number of
 detections in their order. \code{xy<-} expects a dataframe of x and y
 coordinates for points of detection within a 'polygon' or 'transect'
-detector. 
+detector.
 
 }
 
@@ -69,13 +69,13 @@ For \code{signal}, a numeric vector with one element per detection.
 
 \examples{
 
-data(captdata)
+data(secrdemo)
 animalID(captdata)
 
 temp <- sim.capthist(popn=list(D=1), make.grid(detector='count'))
 cbind(ID=as.numeric(animalID(temp)), occ=occasion(temp), trap=trap(temp))
- 
+
 }
 
-\keyword{ models }
+\keyword{ manip }
 

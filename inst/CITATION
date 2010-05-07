@@ -8,7 +8,7 @@ author = personList(as.person("Murray Efford")),
 year = year,
 note = vers,
 textVersion =
-paste("Efford MG (",
+paste("Efford, M. G. (",
 year,
 "). secr: Spatially Explicit Capture-Recapture Models. ",
 vers, ".", sep=""))

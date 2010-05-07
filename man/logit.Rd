@@ -5,7 +5,7 @@
 \title{ Logit Transformation }
 
 \description{
-  Transform real values to the logit scale.
+  Transform real values to the logit scale, and the inverse.
 }
 
 \usage{

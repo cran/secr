@@ -9,8 +9,9 @@ from a fitted secr model and optionally make an approximate contour plot of the 
 likelihood surface.
 }
 \usage{
-LLsurface.secr(object, betapar = c("g0", "sigma"), xval = NULL, yval = NULL,
-centre = NULL, realscale = TRUE, plot = TRUE, plotfitted = TRUE, ...)
+LLsurface.secr(object, betapar = c("g0", "sigma"), xval = NULL,
+    yval = NULL, centre = NULL, realscale = TRUE, plot = TRUE,
+    plotfitted = TRUE, ...)
 }
 \arguments{
   \item{object}{
@@ -95,4 +96,4 @@ temp
 }
 }
 
-\keyword{ models }
+\keyword{ hplot }

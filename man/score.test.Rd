@@ -104,4 +104,4 @@ Morgan, B. J. T., Palmer, K. J. and Ridout, M. S. (2007) Negative score test sta
 }
 
 }
-\keyword{ models }
+\keyword{ htest }

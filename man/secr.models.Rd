@@ -21,7 +21,7 @@ Submodels for spatially explicit capture--recapture in \pkg{secr} are defined
 symbolically using the \R formula notation. A separate linear predictor
 is used for each core parameter. Core parameters are 'real' parameters
 in the terminology of MARK, and \pkg{secr} uses that term to reduce
-confusion. Four real parameters are commonly modelled in \pkg{secr} 1.3: D
+confusion. Four real parameters are commonly modelled in \pkg{secr}: D
 (density), g0, sigma and z. Only the last three real parameters, the
 ones jointly defining detection probability as a function of location,
 can be estimated directly when the model is fitted by maximizing the

@@ -104,7 +104,7 @@ wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31}
 ## for information only - these files not distributed
 netsites0509 <- read.traps(file = 'netsites0509.txt',
     skip = 1, detector = 'multi')
-temp <- read.captures('ovencapt.txt', colClasses=c('character',
+temp <- read.table('ovencapt.txt', colClasses=c('character',
     'character', 'numeric', 'numeric', 'character'))
 ovenCH <- make.capthist(temp, netsites0509, covnames=c('Sex','Age'))
 

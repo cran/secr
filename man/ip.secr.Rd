@@ -20,9 +20,9 @@ are covariates).
 \usage{
 
 ip.secr (capthist, predictorfn = pfn, predictortype = 'null',
-    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3, 
-    min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000, 
-    maxbox = 5, ...) 
+    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
+    centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
+    var.nsim = 1000, maxbox = 5, ...) 
 
 pfn(capthist, N.estimator)
 
@@ -220,7 +220,7 @@ from a simple halfnormal model if variances are not required.
 \dontrun{
 ## these calculations may take several minutes
 
-data(captdata)
+data(secrdemo)
 
 ## default settings
 ip.secr (captdata)

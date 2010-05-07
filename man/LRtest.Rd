@@ -36,4 +36,4 @@ LR.test(secr1, secr2)
     LR.test  (secrdemo.0, secrdemo.b)
 
 }
-\keyword{ models }
+\keyword{ htest }

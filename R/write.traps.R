@@ -1,13 +1,16 @@
 ############################################################################################
 ## package 'secr'
 ## write.traps.R
-## last changed 2009 06 11 2009 11 17
+## last changed 2009 06 11 2009 11 17 2010 04 30
 ## Write detector locations to text file in DENSITY format
 ## should remove conflict between row and ...
 ############################################################################################
 
 write.traps <- function (object, file='', ..., deblank = TRUE, header = TRUE, ndec = 2) {
-    objectname <-  deparse(substitute(object), control=NULL)
+    objectname <- ifelse (is.character(header),
+        header, deparse(substitute(object), control=NULL))
+    header <- ifelse (is.character(header), TRUE, header)
+
     if (!is(object, 'traps')) stop ('write.traps requires a traps object')
     n <- nrow(object)
     object$x <- round(object$x,ndec)
@@ -30,18 +33,17 @@ write.traps <- function (object, file='', ..., deblank = TRUE, header = TRUE, nd
     }
 
     if (header) {
-        cat ("; Detector locations exported from '", objectname, "' \n", sep="", file=file)
-        cat (';', format(Sys.time(), "%a %b %d %X %Y"), '\n', append = TRUE, file=file)
-        cat (';\n', append = TRUE, file=file)
+        cat ("# Detector locations exported from '", objectname, "' \n", sep="", file=file)
+        cat ('#', format(Sys.time(), "%a %b %d %X %Y"), '\n', append = TRUE, file=file)
         if (poly)
-            cat ('; polyID  x  y\n ', append = TRUE, file=file)
+            cat ('# polyID  x  y\n ', append = TRUE, file=file)
         else
         if (transect)
-            cat ('; transectID  x  y\n ', append = TRUE, file=file)
+            cat ('# transectID  x  y\n ', append = TRUE, file=file)
         else
-            cat ('; detector  x  y\n', append = TRUE, file=file)
+            cat ('# Detector  x  y\n', append = TRUE, file=file)
     }
-    write.table(temp, file = file, append = header, 
+    write.table(temp, file = file, append = header,
         row.names = !poly & !transect, col.names = FALSE, quote = FALSE, ...)
 
 }

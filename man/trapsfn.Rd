@@ -75,5 +75,5 @@ plot(temp)
  
 }
 
-\keyword{ models }
+\keyword{ manip }
 

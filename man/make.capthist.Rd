@@ -9,8 +9,8 @@
 
 \usage{
 make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
-    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL,
-    tol = 0.01)
+    covnames = NULL, bysession = TRUE, sortrows = TRUE,
+    cutval = NULL, tol = 0.01)
 }
 
 \arguments{
@@ -18,29 +18,32 @@ make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
   \item{traps}{ object of class \code{traps} describing an array of passive detectors }
   \item{fmt}{ character string for capture format. Valid values are 'XY' and 'trapID'. }
   \item{noccasions}{ number of occasions on which detectors were operated }
-  \item{covnames}{ character vector of names to use for covariate fields if present }
+  \item{covnames}{ character vector of names for individual covariate fields }
   \item{bysession}{ logical, if true then ID are made unique by session }
   \item{sortrows}{ logical, if true then rows are sorted in ascending order of animalID }
   \item{cutval}{ numeric, threshold of signal strength for 'signal' detector type }
-  \item{tol}{ numeric, tolerance (m) when assigning coordinates for 'transect' detector type }
+  \item{tol}{ numeric, tolerance in metres when assigning coordinates for 'transect' detector type }
 }
 
 \details{
 
-\code{make.capthist} is the recommended way to prepare data for
-\code{secr.fit}. Each row of the input data frame represents a detection
-on one occasion. The capture data frame may be formed from a text file
-with \code{read.captures}. 
+\code{make.capthist} is the most flexible way to prepare data for
+\code{secr.fit}. See \code{\link{read.capthist}} for a more streamlined
+way to read data from text files for common detector types. Each row of
+the input data frame \code{captures} represents a detection on one
+occasion. The capture data frame may be formed from a text file with
+\code{read.table}.
 
-Input formats are based on the Density software (Efford 2007). If
-\code{fmt} = 'XY' the required fields are (session, ID, occasion, x, y)
-in that order. If \code{fmt} = 'trapID' the required fields are
-(session, ID, occasion, trap), where \code{trap} is the numeric index of
-the relevant detector in \code{traps}. \code{session} and \code{ID} may
-be character-, vector- or factor-valued; other required fields are
-numeric. Fields are matched by position (column number), \emph{not} by
-name. Columns after the required fields are interpreted as individual
-covariates that may be continuous (e.g., size) or categorical (e.g., age, sex). 
+Input formats are based on the Density software (Efford 2009; see also
+\url{../doc/secr-datainput.pdf}). If \code{fmt} = 'XY' the required
+fields are (session, ID, occasion, x, y) in that order. If \code{fmt} =
+'trapID' the required fields are (session, ID, occasion, trap), where
+\code{trap} is the numeric index of the relevant detector in
+\code{traps}. \code{session} and \code{ID} may be character-, vector- or
+factor-valued; other required fields are numeric. Fields are matched by
+position (column number), \emph{not} by name. Columns after the required
+fields are interpreted as individual covariates that may be continuous
+(e.g., size) or categorical (e.g., age, sex).
 
 If \code{captures} has data from multiple sessions then \code{traps} may
 be either a list of \code{traps} objects, one per session, or a single
@@ -76,9 +79,9 @@ detectors \code{capthist} is an array of values \{-1, 0, 1\} and
 dim(capthist)=c(nc,noccasions,ntraps). The number of animals \code{nc}
 is determined from the input, as is \code{noccasions} if it is not specified.
 \code{traps}, \code{covariates} and other data are retained as
-attributes of \code{capthist}. 
+attributes of \code{capthist}.
 
-Deaths during the experiment are represented as negative values in \code{capthist}. 
+Deaths during the experiment are represented as negative values in \code{capthist}.
 
 If the input has data from multiple sessions then the output is an
 object of class c('list','capthist') comprising a list of single-session
@@ -90,13 +93,14 @@ object of class c('list','capthist') comprising a list of single-session
 
 \code{make.capthist} requires that the data for \code{captures} and
 \code{traps} already exist as \R objects. To read data from external
-(text) files, first use \code{read.captures} and \code{read.traps}. 
+(text) files, first use \code{read.table} and \code{read.traps}, or try
+\code{\link{read.capthist}} for a one-step solution.
 
 }
 
-\references{ 
+\references{
 
-Efford, M. G. (2007) \emph{Density 4.1: software for spatially explicit
+Efford, M. G. (2009) \emph{Density 4.4: software for spatially explicit
 capture--recapture}. Department of Zoology, University of Otago,
 Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
@@ -104,16 +108,18 @@ Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
-\seealso{ \code{\link{capthist}}, \code{\link{traps}}, \code{\link{read.captures}}, \code{\link{secr.fit}}, \code{\link{sim.capthist}} }
+\seealso{ \code{\link{capthist}}, \code{\link{traps}},
+\code{\link{read.capthist}}, \code{\link{secr.fit}},
+\code{\link{sim.capthist}} }
 
 \examples{
 
 ## load demonstration data and peek at XY data
-data(rawdata)
-captXY[1:5,]  
-trapXY[1:5,]  
+data(secrdemo)
+captXY[1:5,]
+trapXY[1:5,]
 
-demotraps <- read.traps(data = trapXY)   
+demotraps <- read.traps(data = trapXY)
 demoCHxy  <- make.capthist (captXY, demotraps, fmt = 'XY')
 
 demoCHxy            ## print method for capthist

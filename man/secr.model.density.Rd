@@ -25,6 +25,10 @@ all points in the mask (non-habitat excluded).  The variables 'x', 'y',
 'session' and 'g' are provided automatically.  Other covariates should be
 named columns in the 'covariates' attribute of the habitat mask.
 
+The fitted model for density is linear on the link scale (see the
+\code{link} argument of \code{\link{secr.fit}}. The default link for
+density is 'log'. 
+
 \tabular{lll}{
 Variable \tab Description \tab Data source \cr
 x        \tab x-coordinate   \tab automatic \cr

@@ -2,33 +2,30 @@
 ## package 'secr'
 ## logmultinom.R
 ## multinomial term in SECR likelihood
-## last changed 2009 02 14, 2009 03 10, 2009 06 11, 2009 10 07
+## last changed 2009 10 07
+## 2010 04 24 grp optional
 ## verified vs DENSITY for 4-session dataset, island fox data set 2009 02 14
+## Does not distinguish CH that end in death from CH that end with animal alive...
 ############################################################################################
 
-logmultinom <- function (capthist, grp) {
-## grp must not be NULL
-    if (is.null(grp)) stop ('NULL grp in logmultinom')
+logmultinom <- function (capthist, grp = NULL) {
     if (inherits (capthist, 'list')) {
         # assume grp also a list, by session
-        nsession <- length(capthist) 
+        nsession <- length(capthist)
         lmn <- 0
-        for (i in 1:nsession) { 
+        for (i in 1:nsession) {
             lmn <- lmn + logmultinom (capthist[[i]], grp[[i]])
         }
         lmn
     }
     else {
         dim3 <- length(dim(capthist)) > 2  # 2009 10 07
-        if (nrow(capthist)==0) stop(paste('no data for session'))
-        nc <- nrow(capthist)
-
-        # following distinguishes CH that end in death from CH that end with animal alive...
+        nc <- nrow(capthist)  # 'nc' = number caught
+        if (nc==0) stop(paste('no data for session'))
+        if (is.null(grp)) grp <- rep(1,nc)
         # Count = number per unique capture history
-
-        if (dim3) capthist <- matrix(capthist, nr=nc)  # here, 'nc' = number caught (rows)
+        if (dim3) capthist <- matrix(capthist, nr = nc)
         groupeddata <- split.data.frame(capthist, grp)
-        ## need to protect make.lookup from bad data...
         count <- function(x) table(make.lookup(x)$index)
         counts <- sapply(groupeddata, count)
         sum(lgamma(table(grp)+1)) - sum(lgamma(unlist(counts)+1))

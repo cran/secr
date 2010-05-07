@@ -46,7 +46,7 @@ detector.
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \examples{
-data(captdata)
+data(secrdemo)
 secr.design.MS (captdata, models = list(g0 = ~b))$designMatrices
 secr.design.MS (captdata, models = list(g0 = ~b))$parameterTable
 }

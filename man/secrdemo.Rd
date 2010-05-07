@@ -1,5 +1,8 @@
 \name{secrdemo}
 \alias{secrdemo}
+\alias{captXY}
+\alias{trapXY}
+\alias{captdata}
 \alias{secrdemo.0}
 \alias{secrdemo.b}
 \alias{secrdemo.CL}
@@ -9,7 +12,12 @@
 \title{ SECR Models Fitted to Demonstration Data }
 
 \description{
-  Objects of class \code{secr} formed by 
+
+  Demonstration data from program Density are provided both as
+  raw dataframes (\code{trapXY}, \code{captXY}) and as a combined
+  \code{capthist} object (\code{captdata}) ready for input to \code{secr.fit}.
+
+  The fitted models are objects of class \code{secr} formed by 
 
       \code{secrdemo.0 <- secr.fit (captdata)}
 
@@ -17,22 +25,24 @@
 
       \code{secrdemo.CL <- secr.fit (captdata, CL = TRUE) }
 
-where \code{captdata} is a \code{capthist} object using the
-demonstration data (files 'trap.txt','capt.txt') from program Density
-4.1 (Efford 2007).
-
 }
 
 \usage{data(secrdemo)}
 
 \details{
 
-The raw data are 235 fictional captures of 76 animals in 100
-single-catch traps over 5 occasions. The fitted models use a halfnormal
-detection function and the likelihood for multi-catch traps (expect
-estimates of g0 to be biased because of trap saturation Efford et al.
-2009). The first is a null model (i.e. parameters constant) and the
-second fits a learned trap response.
+The raw data are 235 fictional captures of 76 animals over 5 occasions
+in 100 single-catch traps 30 metres apart on a square grid with origin
+at (365,365).
+
+Dataframe \code{trapXY} contains the data from the Density input file
+`trap.txt', and \code{captXY} contains the data from `capt.txt' (Efford
+2007).
+
+The fitted models use a halfnormal detection function and the likelihood
+for multi-catch traps (expect estimates of g0 to be biased because of
+trap saturation Efford et al.  2009). The first is a null model
+(i.e. parameters constant) and the second fits a learned trap response.
 
 }
 
@@ -48,11 +58,27 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 }
 
-\seealso{ \code{\link{captdata}}, \code{\link{capthist}} }
+\seealso{ \code{\link{capthist}} }
 
 \examples{
-## display the default fit with the print method for secr
 data (secrdemo)
+
+## construct a traps object from raw trap data
+## this dataset uses fmt = 'XY' (x-y coordinates included in
+## both trap and capture files), but fmt = 'trapID' (capture file
+## uses trap identifier) is simpler
+
+temptrap <- read.traps(data = trapXY, detector = 'single')
+plot(temptrap)
+
+\dontrun{
+## construct a capthist object
+captdata <- make.capthist(captXY, temptrap, fmt='XY')
+}
+
+plot(captdata, tracks = TRUE)
+
+## display the null model fit, using the print method for secr
 secrdemo.0
 }
 
