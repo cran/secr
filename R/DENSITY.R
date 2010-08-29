@@ -45,14 +45,14 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
         write.traps (traps(object)[[1]], file = trapfile, ..., header = tempname)
         write.captures (object[[1]], file = captfile, ..., deblank = TRUE,
             header = deparse(substitute(object), control=NULL), append = FALSE,
-            sess = session(object[[1]]), ndec = ndec)
+            sess = session(object)[1], ndec = ndec)
         for (i in 2:length(object)) {
             if (!same) {
                 trapfile <- paste(filestem, 'trap', session(object)[i], suffix, sep='')
                 write.traps (traps(object)[[i]], file = trapfile, ...)
             }
             write.captures (object[[i]], file = captfile, ..., deblank = TRUE,
-                header = FALSE, append = TRUE, sess = session(object[[i]]), ndec = ndec)
+                header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec)
         }
     }
     else {

@@ -22,7 +22,7 @@ are covariates).
 ip.secr (capthist, predictorfn = pfn, predictortype = 'null',
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
     centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
-    var.nsim = 1000, maxbox = 5, ...) 
+    var.nsim = 1000, maxbox = 5, ...)
 
 pfn(capthist, N.estimator)
 
@@ -32,7 +32,7 @@ pfn(capthist, N.estimator)
   \item{capthist}{ capthist object including capture data and detector (trap) layout}
   \item{predictorfn}{ a function with two arguments (the first a capthist object) that returns a vector of predictor values }
   \item{predictortype}{ value (usually character) passed as the second argument of predictorfn }
-  \item{detectfn}{ numeric code for detection function (0 halfnormal, 2 exponential, 3 uniform) }
+  \item{detectfn}{integer code or character string for shape of detection function 0 halfnormal, 2 exponential, 3 uniform) -- see \link{detectfn} }
   \item{mask}{ optional habitat mask to limit simulated population }
   \item{start}{vector of np initial parameter values (density, g0 and sigma)}
   \item{boxsize}{ scalar or vector of length np for size of design as fraction of central parameter value}
@@ -69,11 +69,11 @@ animals that might be caught. 'Ndist' controls the number of individuals
 simulated within the buffered or masked area. The default is 'poisson'.
 Use 'Ndist = fixed' to fix the number in the buffered or masked area
 \eqn{A} at \eqn{N = DA}. This conditioning reduces the estimated
-standard error of \eqn{\hat{D}}{D-hat}, but conditioning is not always 
+standard error of \eqn{\hat{D}}{D-hat}, but conditioning is not always
 justified - seek advice from a statistician if you are unsure.
 
 The simulated 2-D distribution of animals is Poisson by default. There
-is no 'even' option as in Density. 
+is no 'even' option as in Density.
 
 Simulations are conducted on a factorial experimental design in
 parameter space - i.e. at the vertices of a cuboid 'box' centred on the
@@ -92,7 +92,7 @@ parameters. An error occurs if max.nsim is exceeded.
 
 Once a model with sufficient precision has been obtained, a new working
 vector of parameter estimates is 'predicted' by inverting the linear
-model and applying it to the target vector. A working vector 
+model and applying it to the target vector. A working vector
 is accepted as the final estimate when it lies within the box; this
 reduces the bias from using a linear approximation to extrapolate a
 nonlinear function. If the working vector lies outside the box then a new
@@ -104,7 +104,7 @@ bootstrap sample to evaluate possible bias. Set var.nsim = 0
 to suppress the variance step.
 
 See Efford et al. (2004) for another description of the method, and
-Efford et al. (2005) for an application. 
+Efford et al. (2005) for an application.
 
 The value of \code{predictortype} is passed as the second argument of
 the chosen \code{predictorfn}. By default this is \code{pfn}, for which
@@ -122,7 +122,7 @@ per hectare (10 000 \eqn{\mbox{m}^2}{m^2}).
 }
 
 \value{
-For \code{ip.secr}, a list comprising 
+For \code{ip.secr}, a list comprising
   \item{call}{ the function call }
   \item{IP}{ dataframe with estimated density \eqn{\mbox{ha}^{-1}}{ha^--1}, g0 and sigma (m) }
   \item{vcov}{ variance-covariance matrix of estimates }
@@ -173,7 +173,7 @@ Murray Efford \email{murray.efford@otago.ac.nz}
 Each statistic is expected to have a monotonic relationship with one
 parameter when the other parameters are held constant. Typical statistics are -
 
-\tabular{ll}{ 
+\tabular{ll}{
 Statistic \tab Parameter \cr
 \eqn{\hat{N}}{N-hat} \tab \eqn{D} \cr
 \eqn{\hat{p}}{p-hat} \tab \eqn{g_0}{g0} \cr
@@ -186,7 +186,7 @@ is a trap-revealed measure of the scale of movement.
 
 This method provides nearly unbiased estimates of the detection
 parameter g0 when data are from single-catch traps (likelihood-based
-estimates of g0 are biased in this case - Efford, Borchers & Byrom 2009). 
+estimates of g0 are biased in this case - Efford, Borchers & Byrom 2009).
 
 The implementation largely follows that in Density, and it may help to
 consult the Density online help. There are some differences: the M0 and
@@ -228,7 +228,7 @@ ip.secr (captdata)
 ## coarse initial fit, no variance step
 ip1 <- ip.secr (captdata, boxsize = 0.2, CVmax=0.01, var=0)
 ## refined fit
-ip2 <- ip.secr (captdata, start = ip1$IP[,'estimate'], 
+ip2 <- ip.secr (captdata, start = ip1$IP[,'estimate'],
     boxsize = 0.1, CVmax=0.002, var=1000)
 ip2
 
@@ -237,7 +237,7 @@ pfn2 <- function (capthist, v) {  ## v is not used
     sumni <- sum(capthist!=0)   ## total detections
     n <- nrow(capthist)         ## number of individuals
     nocc <- ncol(capthist)      ## number of occasions
-    c(N = n, p = sumni/n/nocc, dbar = dbar(capthist)) 
+    c(N = n, p = sumni/n/nocc, dbar = dbar(capthist))
 }
 ip.secr (captdata, predictorfn = pfn2)
 }

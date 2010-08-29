@@ -1,9 +1,11 @@
 \name{skink}
+\docType{data}
+
 \alias{skink}
 \alias{infraCH}
 \alias{lineoCH}
+\alias{LStraps}
 
-\docType{data}
 \title{ Skink Pitfall Data }
 
 \description{
@@ -64,6 +66,15 @@ had more-closed vegetation, lacking \emph{Leucopogon fraseri} and with a
 higher canopy that often included \emph{Coriaria arborea}. Site
 variables are listed with definitions in the attribute
 \code{habitat.variables} of \code{LStraps} (see Examples).
+
+
+\tabular{ll}{
+  Object \tab Description \cr
+  infraCH \tab multi-session capthist object \emph{O. infrapunctatum} \cr
+  lineoCH \tab multi-session capthist object \emph{O. lineoocellatum} \cr
+  LStraps \tab traps object -- Lake Station grids \cr
+}
+
 
 }
 

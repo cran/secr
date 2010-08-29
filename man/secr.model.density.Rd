@@ -16,7 +16,7 @@ grid cell of potentially occupied habitat (their combined area may be
 almost any shape and may include disjunct patches).  The full design
 matrix for density (D) has one row for each point in the mask.  The
 design matrix has one column for the intercept (constant) term and one
-for each predictor. 
+for each predictor.
 
 Predictors may be based on Cartesian coordinates (e.g. 'x' for an
 east-west trend), a continuous habitat variable (e.g. vegetation cover)
@@ -27,13 +27,14 @@ named columns in the 'covariates' attribute of the habitat mask.
 
 The fitted model for density is linear on the link scale (see the
 \code{link} argument of \code{\link{secr.fit}}. The default link for
-density is 'log'. 
+density is 'log'.
 
 \tabular{lll}{
 Variable \tab Description \tab Data source \cr
 x        \tab x-coordinate   \tab automatic \cr
 y        \tab y-coordinate   \tab automatic \cr
 session  \tab session factor \tab automatic \cr
+Session  \tab session number 0:(\eqn{R}-1) \tab automatic \cr
 g        \tab group factor   \tab automatic \cr
 [user]   \tab mask covariate \tab \code{covariates (mask)} as named in formula \cr
 }
@@ -51,7 +52,7 @@ fitted when \code{secr.fit} is called with CL = TRUE.
 
 }
 
-\references{ 
+\references{
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum likelihood methods for capture--recapture studies. \emph{Biometrics} \bold{64}, 377--385.
 

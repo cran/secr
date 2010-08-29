@@ -10,10 +10,10 @@ A place for hints and miscellaneous advice.
 
 \section{How do I install secr?}{
 
-Follow the usual procedure for installing binaries from CRAN, or...
+Follow the usual procedure for installing binaries from CRAN, or ...
   
-Under Windows, it is simplest to install the package binary from the
-Rgui. Save the file secr_1.4.x.zip to a local folder ('x' is the release
+Under Windows, install the package binary from the
+Rgui. Save the file secr_1.4.x.zip to a local folder (`x' is the release
 number) and use the menu option "Packages | Install packages(s) from
 local zip files...".
 
@@ -24,6 +24,10 @@ Whatever your system, you also need to get the package \pkg{abind} (use
 Packages | Install package(s)... in Windows to download from
 CRAN). Other required packages (\pkg{MASS}, \pkg{nlme}, \pkg{stats})
 should be available as part of your \R installation.
+
+Like other contributed packages, \bold{secr} needs to be loaded before each use e.g.,\code{library(secr)}.
+
+You can learn about changes in the current version with \code{news(package = 'secr')}.
 
 }
 
@@ -66,8 +70,6 @@ several \R objects together in one .RData file, e.g.,
 'mydata.RData')}. Also, paste into the text of your message the output
 from \code{packageDescription("secr")}.
 
-Needless to say, we cannot promise to solve all problems.
-
 }
 
 \section{ Why do I get different answers from secr and Density? }{
@@ -81,8 +83,8 @@ mesh.  If you want to make a precise comparison, save the Density mesh
 to a file and read it into \pkg{secr}, or vice versa.
 
 Extreme data, especially rare long-distance movements, may be handled
-differently by the two programs. The 'minprob' component of the
-'details' argument of \code{secr.fit} sets a threshold of probability
+differently by the two programs. The `minprob' component of the
+`details' argument of \code{secr.fit} sets a threshold of probability
 for capture histories (smaller values are all set to minprob), whereas
 Density has no explicit limit. In the current version the default
 minprob has been reduced from 1e-20 to 1e-50. If you find a discrepancy
@@ -103,7 +105,7 @@ constant across sessions).
 Check the extent and spacing of the habitat mask that you are using.
 Execution time is roughly proportional to the number of mask points.
 Default settings can lead to very large masks for detector arrays that
-are elongated 'north-south' because the number of points in the
+are elongated `north-south' because the number of points in the
 east-west direction is fixed. Compare results with a much sparser mask
 (e.g., nx = 32 instead of nx = 64).
 
@@ -111,7 +113,7 @@ Do you really need to fit that complex model? Chasing down small
 decrements in AIC is so last-century. Remember that detection parameters
 are mostly nuisance parameters, and models with big differences in AIC
 may barely differ in their density estimates. This is a good topic for
-further research - we seem to need a 'focussed information criterion'
+further research - we seem to need a `focussed information criterion'
 (Claeskens and Hjort 2008) to discern the differences that matter.
 
 Use \code{score.test} to compare nested models. At each stage this
@@ -128,23 +130,23 @@ The function \code{findFn} in package \pkg{sos} lets you search CRAN for
 R functions by matching text in their documentation.
 
 There is now a vast amount of \R advice available on the web. For the
-terminally frustrated, 'R inferno' by Patrick Burns is recommended
+terminally frustrated, `R inferno' by Patrick Burns is recommended
 (\url{www.burns-stat.com/pages/Tutor/R_inferno.pdf}). "If you are using
 R and you think you're in hell, this is a map for you".
 
 Method functions for S3 classes cannot be listed in the usual way by
-typing the function name at the \R prompt because they are 'hidden' in a
+typing the function name at the \R prompt because they are `hidden' in a
 namespace. Get around this with getAnywhere(). For example:
 
 \code{getAnywhere(print.secr)}
 
-R objects have 'attributes' that usually are kept out of sight.
-Important attributes are 'class' (all objects), 'dim' (matrices and
-arrays) and 'names' (lists). \pkg{secr} hides quite a lot of useful data
-as named 'attributes'. Usually you will use summary and extraction
+R objects have `attributes' that usually are kept out of sight.
+Important attributes are `class' (all objects), `dim' (matrices and
+arrays) and `names' (lists). \pkg{secr} hides quite a lot of useful data
+as named `attributes'. Usually you will use summary and extraction
 methods (\code{traps}, \code{covariates}, \code{usage} etc.) to view and change
 the attributes of the various classes of object in \pkg{secr}. If you're
-curious, you can reveal the lot with 'attributes'.  For example:
+curious, you can reveal the lot with `attributes'.  For example:
 
 \code{data(secrdemo)}
 

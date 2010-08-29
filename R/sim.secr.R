@@ -7,6 +7,7 @@
 ## 2010 02 05 removed 'spherical' argument (now detectfn 11)
 ## 2010 03 10 debugged simsecr in secr.c
 ## 2010 03 10 debugged dummyCH
+## 2010 06 30 memory allocation error in sim.detect
 ############################################################################################
 
 simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
@@ -21,16 +22,16 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
 ##  check input
     if (!inherits(object,'secr')) stop ('sim.secr requires secr object')
     if (object$CL) stop ('sim.secr not implemented for conditional model')
-    if (!all(sapply(object$fixed, is.null))) stop ('sim.secr not implemented for fixed parameters') 
+    if (!all(sapply(object$fixed, is.null))) stop ('sim.secr not implemented for fixed parameters')
     if (is.null(object$D)) stop('old secr object does not have D')
 
 ## setup
     # dim(object$D)[1] is number of mask points
-    ngrp <- dim(object$D)[2]  
+    ngrp <- dim(object$D)[2]
     nsession <- dim(object$D)[3]
     if (!is.null(object$groups)) {
         ## individual covariates for foundation of g
-        di <- disinteraction (object$capthist, object$groups)      
+        di <- disinteraction (object$capthist, object$groups)
     }
     ## we will grow this list - inefficient for very large nsim
     sesscapt <- list()
@@ -38,9 +39,9 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
     ##################
     ## set random seed
     ## copied from simulate.lm
-    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) 
+    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
         runif(1)
-    if (is.null(seed)) 
+    if (is.null(seed))
         RNGstate <- get(".Random.seed", envir = .GlobalEnv)
     else {
         R.seed <- get(".Random.seed", envir = .GlobalEnv)
@@ -60,20 +61,25 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
             for (g in 1:ngrp) {
                 density <- object$D[,g,sessnum]
                 if (chat > 1)
-                    density <- density / chat 
-                popn[[g]] <- sim.popn (D = density, core = mask, model2D = 'IHP')
+                    density <- density / chat
+
+if (object$model$D == ~1)
+    popn[[g]] <- sim.popn (D = density, core = mask, model2D = 'IHP')
+else
+    popn[[g]] <- sim.popn (D = density[1], core = mask, model2D = 'poisson')
+
                 ## following line replaces any previous individual covariates
                 ## ---groups only---
                 if (!is.null(object$groups)) {
                     covariates(popn[[g]]) <- di[rep(g, nrow(popn[[g]])),]
                 }
             }
-            sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object   
+            sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
         }
-        sesscapt[[i]] <- sim.detect(object, object$fit$par, sesspopn) 
+        sesscapt[[i]] <- sim.detect(object, object$fit$par, sesspopn)
 
         ## experimental
-        if (chat>1) 
+        if (chat>1)
             sesscapt[[i]] <- replicate (sesscapt[[i]], chat)
     }
     attr(sesscapt,'seed') <- RNGstate   ## save random seed
@@ -82,9 +88,9 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
 }
 ############################################################################################
 
-sim.secr <- function (object, nsim = 1, 
-    extractfn = function(x) c(deviance=deviance(x), df=df.residual(x)), 
-    seed = NULL, data = NULL, tracelevel = 1, hessian = 'none', 
+sim.secr <- function (object, nsim = 1,
+    extractfn = function(x) c(deviance=deviance(x), df=df.residual(x)),
+    seed = NULL, data = NULL, tracelevel = 1, hessian = 'none',
     start = object$fit$par)  {
 
 ## parametric bootstrap simulations based on a fitted secr object
@@ -99,7 +105,7 @@ sim.secr <- function (object, nsim = 1,
 
     if (is.null(extractfn)) extractfn <- trim
     test <- extractfn(object)
- 
+
    if (is.numeric(test)) {
         n.extract <- length(test)
         if (n.extract<=0) stop ('invalid extractfn in sim.secr')
@@ -118,27 +124,27 @@ sim.secr <- function (object, nsim = 1,
     if (is.null(data)) {
         memo ('sim.secr simulating detections...', tracelevel>0)
         data <- simulate(object, nsim = nsim, seed = seed)
-    } 
+    }
     else {
         if (any(class(data) != c('list','secrdata')))
             stop('invalid data')
     }
 
-    fitmodel <- function (sc) { 
-        i <<- i+1     
+    fitmodel <- function (sc) {
+        i <<- i+1
         memo (paste('sim.secr fitting replicate',i,'...'), tracelevel>0)
         nc <-  sum(counts(sc)$'M(t+1)'[,'Total'])
-        if (nc >= min.detections) {  
-            tempfit <- suppressWarnings( secr.fit(sc, model = object$model, mask = object$mask, 
-                CL = object$CL, detectfn = object$detectfn, start = start, link = object$link, 
-                fixed = object$fixed, timecov = object$timecov, sessioncov = object$sessioncov, 
-                groups = object$groups, dframe = object$dframe, details = details, 
+        if (nc >= min.detections) {
+            tempfit <- suppressWarnings( secr.fit(sc, model = object$model, mask = object$mask,
+                CL = object$CL, detectfn = object$detectfn, start = start, link = object$link,
+                fixed = object$fixed, timecov = object$timecov, sessioncov = object$sessioncov,
+                groups = object$groups, dframe = object$dframe, details = details,
                 method = object$fit$method, verify = FALSE) )
             extractfn(tempfit)
-        } 
+        }
         else if (is.list(test)) list() else rep(NA, n.extract)
     }
-   
+
     if (is.numeric(test)) {
         output <- data.frame(t(sapply (data, fitmodel)))
     }
@@ -154,35 +160,38 @@ sim.secr <- function (object, nsim = 1,
 }
 ############################################################################################
 
-print.secrdata <- function(x,...) { 
+print.secrdata <- function(x,...) {
 ## suggestion of Rolf Turner 19 Jan 2009 for printing without attributes
-    attributes(x) <- NULL 
-    print(x) 
-} 
+    attributes(x) <- NULL
+    print(x)
+}
 ############################################################################################
 
-print.secrlist <- function(x,...) { 
+print.secrlist <- function(x,...) {
 ## suggestion of Rolf Turner 19 Jan 2009 for printing without attributes
-    attributes(x) <- NULL 
-    print(x) 
-} 
+    attributes(x) <- NULL
+    print(x)
+}
 ############################################################################################
 
 sim.detect <- function (object, beta, popnlist, renumber = TRUE)
 ## popnlist is always a list of popn objects
 {
+
+#    stop('sim.detect not yet working in version 1.4.1, sorry')
+
     Markov <- 'B' %in% object$vars
     dummycapthist<- function (capthist, pop, fillvalue=1) {
         if (inherits(capthist, 'list')) {
             output <- list()
-            for (i in 1:nsession) 
-                output[[i]] <- dummycapthist (capthist[[i]], 
-                    pop=pop[i], fillvalue = fillvalue)         
+            for (i in 1:nsession)
+                output[[i]] <- dummycapthist (capthist[[i]],
+                    pop=pop[i], fillvalue = fillvalue)
             class(output) <- c('list','capthist')
             session(output) <- session(capthist)   ## 2010 03 10
             output
         }
-        else { 
+        else {
             newdim <- dim(capthist)
             newdim[1] <- nrow(pop[[1]])
             output <- array(fillvalue, dim = newdim)
@@ -195,18 +204,18 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
     }
     ## setup
     MS <- inherits(object$capthist,'list')
-    N <- sapply(popnlist, nrow) 
+    N <- sapply(popnlist, nrow)
     sessionlevels <- session(object$capthist)   ## was names(capthist) 2009 08 15
     nsession <- length(sessionlevels)
 
     ## design matrices etc.
-    dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 0) 
+    dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 0)
     design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov, object$groups, object$dframe)
-    realparval0 <- makerealparameters (design0, beta, object$parindx, object$link, object$fixed)  # naive 
+    realparval0 <- makerealparameters (design0, beta, object$parindx, object$link, object$fixed)  # naive
 
     if ('b' %in% object$vars) {
-        dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1) 
-        design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov, object$groups, object$dframe)   
+        dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
+        design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov, object$groups, object$dframe)
         realparval1 <- makerealparameters (design1, beta, object$parindx, object$link, object$fixed)  # caught before
     }
     else {   ## faster
@@ -224,10 +233,11 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         else {
             s <- ncol(object$capthist)
             session.traps    <- traps(object$capthist)
-        } 
+        }
+
         dettype <- detectorcode(session.traps, MLonly = FALSE)
-        if (dettype < -1) 
-            stop (paste('detector type', detector(session.traps), 'not implemented'))   
+        if (dettype < -1)
+            stop (paste('detector type', detector(session.traps), 'not implemented'))
         if (dettype %in% c(2)) {                      # count detectors
             binomN <- attr(session.traps, 'binomN')   # 0 for Poisson, >0 for binomial
             if (is.null(binomN)) stop ('Count detectors must have attribute binomN', call.=F)
@@ -236,7 +246,7 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
                 warning ("Invalid number of binomial trials; using Poisson instead")
             }
         }
-        else binomN <- 0       
+        else binomN <- 0
         if (dettype %in% c(6,7)) {
             k <- c(table(polyID(session.traps)),0)
             K <- length(k)-1
@@ -245,12 +255,12 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             k <- nrow(session.traps)
             K <- k
         }
-        trps  <- unlist(session.traps, use.names=F) 
+        trps  <- unlist(session.traps, use.names=F)
         sessg <- min (sessnum, design1$R)
         session.animals <- unlist(popnlist[[sessnum]])
 
         #------------------------------------------
-        # allow for scaling of detection parameters 
+        # allow for scaling of detection parameters
 
         Xrealparval1  <- realparval1
         Xrealparval0 <- realparval0
@@ -268,27 +278,38 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         #------------------------------------------
         ## simulate this session...
         used <- unlist(usage(session.traps))
-        if (is.null(used)) used <- rep(1,s*K) 
+        if (is.null(used)) used <- rep(1,s*K)
         NR <- N[sessnum]
+
+
+## bug in following call 2010-06-30
+## tries to allocate too much memory
+
+#        print(NR)
+#        print(s)
+#        print(k)
+#        print(object$details$nmix)
+#        print(session.animals)
+
         temp <- .C('simsecr', PACKAGE = 'secr',
-            as.integer(dettype), 
-            as.double(Xrealparval0), 
+            as.integer(dettype),
+            as.double(Xrealparval0),
             as.double(Xrealparval1),
-            as.integer(nrow(Xrealparval0)),                # number of rows in lookup table, naive 
+            as.integer(nrow(Xrealparval0)),                # number of rows in lookup table, naive
             as.integer(nrow(Xrealparval1)),                # ditto, caught before
             as.integer(design0$PIA[sessg,1:NR,1:s,1:K,]),  # index of N,S,K to rows in Xrealparval0
             as.integer(design1$PIA[sessg,1:NR,1:s,1:K,]),  # index of N,S,K to rows in Xrealparval1
-            as.integer(N[sessnum]),
-            as.integer(s), 
-            as.integer(k), 
+            as.integer(NR),
+            as.integer(s),
+            as.integer(k),
             as.integer(object$details$nmix),
-            as.double(session.animals), 
-            as.double(trps), 
+            as.double(session.animals),
+            as.double(trps),
             as.integer(used),
             as.integer(Markov),
             as.integer(binomN),                            # count detector
-            as.double(object$details$cutval),              # detection threshold on transformed scale 
-            as.integer(object$detectfn), 
+            as.double(object$details$cutval),              # detection threshold on transformed scale
+            as.integer(object$detectfn),
             n = integer(1),
             caught = integer(NR),
             detectedXY = double (NR*s*K*200),  # safety margin 100 detections per animal per detector per occasion
@@ -296,10 +317,11 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             value = integer(NR*s*K),
             resultcode = integer(1)
         )
+
         if (temp$resultcode != 0) {
-          if ((temp$resultcode == 2) && (dettype %in% (6:7))) 
+          if ((temp$resultcode == 2) && (dettype %in% (6:7)))
               stop ('>100 detections per animal per polygon per occasion')
-          else 
+          else
               stop (paste('simulated detection failed, code ', temp$resultcode))
         }
         if (dettype %in% c(-1,0)) {
@@ -317,7 +339,7 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         session(w) <- sessionlevels[sessnum]
 
         if (!is.null(covariates(popnlist))) {
-            covariates(w) <- subset(covariates(popnlist[[sessnum]]), subset = 
+            covariates(w) <- subset(covariates(popnlist[[sessnum]]), subset =
                 as.logical(temp$caught))
         }
         if ((dettype %in% c(5)) && (temp$n>0)) {
@@ -337,13 +359,13 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         }
         else
             attr(w, 'detectedXY') <- NULL
-  
+
         if (renumber & (temp$n>0)) rownames(w) <- 1:temp$n
-        else rownames(w)          <- (1:N[sessnum])[as.logical(temp$caught)]       
-        output[[sessnum]] <- w      
+        else rownames(w)          <- (1:N[sessnum])[as.logical(temp$caught)]
+        output[[sessnum]] <- w
     }
 
-    if (nsession==1) output <- output[[1]] 
+    if (nsession==1) output <- output[[1]]
     else {
         names(output) <- sessionlevels
         class(output) <- c('list','capthist')

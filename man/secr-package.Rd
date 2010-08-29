@@ -13,8 +13,8 @@ population sampled with an array of passive detectors, such as traps. }
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 1.4.0\cr
-Date: \tab 2010-05-07\cr
+Version: \tab 1.4.1\cr
+Date: \tab 2010-08-29\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -60,7 +60,7 @@ important throughout.
 
 }
 
-\references{ 
+\references{
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
@@ -89,20 +89,20 @@ for analysing capture-recapture data from passive detector arrays.
 \keyword{ package }
 
 \seealso{
-\code{\link[secr]{secr.fit}}, 
-\code{\link[secr]{traps}}, 
-\code{\link[secr]{capthist}}, 
+\code{\link[secr]{secr.fit}},
+\code{\link[secr]{traps}},
+\code{\link[secr]{capthist}},
 \code{\link[secr]{mask}}
 }
 \examples{
 \dontrun{
 
 ## generate some data & plot
-detectors  <- make.grid (nx = 10, ny = 10, spacing = 20, 
+detectors  <- make.grid (nx = 10, ny = 10, spacing = 20,
     detector = 'multi')
 plot(detectors, label = TRUE, border = 0, gridspace = 20)
 detections <- sim.capthist (detectors, noccasions = 5,
-    popn = list(D = 5, buffer = 100), 
+    popn = list(D = 5, buffer = 100),
     detectpar = list(g0 = 0.2, sigma = 25))
 session(detections) <- 'Simulated data'
 plot(detections, border = 20, tracks = TRUE, varycol = TRUE)

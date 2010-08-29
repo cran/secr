@@ -1,4 +1,6 @@
 \name{secrdemo}
+\docType{data}
+
 \alias{secrdemo}
 \alias{captXY}
 \alias{trapXY}
@@ -6,8 +8,6 @@
 \alias{secrdemo.0}
 \alias{secrdemo.b}
 \alias{secrdemo.CL}
-
-\docType{data}
 
 \title{ SECR Models Fitted to Demonstration Data }
 
@@ -44,6 +44,17 @@ for multi-catch traps (expect estimates of g0 to be biased because of
 trap saturation Efford et al.  2009). The first is a null model
 (i.e. parameters constant) and the second fits a learned trap response.
 
+
+\tabular{ll}{
+  Object \tab Description \cr
+  captXY \tab data.frame of capture data \cr
+  trapXY \tab data.frame of trap locations \cr
+  captdata \tab capthist object \cr
+  secrdemo.0 \tab fitted secr model -- null \cr
+  secrdemo.b \tab fitted secr model -- g0 trap response \cr
+  secrdemo.CL \tab fitted secr model -- null, conditional likelihood \cr
+}
+ 
 }
 
 \source{ Efford, M.G. (2007) Density 4.1: software for spatially

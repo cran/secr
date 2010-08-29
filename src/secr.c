@@ -1,14 +1,14 @@
-/* 
+/*
    External procedures for secr package
    Murray Efford 2008 07 10 - 2009 12 12
    2009 09 10 single-catch trap simulation integrated with simsecr!
    2009 09 24 remove local math functions & rely on R
    2009 09 26 convert all comments to C (not C++ double slash)
    2009 09 26 un-mix declarations and code in integralprw1 & secrloglik
-   2009 09 30 remaining code incompatible with ISO C: variable-length arrays  
+   2009 09 30 remaining code incompatible with ISO C: variable-length arrays
    2009 09 30 amendments by Ray Brownrigg to compile on Unix
               - removed all mention of EXPORT
-              - changed random() to Random  
+              - changed random() to Random
    ...
    2009 10 25 MR secr code tweaked
    2009 10 26 Major revision to include count, area and signal detectors
@@ -16,18 +16,26 @@
    2009 11 21 allocate 'capt' on stack with R_alloc in trapping simulation routines
    2009 12 03 completed 'transect' detector and revision of 'signal' detector
    2009 12 04 combined proximity, count, quadrat detectors
-   2009 12 04 rescale parameter of binomial: detection function now models Np i.e. E(x), just like Poisson & Bernoulli
+   2009 12 04 rescale parameter of binomial: detection function now models Np
+              i.e. E(x), just like Poisson & Bernoulli
    2009 12 12 finite mixtures completed
    2010 03 09 fixed bug in rdiscrete
- 
+   2010 06 01 trappingsignal extended to allow movement between occasions
+              (sdM passed in details)
+   2010 06 13 pfn for simulators (trappingXXX) now uses correct codes for detectfn>2
+   2010 06 15 detectfn = 6 annular normal now implemented
+   2010 07 01 dbinom no longer called
+   2010 08 17 pfn has extra argument w for truncation
+
    can compile with gcc 4.2.1-sjlj :
    gcc -Ic:/progra~1/R/R-2.9.2/include -c secr.c -Wall -pedantic -std=gnu99
+
 */
 
 #include "secr.h"
-#include <math.h>    
+#include <math.h>
 #include <stdlib.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <R.h>       /* random numbers */
 #include <Rmath.h>   /* R math functions e.g. dbinom, dpois */
 #include <R_ext/Applic.h>
@@ -39,15 +47,15 @@
 
 typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, int, double);
 /*
-    (int k, int m, int c, int double gsbval[], int cc, double traps[], 
+    (int k, int m, int c, int double gsbval[], int cc, double traps[],
      double mask[], int kk, int mm, double cut);
 */
 
-typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[], 
-    double[], int, double[], int, int, int, int, int, int, gfnptr, double[], double[], 
+typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
+    double[], int, double[], int, int, int, int, int, int, gfnptr, double[], double[],
     double[], double);
 /*
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss,
      int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], double minp);
 */
@@ -64,12 +72,12 @@ int maxnpoly = 1000;       /* applies to polygons & transects */
 int maxperpoly = 100;
 int maxnmix = 2;          /* maximum number of mixtures */
 
-struct trap_animal {                   
+struct trap_animal {
     int     trap;
     int     animal;
     double  time;
 };
-struct rpoint {                   
+struct rpoint {
     double x;
     double y;
 };
@@ -81,9 +89,9 @@ void R_CheckUserInterrupt(void);
 
 /*==============================================================================*/
 
-double Random () { 
+double Random () {
 /*
-   this call to R requires preceding 
+   this call to R requires preceding
    GetRNGstate();
    and following
    PutRNGstate();
@@ -96,8 +104,8 @@ double expmin (double x)
 {
   if (x < minimumexp)
       return(0);
-  else 
-      return(exp(x));  
+  else
+      return(exp(x));
 }
 /*==============================================================================*/
 
@@ -118,46 +126,54 @@ int i4 (int i, int j, int k, int l, int ii, int jj, int kk) {
 /*==============================================================================*/
 
 double gpois (int count, double lambda, int uselog)
-{  
+{
     if (count == 0) {
-        if (uselog) 
+        if (uselog)
             return (-lambda);
-        else 
-            return (exp(-lambda));  
+        else
+            return (exp(-lambda));
     }
     else
-        return (dpois(count, lambda, uselog));        
+        return (dpois(count, lambda, uselog));
 }
 
 double gbinom (int count, int size, double p, int uselog)
-{  
+{
     double x;
-    int i; 
+    int i;
     if (count == 0) {
         p = 1 - p;
         x = p;
         for (i=1; i< size; i++) x = x*p;
         if (uselog) x = log(x);
         return (x);   /* faster */
-    } 
-    else return (dbinom (count, size, p, uselog));
+    }
+    else
+        return (dbinom (count, size, p, uselog));
 }
 
 double gnbinom (int count, int size, double mu, int uselog)
-{  
+{
     /* prob = size / (size + mu) */
     size = abs(size);  /* in case negative 'binomN' passed */
     return (dnbinom (count, size, size/(size+mu), uselog));
 }
 
+double gbinomFP (int count, double size, double p, int uselog)
+{
+    return ( lgamma(size+1) - lgamma(size-count+1) - lgamma(count+1) +
+             count * log(p) + (size - count) * log (1-p) );
+
+}
+
 /*==============================================================================*/
 
 double d2 (
-    int k, 
-    int m, 
-    double A1[], 
-    double A2[], 
-    int A1rows, 
+    int k,
+    int m,
+    double A1[],
+    double A2[],
+    int A1rows,
     int A2rows)
 /*
    return squared distance between two points given by row k in A1
@@ -173,158 +189,172 @@ double d2 (
 /*==============================================================================*/
 
 double mufn (
-    int k, 
-    int m, 
-    double b0, 
+    int k,
+    int m,
+    double b0,
     double b1,
-    double A1[], 
-    double A2[], 
-    int A1rows, 
+    double A1[],
+    double A2[],
+    int A1rows,
     int A2rows)
 /*
-   Return predicted signal strength at m for source at point k, 
+   Return predicted signal strength at m for source at point k,
    given strength at source of b0 dB and attenuation of b1 dB/m.
    Spherical spreading is NOT included
-   Coordinates of points are in A1 and A2 which have respectively 
+   Coordinates of points are in A1 and A2 which have respectively
    A1rows and A2rows
 */
 {
     double d2val;
-    d2val = d2(k,m, A1, A2, A1rows, A2rows);  
+    d2val = d2(k,m, A1, A2, A1rows, A2rows);
     return (b0 + b1 * sqrt(d2val));
 }
 /*==============================================================================*/
 
 double mufnsph (
-    int k, 
-    int m, 
-    double b0, 
+    int k,
+    int m,
+    double b0,
     double b1,
-    double A1[], 
-    double A2[], 
-    int A1rows, 
+    double A1[],
+    double A2[],
+    int A1rows,
     int A2rows)
 /*
-   Return predicted signal strength at m for source at point k, 
+   Return predicted signal strength at m for source at point k,
    given strength at source of b0 dB and attenuation of b1 dB/m.
    Spherical spreading is included
-   Coordinates of points are in A1 and A2 which have respectively 
+   Coordinates of points are in A1 and A2 which have respectively
    A1rows and A2rows
 */
 {
     double d2val;
-    d2val = d2(k,m, A1, A2, A1rows, A2rows);  
-     if (d2val>1) {            
+    d2val = d2(k,m, A1, A2, A1rows, A2rows);
+     if (d2val>1) {
         return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1));  /* checked 2008 08 08 */
     }
-    else 
+    else
         return (b0);
 }
 /*==============================================================================*/
 
 double hn (double param [], double r) {
-    return(param[0] * exp(- r * r / 2 / param[1] / param[1]));  
+    return(param[0] * exp(- r * r / 2 / param[1] / param[1]));
 }
 double hz (double param [], double r) {
-    return(param[0] * (1 - exp(- pow(r / param[1], -param[2]))));  
+    return(param[0] * (1 - exp(- pow(r / param[1], -param[2]))));
 }
-double he (double param [], double r) { 
-    return (param[0] * exp(-r / param[1]));  
+double he (double param [], double r) {
+    return (param[0] * exp(-r / param[1]));
 }
 double hnc (double param [], double r) {
     double temp;
-    temp = param[0] * exp(- r * r  / 2 / param[1] / param[1]);  
+    temp = param[0] * exp(- r * r  / 2 / param[1] / param[1]);
     if (round(param[2]) > 1) temp = 1 - pow(1 - temp, param[2]);
     return (temp);
 }
-double un (double param [], double r) { 
+double un (double param [], double r) {
     if (r<param[1]) return (param[0]);
-    else return (0);  
+    else return (0);
 }
-double hf (double param [], double r) { 
+double hf (double param [], double r) {
     if (r<param[2]) return (param[0]);
-    else return (param[0] * exp(-(r-param[2]) / param[1]));  
+    else return (param[0] * exp(-(r-param[2]) / param[1]));
 }
 
 /* halfnormal */
-double ghn 
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
+double ghn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double cut)
 {
-    return (gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 / 
-        gsbval[cc + c] / gsbval[cc + c]));  
+    return (gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 /
+        gsbval[cc + c] / gsbval[cc + c]));
 }
 
 /* compound halfnormal */
-double ghnc 
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
+double ghnc
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double cut)
 {
     double temp;
-    temp = gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 / gsbval[cc + c] / 
-        gsbval[cc + c]);  
-    if (gsbval[2*cc + c] > 1) temp = 1 - pow(1 - temp, gsbval[2*cc + c]); 
+    temp = gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 / gsbval[cc + c] /
+        gsbval[cc + c]);
+    if (gsbval[2*cc + c] > 1) temp = 1 - pow(1 - temp, gsbval[2*cc + c]);
     return (temp);
 }
 
 /* hazard rate */
-double ghz 
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
-    double mask[], int kk, int mm, double cut) 
+double ghz
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double cut)
 {
-    return (gsbval[c] * (1 - exp(- 
-        pow(sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c], - gsbval[cc * 2 + c])))); 
+    return (gsbval[c] * (1 - exp(-
+        pow(sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c], - gsbval[cc * 2 + c]))));
 }
 /* exponential */
-double ghe 
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
-    double mask[], int kk, int mm, double cut) 
+double ghe
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double cut)
 {
-    return (gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c]));  
+    return (gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c]));
 }
 /* 'flat-topped exponential' 2009 09 01 */
-double ghf 
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
-    double mask[], int kk, int mm, double cut) 
+double ghf
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double cut)
 {
     double d, w, g0, sigma;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
     g0 = gsbval[c];
     sigma = gsbval[cc + c];
-    w = gsbval[cc * 2 + c]; 
+    w = gsbval[cc * 2 + c];
     if (d<w) return (g0);
-    else return (g0 * exp(-(d-w) / sigma));  
+    else return (g0 * exp(-(d-w) / sigma));
 }
+/* annular halfnormal 2010-06-15 */
+double gan
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double cut)
+{
+    double d, w, g0, sigma;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    g0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    w = gsbval[cc * 2 + c];
+    return (gsbval[c] * exp(-(d-w)*(d-w) / 2 /
+        gsbval[cc + c] / gsbval[cc + c]));
+}
+
 /* binary signal strength - (beta0-c)/sdS, beta1/sdS */
 double gsigbin
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
-    double mask[], int kk, int mm, double cut) 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double cut)
 {
     double gam, b0, b1;
     b0 = gsbval[c];
     b1 = gsbval[cc + c];
-    gam = -(b0 + b1 * sqrt(d2(k,m, traps, mask, kk, mm))); 
+    gam = -(b0 + b1 * sqrt(d2(k,m, traps, mask, kk, mm)));
     return (pnorm(gam,0,1,0,0));    /* upper */
 }
 /* signal strength - beta0, beta1, sdS */
 double gsig
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double cut) {
     double mu, gam, sdS;
     mu = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm);
     sdS = gsbval[cc * 2 + c];
-    gam = (cut - mu) / sdS; 
+    gam = (cut - mu) / sdS;
     return (pnorm(gam,0,1,0,0));    /* upper */
 }
 /* signal strength with spherical spreading - beta0, beta1, sdS */
 double gsigsph
-    (int k, int m, int c, double gsbval[], int cc, double traps[], 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double cut) {
     double mu, gam, sdS;
     mu = mufnsph (k, m, gsbval[c], gsbval[cc + c],
          traps, mask, kk, mm);
     sdS = gsbval[cc * 2 + c];
-    gam = (cut - mu) / sdS; 
+    gam = (cut - mu) / sdS;
     return (pnorm(gam,0,1,0,0));    /* upper */
 }
 
@@ -337,7 +367,7 @@ void rgr(double *x, int n, void *ex) {
     p = (double*) ex;
     for (i=0; i<4; i++) tmp[i] = p[i];
     fn = tmp[3];
-    fnptr fnp; 
+    fnptr fnp;
     fnp = hn;    /* default */
     if (fn == 1)
         fnp = hz;
@@ -348,7 +378,7 @@ void rgr(double *x, int n, void *ex) {
     else if (fn == 4)
         fnp = un;
     else if (fn == 5)
-        fnp = hf;   
+        fnp = hf;
     for (i=0; i<n; i++) {
         x[i] = x[i] * fnp(tmp,x[i]);   /* r.g(r) */
     }
@@ -358,7 +388,7 @@ void gxy (int *n, int *fn, double *par, double *w, double *xy) {
     int maxj = 100000;
     double r;
     double theta;
-    fnptr fnp; 
+    fnptr fnp;
     int i = 0;
     int j;
     fnp = hn;
@@ -389,7 +419,7 @@ double distance (struct rpoint p1, struct rpoint p2) {
 }
 double gr (int *fn, double par[], struct rpoint xy, struct rpoint animal) {
     double r;
-    fnptr fnp; 
+    fnptr fnp;
     fnp = hn;
     if (*fn == 1)
         fnp = hz;
@@ -407,7 +437,7 @@ double gr (int *fn, double par[], struct rpoint xy, struct rpoint animal) {
 
 double gintegral (int fn, double par[]) {
 /* integral of radial 2-D function */
-    double ex[4];  
+    double ex[4];
     double a;
     int b;
     double epsabs = 0.0001;
@@ -469,7 +499,7 @@ void fy(double *x, int n, void *ex) {
     xy[0] = p[6];
 
     /* set detection function */
-    fnptr fnp; 
+    fnptr fnp;
     fnp = hn;    /* default */
     if (fn == 1)
         fnp = hz;
@@ -480,7 +510,7 @@ void fy(double *x, int n, void *ex) {
     else if (fn == 4)
         fnp = un;
     else if (fn == 5)
-        fnp = hf;   
+        fnp = hf;
     for (i=0; i<n; i++) {
         xy[1] = x[i];   /* set each y value */
         d = sqrt ( (xy[1]-my)*(xy[1]-my) + (xy[0]-mx)*(xy[0]-mx) );
@@ -524,9 +554,9 @@ void fx(double *x, int n, void *ex) {
     }
 }
 
-double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[], 
+double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int n1, int n2, int kk, int mm) {
-    double *ex; 
+    double *ex;
     double ax=1e20;
     double bx=-1e20;
     double epsabs = 0.0001;
@@ -552,7 +582,7 @@ double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[
 
     /* pass parameters etc. through pointer */
     ex = (double *) R_alloc(10 + 2 * ns, sizeof(double));
-    ex[0] = gsbval[c];    
+    ex[0] = gsbval[c];
     ex[1] = gsbval[cc + c];
     ex[2] = gsbval[2*cc + c];
     ex[3] = fn;
@@ -571,15 +601,15 @@ double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[
     Rdqags(fx, ex, &ax, &bx, &epsabs, &epsrel, &result, &abserr, &neval, &ier,
           &limit, &lenw, &last, iwork, work);
     if (ier != 0) Rprintf("ier error code in integral2D %5d\n", ier);
-    return (result); 
+    return (result);
 }
 
 /*===============================================================*/
 void integral2Dtest
-    (int *fn, int *m, int *c, double *gsbval, int *cc, double *traps, 
+    (int *fn, int *m, int *c, double *gsbval, int *cc, double *traps,
     double *mask, int *n1, int *n2, int *kk, int *mm, double *result)
 {
-    double *ex; 
+    double *ex;
     double ax=1e20;
     double bx=-1e20;
     double res;
@@ -606,10 +636,10 @@ void integral2Dtest
 
     par[0] = 1;
     par[1] = gsbval[*cc + *c];
-    par[2] = gsbval[2* *cc + *c];   
+    par[2] = gsbval[2* *cc + *c];
 
     ex = (double *) R_alloc(10 + 2 * *kk, sizeof(double));
-    ex[0] = gsbval[*c];    
+    ex[0] = gsbval[*c];
     ex[1] = gsbval[*cc + *c];
     ex[2] = gsbval[2* *cc + *c];
     ex[3] = *fn;
@@ -659,7 +689,7 @@ void fx1 (double *x, int n, void *ex) {
     double * p;
     double *cumd;
     double d;
-    fnptr fnp; 
+    fnptr fnp;
     /* extract parameters passed in void pointer ex */
     p = (double*) ex;
     fn = round(p[3]);
@@ -679,7 +709,7 @@ void fx1 (double *x, int n, void *ex) {
         cumd[i+1] = cumd[i] + distance (line[i],line[i+1]);
     }
     /* set detection function - default hn */
-    fnp = hn;         
+    fnp = hn;
     if (fn == 1)
         fnp = hz;
     else if (fn == 2)
@@ -689,9 +719,9 @@ void fx1 (double *x, int n, void *ex) {
     else if (fn == 4)
         fnp = un;
     else if (fn == 5)
-        fnp = hf;   
+        fnp = hf;
     /* for each x in x[] */
-    for (i=0; i<n; i++) {              
+    for (i=0; i<n; i++) {
         xy = getxy (x[i], cumd, line, ns, 0);
         d = distance (xy, mxy);
         x[i] = fnp(p, d);   /* g(r) */
@@ -699,10 +729,10 @@ void fx1 (double *x, int n, void *ex) {
 }
 
 double integral1D
-    (int fn, int m, int c, double gsbval[], int cc, double traps[], 
+    (int fn, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int n1, int n2, int kk, int mm)
 {
-    double *ex; 
+    double *ex;
     double ax=0;
     double bx=0;
     double epsabs = 0.0001;
@@ -717,7 +747,7 @@ double integral1D
     int iwork[100];
     double work[400];
     int k;
-    int ns;   
+    int ns;
     ns = n2-n1+1;
     for (k=n1+1; k<=n2; k++) {         /* upper bound is length of this transect */
         bx += sqrt( (traps[k] - traps[k-1]) * (traps[k] - traps[k-1]) +
@@ -725,7 +755,7 @@ double integral1D
     }
     /* pass parameters etc. through pointer */
     ex = (double *) R_alloc(10 + 2 * ns, sizeof(double));
-    ex[0] = gsbval[c];    
+    ex[0] = gsbval[c];
     ex[1] = gsbval[cc + c];
     ex[2] = gsbval[2*cc + c];
     ex[3] = fn;
@@ -734,7 +764,7 @@ double integral1D
     ex[6] = 0;
     ex[7] = 0;
     ex[8] = 0;
-    ex[9] = ns;  
+    ex[9] = ns;
     for (k=0; k<ns; k++) {             /* pass transect vertices */
         ex[k+10] = traps[k+n1];        /* x */
         ex[k+ns+10] = traps[k+n1+kk];  /* y */
@@ -742,20 +772,20 @@ double integral1D
     Rdqags(fx1, ex, &ax, &bx, &epsabs, &epsrel, &result, &abserr, &neval, &ier,
           &limit, &lenw, &last, iwork, work);
     if (ier != 0) Rprintf("ier error code in integral1D %5d\n", ier);
-    return (result); 
+    return (result);
 }
 
 /*===============================================================*/
 
-double pndot (int m, int n, int s1, int s2, int x, int ncol, int gsb0[], 
+double pndot (int m, int n, int s1, int s2, int x, int ncol, int gsb0[],
     double gk0[], int ss, int kk, int cc0, int nmix)
 /*
     probability animal at point m on mask is caught
-    n may indicate group (full likelihood; ncol= number of groups) or 
+    n may indicate group (full likelihood; ncol= number of groups) or
     individual (conditional likelihood; ncol= number of individuals)
     aligned with secrloglik 2009 06 25
 
-    2009 10 24 adjusted to allow summation over qq < ss 
+    2009 10 24 adjusted to allow summation over qq < ss
     2009 11 12 'kk' should be number of parts for polygon detectors
 */
 {
@@ -765,9 +795,9 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int gsb0[],
     double pp;
     pp = 1;
     for (k=0; k< kk; k++) {
-        for (s=s1-1; s<s2; s++) { 
+        for (s=s1-1; s<s2; s++) {
             wxi = i4(n,s,k,x,ncol,ss,kk);
-            c = gsb0[wxi] - 1; 
+            c = gsb0[wxi] - 1;
             if (c >= 0) {    /* drops unset traps */
                 gi = i3(c,k,m,cc0,kk);
                 pp *= 1 - gk0[gi];
@@ -781,11 +811,11 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int gsb0[],
 void integralprw1 (
     int    *detect,    /* detector 0 multi, 1 proximity etc. */
     double *gsb0val,   /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    int    *nc,        /* number of individuals */   
+    int    *nc,        /* number of individuals */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
     int    *mm,        /* number of points on mask */
-    int    *nmix,      /* number of mixtures */ 
+    int    *nmix,      /* number of mixtures */
     double *traps,     /* x,y locations of traps (first x, then y) */
     double *mask,      /* x,y points on mask (first x, then y) */
     int    *cc0,       /* number of g0/sigma/b combinations [naive animal] */
@@ -793,11 +823,11 @@ void integralprw1 (
     int    *ncol,      /* number of columns in gsb0; added 2009 06 25 */
     double *area,      /* area associated with each mask point (ha) */
     int    *fn,        /* codes
-                          0 = halfnormal, 
-                          1 = hazard rate, 
-                          2 = exponential, 
-                          9 = binary signal strength, 
-                          10 = signal strength, 
+                          0 = halfnormal,
+                          1 = hazard rate,
+                          2 = exponential,
+                          9 = binary signal strength,
+                          10 = signal strength,
                           11 = signal strength spher, */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
     double *cut,       /* transformed signal strength threshold for detection */
@@ -839,7 +869,7 @@ void integralprw1 (
     pmix = (double *)  R_alloc(*nc * *nmix, sizeof (double));
     for (i=0; i< *nc * *nmix; i++) pmix[i] = 1; /* default */
 
-    /* 
+    /*
         *fn may take values -
         0  halfnormal
         1  hazard rate
@@ -855,6 +885,7 @@ void integralprw1 (
     else if (*fn == 2)  { gfn = ghe; }
     else if (*fn == 3)  { gfn = ghnc; gpar++; }
     else if (*fn == 5)  { gfn = ghf; gpar++; }
+    else if (*fn == 6)  { gfn = gan; gpar++; }
     else if (*fn == 9)  { gfn = gsigbin; }
     else if (*fn == 10) { gfn = gsig; gpar++; }
     else if (*fn == 11) { gfn = gsigsph; gpar++; }
@@ -864,7 +895,7 @@ void integralprw1 (
     if (*detect == 0) {
         for (c=0; c<*cc0; c++) {
             for (k=0; k<*kk; k++) {
-                for (m=0; m<*mm; m++) {        
+                for (m=0; m<*mm; m++) {
                         gi = i3(c, k, m, *cc0, nk);
                         gk0[gi] = gfn(k, m, c, gsb0val, *cc0, traps, mask, nk, *mm, *cut);
                 }
@@ -883,7 +914,7 @@ void integralprw1 (
                         gk0[gi] = lambda;
                     else if (*binomN < 0)
                         gk0[gi] = 1 - gnbinom (0, *binomN, lambda, 0);
-                    else 
+                    else
                         gk0[gi] = 1 - gbinom (0, *binomN, lambda / *binomN, 0);
                 }
             }
@@ -893,11 +924,11 @@ void integralprw1 (
         for (c=0; c<*cc0; c++) {
             par[0] = 1;
             par[1] = gsb0val[*cc0 + c];
-            par[2] = gsb0val[2* *cc0 + c];   
+            par[2] = gsb0val[2* *cc0 + c];
             stdint = gintegral(*fn, par);
             for (k=0; k<nk; k++) {                 /* over polygons */
                 for (m=0; m<*mm; m++) {
-                    lambda = integral2D (*fn, m, c, gsb0val, *cc0, traps, 
+                    lambda = integral2D (*fn, m, c, gsb0val, *cc0, traps,
                         mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
                     gi = i3(c, k, m, *cc0, nk);
                     gk0[gi] = 1 - gpois (0, lambda, 0);
@@ -909,10 +940,10 @@ void integralprw1 (
         for (c=0; c<*cc0; c++) {
             par[0] = gsb0val[c];
             par[1] = gsb0val[*cc0 + c];
-            par[2] = gsb0val[2* *cc0 + c];   
+            par[2] = gsb0val[2* *cc0 + c];
             for (k=0; k<nk; k++) {                 /* over transects */
                 for (m=0; m<*mm; m++) {
-                    lambda = integral1D (*fn, m, c, gsb0val, *cc0, traps, 
+                    lambda = integral1D (*fn, m, c, gsb0val, *cc0, traps,
                         mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm);
                     gi = i3(c, k, m, *cc0, nk);
                     gk0[gi] = 1 - gpois (0, lambda, 0);
@@ -923,25 +954,25 @@ void integralprw1 (
     else error ("unrecognised detector type in external C fn integralprw1");
 
     if (*nmix>1) {
-        for (n=0; n<*nc; n++) {          
-            for (x=0; x<*nmix; x++) {        
+        for (n=0; n<*nc; n++) {
+            for (x=0; x<*nmix; x++) {
                 wxi = i4(n,0,0,x,*ncol,*ss,*kk);
-                c = gsb0[wxi] - 1; 
+                c = gsb0[wxi] - 1;
                 pmix[*nmix * n + x] = gsb0val[*cc0 * (gpar-1) + c];
-           }        
+           }
        }
     }
 
     for (n=0; n<*nc; n++) {            /* CH numbered 0 <= n < *nc */
-        if ((*ncol > 1) | (n == 0)) {  /* no need to repeat if constant */     
+        if ((*ncol > 1) | (n == 0)) {  /* no need to repeat if constant */
             if ((n+1) > *ncol) {       /* groups not implemented */
-                *resultcode = 3;  
-                return; 
+                *resultcode = 3;
+                return;
             }
             asum = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
-                    asum += pmix[*nmix * n + x] * pndot (m, n, 1, *ss, x, *ncol, gsb0, gk0, *ss, nk, *cc0, *nmix);   
+                    asum += pmix[*nmix * n + x] * pndot (m, n, 1, *ss, x, *ncol, gsb0, gk0, *ss, nk, *cc0, *nmix);
                 }
             }
         }
@@ -953,7 +984,7 @@ void integralprw1 (
 /*==============================================================================*/
 
 double hxy (
-    int c, 
+    int c,
     int m,
     double gk[],
     int cc,
@@ -982,14 +1013,14 @@ double hxy (
 /*==============================================================================*/
 
 double hxys (
-    int c, 
-    int m, 
-    int s, 
-    int gsb[], 
+    int c,
+    int m,
+    int s,
+    int gsb[],
     double gk[],
     int cc,
-    int nc, 
-    int ss, 
+    int nc,
+    int ss,
     int kk
 )
 /*
@@ -1020,9 +1051,9 @@ double hxys (
 }
 /*========================================================*/
 
-double prwimulti 
-   (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
-    double gk[], int binomN, double hxytemps[], int cc, int nc, int kk, int ss, int mm, int nmix, 
+double prwimulti
+   (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
+    double gk[], int binomN, double hxytemps[], int cc, int nc, int kk, int ss, int mm, int nmix,
     gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
 /*
     Probability of capture history n (0 <= n < *nc)
@@ -1038,22 +1069,22 @@ double prwimulti
     double htemp;
     double pks;
     double result = 1.0;
-  
+
     for (s=s1-1; s<s2; s++)
     {
         k = w[nc * s + n];
         if (k < 0) {dead=1; k=-k;}  /*  1 <= k <= kk */
         if (k > 0) {
-            c = gsb[i4(n, s, k-1, x, nc, ss, kk)] - 1;  
+            c = gsb[i4(n, s, k-1, x, nc, ss, kk)] - 1;
             htemp = hxytemps[i3(c, m, s, cc, mm)];
             if (htemp < fuzz) { result = 0; break; }
             gi = i3(c, k-1, m, cc, kk);
             pks = -log (1 - gk[gi]);
-            pks *= (1-expmin(-htemp)) / htemp;   
+            pks *= (1-expmin(-htemp)) / htemp;
         }
         else  {
             c = gsb[i4(n, s, 0, x, nc, ss, kk)] - 1;   /* use combination for k=0 - as good as any */
-            htemp = hxytemps[i3(c, m, s, cc, mm)]; 
+            htemp = hxytemps[i3(c, m, s, cc, mm)];
             if (htemp < fuzz) { result = 0; break; }
             pks = expmin(-htemp);      /* Not captured */
         }
@@ -1061,11 +1092,11 @@ double prwimulti
         if (dead) break;
     }
     return (result);
-}  
+}
 /*=============================================================*/
 
-double prwicount 
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
+double prwicount
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss, int mm, int nmix,
      gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
 
@@ -1080,29 +1111,29 @@ double prwicount
     int c, gi, wi, wxi;
     int count;
     int dead = 0;
-    double result = 1.0;  
-    
-    for (s=s1-1; s<s2; s++) { 
+    double result = 1.0;
+
+    for (s=s1-1; s<s2; s++) {
         for (k=0; k<kk; k++) {
             wi = i3(n, s, k, nc, ss);
             wxi = i4(n, s, k, x, nc, ss, kk);
-            count = w[wi];    
+            count = w[wi];
             if (count<0) {dead=1; count=-count;}
-            c = gsb[wxi] - 1;  
+            c = gsb[wxi] - 1;
             if (c >= 0) {                                       /* skip if this trap not set */
                 gi  = i3(c, k, m, cc, kk);
                 if (binomN == 0)                                /* Poisson */
-                    result *= gpois(count, gk[gi], 0);        
+                    result *= gpois(count, gk[gi], 0);
                 else if (binomN == 1) {                         /* Bernoulli */
                     if (count>0)
-                        result *= gk[gi];                     
+                        result *= gk[gi];
                     else
-                        result *= 1 - gk[gi];        
+                        result *= 1 - gk[gi];
                 }
                 else if (binomN < 0)                           /* negative binomial */
                     result *= gnbinom (count, binomN, gk[gi], 0);
-                else                                            /* binomial */ 
-                    result *= gbinom(count, binomN, gk[gi]/binomN, 0);        
+                else                                            /* binomial */
+                    result *= gbinom(count, binomN, gk[gi]/binomN, 0);
                 if (result < minp) {result = minp; break;}      /* truncate */
             }
         }
@@ -1113,22 +1144,22 @@ double prwicount
 }
 /*=============================================================*/
 
-double prwisignal     
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
+double prwisignal
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss, int mm, int nmix,
      gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
 /*
-    Probability of capture history n (0 <= n < nc) 
-    given that animal's range centre is at m    
-    SIGNAL STRENGTH DETECTOR                    
+    Probability of capture history n (0 <= n < nc)
+    given that animal's range centre is at m
+    SIGNAL STRENGTH DETECTOR
 */
 
 {
     int s;   /* index of occasion  0 <= s < ss */
     int k;   /* index of trap      0 <= k < kk */
-    int j;   /* index of detection */ 
+    int j;   /* index of detection */
     int c, wi, wxi, gi;
-    double result = 1.0;      
+    double result = 1.0;
     double mu, gam, sdS, y;
     int start = 0;
     int count = 0;
@@ -1137,37 +1168,37 @@ double prwisignal
 
     cut = detspec[0];
     spherical = round (detspec[1]);
-    for (s=s1-1; s<s2; s++) { 
-        for (k=0; k<kk; k++) {           
+    for (s=s1-1; s<s2; s++) {
+        for (k=0; k<kk; k++) {
             wxi = i4(n, s, k, x, nc, ss, kk);
-            c = gsb[wxi] - 1;  
+            c = gsb[wxi] - 1;
             if (c >= 0) {                                           /* skip if this trap not set */
                 wi = i3(n, s, k, nc, ss);
                 count = abs(w[wi]);                                 /* ignore 'deaths */
                 if (count==0) {
                     gi = i3(c,k,m,cc,kk);
                     if (binomN == 0)                                /* Poisson */
-                        result *= gpois(0, gk[gi], 0);        
+                        result *= gpois(0, gk[gi], 0);
                     else if (binomN == 1)                           /* Bernoulli */
                         result *= 1 - gk[gi];
                     else if (binomN < 0)                            /* negative binomial */
                         result *= gnbinom (0, binomN, gk[gi], 0);
-                    else                                            /* binomial */ 
-                        result *= gbinom(0, binomN, gk[gi]/binomN, 0);        
+                    else                                            /* binomial */
+                        result *= gbinom(0, binomN, gk[gi]/binomN, 0);
                 }
                 else {
-                    start = round(detspec[wi+2]);               
+                    start = round(detspec[wi+2]);
                     for (j=0; j<count; j++) {
                         if (spherical == 0) {
                             mu = mufn (k, m, gsbval[c], gsbval[cc + c],
-                                traps, mask, kk, mm); 
+                                traps, mask, kk, mm);
                         }
                         else {
                             mu = mufnsph (k, m, gsbval[c], gsbval[cc + c],
-                                traps, mask, kk, mm); 
+                                traps, mask, kk, mm);
                         }
                         sdS = gsbval[cc * 2 + c];
-                        gam = (cut - mu) / sdS; 
+                        gam = (cut - mu) / sdS;
                         y   = signal[start+j] - cut + gam * sdS;
                         result *= dnorm(y, 0, sdS, 0);                  /* signal strength */
                     }
@@ -1181,17 +1212,17 @@ double prwisignal
 }
 /*=============================================================*/
 
-double prwitimes     
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
-     double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss, int mm, int nmix, 
+double prwitimes
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
+     double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss, int mm, int nmix,
      gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
 /*
-    Probability of capture history n (0 <= n < nc) 
-    given that animal's range centre is at m    
+    Probability of capture history n (0 <= n < nc)
+    given that animal's range centre is at m
     TIMES DETECTOR  (uses 'signal' vector for times)
 */
 
-/* R-exts.pdf "the exponential and gamma distributions are parametrized 
+/* R-exts.pdf "the exponential and gamma distributions are parametrized
    by scale rather than rate" see code in src\nmath\... */
 
 {
@@ -1199,20 +1230,20 @@ double prwitimes
     int k;   /* index of trap      0 <= k < kk */
     int c, wi, wxi, gi;
     double lambda;
-    double result = 1.0;      
+    double result = 1.0;
     int count = 0;
 
     /*  for times ... */
-    int j; 
+    int j;
     int start = 0;
     double time0;
     double y = 0;
 
-    for (s=s1-1; s<s2; s++) { 
-        for (k=0; k<kk; k++) {           
+    for (s=s1-1; s<s2; s++) {
+        for (k=0; k<kk; k++) {
             wxi = i4(n,s,k,x,nc,ss,kk);
             wi = i3(n,s,k,nc,ss);
-            c = gsb[wxi] - 1;  
+            c = gsb[wxi] - 1;
             if (c >= 0) {                                       /* skip if this trap not set */
                 count = abs(w[wi]);
                 gi = i3(c,k,m,cc,kk);
@@ -1221,8 +1252,8 @@ double prwitimes
 /*
     The following 'intuitive' code attempts to implement a continuous-time
     model. This appears to be ill-conceived because in a homogeneous
-    model the times contain no additional information (e.g. Nayak 1988 
-    Biometrika 75:113). 
+    model the times contain no additional information (e.g. Nayak 1988
+    Biometrika 75:113).
 
     It is unclear whether the final likelihood component is needed.
     A small trial without it suggests the asymptotic variances estimates
@@ -1232,18 +1263,18 @@ double prwitimes
 
     MGE 2009 12 07
 */
-                if (binomN == 0)                              
-                    result *= gpois(count, lambda, 0);        
+                if (binomN == 0)
+                    result *= gpois(count, lambda, 0);
                 else if (binomN == 1) {
-                    if (count==0)      
+                    if (count==0)
                         result *= 1 - lambda;
                     else
                         result *= lambda;
                 }
-                else if (binomN < 0)                           
+                else if (binomN < 0)
                     result *= gnbinom (count, binomN, lambda, 0);
-                else                                            
-                    result *= gbinom(count, binomN, lambda/binomN, 0);        
+                else
+                    result *= gbinom(count, binomN, lambda/binomN, 0);
 
                 if (count>0) {
                     start = round(detspec[wi]);
@@ -1254,7 +1285,7 @@ double prwitimes
                         time0 = signal[start+j];
                     }
                     /* result *= 1- pexp (1-time0, 1/lambda, 1, 0);   no detection after last */
-                } 
+                }
                 if (result < minp) {result = minp; break;}      /* truncate */
             }
         }
@@ -1264,15 +1295,15 @@ double prwitimes
 }
 /*=============================================================*/
 
-double prwipolygon 
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[], 
+double prwipolygon
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss, int mm, int nmix,
      gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
 
 /*
     Likelihood component due to capture history n (0 <= n < nc)
     given that animal's range centre is at m
-    POLYGON OR TRANSECT DETECTOR  
+    POLYGON OR TRANSECT DETECTOR
 */
 {
     int s;   /* index of occasion  0 <= s < ss  */
@@ -1281,8 +1312,8 @@ double prwipolygon
     int c, wxi, wi, gi;
     long count;
     int dead = 0;
-    double result = 1.0; 
-    double geval; 
+    double result = 1.0;
+    double geval;
     int nk;
     int nd;
     int start;
@@ -1295,27 +1326,27 @@ double prwipolygon
             count = w[wi];
             if (count<0) {dead=1; count=-count;}
             wxi = i4(n,s,k,x,nc,ss,kk);
-            c = gsb[wxi] - 1;  
+            c = gsb[wxi] - 1;
             if (c >= 0) {                                       /* skip if this polygon not used */
-                gi  = i3(c,k,m,cc,nk);     
+                gi  = i3(c,k,m,cc,nk);
                 result *= gpois(count, gk[gi], 0);              /* Poisson - lambda is cues/animal x cue detection */
-                if (result > minp) {                            /* avoid underflow 2009 11 16 */             
+                if (result > minp) {                            /* avoid underflow 2009 11 16 */
                     start = round(detspec[wi+cc+2]);
                     for (j=start; j < start+count; j++) {
                         geval = gfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0);
-                        result *= geval / (gk[gi] * detspec[2+c]);          
+                        result *= geval / (gk[gi] * detspec[2+c]);
                     }
                 }
             }
         }
-        if (result <= minp) {result = minp; break;}  
+        if (result <= minp) {result = minp; break;}
         if (dead==1) break;
     }
     return (result);
 }
 /*=============================================================*/
 
-void pdotpoly (double *xy, int *nxy, double *traps, int *nk, 
+void pdotpoly (double *xy, int *nxy, double *traps, int *nk,
     int *kk, int *fn, int *nocc, double *par, double *value)
 {
     double stdintegral;
@@ -1326,22 +1357,22 @@ void pdotpoly (double *xy, int *nxy, double *traps, int *nk,
     int *cumk;
     cumk = (int *) R_alloc(*nk+1, sizeof(int));
     cumk[0] = 0;
-    for (i=0; i<*nk; i++) 
+    for (i=0; i<*nk; i++)
         cumk[i+1] = cumk[i] + kk[i];
     stdintegral = gintegral(*fn, par);
     for (i=0; i<*nxy; i++) {
         sumlambda = 0.0;
         for (k=0; k<*nk; k++) {                        /* over parts */
-            lambda = integral2D (*fn, i, 0, par, 1, traps, xy, 
+            lambda = integral2D (*fn, i, 0, par, 1, traps, xy,
                 cumk[k], cumk[k+1]-1, cumk[*nk], *nxy) / stdintegral;
-            sumlambda += lambda;            
-        }   
+            sumlambda += lambda;
+        }
         value[i] = 1 - pow(gpois (0, sumlambda, 0), *nocc);
     }
 }
 /*=============================================================*/
 
-void pdottransect (double *xy, int *nxy, double *traps, int *nk, 
+void pdottransect (double *xy, int *nxy, double *traps, int *nk,
     int *kk, int *fn, int *nocc, double *par, double *value)
 {
     int k;
@@ -1351,15 +1382,15 @@ void pdottransect (double *xy, int *nxy, double *traps, int *nk,
     int *cumk;
     cumk = (int *) R_alloc(*nk+1, sizeof(int));
     cumk[0] = 0;
-    for (i=0; i<*nk; i++) 
+    for (i=0; i<*nk; i++)
         cumk[i+1] = cumk[i] + kk[i];
     for (i=0; i<*nxy; i++) {
         sumlambda = 0.0;
         for (k=0; k<*nk; k++) {                        /* over transects */
-            lambda = integral1D (*fn, i, 0, par, 1, traps, xy, 
+            lambda = integral1D (*fn, i, 0, par, 1, traps, xy,
                 cumk[k], cumk[k+1]-1, cumk[*nk], *nxy);
-            sumlambda += lambda;            
-        }   
+            sumlambda += lambda;
+        }
         value[i] = 1 - pow(gpois (0, sumlambda, 0), *nocc);
     }
 }
@@ -1406,7 +1437,7 @@ void secrloglik (
     int    gi;
     int    notset = 0;
     int    indiv = 0;     /* indicator for whether detection varies between individuals (CL only) */
-    double asum[maxnmix];      
+    double asum[maxnmix];
     double *pmix;
     double temp, tempsum;
     double sumD[*gg];     /* 2009 08 21  for binomial */
@@ -1446,11 +1477,11 @@ void secrloglik (
             nk++;
         }
     }
-    else 
+    else
         nk = *kk;
 
     if ((*detect>=5) && (*detect<=8)) {
-        /* start[z] indexes the first row in xy (or element in signal) 
+        /* start[z] indexes the first row in xy (or element in signal)
            for each possible count z, where z is w-order (isk) */
         start = (int *) R_alloc(*nc * *ss * nk, sizeof(int));
         for (k=0; k<nk; k++) {
@@ -1459,20 +1490,20 @@ void secrloglik (
                     wi = i3(i,s,k,*nc,*ss);
                     start[wi] = nd;
                     nd += abs(w[wi]);
-                } 
+                }
             }
         }
     }
 
-    if (*detect==0) 
+    if (*detect==0)
         nval = *cc * *mm * *ss;
-    else if (*detect==5) 
+    else if (*detect==5)
         nval = 2 + *nc * *ss * nk * *nmix;
     else if ((*detect==6) | (*detect==7))
         nval = 2 + *cc + *nc * *ss * nk * *nmix;
-    else if (*detect==8) 
+    else if (*detect==8)
         nval = *nc * *ss * nk * *nmix;
-    else 
+    else
         nval = 4;    /* 1-4, mostly not used */
 
     /* use R_alloc for robust exit on interrupt */
@@ -1481,7 +1512,7 @@ void secrloglik (
     detspec = (double *) R_alloc(nval, sizeof(double));
     pmix = (double *)  R_alloc(*nc * *nmix, sizeof (double));
 
-    /* 
+    /*
         *fn may take values -
         0  halfnormal
         1  hazard rate
@@ -1497,6 +1528,7 @@ void secrloglik (
     else if (*fn == 2)  { gfn = ghe; }
     else if (*fn == 3)  { gfn = ghnc; gpar++; }
     else if (*fn == 5)  { gfn = ghf; gpar++; }
+    else if (*fn == 6)  { gfn = gan; gpar++; }
     else if (*fn == 9)  { gfn = gsigbin; }
     else if (*fn == 10) { gfn = gsig; gpar++; }
     else if (*fn == 11) { gfn = gsigsph; gpar++; }
@@ -1516,14 +1548,14 @@ void secrloglik (
         5  signal detectors
         6  polygon detector
         7  transect detector
-        8  times 
+        8  times
     */
 
     /* dedicated detectors ... */
     if (*detect==1) *binomN = 1;  /* Bernoulli */
     if (*detect==3) *binomN = 1;  /* Bernoulli */
 
-    if (*detect == 0) {          
+    if (*detect == 0) {
         for (k=0; k<*kk; k++) {
             for (m=0; m<*mm; m++) {
                 for (c=0; c<*cc0; c++) {
@@ -1543,7 +1575,7 @@ void secrloglik (
         for (k=0; k<*kk; k++) {
             for (m=0; m<*mm; m++) {
                 for (c=0; c<*cc0; c++) {
-                    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk, 
+                    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk,
                         *mm, *cut);
                     gi = i3(c,k,m,*cc0,nk);
                     if (*binomN == 0)
@@ -1551,16 +1583,16 @@ void secrloglik (
                     else if (*binomN == 1)
                         gk0[gi] = lambda;
                     else if (*binomN < 0)
-                        gk0[gi] = 1 - gnbinom (0, *binomN, 
+                        gk0[gi] = 1 - gnbinom (0, *binomN,
                             lambda, 0);
                     else  /* (*binomN > 1) */
                         gk0[gi] = 1 - gbinom (0, *binomN, lambda / *binomN, 0);
                 }
                 for (c=0; c<*cc; c++) {
-                    gi = i3(c,k,m,*cc,nk); 
-                    gk[gi] = gfn(k, m, c, gsbval, *cc, 
+                    gi = i3(c,k,m,*cc,nk);
+                    gk[gi] = gfn(k, m, c, gsbval, *cc,
                         traps, mask, nk, *mm, *cut);
-                } 
+                }
             }
         }
     }
@@ -1568,11 +1600,11 @@ void secrloglik (
         for (c=0; c<*cc0; c++) {
             par[0] = 1;
             par[1] = gsb0val[*cc0 + c];
-            par[2] = gsb0val[2* *cc0 + c];   
+            par[2] = gsb0val[2* *cc0 + c];
             stdint = gintegral(*fn, par);
             for (k=0; k<nk; k++) {               /* over parts */
                 for (m=0; m<*mm; m++) {
-                    lambda = integral2D (*fn, m, c, gsb0val, *cc0, traps, mask, 
+                    lambda = integral2D (*fn, m, c, gsb0val, *cc0, traps, mask,
                         cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint ;
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = 1 - gpois (0, lambda, 0);
@@ -1583,13 +1615,13 @@ void secrloglik (
         for (c=0; c<*cc; c++) {
             par[0] = 1;
             par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];   
+            par[2] = gsbval[2* *cc + c];
             detspec[2+c] = gintegral(*fn, par);  /* passed to prwipolygon */
             for (k=0; k<nk; k++) {               /* over parts */
                 for (m=0; m<*mm; m++) {
                     gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = integral2D (*fn, m, c, gsbval, *cc, 
-                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / detspec[2+c];                    
+                    gk[gi] = integral2D (*fn, m, c, gsbval, *cc,
+                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / detspec[2+c];
                 }
             }
         }
@@ -1598,7 +1630,7 @@ void secrloglik (
         for (c=0; c<*cc0; c++) {
             for (k=0; k<nk; k++) {               /* over transects */
                 for (m=0; m<*mm; m++) {
-                    lambda = integral1D (*fn, m, c, gsb0val, *cc0, traps, mask, 
+                    lambda = integral1D (*fn, m, c, gsb0val, *cc0, traps, mask,
                         cumk[k], cumk[k+1]-1, cumk[nk], *mm);
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = 1 - gpois (0, lambda, 0);
@@ -1611,8 +1643,8 @@ void secrloglik (
             for (k=0; k<nk; k++) {               /* over transects */
                 for (m=0; m<*mm; m++) {
                     gi = i3(c,k,m,*cc0,nk);
-                    gk[gi] = integral1D (*fn, m, c, gsbval, *cc, 
-                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm);                    
+                    gk[gi] = integral1D (*fn, m, c, gsbval, *cc,
+                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm);
                 }
             }
         }
@@ -1625,66 +1657,66 @@ void secrloglik (
 
     prwfn = prwicount;   /* default */
 
-    if (*detect == 0) {             
-        prwfn = prwimulti; 
+    if (*detect == 0) {
+        prwfn = prwimulti;
         /* check if any traps not set */
         /* and decide whether to use full or collapsed hxy */
         nSK = *nc * *ss * *kk;
-        for (i=0; i<nSK; i++) 
+        for (i=0; i<nSK; i++)
             if (gsb[i]==0) notset++;
         if (notset==0) {
             for (c=0; c<*cc; c++) {
-                for (m=0; m<*mm; m++) { 
+                for (m=0; m<*mm; m++) {
                     detspec[i3(c,m,0,*cc,*mm)] = hxy(c,m,gk, *cc, *kk);
                     for (s=1; s<*ss; s++) {
                         detspec[i3(c,m,s,*cc,*mm)] = detspec[i3(c,m,0,*cc,*mm)];
-                    } 
+                    }
                 }
             }
         }
         else {    /* some traps not set: occasion-specific total hazard */
-          for (s=0; s<*ss; s++)  
+          for (s=0; s<*ss; s++)
             for (c=0; c<*cc; c++)
-              for (m=0; m<*mm; m++) 
+              for (m=0; m<*mm; m++)
                   detspec[i3(c,m,s,*cc,*mm)] = hxys(c,m,s, gsb, gk, *cc, *nc, *ss, *kk);
         }
     }
     else if (*detect == 1) { prwfn = prwicount; }    /* Bernoulli */
-    else if (*detect == 2) { prwfn = prwicount; }    /* Poisson (0) or binomial or neg binomial */     
+    else if (*detect == 2) { prwfn = prwicount; }    /* Poisson (0) or binomial or neg binomial */
     else if (*detect == 3) { prwfn = prwicount; }    /* Bernoulli */
-    else if (*detect == 4) { prwfn = prwicount; }    /* Poisson (0) or binomial or neg binomial */     
-    else if (*detect == 5) { 
-        prwfn = prwisignal; 
-        detspec[0]= *cut; 
-        detspec[1]= (*fn == 11);     /* spherical */ 
-        for (i=0; i< (*nc* *ss * nk); i++) 
+    else if (*detect == 4) { prwfn = prwicount; }    /* Poisson (0) or binomial or neg binomial */
+    else if (*detect == 5) {
+        prwfn = prwisignal;
+        detspec[0]= *cut;
+        detspec[1]= (*fn == 11);     /* spherical */
+        for (i=0; i< (*nc* *ss * nk); i++)
             detspec[2+i] = (double) start[i];
     }
-    else if ((*detect == 6) | (*detect == 7)) { 
+    else if ((*detect == 6) | (*detect == 7)) {
         prwfn = prwipolygon;
         detspec[0] = (double) nk;
         detspec[1] = (double) nd;
-        for (i=0; i< (*nc* *ss * nk); i++) 
+        for (i=0; i< (*nc* *ss * nk); i++)
             detspec[2+*cc+i] = (double) start[i];
     }
-    else if (*detect == 8) { 
-        prwfn = prwitimes; 
-        for (i=0; i< (*nc* *ss * nk); i++) 
+    else if (*detect == 8) {
+        prwfn = prwitimes;
+        for (i=0; i< (*nc* *ss * nk); i++)
             detspec[i] = (double) start[i];
     }
     for (i=0; i < *nc * *nmix; i++) pmix[i] = 1; /* default */
     if (*nmix>1) {
-        for (n=0; n<*nc; n++) {          
-            for (x=0; x<*nmix; x++) {        
+        for (n=0; n<*nc; n++) {
+            for (x=0; x<*nmix; x++) {
                 wxi = i4(n,0,0,x,*nc,*ss,nk);
-                c = gsb[wxi] - 1; 
+                c = gsb[wxi] - 1;
                 if (*like==0) {
                     g = grp[n]-1;
                     pmix[*nmix * g + x] = gsbval[*cc * (gpar-1) + c];
                 }
                 else
                     pmix[*nmix * n + x] = gsbval[*cc * (gpar-1) + c];
-            }        
+            }
         }
     }
     /*===============================================================*/
@@ -1695,8 +1727,8 @@ void secrloglik (
            i.e. check if detection parameters constant for given s,k
         */
         indiv = 0;
-        for (s=0; s<*ss; s++) { 
-            for (k=0; k<nk; k++) {   
+        for (s=0; s<*ss; s++) {
+            for (k=0; k<nk; k++) {
                 for (x=0; x<*nmix; x++) {
                     wxi = i4(0,s,k,x,*nc,*ss,*kk);
                     i = gsb0[wxi];
@@ -1712,7 +1744,7 @@ void secrloglik (
 
         if (indiv == 0) {
             /* save time by doing this once, rather than inside n loop */
-            for (x=0; x<*nmix; x++) {        
+            for (x=0; x<*nmix; x++) {
                 asum[x] = 0;
                 for (m=0; m<*mm; m++) {
                     asum[x] += pndot (m, 0, 1, *ss, x, *nc, gsb0, gk0, *ss, nk, *cc0, *nmix);   /* all individuals the same */
@@ -1724,31 +1756,31 @@ void secrloglik (
         *value = 0;
         /* Loop over individuals... */
         for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
-            a[n] = 0; 
+            a[n] = 0;
             tempsum = 0;
             for (x=0; x<*nmix; x++) {
                 temp = 0;
-                if (indiv > 0) 
+                if (indiv > 0)
                     asum[x] = 0;
                 for (m=0; m<*mm; m++) {
-                    if (indiv > 0) 
-                        asum[x] += pndot (m, n, 1, *ss, x, *nc, gsb0, gk0, *ss, nk, *cc0, *nmix);  
-                    temp += prwfn (m, n, 1, *ss, x, w, xy, signal, gsb, gk, *binomN, detspec, 
+                    if (indiv > 0)
+                        asum[x] += pndot (m, n, 1, *ss, x, *nc, gsb0, gk0, *ss, nk, *cc0, *nmix);
+                    temp += prwfn (m, n, 1, *ss, x, w, xy, signal, gsb, gk, *binomN, detspec,
                         *cc, *nc, nk, *ss, *mm, *nmix, gfn, gsbval, traps, mask, *minprob);
                 }
-                a[n] += pmix[*nmix * n + x] * asum[x];    
+                a[n] += pmix[*nmix * n + x] * asum[x];
                 tempsum += pmix[*nmix * n + x] * temp;
             }    /* end of loop over mixtures */
 
             templog = log(tempsum/a[n]);
             a[n] = *area * a[n];
-           
-            if (R_FINITE(templog)) 
+
+            if (R_FINITE(templog))
                 *value += templog;
             else {
                 *resultcode = 9;
-                return; 
-            }              
+                return;
+            }
             R_CheckUserInterrupt();
         }        /* end of loop over individuals */
     }
@@ -1763,28 +1795,28 @@ void secrloglik (
             for (m=0; m<*mm; m++)  {
                 sumD[g] += Dmask[*mm * g + m];
                 for (x=0; x<*nmix; x++)
-                    sumDp[g] += pmix[*nmix * g + x] * pndot (m, g, 1, *ss, x, *gg, gsb0, gk0, 
+                    sumDp[g] += pmix[*nmix * g + x] * pndot (m, g, 1, *ss, x, *gg, gsb0, gk0,
                         *ss, nk, *cc0, *nmix) * Dmask[*mm * g + m];
             }
         }
         *value = 0;
         for (n=0; n<*nc; n++) {  /* CH are numbered 0 <= n < *nc in C code */
             g = grp[n]-1;
-            ng[g]++; 
+            ng[g]++;
             temp = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
-                    temp += pmix[*nmix * g + x] * prwfn (m, n, 1, *ss, x, w, xy, signal, gsb, 
-                        gk, *binomN, detspec, *cc, *nc, nk, *ss, *mm, *nmix, gfn, 
-                        gsbval, traps, mask, *minprob) * Dmask[*mm * g + m];    
+                    temp += pmix[*nmix * g + x] * prwfn (m, n, 1, *ss, x, w, xy, signal, gsb,
+                        gk, *binomN, detspec, *cc, *nc, nk, *ss, *mm, *nmix, gfn,
+                        gsbval, traps, mask, *minprob) * Dmask[*mm * g + m];
                 }
             }
             templog = log(temp);
-            if (R_FINITE(templog)) 
+            if (R_FINITE(templog))
                 *value += templog;
             else {
                 *resultcode = 9;
-                return; 
+                return;
             }
             R_CheckUserInterrupt();
         }
@@ -1796,8 +1828,8 @@ void secrloglik (
             /* binomial */
             /* note must round 'size' argument to an integer */
             /* note restriction to integer values causes asymptotic variance of density to fail */
-            if (*distrib==1) *value += gbinom (ng[g], round(sumD[g] * *area), sumDp[g]
-                / sumD[g], 1);                                       
+/*            if (*distrib==1) *value += gbinom (ng[g], round(sumD[g] * *area), sumDp[g] */
+            if (*distrib==1) *value += gbinomFP (ng[g], sumD[g] * *area, sumDp[g] / sumD[g], 1);
         }
     }
 
@@ -1806,25 +1838,48 @@ void secrloglik (
 /*==============================================================================*/
 
 /*
-    trappingXXXX routines perform simulated sampling of 2D popn with various 
+    trappingXXXX routines perform simulated sampling of 2D popn with various
     detector types
 */
 
 double pfn (
     int fn,
-    double d2val, 
+    double d2val,
     double g0,
     double sigma,
     double z,
-    double area)
+    double area,
+    double w2)
 {
+
+/*
+fn 0  halfnormal
+fn 1  hazard-rate
+fn 2  exponential
+fn 3  compound halfnormal
+fn 4  uniform
+fn 5  w-exponential
+fn 6  annular normal
+
+fn 9  binary signal strength
+fn 10 signal strength
+fn 11 signal strength with spherical spreading
+
+*/
     double p = -1;
     double gam = 0;
-    if (fn == 0) p = g0 * expmin(-d2val / 2 / sigma / sigma);
+
+    if (d2val > w2) p = 0;
+    else if (fn == 0) p = g0 * expmin(-d2val / 2 / sigma / sigma);
     else if (fn == 1) p = g0 * (1 - expmin(- pow (sqrt(d2val) / sigma, - z)));
     else if (fn == 2) p = g0 * expmin(- sqrt(d2val) / sigma);
-    else if (fn == 3) { if (sqrt(d2val) <= sigma) p = g0; else p = 0; }
+    else if (fn == 3) p = 1 - pow(1 - g0 * expmin(-d2val / 2 / sigma / sigma), z);
+    else if (fn == 4) { if (sqrt(d2val) <= sigma) p = g0; else p = 0; }
     else if (fn == 5) { if (sqrt(d2val) <= z) p = g0; else p = g0 * expmin(- (sqrt(d2val)-z) / sigma); }
+    else if (fn == 6) p = g0 * expmin(- (sqrt(d2val)-z) * (sqrt(d2val)-z) / 2 / sigma / sigma);
+    else if (fn == 9) error("detectfn 9 currently disabled");
+    else if (fn == 10)  error("detectfn 10 currently disabled");
+    else if (fn == 11)  error("detectfn 11 currently disabled");
     else if (fn == 11) { gam = -(g0 + sigma * sqrt(d2val)); p = pnorm(gam,0,1,0,0); }
     else error ("requested detection function not valid in this context");
     return (p);
@@ -1846,7 +1901,7 @@ double randomtime (double p)
         random_U = Random();
         if (random_U <= 0)                   /* trap for zero */
             return(huge);
-        else 
+        else
             return (-log(random_U)/lambda);   /* random exponential e.g. Ripley 1987 Algorithm 3.2 p 55 */
     }
 }
@@ -1854,15 +1909,15 @@ double randomtime (double p)
 
     void probsort (int n, struct trap_animal tran[])
     /*
-        Sort using Shell algorithm see Press et al 1989 p 257 
-        tran is an array of trap_animal records 
+        Sort using Shell algorithm see Press et al 1989 p 257
+        tran is an array of trap_animal records
     */
     {
        double aln2i = 1.442695022;
        double tiny  = 1.0e-5;
        int nn,m,lognb2,l,k,j,i;
-       struct trap_animal t; 
-    
+       struct trap_animal t;
+
        lognb2 = trunc(log(n)*aln2i+tiny);
        m = n;
        for (nn=1; nn<=lognb2; nn++)
@@ -1870,10 +1925,10 @@ double randomtime (double p)
           m = m / 2;
           k = n-m;
           for (j=1; j<=k; j++)
-          { 
+          {
              i = j;
     lab1:    l = i+m;
-             if (tran[l-1].time < tran[i-1].time) 
+             if (tran[l-1].time < tran[i-1].time)
              {
                 t = tran[i-1];
                 tran[i-1] = tran[l-1];
@@ -1897,7 +1952,8 @@ void trappingcount (
     double *traps,     /* x,y locations of traps (first x, then y)  */
     int    *used,      /* ss x kk array of 0/1 codes for usage */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
-    int    *binomN,    /* 0 poisson, 1 Bernoulli, or number of trials for 'count' 
+    double *w2,        /* truncation radius */
+    int    *binomN,    /* 0 poisson, 1 Bernoulli, or number of trials for 'count'
                           detector modelled with binomial */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
@@ -1917,13 +1973,13 @@ void trappingcount (
     nc = 0;
     GetRNGstate();
 
-    for (i=0; i<*N; i++) caught[i] = 0; 
+    for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             for (k=0; k<*kk; k++) {
-                if (used[s * *kk + k]) {                        /* 2009 11 09 */            
+                if (used[s * *kk + k]) {                        /* 2009 11 09 */
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0);
+                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
                     if (theta>0) {
                         if (*binomN == 0)
                             count = rpois(theta);
@@ -1931,32 +1987,32 @@ void trappingcount (
                             if (Random() < theta)
                                 count = 1;
                             else
-                                count = 0; 
+                                count = 0;
                         }
                         else if (*binomN < 0) {
                             /* must use 'size, prob' parameters */
                             /* prob = size / (size + mu) */
                             *binomN = abs(*binomN);
-                            count = rnbinom(*binomN, *binomN / (*binomN+theta));   
+                            count = rnbinom(*binomN, *binomN / (*binomN+theta));
                         }
                         else
-                            count = rbinom(*binomN, theta / *binomN);   
+                            count = rbinom(*binomN, theta / *binomN);
                         if (count>0)
                         {
                              if (caught[i]==0)                  /* first capture of this animal */
                              {
-                                 nc++; 
+                                 nc++;
                                  caught[i] = nc;
                                  for (j=0; j<*ss; j++)
                                    for (l=0; l<*kk; l++)
                                      value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                             } 
+                             }
                              value[*ss * ((caught[i]-1) * *kk + k) + s] = count;
                         }
                     }
                 }
             }
-        }     
+        }
     }
     *n = nc;
 
@@ -1976,6 +2032,7 @@ void trappingpolygon (
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,          /* truncation radius */
     int    *maxone,      /* maximum of one detection per animal per occasion */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */
@@ -1995,7 +2052,7 @@ void trappingpolygon (
     int    maxdet;
     int    g=0;
     int    *gotcha;
-    double xy[2]; 
+    double xy[2];
     gotcha = &g;
     int cumk[maxnpoly+1];   /* limit maxnpoly polygons */
     int sumk;
@@ -2004,7 +2061,7 @@ void trappingpolygon (
     int    *sortorder;
     double *sortkey;
 
-    *resultcode = 1; 
+    *resultcode = 1;
     GetRNGstate();
     if (*npoly>maxnpoly) {
         *resultcode = 2;
@@ -2018,7 +2075,7 @@ void trappingpolygon (
     sortorder = (int*) R_alloc(maxdet, sizeof(int));
     sortkey = (double*) R_alloc(maxdet, sizeof(double));
 
-    for (i=0; i<*N; i++) caught[i] = 0;                           
+    for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             if (*maxone)
@@ -2029,26 +2086,26 @@ void trappingpolygon (
             par[0] = 1;
             par[1] = sigma[s];
             par[2] = z[s];
-            for (j=0; j<count; j++) {             
+            for (j=0; j<count; j++) {
                 gxy (&np, fn, par, &w, xy);            /* simulate location */
                 xy[0] = xy[0] + animals[i];
                 xy[1] = xy[1] + animals[*N + i];
                 for (k=0; k<*npoly; k++) {             /* each polygon */
-                    n1 = cumk[k]; 
+                    n1 = cumk[k];
                     n2 = cumk[k+1]-1;
                     inside(xy, &n1, &n2, &sumk, traps, gotcha);  /* assume closed */
                     if (*gotcha > 0) {
                         if (caught[i]==0) {            /* first capture of this animal */
-                            nc++; 
+                            nc++;
                             caught[i] = nc;
                             for (t=0; t<*ss; t++)
-                                for (l=0; l<*npoly; l++)                            
+                                for (l=0; l<*npoly; l++)
                                     value[*ss * ((nc-1) * *npoly + l) + t] = 0;
                         }
                         nd++;
                         if (nd >= maxdet) {
                             *resultcode = 2;           /* error */
-                            return;  
+                            return;
                         }
                         value[*ss * ((caught[i]-1) * *npoly + k) + s]++;
                         workXY[(nd-1)*2] = xy[0];
@@ -2059,14 +2116,14 @@ void trappingpolygon (
             }
         }
     }
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         sortorder[i] = i;
     if (nd>0) rsort_with_index (sortkey, sortorder, nd);
     for (i=0; i<nd; i++) {
         detectedXY[i]    = workXY[sortorder[i]*2];
         detectedXY[i+nd] = workXY[sortorder[i]*2+1];
     }
-    *n = nc;    
+    *n = nc;
     *resultcode = 0;
     PutRNGstate();
 }
@@ -2083,6 +2140,7 @@ void trappingtransect (
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential etc. */
+    double *w2,          /* truncation radius */
     int    *maxone,      /* maximum of one detection per animal per occasion */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */
@@ -2100,7 +2158,7 @@ void trappingtransect (
     int    maxdet;
     int    gotcha;
 
-    int    *cumk;       
+    int    *cumk;
     double *cumd;
     struct rpoint *line;
     struct rpoint xy;
@@ -2114,12 +2172,12 @@ void trappingtransect (
     int    *sortorder;
     double *sortkey;
 
-    *resultcode = 1; 
+    *resultcode = 1;
     GetRNGstate();
 
     cumk = (int *) R_alloc(*ntransect+1, sizeof(int));
     cumk[0] = 0;
-    for (k =0; k<*ntransect; k++) 
+    for (k =0; k<*ntransect; k++)
         cumk[k+1] = cumk[k] + kk[k];
     sumk = cumk[*ntransect];
     line = (struct rpoint *) R_alloc(sumk, sizeof(struct rpoint));
@@ -2139,17 +2197,17 @@ void trappingtransect (
     for (k=0; k<*ntransect; k++) {
         cumd[cumk[k]] = 0;
         for (i=cumk[k]; i<(cumk[k+1]-1); i++) {
-            cumd[i+1] = cumd[i] + distance(line[i], line[i+1]);  
+            cumd[i+1] = cumd[i] + distance(line[i], line[i+1]);
         }
     }
 
-    for (i=0; i<*N; i++) caught[i] = 0;                           
-    for (s=0; s<*ss; s++) {                       /* each occasion */ 
+    for (i=0; i<*N; i++) caught[i] = 0;
+    for (s=0; s<*ss; s++) {                       /* each occasion */
         for (i=0; i<*N; i++) {                            /* each animal */
             animal.x = animals[i];
             animal.y = animals[i + *N];
             for (k=0; k<*ntransect; k++) {            /* each transect */
-                n1 = cumk[k]; 
+                n1 = cumk[k];
                 n2 = cumk[k+1]-1;
                 par[0] = lambda[s];
                 par[1] = sigma[s];
@@ -2158,42 +2216,42 @@ void trappingtransect (
                 if (*maxone)
                     count = (Random() < lambdak);     /* not clear this is useful */
                 else
-                   count = rpois(lambdak);                          
+                   count = rpois(lambdak);
                 maxg = 0;
                 if (count>0) {                        /* find maximum - approximate */
                     for (l=0; l<=100; l++) {
-                        lx = cumd[n2] * l/100; 
+                        lx = cumd[n2] * l/100;
                         xy = getxy (lx, cumd, line, sumk, n1);
                         grx = gr (fn, par, xy, animal);
-                        maxg = fmax2(maxg, grx); 
+                        maxg = fmax2(maxg, grx);
                     }
                     for (l=n1; l<=n2; l++) {
                         xy = line[l];
                         grx = gr (fn, par, xy, animal);
-                        maxg = fmax2(maxg, grx); 
+                        maxg = fmax2(maxg, grx);
                     }
                     maxg= 1.2 * maxg;                 /* safety margin */
                     if (maxg<=0) maxg=0.0001;         /* not found */
-                } 
-                for (j=0; j<count; j++) {             
+                }
+                for (j=0; j<count; j++) {
                     gotcha = 0;
                     l = 0;
-                    while (gotcha == 0) { 
+                    while (gotcha == 0) {
                         lx = Random() * cumd[n2];     /* simulate location */
                         xy = getxy (lx, cumd, line, sumk, n1);
                         grx = gr (fn, par, xy, animal);
                         if (Random() < (grx/maxg))    /* rejection sampling */
-                            gotcha = 1;       
+                            gotcha = 1;
                         l++;
-                        if (l % 10000 == 0) 
+                        if (l % 10000 == 0)
                             R_CheckUserInterrupt();
-                        if (l>1e6) gotcha = 1;        /* give up and accept anything!!!! */ 
+                        if (l>1e6) gotcha = 1;        /* give up and accept anything!!!! */
                     }
                     if (caught[i]==0) {               /* first capture of this animal */
-                        nc++; 
+                        nc++;
                         caught[i] = nc;
                         for (t=0; t<*ss; t++)
-                            for (l=0; l<*ntransect; l++)                            
+                            for (l=0; l<*ntransect; l++)
                                 value[*ss * ((nc-1) * *ntransect + l) + t] = 0;
                     }
                     nd++;
@@ -2209,14 +2267,14 @@ void trappingtransect (
             }
         }
     }
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         sortorder[i] = i;
     if (nd>0) rsort_with_index (sortkey, sortorder, nd);
     for (i=0; i<nd; i++) {
         detectedXY[i]    = workXY[sortorder[i]*2];
         detectedXY[i+nd] = workXY[sortorder[i]*2+1];
     }
-    *n = nc;    
+    *n = nc;
     *resultcode = 0;
     PutRNGstate();
 }
@@ -2227,6 +2285,7 @@ void trappingsignal (
     double *beta1,     /* Parameter : slope */
     double *sdS,       /* Parameter : error sd */
     double *cut,       /* detection threshold on transformed scale */
+    double *sdM,       /* movement between occasions */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
     int    *N,         /* number of animals */
@@ -2236,7 +2295,7 @@ void trappingsignal (
     int    *fn,        /* code 10 = signal strength, 11 = signal strength with sph spread */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
-    double *signal,    /* signal strength, one per detection */  
+    double *signal,    /* signal strength, one per detection */
     int    *value,     /* return value matrix of trap locations n x s */
     int    *resultcode
 )
@@ -2252,33 +2311,45 @@ void trappingsignal (
     double *worksignal;
     int    *sortorder;
     double *sortkey;
+    double animalss [*N*2];
 
-    *resultcode = 1;          
-    GetRNGstate();   
+    *resultcode = 1;
+    GetRNGstate();
 
     maxdet = *N * *ss * *kk;
     worksignal = (double*) R_alloc(maxdet, sizeof(double));
     sortorder = (int*) R_alloc(maxdet, sizeof(int));
     sortkey = (double*) R_alloc(maxdet, sizeof(double));
 
+    for (i=0; i<*N; i++) {
+        animalss[i] = animals[i];
+        animalss[*N+i] = animals[*N+i];
+    }
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
+            if (*sdM > fuzz) {
+                animalss[i] = animals[i] +  norm_rand() * *sdM;
+                animalss[*N+i] = animals[*N+i] + norm_rand() * *sdM;
+            }
+            else {
+            }
             for (k=0; k<*kk; k++) {
-                if (used[s * *kk + k]) {   
-                    if (*fn == 10)                     
-                        mu  = mufn (i, k, beta0[s], beta1[s], animals, traps, *N, *kk);
+                if (used[s * *kk + k]) {
+                    if (*fn == 10)
+                        mu  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk);
                     else
-                        mu  = mufnsph (i, k, beta0[s], beta1[s], animals, traps, *N, *kk);
+                        mu  = mufnsph (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk);
                     signalvalue = norm_rand() * sdS[s] + mu;
-                    if (signalvalue > *cut) {                  
+                    if (signalvalue > *cut) {
                         if (caught[i]==0) {              /* first capture of this animal */
-                            nc++; 
+                            nc++;
                             caught[i] = nc;
                             for (j=0; j<*ss; j++)
                                 for (l=0; l<*kk; l++)
                                     value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                        } 
+                        }
                         nd++;
                         if (nd >= maxdet) {
                             *resultcode = 2;
@@ -2287,17 +2358,17 @@ void trappingsignal (
                         value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
                         worksignal[nd-1] = signalvalue;
                         sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
-                    } 
+                    }
                 }
             }
-        }     
+        }
     }
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         sortorder[i] = i;
     if (nd>0) rsort_with_index (sortkey, sortorder, nd);
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         signal[i]   = worksignal[sortorder[i]];
-    *n = nc; 
+    *n = nc;
     *resultcode = 0;
     PutRNGstate();
 }
@@ -2314,9 +2385,10 @@ void trappingtimes (
     double *traps,     /* x,y locations of traps (first x, then y)  */
     int    *used,      /* ss x kk array of 0/1 codes for usage */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,        /* truncation radius */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
-    double *times,     /* time of detection within occasion */  
+    double *times,     /* time of detection within occasion */
     int    *value,     /* return value matrix of trap locations n x s */
     int    *resultcode
 )
@@ -2331,8 +2403,8 @@ void trappingtimes (
     int    *sortorder;
     double *sortkey;
 
-    *resultcode = 1;          
-    GetRNGstate();   
+    *resultcode = 1;
+    GetRNGstate();
     maxdet = *N * *ss * *kk * 100;
     work = (double*) R_alloc(maxdet, sizeof(double));
     sortorder = (int*) R_alloc(maxdet, sizeof(int));
@@ -2341,21 +2413,21 @@ void trappingtimes (
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             for (k=0; k<*kk; k++) {
-                if (used[s * *kk + k]) {                       
+                if (used[s * *kk + k]) {
                     timevalue = 0;
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0);
+                    lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
                     if (lambda>0) {
                         while (timevalue < 1) {
                             timevalue += rexp(1/lambda);
-                            if (timevalue < 1) {                  
+                            if (timevalue < 1) {
                                 if (caught[i]==0) {                 /* first capture of this animal */
-                                    nc++; 
+                                    nc++;
                                     caught[i] = nc;
                                     for (j=0; j<*ss; j++)
                                       for (l=0; l<*kk; l++)
                                         value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                                } 
+                                }
                                 nd++;
                                 if (nd >= maxdet) {
                                     *resultcode = 2;
@@ -2369,14 +2441,14 @@ void trappingtimes (
                     }
                 }
             }
-        }     
+        }
     }
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         sortorder[i] = i;
     if (nd>0) rsort_with_index (sortkey, sortorder, nd);
-    for (i=0; i<nd; i++) 
+    for (i=0; i<nd; i++)
         times[i]   = work[sortorder[i]];
-    *n = nc; 
+    *n = nc;
     *resultcode = 0;
     PutRNGstate();
 }
@@ -2393,12 +2465,13 @@ void trappingmulti (
     double *traps,      /* x,y locations of traps (first x, then y)  */
     int    *used,       /* ss x kk array of 0/1 codes for usage */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,         /* truncation radius */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
     int    *resultcode  /* 0 for successful completion */
 )
-  
+
 {
     double *h;
     double hsum[*N];
@@ -2408,13 +2481,13 @@ void trappingmulti (
     int    nc;
     double d2val;
     double p;
-  
+
     *resultcode = 1;
     cump[0] = 0;
     nc = 0;
     GetRNGstate();
     h = (double *) R_alloc(*N * *kk, sizeof(double));
- 
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
@@ -2422,7 +2495,7 @@ void trappingmulti (
             for (k=0; k<*kk; k++)
             {
                 d2val = d2(i,k, animals, traps, *N, *kk);
-                p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0);  
+                p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
                 p = p * used[s * *kk + k];           /* zero if not used 2009 11 09 */
                 h[k * *N + i] = -log(1 - p);
                 hsum[i] += h[k * *N + i];
@@ -2436,17 +2509,17 @@ void trappingmulti (
             {
                if (caught[i]==0)           /* first capture of this animal */
                {
-                   nc++; 
+                   nc++;
                    caught[i] = nc;
-                   for (j=0; j<*ss; j++) 
+                   for (j=0; j<*ss; j++)
                        value[*ss * (nc-1) + j] = 0;
-               } 
+               }
                runif = Random();
                k = 0;
                while ((runif > cump[k]) & (k<*kk)) k++;  /* pick a trap */
                value[*ss * (caught[i]-1) + s] = k;
             }
-        } 
+        }
     }
     *n = nc;
     *resultcode = 0;
@@ -2466,6 +2539,7 @@ void trappingsingle (
     double *traps,     /* x,y locations of traps (first x, then y)  */
     int    *used,      /* ss x kk array of 0/1 codes for usage */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform */
+    double *w2,        /* truncation radius */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     int    *value,     /* return value matrix of trap locations n x s */
@@ -2481,8 +2555,8 @@ void trappingsingle (
     int ntraps;           /* temporary */
     int occupied[*kk];    /* today */
     int intrap[*N];       /* today   */
-  
-    struct  trap_animal *tran;  
+
+    struct  trap_animal *tran;
     double event_time;
     int anum;
     int tnum;
@@ -2509,7 +2583,7 @@ void trappingsingle (
         for (k=0; k<*kk; k++)  /* traps */
         if (used[s * *kk + k]) {
             d2val = d2(i,k, animals, traps, *N, *kk);
-            p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0);         
+            p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
             event_time = randomtime(p);
             if (event_time <= 1) {
                 tran[tr_an_indx].time   = event_time;
@@ -2524,14 +2598,14 @@ void trappingsingle (
         /* make captures */
         while ((nextcombo < tr_an_indx) & (nanimals>0) & (ntraps>0)) {
             finished = 0;
-            OK       = 0; 
+            OK       = 0;
             while ((1-finished)*(1-OK) > 0) {    /* until finished or OK */
                 if (nextcombo >= (tr_an_indx)) finished = 1;  /* no more to process */
                 else {
                     anum = tran[nextcombo].animal;
                     tnum = tran[nextcombo].trap;
                     OK = (1-occupied[tnum]) * (1-intrap[anum]); /* not occupied and not intrap */
-                    nextcombo++;       
+                    nextcombo++;
                 }
             }
             if (finished==0) {                   /* Record this capture */
@@ -2541,16 +2615,16 @@ void trappingsingle (
                   ntraps--;
             }
         }
-        for (i=0; i<*N; i++) 
+        for (i=0; i<*N; i++)
         if (intrap[i]>0) {
             if (caught[i]==0) {                  /* first capture of this animal */
-               nc++; 
+               nc++;
                caught[i] = nc;                   /* nc-th animal to be captured */
-               for (j=0; j<*ss; j++) 
+               for (j=0; j<*ss; j++)
                    value[*ss * (nc-1) + j] = 0;
-             } 
+             }
              value[*ss * (caught[i]-1) + s] = intrap[i];  /* trap = k+1 */
-        } 
+        }
     }
     *n = nc;
     *resultcode = 0;
@@ -2559,7 +2633,7 @@ void trappingsingle (
 }
 /*==============================================================================*/
 
-int rdiscrete (int n, double pmix[]) 
+int rdiscrete (int n, double pmix[])
 /* return random discrete observation from distribution in pmix */
 {
     double *cumpmix;
@@ -2568,7 +2642,7 @@ int rdiscrete (int n, double pmix[])
     if (n<1) error ("invalid n in rdiscrete");
     if (n==1) return (0);
     else {
-        cumpmix = (double*) R_alloc(n+1, sizeof(double));   
+        cumpmix = (double*) R_alloc(n+1, sizeof(double));
         cumpmix[0] = 0;
         for (x=0; x<n; x++) {
             cumpmix[x+1] = cumpmix[x] + pmix[x];
@@ -2580,7 +2654,7 @@ int rdiscrete (int n, double pmix[])
 }
 
 void simsecr (
-    int    *detect,     /* detector 0 multi, 1 proximity, 2 single, 3 count, 4 area ??? */ 
+    int    *detect,     /* detector 0 multi, 1 proximity, 2 single, 3 count, 4 area ??? */
     double *gsb0val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     double *gsb1val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before] */
     int    *cc0,        /* number of g0/sigma/b combinations for naive animals */
@@ -2636,17 +2710,17 @@ void simsecr (
         3  binary quadrat search
         4  count  quadrat search
         5  signal detectors
-        6  polygon detectors 
-        7  transect detectors 
+        6  polygon detectors
+        7  transect detectors
     */
     /*========================================================*/
     /* 'single-catch only' declarations */
-    int    tr_an_indx = 0;  
-    int    nanimals;        
-    int    ntraps;          
-    int    *occupied = NULL;   
-    int    *intrap = NULL;      
-    struct trap_animal *tran = NULL;  
+    int    tr_an_indx = 0;
+    int    nanimals;
+    int    ntraps;
+    int    *occupied = NULL;
+    int    *intrap = NULL;
+    struct trap_animal *tran = NULL;
     double event_time;
     int    anum;
     int    tnum;
@@ -2662,12 +2736,12 @@ void simsecr (
 
     /*========================================================*/
     /* 'polygon & transect only' declarations */
-    int    nd = 0; 
-    int    cumk[maxnpoly+1]; 
+    int    nd = 0;
+    int    cumk[maxnpoly+1];
     int    sumk;               /* total number of vertices */
     int    g=0;
     int    *gotcha;
-    double xy[2]; 
+    double xy[2];
     int    n1,n2,t;
     double par[3];
     int    np = 1;             /* n points each call of gxy */
@@ -2703,24 +2777,24 @@ void simsecr (
     if (*detect == -1) {                                   /* single-catch only */
         occupied = (int*) R_alloc(*kk, sizeof(int));
         intrap = (int*) R_alloc(*N, sizeof(int));
-        tran = (struct trap_animal *) R_alloc(*N * *kk,  
+        tran = (struct trap_animal *) R_alloc(*N * *kk,
             sizeof(struct trap_animal));
     }
-    if (*detect == 0) {                                    /* multi-catch only */    
-        h = (double *) R_alloc(*N * *kk, sizeof(double));  
+    if (*detect == 0) {                                    /* multi-catch only */
+        h = (double *) R_alloc(*N * *kk, sizeof(double));
         hsum = (double *) R_alloc(*N, sizeof(double));
         cump = (double *) R_alloc(*kk+1, sizeof(double));
-        cump[0] = 0;                                     
+        cump[0] = 0;
     }
     if (*detect == 5) {                                    /* signal only */
-        maxdet = *N * *ss * *kk;                           
+        maxdet = *N * *ss * *kk;
         if (!((*fn == 10) | (*fn == 11)))
             error ("simsecr not implemented for this combination of detector & detectfn");
 
     }
     if ((*detect == 6) | (*detect == 7)) {                 /* polygon or transect only */
         cumk[0] = 0;
-        for (i=0; i<maxnpoly; i++) {                       /* maxnpoly much larger than npoly */ 
+        for (i=0; i<maxnpoly; i++) {                       /* maxnpoly much larger than npoly */
             if (kk[i]<=0) break;
             cumk[i+1] = cumk[i] + kk[i];
             nk++;
@@ -2741,10 +2815,10 @@ void simsecr (
         for (k=0; k<nk; k++) {
             cumd[cumk[k]] = 0;
             for (i=cumk[k]; i<(cumk[k+1]-1); i++) {
-                cumd[i+1] = cumd[i] + distance(line[i], line[i+1]);  
+                cumd[i+1] = cumd[i] + distance(line[i], line[i+1]);
             }
         }
-    }    
+    }
     if ((*detect==5) | (*detect==6) | (*detect==7)) {
         work = (double*) R_alloc(maxdet*2, sizeof(double));   /* twice size needed for signal */
         sortorder = (int*) R_alloc(maxdet, sizeof(int));
@@ -2754,17 +2828,17 @@ void simsecr (
 
     /* may be better to pass pmix */
     gpar = 2;
-    if ((*fn == 1) | (*fn == 3) | (*fn == 5) | (*fn == 10) | (*fn == 11)) gpar ++;
+    if ((*fn == 1) | (*fn == 3) | (*fn == 5)| (*fn == 6) | (*fn == 10) | (*fn == 11)) gpar ++;
     if (*nmix>1) gpar++;
 
 
 
     if (*nmix>1) {
-        if (*nmix>2) 
+        if (*nmix>2)
             error("simsecr nmix>2 not implemented");
         for (i=0; i<*nmix; i++) {
             wxi = i4(0,0,0,i,*N,*ss,nk);
-            c = gsb0[wxi] - 1; 
+            c = gsb0[wxi] - 1;
             pmix[i] = gsb0val[*cc0 * (gpar-1) + c];    /* assuming 4-column gsb */
         }
         for (i=0; i<*N; i++) {
@@ -2785,7 +2859,7 @@ void simsecr (
             if ((s>0) & *Markov) {
                 caughtbefore[i] = 0;
                 for (k=0;k<nk;k++)
-                    if (value[i3(s-1, k, i, *ss, nk)]) 
+                    if (value[i3(s-1, k, i, *ss, nk)])
                         caughtbefore[i] = caught[i];
             }
             else
@@ -2794,7 +2868,7 @@ void simsecr (
 
         /* ------------------ */
         /* single-catch traps */
-        if (*detect == -1) {  
+        if (*detect == -1) {
             /* initialise day */
             tr_an_indx = 0;
             nanimals = *N;
@@ -2814,14 +2888,14 @@ void simsecr (
                             sigma = gsb0val[*cc0 + c];
                             if ((*fn==1) | (*fn == 5)) z = gsb0val[2* *cc0 + c];
                         }
-                        else {                 
+                        else {
                             c = gsb1[wxi]-1;
                             g0 = gsb1val[c];
                             sigma = gsb1val[*cc1 + c];
                             if ((*fn==1) | (*fn == 5)) z = gsb1val[2* *cc1 + c];
-                        }                       
+                        }
                         d2val = d2(i,k, animals, traps, *N, nk);
-                        p = pfn(*fn, d2val, g0, sigma, z, 0);         
+                        p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);   /* effectively infinite w2 */
                         event_time = randomtime(p);
                         if (event_time <= 1) {
                             tran[tr_an_indx].time   = event_time;
@@ -2834,21 +2908,21 @@ void simsecr (
             }
             /* end of make tran */
 
-            if (tr_an_indx > 1) probsort (tr_an_indx, tran);        
+            if (tr_an_indx > 1) probsort (tr_an_indx, tran);
 
             while ((nextcombo < tr_an_indx) & (nanimals>0) & (ntraps>0)) {
                     finished = 0;
-                OK       = 0; 
+                OK       = 0;
                     while ((1-finished)*(1-OK) > 0) {      /* until finished or OK */
-                    if (nextcombo >= (tr_an_indx)) 
+                    if (nextcombo >= (tr_an_indx))
                             finished = 1;                  /* no more to process */
                     else {
                             anum = tran[nextcombo].animal;
                         tnum = tran[nextcombo].trap;
                             OK = (1-occupied[tnum]) * (1-intrap[anum]); /* not occupied and not intrap */
-                        nextcombo++;       
+                        nextcombo++;
                         }
-                }             
+                }
                     if (finished==0) {
                        /* Record this capture */
                           occupied[tnum] = 1;
@@ -2856,23 +2930,23 @@ void simsecr (
                           nanimals--;
                       ntraps--;
                     }
-            }    
+            }
                 for (i=0; i<*N; i++) {
                 if (intrap[i]>0) {
                     if (caught[i]==0) {                    /* first capture of this animal */
-                       nc++; 
+                       nc++;
                        caught[i] = nc;                     /* nc-th animal to be captured */
-                       for (j=0; j<*ss; j++) 
+                       for (j=0; j<*ss; j++)
                            value[*ss * (nc-1) + j] = 0;
-                    } 
+                    }
                     value[*ss * (caught[i]-1) + s] = intrap[i];  /* trap = k+1 */
-                } 
+                }
             }
         }
 
         /* -------------------------------------------------------------------------- */
         /* multi-catch trap; only one site per occasion (drop last dimension of capt) */
-        else if (*detect == 0) {  
+        else if (*detect == 0) {
             for (i=0; i<*N; i++) {
                 hsum[i] = 0;
                 for (k=0; k<nk; k++) {
@@ -2883,14 +2957,14 @@ void simsecr (
                         sigma = gsb0val[*cc0 + c];
                         if ((*fn==1) | (*fn == 5)) z = gsb0val[2* *cc0 + c];
                     }
-                    else {                 
+                    else {
                         c = gsb1[wxi]-1;
                         g0 = gsb1val[c];
                         sigma = gsb1val[*cc1 + c];
                         if ((*fn==1) | (*fn == 5)) z = gsb1val[2* *cc1 + c];
                     }
                     d2val = d2(i,k, animals, traps, *N, nk);
-                    p = pfn(*fn, d2val, g0, sigma, z, 0);         
+                    p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
                     p = p * used[s * nk + k];           /* zero if not used */
                     h[k * *N + i] = -log(1 - p);
                     hsum[i] += h[k * *N + i];
@@ -2898,14 +2972,14 @@ void simsecr (
 
                 for (k=0; k<nk; k++) {
                     cump[k+1] = cump[k] + h[k * *N + i]/hsum[i];
-                }                 
+                }
                 if (Random() < (1-exp(-hsum[i]))) {
                     if (caught[i]==0)  {        /* first capture of this animal */
-                        nc++; 
+                        nc++;
                         caught[i] = nc;
                         for (j=0; j<*ss; j++)
                             value[*ss * (nc-1) + j] = 0;
-                    } 
+                    }
                     /* find trap with probability proportional to p
                        searches cumulative distribution of p  */
                     runif = Random();
@@ -2929,18 +3003,18 @@ void simsecr (
                             sigma = gsb0val[*cc0 + c];
                             if ((*fn==1) | (*fn == 5)) z = gsb0val[2* *cc0 + c];
                         }
-                        else {                 
+                        else {
                             c = gsb1[wxi]-1;
                             g0 = gsb1val[c];
                             sigma = gsb1val[*cc1 + c];
                             if ((*fn==1) | (*fn == 5)) z = gsb1val[2* *cc1 + c];
                         }
-          
+
                         d2val = d2(i,k, animals, traps, *N, nk);
-                        p = pfn(*fn, d2val, g0, sigma, z, 0);         
-    
-                        if (p < -0.1) { PutRNGstate(); return; }   /* error */   
-    
+                        p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
+
+                        if (p < -0.1) { PutRNGstate(); return; }   /* error */
+
                         if (p>0) {
                             if (*detect == 1) {
                                 count = Random() < p;              /* binary proximity */
@@ -2949,36 +3023,36 @@ void simsecr (
                                 if (*binomN == 0)
                                     count = rpois(p);
                                 else if (*binomN == 1)
-                                    count = Random() < p;              
+                                    count = Random() < p;
                                 else if (*binomN < 0) {
                                     /* prob = size / (size + mu) */
                                     *binomN = abs(*binomN);
-                                    count = rnbinom(*binomN, *binomN / (*binomN+p));   
+                                    count = rnbinom(*binomN, *binomN / (*binomN+p));
                                 }
                                 else
-                                    count = rbinom(*binomN, p / *binomN);   
+                                    count = rbinom(*binomN, p / *binomN);
                             }
                             else if (*detect == 3) {               /* quadrat binary */
                                 count = Random() < 1-(exp(-p));    /* Poisson Pr(nonzero) */
                             }
                             else if (*detect == 4) {               /* quadrat count */
                                 count = rpois(p);
-                            }         
+                            }
                             if (count>0) {
                                 if (caught[i]==0) {                /* first capture of this animal */
-                                    nc++; 
+                                    nc++;
                                     caught[i] = nc;
                                     for (j=0; j<*ss; j++)
                                       for (l=0; l<nk; l++)
                                         value[*ss * ((nc-1) * nk + l) + j] = 0;
-                                } 
+                                }
                                 value[*ss * ((caught[i]-1) * nk + k) + s] = count;
                             }
                         }
                     }
                 }
-            } 
-        }    
+            }
+        }
 
         /* -------------------------------------------------------------------------------- */
         /* polygon detectors  */
@@ -2990,14 +3064,14 @@ void simsecr (
                     c = gsb0[wxi]-1;
                     g0 = gsb0val[c];
                     sigma = gsb0val[*cc0 + c];
-                    if ((*fn==1) | (*fn == 5)) 
+                    if ((*fn==1) | (*fn == 5))
                         z = gsb0val[2* *cc0 + c];
                 }
-                else {                 
+                else {
                     c = gsb1[wxi]-1;
                     g0 = gsb1val[c];
                     sigma = gsb1val[*cc1 + c];
-                    if ((*fn==1) | (*fn == 5)) 
+                    if ((*fn==1) | (*fn == 5))
                         z = gsb1val[2* *cc1 + c];
                 }
                 count = rpois(g0);                              /* number of cues */
@@ -3005,21 +3079,21 @@ void simsecr (
                 par[0] = 1;
                 par[1] = sigma;
                 par[2] = z;
-                for (j=0; j<count; j++) {             
+                for (j=0; j<count; j++) {
                     gxy (&np, fn, par, &w, xy);                 /* simulate location */
                     xy[0] = xy[0] + animals[i];
                     xy[1] = xy[1] + animals[*N + i];
                     for (k=0; k<nk; k++) {                      /* each polygon */
                         if (used[s * nk + k]) {
-                            n1 = cumk[k]; 
+                            n1 = cumk[k];
                             n2 = cumk[k+1]-1;
                             inside(xy, &n1, &n2, &sumk, traps, gotcha);  /* assume closed */
                             if (*gotcha > 0) {
                                 if (caught[i]==0) {             /* first capture of this animal */
-                                    nc++; 
+                                    nc++;
                                     caught[i] = nc;
                                     for (t=0; t<*ss; t++)
-                                        for (l=0; l<nk; l++)                            
+                                        for (l=0; l<nk; l++)
                                             value[*ss * ((nc-1) * nk + l) + t] = 0;
                                 }
                                 nd++;
@@ -3037,7 +3111,7 @@ void simsecr (
                 }
             }
         }
-    
+
         /* -------------------------------------------------------------------------------- */
         /* transect detectors  */
         else if (*detect == 7) {
@@ -3054,72 +3128,72 @@ void simsecr (
                             if ((*fn==1) | (*fn == 5))        /* z */
                                 par[2] = gsb0val[2* *cc0 + c];
                         }
-                        else {                 
+                        else {
                             c = gsb1[wxi]-1;
                             par[0] = gsb1val[c];              /* naive lambda(0) */
                             par[1] = gsb1val[*cc1 + c];       /* naive sigma */
                             if ((*fn==1) | (*fn == 5))        /* naive z */
                                 par[2] = gsb1val[2* *cc1 + c];
                         }
-                        n1 = cumk[k]; 
+                        n1 = cumk[k];
                         n2 = cumk[k+1]-1;
                         lambdak = integral1D (*fn, i, 0, par, 1, traps, animals, n1, n2, sumk, *N);
-                        count = rpois(lambdak);               /* number of detections on this transect */               
+                        count = rpois(lambdak);               /* number of detections on this transect */
                         maxg = 0;
                         if (count>0) {                        /* find maximum - approximate */
                             for (l=0; l<=100; l++) {
-                                lx = cumd[n2] * l/100; 
+                                lx = cumd[n2] * l/100;
                                 xyp = getxy (lx, cumd, line, sumk, n1);
                                 grx = gr (fn, par, xyp, animal);
                                 if (R_FINITE(grx))
-                                    maxg = fmax2(maxg, grx); 
+                                    maxg = fmax2(maxg, grx);
                             }
                             for (l=n1; l<=n2; l++) {
                                 xyp = line[l];
                                 grx = gr (fn, par, xyp, animal);
                                 if (R_FINITE(grx))
-                                    maxg = fmax2(maxg, grx); 
+                                    maxg = fmax2(maxg, grx);
                             }
                             maxg= 1.2 * maxg;                 /* safety margin */
-                            if (maxg<=0) 
+                            if (maxg<=0)
                                 Rprintf("maxg error in simsecr\n"); /* not found */
 
-                        } 
-                        for (j=0; j<count; j++) {             
+                        }
+                        for (j=0; j<count; j++) {
                             *gotcha = 0;
                             l = 0;
-                            while (*gotcha == 0) { 
+                            while (*gotcha == 0) {
                                 lx = Random() * cumd[n2];     /* simulate location */
                                 xyp = getxy (lx, cumd, line, sumk, n1);
                                 grx = gr (fn, par, xyp, animal);
                                 if (Random() < (grx/maxg))   /* rejection sampling */
-                                    *gotcha = 1;       
+                                    *gotcha = 1;
                                 l++;
-                                if (l % 10000 == 0) 
+                                if (l % 10000 == 0)
                                     R_CheckUserInterrupt();
                             }
                             if (caught[i]==0) {               /* first capture of this animal */
-                                nc++; 
+                                nc++;
                                 caught[i] = nc;
                                 for (t=0; t<*ss; t++)
-                                    for (l=0; l<nk; l++)                            
+                                    for (l=0; l<nk; l++)
                                         value[*ss * ((nc-1) * nk + l) + t] = 0;
                             }
                             nd++;
                             if (nd >= maxdet) {
                                 *resultcode = 2;  /* error */
-                                return;  
+                                return;
                             }
                             value[*ss * ((caught[i]-1) * nk + k) + s]++;
                             work[(nd-1)*2] = xyp.x;
                             work[(nd-1)*2+1] = xyp.y;
                             sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
                         }
-                    } 
+                    }
                 }                                             /* end loop over transects */
             }                                                 /* end loop over animals */
         }
-   
+
         /* ------------------------ */
         /* signal strength detector */
         else if (*detect == 5) {
@@ -3133,17 +3207,17 @@ void simsecr (
                         sdS   = gsb0val[2* *cc0 + c];
                         if (*fn == 10)
                             mu  = mufn (i, k, beta0, beta1, animals, traps, *N, nk);
-                        else 
+                        else
                             mu  = mufnsph (i, k, beta0, beta1, animals, traps, *N, nk);
                         signalvalue = norm_rand() * sdS + mu;
                         if (signalvalue > *cut) {
                             if (caught[i]==0) {                /* first capture of this animal */
-                                nc++; 
+                                nc++;
                                 caught[i] = nc;
                                 for (j=0; j<*ss; j++)
                                   for (l=0; l<nk; l++)
                                     value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                            } 
+                            }
                             nd++;
                             value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
                             work[nd-1] = signalvalue;
@@ -3152,13 +3226,13 @@ void simsecr (
                     }
                 }
             }
-        } 
+        }
     }   /* loop over s */
 
     if ((*detect==5) | (*detect==6) | (*detect==7)) {
         for (i=0; i<nd; i++) sortorder[i] = i;
         if (nd>0) rsort_with_index (sortkey, sortorder, nd);
-        if (*detect==5) 
+        if (*detect==5)
             for (i=0; i<nd; i++) signal[i] = work[sortorder[i]];
         else {
             for (i=0; i<nd; i++) {
@@ -3189,44 +3263,45 @@ void naived (
   double *value    /* return value */
 )
 {
-  double truncate2 = (2.45 * *sigma) * (2.45 * *sigma);
-  double sump  = 0;
-  double sumdp = 0;
-  double x,y;
-  double dij, d21, d22, p1p2;
-  int i,j,n;
+    double truncate2 = (2.45 * *sigma) * (2.45 * *sigma);
+    double sump  = 0;
+    double sumdp = 0;
+    double x,y;
+    double dij, d21, d22, p1p2;
+    int i,j,n;
 
-  for (n=0; n<*nc; n++)
-  {
-    x = animals[n];
-    y = animals[n + *nc];
+    if (*fn != 0)
+    error ("invalid detection function in naived");
 
-    for (i=0; i<*kk; i++)
-      for (j=0; j<(i-1); j++)
-        {
+    for (n=0; n<*nc; n++)
+    {
+        x = animals[n];
+        y = animals[n + *nc];
 
-        dij = (traps[i] - traps[j]) * (traps[i] - traps[j]) + 
-                (traps[i+*kk] - traps[j+*kk]) * (traps[i+*kk] - traps[j+*kk]);
-        d21 = (traps[i] - x) * (traps[i] - x) + (traps[i+*kk] - y) * (traps[i+*kk] - y);
-        d22 = (traps[j] - x) * (traps[j] - x) + (traps[j+*kk] - y) * (traps[j+*kk] - y);
+        for (i=0; i<*kk; i++)
+            for (j=0; j<(i-1); j++) {
 
-        if ((d21<=truncate2) & (d22<=truncate2)) 
-           p1p2 = exp(-(d21+d22) / 2 / *sigma / *sigma);
-        else
-           p1p2 = 0;
+                dij = (traps[i] - traps[j]) * (traps[i] - traps[j]) +
+                        (traps[i+*kk] - traps[j+*kk]) * (traps[i+*kk] - traps[j+*kk]);
+                d21 = (traps[i] - x) * (traps[i] - x) + (traps[i+*kk] - y) * (traps[i+*kk] - y);
+                d22 = (traps[j] - x) * (traps[j] - x) + (traps[j+*kk] - y) * (traps[j+*kk] - y);
 
-        sump  += p1p2;
-        sumdp += p1p2 * sqrt(dij);
-  
+                if ((d21<=truncate2) & (d22<=truncate2))
+                   p1p2 = exp(-(d21+d22) / 2 / *sigma / *sigma);
+                else
+                   p1p2 = 0;
+
+                sump  += p1p2;
+                sumdp += p1p2 * sqrt(dij);
+
+            }
+        for (i=0; i<*kk; i++) {  /* diagonal */
+            d21 = (traps[i] - x) * (traps[i] - x) + (traps[i+*kk] - y) * (traps[i+*kk] - y);
+            if (d21<=truncate2)                                     /* d21=d22 */
+                sump += exp(-2*d21 /2 / *sigma / *sigma)/2;
         }
-    for (i=0; i<*kk; i++)  /* diagonal */
-      {
-        d21 = (traps[i] - x) * (traps[i] - x) + (traps[i+*kk] - y) * (traps[i+*kk] - y);
-        if (d21<=truncate2)                                     /* d21=d22 */
-          sump += exp(-2*d21 /2 / *sigma / *sigma)/2;
-      }
-  }
-  *value = sumdp/sump;
+    }
+    *value = sumdp/sump;
 }
 /*==============================================================================*/
 
@@ -3247,13 +3322,17 @@ void naiveRPSV (
     double pk;
     double pdot;
     double sumd2k;
-    double sumpk;  
+    double sumpk;
     double sump  = 0;
     double sumpRPSV = 0;
+
+    if (*fn != 0)
+    error ("invalid detection function in naiveRPSV");
+
     for (n=0; n<*nc; n++)
     {
         x = animals[n];
-        y = animals[n + *nc];  
+        y = animals[n + *nc];
         pdot   = 1;
         sumd2k = 0;
         sumpk  = 0;
@@ -3261,7 +3340,7 @@ void naiveRPSV (
             d2k = (traps[k] - x) * (traps[k] - x) + (traps[k + *kk]-y) * (traps[k + *kk]-y);
             if (d2k <= truncate2)
                 pk = exp(-d2k / 2 / *sigma / *sigma);
-            else 
+            else
                 pk = 0;
             sumd2k += pk * d2k;
             sumpk  += pk;
@@ -3269,14 +3348,14 @@ void naiveRPSV (
         }
         pdot     = 1 - pdot;                  /* overall detection probability (excl g0) */
         sump     += pdot;
-    
+
         if (sumd2k/sumpk > 0)
             sumpRPSV += pdot * sqrt(sumd2k/sumpk);
     }
 
     if (sump > fuzz)
         *value = sumpRPSV/sump;
-    else 
+    else
         *value = -1;
 
 }
@@ -3302,7 +3381,10 @@ void naivecap2 (
     int m,k;
     double nsum = 0;
     double psum = 0;
-  
+
+    if (*fn != 0)
+    error ("invalid detection function in naivecap2");
+
     for (m=0; m<*mm; m++)
     {
         product = 1.0;
@@ -3312,7 +3394,7 @@ void naivecap2 (
             pk = *g0 * expmin(-d2val / 2 / *sigma / *sigma);
             product *= (1 - pk);
             if (*detect == 1) nsum += pk;
-        }      
+        }
         if (*detect == 0) nsum += (1 - product);
         psum += 1 - pow(product, *ss);
     }
@@ -3323,7 +3405,7 @@ void naivecap2 (
 }
 /*==============================================================================*/
 
-void makelookup (   
+void makelookup (
   double *x,            /* input matrix */
   int    *nrow,         /* input */
   int    *ncol,         /* input */
@@ -3340,7 +3422,7 @@ void makelookup (
 */
 
 {
-    int i;    
+    int i;
     int j;
     int k;
     int dupl = 0;
@@ -3353,7 +3435,7 @@ void makelookup (
     /*
         avoid sort for now as it's complex to keep order of first occurrence, not needed
         scan for unique rows of x, copying to y
-        assign unique index to original rows as we go    
+        assign unique index to original rows as we go
     */
 
     for (j=0; j < *ncol; j++) ytemp[j] = x[*nrow * j];    /* first row */
@@ -3365,7 +3447,7 @@ void makelookup (
        for (k=0; k <= *unique; k++) {
            dupl = 1;
            for (j=0; j < *ncol; j++) {
-               if (x[*nrow * j + i] != ytemp[k * *ncol + j]) 
+               if (x[*nrow * j + i] != ytemp[k * *ncol + j])
                {dupl=0; break;}
            }
            if (dupl==1) break;  /* found previous instance */
@@ -3373,7 +3455,7 @@ void makelookup (
        if (dupl==0) { /* add unique row */
            *unique = *unique + 1;
            k = *unique;
-           for (j=0; j< *ncol; j++) ytemp[k * *ncol + j] = x[*nrow * j + i];          
+           for (j=0; j< *ncol; j++) ytemp[k * *ncol + j] = x[*nrow * j + i];
        }
        index[i] = k+1;
     }
@@ -3386,7 +3468,7 @@ void makelookup (
 }
 /*==============================================================================*/
 
-void nearest (   
+void nearest (
   double *xy,       /* input point */
   int    *ntrap,    /* input */
   double *traps,    /* input */
@@ -3397,23 +3479,23 @@ void nearest (
     int id=-1;
     double d2;
     *d = 1e100;
-    for (i=0; i<*ntrap; i++) 
+    for (i=0; i<*ntrap; i++)
     {
         d2 = (traps[i] - xy[0]) * (traps[i] - xy[0]) +
              (traps[i + *ntrap] - xy[1]) * (traps[i + *ntrap] - xy[1]);
         if (d2 < *d) { *d = d2; id = i; }
     }
-    *d = sqrt(*d);  
+    *d = sqrt(*d);
     *p = id+1;
 }
 /*==============================================================================*/
 
 void inside (
-    double *xy, 
-    int    *n1, 
-    int    *n2, 
+    double *xy,
+    int    *n1,
+    int    *n2,
     int    *npts,
-    double *poly, 
+    double *poly,
     int    *in)
 {
 /*
@@ -3421,7 +3503,7 @@ void inside (
     Based on contribution on s-news list by Peter Perkins 23/7/96
     We assume poly is closed, and in col-major order (x's then y's)
 */
-  
+
     double theta = 0;
     double cutoff = 1e-6;
     int k;
@@ -3432,18 +3514,18 @@ void inside (
 
     ns = *n2 - *n1 + 1;   /* number of selected points */
     temp = (double *) R_alloc((ns+1) * 2, sizeof (double));
-    
+
     /* get & translate to coords centered at each test point */
-    for (k=0; k < ns; k++) 
+    for (k=0; k < ns; k++)
     {
         temp[k]     = poly[k + *n1] - xy[0];           /* x */
         temp[k + ns] = poly[k + *n1 + *npts] - xy[1];    /* y */
     }
-  
-    for (k=0; k < (ns-1); k++) 
+
+    for (k=0; k < (ns-1); k++)
     {
         N = temp[k] * temp[k+1 + ns] - temp[k + ns] * temp[k+1];
-        d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];  
+        d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];
         if (abs(d)>0) { N = N/abs(d);  d = d/abs(d); }
         theta += atan2(N, d);
     }
@@ -3456,11 +3538,11 @@ void inside (
 /*==============================================================================*/
 
 void ontransect (
-    double *xy, 
-    int    *n1, 
-    int    *n2, 
+    double *xy,
+    int    *n1,
+    int    *n2,
     int    *npts,
-    double *transect, 
+    double *transect,
     double *tol,
     int    *on)
 {
@@ -3468,7 +3550,7 @@ void ontransect (
     Is point xy on transect?
     We assume transect coordinates are in col-major order (x's then y's)
     http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/ 29/11/09
-*/ 
+*/
     int k;
     double r;
     double u;
@@ -3479,14 +3561,14 @@ void ontransect (
     p3.x = xy[0];
     p3.y = xy[1];
 
-    for (k= *n1; k < *n2; k++) 
-    {        
+    for (k= *n1; k < *n2; k++)
+    {
         p1.x = transect[k];
         p1.y = transect[k+*npts];
         p2.x = transect[k+1];
         p2.y = transect[k+1+*npts];
-        if (distance(p1,p2) > 0) { 
-            u = ((p3.x-p1.x) * (p2.x-p1.x) + (p3.y-p1.y) * (p2.y-p1.y)) / 
+        if (distance(p1,p2) > 0) {
+            u = ((p3.x-p1.x) * (p2.x-p1.x) + (p3.y-p1.y) * (p2.y-p1.y)) /
                 ((p2.x-p1.x) * (p2.x-p1.x) + (p2.y-p1.y) * (p2.y-p1.y));
             if ((u>=0) && (u<=1)) {
                 p.x = p1.x + u * (p2.x-p1.x);

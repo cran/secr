@@ -1,8 +1,10 @@
 \name{ovensong}
+\docType{data}
+
 \alias{ovensong}
 \alias{signalCH}
-
-\docType{data}
+\alias{ovensong.model.1}
+\alias{ovensong.model.2}
 
 \title{ Ovenbird Acoustic Dataset }
 
@@ -61,6 +63,17 @@ the default maximization method in \code{secr.fit}, is particularly
 inclined to settle on a local maximum; in the example below we use a set
 of starting values that have been found by trial and error to yield the
 global maximum.
+
+Two fitted models are included (ovensong.model.1 and
+ovensong.model.2). See Examples for details.
+
+
+\tabular{ll}{
+  Object \tab Description \cr
+  signalCH \tab capthist object \cr
+  ovensong.model.1 \tab fitted secr model -- spherical spreading \cr
+  ovensong.model.2 \tab fitted secr model -- no spherical spreading \cr
+}
 
 }
 
