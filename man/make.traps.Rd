@@ -78,6 +78,9 @@ straightline distance between adjacent detectors. Traps are numbered
 from the trap due east of the origin, either clockwise or anticlockwise
 as set by \code{IDclockwise}. 
 
+Specialised functions for arrays using a triangular grid are described
+separately (\code{\link{make.tri}},  \code{\link{clip.hex}}).
+
 Polygon vertices may be specified with \code{x} and \code{y} in the case
 of a single polygon, or as \code{polylist} for one or more polygons. Each
 component of \code{polylist} is a dataframe with columns 'x' and 'y'.
@@ -114,7 +117,9 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
-\seealso{ \code{\link{read.traps}},\code{\link{detector}}, \code{\link{print.traps}}, \code{\link{plot.traps}}, \code{\link{traps}} }
+\seealso{ \code{\link{read.traps}},\code{\link{detector}},
+  \code{\link{print.traps}}, \code{\link{plot.traps}},
+  \code{\link{traps}}, \code{\link{make.tri}} }
 
 \note{ Several methods are provided for manipulating detector arrays - see \code{\link{traps}}.
 

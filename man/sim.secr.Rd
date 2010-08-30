@@ -67,7 +67,7 @@ the habitat mask(s) in \code{object}.  Group subpopulations are combined
 using \code{\link{rbind.popn}} within each session; information to
 reconstruct groups is retained in the individual-level factor
 covariate(s) of the resulting \code{popn} object (corresponding to
-\code{object\$groups}).  Each population is then sampled using the fitted
+\code{object$groups}).  Each population is then sampled using the fitted
 detection model and detector (trap) array(s) in \code{object}.
 
 The random number seed is managed as in \code{simulate.lm}.
@@ -95,7 +95,7 @@ as its only argument.
 
 \code{tracelevel=0} suppresses most messages; \code{tracelevel=1} gives a
 terse message at the start of each fit; \code{tracelevel=2} also sets
-'details\$trace = TRUE' for \code{secr.fit}, causing each likelihood
+'details$trace = TRUE' for \code{secr.fit}, causing each likelihood
 evaluation to be reported.
 
 It is OK (and faster) to use \code{hessian='none'} unless

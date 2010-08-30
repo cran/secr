@@ -2,11 +2,12 @@
 ## package 'secr'
 ## ip.secr.R
 ## last changed 2009 09 12, 2009 09 14
+## 2010 07 01 alpha detection function
 ############################################################################################
 
-ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null', 
-    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3, 
-    min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000, 
+ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
+    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3,
+    min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
     maxbox = 5, ...) {
 
     ## ... passed to sim.popn e.g. buffer = 100, Ndist = 'fixed'
@@ -18,6 +19,10 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     cl <- match.call(expand.dots = TRUE)
     cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
     cl <- paste('ip.secr(', cl, ')')
+
+    ## added 2010-07-01
+    if (is.character(detectfn))
+        detectfn <- detectionfunctionnumber(detectfn)
 
     if (!(detectfn %in% c(0,1,2,3))) stop ('unrecognised detectfn')
     parnames <- switch (detectfn+1,
@@ -39,7 +44,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         detectpar <- as.list(parval[-1])
         names(detectpar) <- parnames[-1]
         detectpar[['g0']] <- invodds(detectpar[['g0']])
-        if (is.null(mask)) 
+        if (is.null(mask))
             popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
         else
             popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
@@ -55,15 +60,15 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     if (length(y) != np) stop(paste('need one predictor for each parameter',parnames, collapse=' '))
 
     if (is.null(start)) {
-        cat('\nFinding starting values ...\n')            
+        cat('\nFinding starting values ...\n')
         flush.console()
         if (is.null(mask)) {
             automask <- make.mask(traps, buffer=3*RPSV(capthist))
             start <- unlist(autoini(capthist, automask))
-        } 
+        }
         else
             start <- unlist(autoini(capthist, mask))
-        ## ad hoc bias adjustment 
+        ## ad hoc bias adjustment
         if (detector(traps)=='single') start[2] <- invodds(odds(start[2]) * 1.4)
         if (detectfn %in% 1) start <- c(start,5)  ## z
     }
@@ -72,7 +77,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     par['g0'] <- odds(par['g0'])
 
     for (m in 1:maxbox) {
-        cat('\nFitting box', m, '...   (g0 on odds scale) \n')            
+        cat('\nFitting box', m, '...   (g0 on odds scale) \n')
         names(par) <- parnames
         vertices <- sweep (1 + outer(c(-1,1), boxsize), MAR=2, FUN='*', STAT=par)
         vertices <- data.frame(vertices)
@@ -96,16 +101,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             sim <- rbind(sim, newsim[OK,])
             ## indices <- c(indices, baseindices[OK])
             design <- rbind(design,basedesign[OK,])
-            if ((nrow(design) > max.nsim)) break          
+            if ((nrow(design) > max.nsim)) break
             sim.lm <- lm ( sim ~ design )
             CV <- sapply(summary(sim.lm), function(x) x$sigma) / y / sqrt(nrow(sim))
             ## following is almost identical in effect; requires 'indices'
-            ## CV <- apply (sim,2, function (x) tapply(x, indices, function(y) 
+            ## CV <- apply (sim,2, function (x) tapply(x, indices, function(y)
             ##       sd(y)/mean(y)/sqrt(nrow(sim))))
             if (all(CV <= CVmax)) break
         }
         if (nrow(design)/(2^np+centre) > max.nsim) {
-            warning ('exceeded max allowable repl without achieving CVmax') 
+            warning ('exceeded max allowable repl without achieving CVmax')
             return (NA)
         }
         else {
@@ -134,14 +139,14 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         n <- apply(newsim, 2, function(x) sum(!is.na(x)))
         ymean <- apply(newsim, 2, mean, na.rm=T)
         yse <- apply(newsim, 2, function(x) sd(x, na.rm=T) / sum(!is.na(x)))
-       
-        bootstrap <- data.frame (target = y, nsim = n, simulated = ymean, SE.simulated = yse) 
+
+        bootstrap <- data.frame (target = y, nsim = n, simulated = ymean, SE.simulated = yse)
 
         ## biasest not reported, yet
         yest <- as.numeric(B %*% matrix((ymean - lambda), nc=1))
         biasest <- data.frame (estimate = 100 * (par - yest) / yest,
             SE = 100 * (par - yest) / yest)
-   
+
         ## adjust var-covar matrix for g0 using delta method
         tx <- diag(np)
         dimnames (tx) <- list(parnames, parnames)
@@ -154,7 +159,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     }
 
     dimnames(vcov) <- list(parnames, parnames)
-    par['g0'] <- invodds(par['g0'])       
+    par['g0'] <- invodds(par['g0'])
 
     list(call = cl,
         IP = data.frame(estimate=unlist(par), SE.estimate=diag(vcov)^0.5),
@@ -174,13 +179,13 @@ negloglikM0   <- function (theta, n) {
   ndot <- n[1]  # total captures
   Mt1  <- n[2]  # total animals
   K    <- n[3]
-  LL   <- lgamma (NN+1) - lgamma(NN-Mt1+1) + ndot * log(ndot) + 
+  LL   <- lgamma (NN+1) - lgamma(NN-Mt1+1) + ndot * log(ndot) +
           (K*NN - ndot) * log(K*NN - ndot) - K*NN*log(K*NN)
   if (is.finite(LL)) -LL
   else 1e10
 }
 
-negloglikMb   <- function (theta, u) { 
+negloglikMb   <- function (theta, u) {
   p <- invlogit(theta)
   K <- length(u)
   n  <- sum(u)
@@ -194,30 +199,30 @@ jack.est <- function (inp, deads = 0, full = F)
 # Calculate Burnham & Overton's jackknife estimate for closed populations
 #
 # inp may be a vector of capture frequencies, or
-#            a list comprising such a vector as its first element and 
+#            a list comprising such a vector as its first element and
 #                              the scalar number of 'deads' as its second
-# 
+#
 # 'deads' are assumed to be additional to the tabulated capture frequencies
 # They are added to the calculated population size (cf Otis et al. 1978)
 #
-# MODIFIED 
+# MODIFIED
 # 30/3/95 Fix bug when mt=5 (last jacknife selected) - length(test) s/b 5
 # 30/3/95 Optional full output
 # 30/3/95 Add confIDence limits and deads to 'short' output
 # 3/4/95  Implement unconditional se using method of K.P.Burnham
-# 3/4/95  Minor changes to full output 
+# 3/4/95  Minor changes to full output
 #
 
         first	<- function(vec) match(1, vec)
 
 	jack.fill <- function(tt)
 	{
-	
+
 	# Input:  tt is the number of capture occasions (e.g., days)
 	# Output: matrix of jackknife coefficients for Burnham & Overton estimator
-	
+
 	# Murray Efford 30/3/95
-	
+
 		T1 <- tt - 1
 		T2 <- tt - 2
 		T3 <- tt - 3
@@ -265,12 +270,12 @@ jack.est <- function (inp, deads = 0, full = F)
 	test[is.na(test)] <- 0
 	test	<- rbind(test, 0)
 	pk		<- 1 - pchisq((difnk/sqrt(S/(S - 1) * (b2f - difnk^2/S)))^2, 1)
-	pk[difnk == 0] <- 1 
-	
+	pk[difnk == 0] <- 1
+
 	# Select jacknife on basis of test results, and interpolate estimate
-	# The conditional variance calculations commented out here are superceded by the 
+	# The conditional variance calculations commented out here are superceded by the
 	# unconditional calculations below
-	 
+
 	     mt		<- first(test < 3.84) #
 	     if(mt == 1) {
 	          xtest	<- (nj[1] * fi[1])/(nj[1] - fi[1])
@@ -297,22 +302,22 @@ jack.est <- function (inp, deads = 0, full = F)
 	     for(i in 2:occ5) Pi[i] <- Pi[i - 1] * (1 - Beta[i - 1])
 	     Pi[1:k1]	<- Pi[1:k1] * Beta[1:k1]
 	     if(occ5 < 5) Pi[occ5] <- 1 - sum(Pi[1:k1])
-	     varN 	<- sum(Pi * varnj) + sum(Pi * (nj - sum(Pi * nj))^2)   
-             sejack <- sqrt(varN) 
+	     varN 	<- sum(Pi * varnj) + sum(Pi * (nj - sum(Pi * nj))^2)
+             sejack <- sqrt(varN)
 
 	# Confidence limits as in Rexstad & Burnham 1991 CAPTURE Users' Guide
-	
+
 	     f0		<- N - S
              if (f0>0)
                  cc1 	<- exp(1.96 * sqrt(log(1 + varN/f0^2)))
              else
                  cc1    <- NA
 	     jacklcl	<- S + f0 / cc1
-	     jackucl	<- S + f0 * cc1  
-	
+	     jackucl	<- S + f0 * cc1
+
 	# Output
 	     if(full) list(fi = fi, jack = N + deads, deads = deads, sejack = sejack, jacklcl
-	                = jacklcl + deads, jackucl = jackucl + deads, mt = mt, aki = aki, 
+	                = jacklcl + deads, jackucl = jackucl + deads, mt = mt, aki = aki,
 	               nj = data.frame(nj, se = sqrt(varnj), X2 = test, Pi = Pi, Beta = Beta))
 	     else c(N + deads, sqrt(varN), jacklcl + deads, jackucl + deads, deads)
 	}
@@ -321,7 +326,7 @@ jack.est <- function (inp, deads = 0, full = F)
 M0 <- function (ni)
 ## data vector ni is c(total captures, total animals, n occasions)
   { Mt1 <- ni[2]
-    if (Mt1==0) c(0,NA,NA)  
+    if (Mt1==0) c(0,NA,NA)
     else {
       theta <- optimize (f = negloglikM0, lower = log(Mt1), upper = log(1000*Mt1),
                          n = ni)$minimum
@@ -333,7 +338,7 @@ M0 <- function (ni)
 Mb <- function (ui)
 ## data vector ui is number of new animals on each occasion
   { n <- sum(ui)
-    if (n==0) c(0,NA)  
+    if (n==0) c(0,NA)
     else {
       theta <- optimize (f = negloglikMb, lower = logit(0.0001), upper = logit(0.9999),
                          u = ui)$minimum
@@ -347,14 +352,14 @@ Mb <- function (ui)
 Mh <- function (fi) {
 ## data vector fi is number of animals caught on exactly i occasions
     temp <- jack.est(fi)
-    nocc <- length(fi) 
+    nocc <- length(fi)
     p <- sum(fi*(1:nocc)) / temp[1] / nocc
     c(temp[1], p)
 }
 ##################################################
 
 pfn <- function (capthist, N.estimator) {
-    ## capthist single-session only; ignoring deads 
+    ## capthist single-session only; ignoring deads
     n <- nrow(capthist)         ## number of individuals
     cts <- abind(counts(capthist, c('n','f','u')), along=1)
     ni <- cts['n', - ncol(cts)] ## drop total at end
@@ -362,13 +367,13 @@ pfn <- function (capthist, N.estimator) {
     fi <- cts['f', - ncol(cts)] ## drop total at end
     nocc <- ncol(capthist)      ## number of occasions
     N.estimator <- tolower(N.estimator)
-    estimates <- switch (N.estimator, 
+    estimates <- switch (N.estimator,
         n = c(n, sum(ni)/n/nocc),
         null = M0(c(sum(ni), n, nocc)),
         zippin = Mb(ui),
         jackknife = Mh(fi)
     )
-    c(N=estimates[1], odds.p=odds(estimates[2]), rpsv=RPSV(capthist)) 
+    c(N=estimates[1], odds.p=odds(estimates[2]), rpsv=RPSV(capthist))
 }
 ##################################################
 

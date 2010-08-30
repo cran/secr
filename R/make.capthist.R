@@ -127,6 +127,12 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
             d <- dimnames(temp)
             d <- lapply(d, as.numeric)
             w[d[[1]], d[[2]], d[[3]]] <- temp
+
+            ## fix to retain deads 2010-08-06
+            dead <- captures[,3]<0
+            deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
+            w[deadindices] <- w[deadindices] * -1
+            #################################
         }
         else {
             w     <- matrix(nr=nID, nc=nocc)

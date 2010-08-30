@@ -14,21 +14,21 @@ detection probabilities of interest. We can think of these as elements
 of a 3-dimensional array. Strictly, we are also interested in the
 detection probabilities of unobserved individuals, but these are
 estimated only by extrapolation from those observed so we do not
-consider them in the array. 
+consider them in the array.
 
 In a null (constant) model, all \eqn{n.S.K} detection probabilities are the
 same. The conventional sources of variation in capture probability (Otis
 et al. 1978) appear as variation in the \eqn{n} dimension ('individual
 heterogeneity' h), in the \eqn{S} dimension ('time variation' t) or as a
 particular interaction in these two dimensions ('behavioural response to
-capture' b). Combined effects are possible. 
+capture' b). Combined effects are possible.
 
 Spatially explicit capture--recapture introduces two sorts of additional
 complexity. Firstly, detection probability is no longer a scalar (even
 for a particular animal, occasion and detector combination); it is
 described by the detection function, which may have two parameters (e.g.
 g0, sigma for half-normal), three parameters (e.g. g0, sigma, z for the
-hazard-rate function), or potentially more. 
+hazard-rate function), or potentially more.
 
 Secondly, many more types of variation are possible. Any of the
 parameters of the detection function may vary with respect to individual
@@ -46,9 +46,12 @@ array is convenient for coding both group membership (Lebreton et al.
 1992, Cooch and White 2008) and experience of capture, even when
 individual-level heterogeneity cannot be modelled.
 
-Variation between 'sessions' adds a further level of complexity: in
-principle there is an \eqn{n.S.K} array for each session (sessions are
-numbered 1..\eqn{R}). We do not expand on this here.
+Variation between 'sessions' and between latent classes in a finite
+mixture adds two further dimensions: in principle there is an
+\eqn{n.S.K} array for each latent class (classes are numbered
+1..\eqn{M}), and an \eqn{n.S.K.M} array for each session (sessions are
+numbered 1..\eqn{R}). The full design matrix has \eqn{n.S.K.M.R}
+rows. We do not expand on this here.
 
 }
 
@@ -72,6 +75,7 @@ g        \tab group \tab see below \tab \eqn{n} \cr
 h2       \tab 2-class mixture \tab -- \tab 2 \cr
 h3       \tab 3-class mixture \tab -- \tab 2 \cr
 session  \tab session factor (one level for each session) \tab automatic \tab \eqn{R} \cr
+Session  \tab session number 0:(R-1) \tab automatic \tab \eqn{R} \cr
 [user]   \tab individual covariate \tab \code{covariates (capthist)} \tab \eqn{n} \cr
 [user]   \tab session covariate \tab \code{sessioncov} \tab \eqn{R} \cr
 [user]   \tab time covariate \tab \code{timecov} \tab \eqn{S} \cr
@@ -117,24 +121,24 @@ The submodels for 'g0', 'sigma' and 'z' are named components of the
 \code{model} argument of \code{secr.fit}. They are expressed in \R
 formula notation by appending terms to \eqn{\sim{~}}{~}.
 The name of the response may optionally appear on the left hand side of
-the formula (e.g. g0\eqn{\sim{~}}{~}b). 
+the formula (e.g. g0\eqn{\sim{~}}{~}b).
 
 }
 
 \examples{
 
 ## constant (null) model
-list(g0 = ~1, sigma = ~1)      
+list(g0 = ~1, sigma = ~1)
 
 ## both detection parameters change after first capture
-list(g0 = ~b, sigma = ~b)      
+list(g0 = ~b, sigma = ~b)
 
 ## group-specific parameters; additive time effect on g0
 ## groups are defined via the 'groups' argument of secr.fit
-list(g0 = ~ g + t, sigma = ~ g) 
+list(g0 = ~ g + t, sigma = ~ g)
 
 ## g0 depends on trap-specific covariate
-list(g0 = ~ kcov) 
+list(g0 = ~ kcov)
 
 }
 
@@ -146,7 +150,7 @@ trap response.
 
 }
 
-\references{ 
+\references{
 
 Cooch, E. and White, G. (eds) (2008) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{www.phidot.org}.
 

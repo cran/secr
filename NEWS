@@ -1,3 +1,109 @@
+Changes in version 1.4.1 (2010-08-29)
+
+New functions
+    o   empirical.varD() computes an estimate of the sampling error of a
+    Horvitz-Thompson-like estimate of density for replicated spatial
+    samples.  The formulation closely resembles that in conventional
+    distance sampling with equal-length transects.
+
+    o   moves() returns a list of the distances between consecutive
+    detections for each animal in a capthist object (meaningful only
+    for trap-like detectors, for which the sequence of detections is
+    unambiguous).
+
+    o   make.tri() generates a detector array based on a triangular grid
+    and clip.hex() retains a hexagonal subset.
+
+New features in old functions
+    o   MS.capthist() now accepts any combination of single-session
+    capthist objects, multi-session capthist objects, and lists of
+    single-session capthist objects.
+
+    o   sim.popn() now optionally generates a spatiotemporal population
+    i.e. a list whose components form a time series of simple popn
+    objects with mortality and recruitment and movement between
+    times. Two new arguments are used (number.from and nsession);
+    turnover parameters are passed as presently undocumented
+    components of 'details'.
+
+    o   sim.capthist now generates a multi-session capthist object when
+    passed a list of populations (see preceding).
+
+    o   sim.capthist now has an option to truncate detections beyond a
+    fixed radius, regardless of the shape of the detection
+    function. The radius is specified as component `truncate` in the
+    `detectpar` argument. The default is no truncation (truncate =
+    NULL).
+
+    o   secr.fit() new automatic model effect 'Session' coded as 0:(R-1)
+    where R is the number of sessions. Contrast with lower-case
+    'session' which is a factor. Equivalent to manual sessioncov =
+    data.frame(0:(R-1)); useful for modelling trend.
+
+    o   secr.fit() new automatic covariates 'x2', 'y2','xy' for density
+    trend models (defined for all points on habitat mask).
+
+    o   new detection function = 6 'annular normal' has peak at distance
+    +w where parameter w >= 0.
+
+    o   Various functions with the argument 'detectfn' (secr.fit(),
+    sim.capthist(), detectfnplot() etc.) now allow the name of the
+    function to be supplied as a character value (e.g. 'halfnormal';
+    see ?detectfn for names). Values are still stored as the integer
+    codes.
+
+    o	rbind.mask() now handles covariates rather than discarding them
+    with a warning; rbind.traps() has been revised internally.
+
+    o   read.capthist() and make.capthist() accept negative occasion
+    numbers for death on capture even when detector type is not
+    'single' or 'multi'.  Previously this coding was ignored because
+    modelling of such data poses problems; responsibility now lies
+    with the user.
+
+Bugs fixed
+    o   write.captures() and write.capthist() used row (animal) number
+    rather than row names (animal identifiers) when detector='single'
+    or detector='multi'. This has been rectified.
+
+    o   write.captures() and write.capthist() when used with
+    multi-session data lost the session names and exported all
+    detections as session 1. Actual session names are now used to
+    distinguish sessions in the output.
+
+    o   sim.capthist() became confused when detectfn=3 or
+    detectfn=4. Simulation with a compound halfnormal detection
+    function (3) or uniform detection function (4) should now work.
+
+    o   rbind.popn() returned with meaningless 'Ndist' and 'model2D'
+    attributes. Now Ndist is set to 'user' and 'model2D' to the value
+    for the first contributing population.
+
+    o   secr.fit() with distribution = 'binomial' failed to calculate
+    the asymptotic variance of D because it called the R function
+    dbinom that takes only integer values for the size parameter
+    (N). This call has been replaced by a local function that accepts
+    non-integer N. The associated warning has been suppressed.
+
+    o   rbind.traps() should now combine covariates and usage correctly.
+
+    o   secr.make.newdata() failed with trend-over-occasion models (T),
+    causing errors in predict.secr(), collate() and model.average(). 
+
+Other
+    o	Displays startup message (see .onAttach)
+
+    o   Minor improvements to documentation (alias for detectfn, all
+    data objects documented etc.)
+
+    o	details$binomN argument of secr.fit has been documented. binomN is
+    used to specify the discrete distribution fitted to count data
+    (binomial, Poisson etc.), and the size parameter of the binomial.
+
+    o   print.mask() has been dropped as print.dataframe() works
+    perfectly well with masks.
+
+
 Changes in version 1.4.0 (2010-05-07)
 
 New functions
@@ -24,16 +130,16 @@ New datasets
     o	'deermouse' Reid Peromyscus (Otis et al. 1978)
 
 New features in old functions
-    o	make.capthist() now sorts rows numerically if all values of 
+    o	make.capthist() now sorts rows numerically if all values of
     animalID are valid numbers.
     o	make.capthist() now checks for missing values.
-    o	make.capthist() places multi-session capture data in order by 
+    o	make.capthist() places multi-session capture data in order by
     session before matching 'traps' objects.
-    o	print.capthist() now sorts rows numerically if all values of 
+    o	print.capthist() now sorts rows numerically if all values of
     animalID are valid numbers.
     o	make.grid() has a new option for labeling detectors "xy".
     o	secr.fit() has a new 'details' option to centre trap and mask
-    coordinates; this can solve some numerical problems fitting 
+    coordinates; this can solve some numerical problems fitting
     coordinates with large absolute values.
     o	plot.mask() produces more attractive images and does not call
     image(), but is somewhat slower.
@@ -44,7 +150,7 @@ Defunct
     o	read.captures() has been ditched - use read.table() instead.
 
 Bugs fixed
-    o	A bug in 'traps<-' has been fixed; replacement of traps for 
+    o	A bug in 'traps<-' has been fixed; replacement of traps for
     multiple sessions should now work.
 
 Other
@@ -59,9 +165,9 @@ Other
 Changes in version 1.3.0 (2010-03-11)
 
 New functions
-    o	ellipse.secr() computes and plots confidence ellipses of 
+    o	ellipse.secr() computes and plots confidence ellipses of
     fitted parameters.
-    o	LLsurface.secr() plots log-likelihood surface of SECR model 
+    o	LLsurface.secr() plots log-likelihood surface of SECR model
     for 2 dimensions at a time.
     o	attenuationplot() plots the sound attenuation function from
     an acoustic SECR model.
@@ -81,13 +187,13 @@ New features in old functions
     trend in detection parameter model formulae.
 
 Other
-    o	New detector types 'count', 'signal' ('polygon' and 
+    o	New detector types 'count', 'signal' ('polygon' and
     'transect' are present but should be treated as 'under
      development')
     o	New detection functions 'binary signal strength', 'signal
     strength', 'signal strength spherical'
     o	Finite mixture models for heterogeneity in detection
     parameters (use 'h2' in model formula)
-    o	New vignettes: secr-overview.pdf, secr-sound.pdf, 
+    o	New vignettes: secr-overview.pdf, secr-sound.pdf,
     secr-finitemixtures.pdf
 

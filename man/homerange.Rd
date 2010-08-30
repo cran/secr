@@ -3,6 +3,7 @@
 \alias{RPSV}
 \alias{MMDM}
 \alias{ARL}
+\alias{moves}
 
 \title{ Home Range Statistics }
 
@@ -12,7 +13,8 @@ Some ad hoc measures of home range size may be calculated in \pkg{secr}
 from capture--recapture data:
 
 \code{dbar} is the mean distance between consecutive capture locations,
-pooled over individuals (e.g. Efford 2004).
+pooled over individuals (e.g. Efford 2004). \code{moves} returns the
+raw distances.
 
 \code{RPSV} (for 'Root Pooled Spatial Variance') is a measure of the 2-D
 dispersion of the locations at which individual animals are detected,
@@ -33,6 +35,7 @@ dbar(capthist)
 RPSV(capthist)
 MMDM(capthist, min.recapt = 1, full = FALSE)
 ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE)
+moves(capthist)
 }
 
 \arguments{

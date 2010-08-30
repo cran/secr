@@ -1,8 +1,12 @@
 \name{stoatDNA}
+\docType{data}
+
 \alias{stoatDNA}
 \alias{stoatCH}
+\alias{stoat.model.EX}
+\alias{stoat.model.HN}
+\alias{stoat.model.HZ}
 
-\docType{data}
 \title{ Stoat DNA data }
 
 \description{
@@ -36,6 +40,17 @@ an individual to be detected at multiple detectors on one occasion
 pre-fitted models are included: \code{stoat.model.HN},
 \code{stoat.model.HZ}, and \code{stoat.model.EX} (with halfnormal,
 hazard-rate and negative exponential detection functions, respectively).
+
+\tabular{ll}{
+  Object \tab Description \cr
+  stoatCH \tab capthist object \cr
+  stoat.model.EX \tab fitted secr model -- null, exponential detection
+  function \cr
+  stoat.model.HN \tab fitted secr model -- null, halfnormal detection
+  function \cr
+  stoat.model.HZ \tab fitted secr model -- null, hazard-rate detection
+  function \cr
+}
 
 }
 

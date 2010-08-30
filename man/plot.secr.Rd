@@ -38,7 +38,8 @@ attenuationplot (pars, add = FALSE, spherical = TRUE,
   \item{ylab}{ label for y axis }
   \item{\dots}{ arguments to pass to \code{lines} }
 
-  \item{detectfn}{ integer code for detection function 0 halfnormal, 1 hazard-rate etc. }
+  \item{detectfn}{integer code or character string for shape of
+        detection function 0 = halfnormal etc. -- see \link{detectfn} }
   \item{pars}{ vector or matrix of parameter values }
   \item{details}{ list of ancillary parameters }
   \item{spherical}{ logical for whether to include spherical spreading term }

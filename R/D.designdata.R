@@ -76,13 +76,27 @@ D.designdata <- function (mask, Dmodel, grps, sessionlevels, sessioncov = NULL) 
         dframe$g <- insertdim(factor(grps), 2, dims)
     }
 
+    ## added 2010-06-21
+    if ('x2' %in% vars) {
+        dframe$x2 <- dframe$x^2
+    }
+    if ('y2' %in% vars) {
+        dframe$y2 <- dframe$y^2
+    }
+    if ('xy' %in% vars) {
+        dframe$xy <- dframe$x * dframe$y
+    }
+
     ## force levels=sessionlevels 2010 02 25
     if ('session' %in% vars) {
        dframe$session <- insertdim(factor(sessionlevels, levels=sessionlevels), 3, dims)
     }
+    if ('Session' %in% vars) {
+       dframe$Session <- insertdim(0:(R-1), 3, dims)
+    }
 
     ## all autovars should have now been dealt with
-    vars <- vars[!vars %in% c('g','x','y','session')]
+    vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session')]
 
     if (!is.null(sessioncov)) {
         findvars (sessioncov, vars, 3, std = FALSE)

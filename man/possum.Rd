@@ -1,11 +1,11 @@
 \name{possum}
+\docType{data}
+
 \alias{possum}
 \alias{possumCH}
 \alias{possummask}
 \alias{possum.model.1}
 \alias{possum.model.1b}
-
-\docType{data}
 
 \title{ Brushtail Possum Trapping Dataset }
 
@@ -50,6 +50,15 @@ The data are provided as a single-session \code{capthist} object
 fitted models ('possum.model.1' & 'possum.model.1b') are provided for
 illustration.
 
+
+\tabular{ll}{
+  Object \tab Description \cr
+  possumCH \tab capthist object \cr
+  possummask \tab mask object \cr
+  possum.model.1 \tab fitted secr model -- null \cr
+  possum.model.1b \tab fitted secr model -- trap response g0 \cr
+}
+ 
 }
 
 \source{

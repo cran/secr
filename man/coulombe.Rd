@@ -1,8 +1,17 @@
 \name{housemouse}
+\docType{data}
+
 \alias{housemouse}
 \alias{Coulombe}
-
-\docType{data}
+\alias{housemouse.0}
+\alias{housemouse.ampm}
+\alias{housemouse.ampmh2h2}
+\alias{morning.0}
+\alias{morning.0h2}
+\alias{morning.b}
+\alias{morning.h2}
+\alias{morning.h2h2}
+\alias{morning.t}
 
 \title{ House mouse live trapping data  }
 
@@ -28,34 +37,50 @@ cite Coulombe's unpublished 1965 master's thesis from the University of
 California, Los Angeles, California.
 
 The data are provided as a single-session \code{capthist} object. There
-are two individual covariates: sex (factor levels 'f', 'm') and age
-class (factor levels 'j', 'sa', 'a'). The sex of two animals is not
+are two individual covariates: sex (factor levels `f', `m') and age
+class (factor levels `j', `sa', `a'). The sex of two animals is not
 available (NA); it is necessary to drop these records for analyses
-using 'sex'.
+using `sex'.
 
-The datasets were originally in the CAPTURE 'xy complete' format which
-for each detection gives the 'column' and 'row' numbers of the trap
-(e.g. ' 9 5' for a capture in the trap at position (x=9, y=5) on the
+The datasets were originally in the CAPTURE `xy complete' format which
+for each detection gives the `column' and `row' numbers of the trap
+(e.g. ` 9 5' for a capture in the trap at position (x=9, y=5) on the
 grid). Trap identifiers have been recoded as strings with no spaces by
-inserting zeros (e.g. '0905' in this example).
+inserting zeros (e.g. `0905' in this example).
 
 Sherman traps are designed to capture one animal at a time, but the data
 include 30 double captures and one occasion when there were 4
 individuals in a trap at one time. The true detector type therefore
-falls between 'single' and 'multi'. Detector type is set to 'multi' in
+falls between `single' and `multi'. Detector type is set to `multi' in
 the distributed data objects.
 
 Otis et al. (1978) report various analyses including a closure test on
 the full data, and model selection and density estimation on data from
 the mornings only. We include several secr models fitted to the
-'morning' data (\code{morning.0}, \code{morning.b} etc.). Of these, a model
+`morning' data (\code{morning.0}, \code{morning.b} etc.). Of these, a model
 including individual heterogeneity in both g0 and sigma has the lowest AIC.
+
+\tabular{ll}{
+  Object \tab Description \cr
+  housemouse \tab capthist object \cr
+  housemouse.0 \tab fitted secr model -- null \cr
+  housemouse.ampm \tab fitted secr model -- g0 differs morning vs afternoon \cr
+  housemouse.ampmh2h2 \tab fitted secr model -- as above, finite
+  mixture g0, sigma \cr
+  morning.0 \tab fitted secr model -- morning data only, null \cr
+  morning.0h2 \tab fitted secr model -- mornings, null g0,
+  finite mixture sigma \cr
+  morning.b \tab  fitted secr model -- mornings, trap response g0 \cr
+  morning.h2 \tab  fitted secr model -- mornings, finite mixture g0 \cr         
+  morning.h2h2 \tab  fitted secr model -- mornings, finite mixture g0, sigma \cr
+  morning.t \tab  fitted secr model -- mornings, day-specific g0 \cr
+}
 
 }
 
 \source{
 
-File 'examples' distributed with program CAPTURE.
+File `examples' distributed with program CAPTURE.
 
 }
 

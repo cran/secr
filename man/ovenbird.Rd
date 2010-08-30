@@ -1,10 +1,13 @@
 \name{ovenbird}
+\docType{data}
+
 \alias{ovenbird}
 \alias{ovenCH}
 \alias{ovenbird.model.1}
 \alias{ovenbird.model.1b}
-
-\docType{data}
+\alias{ovenbird.model.1T}
+\alias{ovenbird.model.h2}
+\alias{ovenmask}
 
 \title{ Ovenbird Mist-netting Dataset }
 
@@ -48,7 +51,7 @@ number).  Recaptures within a day are not included in this dataset, so
 each bird occurs at most once per day and the detector type is 'multi'
 rather than 'proximity'.  Although several individuals were captured in
 more than one year, no use is made of this information in the analyses
-presently offered in \pkg{secr}. 
+presently offered in \pkg{secr}.
 
 
 The data are provided as a multi-session \code{capthist} object
@@ -60,7 +63,21 @@ they tended to avoid nets after their first capture within a season
 (Dawson & Efford in press).  While the species was present consistently,
 the number of detections in any one year was too small to give reliable
 estimates of density; pooling of detection parameters across years
-helped to improve precision. 
+helped to improve precision.
+
+Included with the data are a mask and four models fitted as in
+Examples.
+
+\tabular{ll}{
+  Object \tab Description \cr
+  ovenCH \tab multi-session capthist object \cr
+  ovenbird.model.1 \tab fitted secr model -- null \cr
+  ovenbird.model.1b \tab fitted secr model -- g0 net shyness \cr
+  ovenbird.model.1T \tab fitted secr model -- g0 time trend within years
+  \cr
+  ovenbird.model.h2 \tab fitted secr model -- g0 finite mixture \cr
+  ovenmask \tab mask object \cr
+}
 
 }
 
@@ -81,7 +98,7 @@ acoustic signals. \emph{Journal of Applied Ecology} \bold{46}, 1201--1209.
 
 Efford, M. G., Dawson, D. K. and Robbins C. S. (2004) DENSITY: software
 for analysing capture-recapture data from passive detector arrays.
-\emph{Animal Biodiversity and Conservation} \bold{27}, 217--228. 
+\emph{Animal Biodiversity and Conservation} \bold{27}, 217--228.
 
 Stamm, D. D., Davis, D. E. and Robbins, C. S. (1960) A method of studying
 wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31},
@@ -100,7 +117,7 @@ wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31}
 \dontrun{
 
 ## commands used to create ovenCH from the input files
-## 'netsites0509.txt' and 'ovencapt.txt' 
+## 'netsites0509.txt' and 'ovencapt.txt'
 ## for information only - these files not distributed
 netsites0509 <- read.traps(file = 'netsites0509.txt',
     skip = 1, detector = 'multi')
@@ -120,7 +137,7 @@ counts(ovenCH, 'n')
 \dontrun{
 
 ## array constant over years, so build mask only once
-ovenmask <- make.mask(traps(ovenCH)[['2005']], type='pdot', buffer=400, 
+ovenmask <- make.mask(traps(ovenCH)[['2005']], type='pdot', buffer=400,
     spacing=15, detectpar=list(g0=0.03, sigma=90), nocc=10)
 
 ## fit constant-density model
@@ -132,14 +149,26 @@ ovenbird.model.1b <- secr.fit(ovenCH, mask = ovenmask, model =
     list(g0~b))
 ovenbird.model.1b
 
+## fit model with time trend in detection
+ovenbird.model.1T <- secr.fit(ovenCH, mask = ovenmask, model =
+    list(g0 ~ T))
+ovenbird.model.1T
+
+## fit model with 2-class mixture for g0
+ovenbird.model.h2 <- secr.fit(ovenCH, mask = ovenmask, model =
+    list(g0~h2))
+ovenbird.model.h2
+
 }
 
 ## compare & average pre-fitted models
-AIC(ovenbird.model.1, ovenbird.model.1b)
-model.average(ovenbird.model.1, ovenbird.model.1b)
+AIC (ovenbird.model.1, ovenbird.model.1b, ovenbird.model.1T,
+    ovenbird.model.h2)
+model.average (ovenbird.model.1,ovenbird.model.1b, ovenbird.model.1T,
+    ovenbird.model.h2, realnames='D')
 
 ## select one year to plot
-plot(ovenbird.model.1b, newdata = data.frame(session = '2005', 
+plot(ovenbird.model.1b, newdata = data.frame(session = '2005',
     b = 0))
 
 }

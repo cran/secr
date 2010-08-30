@@ -137,6 +137,7 @@ void trappingpolygon (
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,          /* truncation radius */
     int    *maxone,      /* maximum of one detection per animal per occasion */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */
@@ -156,6 +157,7 @@ void trappingtransect (
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,          /* truncation radius */
     int    *maxone,      /* maximum of one detection per animal per occasion */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */
@@ -173,6 +175,7 @@ void trappingsignal (
     double *beta1,     /* Parameter : slope */
     double *sdS,       /* Parameter : error sd */
     double *cut,       /* detection threshold on transformed scale */
+    double *sdM,       /* movement between occasions */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
     int    *N,         /* number of animals */
@@ -198,6 +201,7 @@ void trappingtimes (
     double *traps,     /* x,y locations of traps (first x, then y)  */
     int    *used,      /* ss x kk array of 0/1 codes for usage */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,        /* truncation radius */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     double *times,     /* time of detection within occasion */  
@@ -216,6 +220,7 @@ void trappingcount (
     double *traps,      /* x,y locations of traps (first x, then y)  */
     int    *used,      /* code 0 unused 1 used for each trap x occasion */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 11 = normal signal */
+    double *w2,        /* truncation radius */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
@@ -234,6 +239,7 @@ void trappingmulti (
     double *traps,      /* x,y locations of traps (first x, then y)  */
     int    *used,      /* code 0 unused 1 used for each trap x occasion */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,         /* truncation radius */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
@@ -251,6 +257,7 @@ void trappingsingle (
     double *traps,      /* x,y locations of traps (first x, then y)  */
     int    *used ,      /* code 0 unused 1 used for each trap x occasion */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,         /* truncation radius */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */

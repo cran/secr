@@ -3,6 +3,7 @@
 ## dbar.R
 ## last changed 2009 07 10 (multi-session)  2009 10 07 (prox) 2009 11 13 (polygon)
 ## streamlined 2010 03 30
+## added function moves 2010 06 04
 ############################################################################################
 
 dbar <- function (capthist) {
@@ -25,6 +26,31 @@ dbar <- function (capthist) {
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
             mean(unlist(lapply(w,dbarx)), na.rm=T)
+        }
+    }
+}
+############################################################################################
+
+moves <- function (capthist) {
+    if (inherits (capthist, 'list')) {
+        lapply(capthist, moves)   ## recursive
+    }
+    else {
+        traps <- traps(capthist)
+        movex    <- function (x) {
+            x <- abs(unlist(x))
+            sqrt(diff(traps$x[x])^2 + diff(traps$y[x])^2)
+        }
+        movexy    <- function (xy) {
+            sqrt(diff(xy$x)^2 + diff(xy$y)^2)
+        }
+        if (detector(traps) == 'polygon') {
+            lxy <- split (xy(capthist), animalID(capthist))
+            lapply (lxy, movexy)
+        }
+        else {
+            w <- split(trap(capthist, names=F), animalID(capthist))
+            lapply(w,movex)
         }
     }
 }

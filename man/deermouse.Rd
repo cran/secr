@@ -1,9 +1,17 @@
 \name{deermouse}
+\docType{data}
+
+\alias{deermouse}
 \alias{deermouse.ESG}
 \alias{deermouse.WSG}
-\alias{deermouse}
-
-\docType{data}
+\alias{ESG.0}
+\alias{ESG.b}
+\alias{ESG.h2}
+\alias{ESG.t}
+\alias{WSG.0}
+\alias{WSG.b}
+\alias{WSG.h2}
+\alias{WSG.t}
 
 \title{ Deermouse Live-trapping Datasets }
 
@@ -72,6 +80,20 @@ WSG.0, WSG.b, WSG.t, WSG.h2, each with the indicated effect on g0). Otis
 et al. (1978) draw attention to the tendency of \emph{Peromyscus} to become
 'trap happy', and we observe that models with a behavioural response
 (ESG.b, WSG.b) have the lowest AIC among those fitted here.
+
+\tabular{ll}{
+  Object \tab Description \cr
+ deermouse.ESG \tab capthist object, East Stuart Gulch \cr
+ deermouse.WSG \tab capthist object, Wet Swizer Gulch \cr
+ ESG.0 \tab fitted secr model -- ESG null \cr
+ ESG.b \tab fitted secr model -- ESG trap response g0 \cr
+ ESG.h2 \tab fitted secr model -- ESG finite mixture g0 \cr
+ ESG.t \tab fitted secr model -- ESG time-varying g0 \cr
+ WSG.0 \tab fitted secr model -- WSG null \cr
+ WSG.b \tab fitted secr model -- WSG trap response g0 \cr
+ WSG.h2 \tab fitted secr model -- WSG finite mixture g0 \cr
+ WSG.t \tab fitted secr model -- WSG time-varying g0 \cr
+}
 
 }
 

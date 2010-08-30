@@ -16,7 +16,16 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
 }
 
 \details{
-  An attempt to combine objects will fail if they conflict in their \code{usage} or \code{covariates} attributes.
+  
+  An attempt to combine objects will fail if they conflict in their
+  \code{covariates} attributes. Differences in the \code{usage}
+  attribute are handled as follows. If \code{usage} is specified for one
+  input but not other(s), the missing values are constructed assuming
+  all detectors were operated for the maximum number of occasions in any
+  input. If inputs differ in the number of `usage' columns (occasions),
+  the smaller matrices are padded with `zero' columns to the maximum
+  number of columns in any input.
+
 }
 
 \value{

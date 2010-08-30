@@ -3,6 +3,7 @@
 ## write.captures.R (was write.capthist - changed 2010-05-02)
 ## last changed 2009 03 30, 2009 06 11, 2009 07 08 2009 11 17
 ## revised 2010 04 01 with new argument append and character value allowed for header
+## bug fixed 2010-06-07: use row names when single/multi
 ## Write capture histories to text file in DENSITY format
 ############################################################################################
 
@@ -15,10 +16,10 @@ write.captures <- function (object, file='', ..., deblank = TRUE, header = TRUE,
     if (inherits(object, 'list')) {
         write.captures (object[[1]], file = file, ..., deblank = deblank,
             header = deparse(substitute(object), control=NULL), append = append,
-            sess = session(object[[1]]), ndec = ndec)
+            sess = session(object)[1], ndec = ndec)
         for (i in 2:length(object)) {
             write.captures (object[[i]], file = file, ..., deblank = deblank,
-                header = FALSE, append = TRUE, sess = session(object[[i]]), ndec = ndec)
+                header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec)
         }
     }
     else {
@@ -59,7 +60,10 @@ write.captures <- function (object, file='', ..., deblank = TRUE, header = TRUE,
             if (deblank) trap <- gsub(' ', '', trap)
             trap <- trap[abs(object)]
             session <- rep(sess, n*S*K)[OK]             ## assumes 1 session
-            ID <- rep( 1:n, S*K )[OK]
+##            ID <- rep( 1:n, S*K )[OK]
+## FIX 2010-06-07 version 1.4.1
+## use row names
+            ID <- rep(row.names(object), S*K )[OK]
             occ <- rep (rep (1:S, K), rep(n, S*K))[OK]
             temp <- data.frame (session=session, ID=ID, occ=occ, trap=trap)
         }

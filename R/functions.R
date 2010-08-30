@@ -570,8 +570,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
 
     #--------------------------------------------------------------------
     # Detection parameters
-    if (!detectfn %in% c(0:3,5,9,10,11))
-        stop ('detectfn can only take values in c(0:3,5,9,10,11)')
+    if (!detectfn %in% c(0:3,5,6,9,10,11))
+        stop ('detectfn can only take values in c(0:3,5,6,9,10,11)')
     realparval  <- makerealparameters (design, beta, parindx, link, fixed)
     realparval0 <- makerealparameters (design0, beta, parindx, link, fixed)  # naive
 
@@ -789,8 +789,8 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
     else sessionlevels <- 1
     nsession <- length(sessionlevels)
 
-    if (!detectfn %in% c(0:2,5))
-        stop ('detectfn can only take values 0 (halfnormal), 1 (hazard-rate), 2 (exponential) or 5 (w-exponential) for now')
+    if (!detectfn %in% c(0:3,5,6))
+        stop ('detectfn can only take values 0 (halfnormal), 1 (hazard-rate), 2 (exponential), 3 (compound halfnormal, 5 (w-exponential) or 6 (annular normal)for now')
 
     #--------------------------------------------------------------------
     # Groups

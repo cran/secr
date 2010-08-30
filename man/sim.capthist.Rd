@@ -6,14 +6,14 @@
 
 \description{
 
-Create a set of capture or marking-and-resighting histories by simulated sampling 
+Create a set of capture or marking-and-resighting histories by simulated sampling
 of a 2-D population using an array of detectors.
 
 }
 
 \usage{
 sim.capthist(traps, popn = list(D = 5, buffer = 100,
-    Ndist = 'poisson'), detectfn = 0, detectpar = list(), 
+    Ndist = 'poisson'), detectfn = 0, detectpar = list(),
     noccasions = 5, renumber = TRUE, seed = NULL)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
     nonID = TRUE)
@@ -24,8 +24,9 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   \item{traps}{ \code{traps} object with the locations and other attributes of detectors }
   \item{popn}{ locations of individuals in the population to be sampled, either as
  a \code{\link{popn}} object or a list with named elements 'D' (density) and 'buffer' }
-  \item{detectfn}{ code for type of detection function }
-  \item{detectpar}{ list of values for named parameters of detection function } 
+  \item{detectfn}{integer code or character string for shape of
+  detection function 0 = halfnormal etc. -- see \link{detectfn}}
+  \item{detectpar}{ list of values for named parameters of detection function }
   \item{noccasions}{ number of occasions to simulate }
   \item{renumber}{ logical for whether output rows should labeled sequentially (TRUE) or
  retain the numbering of the population from which they were drawn (FALSE) }
@@ -49,17 +50,21 @@ detection probability of animal \emph{i} at detector \emph{j} is the
 naive probability given by the detection function. For 'single' and
 'multi' detectors the naive probability is modified by competition
 between detectors and, in the case of 'single' detectors, between animals. See
-Efford (2004) and other papers below for details. 
+Efford (2004) and other papers below for details.
 
-Detection parameters are specific to the detection function, which is
-indicated by a numeric code (\code{\link{detection functions}}).
+Detection parameters in \code{detectpar} are specific to the detection
+function, which is indicated by a numeric code (\code{\link{detectfn}}).
 Parameters may vary with time - for this provide a vector of length
-\code{noccasion}.  The default detection parameters are \code{list(g0 = 0.2,
- sigma = 25, z = 1)}.
+\code{noccasions}.  The default detection parameters are \code{list(g0 =
+0.2, sigma = 25, z = 1)}.
 
 \code{detectpar} may also include 'binomN' and other arguments for
 detectors that have yet to be documented. A zero value for \code{binomN}
 indicates that counts should be modelled with a Poisson distribution.
+
+\code{detectpar} may include a component 'truncate' for the distance
+beyond which detection probability is set to zero. By default this value
+is NULL (no specific limit).
 
 If \code{popn} is specified by an object of class 'popn' then any
 individual covariates will be passed on; the \code{covariates} attribute
@@ -68,7 +73,7 @@ of the output is otherwise set to NULL.
 The random number seed is managed as in \code{\link[stats]{simulate}}.
 
 \code{sim.resight} generates mark-resight data for 'q' marking occasions
-followed by 'noccasion -- q' sighting occasions. \code{sim.capthist} is
+followed by 'noccasions -- q' sighting occasions. \code{sim.capthist} is
 first called with the arguments 'traps' and \dots. The detector type
 must be 'proximity'. The 'usage' attribute of \code{traps} is ignored at
 present, so the same detectors are operated on all occasions.  Any
@@ -95,7 +100,7 @@ counts of 'unmarked' and 'marked, not identified' sightings.
 
 }
 
-\references{ 
+\references{
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
@@ -118,7 +123,7 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
-\note{ 
+\note{
 
 External code is called to speed the simulations. The present version
 assumes a 'null model' i.e. naive detection probability is constant
@@ -128,12 +133,19 @@ detection parameters from 1.2.10). You can, however, use
 subclasses (e.g. males and females) simulated with different parameter
 values. This is not valid for detector type 'single' because it fails to
 allow for competition for traps between subclasses. Future versions may
-allow more complex models. 
+allow more complex models.
+
+\code{truncate} has no effect (i) when using a uniform detection
+function with radius (\code{sigma}) <= \code{truncate} and (ii) with
+signal strength detection (detectfn 10, 11). Note that truncated
+detection functions are provided for de novo simulation, but are not
+available when fitting models with in \code{secr.fit} or simulating from
+a fitted model with \code{sim.secr}.
 
 }
 
-\seealso{ 
-    \code{\link{sim.popn}}, \code{\link{capthist}}, \code{\link{traps}}, 
+\seealso{
+    \code{\link{sim.popn}}, \code{\link{capthist}}, \code{\link{traps}},
     \code{\link{popn}}, \code{\link{detection functions}}, \code{\link[stats]{simulate}}
 }
 
@@ -143,11 +155,11 @@ allow more complex models.
 temptrap <- make.grid(nx = 6, ny = 6, spacing = 20)
 sim.capthist (temptrap, detectpar = list(g0 = 0.2, sigma = 20))
 
-## with detector = 'proximity, there may be more than one 
+## with detector = 'proximity, there may be more than one
 ## detection per individual per occasion
-temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector = 
+temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector =
     'proximity')
-summary(sim.capthist (temptrap, detectpar = 
+summary(sim.capthist (temptrap, detectpar =
     list(g0 = 0.2, sigma = 20)))
 
 }

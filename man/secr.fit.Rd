@@ -27,11 +27,12 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{mask}{ \code{\link{mask}} object}
   \item{buffer}{ scalar mask buffer radius if \code{mask} not specified}
   \item{CL}{ logical, if true then the model is fitted by maximizing the conditional likelihood }
-  \item{detectfn}{ integer code for shape of detection function. 0 halfnormal, 1 hazard-rate, 2 exponential etc.}
+  \item{detectfn}{integer code or character string for shape of
+  detection function 0 = halfnormal, 1 = hazard rate etc. -- see \link{detectfn}}
   \item{start}{ vector of initial values for beta parameters, or \code{secr} object from which they may be derived }
-  \item{link}{ list with optional components 'D', 'g0', 'sigma' and 'z', each a character string in \{'log', 'logit', 'identity', 'sin'\} for the link function of the relevant real parameter }
-  \item{fixed}{ list with optional components corresponding to each 'real' parameter (e.g., 'D', 'g0', 'sigma'), the scalar value to which parameter is to be fixed }
-  \item{model}{ list with optional components 'D', 'g0', 'sigma' and 'z', each symbolically defining a linear predictor for the relevant real parameter using \code{formula} notation }
+  \item{link}{ list with optional components `D', `g0', `sigma' and `z', each a character string in \{`log', `logit', `identity', `sin'\} for the link function of the relevant real parameter }
+  \item{fixed}{ list with optional components corresponding to each `real' parameter (e.g., `D', `g0', `sigma'), the scalar value to which parameter is to be fixed }
+  \item{model}{ list with optional components `D', `g0', `sigma' and `z', each symbolically defining a linear predictor for the relevant real parameter using \code{formula} notation }
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
   \item{sessioncov}{ optional dataframe of values of session-specific covariate(s). }
   \item{groups}{ optional vector of one or more variables with which to form groups. Each element should be the name of a factor variable in the \code{covariates} attribute of \code{capthist}. }
@@ -46,11 +47,11 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
 \details{
 
 \code{secr.fit} fits a SECR model by maximizing the likelihood. The
-likelihood depends on the detector type ('multi' or 'proximity') of the
-'\code{traps}' attribute of \code{capthist} (Borchers and Efford 2008,
+likelihood depends on the detector type (`multi' or `proximity') of the
+\code{traps} attribute of \code{capthist} (Borchers and Efford 2008,
 Efford, Borchers and Byrom 2009, Efford, Dawson and Borchers 2009). The
-'multi' form of the likelihood is also used, with a warning, when
-detector type = 'single' (see Efford et al. 2009). The default \code{model}
+`multi' form of the likelihood is also used, with a warning, when
+detector type = `single' (see Efford et al. 2009). The default \code{model}
 is null (constant density and detection probability). The set of
 variables available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B), group (g), and others that appear
@@ -61,8 +62,8 @@ more on defining models.
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
 \code{sessioncov} and \code{groups} are used only when needed for terms
-in one of the model specifications. Default \code{link} is list(D='log',
-g0='logit', sigma='log').
+in one of the model specifications. Default \code{link} is \code{list(D='log',
+g0='logit', sigma='log')}.
 
 If \code{start} is missing then \code{\link{autoini}} is used for D, g0
 and sigma, and other beta parameters are set initially to arbitrary
@@ -76,25 +77,39 @@ intervention is not allowed.
 
 \code{details$distribution} specifies the distribution of the number of
 individuals detected; this may be conditional on the number in the
-masked area ('binomial') or unconditional ('poisson').
+masked area (`binomial') or unconditional (`poisson').
 \code{distribution} affects the sampling variance of the estimated
-density. The default is 'poisson'.
+density. The default is `poisson'.
+
+\code{details$binomN} determines the distribution that is fitted to each
+count (detections of an individual at a particular detector, on a
+particular occasion) when the detectors are of type `count':
+
+\itemize{
+\item{binomN > 1} {binomial with size binomN}
+\item{binomN = 1} {Bernoulli}
+\item{binomN = 0} {Poisson}
+\item{binomN < 0} {negative binomial with size abs(binomN) -- see help(dnbinom) }
+}
+
+In this version the `size' parameter of the negative binomial is not
+estimated: it must be supplied. \code{binomN} should be an integer
+unless negative.
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.
-Options are 'none' (no variances), 'auto' (the default) or 'fdhess' (use
-the function fdHess in \pkg{nlme}).  If 'auto' then the Hessian from the
+Options are `none' (no variances), `auto' (the default) or `fdhess' (use
+the function fdHess in \pkg{nlme}).  If `auto' then the Hessian from the
 optimisation function is used.
 
 \code{details$LLonly} = TRUE causes the function to returns a single
-evaluation of the log likelihood at the 'start' values.
+evaluation of the log likelihood at the `start' values.
 
 \code{details$scalesigma} = TRUE causes sigma to be scaled by
 \eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}.
 
 \code{details$scaleg0} = TRUE causes g0 to be scaled by
-\eqn{\mathrm{sigma}^{-2}}{sigma^-2}. The corresponding 'real' parameters
-are marked with an asterisk in output (e.g. g0*).
+\eqn{\mathrm{sigma}^{-2}}{sigma^-2}.
 
 \code{details$centred} = TRUE causes coordinates of both traps and mask
 to be centred on the centroid of the traps, computed separately for each
@@ -102,13 +117,13 @@ session in the case of multi-session data. This may be necessary to
 overcome numerical problems when x- or y-coordinates are large
 numbers. The default (1.4.0) is not to centre coordinates.
 
-If \code{method} = 'Newton-Raphson' then \code{\link[stats]{nlm}} is
+If \code{method = 'Newton-Raphson'} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood; otherwise
 \code{\link[stats]{optim}} is used with the chosen method
-('BFGS','Nelder-Mead', etc.).  A feature of \code{nlm} is that it takes a
+(`BFGS', `Nelder-Mead', etc.).  A feature of \code{nlm} is that it takes a
 large step early on in the maximization that may cause floating point
 underflow or overflow in one or more real parameters.  This can be
-controlled by passing the 'stepmax' argument of \code{nlm} in the \dots
+controlled by passing the `stepmax' argument of \code{nlm} in the \dots
 argument of \code{secr.fit} (see first example).
 
 If \code{verify} = TRUE then \code{\link{verify}} is called to check
@@ -128,11 +143,11 @@ The function \code{secr.fit} returns an object of class secr.  This has componen
   \item{groups }{saved input}
   \item{dframe }{saved input}
   \item{design }{reduced design matrices, parameter table and parameter index array for actual animals (see \code{\link{secr.design.MS}})}
-  \item{design0 }{reduced design matrices, parameter table and parameter index array for 'naive' animal (see \code{\link{secr.design.MS}})}
+  \item{design0 }{reduced design matrices, parameter table and parameter index array for `naive' animal (see \code{\link{secr.design.MS}})}
   \item{start }{vector of starting values for beta parameters}
-  \item{link }{list with components for each real parameter (e.g., 'D', 'g0'), the name of the link function used for each real parameter. Component 'z' is NULL unless detectfn = 1 (hazard-rate). }
+  \item{link }{list with components for each real parameter (e.g., `D', `g0'), the name of the link function used for each real parameter. Component `z' is NULL unless detectfn = 1 (hazard-rate). }
   \item{fixed }{saved input}
-  \item{parindx }{list with possible components 'D', 'g0', 'sigma' and 'z', for the indices of the 'beta' parameters associated with each real parameter ('z' NULL unless detectfn = 1).}
+  \item{parindx }{list with possible components `D', `g0', `sigma' and `z', for the indices of the `beta' parameters associated with each real parameter (`z' NULL unless detectfn = 1).}
   \item{model }{saved input}
   \item{details }{saved input}
   \item{vars }{vector of unique variable names in \code{model} }
@@ -174,14 +189,14 @@ One system of units is used throughout \pkg{secr}. Distances are in metres and
 areas are in hectares (ha). The unit of density is animals per
 hectare. 1 ha = 10000 m^2 = 0.01 km^2. To convert density to animals /
 km^2, multiply by 100.
-  
+
 \code{print}, \code{AIC}, \code{vcov}, and \code{predict} methods
 are provided. \code{derived} is used to compute the derived parameters
-'esa' (effective sampling area) and 'D' (density) for models fitted by
+`esa' (effective sampling area) and `D' (density) for models fitted by
 maximizing the conditional likelihood (CL = TRUE).
 
-Components 'version' and 'starttime' were introduced in version 1.2.7,
-and recording of the completion time in 'fitted' was discontinued.
+Components `version' and `starttime' were introduced in version 1.2.7,
+and recording of the completion time in `fitted' was discontinued.
 
 }
 

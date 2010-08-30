@@ -36,7 +36,10 @@ Although \code{rbind.capthist} looks like an S3 method, it isn't. The
 full function name must be used.
 
 \code{MS.capthist} treats each source object as the data for a separate
-session. Compatibility is not required.
+session. Compatibility is not required. The \dots argument may include
+lists of single-session capthist objects regardless of whether the list
+has the class ('list','capthist').
+
 }
 
 \value{
@@ -57,9 +60,9 @@ with number sessions equal to the number of objects in \dots.
 
 ## simulate 2-part mixture
 temptrap <- make.grid(nx = 8, ny = 8)
-temp1 <- sim.capthist(temptrap, 
+temp1 <- sim.capthist(temptrap,
     detectpar = list(g0 = 0.1, sigma = 40))
-temp2 <- sim.capthist(temptrap, 
+temp2 <- sim.capthist(temptrap,
     detectpar = list(g0 = 0.2, sigma = 20))
 temp3 <- rbind.capthist(temp1, temp2)
 
@@ -68,6 +71,15 @@ temp3 <- rbind.capthist(temp1, temp2)
 ## nor is 'traps set'
 (summary(temp1)$counts +  summary(temp2)$counts) -
     summary(temp3)$counts
+
+## assemble a multi-session object
+## we fake the 2010 data by copying from 2005
+## note must provide name each session
+data(ovenbird)
+fakeCH <- ovenCH[['2005']]
+MS.capthist(ovenCH, '2010' = fakeCH)
+
 }
+
 \keyword{ manip }
 
