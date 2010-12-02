@@ -109,8 +109,6 @@ understanding AIC and BIC in model selection. \emph{Sociological Methods
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{AIC.secr}}, \code{\link{secr.fit}}}
 
 \examples{
@@ -118,7 +116,6 @@ understanding AIC and BIC in model selection. \emph{Sociological Methods
 ## secrdemo.0 is a null model
 ## secrdemo.b has a learned trap response
 
-data(secrdemo)
 model.average(secrdemo.0, secrdemo.b)
 model.average(secrdemo.0, secrdemo.b, betanames = c('D','g0','sigma'))
 

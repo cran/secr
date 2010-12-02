@@ -4,59 +4,106 @@
 ## 2009 02 12 2009 08 09 2009 09 13 (limits)
 ## 2009 11 04 signal strength
 ## 2010 07 01 alpha detectfn
+## 2010 09 15 amend message for missing cutval
+## 2010 11 01 enabled plot detectfn=9
+## default of limits changed to FALSE in plot.secr()
 ############################################################################################
 
-plot.secr <- function (x, newdata=NULL, add = FALSE,
-    sigmatick = FALSE, rgr = FALSE, limits = TRUE, alpha = 0.05, xval = 0:200,
-    ylim = NULL, xlab = NULL, ylab = NULL, ...)
-{
-    HN <- function (pars, r) {
+
+    HN <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]
         g0 * exp (-r^2 / 2 / sigma^2)
     }
 
-    HZ <- function (pars, r) {
+    HZ <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * (1 - exp (-(r / sigma)^-z))
     }
 
-    EX <- function (pars, r) {
+    EX <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * exp (-r / sigma)
     }
-    UN <- function (pars, r) {
+    UN <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]
         ifelse (r<=sigma, g0, 0)
     }
-    CHN <- function (pars, r) {
+    CHN <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        1 - (1 - g0 * exp (-r^2 / 2 / sigma^2)) ^ z
+##        1 - (1 - g0 * exp (-r^2 / 2 / sigma^2)) ^ z    ## changed 2010-10-10
+        g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
     }
-    WEX <- function (pars, r) {
+    WEX <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
         ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
     }
-    ANN <- function (pars, r) {
+    ANN <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
         g0 * exp (-(r-w)^2 / 2 / sigma^2)
     }
-    SS <- function (pars, r) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(x$details$cutval))
-            stop ('require cut parameter for signal strength plot')
-        mu <- beta0 + beta1 * r
-        1 - pnorm (q=x$details$cutval, mean=mu, sd=sdS)
+    CLN <- function (pars, r, cutval) {
+        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+        CV2 <- (z/sigma)^2
+        sdlog <- log(1 + CV2)^0.5
+        meanlog <- log(sigma) - sdlog^2/2
+        g0 * plnorm(r, meanlog, sdlog, lower.tail = FALSE)
     }
-    SSS <- function (pars, r) {
+##    CN <- function (pars, r, cutval) {
+##        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+##        g0 * pnorm(r, sigma, z, lower.tail = FALSE)
+##    }
+    CG <- function (pars, r, cutval) {
+        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+        g0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
+    }
+    CN <- function (pars, r, cutval) {
+        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+        x <- z * (r - sigma)
+        g0 * (1 + (1 - exp(x)) / (1 + exp(x)))/2
+    }
+    BSS <- function (pars, r, cutval) {
+        b0 <- pars[1]; b1 <- pars[2]
+        gam <- -(b0 + b1 * r);
+        pnorm (gam, mean=0, sd=1, lower=FALSE)
+    }
+    SS <- function (pars, r, cutval) {
         beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(x$details$cutval))
-            stop ('require cut parameter for signal strength plot')
+        if (is.null(cutval))
+            stop ("require 'details$cutval' for signal strength plot")
+        mu <- beta0 + beta1 * r
+        1 - pnorm (q=cutval, mean=mu, sd=sdS)
+    }
+    SSS <- function (pars, r, cutval) {
+        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
+        if (is.null(cutval))
+            stop ("require 'details$cutval' for signal strength plot")
         ## spherical so assume distance r measured from 1 m
         mu <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
         mu[r<1] <- beta0
-        1 - pnorm (q=x$details$cutval, mean=mu, sd=sdS)
+        1 - pnorm (q=cutval, mean=mu, sd=sdS)
     }
 
+plot.secrlist <- function (x, newdata=NULL, add = FALSE,
+    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
+    ylim = NULL, xlab = NULL, ylab = NULL, ..., overlay = TRUE)
+{
+    if (overlay) {
+        plot(x[[1]], newdata, add, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
+               ylab, ...)
+        lapply(x[-1], plot, newdata, TRUE, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
+               ylab, ...)
+    }
+    else {
+        lapply(x, plot, newdata, TRUE, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
+               ylab, ...)
+    }
+    invisible()
+}
+
+plot.secr <- function (x, newdata=NULL, add = FALSE,
+    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
+    ylim = NULL, xlab = NULL, ylab = NULL, ...)
+{
     gline <- function (predicted, rowi = 1, eps = 1e-10) {
         ## eps is used to limit y to range where gradient() works
         ## may need later adjustment
@@ -68,32 +115,17 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             out
         }
         else {
-
-            parnames <- switch (x$detectfn+1,
-                c('g0','sigma'),
-                c('g0','sigma','z'),
-                c('g0','sigma'),
-                c('g0','sigma','z'),
-                c('g0','sigma'),
-                c('g0','sigma','w'),
-                c('g0','sigma','w'),
-                ,,,
-                c('beta0','beta1', 'sdS'),
-                c('beta0','beta1', 'sdS')
-            )
-
-            pars <- predicted[parnames,'estimate']
-
+            pars <- predicted[parnames(x$detectfn),'estimate']
             pars[is.na(pars)] <- unlist(x$fixed)
-            dfn <- switch (x$detectfn+1, HN, HZ, EX, UN, CHN, WEX, ANN,,,,SS,SSS)   ## omits binary SS!
+            dfn <- switch (x$detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
             if (sigmatick) {
               sigma <- pars[2]
-              y <- dfn(pars, sigma)
+              y <- dfn(pars, sigma, x$details$cutval)
               dy <- par()$usr[4]/20
               segments (sigma, y-dy, sigma, y+dy)
             }
 
-            y <- dfn(pars, xval)
+            y <- dfn(pars, xval, x$details$cutval)
 
             if (rgr) {
               y <- xval * y
@@ -186,14 +218,17 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard-rate z!
     temp <- predict (x, newdata)
     if (is.null(ylim)) {
-        if (x$detectfn %in% c(10,11)) {
+        if (x$detectfn %in% c(9,10,11)) {      ## included 9 2010-11-01
             ylim <- c(0, 1)
         }
         else {
             getmax <- function(x) {
                 g0 <- x['g0','estimate']
                 se.g0 <- x['g0','SE.estimate']
-                if (limits) min(1, g0 + z * se.g0) else g0
+                if (limits & is.finite(se.g0))  ## is.finite 2010-10-10
+                    min(1, g0 + z * se.g0)
+                else
+                    g0
             }
             if (is.data.frame(temp)) maxg0 <- getmax(temp)
             else maxg0 <- max(sapply (temp, getmax))
@@ -208,8 +243,10 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             xlab <- 'Distance  (m)'
         if (is.null(ylab)) {
            binomN <- ifelse(is.null(x$details$binomN),0,x$details$binomN)
-           dlambda <- (detector(traps(x$capthist)) %in% c('quadratbinary', 'polygon')) |
-               ((detector(traps(x$capthist)) %in% c('count','quadratcount')) & (binomN==0))
+##           dlambda <- (detector(traps(x$capthist)) %in% c('quadratbinary', 'polygon')) |
+##               ((detector(traps(x$capthist)) %in% c('count','quadratcount')) & (binomN==0))
+           dlambda <- (detector(traps(x$capthist)) %in% c('polygon')) |
+               ((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
            if (dlambda)
                ylab <- 'Detection lambda'
            else
@@ -226,65 +263,18 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     add = FALSE, sigmatick = FALSE, rgr = FALSE,
     xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...)
 {
-    HN <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]
-        g0 * exp (-r^2 / 2 / sigma^2)
-    }
-
-    HZ <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * (1 - exp (-(r / sigma)^-z))
-    }
-
-    EX <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * exp (-r / sigma)
-    }
-    UN <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]
-        ifelse (r<=sigma, g0, 0)
-    }
-    CHN <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        1 - (1 - g0 * exp (-r^2 / 2 / sigma^2)) ^ z
-    }
-    WEX <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
-    }
-    ANN <- function (pars, r) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        g0 * exp (-(r-w)^2 / 2 / sigma^2)
-    }
-    SS <- function (pars, r) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(details$cutval))
-            stop ('require cut parameter for signal strength plot')
-        mu <- beta0 + beta1 * r
-        1 - pnorm (q=details$cutval, mean=mu, sd=sdS)
-    }
-
-    SSS <- function (pars, r) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(details$cutval))
-            stop ('require cut parameter for signal strength plot')
-        ## spherical so assume distance r measured from 1 m
-        mu <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
-        mu[r<1] <- beta0
-        1 - pnorm (q=details$cutval, mean=mu, sd=sdS)
-    }
 
     gline <- function (pars) {
         ## here pars is a vector of parameter values
 
-        dfn <- switch (detectfn+1, HN, HZ, EX, UN, CHN, WEX, ANN,,,,SS,SSS)
+        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS)
         if (sigmatick) {
             sigma <- pars[2]
-            y <- dfn(sigma, pars)
+            y <- dfn(sigma, pars,details$cutval)
             dy <- par()$usr[4]/20
             segments (sigma, y-dy, sigma, y+dy)
         }
-        y <- dfn(pars, xval)
+        y <- dfn(pars, xval, details$cutval)
         if (rgr) {
             y <- xval * y
             ymax <- par()$usr[4]
@@ -298,17 +288,24 @@ detectfnplot <- function (detectfn, pars, details = NULL,
 
     ### mainline
 
+    if (is.list(pars)) {   ## 2010-10-26
+        if (is.list(pars[[1]]))
+            pars <- matrix(unlist(pars), nr = length(pars), byrow = T)
+        else
+            pars <- unlist(pars)
+    }
+
     if (!is.matrix(pars)) pars <- matrix(pars, nr=1)
 
     ## added 2010-07-01
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    needp <- c(2,3,2,3,2,3,3,0,0,0,3,3)[detectfn+1]
-    nam <- c('halfnormal','hazard','exponential','uniform','compound halfnormal',
-        'w exponential', 'annular normal',"","","", 'signal strength', 'binary signal strength')
+    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3)[detectfn+1]
+
     if (ncol(pars) != needp)
-        stop(paste('require', needp, 'parameters for', nam[detectfn+1], 'detection function'))
+        stop(paste("require", needp, "parameters for", detectionfunctionname(detectfn),
+                   "detection function"))
 
     if (is.null(ylim)) {
         if (detectfn %in% c(10,11)) {
@@ -355,6 +352,12 @@ attenuationplot <- function (pars, add = FALSE, spherical = TRUE,
         data.frame(x=xval, y=y)
     }
 
+    if (is.list(pars)) {   ## 2010-10-26
+        if (is.list(pars[[1]]))
+            pars <- matrix(unlist(pars), nr = length(pars), byrow = T)
+        else
+            pars <- unlist(pars)
+    }
     if (!is.matrix(pars)) pars <- matrix(pars, nr=1)
 
     if (is.null(ylim)) {

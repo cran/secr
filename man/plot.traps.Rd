@@ -40,8 +40,6 @@ Axes are not labeled. Use \code{\link{axis}} and \code{\link{mtext}} if necessar
 None
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{plot}}, \code{\link{traps}} }
 
 \examples{

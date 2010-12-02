@@ -41,11 +41,8 @@ is conservative, dropping only components in \code{drop} and not in
 a list retaining selected components.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \examples{
 
-data(secrdemo)
 names(secrdemo.0)
 names(trim(secrdemo.0))
 object.size(secrdemo.0)

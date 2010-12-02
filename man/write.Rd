@@ -37,10 +37,7 @@ write.traps(object, file = "", ..., deblank = TRUE,  header = TRUE,
   both the capture data and trap layout from a \code{capthist} object.
   
 }
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \examples{
-  data (secrdemo)
   write.captures (captdata)
 }
 \keyword{ IO }

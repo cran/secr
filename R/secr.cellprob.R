@@ -15,7 +15,9 @@ secr.cellprob <- function (beta, parindx, link, fixed, designD, design, design0 
     else sessionlevels <- 1
     nsession <- length(sessionlevels)
 
-    if (!detectfn %in% c(0:2,5)) stop ('detectfn can only take values 0 (halfnormal), 1 (hazard-rate), 2 (exponential) or 5 (w-exponential) for now')
+    if (!detectfn %in% c(0:2,5))
+        stop ("'detectfn' can only take values 0 (halfnormal), 1 (hazard-rate),",
+              " 2 (exponential) or 5 (w-exponential) for now")
 
     #--------------------------------------------------------------------
     # Groups
@@ -43,8 +45,10 @@ secr.cellprob <- function (beta, parindx, link, fixed, designD, design, design0 
 
     #--------------------------------------------------------------------
 
-if (nsession>1) stop ('not yet for multiple sessions')
-if (CL) stop ('not yet for conditional likelihood')
+if (nsession>1)
+    stop ("not yet for multiple sessions")
+if (CL)
+    stop ("not yet for conditional likelihood")
 
     ####################################################
     ## start loop over sessions
@@ -88,7 +92,8 @@ if (CL) stop ('not yet for conditional likelihood')
             )
         }
         if (dettype == 4) {    # area search
-            if (is.null(attr(session.traps,'spacing'))) stop ('Cell spacing required')
+            if (is.null(attr(session.traps,'spacing')))
+                stop ("cell spacing required")
             searchcell <- attr(session.traps,'spacing')^2 * 0.0001
         }
         else searchcell <- 1    # for proximity
@@ -163,9 +168,8 @@ cat ('*cc', nrow(Xrealparval), '\n')
             resultcode=integer(1)
     )
 
-        if (temp$resultcode != 0) stop (paste('Error in external function secr.cellprob'), call.=F)
-
-
+        if (temp$resultcode != 0)
+            stop ("error in external function 'secr.cellprob'")
     }
     ## end loop over sessions
     ####################################################

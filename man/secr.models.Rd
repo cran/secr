@@ -105,7 +105,5 @@ mask, given the current magnitude of sigma.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \keyword{ models }
 

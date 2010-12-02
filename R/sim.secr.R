@@ -20,10 +20,14 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
 {
 
 ##  check input
-    if (!inherits(object,'secr')) stop ('sim.secr requires secr object')
-    if (object$CL) stop ('sim.secr not implemented for conditional model')
-    if (!all(sapply(object$fixed, is.null))) stop ('sim.secr not implemented for fixed parameters')
-    if (is.null(object$D)) stop('old secr object does not have D')
+    if (!inherits(object,'secr'))
+        stop ("requires 'secr' object")
+    if (object$CL)
+        stop ("not implemented for conditional likelihood")
+    if (!all(sapply(object$fixed, is.null)))
+        stop ("not implemented for fixed parameters")
+    if (is.null(object$D))
+        stop("old 'secr' object does not have 'D' component")
 
 ## setup
     # dim(object$D)[1] is number of mask points
@@ -51,7 +55,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
     }
     ##################
 
-## loop over replicates
+    ## loop over replicates
     for (i in 1:nsim) {
         sesspopn <- list()
         for (sessnum in 1:nsession) {
@@ -59,14 +63,17 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
             else mask <- object$mask[[sessnum]]
             popn <- list()
             for (g in 1:ngrp) {
-                density <- object$D[,g,sessnum]
+                if (object$model$D == ~1) {
+                    density <- object$D[1,g,sessnum]   ## homogeneous
+                    mod2D <- 'poisson'
+                }
+                else {
+                    density <- object$D[,g,sessnum]    ## inhomogeneous
+                    mod2D <- 'IHP'
+                }
                 if (chat > 1)
                     density <- density / chat
-
-if (object$model$D == ~1)
-    popn[[g]] <- sim.popn (D = density, core = mask, model2D = 'IHP')
-else
-    popn[[g]] <- sim.popn (D = density[1], core = mask, model2D = 'poisson')
+                popn[[g]] <- sim.popn (D = density, core = mask, model2D = mod2D)
 
                 ## following line replaces any previous individual covariates
                 ## ---groups only---
@@ -108,7 +115,8 @@ sim.secr <- function (object, nsim = 1,
 
    if (is.numeric(test)) {
         n.extract <- length(test)
-        if (n.extract<=0) stop ('invalid extractfn in sim.secr')
+        if (n.extract<=0)
+            stop ("invalid 'extractfn'")
     }
     detectnames <- names(object$design0[[1]])   ## names of real detection parameters
     details <- replace(object$details, 'hessian', hessian)
@@ -127,7 +135,7 @@ sim.secr <- function (object, nsim = 1,
     }
     else {
         if (any(class(data) != c('list','secrdata')))
-            stop('invalid data')
+            stop("invalid data")
     }
 
     fitmodel <- function (sc) {
@@ -237,16 +245,21 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
 
         dettype <- detectorcode(session.traps, MLonly = FALSE)
         if (dettype < -1)
-            stop (paste('detector type', detector(session.traps), 'not implemented'))
+            stop ("detector type ",
+                  detector(session.traps),
+                  " not implemented")
+
         if (dettype %in% c(2)) {                      # count detectors
-            binomN <- attr(session.traps, 'binomN')   # 0 for Poisson, >0 for binomial
-            if (is.null(binomN)) stop ('Count detectors must have attribute binomN', call.=F)
-            if (binomN < 0) {
-                binomN <- 0
-                warning ("Invalid number of binomial trials; using Poisson instead")
-            }
+            ## 2010-12-01
+            ## suspend use of traps attribute until resolve vector/scalar
+            ## binomN <- attr(session.traps, 'binomN')   # <0 negBin, 0 Poisson, >0 binomial
+            ## if (is.null(binomN))...
+            binomN <- object$details$binomN
+            if (is.null(binomN))
+                binomN <- 0                           # default Poisson
         }
-        else binomN <- 0
+        else binomN <- 0   # not used, just place holder
+
         if (dettype %in% c(6,7)) {
             k <- c(table(polyID(session.traps)),0)
             K <- length(k)-1
@@ -281,15 +294,9 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         if (is.null(used)) used <- rep(1,s*K)
         NR <- N[sessnum]
 
-
-## bug in following call 2010-06-30
-## tries to allocate too much memory
-
-#        print(NR)
-#        print(s)
-#        print(k)
-#        print(object$details$nmix)
-#        print(session.animals)
+## 2010-06-30 following call tries to allocate too much memory
+## 2010-12-02 fixed by reducing safety margin for detectedXY, signal
+##            from 100 to 10
 
         temp <- .C('simsecr', PACKAGE = 'secr',
             as.integer(dettype),
@@ -307,22 +314,23 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             as.double(trps),
             as.integer(used),
             as.integer(Markov),
-            as.integer(binomN),                            # count detector
-            as.double(object$details$cutval),              # detection threshold on transformed scale
+            as.integer(binomN),                # used only for count detector checked 2010-12-01
+            as.double(object$details$cutval),  # detection threshold on transformed scale
             as.integer(object$detectfn),
             n = integer(1),
             caught = integer(NR),
-            detectedXY = double (NR*s*K*200),  # safety margin 100 detections per animal per detector per occasion
-            signal = double (NR*s*K*100),      # safety margin 100 detections per animal per detector per occasion
+            detectedXY = double (NR*s*K*20),  # safety margin 10 detections per animal per detector per occasion
+            signal = double (NR*s*K*10),      # safety margin 10 detections per animal per detector per occasion
             value = integer(NR*s*K),
             resultcode = integer(1)
         )
 
         if (temp$resultcode != 0) {
           if ((temp$resultcode == 2) && (dettype %in% (6:7)))
-              stop ('>100 detections per animal per polygon per occasion')
+              stop (">100 detections per animal per polygon per occasion")
           else
-              stop (paste('simulated detection failed, code ', temp$resultcode))
+              stop ("simulated detection failed, code ",
+                    as.character(temp$resultcode))
         }
         if (dettype %in% c(-1,0)) {
             w <- array(dim=c(s,temp$n), dimnames = list(1:s, NULL))

@@ -94,8 +94,6 @@ Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
 
 \examples{
 
-require (graphics)
-data(housemouse)
 plot(housemouse, title = paste('Coulombe (1965), Mus musculus,',
     'California salt marsh'), border = 5, rad = 0.5,
     gridlines = FALSE)

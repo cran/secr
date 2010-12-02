@@ -13,8 +13,8 @@ population sampled with an array of passive detectors, such as traps. }
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 1.4.1\cr
-Date: \tab 2010-08-29\cr
+Version: \tab 1.5.1\cr
+Date: \tab 2010-12-02\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -45,9 +45,7 @@ documentation or new features consistent with the overall design.
 
 }
 
-\author{
-Murray Efford \email{murray.efford@otago.ac.nz}
-}
+\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \section{Acknowledgements}{
 
@@ -56,7 +54,8 @@ likelihood, and I'm grateful for his continuing advice. Jeff Laake
 provided encouragement and reviewed an early version. Ray Brownrigg got
 my Windows code running under Unix. Deanna Dawson editted some of the
 documentation (the cleaner bits!) and her support and collaboration were
-important throughout.
+important throughout. Tiago Marques suggested many improvements to the
+help pages.
 
 }
 

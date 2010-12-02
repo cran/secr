@@ -13,12 +13,12 @@ A place for hints and miscellaneous advice.
 Follow the usual procedure for installing binaries from CRAN, or ...
   
 Under Windows, install the package binary from the
-Rgui. Save the file secr_1.4.x.zip to a local folder (`x' is the release
+Rgui. Save the file secr_1.5.x.zip to a local folder (`x' is the release
 number) and use the menu option "Packages | Install packages(s) from
 local zip files...".
 
 For other systems you may need to install the source package
-secr_1.4.x.tar.gz.
+secr_1.5.x.tar.gz.
 
 Whatever your system, you also need to get the package \pkg{abind} (use
 Packages | Install package(s)... in Windows to download from
@@ -146,12 +146,11 @@ arrays) and `names' (lists). \pkg{secr} hides quite a lot of useful data
 as named `attributes'. Usually you will use summary and extraction
 methods (\code{traps}, \code{covariates}, \code{usage} etc.) to view and change
 the attributes of the various classes of object in \pkg{secr}. If you're
-curious, you can reveal the lot with `attributes'.  For example:
+curious, you can reveal the lot with `attributes'.  For example, with
+the demonstration capture history data `captdata':
 
-\code{data(secrdemo)}
 
 \code{traps(captdata)       ## extraction method for 'traps'}
-
 \code{attributes(captdata)  ## all attributes}
 
 }
@@ -162,8 +161,6 @@ Claeskens, G. and Hjort N. L. (2008) \emph{Model Selection and Model
 Averaging}. Cambridge: Cambridge University Press.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \keyword{ manip }
 

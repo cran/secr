@@ -165,7 +165,7 @@ verify.traps <- function (object, report = 2, ...) {
 ## -- Occasions with no used detectors
 
     if (!inherits(object, 'traps')) {
-         stop ('object must be of class traps')
+         stop ("object must be of class 'traps'")
     }
 
     if (inherits(object, 'list')) {
@@ -178,7 +178,8 @@ verify.traps <- function (object, report = 2, ...) {
     else {
 
         single <- detector(object) %in% c('single')
-        area <- detector(object) %in% c('quadratcount','quadratbinary')
+##        area <- detector(object) %in% c('quadratcount','quadratbinary')
+        area <- FALSE
         poly <- detector(object) %in% c('polygon')
 
         usagedetectorsOK <- TRUE
@@ -288,7 +289,8 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 ## -- Detections at unused detectors
 
 
-    if (!inherits(object, 'capthist')) stop ('object must be of class capthist')
+    if (!inherits(object, 'capthist'))
+        stop ("object must be of class 'capthist'")
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report, 1))
         anyerrors <- any(sapply(temp, function(x) x$errors))
@@ -301,9 +303,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## preliminaries
 ##        dim3 <- detector(traps(object)) %in% c('proximity', 'count', 'quadratbinary', 'quadratcount', 'signal', 'polygon','transect')
         dim3 <- length(dim(object)) == 3
-        count <- detector(traps(object)) %in% c('count', 'areacount','polygon','transect')
-        area <- detector(traps(object)) %in% c('quadratbinary', 'quadratcount')
-        binary <- detector(traps(object)) %in% c('proximity', 'quadratbinary')
+        count <- detector(traps(object)) %in% c('count', 'polygon','transect')
+##        area <- detector(traps(object)) %in% c('quadratbinary', 'quadratcount')
+        area <- FALSE
+##        binary <- detector(traps(object)) %in% c('proximity', 'quadratbinary')
+        binary <- detector(traps(object)) %in% c('proximity')
         single <- detector(traps(object)) %in% c('single')
         signal <- detector(traps(object)) %in% c('signal')
         poly <- detector(traps(object)) %in% c('polygon')
@@ -392,9 +396,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             }
 
             ## 9
-            if (count) {
-                countOK <- all (object>=0)
-            }
+## blocked 2010-12-01 - no problem with 'dead' count
+##            if (count) {
+##                countOK <- all (object>=0)
+##            }
         }
 
         ## 10
@@ -452,12 +457,13 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## 14
         if (poly) {
             xy <- xy(object)
-            ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
             xyOK <- nrow(xy) == sum(abs(object))
             inpoly <- xyinpoly(xy(object), traps(object))
             inpoly <- inpoly == trap(object, name = F)
             xyinpolyOK <- all(inpoly)
-            IDOK <- all(table(ID) == apply(object,1,sum))
+## check dropped 2010-11-17
+##            ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
+##            IDOK <- all(table(ID) == apply(object,1,sum))
         }
         if (transect) {
             xy <- xy(object)
@@ -519,7 +525,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
 
                 if (!binaryOK) {
-                    cat ('More than one detection per detector per occasion at proximity or quadratbinary detector(s)\n')
+                    cat ('More than one detection per detector per occasion at proximity detector(s)\n')
                 }
 
                 if (!countOK) {
@@ -592,7 +598,8 @@ verify.mask <- function (object, report = 2, ...) {
 ## nrow(covariates) = nrow(object)
 ## ...also look at attributes?
 
-    if (!inherits(object, 'mask')) stop ('object must be of class mask')
+    if (!inherits(object, 'mask'))
+        stop ("object must be of class 'mask'")
 
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report, 1))

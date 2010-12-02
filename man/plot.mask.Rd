@@ -9,7 +9,8 @@
 
 \usage{
 \method{plot}{mask}(x, border = 20, add = F, covariate = NULL, axes = F,
-    dots = T, col = "grey", breaks = 12, ppoly = T, polycol = "red", \dots)
+    dots = T, col = "grey", breaks = 12, ppoly = T,
+    polycol = "red", \dots)
 }
 
 \arguments{
@@ -38,8 +39,6 @@ Border lines around pixels are drawn in the current foreground colour
 but remember to reset it when you've finished.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{colours}}, \code{\link{mask}} }
 

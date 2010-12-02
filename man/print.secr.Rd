@@ -52,14 +52,11 @@ models fitted by maximizing the conditional likelihood (CL = TRUE).
 Burnham, K. P. and Anderson, D. R. (2002) \emph{Model selection and multimodel inference: a practical information-theoretic approach}. Second edition. New York: Springer-Verlag.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{AIC.secr}}, \code{\link{secr.fit}} }
 
 \examples{
 
 ## load & print previously fitted null (constant parameter) model
-data(secrdemo)  
 print(secrdemo.0)
 print(secrdemo.CL, deriv = TRUE)
 

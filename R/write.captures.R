@@ -11,7 +11,8 @@ write.captures <- function (object, file='', ..., deblank = TRUE, header = TRUE,
     append = FALSE, sess = '1', ndec = 2)
 
 {
-    if (!is(object, 'capthist')) stop ('write.captures requires a capthist object')
+    if (!is(object, 'capthist'))
+        stop ("requires a 'capthist' object")
 
     if (inherits(object, 'list')) {
         write.captures (object[[1]], file = file, ..., deblank = deblank,
@@ -45,7 +46,8 @@ write.captures <- function (object, file='', ..., deblank = TRUE, header = TRUE,
             trap <- trap(object)
             temp <- data.frame (session=session, ID=ID, occ=occ, trap=trap, signal=signal)
         }
-        else if (det %in% c('proximity','count','quadratbinary','quadratcount')) {
+##        else if (det %in% c('proximity','count','quadratbinary','quadratcount')) {
+        else if (det %in% c('proximity','count')) {
                 K <- dim(object)[3]
                 session <- rep(rep(sess, n*S*K), abs(object))
                 trap <- rep(rep(row.names(traps(object)), rep(n*S, K)), abs(object))
@@ -83,7 +85,7 @@ write.captures <- function (object, file='', ..., deblank = TRUE, header = TRUE,
         if (deblank) temp$session <- gsub(' ','', temp$session)
         if (deblank) temp$session <- gsub(',','', temp$session)
         if (any(nchar(temp$session)>17)) {
-            warning ('truncating long session names')
+            warning ("truncating long session names")
             temp$session <- substring(temp$session,1,17)
         }
 

@@ -25,26 +25,41 @@ hexagon <- function (r = 20, centre = c(0,0)) {
     sweep(temp, MAR=2, STAT=centre, '+')
 }
 
-insidepoly <- function(xy, poly) {
-    np <- nrow(poly)
-    poly <- unlist(poly)  ## in case dataframe
-    temp <- .C("inside", PACKAGE = "secr", as.double(xy),
-        as.integer(0), as.integer(np-1), as.integer(np),
-        as.double(poly), result = integer(1))
-    as.logical(temp$result)
-}
-
 make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, originxy=c(0,0))
 # see make.grid for binomN
 {
-##    if (!( detector %in% .localstuff$validdetectors ))
-##        stop ('invalid detector type')
+    if (!( detector %in% .localstuff$validdetectors ))
+        stop ("invalid detector type")
     dy2 <- spacing * cos (pi / 6)
     xvals <- seq(from = originxy[1], length = nx, by = spacing)
     yvals <- seq(from = originxy[2], length = ny, by = dy2)
     grid <- expand.grid(x = xvals, y = yvals)
     oddrow <- as.logical(rep ((0:(ny-1)) %% 2, rep(nx, ny)))
     grid$x[oddrow] <- grid$x[oddrow] + spacing/2
+    attr(grid, 'detector')   <- detector
+    attr(grid, 'binomN')     <- binomN
+    attr(grid, 'class')      <- c('traps', 'data.frame')
+    attr(grid, 'spacex')     <- NULL
+    attr(grid, 'spacey')     <- NULL
+    attr(grid, 'spacing')    <- spacing
+    attr(grid, 'searchcell') <- NULL
+    attr(grid, 'usage')      <- NULL
+    attr(grid, 'covariates') <- NULL
+    grid
+}
+
+make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, originxy=c(0,0))
+{
+    ##    if (!( detector %in% .localstuff$validdetectors ))
+    ##        stop ('invalid detector type')
+    dy2 <- spacing * cos (pi / 6)
+    xvals <- seq(from = originxy[1], length = nx, by = spacing)
+    yvals <- seq(from = originxy[2], length = ny, by = dy2)
+    grid <- expand.grid(x = xvals, y = yvals)
+    oddrow <- as.logical(rep ((0:(ny-1)) %% 2, rep(nx, ny)))
+    third  <- as.logical(rep ((0:(nx-1)) %% 3,ny))
+    grid$x[oddrow] <- grid$x[oddrow] + 3*spacing/2
+    grid <- grid[third,]
     attr(grid, 'detector')   <- detector
     attr(grid, 'binomN')     <- binomN
     attr(grid, 'class')      <- c('traps', 'data.frame')
@@ -65,7 +80,7 @@ ringID <- function (hextraps) {
     angle <- apply(hextraps, 1, radians)
     ring <- trunc(d / attr(hextraps, 'spacing') + 0.5) + 1
     if (max(ring)>26)
-        stop ('limited to 26 rings')
+        stop ("limited to 26 rings")
     ringorder <- order(ring, angle)
     hextraps[,] <- hextraps[ringorder,]
     ring <- ring[ringorder]
@@ -78,10 +93,12 @@ ringID <- function (hextraps) {
 clip.hex <- function (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     fuzz = 1e-3, ID = 'num', ...) {
     hex <- hexagon(side+fuzz, centre)
-    temp <- subset(traps, apply(traps, 1, insidepoly, poly=hex), ...)
+    hex <- matrix(unlist(hex), nc = 2)
+    OK <- insidepoly(traps, hex)
+    temp <- subset(traps, OK, ...)
     if (!is.null(ID)) {
         if (!(ID %in% c('num', 'alpha')))
-            stop ('ID must be num or alpha')
+            stop (paste("ID must be", dQuote("num"), "or", dQuote("alpha")))
         if (ID == 'num') row.names(temp) <- 1:nrow(temp)
         if (ID == 'alpha') temp <- ringID(temp)
     }

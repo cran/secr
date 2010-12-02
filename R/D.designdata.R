@@ -72,7 +72,8 @@ D.designdata <- function (mask, Dmodel, grps, sessionlevels, sessioncov = NULL) 
     ))
 
     if ('g' %in% vars) {
-        if (length(grps)<1) stop('No groups specified')
+        if (length(grps)<1)
+            stop("no groups specified")
         dframe$g <- insertdim(factor(grps), 2, dims)
     }
 
@@ -103,11 +104,13 @@ D.designdata <- function (mask, Dmodel, grps, sessionlevels, sessioncov = NULL) 
     }
 
     if ((!is.null(covariates(mask))) & (length(vars>0))) {
-        if (MS) stop ('D.designdata does not yet handle mask covariates for  multiple sessions')
+        if (MS)
+            stop ("D.designdata does not yet handle mask covariates for multiple sessions")
         findvars (covariates(mask), vars, 1, std = FALSE)
     }
 
-    if (length(vars)>0) stop (paste(paste(vars,collapse=','),'not found'))
+    if (length(vars)>0)
+        stop (paste(paste(vars,collapse=','),"not found"))
 
     attr(dframe, 'dimD') <- c(nmask, ngrp, R)
     dframe

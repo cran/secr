@@ -1,5 +1,6 @@
 \name{plot.secr}
 \alias{plot.secr}
+\alias{plot.secrlist}
 \alias{detectfnplot}
 \alias{attenuationplot}
 
@@ -11,8 +12,13 @@
 
 \usage{
 \method{plot}{secr}(x, newdata = NULL, add = FALSE,
-    sigmatick = FALSE, rgr = FALSE, limits = TRUE, alpha = 0.05,
+    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05,
     xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...)
+
+\method{plot}{secrlist}(x, newdata = NULL, add = FALSE,
+    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05,
+    xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...,
+    overlay = TRUE)
 
 detectfnplot (detectfn, pars, details = NULL, add = FALSE,
     sigmatick = FALSE, rgr = FALSE, xval = 0:200, ylim = NULL,
@@ -37,10 +43,11 @@ attenuationplot (pars, add = FALSE, spherical = TRUE,
   \item{xlab}{ label for x axis }
   \item{ylab}{ label for y axis }
   \item{\dots}{ arguments to pass to \code{lines} }
-
+  \item{overlay}{ logical; if TRUE then automatically \code{add = TRUE}
+  for plots after the first }
   \item{detectfn}{integer code or character string for shape of
         detection function 0 = halfnormal etc. -- see \link{detectfn} }
-  \item{pars}{ vector or matrix of parameter values }
+  \item{pars}{ list, vector or matrix of parameter values }
   \item{details}{ list of ancillary parameters }
   \item{spherical}{ logical for whether to include spherical spreading term }
 
@@ -54,8 +61,11 @@ estimates and plot a curve for each row in \code{newdata}.
 If axis labels are not provided they default to 'Distance (m)' and 'Detection probability' or 'Detection lambda'.
 
 \code{detectfnplot} is an alternative in which the user nominates the
-type of function and provides parameter values. If pars is a matrix then
-a separate curve is plotted with the parameter values in each row.
+type of function and provides parameter values. \code{pars} maybe a list
+as from \code{\link{detectpar}}; it is first coerced to a numeric vector
+with \code{unlist}. Parameter values must be in the expected order
+(e.g. g0, sigma, z). If \code{pars} is a matrix then a separate
+curve is plotted with the parameter values in each row.
 
 For \code{detectfnplot} the signal threshold parameters 'cutval' and
 'spherical' should be provided in \code{details} (see examples).
@@ -79,13 +89,10 @@ row).
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{detection functions}}, \code{\link{plot}}, \code{\link{secr}} }
 
 \examples{
 
-data(secrdemo)
 plot (secrdemo.b, xval = 0:100, ylim = c(0, 0.4))
 ## Add recapture probability
 plot (secrdemo.b, newdata = data.frame(b = 1), add = TRUE,

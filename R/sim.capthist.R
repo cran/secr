@@ -5,6 +5,7 @@
 ## last changed 2009 06 19, 2009 09 09 'seed' added 2009 10 27 new detector types
 ## 2009 11 12
 ## 2010 07 01 allow alphanumeric detection functions
+## 2010 10 09 annular normal and cumulative lognormal detection functions
 ## sim.resight 2009 10 08
 ############################################################################################
 
@@ -90,7 +91,7 @@ sim.capthist <- function (
         ##################
 
         if (is.null(detector(traps)))
-            stop ("Not a valid traps: detector type needed")
+            stop ("'traps' lacks detector type")
 
         usage <- usage(traps)
         if (is.null(usage))
@@ -98,23 +99,28 @@ sim.capthist <- function (
         else
             if (ncol(usage) != noccasions) {
                 noccasions <- ncol(usage)
-                warning ("Ignoring 'noccasions' - does not match usage attribute of 'traps'", call.=F)
+                warning ("'noccasions' does not match usage attribute of 'traps'; ignored")
             }
 
 
         validatepar <- function (x, xrange) {
             xname <- deparse(substitute(x))
-            if (is.null(x)) stop (paste('No value for',xname), call.=F)
-            if (any(is.na(x))) stop (paste('NA is not a valid value for',xname), call.=F)
-            if (any(x < xrange[1])) warning (paste('Value for',xname,'is less than minimum',xrange[1]), call.=F)
-            if (any(x > xrange[2])) warning (paste('Value for',xname,'is greater than maximum',xrange[2]), call.=F)
+            if (is.null(x))
+                stop ("no value for ", xname)
+            if (any(is.na(x)))
+                stop ("NA is not a valid value for ", xname)
+            if (any(x < xrange[1]))
+                warning ("value for ", xname, " is less than minimum ", as.character(xrange[1]))
+            if (any(x > xrange[2]))
+                warning ("value for ", xname, " is greater than maximum ", as.character(xrange[2]))
         }
 
         ## added 2010-07-01
         if (is.character(detectfn))
             detectfn <- detectionfunctionnumber(detectfn)
         if (detector(traps) == 'signal') {
-            if (detectfn != 10) warning ('forcing detection function = 10 for signal detectors')
+            if (detectfn != 10)
+                warning ("forcing detection function = 10 for signal detectors")
             detectfn <- 10
         }
 
@@ -126,6 +132,8 @@ sim.capthist <- function (
         ##    3  compound halfnormal
         ##    4  uniform
         ##    5  w-exponential
+        ##    6  annular normal
+        ##    7  cumulative lognormal
         ##    9  binary signal strength (b0 = (beta0-c)/sdS, b1 = beta1/sdS)
         ##   10  signal strength (signal detectors only)
         ##   11  signal strength with spherical spreading (signal detectors only)
@@ -135,6 +143,8 @@ sim.capthist <- function (
         if (detectfn %in% c(0:4))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
 
         if (detectfn %in% c(5))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
+        if (detectfn %in% c(6))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
+        if (detectfn %in% c(7))    defaults <- list(g0 = 0.2, sigma = 25, z = 5)
         if (detectfn %in% c(9))  defaults <- list(b0 = 1, b1=-0.1, cutval = 60,
             tx = 'identity')
         if (detectfn %in% c(10,11))  defaults <- list(beta0 = 90, beta1=-0.2,
@@ -143,8 +153,8 @@ sim.capthist <- function (
 
         if (detector(traps) == 'proximity') defaults <- c(defaults, list(binomN = 1))
         if (detector(traps) == 'count') defaults <- c(defaults, list(binomN = 0))
-        if (detector(traps) == 'quadratbinary') defaults <- c(defaults, list(binomN = 1))
-        if (detector(traps) == 'quadratcount') defaults <- c(defaults, list(binomN = 0))
+##        if (detector(traps) == 'quadratbinary') defaults <- c(defaults, list(binomN = 1))
+##        if (detector(traps) == 'quadratcount') defaults <- c(defaults, list(binomN = 0))
         if (detector(traps) == 'signal') defaults <- c(defaults, list(binomN = 1))
 
         if (detector(traps) == 'polygon') defaults <- c(defaults, list(maxone = FALSE))
@@ -153,12 +163,14 @@ sim.capthist <- function (
         detectpar <- replacedefaults(defaults, detectpar)
 
     ## extended for uniform (detectfn=4) 2010-06-13
+    ## extended for annualr normal and cum lognormal 2010-10-09
     ##    if (detectfn %in% c(0,1,2,3,5)) {
-        if (detectfn %in% c(0,1,2,3,4,5)) {
+        if (detectfn %in% c(0,1,2,3,4,5,6,7)) {
             g0    <- expand(detectpar$g0, noccasions)
             sigma <- expand(detectpar$sigma, noccasions)
-            z     <- expand(ifelse(detectfn == 5, detectpar$w, detectpar$z), noccasions)
-            if (detector(traps) %in% c('count', 'quadratbinary','quadratcount', 'polygon'))
+            z     <- expand(ifelse(detectfn %in% c(5,6), detectpar$w, detectpar$z), noccasions)
+##            if (detector(traps) %in% c('count', 'quadratbinary','quadratcount', 'polygon'))
+            if (detector(traps) %in% c('count', 'polygon'))
                 validatepar(g0, c(0,Inf))
             else validatepar(g0, c(0,1))
             validatepar(sigma, c(1e-10,Inf))
@@ -215,7 +227,8 @@ sim.capthist <- function (
                 value=integer(N*noccasions),
                 resultcode = integer(1)
             )
-            if (temp$resultcode != 0) stop ('Call to trappingsingle failed')
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingsingle' failed")
             w <- matrix(nc = temp$n, nr=noccasions, dimnames = list(1:noccasions, NULL))
             if (temp$n > 0) w[,] <- temp$value[1:(temp$n*noccasions)]
             w <- t(w)
@@ -239,15 +252,18 @@ sim.capthist <- function (
                 value=integer(N*noccasions),
                 resultcode = integer(1)
             )
-            if (temp$resultcode != 0) stop ('Call to trappingmulti failed')
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingmulti' failed")
             w <- matrix(nc = temp$n, nr = noccasions, dimnames = list(1:noccasions, NULL))
             if (temp$n > 0) w[,] <- temp$value[1:(temp$n*noccasions)]
             w <- t(w)
         }
         else
-        if (detector(traps) %in% c('proximity', 'count', 'quadratbinary', 'quadratcount')) {
-            binomN <- switch(detector(traps), proximity=1, count=detectpar$binomN,
-                quadratbinary=1, quadratcount=detectpar$binomN)
+##        if (detector(traps) %in% c('proximity', 'count', 'quadratbinary', 'quadratcount')) {
+##            binomN <- switch(detector(traps), proximity=1, count=detectpar$binomN,
+##                quadratbinary=1, quadratcount=detectpar$binomN)
+        if (detector(traps) %in% c('proximity', 'count')) {
+            binomN <- switch(detector(traps), proximity=1, count=detectpar$binomN)
             temp <- .C("trappingcount", PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
@@ -267,7 +283,8 @@ sim.capthist <- function (
                 resultcode = integer(1)
             )
 
-            if (temp$resultcode != 0) stop ('Call to trappingcount failed')
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingcount' failed")
             w <- array(dim=c(noccasions, k, temp$n), dimnames = list(1:noccasions,NULL, NULL))
             if (temp$n>0) {
                 w[,,] <- temp$value[1:(temp$n*noccasions*k)]
@@ -295,7 +312,8 @@ sim.capthist <- function (
                 value = integer(N*noccasions*k),
                 resultcode = integer(1)
             )
-            if (temp$resultcode != 0) stop ('Call to trappingsignal failed')
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingsignal' failed")
             w <- array(dim=c(noccasions, k, temp$n), dimnames = list(1:noccasions,NULL,NULL))
             if (temp$n>0)  {
                 w[,,] <- temp$value[1:(temp$n * noccasions * k)]
@@ -323,7 +341,8 @@ sim.capthist <- function (
                 value = integer(N*noccasions*k),
                 resultcode = integer(1)
             )
-            if (temp$resultcode != 0) stop ('Call to trappingtimes failed')
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingtimes' failed")
             w <- array(dim=c(noccasions, k, temp$n), dimnames = list(1:noccasions,NULL,NULL))
             if (temp$n>0)  {
                 w[,,] <- temp$value[1:(temp$n * noccasions * k)]
@@ -355,9 +374,9 @@ sim.capthist <- function (
             )
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)
-                    stop ('>200 detections per animal per polygon per occasion')
+                    stop (">200 detections per animal per polygon per occasion")
                 else
-                    stop ('trappingpolygon failed')
+                    stop ("call to trappingpolygon failed")
             }
             w <- array(dim=c(noccasions, npoly, temp$n), dimnames = list(1:noccasions,
                 levels(polyID(traps)), NULL))
@@ -397,9 +416,9 @@ sim.capthist <- function (
             )
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)
-                    stop ('>200 detections per animal per transect per occasion')
+                    stop (">200 detections per animal per transect per occasion")
                 else
-                    stop ('trappingtransect failed')
+                    stop ("call to trappingtransect failed")
             }
             w <- array(dim=c(noccasions, ntransect, temp$n), dimnames = list(1:noccasions,
                 levels(transectID(traps)), NULL))
@@ -448,9 +467,10 @@ sim.resight <- function (traps, ..., q = 1, pID = 1, unmarked = TRUE, nonID = TR
     S <- ncol(capthist)
     K <- nrow(traps(capthist))
 
-    if (S <= q) stop('no sighting intervals')
+    if (S <= q)
+        stop("no sighting intervals")
     if (!(detector(traps(capthist)) %in% c('proximity')))
-        stop ('only for proximity detectors')
+        stop ("only for proximity detectors")
 
     ## sighting only unmarked animals
     marked <- apply(capthist[,1:q,,drop = FALSE], 1, sum) > 0

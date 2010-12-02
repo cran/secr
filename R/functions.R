@@ -6,6 +6,8 @@
 ## 2009 12 10 mixtures
 ## 2010 02 05 update signal-strength detection functions
 ## 2010 02 25 insertdim factor handling improved to retain ordering of levels
+## 2010-10-09 allow detectfn 6,7
+## 2010-12-02
 ############################################################################################
 
 ############################################################################################
@@ -40,38 +42,70 @@ get.nmix <- function (model) {
     nmix
 }
 
+## distancetotrap <- function (X, traps) {
+##     ## X should be 2-column dataframe, mask, matrix or similar
+##     ## with x coord in col 1 and y coor in col 2
+##     X <- matrix(unlist(X),nc=2)
+##     disttotrap <- function (xy) {
+##         temp <- .C("nearest",  PACKAGE = 'secr',
+##         as.double(xy),
+##         as.integer(nrow(traps)),
+##         as.double(unlist(traps)),
+##         index = integer(1),
+##         distance = double(1)
+##         )
+##         temp$distance
+##     }
+##     apply(X, 1, disttotrap)
+## }
+##
+## nearesttrap <- function (X, traps) {
+##     ## X should be 2-column dataframe, mask, matrix or similar
+##     ## with x coord in col 1 and y coor in col 2
+##     X <- matrix(unlist(X),nc=2)
+##     nearest <- function (xy) {
+##         temp <- .C("nearest",  PACKAGE = 'secr',
+##         as.double(xy),
+##         as.integer(nrow(traps)),
+##         as.double(unlist(traps)),
+##         index = integer(1),
+##         distance = double(1)
+##         )
+##         temp$index
+##     }
+##     apply(X, 1, nearest)
+## }
+
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
     X <- matrix(unlist(X),nc=2)
-    disttotrap <- function (xy) {
-        temp <- .C("nearest",  PACKAGE = 'secr',
-        as.double(xy),
+    nxy <- nrow(X)
+    temp <- .C("nearest",  PACKAGE = 'secr',
+        as.integer(nxy),
+        as.double(X),
         as.integer(nrow(traps)),
         as.double(unlist(traps)),
-        index = integer(1),
-        distance = double(1)
-        )
-        temp$distance
-    }
-    apply(X, 1, disttotrap)
+        index = integer(nxy),
+        distance = double(nxy)
+    )
+    temp$distance
 }
 
 nearesttrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
     X <- matrix(unlist(X),nc=2)
-    nearest <- function (xy) {
-        temp <- .C("nearest",  PACKAGE = 'secr',
-        as.double(xy),
+    nxy <- nrow(X)
+    temp <- .C("nearest",  PACKAGE = 'secr',
+        as.integer(nxy),
+        as.double(X),
         as.integer(nrow(traps)),
         as.double(unlist(traps)),
-        index = integer(1),
-        distance = double(1)
-        )
-        temp$index
-    }
-    apply(X, 1, nearest)
+        index = integer(nxy),
+        distance = double(nxy)
+    )
+    temp$index
 }
 
 insertdim <- function (x, dimx, dims) {
@@ -107,7 +141,8 @@ pad1 <- function (x, n) {
 padarray <- function (x, dims) {
     temp <- array(dim=dims)
     dimx <- dim(x)
-    if (length(dimx)<2 | length(dimx)>3) stop('Invalid array for padarray')
+    if (length(dimx)<2 | length(dimx)>3)
+        stop("invalid array")
     if (length(dimx)>2) temp[1:dimx[1], 1:dimx[2], 1:dimx[3]] <- x
     else temp[1:dimx[1], 1:dimx[2]] <- x
     temp
@@ -218,14 +253,16 @@ se.Xuntransform <- function (beta, sebeta, linkfn, varnames)
 # Delta method cf Lebreton et al 1992 p 77
 {
   out <- beta
-  if (length(beta)!=length(sebeta)) stop ('beta and sebeta do not match')
-  if (!all(varnames %in% names(linkfn))) stop ('link fn missing for real variable(s)')
+  if (length(beta)!=length(sebeta))
+      stop ("'beta' and 'sebeta' do not match")
+  if (!all(varnames %in% names(linkfn)))
+      stop ("'linkfn' component missing for at least one real variable")
   for (i in 1:length(beta)) {
       vn <- varnames[i]
       out[i] <- switch (linkfn[[vn]],
                   identity = sebeta[i],
-                  log = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),,
-                  neglog = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),,
+                  log = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
+                  neglog = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
                   logit = invlogit(beta[i]) * (1-invlogit(beta[i])) * sebeta[i],
                   sin = NA)         ####!!!!
   }
@@ -248,10 +285,13 @@ CLdensity <- function (beta, object, individuals, sessnum)
 CLmeanesa <- function (beta, object, individuals, sessnum)
 ## object is a fitted secr object (CL=T)
 ## individuals is vector indexing the subset of a to be used
-# Return the mean esa for given g0, sigma, z in beta
+# Return the weighted mean esa for given g0, sigma, z in beta
 # Only 1 session
 {
-    mean (esa (object, sessnum, beta)[individuals])
+## mean (esa (object, sessnum, beta)[individuals])
+## modified 2010-11-30 after suggestion of DLB
+    a <- esa (object, sessnum, beta)[individuals]
+    length(a) / sum (1/a)
 }
 ############################################################################################
 
@@ -353,7 +393,8 @@ group.levels <- function (capthist, groups, sep='.') {
         if (is.null(groups)) 0
         else {
             temp <- as.data.frame(covariates(capthist)[,groups])
-            if (ncol(temp) != length(groups)) stop ('One or more grouping variables is missing from covariates')
+            if (ncol(temp) != length(groups))
+                stop ("one or more grouping variables is missing from covariates(capthist)")
             sort(levels(interaction(temp, drop=T, sep=sep)))  # omit null combinations, sort as with default of factor levels
         }
     }
@@ -386,7 +427,8 @@ group.factor <- function (capthist, groups, sep='.')
         if (is.null(groups) | (length(groups)==0) )
             return (factor(rep(1, nrow(capthist))))
         temp <- as.data.frame(covariates(capthist)[,groups])
-        if (ncol(temp) != length(groups)) stop ('One or more grouping variables are missing from covariates')
+        if (ncol(temp) != length(groups))
+            stop ("one or more grouping variables is missing from covariates(capthist)")
         temp <- interaction(temp, drop=T, sep=sep)  # omit null combinations
         temp
     }
@@ -409,7 +451,7 @@ disinteraction <- function (capthist, groups, sep='.') {
 secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
     vars <- all.vars(model)
     if (any(!(vars %in% names(newdata))))
-        stop('some model parameters not found in newdata')
+        stop("one or more model covariates not found in 'newdata'")
     newdata <- as.data.frame(newdata)
     lpred <- matrix(nc=2,nr=nrow(newdata),dimnames=list(NULL,c('estimate','se')))
     mat <- model.matrix(model, data=newdata)
@@ -482,7 +524,8 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
     detectionparameters <- names(link)
     fixed.dp <- fixed[names(fixed) %in% detectionparameters]
     if (length(fixed.dp)>0) link[[names(fixed.dp)]] <- NULL
-    if (length(link) != nrealpar) stop('wrong links')
+    if (length(link) != nrealpar)
+        stop("number of links does not match design matrices")
 
     temp <- sapply (1:nrealpar, modelfn)
     if (nrow(design$parameterTable)==1) temp <- t(temp)
@@ -506,11 +549,12 @@ scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
     g0index <- match('g0', realnames)
     if (scalesigma) {   ## assuming previous check that scalesigma OK...
         if (is.na(D)) sigmaindex <- NA
-        if (is.na(sigmaindex)) stop('scalesigma requires both sigma and D in model')
+        if (is.na(sigmaindex)) stop("'scalesigma' requires both 'sigma' and 'D' in model")
         realparval[,sigmaindex]  <- realparval[,sigmaindex] / D^0.5
     }
     if (scaleg0)    {   ## assuming previous check that scaleg0 OK...
-        if (is.na(g0index) | is.na(sigmaindex)) stop('scaleg0 requires both g0 and sigma in model')
+        if (is.na(g0index) | is.na(sigmaindex))
+            stop("'scaleg0' requires both 'g0' and 'sigma' in model")
         realparval[,g0index]  <- realparval[,g0index] / realparval[,sigmaindex]^2
     }
     realparval
@@ -570,8 +614,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
 
     #--------------------------------------------------------------------
     # Detection parameters
-    if (!detectfn %in% c(0:3,5,6,9,10,11))
-        stop ('detectfn can only take values in c(0:3,5,6,9,10,11)')
+    if (!detectfn %in% c(0:3,5:11))
+        stop ("'detectfn' can only take values in c(0:3,5:11)")
     realparval  <- makerealparameters (design, beta, parindx, link, fixed)
     realparval0 <- makerealparameters (design0, beta, parindx, link, fixed)  # naive
 
@@ -585,7 +629,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
     D.modelled <- !CL & is.null(fixed$D)
     if (!CL) {
          D <- getD (designD, beta, mask, parindx, link, fixed, MS, ngrp, nsession)
-        if (sum(D)<=0) stop ('Invalid density')
+        if (sum(D)<=0) stop ("invalid density")
     }
     #--------------------------------------------------------------------
 
@@ -611,7 +655,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
             session.grp      <- grp
         }
 
-        if (nrow(session.capthist)==0) stop(paste('no data for session',sessnum))
+        if (nrow(session.capthist)==0)
+            stop(paste("no data for session", sessnum))
         nc   <- nrow(session.capthist)
         s    <- ncol(session.capthist)
         m    <- nrow(session.mask)
@@ -665,7 +710,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
         Xrealparval0 <- scaled.detection (realparval0, details$scalesigma, details$scaleg0, Dtemp)
         if (!all(is.finite(Xrealparval))) {
             cat ('beta vector :', beta, '\n')
-            stop ('extreme beta in secr.loglikfn (try smaller stepmax in nlm Newton-Raphson?)')
+            stop ("extreme 'beta' in 'secr.loglikfn' (try smaller stepmax in nlm Newton-Raphson?)")
         }
 
         #------------------------------------------
@@ -789,8 +834,10 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
     else sessionlevels <- 1
     nsession <- length(sessionlevels)
 
-    if (!detectfn %in% c(0:3,5,6))
-        stop ('detectfn can only take values 0 (halfnormal), 1 (hazard-rate), 2 (exponential), 3 (compound halfnormal, 5 (w-exponential) or 6 (annular normal)for now')
+    if (!detectfn %in% c(0:3,5,6,7,8))
+        stop ("'detectfn' can only take values 0 (halfnormal), 1 (hazard-rate),
+            2 (exponential), 3 (compound halfnormal, 5 (w-exponential),
+            6 (annular normal), 7 (cumulative lognormal), 8 (cumulative gamma) for now")
 
     #--------------------------------------------------------------------
     # Groups
@@ -851,7 +898,7 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
         else if (session.detector == 'signal') dettype <- 2
         else if (session.detector == 'count') dettype <- 3
         else if (session.detector == 'areasearch') dettype <- 4
-        else stop('Unrecognised detector type')
+        else stop("unrecognised detector type")
 
         k     <- nrow(session.traps)
         trps  <- unlist(session.traps, use.names=F)
@@ -960,7 +1007,7 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
             value=double(1),
             resultcode=integer(1))
 
-        if (temp$resultcode != 0) stop (paste('Error in external function secrloglik'), call.=F)
+        if (temp$resultcode != 0) stop (paste("error in external function 'secrloglik'"))
 
         loglik <- loglik + temp$value
     }
@@ -988,9 +1035,9 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
 make.lookup <- function (tempmat) {
 
     ## should add something to protect make.lookup from bad data...
-
     nrw <- nrow(tempmat)
     ncl <- ncol(tempmat)
+
     temp <- .C("makelookup",  PACKAGE='secr',
         as.double(tempmat),
         as.integer(nrw),
@@ -1001,7 +1048,7 @@ make.lookup <- function (tempmat) {
         result = integer(1))
 
     if (temp$result != 0)
-        stop ('error in external function (makelookup) - perhaps problem is too large')
+        stop ("error in external function 'makelookup'; perhaps problem is too large")
     lookup <- matrix(temp$y[1:(ncl*temp$unique)], nr=temp$unique, byrow=T)
 
     colnames(lookup) <- colnames(tempmat)

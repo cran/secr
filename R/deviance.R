@@ -9,33 +9,33 @@ deviance.secr <- function (object, ...) {
     ## object - an secr object, including capthist
 
     session.deviance <- function (capthist, grp, N) {
-        capthist <- matrix(capthist, nr=nrow(capthist)) 
+        capthist <- matrix(capthist, nr=nrow(capthist))
         groupeddata <- split.data.frame(capthist, grp)
         ngrp <- length(groupeddata)
         count <- function(x) table(make.lookup(x)$index)
         nw <- lapply(groupeddata, count)  ## list, each component a vector
         n <- sapply(nw, sum)              ## vector, each group an element
-        if (object$CL) 
+        if (object$CL)
             LLsat <- sum(sapply(n, lfactorial))
-        else 
+        else
             LLsat <- switch (tolower(object$details$distribution),
                 poisson = sum(n * log(n) - n),   ## not 100% sure this applies to inhomog Poisson
-                binomial = sum(n * log(n/N) + (N-n) * log((N-n)/N) + 
-                  lgamma(N+1) - lgamma(N-n+1)))       
+                binomial = sum(n * log(n/N) + (N-n) * log((N-n)/N) +
+                  lgamma(N+1) - lgamma(N-n+1)))
         nwfn <- function (nwg, ng) - sum(lfactorial(nwg)) + sum(nwg * log(nwg / ng ))
         LLsat + sum(sapply(1:ngrp, function(g) nwfn(nw[[g]], n[g])))
     }
- 
+
     grps <- group.factor(object$capthist, object$groups)
 
     if (!object$CL & (object$details$distribution=='binomial')) {
-        if(is.null(object$D)) 
-            stop ('D appears to be missing - may be old fit?')
+        if(is.null(object$D))
+            stop ("component 'D' not found - is fitted model from an old version of 'secr'?")
         N <- t(apply(object$D, 2:3, sum, drop = FALSE))
     }
 
     if (inherits (object$capthist, 'list')) {
-        nsession <- length(object$capthist) 
+        nsession <- length(object$capthist)
         LLsat.allsess <- sum(sapply(1:nsession, function(r) session.deviance(
             object$capthist[[r]], grps[[r]], N[r,])))
     }

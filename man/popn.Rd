@@ -24,8 +24,6 @@ on \code{Ndist} and \code{model2D}.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{ The \code{popn} class is used only occasionally: it is not central to spatially explicit capture recapture. }
 
 \seealso{ \code{\link{sim.popn}}, \code{\link{plot.popn}} }

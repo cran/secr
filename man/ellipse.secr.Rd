@@ -51,10 +51,8 @@ If \code{object} is a list of secr models then one ellipse is constructed for ea
 \value{
 A list containing the x and y coordinates is returned invisibly
 }
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \examples{
-data(secrdemo)
 ellipse.secr(secrdemo.0)
 }
 \keyword{ hplot }

@@ -27,8 +27,6 @@ covariates(object) <- value
   covariates(object) returns the dataframe of covariates associated with \code{object}. \code{covariates(object)} may be NULL.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \examples{
 temptrap <- make.grid(nx = 6, ny = 8)
 covariates (temptrap) <- data.frame(halfnhalf = 

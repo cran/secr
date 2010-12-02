@@ -23,8 +23,6 @@ usage(object) <- value
 \value{
   usage(object) returns the usage matrix of the \code{traps} object. \code{usage(object)} may be NULL.
 }
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{traps}} }
 
 \examples{

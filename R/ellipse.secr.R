@@ -5,24 +5,24 @@
 ## last changed 2010 02 15
 ############################################################################################
 
-ellipse.secr <- function (object, par=c('g0', 'sigma'), alpha = 0.05, npts = 100, 
+ellipse.secr <- function (object, par=c('g0', 'sigma'), alpha = 0.05, npts = 100,
     plot = TRUE, linkscale = TRUE, add = FALSE, col = palette(), ...) {
 
     if (inherits(object, 'list')) {
         temp <- list()
-        nsecr <- length(object) 
+        nsecr <- length(object)
         colr <- rep(col, nsecr)
         for (i in 1:nsecr) {
-            temp[[i]] <- ellipse.secr (object[[i]], par = par, alpha = alpha, npts = npts, 
+            temp[[i]] <- ellipse.secr (object[[i]], par = par, alpha = alpha, npts = npts,
                 plot = plot, linkscale = linkscale, add = add, col = colr[i], ...)
         }
         invisible(temp)
     }
     else {
         if ((length(par) != 2) | (any(is.na(match(par, object$betanames)))))
-            stop ('require two named beta parameters')
+            stop ("require two named beta parameters")
         if ((!linkscale) & (any(is.na(match(par, object$realnames)))))
-            stop ('ellipse.secr is currently limited to null models')
+            stop ("'ellipse.secr' is currently limited to null models")
         vcv <- vcov(object)[par,par]
         centre <- coef(object)[par,'beta']
         scale  <- sqrt(diag(vcv))
@@ -41,7 +41,7 @@ ellipse.secr <- function (object, par=c('g0', 'sigma'), alpha = 0.05, npts = 100
             centre[2] <- untransform (centre[2], object$link[[par[2]]])
         }
         if (plot) {
-            if (add) 
+            if (add)
                 lines(x, y, col = col, ...)
             else
                 plot(x,y,type='l', xlab=par[1], ylab=par[2], col = col, ...)
@@ -53,6 +53,6 @@ ellipse.secr <- function (object, par=c('g0', 'sigma'), alpha = 0.05, npts = 100
 
 ## data(secrdemo)
 ## ellipse.secr(secrdemo.0)
-## ellipse.secr(secrdemo.0, link = FALSE, xlim = c(0.1,0.4), 
+## ellipse.secr(secrdemo.0, link = FALSE, xlim = c(0.1,0.4),
 ##     ylim = c(20,40), alpha=0.01)
 

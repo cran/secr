@@ -28,8 +28,6 @@ fragmented masks) it may also yield the wrong answer.
 object of class \code{mask} with type 'user'
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{mask}} }
 
 \note{

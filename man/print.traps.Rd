@@ -17,8 +17,6 @@ Print method for \code{traps} objects.
   \item{\dots}{ arguments to pass to \code{\link{print.default}} }
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{print}}, \code{\link{traps}} }
 
 \examples{

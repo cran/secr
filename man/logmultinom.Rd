@@ -65,13 +65,10 @@ Demographic Processes in Marked Populations}. Springer. Pp. 255--269.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{\code{\link{stoatDNA}}}
 
 \examples{
 
-data(stoatDNA)
 ## no groups
 logmultinom(stoatCH)
 

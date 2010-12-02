@@ -12,7 +12,8 @@ Closed population estimates
 
 \usage{
 
-closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07)
+closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07,
+    dmax = 10 )
 
 }
 
@@ -21,6 +22,7 @@ closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07)
   \item{estimator}{ character; name of estimator (see Details) }
   \item{level}{ confidence level (1 -- alpha) }
   \item{maxN}{ upper bound for population size }
+  \item{dmax}{ numeric, the maximum AIC difference for inclusion in confidence set}  
 }
 
 \details{
@@ -31,6 +33,13 @@ closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07)
   AIC-based model selection is available for the maximum-likelihood
   estimators \code{null}, \code{zippin}, \code{darroch}, \code{h2}, and
   \code{betabinomial}.
+
+  Model weights are calculated as \deqn{w_i = \frac{\exp(-\Delta_i / 2)}{
+  \sum{\exp(-\Delta_i / 2)}}}{w_i = exp(-dAICc_i / 2) / sum{ exp(-dAICc_i
+  / 2) }}
+
+  Models for which dAICc > \code{dmax} are given a weight of zero and are
+  excluded from the summation, as are non-likelihood models.  
 
   Computation of \code{null}, \code{zippin} and \code{darroch} estimates
   differs slightly from Otis et al. (1978) in that the likelihood is
@@ -123,14 +132,11 @@ Collins, Colorado, USA.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
   \code{\link{capthist}}, \code{\link{closure.test}}
 }
 
 \examples{
-data(deermouse)
 closedN(deermouse.ESG)
 }
 

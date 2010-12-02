@@ -1,5 +1,7 @@
 \name{AIC.secr}
 \alias{AIC.secr}
+\alias{logLik.secr}
+\alias{AIC.secrlist}
 
 \title{ Compare SECR Models }
 
@@ -13,10 +15,13 @@ Information Criterion) are preferred.
 
 \usage{
 \method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10)
+\method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10)
+\method{logLik}{secr}(object, ...)
 }
 
 \arguments{
-  \item{object}{ \code{secr} object output from the function \code{\link{secr.fit}} }
+  \item{object}{ \code{secr} object output from the function
+      \code{\link{secr.fit}}, or a list of such objects with class c('list','secrlist') }
   \item{\dots}{ other \code{secr} objects }
   \item{sort}{ logical for whether rows should be sorted by ascending AICc }
   \item{k}{ numeric, the penalty per parameter to be used; always k = 2 in this method}
@@ -62,6 +67,11 @@ The argument \code{k} is included for consistency with the generic method \code{
   \item{AICc }{AIC with small-sample adjustment of Hurvich & Tsai (1989)}
   \item{dAICc }{difference between AICc of this model and the one with smallest AICc}
   \item{AICwt }{AICc model weight}
+
+  \code{logLik.secr} returns an object of class `logLik' that has
+  attribute \code{df} (degrees of freedom = number of estimated
+  parameters).
+  
 }
 \references{ 
 
@@ -73,9 +83,15 @@ Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model selection
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
+
+It is not be meaningful to compare models by AIC if they relate to
+different data or habitat masks. For example, an `secrlist' generated
+and saved to file by \code{mask.check} may be supplied as the object
+argument of \code{AIC.secrlist}, but the results are not
+informative. Likewise, models fitted by the conditional likelihood
+(\code{CL = TRUE}) and full likelihood (\code{CL = FALSE}) methods
+cannot be compared.
 
 The issue of goodness-of-fit and possible adjustment of AIC for
 overdispersion has yet to be addressed (cf QAIC in MARK).
@@ -89,7 +105,6 @@ overdispersion has yet to be addressed (cf QAIC in MARK).
 ## secrdemo.0 is a null model
 ## secrdemo.b has a learned trap response
 
-data(secrdemo)
 AIC(secrdemo.0, secrdemo.b)
 }
 

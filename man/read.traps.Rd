@@ -7,13 +7,16 @@
 }
 
 \usage{
-read.traps(file = NULL, data = NULL, detector = "multi", ...)
+read.traps(file = NULL, data = NULL, detector = "multi", covnames =
+NULL, ...)
 }
 
 \arguments{
   \item{file}{ character string with name of text file }
   \item{data}{ data frame of detector coordinates }
   \item{detector}{ character string for detector type }
+  \item{covnames}{ character vector of names for detector covariate
+  fields }
   \item{\dots}{ other arguments to pass to \code{read.table} }
 }
 
@@ -22,31 +25,32 @@ read.traps(file = NULL, data = NULL, detector = "multi", ...)
 Reads a text file in which the first column is a character string
 identifying a detector and the next two columns are its x- and
 y-coordinates, separated by white space. The coordinates optionally may
-be followed by a string of codes '0' or '1' indicating whether the
-detector was operated on each occasion. A single trap-specific
-numeric covariate is allowed; it should be at the end of the line
-preceded by '/'. This format is compatible with the Density software
-(Efford 2007), except that all detectors are assumed to be of the same
-type (usage codes greater than 1 are treated as 1).
+be followed by a string of codes `0' or `1' indicating whether the
+detector was operated on each occasion. Trap-specific covariates may be
+added at the end of the line preceded by `/'. This format is compatible
+with the Density software (Efford 2007), except that all detectors are
+assumed to be of the same type (usage codes greater than 1 are treated
+as 1), and more than one covariate may be specified.
 
 If \code{file} is missing then x-y coordinates will be taken instead
 from \code{data}. This option does not allow for \code{covariates} or
 \code{usage}, but they maybe added later.
 
 \code{detector} specifies the behaviour of the detector following Efford
-et al. (2009). 'single' refers to a trap that is able to catch at most
-one animal at a time; 'multi' refers to a trap that may catch more than
-one animal at a time. For both 'single' and 'multi' detectors a trapped
+et al. (2009). `single' refers to a trap that is able to catch at most
+one animal at a time; `multi' refers to a trap that may catch more than
+one animal at a time. For both `single' and `multi' detectors a trapped
 animals can appear at only one detector per occasion. Detectors of type
-'proximity', such as camera traps and hair snags for DNA sampling, allow
-animals to be recorded at several detectors on one occasion.
+`proximity', such as camera traps and hair snags for DNA sampling, allow
+animals to be recorded at several detectors on one occasion. See
+\code{\link{detector}} for further detector types.
 
 }
 
 \value{
 
 An object of class \code{traps} comprising a data frame of x- and
-y-coordinates, the detector type ('single', 'multi', or 'proximity'),
+y-coordinates, the detector type (`single', `multi', `proximity' etc.),
 and possibly other attributes.
 
 }
@@ -65,9 +69,7 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
-\seealso{  \code{\link{traps}}, \code{\link{make.grid}} }
+\seealso{  \code{\link{traps}}, \code{\link{make.grid}}, \code{\link{detector}} }
 
 \examples{
 ## Replace file name with a valid local name and remove '#' 

@@ -52,8 +52,6 @@ with number sessions equal to the number of objects in \dots.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}}, \code{\link{subset.capthist}} }
 
 \examples{
@@ -75,7 +73,6 @@ temp3 <- rbind.capthist(temp1, temp2)
 ## assemble a multi-session object
 ## we fake the 2010 data by copying from 2005
 ## note must provide name each session
-data(ovenbird)
 fakeCH <- ovenCH[['2005']]
 MS.capthist(ovenCH, '2010' = fakeCH)
 

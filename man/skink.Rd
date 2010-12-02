@@ -109,7 +109,6 @@ Zealand Journal of Zoology 25: 457--463.
 }
 
 \examples{
-data (skink)
 summary (infraCH)
 summary (lineoCH)
 

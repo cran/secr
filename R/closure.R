@@ -23,7 +23,7 @@ N.Mt <- function (ni, Mt1) {
 closure.test <- function (object, SB = FALSE, min.expected = 2) {
 
     if (!inherits(object, 'capthist'))
-        stop('closure.test requires capthist object')
+        stop("requires 'capthist' object")
 
     if (inherits(object,'list')) {
         ## multiple sessions
@@ -41,7 +41,7 @@ closure.test <- function (object, SB = FALSE, min.expected = 2) {
         cts <- as.matrix(summary(object)$counts)
         di <- apply(object, 2, function(x) sum(x<0))
         if (sum(di[-nocc])>0)
-            warning ('closure.test not adjusted for losses on capture', call. = FALSE)
+            warning ("estimates not adjusted for losses on capture")
 
         #######################################
         ## closure test of Otis et al. 1978
@@ -67,7 +67,7 @@ closure.test <- function (object, SB = FALSE, min.expected = 2) {
         sumqi <- sum(qik/fik - (k-1) * (nocc+1) / (k+1))
         denom <- sum( 2*(nocc-k)*(k-1)*(nocc+1) / (k+2)/(k+1)^2/fik)
         cstat <- sumqi/sqrt(denom)
-        if (sum(fik)<10) warning ('closure.test sum fik < 10', call. = FALSE)
+        if (sum(fik)<10) warning ("sum(fik) < 10")
 
         if (!SB) {
             c(statistic = cstat, p = pnorm(cstat))
@@ -106,7 +106,7 @@ closure.test <- function (object, SB = FALSE, min.expected = 2) {
             #######################################
 
             if (any(ni==0)) {
-                warning ('closure.test one or more ni = 0', call. = FALSE)
+                warning ("one or more ni = 0")
                 XtNRi <- rep(NA, nocc-1)
                 XtNR <- NA
                 dftNR <- NA

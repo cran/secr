@@ -16,9 +16,10 @@ esa(object, sessnum = 1, beta = NULL, real = NULL)
 }
 
 \arguments{
-  \item{object}{ \code{secr} object output from \code{secr.fit} }
+  \item{object}{ \code{secr} object output from \code{secr.fit}, or an
+  object of class \code{c('list','secrlist')} }
   \item{sessnum}{ index of session in object$capthist for which output required }
-  \item{groups}{ indices defining group(s) (see Details) }
+  \item{groups}{ vector of covariate names to define group(s) (see Details) }
   \item{alpha}{ alpha level for confidence intervals }
   \item{se.esa}{ logical for whether to calculate SE(mean(esa)) }
   \item{se.D}{ logical for whether to calculate SE(D-hat) }
@@ -64,8 +65,9 @@ individual covariates. Integration is over the area \eqn{A} of the
 habitat mask.
 
 The effective sampling area `esa' (\eqn{a(\hat{\theta})}{a(theta-hat)})
-reported by \code{derived} is equal to the arithmetic mean of the
-\eqn{a_i (\hat{\theta})}{a_i (theta-hat)}. The sampling variance of
+reported by \code{derived} is equal to the harmonic mean of the
+\eqn{a_i (\hat{\theta})}{a_i (theta-hat)} (arithmetic
+mean prior to version 1.5). The sampling variance of
 \eqn{a(\hat{\theta})}{a(theta-hat)} is estimated by
 \deqn{\widehat{\mbox{var}}(a(\hat{\theta})) = \hat{G}_\theta^T
 \hat{V}_\theta \hat{G}_\theta, }{ var(a(theta)) = G-hat^T V-hat G-hat,}
@@ -109,6 +111,8 @@ varcomp2    \tab variance due to uncertainty in estimates of detection parameter
 For a multi-session or multi-group analysis the value is a list
 with one component for each session and group.
 
+The result will also be a list if \code{object} is an `secrlist'.
+
 }
 
 \references{
@@ -120,14 +124,11 @@ Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{predict.secr}}, \code{\link{print.secr}}, \code{\link{secr.fit}} }
 
 \examples{
 ## extract derived parameters from a model fitted previously
 ## by maximizing the conditional likelihood 
-data(secrdemo)
 derived (secrdemo.CL)
 
 ## what happens when sampling variance is conditional on mask N?

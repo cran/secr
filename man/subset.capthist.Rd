@@ -60,8 +60,6 @@ selected.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}}, \code{\link{rbind.capthist}}, \code{\link{reduce.capthist}} }
 
 \examples{

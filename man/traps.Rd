@@ -33,8 +33,9 @@ The required attribute 'detector' records the type of detector
 ('single', 'multi' or 'proximity' etc.; see \code{\link{detector}} for
 more).
 
-Other possible attributes of a \code{traps} object are trap-specific
-covariates (\code{covariates}) and a matrix of binary (0/1) codes
+Other possible attributes of a \code{traps} object are average
+\code{\link{spacing}}, trap-specific
+covariates (\code{covariates}), and a matrix of binary (0/1) codes
 indicating whether each detector was used on each occasion
 (\code{usage}). If usage is specified, at least one detector must be
 'used' on each occasion.
@@ -59,9 +60,9 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 Generic methods are provided to select rows (\code{\link{subset.traps}}), combine two or more arrays (\code{\link{rbind.traps}}), shift an array (\code{\link{shift.traps}}), and to rotate an array (\code{\link{rotate.traps}}).  The attributes \code{usage} and \code{covariates} may be extracted or replaced using generic methods of the same name.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
-\seealso{ \code{\link{make.grid}}, \code{\link{read.traps}}, \code{\link{plot.traps}}, \code{\link{secr.fit}} }
+\seealso{ \code{\link{make.grid}}, \code{\link{read.traps}},
+  \code{\link{plot.traps}}, \code{\link{secr.fit}},
+  \code{\link{spacing}}, \code{\link{detector}} }
 
 \examples{
 

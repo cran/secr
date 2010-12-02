@@ -72,7 +72,6 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 \seealso{ \code{\link{capthist}} }
 
 \examples{
-data (secrdemo)
 
 ## construct a traps object from raw trap data
 ## this dataset uses fmt = 'XY' (x-y coordinates included in

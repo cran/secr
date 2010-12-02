@@ -13,16 +13,16 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
     object <- list(...)
     if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
         if (length(object)>1)
-            warning('using first argument (list) and discarding others')
+            warning("using first argument (list) and discarding others")
         object <- object[[1]]
     }
 
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
-        stop ('require fitted secr objects')
+        stop ("require fitted 'secr' objects")
     if ( length(object) < 2 )
-        warning ('only one model')
+        warning ("only one model")
     if (!is.list(object) | !inherits(object[[1]], 'secr'))
-        stop('object must be secr or list of secr')
+        stop("object must be secr or list of secr")
 
     type <- 'real'                     ## default
     parnames <- object[[1]]$realnames  ## default
@@ -41,7 +41,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
     if (nsecr > 1) {
         objnames <- function(i) switch (type, real=object[[i]]$realnames, beta=object[[i]]$betanames)
         test <- sapply (2:nsecr, function(i) sum(match(parnames, objnames(i), nomatch=0)>0) == np)
-        if (!all(test)) stop ('parameters not found in all models, or incompatible models')
+        if (!all(test))
+            stop ("requested parameters not found in all models, or models incompatible")
     }
 
     if (is.null(newdata)) {
@@ -155,7 +156,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         ## 2010 02 15, 2010 02 23
         for (m in 1: length(object))
         if (object[[m]]$details$scalesigma | object[[m]]$details$scaleg0) {
-            stop ('model.average cannot handle scaled detection parameters')
+            stop ("'model.average' cannot handle scaled detection parameters")
         }
         for (i in 1:nr) {
             if (average == 'real') {
@@ -301,9 +302,9 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
                     if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
                     temp2 <- apply(temp, 1, function(est) logit(mlogit.untransform(est, 1:nmix)))
                     x$pmix[,'estimate'] <- as.numeric(t(temp2))
-                    if (nmix==2) 
-                        x$pmix[x$pmix$h2==1,'se'] <- x$pmix[x$pmix$h2==2,'se'] 
-                    else 
+                    if (nmix==2)
+                        x$pmix[x$pmix$h2==1,'se'] <- x$pmix[x$pmix$h2==2,'se']
+                    else
                         x$pmix[,'se'] <- rep(NA, nrow(x$pmix))   ## don't know how
                     x
                 }

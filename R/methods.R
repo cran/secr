@@ -1,4 +1,4 @@
-############################################################################################
+###########################################################################################
 ## package 'secr'
 ## methods.R
 ## Methods for classes traps, capthist and mask
@@ -50,36 +50,49 @@
 ## 2010 06 08 fixed bug in insidepoly (wrong call of C fn)
 ## 2010 07 03 rbind.mask handles covariates
 ## 2010 08 30 print.mask removed
+## 2010 10 10 enabled compound halfnormal in secr.fit
+## 2010 10 10 added function 'detectpar'
+## 2010 10 11 secr.fit default binomN changed to Poisson if detector == count
+## 2010 10 12 covariates<- modified for multi-session data
+## 2010 10 12 plot.mask now handles multi-session mask
+## 2010 10 15 function ms to recognise multisession objects
+## 2010 10 15 make.mask poly clipping extended to all types
+## 2010 10 19 version 1.5
+## 2010-10-21 AIC.secrlist
+## 2010-10-22 predict.secrlist
+## 2010-10-24 multisession detectpar
+## 2010-10-25 revision of all error and warning messages in R code
+## 2010-11-04 logLik.secr
 ############################################################################################
 
 # Following code may be used at some stage during debugging,
 # not for production version
-# source ('d:\\density secr 1.4\\secr\\R\\methods.R')
-# source ('d:\\density secr 1.4\\secr\\R\\autoini.R')
-# source ('d:\\density secr 1.4\\secr\\R\\functions.R')
-# source ('d:\\density secr 1.4\\secr\\R\\D.designdata.R')
-# source ('d:\\density secr 1.4\\secr\\R\\logmultinom.R')
-# source ('d:\\density secr 1.4\\secr\\R\\secr.make.newdata.R')
-# source ('d:\\density secr 1.4\\secr\\R\\secr.design.MS.R')
-# source ('d:\\density secr 1.4\\secr\\R\\plot.secr.R')
-# source ('d:\\density secr 1.4\\secr\\R\\sim.popn.R')
-# source ('d:\\density secr 1.4\\secr\\R\\sim.capthist.R')
-# source ('d:\\density secr 1.4\\secr\\R\\esa.R')
-# source ('d:\\density secr 1.4\\secr\\R\\derivedMS.R')
-# source ('d:\\density secr 1.4\\secr\\R\\score.test.R')
-# source ('d:\\density secr 1.4\\secr\\R\\pdot.R')
-# source ('d:\\density secr 1.4\\secr\\R\\RPSV.R')
-# source ('d:\\density secr 1.4\\secr\\R\\dbar.R')
-# source ('d:\\density secr 1.4\\secr\\R\\model.average.R')
-# source ('d:\\density secr 1.4\\secr\\R\\deviance.R')
-# source ('d:\\density secr 1.4\\secr\\R\\sim.secr.R')
-# source ('d:\\density secr 1.4\\secr\\R\\confint.secr.R')
-# source ('d:\\density secr 1.4\\secr\\R\\verify.R')
-# source ('d:\\density secr 1.4\\secr\\R\\secr.cellprob.R')
-# source ('d:\\density secr 1.4\\secr\\R\\reduce.capthist.R')
-# source ('d:\\density secr 1.4\\secr\\R\\write.traps.R')
-# source ('d:\\density secr 1.4\\secr\\R\\LLsurface.secr.R')
-# source ('d:\\density secr 1.4\\secr\\R\\make.capthist.R')
+#
+# source ('d:\\density secr 1.5\\secr\\R\\autoini.R')
+# source ('d:\\density secr 1.5\\secr\\R\\functions.R')
+# source ('d:\\density secr 1.5\\secr\\R\\D.designdata.R')
+# source ('d:\\density secr 1.5\\secr\\R\\logmultinom.R')
+# source ('d:\\density secr 1.5\\secr\\R\\secr.make.newdata.R')
+# source ('d:\\density secr 1.5\\secr\\R\\secr.design.MS.R')
+# source ('d:\\density secr 1.5\\secr\\R\\plot.secr.R')
+# source ('d:\\density secr 1.5\\secr\\R\\sim.popn.R')
+# source ('d:\\density secr 1.5\\secr\\R\\sim.capthist.R')
+# source ('d:\\density secr 1.5\\secr\\R\\esa.R')
+# source ('d:\\density secr 1.5\\secr\\R\\derivedMS.R')
+# source ('d:\\density secr 1.5\\secr\\R\\score.test.R')
+# source ('d:\\density secr 1.5\\secr\\R\\pdot.R')
+# source ('d:\\density secr 1.5\\secr\\R\\RPSV.R')
+# source ('d:\\density secr 1.5\\secr\\R\\dbar.R')
+# source ('d:\\density secr 1.5\\secr\\R\\model.average.R')
+# source ('d:\\density secr 1.5\\secr\\R\\deviance.R')
+# source ('d:\\density secr 1.5\\secr\\R\\sim.secr.R')
+# source ('d:\\density secr 1.5\\secr\\R\\confint.secr.R')
+# source ('d:\\density secr 1.5\\secr\\R\\verify.R')
+# source ('d:\\density secr 1.5\\secr\\R\\secr.cellprob.R')
+# source ('d:\\density secr 1.5\\secr\\R\\reduce.capthist.R')
+# source ('d:\\density secr 1.5\\secr\\R\\write.traps.R')
+# source ('d:\\density secr 1.5\\secr\\R\\LLsurface.secr.R')
+# source ('d:\\density secr 1.5\\secr\\R\\make.capthist.R')
 #
 ############################################################################################
 # Global variables in namespace
@@ -88,8 +101,9 @@
 ## see e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
-.localstuff$validdetectors <- c('single','multi','proximity','count','quadratbinary',
-    'quadratcount', 'signal', 'polygon', 'transect', 'times')
+.localstuff$validdetectors <- c('single','multi','proximity','count', 'signal', 'polygon',
+                                'transect', 'times')
+.localstuff$pointdetectors <- c('single','multi','proximity','count','signal')
 .localstuff$iter <- 0
 .localstuff$detectionfunctions <-
         c('halfnormal',
@@ -99,7 +113,8 @@
       'uniform',
       'w exponential',
       'annular normal',
-      '','',
+      'cumulative lognormal',
+      'cumulative gamma',
       'binary signal strength',
       'signal strength',
       'signal strength spherical')
@@ -109,8 +124,42 @@ detectionfunctionname <- function (fn) {
 }
 detectionfunctionnumber <- function (detname) {
     dfn <- match (tolower(detname), .localstuff$detectionfunctions)
-    if (is.na(dfn)) stop(paste('Unrecognised detection function', detname))
+    if (is.na(dfn)) stop(paste("unrecognised detection function", detname))
     dfn-1
+}
+parnames <- function (detectfn) {
+    parnames <- switch (detectfn+1,
+        c('g0','sigma'),
+        c('g0','sigma','z'),
+        c('g0','sigma'),
+        c('g0','sigma','z'),
+        c('g0','sigma'),
+        c('g0','sigma','w'),
+        c('g0','sigma','w'),
+        c('g0','sigma','z'),
+        c('g0','sigma','z'),
+        c('b0','b1'),
+        c('beta0','beta1', 'sdS'),    ## include cutval?
+        c('beta0','beta1', 'sdS')     ## include cutval?
+    )
+}
+
+valid.detectfn <- function (detectfn, valid = c(0:3,5:11)) {
+    if (is.null(detectfn))
+        stop ("requires 'detectfn'")
+    if (is.character(detectfn))
+        detectfn <- detectionfunctionnumber(detectfn)
+    if (!(detectfn %in% valid))
+        stop ('invalid detection function')
+    detectfn
+}
+valid.detectpar <- function (detectpar, detectfn) {
+    if (is.null(detectpar) | is.null(detectfn))
+        stop ("requires valid 'detectpar' and 'detectfn'")
+    if (!all(parnames(detectfn) %in% names(detectpar)))
+        stop ("requires 'detectpar' ", paste(parnames(detectfn), collapse=','),
+            " for ", detectionfunctionname(detectfn), " detectfn")
+    detectpar[parnames(detectfn)]
 }
 
 ############################################################################################
@@ -120,6 +169,7 @@ usage      <- function (object, ...) UseMethod("usage")
 covariates <- function (object, ...) UseMethod("covariates")
 traps      <- function (object, ...) UseMethod("traps")
 detector   <- function (object, ...) UseMethod("detector")
+spacing    <- function (object, ...) UseMethod("spacing")
 session    <- function (object, ...) UseMethod("session")
 trim       <- function (object, drop, keep) UseMethod("trim")
 
@@ -128,20 +178,32 @@ rotate     <- function (object, degrees, centrexy=NULL, ...) UseMethod("rotate")
 shift      <- function (object, shiftxy, ...) UseMethod("shift")
 flip       <- function (object, lr=F, tb=F, ...) UseMethod("flip")
 
+ms         <- function (object, ...) UseMethod("ms")
+
 # Default methods for specialised functions
 
+ms.default <- function (object, ...)       {
+    inherits(object, 'list')
+}
+ms.mask <- function (object, ...)       {
+    !is.data.frame(object)
+}
+ms.secr <- function (object, ...)       {
+    ms(object$capthist)
+}
+
 usage.default <- function (object, ...)       {
-    if (inherits(object, 'list')) lapply(object, usage.default, ...)
+    if (ms(object)) lapply(object, usage.default, ...)
     else attr(object,'usage')
 }
 
 covariates.default <- function (object, ...)  {
-    if (inherits(object, 'list')) lapply(object, covariates.default, ...)
+    if (ms(object)) lapply(object, covariates.default, ...)
     else attr(object,'covariates')
 }
 
 traps.default <- function (object, ...)       {
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         temp <- lapply(object, traps.default, ...)
         class(temp) <- c('list', 'traps')
         temp
@@ -153,7 +215,7 @@ traps.default <- function (object, ...)       {
 
 detector.default <- function (object, ...)    {
 ## assumed constant across MS
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         detector.default (object[[1]], ...)
     }
     else {
@@ -162,9 +224,55 @@ detector.default <- function (object, ...)    {
     }
 }
 
+spacing.default <- function (object, ...)    {
+    if (is.null(object))
+        NULL
+    else {
+        attr(object,'spacing')
+    }
+}
+
+spacing.traps <- function (object, ...)    {
+    if (ms(object)) {
+        sapply(object, spacing.traps, ...)
+    }
+    else {
+        if (is.null(object)) NULL
+        else {
+            temp <- attr(object,'spacing')
+            if (is.null(temp)) {
+                spacing <- as.matrix(dist(object))
+                sp <- apply(spacing,1,function(x) min(x[x>0]))
+                mean(sp)
+            }
+            else
+                temp
+        }
+    }
+}
+
+spacing.mask <- function (object, ...)    {
+    if (ms(object)) {
+        sapply(object, spacing.mask, ...)
+    }
+    else {
+        if (is.null(object)) NULL
+        else {
+            temp <- attr(object,'spacing')
+            if (is.null(temp)) {
+                spacing <- as.matrix(dist(object))
+                sp <- apply(spacing,1,function(x) min(x[x>0]))
+                mean(sp)
+            }
+            else
+                temp
+        }
+    }
+}
+
 ## traps object
 polyID <- function (object)    {
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         polyID (object[[1]])
     }
     else {
@@ -176,7 +284,7 @@ polyID <- function (object)    {
 
 ## traps object
 transectID <- function (object)    {
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         transectID (object[[1]])
     }
     else {
@@ -195,9 +303,9 @@ ndetector <- function (traps) {
 
 xy <- function (object) {
     if (!inherits(object, 'capthist'))
-        stop('xy requires capthist object')
+        stop("requires 'capthist' object")
 
-    if (inherits(object,'list')) {
+    if (ms(object)) {
         lapply(object, xy)
     }
     else {
@@ -211,9 +319,9 @@ xy <- function (object) {
 
 signal <- function (object) {
     if (!inherits(object, 'capthist'))
-        stop('signal requires capthist object')
+        stop("requires 'capthist' object")
 
-    if (inherits(object,'list')) {
+    if (ms(object)) {
         lapply(object, signal)
     }
     else {
@@ -227,9 +335,9 @@ signal <- function (object) {
 
 times <- function (object) {
     if (!inherits(object, 'capthist'))
-        stop('times requires capthist object')
+        stop("requires 'capthist' object")
 
-    if (inherits(object,'list')) {
+    if (ms(object)) {
         lapply(object, times)
     }
     else {
@@ -243,8 +351,8 @@ times <- function (object) {
 
 occasion <- function (object) {
     if (!inherits(object, 'capthist'))
-        stop('occasion requires capthist object')
-    if (inherits(object,'list')) {
+        stop("requires 'capthist' object")
+    if (ms(object)) {
         lapply(object, occasion)
     }
     else {
@@ -262,8 +370,8 @@ occasion <- function (object) {
 
 trap <- function (object, names = TRUE) {
     if (!inherits(object, 'capthist'))
-        stop('trap requires capthist object')
-    if (inherits(object,'list')) {
+        stop("requires 'capthist' object")
+    if (ms(object)) {
         lapply(object, trap, names=names)
     }
     else {
@@ -287,8 +395,8 @@ trap <- function (object, names = TRUE) {
 
 animalID <- function (object, names = TRUE) {
     if (!inherits(object, 'capthist'))
-        stop('animalID requires capthist object')
-    if (inherits(object,'list')) {
+        stop("requires 'capthist' object")
+    if (ms(object)) {
         lapply(object, animalID, names=names)
     }
     else {
@@ -309,22 +417,28 @@ animalID <- function (object, names = TRUE) {
     }
 }
 
+polyarea <- function (xy, ha = TRUE) {
+    nr <- length(xy$x)
+    xy$x <- as.double(xy$x)  ## beat problem with integer overflow 2010-11-21
+    xy$y <- as.double(xy$y)
+    sc <- sum (xy$x[-nr] * xy$y[-1] - xy$x[-1] * xy$y[-nr])
+    if (ha)
+        abs(sc/2)/10000
+    else
+        abs(sc/2)
+}
+
 searcharea <- function (object)    {
 ## use search cell area if attribute present 2009 11 08
 ## searchcell, or spacex.spacey, or spacing^2, or 1
 ## requires traps object
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         searcharea (object[[1]])
     }
     else {
         if (detector(object) %in% c('polygon')) {
             ## assume poly closed
-            calcarea <- function (xy) {
-                nr <- nrow(xy)    ## number of vertices
-                sc <- sum (xy$x[-nr] * xy$y[-1] - xy$x[-1] * xy$y[-nr])
-                abs(sc/2)/10000
-            }
-            sapply(split(object, polyID(object)), calcarea)
+            sapply(split(object, polyID(object)), polyarea)
         }
         else {
             sc <- attr(object,'searchcell')
@@ -344,7 +458,7 @@ searcharea <- function (object)    {
 
 transectlength <- function (object)    {
 ## requires traps object
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         transectlength (object[[1]])
     }
     else {
@@ -368,8 +482,8 @@ detectorcode <- function (object, MLonly = TRUE) {
         multi = 0,
         proximity = 1,
         count = 2,
-        quadratbinary = 3,
-        quadratcount = 4,
+##        quadratbinary = 3,
+##        quadratcount = 4,
         signal = 5,
         polygon=6,
         transect=7,
@@ -386,7 +500,7 @@ session.default <- function (object, ...)     {
 ## bypass session attribute for multi-session objects 2009 12 22
 ## use names(object) for lists i.e. multi-session objects
 
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
        temp <- names(object)
     }
     else {
@@ -414,7 +528,8 @@ trim.default <- function (object, drop, keep)     {
 
 reduce.default <- function (object, columns, ...) {
   object <- as.matrix(object)
-  if (any(is.na(object))) warning ('NAs in input to reduce.default converted to zero')
+  if (any(is.na(object)))
+      warning ("NAs in input converted to zero")
   firsttrap <- function (y) y[abs(y)>0][1]    # first non-zero
   fnmulti   <- function (occ) apply (object[,occ,drop=F], 1, firsttrap)
   nrow <- nrow(object)
@@ -436,11 +551,12 @@ rotate.default <- function (object, degrees, centrexy=NULL, ...) {
         c(x2,y2)
       }
 
-##    if (inherits(object, 'list')) lapply(object, rotate.default, degrees=degrees, centrexy=centrexy, ...)
+##    if (ms(object)) lapply(object, rotate.default, degrees=degrees, centrexy=centrexy, ...)
 ##    else
 
     object <- as.matrix(object)
-    if (dim(object)[2] <2) stop ('require at least 2 columns')
+    if (dim(object)[2] <2)
+        stop ("requires at least 2 columns")
     if (abs(degrees)>0) {
         if (is.null(centrexy)) centrexy <- c(0,0)
         theta <- 2*pi*degrees/360 # convert to radians
@@ -453,7 +569,7 @@ rotate.default <- function (object, degrees, centrexy=NULL, ...) {
 ############################################################################################
 
 shift.default <- function (object, shiftxy, ...) {
-##    if (inherits(object, 'list')) lapply(object, shift.default, shiftxy=shiftxy, ...)
+##    if (ms(object)) lapply(object, shift.default, shiftxy=shiftxy, ...)
 ##    else
 
     object <- as.matrix(object[,1:2])
@@ -464,7 +580,7 @@ shift.default <- function (object, shiftxy, ...) {
 ############################################################################################
 
 flip.default <- function (object, lr=F, tb=F, ...) {
-##    if (inherits(object, 'list')) lapply(object, flip.default, lr=lr, tb=tb, ...)
+##    if (ms(object)) lapply(object, flip.default, lr=lr, tb=tb, ...)
 ##    else
     object <- as.matrix(object[,1:2])
     if (is.logical(lr)) {
@@ -486,33 +602,50 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 'usage<-' <- function (object, value) structure (object, usage = value)
 
 'covariates<-' <- function (object, value) {
-    if (!is.null(value)) {
-        if (is.null(dim(value))) {
-            if (length(value) != nrow(object)) stop ('length of covariate does not match', call.=F)
-        }
-        else
-            if (nrow(value) != nrow(object)) stop ('dimension of covariates does not match', call.=F)
-        structure (object, covariates = data.frame(value))
-    }
-    else
+## modified for multi-session data 2010-10-15
+    if (is.null(value))
         structure (object, covariates = NULL)
-
+    else {
+        if (ms(object)) {
+            if (length(object) != length(value))
+                stop ("mismatch between multisession object and covariates")
+            value <- lapply(value, as.data.frame)
+        }
+        else {
+            value <- as.data.frame(value)
+            if (nrow(value) != nrow(object))
+                stop ("length of covariate does not match")
+        }
+        structure (object, covariates = value)
+    }
 }
 
 'detector<-' <- function (object, value) {
     if (!(value %in% .localstuff$validdetectors))
-        stop ('invalid detector type')
+        stop ("invalid detector type")
     structure (object, detector = value)
 }
 
-'searcharea<-' <- function (object, value) {
-    if (!(is.numeric(value))) stop ('invalid search area')
-    if (!(detector(object) %in% c('quadratbinary','quadratcount')))
-        stop('cannot replace search area of non-quadrat detectors')
-    spacing <- value^0.5 * 100
-    structure (object, searchcell = value, spacing = spacing, spacex = spacing,
-        spacey = spacing)
+'spacing<-' <- function (object, value) {
+    if (!(is.numeric(value)))
+        stop ("non-numeric spacing")
+    if (ms(object)) {
+        stop("not sure how to replace spacing of ms object")
+    }
+    else {
+        structure (object, spacing = value)
+    }
 }
+
+## 'searcharea<-' <- function (object, value) {
+##    if (!(is.numeric(value)))
+##        stop ("invalid search area")
+##    if (!(detector(object) %in% c('quadratbinary','quadratcount')))
+##        stop("cannot replace search area of non-quadrat detectors")
+##    spacing <- value^0.5 * 100
+##    structure (object, searchcell = value, spacing = spacing, spacex = spacing,
+##        spacey = spacing)
+##}
 
 'polyID<-' <- function (object, value) {
     if (length(value)==1) value <- rep(value, nrow(object))
@@ -528,21 +661,22 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 
 'xy<-' <- function (object, value) {
     if (nrow(value) != sum(abs(object)))
-        stop ('require one location per detection')
+        stop ("requires one location per detection")
     if (!(detector(traps(object)) %in% c('polygon','transect')) | !(inherits(object,'capthist')))
-        stop ('require capthist object with polygon or transect detector')
-    if (inherits(object,'list'))
-        stop ('require single-session capthist object')
+        stop (paste("requires 'capthist' object with",
+                    dQuote("polygon"), "or", dQuote("transect"), "detector"))
+    if (ms(object))
+        stop ("requires single-session 'capthist' object")
     structure (object, detectedXY = value)
 }
 
 'signal<-' <- function (object, value) {
     if (length(value) != sum(abs(object)))
-        stop ('require one signal per detection')
+        stop ("requires one signal per detection")
     if (!(detector(traps(object)) == 'signal') | !(inherits(object,'capthist')))
-        stop ('require capthist object with signal detector')
-    if (inherits(object,'list'))
-        stop ('require single-session capthist object')
+        stop (paste("requires 'capthist' object with", dQuote("signal"), "detector"))
+    if (ms(object))
+        stop ("requires single-session 'capthist' object")
     structure (object, signal = value)
 }
 
@@ -550,9 +684,9 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     if (length(value) != sum(abs(object)))
         stop ('require one time per detection')
     if (!(detector(traps(object)) == 'times') | !(inherits(object,'capthist')))
-        stop ('require capthist object with times detector')
-    if (inherits(object,'list'))
-        stop ('require single-session capthist object')
+        stop (paste("requires 'capthist' object with", dQuote("times"), "detector"))
+    if (ms(object))
+        stop ("requires single-session 'capthist' object")
     structure (object, times = value)
 }
 
@@ -560,10 +694,10 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     if (!is(value,'traps')) stop ("'traps' object required for replacement")
 
     ## MODIFIED 2010 04 27
-    if (inherits(object, 'list')) {
+    if (ms(object)) {
         nsess <- length(object)
         temp <- vector(mode='list', nsess)
-        if (nsess != length(value)) stop ('replacement value wrong length')
+        if (nsess != length(value)) stop ("replacement value has wrong length")
         for (i in 1:nsess) temp[[i]] <- `traps<-`(object[[i]], value[[i]])
         class(temp) <- c('list', 'traps')
         temp
@@ -574,14 +708,14 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'session<-' <- function (object, value) {
-    if (inherits(object, 'list')) {
-       if (length(value) != length(object)) stop ('invalid replacement value for sessions')
+    if (ms(object)) {
+       if (length(value) != length(object)) stop ("invalid replacement value")
        for (i in 1:length(object)) session(object[[i]]) <- value[i]   ## 2010 03 26
        structure (object, names = as.character(value))
     }
     else {
         if (length(value) > 1)
-            stop ("require only one session name per session")
+            stop ("requires only one session name per session")
         structure (object, session = as.character(value))
     }
 }
@@ -611,13 +745,15 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detec
 
     grid <- expand.grid (x=(0:(nx-1))*spacex + originxy[1], y=(0:(ny-1))*spacey + originxy[2])
 
-    if (! ID %in% c('numx','numy', 'numxb', 'numyb', 'alphax','alphay', 'xy'))
-        stop ('ID should be one of numx, numy, numxb, numyb, alphax, alphay', 'xy')
+    allowedID <- c('numx','numy', 'numxb', 'numyb', 'alphax','alphay', 'xy')
+    if (! ID %in% allowedID)
+        stop (paste("ID should be one of", paste(sapply(allowedID, dQuote),collapse=',')))
 
-if (ID %in% c('alphax','alphay')) {
-  n <- max(nx,ny)/25 + 1
-  ll <- sapply(1:n, function(x) apply(matrix(rep(LETTERS,rep(x,26)), nr=x),2,paste, collapse=''))
-}
+    if (ID %in% c('alphax','alphay')) {
+        n <- max(nx,ny)/25 + 1
+        ll <- sapply(1:n, function(x) apply(matrix(rep(LETTERS,rep(x,26)), nr=x), 2, paste,
+            collapse=''))
+    }
 
     if (ID == 'numy') temp <- 1:nrow(grid)
     if (ID == 'numx') temp <- t(matrix(1:nrow(grid), nc=nx))
@@ -640,7 +776,8 @@ if (ID %in% c('alphax','alphay')) {
     if (ID == 'alphay') {
         colA <- 1:nx
         rowA <- ll[1:ny]
-        row.names(grid) <- apply(expand.grid(colA, rowA), 1, function(x) paste(rev(x), sep='', collapse=''))
+        row.names(grid) <- apply(expand.grid(colA, rowA), 1,
+            function(x) paste(rev(x), sep='', collapse=''))
     }
 
     ## added 2010 03 24
@@ -648,7 +785,8 @@ if (ID %in% c('alphax','alphay')) {
         leadingzero <- function (x) formatC(x, width=max(nchar(x)), flag="0")
         colA <- leadingzero(1:nx)
         rowA <- leadingzero(1:ny)
-        row.names(grid) <- apply(expand.grid(colA, rowA), 1, function(x) paste(x, sep='', collapse=''))
+        row.names(grid) <- apply(expand.grid(colA, rowA), 1,
+            function(x) paste(x, sep='', collapse=''))
     }
 
     if (hollow) {
@@ -677,7 +815,8 @@ if (ID %in% c('alphax','alphay')) {
     attr(grid, 'class')      <- c('traps', 'data.frame')
     attr(grid, 'spacex')     <- spacex
     attr(grid, 'spacey')     <- spacey
-    attr(grid, 'spacing')    <- (spacex * spacey)^0.5
+#    attr(grid, 'spacing')    <- (spacex * spacey)^0.5
+    attr(grid, 'spacing')    <- spacing(grid)  ## reset if NULL
     attr(grid, 'searchcell') <- spacex * spacey / 10000
     attr(grid, 'usage')      <- NULL
     attr(grid, 'covariates') <- NULL
@@ -738,7 +877,7 @@ make.circle <- function (n = 20, radius = 100, spacing = NULL,
     if (!( detector %in% .localstuff$validdetectors ))
         stop ('invalid detector type')
     if (is.null(radius) & is.null(spacing))
-        stop ('Specify one of radius or spacing')
+        stop ("specify 'radius' or 'spacing'")
     theta <- seq (0, 2 * pi * (n-1)/n, 2 * pi / n)
     if (!is.null(spacing)) radius <- spacing / 2 / sin(pi / n)  ## override
     if (is.null(spacing)) spacing <- radius * sin(pi / n) * 2
@@ -764,7 +903,7 @@ make.circle <- function (n = 20, radius = 100, spacing = NULL,
 
 rotate.traps <- function (object, degrees, centrexy=NULL, ...)
 {
-##    if (inherits(object, 'list')) lapply(object, rotate.traps, degrees, centrexy, ...)
+##    if (ms(object)) lapply(object, rotate.traps, degrees, centrexy, ...)
 ##    else
 
   rotatefn <- function (xy) {
@@ -796,7 +935,7 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
 
 shift.traps <- function (object, shiftxy, ...)
 {
-##    if (inherits(object, 'list')) lapply(object, shift.traps, shiftxy, ...)
+##    if (ms(object)) lapply(object, shift.traps, shiftxy, ...)
 ##    else
 
   object$x <- object$x + shiftxy[1]
@@ -807,7 +946,7 @@ shift.traps <- function (object, shiftxy, ...)
 
 flip.traps <- function (object, lr=F, tb=F, ...) {
 
-##    if (inherits(object, 'list')) lapply(object, flip.traps, lr, tb, ...)
+##    if (ms(object)) lapply(object, flip.traps, lr, tb, ...)
 ##    else
 
     if (is.logical(lr)) {
@@ -824,11 +963,12 @@ flip.traps <- function (object, lr=F, tb=F, ...) {
 }
 ############################################################################################
 
-read.traps <- function (file = NULL, data = NULL, detector = 'multi', ...)
+read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames = NULL, ...)
 ## possibly add sortrows argument, but risk breaking covariates, polygon etc.
 {
 
-    # count.fields(file, sep = "", quote = "\"'", skip = 0, blank.lines.skip = TRUE, comment.char = "#")
+    # count.fields(file, sep = "", quote = "\"'", skip = 0, blank.lines.skip = TRUE,
+    #     comment.char = "#")
     close <- function (xyi) {    ## close polygon
         if ((tail(xyi$x,1) != xyi$x[1]) | (tail(xyi$y,1) != xyi$y[1]))
             xyi <- rbind(xyi,xyi[1,,drop=F])
@@ -838,10 +978,11 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', ...)
     if (!( detector %in% .localstuff$validdetectors ))
         stop ('invalid detector type')
     if (is.null(file) & is.null(data))
-        stop ('Must provide one of file or data')
+        stop ("requires 'file' or 'data'")
     if (!is.null(file)) {
         nfld <- count.fields (file, ...)
-        if (min(nfld) < 3) stop ('Require 3 fields (detectorID, x, y)')
+        if (min(nfld) < 3)
+            stop ("requires 3 fields (detectorID, x, y)")
         if (min(nfld) == 3) colcl <- c('character',NA,NA)
         else colcl <- c('character',NA,NA,'character')
         if (detector=='polygon') {
@@ -891,35 +1032,57 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', ...)
 
     if (!is.null(file)) {
         if (ncol(temp)>2) {
-            if (ncol(temp)>3) temp2 <- apply(temp[,3:ncol(temp)],1,paste)
-            else temp2 <- temp[,3]
+            ## 2010-11-22 bug? if (ncol(temp)>3) temp2 <- apply(temp[,3:ncol(temp)],1,paste)
+            if (ncol(temp)>3)
+                temp2 <- apply(temp[,3:ncol(temp)],1,paste,collapse='')
+            else
+                temp2 <- temp[,3]
 
-            splitfield <- matrix(unlist(strsplit(as.character(temp2),'/')),byrow=T, nr=nrow(traps))   # before '/'
-            used <- gsub(' ','', splitfield[,1])     # remove blanks
-            used <- gsub('//t','', used)   # remove tabs
-            used <- gsub(',','', used)   # remove commas
+            splitfield <- matrix(unlist(strsplit(as.character(temp2),'/')),
+                byrow=T, nr=nrow(traps))                                    # before '/'
+            used <- gsub(' ','', splitfield[,1])                            # remove blanks
+            used <- gsub('//t','', used)                                    # remove tabs
+            used <- gsub(',','', used)                                      # remove commas
             nocc <- max(nchar(used))
-            if (any(nchar(used) != nocc)) stop ('Usage fields suggest varying number of occasions')
+            if (any(nchar(used) != nocc))
+                stop ("'usage' fields suggest varying number of occasions")
             if (nocc>0) {
                 usage(traps) <- matrix(unlist(strsplit(used,split='')), byrow=T, nc=nocc)>0
                 dimnames(attr(traps, 'usage')) <- list(dimnames(traps)[[1]], 1:nocc)
             }
 
+## 2010-11-26
             if (ncol(splitfield)>1) {
-                temp <- splitfield[,2,drop=F]
-                covariates(traps) <- data.frame(C1=as.numeric(temp))
+##                temp <- splitfield[,2,drop=F]
+##                covariates(traps) <- data.frame(C1=as.numeric(temp))
+                 firstcov <- grep ('/', temp[1,]) + 1
+                 covariates(traps) <- data.frame(temp[, firstcov: ncol(temp), drop = F])
+                 if (!is.null(covnames)) {
+                     ncc <- ncol(covariates(traps))
+                     if (length(covnames) != ncc)
+                         stop("number of covariate names does",
+                              "not match number of columns", ncc )
+                     names (covariates(traps)) <- covnames
+                 }
             }
         }
     }
 
     attr(traps,'spacex') <- min(dist(unique(traps$x)))
     attr(traps,'spacey') <- min(dist(unique(traps$y)))
+
+    ## added 2010-10-27/29
+    spacing(traps) <- spacing(traps)   ## !!
+##    spacing <- as.matrix(dist(traps))
+##    sp <- apply(spacing,1,function(x) min(x[x>0]))
+##    attr(traps,'spacing') <- mean(sp)
+
     traps
 }
 ############################################################################################
 
 print.traps <- function(x, ...) {
-    if (inherits(x, 'list')) {
+    if (ms(x)) {
         for (i in 1:length(x)) {
             cat('\n')
             if (!is.null(names(x)))
@@ -943,7 +1106,7 @@ print.traps <- function(x, ...) {
 subset.traps <- function (x, subset, ...) {
     # subset may be numeric index or logical
 
-    if (inherits(x, 'list')) {
+    if (ms(x)) {
         temp <- lapply(x, subset.traps, subset=subset, ...)
         class(temp) <- c('list', 'traps')
         temp
@@ -968,9 +1131,9 @@ subset.traps <- function (x, subset, ...) {
 
 split.traps <- function (x, f, drop = FALSE, prefix='S', ...) {
   if (!inherits(x, 'traps'))
-      stop ('argument to split.traps does not have class traps')
-  if (inherits(x, 'list'))
-      stop ('split not suitable for multi-session traps')
+      stop ("argument to split.traps should have class 'traps'")
+  if (ms(x))
+      stop ("'split.traps' not suitable for multi-session traps")
   options(warn=-1)
   f <- factor(f)
   if (any(!is.na(as.numeric(levels(f))))) f <- factor(paste (prefix,f,sep=''))
@@ -989,20 +1152,21 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', ...) {
 
 rbind.traps <- function (..., renumber = TRUE) {
 # combine 2 or more traps objects
+# what if multi-session?
     allargs <- list(...)
     check <- function (x) {
         if (!is(x,'traps'))
-            stop ('All arguments must be traps objects', call.=F)
+            stop ("all arguments must be 'traps' objects")
         if (is.null(covariates(x)) != is.null(covariates(allargs[[1]]) ))
-            stop ('Covariates must be provided for all or none', call.=F)
+            stop ("covariates must be provided for all or none")
         if (!is.null(usage(x)))
             if (ncol(usage(x)) != ncol(usage(allargs[[1]])))
-                stop ('Usage defined for varying number of occasions')
+                stop ("'usage' is defined for varying number of occasions")
         if (detector(x) != detector(allargs[[1]]))
-            warning ('Detector types vary; using first')
+            warning ("detector types vary; using first")
     }
     if (length(allargs) <= 1)
-        stop('require more than one traps object')
+        stop("requires more than one traps object")
     sapply (allargs, check)
     temp <- rbind.data.frame(...)
     class(temp) <- c('traps', 'data.frame')
@@ -1010,7 +1174,7 @@ rbind.traps <- function (..., renumber = TRUE) {
     ## 2010 07 05
     tempdet <- lapply(allargs, detector)
     if (length(unique(sapply(tempdet, detector))) >1 )
-        stop ('cannot combine detector types - change with reduce()')
+        stop ("cannot combine detector types - change with reduce()")
     detector(temp) <- tempdet[[1]]
 
     ##  cov <- covariates(allargs[[1]])
@@ -1030,7 +1194,8 @@ rbind.traps <- function (..., renumber = TRUE) {
     if (any(!sapply(tempusage, is.null))) {
         nocc <- unique(unlist(sapply(tempusage, ncol)))
         nr <- unlist(sapply(allargs, nrow))
-        if (length(nocc)>1) warning ('varying number of occasions, using maximum')
+        if (length(nocc)>1)
+            warning ("varying number of occasions; using maximum")
         nocc <- max(nocc)
         fillmissing <- function(x, nr) {
             flush.console()
@@ -1085,18 +1250,21 @@ plot.traps <- function(x,
     markvarying=FALSE,
     ... )
 {
-    if (inherits(x, 'list')) lapply(x, plot.traps,
-        border, label, offset,
-        add, hidetr, detpar, txtpar,
-        bg, gridlines, gridspace, gridcol,
-        markvarying, ...)
+    if (ms(x)) {
+        lapply(x, plot.traps,
+            border, label, offset,
+            add, hidetr, detpar, txtpar,
+            bg, gridlines, gridspace, gridcol,
+            markvarying, ...)
+    }
     else {
 
         buff <- c(-border,+border)
         offsety <- ifelse (length(offset)==2, offset[2], offset[1])
 
-        dcol <- ifelse (detector(x) %in% c('quadratbinary','quadratcount'),
-                        'white','red')
+##        dcol <- ifelse (detector(x) %in% c('quadratbinary','quadratcount'),
+##                        'white','red')
+        dcol <- 'red'
         detpar <- replacedefaults (list(col=dcol, pch=3, cex=0.8), detpar)
         txtpar <- replacedefaults (list(col='blue', cex=0.7), txtpar)
 
@@ -1108,6 +1276,7 @@ plot.traps <- function(x,
 
         if (!add) {
             par(bg=bg)
+            require(MASS)
             eqscplot (x$x, x$y, xlim=range(x$x)+buff, ylim=range(x$y)+buff,
                 xlab='', ylab='', type='n', axes=F, ...)
             if (gridlines) {
@@ -1145,22 +1314,22 @@ plot.traps <- function(x,
                 }
             }
             else {
-                if (detector(x) %in% c('quadratbinary', 'quadratcount')) {
-                    plotpixel <- function (xy, spacex, spacey) {
-                        spx2 <- spacex/2
-                        spy2 <- spacey/2
-                        polygon (x = xy[1] + c(-spx2,-spx2,+spx2,+spx2),
-                            y = xy[2] + c(-spy2,+spy2,+spy2,-spy2), col=detpar$col)
-
-                    }
-                    apply(x,1,plotpixel, spacex = attr(x,'spacex'), spacey = attr(x,'spacey'))
-                }
-                else {
+##                if (detector(x) %in% c('quadratbinary', 'quadratcount')) {
+##                    plotpixel <- function (xy, spacex, spacey) {
+##                        spx2 <- spacex/2
+##                        spy2 <- spacey/2
+##                        polygon (x = xy[1] + c(-spx2,-spx2,+spx2,+spx2),
+##                            y = xy[2] + c(-spy2,+spy2,+spy2,-spy2), col=detpar$col)
+##
+##                    }
+##                    apply(x,1,plotpixel, spacex = attr(x,'spacex'), spacey = attr(x,'spacey'))
+##                }
+##                else {
                     points (x$x, x$y)
                     if (markvarying & any(!constant)) {
                         points (x$x[!constant], x$y[!constant], pch=16,cex=0.8)
                     }
-                }
+##                }
             }
             par(txtpar)
             if (label && !(detector(x) %in% c('polygon','transect')))
@@ -1173,23 +1342,27 @@ plot.traps <- function(x,
 ############################################################################################
 
 summary.traps <- function(object, getspacing = TRUE, ...) {
-    if (inherits(object, 'list')) lapply(object, summary.traps, getspacing = getspacing, ...)
+    if (ms(object)) lapply(object, summary.traps, getspacing = getspacing, ...)
     else {
-        if (is.null(object$x) | is.null(object$y)) stop ('Not a valid traps object')
+        if (is.null(object$x) | is.null(object$y))
+            stop ("not a valid 'traps' object")
         nd <- nrow(object)
         np <- NA
         if (detector(object) %in% c('polygon', 'transect')) {
             spacing <- NA
         }
         else {
-            if (getspacing) {
-                spacing <- as.matrix(dist(cbind(object$x,object$y)))
-                sp <- apply(spacing,1,function(x) min(x[x>0]))
-            }
-            else {
-                sp <- attr(object, 'spacing')
-                warning ('spacing not computed: using spacing attribute in traps object')
-            }
+## 2010-10-29
+            spacing <- spacing(object)
+##            if (getspacing & (nd > 1)) {
+##                spacing <- as.matrix(dist(object))
+##                sp <- apply(spacing,1,function(x) min(x[x>0]))
+##            }
+##            else {
+##                sp <- attr(object, 'spacing')
+## warning ('spacing not computed in summary.traps: using spacing attribute in traps object')
+##            }
+
             if (is.factor(covariates(object))) {
                 susage <- by(usage(object), covariates(object), function(y) apply(y,2,sum))
                 sumusage <- matrix(unlist(susage),byrow=T,nr=length(susage))
@@ -1202,7 +1375,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
             if (!is.null(tempcovar))
                 if ((nrow(tempcovar)>0) & (ncol(tempcovar)>0)) ## amended to check ncol 2009 09 18
                     sumcovar <- summary(tempcovar, ...)
-            spacing <- mean(sp, na.rm=T)
+##            spacing <- mean(sp, na.rm=T)
         }
 
         ## defaults
@@ -1215,17 +1388,17 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
         sumcovar <- NULL
         xrange <- range(object$x)
         yrange <- range(object$y)
-        if (detector(object) %in% c('quadratbinary', 'quadratcount')) {
-            area <- searcharea(object) * ndetector(object)
-            spacex <- attr(object, 'spacex')
-            spacey <- attr(object, 'spacey')
-            if (is.null(spacex) | is.null(spacey)) {
-                spacex <- spacing
-                spacey <- spacing
-            }
-            xrange <- range(object$x) + spacex/2 * c(-1,1)
-            yrange <- range(object$y) + spacey/2 * c(-1,1)
-        }
+##        if (detector(object) %in% c('quadratbinary', 'quadratcount')) {
+##            area <- searcharea(object) * ndetector(object)
+##            spacex <- attr(object, 'spacex')
+##            spacey <- attr(object, 'spacey')
+##            if (is.null(spacex) | is.null(spacey)) {
+##                spacex <- spacing
+##                spacey <- spacing
+##            }
+##            xrange <- range(object$x) + spacex/2 * c(-1,1)
+##            yrange <- range(object$y) + spacey/2 * c(-1,1)
+##        }
         if (detector(object) %in% c('polygon'))
             area <- searcharea(object)
         if (detector(object) %in% c('transect'))
@@ -1254,11 +1427,11 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
     if (!terse)
     cat ('Object class     ', 'traps', '\n')
     cat ('Detector type    ', x$detector, '\n')
-    if (x$detector %in% c('quadratbinary', 'quadratcount')) {
-        cat ('Number quadrats  ', x$ndetector, '\n')
-        cat ('Total area       ', x$area, 'ha \n')
-    }
-    else if (x$detector %in% c('polygon')) {
+##    if (x$detector %in% c('quadratbinary', 'quadratcount')) {
+##        cat ('Number quadrats  ', x$ndetector, '\n')
+##        cat ('Total area       ', x$area, 'ha \n')
+##    }
+    if (x$detector %in% c('polygon')) {
         cat ('Number vertices  ', x$ndetector-x$npart, '\n')  ## assume each polygon closed
         cat ('Number polygons  ', x$npart, '\n')
         cat ('Total area       ', sum(x$area), 'ha \n')
@@ -1309,7 +1482,7 @@ discreteN <- function (n, N) {
 
 plot.popn <- function (x, add = FALSE, frame = TRUE, ...) {
 
-    if (inherits(x,'list')) {
+    if (ms(x)) {
         ## force shared frame
         temp <- do.call(rbind, lapply(x, function(y) attr(y,'boundingbox')))
         vertices <- apply(temp,2,range)
@@ -1322,6 +1495,7 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, ...) {
 
         if (add==FALSE)
         {
+            require(MASS)
             if (frame)
                 eqscplot (x$x, x$y, xlab='', ylab='', xlim=range(vertices$x),
                     ylim=range(vertices$y), type='p', axes=F, ...)
@@ -1351,9 +1525,9 @@ rbind.popn <- function (..., renumber = TRUE) {
     ## check input
     check <- function (x) {
         if (!is(x,'popn'))
-            stop ('All arguments must be popn objects', call.=F)
+            stop ("all arguments must be 'popn' objects")
         if (is.null(covariates(x)) != is.null(covariates(allargs[[1]]) ))
-            stop ('Covariates must be provided for all or none', call.=F)
+            stop ("covariates must be provided for all or none")
     }
     sapply (allargs, check)
 
@@ -1393,7 +1567,7 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, renumber = FALSE, ..
 ## subset - vector (character, logical or integer) to subscript rows (dim(1)) of x
 ## sessions - vector (integer or logical) to subscript sessions
 
-## 2010 06 14 - not yet for MS popn
+## 2010 06 14 - not yet for MS popn  !!!!!!!!
 {
     if (is.null(subset)) subset <- 1:nrow(x)
     pop <- x[subset,]
@@ -1419,7 +1593,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
 ## traps - vector (integer or logical) to subscript rows of traps object
 ## sessions - vector (integer or logical) to subscript sessions
 
-    if (inherits(x,'list')) {
+    if (ms(x)) {
         if (is.null(sessions)) sessions <- 1:length(x)
         temp <- lapply (x[sessions], subset,
             subset = subset,
@@ -1461,8 +1635,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         #################################
         ## prepare to drop null histories
         if (dropnull) {
-            if (detector %in% c('quadratbinary', 'quadratcount', 'proximity', 'count',
-                                'polygon','transect')) {
+##            if (detector %in% c('quadratbinary', 'quadratcount', 'proximity', 'count',
+            if (detector %in% c('proximity', 'count', 'polygon', 'transect')) {
                 nonnull <- apply(abs(x[,occasions, traps, drop=F]),1,sum) > 0
             }
             else if (detector == 'signal') {
@@ -1483,7 +1657,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         #################################
         ## apply new cutval
         if (detector == 'signal') {
-            if (cutval < attr(x, 'cutval')) stop ('cannot decrease cutval')
+            if (cutval < attr(x, 'cutval'))
+                stop ("cannot decrease 'cutval'")
             detected <- x>0
             x[detected] <- signal(x) > cutval
             signal(x) <- signal(x)[signal(x)>cutval]
@@ -1518,8 +1693,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
                     temp <- temp[,OK2,drop=F]
             }
             else
-                warning (paste('No detections on occasion(s) : ',
-                    paste((1:nocc)[apply(abs(temp),2,sum) ==0]),'\n  '))
+                warning (paste("no detections on occasion(s) ",
+                    paste((1:nocc)[apply(abs(temp),2,sum) ==0]), "\n"))
             nocc <- dim(temp)[2]  # refresh
         }
 
@@ -1572,7 +1747,8 @@ flatten <- function(x) {
 ## 7/6/2010
 ## x is expected to be a list whose components are non-list and list objects
 ## create a new list from a concatenation of the non-list objects and the first-order components of the lists
-    if (!is.list(x)) stop ('can only flatten a list')
+    if (!is.list(x))
+        stop ("can only flatten a list")
     unlist(lapply(x,
                   function(y) if (is.list(y)) y else list(y)),
            recursive=F)
@@ -1591,8 +1767,10 @@ MS.capthist <- function (...) {
     MS <- flatten(list(...))
     if (is.null(names(MS))) names(MS) <- 1:length(MS)
     class(MS) <- c('list', 'capthist')
-    if (any(duplicated(names(MS)))) stop ('Sessions must have unique names')
-    if (any(names(MS)=='')) stop ('Sessions must be named')
+    if (any(duplicated(names(MS))))
+        stop ("session names must be unique")
+    if (any(names(MS)==''))
+        stop ("sessions must be named")
     for (i in 1:length(MS))
         session(MS[[i]]) <- names(MS)[i]  ## force conformity
     MS
@@ -1615,7 +1793,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL)
     ## concatenate lists, including elementary objects (ignore 'pool')
 
     if ((length(dots)>1) & any(sapply(allargs, is.list))) {
-        if (!is.null(pool)) warning('pool argument ignored in rbind.capthist')
+        if (!is.null(pool))
+            warning("'pool' argument will be ignored")
         temp <- c(...)
         class (temp) <- c('list', 'capthist')
         return(temp)
@@ -1629,10 +1808,10 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL)
     if((length(dots)==1) & (is.list(object)) & !is.null(pool)) {
         if (!is.list(pool)) {
             pool <- list(combined=1:length(object))
-            warning ('list not specified, pooling all components')
+            warning ("list not specified, pooling all components")
         }
         else if (any (sapply(unlist(pool), function(x) length(object[[x]])==0)))
-                stop('invalid pooling indices') ## prempted by 'subscript out of bounds'
+                stop("invalid pooling indices") ## prempted by 'subscript out of bounds'
 
         temp <- lapply (pool, function (x) {
             temphist <- object[x]
@@ -1652,16 +1831,16 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL)
 
     ## Case 3
     ## 1 to several several elementary capthist objects
-    ## conventional rbind, given compatible traps, covariates, noccasion
+    ## conventional rbind, given compatible traps, covariates, noccasions
     ## optional renumbering
 
         check <- function (x) {
           if (!is(x,'capthist'))
-              stop ('all arguments must be capthist objects', call.=F)
+              stop ("all arguments must be 'capthist' objects")
           if (is.null(covariates(x)) != is.null(covariates(object[[1]]) ))
-              stop ('covariates must be provided for all or none', call.=F)
+              stop ("covariates must be provided for all or none")
           if (any(dim(x)[-1] != dim(object[[1]])[-1]))
-                  stop ('varying numbers of occasions and/or traps', call.=F)
+                  stop ("varying numbers of occasions and/or traps")
         }
 
         if (length(dots)==1)
@@ -1695,12 +1874,13 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL)
 print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
 {
     ## recursive if list of capthist
-    if (inherits(x, 'list')) lapply (x, print.capthist, ..., condense = condense,
+    if (ms(x)) lapply (x, print.capthist, ..., condense = condense,
         sortrows = sortrows)
     else { # strip attributes, but why bother?
         cat('Session = ', session(x), '\n')
-        if (condense & (detector(traps(x)) %in% c('proximity', 'count','quadratbinary',
-                 'quadratcount','signal'))) {
+##        if (condense & (detector(traps(x)) %in% c('proximity', 'count','quadratbinary',
+##                 'quadratcount','signal'))) {
+        if (condense & (detector(traps(x)) %in% c('proximity', 'count', 'signal'))) {
             temp <- apply(x, 3, function(y) y[apply(abs(y),1,sum)>0,, drop=F])
             trapnames <- rownames(traps(x))
             traps <- trapnames[rep(1:length(temp), sapply(temp, nrow))]
@@ -1754,7 +1934,7 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
 
 {
     ## recursive if list of capthist
-    if (inherits(x, 'list')) {
+    if (ms(x)) {
         sapply (x, plot.capthist,
             rad = rad, hidetraps = hidetraps, tracks = tracks,
             title = title, subtitle = subtitle, add = add, varycol = varycol, icolours =
@@ -1824,9 +2004,10 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             }
         }
         labcapt <- function (n) {
-            if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity', 'count','signal','polygon','transect') )
-            {
-                warning ('labels not implemented for this detector type')
+##            if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity',
+##                                'count','signal','polygon','transect') ) {
+            if ( detectr %in% c('proximity', 'count', 'signal', 'polygon', 'transect') ) {
+                warning ("labels not implemented for this detector type")
             }
             else {
                 t1 <- abs(x[n,])
@@ -1847,9 +2028,9 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
                 text (head(df[[n]],1)$x++laboffset[1], head(df[[n]],1)$y+laboffsety, row.names(x)[n])
         }
         ncapt <- function (x) {
-            if (detectr %in% c('proximity', 'count','quadratbinary','quadratcount')) {
+##            if (detectr %in% c('proximity', 'count','quadratbinary','quadratcount')) {
+            if (detectr %in% c('proximity', 'count')) {
                temp <- t(apply (x,c(2,3),sum)) # capts/trap/day)
-
             }
             else {
                fx   <- factor(x, levels=0:nrow(traps))
@@ -1908,7 +2089,8 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
 
         if (!add) plot(traps, hidetr=hidetraps, ...)
 
-        if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity', 'count') )
+##        if ( detectr %in% c('quadratbinary', 'quadratcount', 'proximity', 'count') )
+        if ( detectr %in% c('proximity', 'count') )
         {
             w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
             w <- aperm(w, c(2,3,1))
@@ -1926,7 +2108,8 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
             .localstuff$i <- 0
             temp <- data.frame(ID=animalID(x), occ=occasion(x), trap=trap(x), signal=signal(x))
             lsignal <- split(temp, animalID(x))
-            lapply(lsignal, plotsignal, minsignal = min(temp$signal), maxsignal = max(temp$signal), n=nanimal)
+            lapply(lsignal, plotsignal, minsignal = min(temp$signal),
+                maxsignal = max(temp$signal), n=nanimal)
         }
         else  {   ## single, multi-catch traps
             apply( x, 1, plotcapt )
@@ -1975,7 +2158,7 @@ plot.capthist <- function(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
 summary.capthist <- function(object, ...) {
 
     ## recursive if list of capthist
-    if (inherits(object, 'list')) lapply (object, summary.capthist, ...)
+    if (ms(object)) lapply (object, summary.capthist, ...)
     else {
 
         traps <- traps(object)
@@ -1989,7 +2172,6 @@ summary.capthist <- function(object, ...) {
         counts <- matrix(nr = 8, nc = nocc)
         counts[,] <- 0
         signalsummary <- NULL
-
         if (nrow(object) > 0) {
             if (length(dim(object)) > 2) {
                 tempx <- apply( object[,,,drop=F], c(1,2), function(x) sum(abs(x))>0)
@@ -2008,9 +2190,11 @@ summary.capthist <- function(object, ...) {
                     counts [4,1] <- counts [1,1]
                     counts [5,1] <- sum(tempx<0)
                 }
-                if (detector %in% c('single','multi','proximity','signal','quadratbinary'))
+##                if (detector %in% c('single','multi','proximity','signal','quadratbinary'))
+                if (detector %in% c('single','multi','proximity','signal'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)>0))
-                if (detector %in% c('count', 'quadratcount','polygon','transect'))
+##                if (detector %in% c('count', 'quadratcount','polygon','transect'))
+                if (detector %in% c('count', 'polygon','transect'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(x))
                 tempt <- apply(object[,,,drop=F],c(2,3), function(x) sum(x)>0)
                 counts [7,] <- apply(tempt,1,sum)
@@ -2048,7 +2232,6 @@ summary.capthist <- function(object, ...) {
         dimnames(counts) <- list(c('n','u','f','M(t+1)','losses','detections','detectors visited','detectors used'), 1:nocc)
         counts$Total <- apply(counts, 1, sum)
         counts$Total[4] <- counts[4, nocc]
-
         if (is.null(traps)) {
             trapsum <- NULL
             signalsummary <- NULL
@@ -2127,23 +2310,38 @@ print.summary.capthist <- function (x, ...) {
 ## defines a habitat mask
 ###############################
 
-make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'traprect',
-    poly = NULL, pdotmin = 0.001, ...)
-{
-    insidepoly <- function (xy) {
-        temp <- .C('inside',  PACKAGE = 'secr',
-            as.double (xy),
-            as.integer (0),
-            as.integer (np-1),
-            as.integer (np),
-            as.double (poly),
-            result = integer(1))
-        as.logical(temp$result)
+insidepoly <- function (xy, poly) {
+    xy <- matrix(unlist(xy), nc = 2)  ## in case dataframe
+    if (inherits(poly, "SpatialPolygonsDataFrame")) {
+        require (sp)
+        xy <- SpatialPoints(xy)
+        OK <- overlay (xy, poly)
+        !is.na(OK)
     }
+    else {
+        checkone <- function (xy1) {
+            temp <- .C('inside',  PACKAGE = 'secr',
+                as.double (xy1),
+                as.integer (0),
+                as.integer (np-1),
+                as.integer (np),
+                as.double (poly),
+                result = integer(1))
+            as.logical(temp$result)
+        }
+        poly <- matrix(unlist(poly), nc = 2)  ## in case dataframe
+        np <- nrow(poly)
+        apply(xy, 1, checkone)
+    }
+}
 
-    if (inherits(traps, 'list')) {         ## a list of traps objects
-        if (inherits(poly, 'list'))
-            stop ('lists of polygons not implemented in make.mask')
+make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'traprect',
+    poly = NULL, keep.poly = TRUE, pdotmin = 0.001, ...)
+{
+
+    if (ms(traps)) {         ## a list of traps objects
+        if (inherits(poly, 'list') & (!is.data.frame(poly)))
+            stop ("lists of polygons not implemented in 'make.mask'")
         temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx,
             type = type, poly = poly, pdotmin = pdotmin, ...)
         class (temp) <- c('list', 'mask')
@@ -2151,23 +2349,40 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'tra
       }
     else {
 
-        if (! (type %in% c('traprect','trapbuffer','polygon', 'pdot')))
-            stop ('Mask type must be one of traprect, trapbuffer, polygon or pdot')
-
+        allowedType <- c('traprect','trapbuffer','polygon', 'pdot')
+        if (! (type %in% allowedType))
+            stop (paste("mask type must be one of",
+                        paste(sapply(allowedType, dQuote),collapse=",")))
         dots <- match.call(expand.dots = FALSE)$...
-        if ((length(dots)==0) & (type == 'pdot')) warning ('no detection parameters supplied for make.mask; using defaults')
+        if ((length(dots)==0) & (type == 'pdot'))
+            warning ("no detection parameters supplied; using defaults")
 
         buff <- c(-buffer,+buffer)
 
-        if (type=='polygon') {
-            if (is.null(poly)) stop ('mask polygon must be supplied')
-            poly <- matrix(unlist(poly),nc=2)
-            poly <- rbind (poly, poly[1,])  # force closure of poly
-            np <- nrow(poly)
+        if (!is.null(poly)) {
+            SPDF <- class(poly) == "SpatialPolygonsDataFrame"
+            if (SPDF) {
+                require(sp)
+            }
+            else {
+                poly <- matrix(unlist(poly),nc=2)
+                poly <- rbind (poly, poly[1,])  # force closure of poly
+            }
+        }
 
-            if (any (!apply(traps,1,insidepoly))) warning ('some traps are outside mask polygon')
-            xl <- range(poly[,1])
-            yl <- range(poly[,2])
+        if (type=='polygon') {
+            if (is.null(poly))
+                stop ("mask polygon must be supplied")
+            if (any (!insidepoly(traps, poly)))
+                warning ("some traps are outside mask polygon")
+            if (SPDF) {
+                xl <- poly@bbox[1,]
+                yl <- poly@bbox[2,]
+            }
+            else {
+                xl <- range(poly[,1])
+                yl <- range(poly[,2])
+            }
         }
         else {
             xl <- range(traps$x) + buff
@@ -2186,13 +2401,6 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'tra
             mask <- mask[distancetotrap(mask, traps) <= buffer,]
         }
 
-        if (type=='polygon') {
-            mask <- mask[apply(mask,1,insidepoly),]
-            attr(mask,'polygon') <- poly   # save
-        }
-        else
-            attr(mask,'polygon') <- NULL
-
         if (type=='pdot') {
             OK <- pdot(mask, traps = traps, ...) > pdotmin
             edge <- function (a,b) any (abs(a-b) < (spacing))
@@ -2202,7 +2410,15 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'tra
                 edge(mask[,1],xl[2]) |
                 edge(mask[,2],yl[1]) |
                 edge(mask[,2],yl[2]))
-            warning ('pdot mask may have been truncated; possibly increase buffer')
+            warning ("'pdot' mask may have been truncated; possibly increase buffer")
+        }
+
+        if (!is.null(poly)) {
+            mask <- mask[insidepoly(mask, poly),]
+            xl <- range(mask$x)
+            yl <- range(mask$y)
+            if (keep.poly)
+                attr(mask,'polygon') <- poly   # save
         }
 
         # get mean and SD of numeric columns
@@ -2221,6 +2437,10 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'tra
 ###############################################################################
 
 subset.mask <- function (x, subset, ...) {
+
+    if (ms(x))
+        stop ("subset of multi-session mask not implemented")
+
     # subset may be numeric index or logical
     temp <- x[subset,,drop=F]
 
@@ -2240,19 +2460,21 @@ subset.mask <- function (x, subset, ...) {
 
 rbind.mask <- function (...) {
 # combine 2 or more mask objects
+
+##    no check for multi-session masks at present
+##        stop ('rbind of multi-session mask not implemented')
+##
     dropduplicates <- TRUE   ## always
     allargs <- list(...)
     spacing <- attr(allargs[[1]],'spacing')
     area    <- attr(allargs[[1]],'area')
     check <- function (x) {
         if (!is(x,'mask'))
-            stop ('All arguments must be mask objects', call.=F)
+            stop ("arguments must be mask objects")
         if (attr(x,'spacing') != spacing)
-            stop ('All arguments must have same spacing attribute', call.=F)
+            stop ("arguments must have same 'spacing' attribute")
         if (attr(x,'area') != area)
-            stop ('All arguments must have same area attribute', call.=F)
-    ##  if (!is.null(attr(x,'covariates')))
-    ##      warning ('covariates are discarded in rbind.mask', call.=F)
+            stop ("arguments must have same area attribute")
     }
     sapply (allargs, check)
     temp <- rbind.data.frame(...)
@@ -2269,7 +2491,7 @@ rbind.mask <- function (...) {
         if (droppedrows>0) {
             covariates(temp) <- covariates(temp)[!dupl,]
             temp <- temp[!dupl,]
-            warning (paste(droppedrows, ' duplicate points dropped from mask'))
+            warning (paste(droppedrows, "duplicate points dropped from mask"))
         }
     }
 
@@ -2339,51 +2561,70 @@ read.mask <- function (file, spacing = NULL, ...)
 plot.mask <- function(x, border=20, add=F, covariate=NULL,
                      axes=F, dots=T, col='grey', breaks = 12, ppoly=T, polycol='red', ...)
 {
-    buff <- c(-border,+border)
-    if (!add)
-        eqscplot (x$x, x$y,
-        xlim=range(x$x)+buff, ylim=range(x$y)+buff,
-        xlab='', ylab='',
-        axes=axes, type='n', ...)
-
-    if (is.null(covariate))
-        covfactor <- factor(1)
-    else {
-        if (is.factor(covariates(x)[,covariate]))
-            covfactor <- covariates(x)[,covariate]
-        else
-            covfactor <- cut ( covariates(x)[,covariate], breaks = breaks)
-    }
-    ncol <- length(levels(covfactor))
-    if (length(col) < ncol)
-    col <- heat.colors(ncol)   # default set
-    cols <- col[as.numeric(covfactor)]
-
-    if (dots) {
-        points (x$x, x$y, col = cols, pch = 16, cex = 0.4)
+    if (ms(x)) {
+        lapply (x, plot.mask)
     }
     else {
-        pixelsize <- attr(x,'spacing')
-        dx <- c(-0.5, -0.5, +0.5, +0.5) * pixelsize
-        dy <- c(-0.5, +0.5, +0.5, -0.5) * pixelsize
-        plotpixel <- function (xy) {
-        polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1)
+
+        buff <- c(-border,+border)
+        if (!add)
+            require(MASS)
+            eqscplot (x$x, x$y,
+            xlim=range(x$x)+buff, ylim=range(x$y)+buff,
+            xlab='', ylab='',
+            axes=axes, type='n', ...)
+
+        if (is.null(covariate))
+            covfactor <- factor(1)
+        else {
+            if (is.factor(covariates(x)[,covariate]))
+                covfactor <- covariates(x)[,covariate]
+            else
+                covfactor <- cut ( covariates(x)[,covariate], breaks = breaks)
         }
-        apply(cbind(x,as.numeric(covfactor)),1,plotpixel)
+        ncol <- length(levels(covfactor))
+        if (length(col) < ncol)
+        col <- heat.colors(ncol)   # default set
+        cols <- col[as.numeric(covfactor)]
+
+        if (dots) {
+            points (x$x, x$y, col = cols, pch = 16, cex = 0.4)
+        }
+        else {
+            pixelsize <- attr(x,'spacing')
+            dx <- c(-0.5, -0.5, +0.5, +0.5) * pixelsize
+            dy <- c(-0.5, +0.5, +0.5, -0.5) * pixelsize
+            plotpixel <- function (xy) {
+            polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1)
+            }
+            apply(cbind(x,as.numeric(covfactor)),1,plotpixel)
+        }
+
+        if (!is.null(attr(x,'polygon')) & ppoly) {
+            poly <- attr(x,'polygon')
+            if (class(poly) == "SpatialPolygonsDataFrame") {
+                require(sp)
+                plot(poly, add = TRUE)
+            }
+            else
+                polygon (poly, col = polycol, density = 0)
+        }
     }
 
-    if ((attr(x,'type')=='polygon') & ppoly)
-        polygon (attr(x,'polygon'), col = polycol, density = 0)
 }
 ###############################################################################
 
 summary.mask <- function(object, ...) {
 
-  if (is.data.frame(object)) {
-
-      if (is.null(object$x) | is.null(object$y)) stop ('Not a valid mask')
+  if (ms(object)) {
+      temp <- lapply(object, summary.mask)
+      class(temp) <- c('summary.mask', 'list')
+      temp
+  }
+  else {
+      if (is.null(object$x) | is.null(object$y)) stop ('not a valid mask')
       nd <- length(object$x)
-      if (length(object$x) != length(object$y)) stop  ('Not a valid mask')
+      if (length(object$x) != length(object$y)) stop  ('not a valid mask')
 
       if (!is.null(covariates(object))) {
           sumcovar <- summary(covariates(object), ...)
@@ -2404,17 +2645,15 @@ summary.mask <- function(object, ...) {
       class(temp) <- 'summary.mask'
       temp
   }
-  else {
-      temp <- lapply(object, summary.mask)
-      class(temp) <- c('summary.mask', 'list')
-      temp
-  }
 
 }
 ############################################################################################
 
 print.summary.mask <- function (x, ...) {
-  if (!('list' %in% class(x))) {
+    if (ms(x)) {
+        lapply (x, print.summary.mask)
+    }
+    else {
       cat ('Object class     ', 'mask', '\n')
       cat ('Mask type        ', x$type, '\n')
       cat ('Number of points ', x$nmaskpoints, '\n')
@@ -2431,9 +2670,6 @@ print.summary.mask <- function (x, ...) {
           print(x$covar, ...)
       }
   }
-  else {
-      lapply (x, print.summary.mask)
-  }
 }
 ############################################################################################
 
@@ -2443,10 +2679,10 @@ print.summary.mask <- function (x, ...) {
 ####################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
-    buffer = 100, CL = FALSE, detectfn = NULL, start = NULL, link = list(),
+    buffer = NULL, CL = FALSE, detectfn = NULL, start = NULL, link = list(),
     fixed = list(), timecov = NULL, sessioncov = NULL, groups = NULL,
-    dframe = NULL, details = list(), method = 'Newton-Raphson', verify = TRUE, trace = NULL,
-    ...)
+    dframe = NULL, details = list(), method = 'Newton-Raphson', verify = TRUE,
+    trace = NULL, ...)
 
 {
 # Fit spatially explicit capture recapture model
@@ -2461,7 +2697,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 #  detectfn   -  code for detection function 0 = halfnormal, 1 = hazard, 2 = exponential etc.
 #  start      -  start values for maximisation (numeric vector link scale);
 #                if NULL then 'autoini' function is used
-#  link       -  list of parameter-specific link function names 'log', 'logit', 'identity', 'sin', 'neglog'
+#  link       -  list of parameter-specific link function names 'log', 'logit', 'identity',
+#                'sin', 'neglog'
 #  fixed      -  list of fixed values for named parameters
 #  timecov    -  data for time covariates if these are used in 'model'
 #  sessioncov -  dataframe of session-level covariates
@@ -2473,6 +2710,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 #  trace      -  logical; if TRUE output each likelihood as it is calculated
 #  ...        -  other arguments passed to nlm() or optim()
 
+
+    if (!inherits(capthist, 'capthist'))
+        stop ("requires 'capthist' object")
+
     #################################################
     ## Remember start time and call
 
@@ -2480,8 +2721,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
 
     cl   <- match.call(expand.dots = TRUE)
-    cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
-    cl <- paste('secr.fit(', cl, ')')
+
+##    cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
+##    cl <- paste('secr.fit(', cl, ')')
 
 
     #################################################
@@ -2490,21 +2732,18 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (is.null(detectfn)) {
         if (detector(traps(capthist)) == 'signal') {
             detectfn <- 10
-            warning ('detectfn not specified, using threshold signal strength (10)')
+            warning ("detectfn not specified; using signal strength (10)")
         }
         else {
             detectfn <- 0
-            warning ('detectfn not specified, using halfnormal (0)')
+            ## warning removed 1.5.0
+            ## warning ("detectfn not specified, using halfnormal (0)")
         }
     }
 
     ## new 2010-07-01
-    else {
-        if (is.character(detectfn))
-            detectfn <- detectionfunctionnumber(detectfn)
-        if (!(detectfn %in% c(0,1,2,3,5,6,9,10,11)))
-            stop ('Invalid detection function')
-    }
+    else
+        detectfn <- valid.detectfn(detectfn)
 
     #################################################
     ## Use input 'details' to override various defaults
@@ -2513,6 +2752,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         scaleg0 = FALSE, hessian = 'auto', trace = TRUE, LLonly = FALSE,
         cellprob = FALSE, centred = FALSE, binomN = 1, cutval = 0,
         minprob = 1e-50, tx = 'identity')
+    if (detector(traps(capthist)) == 'count')     ## 2010 10 11
+        defaultdetails$binomN <- 0
     if (!is.null(attr(capthist,'cutval')))
         defaultdetails$cutval <- attr(capthist,'cutval')
     details <- replace (defaultdetails, names(details), details)
@@ -2524,22 +2765,23 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## MS - indicator TRUE if multi-session (logical)
     ## sessionlevels - names of sessions (character)
 
-    MS <- inherits(capthist, 'list')
+    MS <- ms(capthist)
     sessionlevels <- session(capthist)
 
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    anycount <- any(detector(traps(capthist)) %in% c('count', 'quadratbinary',
-        'quadratcount', 'polygon', 'transect', 'times'))
+##    anycount <- any(detector(traps(capthist)) %in% c('count', 'quadratbinary',
+##        'quadratcount', 'polygon', 'transect', 'times'))
+    anycount <- any(detector(traps(capthist)) %in% c('count', 'polygon', 'transect', 'times'))
     anypoly <- any(detector(traps(capthist)) == 'polygon')
     anytrans <- any(detector(traps(capthist)) == 'transect')
 
     if (MS) {
        if (any (sapply(traps(capthist), detector) == 'single'))
-        warning ('multi-catch likelihood used for single-catch traps')
+        warning ("multi-catch likelihood used for single-catch traps")
     }
     else {
        if (detector(traps(capthist)) == 'single')
-        warning ('multi-catch likelihood used for single-catch traps')
+        warning ("multi-catch likelihood used for single-catch traps")
     }
 
     #################################################
@@ -2549,17 +2791,17 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         memo ('Checking data', details$trace)
         test <- verify(capthist, report = 1)
         if (test$errors)
-            stop ('verify() found errors in capthist argument')
+            stop ("'verify' found errors in 'capthist' argument")
 
         if (!is.null(mask)) {
-            if (MS & !is.data.frame(mask)) {
+            if (MS & ms(mask)) {
                 ## list of masks
                 test <- lapply(mask, verify, report = 1)
                 notOK <- any(unlist(test))
             }
             else notOK <- verify(mask, report = 1)$errors
             if (notOK)
-                stop ('verify() found errors in mask argument')
+                stop ("'verify' found errors in 'mask' argument")
         }
     }
 
@@ -2568,12 +2810,17 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## assume traps(capthist) will extract a list of trap layouts
     ## if multi-session (MS == TRUE)
 
-    if (is.null(mask)) {
+    usebuffer <- is.null(mask)    ## flag for later check
+    if (usebuffer) {
+        if (is.null(buffer)) {
+            buffer <- 100
+            warning ("using default buffer width 100 m")
+        }
         if (MS) mask <- lapply (traps(capthist), make.mask, buffer = buffer)
         else    mask <- make.mask(traps(capthist), buffer = buffer)
     }
     else {
-      if (MS & is.data.frame(mask)) {
+      if (MS & !ms(mask)) {
           ## inefficiently replicate mask for each session!
           mask <- lapply(sessionlevels, function(x) mask)
           class (mask) <- c('list', 'mask')
@@ -2582,7 +2829,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
 
     nc <- ifelse (MS, sum(sapply(capthist, nrow)), nrow(capthist))
-    if (nc < 1) stop (paste(nc,'detection histories'))
+    if (nc < 1) stop (paste(nc,"detection histories"))
 
     if (MS) {
         q  <- attr(capthist[[1]],'q')
@@ -2593,7 +2840,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         Tm <- attr(capthist,'Tm')
     }
     nonID <- !is.null(Tm)   ## were marked animals recorded if unidentified?
-    if (!is.null(q) & CL) stop ('mark-resight incompatible with CL')
+    if (!is.null(q) & CL) stop ("mark-resight incompatible with CL")
 
     #################################################
     ## optional centring of traps and mask 2010 04 27
@@ -2630,15 +2877,16 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     defaultmodel <- list(D=~1, g0=~1, sigma=~1, z=~1, w=~1, pID=~1,
         beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
     model <- replace (defaultmodel, names(model), model)
-    if (!(detectfn %in% c(1))) model$z <- NULL
+    if (!(detectfn %in% c(1,3,7,8))) model$z <- NULL
     if (!(detectfn %in% c(5,6))) model$w <- NULL
     if (!(detectfn %in% c(9))) { model$b0 <- NULL; model$b1 <- NULL }
     if (!(detectfn %in% c(10,11))) { model$beta0 <- NULL; model$beta1 <- NULL; model$sdS <- NULL }
-    if (!(detectfn %in% 0:6)) { model$g0 <- NULL; model$sigma <- NULL }
+    if (!(detectfn %in% 0:8)) { model$g0 <- NULL; model$sigma <- NULL }
     if (is.null(q) | !nonID)
         model$pID <- NULL    ## no use for this parameter
     else
-        if (model$pID != ~1) stop ('pID must be constant in this version')
+        if (model$pID != ~1)
+            stop ("'pID' must be constant in this implementation")
 
     #################################################
     ## CUSTOMIZE FOR OTHER STYLES OF MODEL - TO DO
@@ -2646,29 +2894,31 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     if (CL & !is.null(groups)) {
         groups <- NULL
-        warning ('Groups not valid with CL - will ignore')
+        warning ("groups not valid with CL; groups ignored")
     }
 
-    ## if (CL & ('g' %in% unlist(sapply(model, all.vars)))) stop ('g not a valid effect when CL=TRUE')
-    if (CL && var.in.model('g', model)) stop ('g not a valid effect when CL=TRUE')
+    ## if (CL & ('g' %in% unlist(sapply(model, all.vars))))
+    ##    stop ('g not a valid effect when CL=TRUE')
+    if (CL && var.in.model('g', model))
+        stop ("'g' is not a valid effect when 'CL = TRUE'")
 
     ## Drop any fixed real parameters from model
     model[names(fixed)] <- NULL
 
     if ((length(model) == 0) & !is.null(fixed)) {
         ## all fixed; assume want only LL
-        stop ('all parameters fixed')
+        stop ("all parameters fixed")
     }
 
     vars <-  unlist(lapply(model, all.vars))
 
     if (details$scalesigma) {
-        if (CL) stop ('Cannot use scalesigma with CL')
-        if (!is.null(fixed$D)) stop ('Cannot use scalesigma with fixed density')
+        if (CL) stop ("cannot use 'scalesigma' with 'CL'")
+        if (!is.null(fixed$D)) stop ("cannot use 'scalesigma' with fixed density")
         if (!(model$D == formula(~1) |
               model$D == formula(~session))
-           ) stop ('Cannot use scalesigma with inhomogenous density or groups')
-        if (!is.null(groups)) stop ('Cannot use scalesigma with groups')
+           ) stop ("cannot use 'scalesigma' with inhomogenous density or groups")
+        if (!is.null(groups)) stop ("cannot use 'scalesigma' with groups")
     }
 
     if (details$scaleg0) {
@@ -2683,7 +2933,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         model$pmix <- ~h2
     if ((details$nmix == 3) && is.null (model$pmix))
         model$pmix <- ~h3
-    if (details$nmix == 3) warning ('implementation of 3-part finite mixtures is not reliable')
+    if (details$nmix == 3)
+        warning ("implementation of 3-part finite mixtures is not reliable")
     if (!all(all.vars(model$pmix) %in% c('session','g','h2','h3')))
         stop("formula for pmix may include only 'session', 'g' or '1'")
 
@@ -2696,11 +2947,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     link <- replace (defaultlink, names(link), link)
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
     if (CL) link$D <- NULL
-    if (!(detectfn %in% c(1))) link$z <- NULL
+    if (!(detectfn %in% c(1,3,7,8))) link$z <- NULL
     if (!(detectfn %in% c(5,6))) link$w <- NULL
     if (!(detectfn %in% c(9))) { link$b0 <- NULL; link$b1 <- NULL }
     if (!(detectfn %in% c(10,11))) { link$beta0 <- NULL; link$beta1 <- NULL; link$sdS <- NULL }
-    if (!(detectfn %in% 0:6)) { link$g0 <- NULL; link$sigma <- NULL }
+    if (!(detectfn %in% 0:8)) { link$g0 <- NULL; link$sigma <- NULL }
     if (is.null(q) | !nonID) link$pID <- NULL
     if (details$nmix==1) link$pmix <- NULL
 
@@ -2755,8 +3006,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     #############################
     .localstuff$iter <- 0
     if (details$LLonly) {
-      if (is.null(start)) stop('Must provide transformed parameter values in start')
-      if (!is.null(q)) stop ('not for mark-resight')
+      if (is.null(start))
+          stop("must provide transformed parameter values in 'start'")
+      if (!is.null(q))
+          stop ("not for mark-resight")
       LL <- - secr.loglikfn (beta = start,
                        parindx    = parindx,
                        link       = link,
@@ -2778,7 +3031,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     ## 2009 10 17 tentative insertion
     if (details$cellprob) {
-      if (is.null(start)) stop('Must provide transformed parameter values in start')
+      if (is.null(start)) stop("must provide transformed parameter values in 'start'")
       if (!is.null(q)) stop ('not for mark-resight')
       pi.n <- secr.cellprob (beta = start, link = link, fixed = fixed,
           parindx = parindx, capthist = capthist, mask = mask, CL = CL,
@@ -2806,11 +3059,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             else
                 start3 <- autoini (capthist, mask)
             if (any(is.na(unlist(start3)))) {
-                warning ('secr.fit failed because initial values not found (data sparse?)')
+                warning (paste("'secr.fit' failed because initial values not found (data sparse?);",
+                         "specify transformed values in 'start'"))
                 return (list(call=cl, fit=NULL))
             }
 
-            if (details$scaleg0 & anycount) stop ('scaleg0 incompatible with count detectors')
+            if (details$scaleg0 & anycount)
+                stop ("'scaleg0' not compatible with count detectors")
             ## next two stmts must be this order (g0 then sigma)
             if (details$scaleg0) start3$g0 <- start3$g0 * start3$sigma^2
             if (details$scalesigma) start3$sigma <- start3$sigma * start3$D^0.5
@@ -2819,7 +3074,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                                                       round(unlist(start3),5)),collapse=', ')),
                  details$trace)
         }
-        else warning ('using default starting values')
+        else warning ("using default starting values")
 
         ## assemble start vector
         default <- list(
@@ -2832,13 +3087,19 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             beta0 = details$cutval + 30,
             beta1 = -0.2,
             sdS   = 2,
-            b0    = 15,
+            b0    = 2,        ## changed from 15 2010-11-01
             b1    = -0.1,
             pmix  = 0.25
         )
         if (detectfn==6) {
             default$w <- default$sigma
             default$sigma <- default$sigma/2
+        }
+        if (detectfn %in% c(7)) {
+            default$z <- default$sigma/5
+        }
+        if (detectfn %in% c(8)) {
+            default$z <- 1    ## cumulative gamma
         }
         if (anypoly) {
             default$D     <- 1
@@ -2872,9 +3133,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     fb <- details$fixedbeta
     if (!is.null(fb)) {
         if (!(length(fb)== NP))
-            stop ('invalid fixed beta - require NP-vector')
+            stop ("invalid fixed beta - require NP-vector")
         if (sum(is.na(fb))==0)
-            stop ('cannot fix all beta parameters')
+            stop ("cannot fix all beta parameters")
         start <- start[is.na(fb)]  ## drop unwanted betas; remember later to adjust parameter count
     }
 
@@ -2982,6 +3243,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################
 
     if (tolower(details$hessian)=='fdhess') {
+        require (nlme)
         memo ('Computing Hessian with fdHess in nlme', details$trace)
         loglikfn <- function (beta) {
            -secr.loglikfn(
@@ -3012,7 +3274,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         covar <- try(solve(this.fit$hessian))
         if (inherits(covar, "try-error")) {
             warning ('could not invert Hessian to compute variance-covariance matrix')
-            covar <- matrix(rep(NA,NP*NP), nc=NP)  # failed
+            covar <- matrix(nr=NP, nc=NP)  # failed; simplified 2010-09-25
         }
         dimnames(covar) <- list(betanames, betanames)
 
@@ -3025,7 +3287,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## added 2009 09 04
     if (CL) D <- NULL
     else {
-        D <- getD (D.designmatrix, this.fit$par, mask, parindx, link, fixed, MS, length(grps), length(sessionlevels))
+        D <- getD (D.designmatrix, this.fit$par, mask, parindx, link, fixed, MS,
+                   length(grps), length(sessionlevels))
         dimnames (D) <- list(1:nrow(D), grps, sessionlevels)
         ## N <- t(apply(D, 2:3, sum, drop = FALSE))
         ## dimnames (N) <- list(sessionlevels, grps)
@@ -3065,6 +3328,29 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
              )
 
     attr (temp, 'class') <- 'secr'
+
+    ## check introduced 2010-12-01
+    ## bias.D not for polygon & transect detectors
+    if (usebuffer &
+        (detector(traps(capthist)) %in% .localstuff$pointdetectors)) {
+        if (MS) {
+            nsess <- length(capthist)
+            bias <- numeric(nsess)
+            for (i in 1:nsess) {
+                bias[i] <- bias.D(buffer, traps(capthist)[[i]], detectfn = temp$detectfn,
+                    detectpar = detectpar(temp)[[i]], noccasions = ncol(capthist[[i]]))$RB.D
+            }
+            if (any(bias > 0.01))
+                warning ("predicted relative bias exceeds 0.01 with buffer = ", buffer)
+        }
+        else {
+            bias <- bias.D(buffer, traps(capthist), detectfn=temp$detectfn,
+                detectpar = detectpar(temp), noccasions = ncol(capthist))$RB.D
+            if (bias > 0.01)
+                warning ("predicted relative bias exceeds 0.01 with buffer = ", buffer)
+        }
+    }
+
     memo(paste('Completed in ', round(temp$proctime,2), ' seconds at ',
         format(Sys.time(), "%H:%M:%S %d %b %Y"),
         sep=''), details$trace)
@@ -3082,9 +3368,8 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     savenew = FALSE, scaled = FALSE, ...) {
 
     if (is.null(object$fit)) {
-        warning ('Null fit passed to predict.secr')
+        warning ('empty (NULL) object')
         return(NULL)
-
     }
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
     ## allow for fixed beta parameters 2009 10 19
@@ -3172,6 +3457,13 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     if (savenew) attr(out, 'newdata') <- newdata
     out
 }
+############################################################################################
+## 2010-10-22
+
+predict.secrlist <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
+    savenew = FALSE, scaled = FALSE, ...) {
+    lapply(object, predict, newdata, se.fit, alpha, savenew, scaled, ...)
+}
 
 ############################################################################################
 
@@ -3193,14 +3485,38 @@ coef.secr <- function (object, alpha=0.05, ...) {
 }
 ############################################################################################
 
+detectpar <- function(object, ...) {
+    extractpar <- function (temp) {
+
+        if (!is.data.frame(temp))   ## assume list
+            temp <- temp[[1]]
+        if (!is.data.frame(temp) |
+            (nrow(temp) > length(object$link)))
+            stop("unexpected input to detectpar()")
+
+        temp <- temp[, 'estimate', drop = F]
+        temp <- split(temp[,1], rownames(temp))
+        temp <- c(temp, object$fixed)
+        temp <- temp[parnames(object$detectfn)]
+        if (object$detectfn > 9)
+            temp <- c(temp, list(cutval = object$details$cutval))
+        temp
+    }
+    if (!inherits(object,'secr'))
+        stop("requires 'secr' object")
+    temppred <- predict (object, ...)
+    if (ms(object)) {
+        temp <- lapply(temppred, extractpar)
+        names(temp) <- session(object$capthist)
+        temp
+    }
+    else
+        extractpar(temppred)
+}
+############################################################################################
+
 model.string <- function (model) {
-
-## parentheses removed 2009 08 18
-##    temp <- paste (names(model), as.character(model), collapse=') ', sep='(')
-##    temp <- paste(temp,')',sep='')
-
     temp <- paste (names(model), as.character(model), collapse=' ', sep='')
-
     temp
 }
 fixed.string <- function (fixed) {
@@ -3212,7 +3528,18 @@ fixed.string <- function (fixed) {
 print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
 
     cat ('\n')
-    cat(strwrap(x$call, getOption('width')), sep='\n  ')
+
+    if (is.character(x$call))     ## pre secr 1.5 object
+        cl <- x$call
+    else {
+        cl <- paste(names(x$call)[-1],x$call[-1], sep=' = ', collapse=', ' )
+        cl <- paste('secr.fit(', cl, ')')
+    }
+
+    cat(strwrap(cl, getOption('width')), sep='\n  ')
+
+    ## 2010 10 14 cat(strwrap(x$call, getOption('width')), sep='\n  ')
+
     if (!is.null(x$version)) {
         cat ('secr ', x$version, ', ', x$starttime, '\n', sep='')
     }
@@ -3226,8 +3553,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
     ###################
     ## Data description
 
-    MS <- inherits(x$capthist, 'list')
-    if (MS) {
+    if (ms(x$capthist)) {
         n     <- sapply(x$capthist, nrow)        # number caught
         nocc  <- sapply(x$capthist, ncol)        # number occasions
         ncapt <- sapply(x$capthist, function (xx) sum(abs(xx)>0))
@@ -3267,7 +3593,8 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
         ## cat ('N detectors     : ', ndetector(traps(x$capthist)), '\n')
     }   # end of single-session
 
-    if (det %in% c('count', 'quadratcount')) {
+##    if (det %in% c('count', 'quadratcount')) {
+    if (det %in% c('count')) {
         cat ('Count model     :  ')
         if (x$details$binomN == 0) cat ('Poisson \n')
         if (x$details$binomN == 1) cat ('Bernoulli \n')
@@ -3275,7 +3602,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
         if (x$details$binomN > 1) cat('Binomial', x$details$binomN, '\n')
     }
 
-    if (!MS)
+    if (!ms(x$capthist))
     cat ('Mask area       : ', attr(x$mask,'area') * nrow(x$mask), 'ha \n')
 
     ####################
@@ -3356,7 +3683,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
 
 oneline.secr <- function (secr) {
 
-    if (is.list(secr$capthist)) {
+    if (ms(secr$capthist)) {
         n <- sum(sapply (secr$capthist, nrow))
         ncapt <- sum(sapply (secr$capthist, function (x) sum(abs(x>0))))
     }
@@ -3382,16 +3709,61 @@ oneline.secr <- function (secr) {
 }
 ############################################################################################
 
+logLik.secr <- function(object, ...) {
+    npar <- length(object$fit$par)
+    structure (-object$fit$value, df = npar, class = 'logLik')
+}
+
+############################################################################################
+
 AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10) {
 
-    if (k != 2) stop ('AIC.secr defined only for k = 2')
+    if (k != 2)
+        stop ("'AIC.secr' defined only for k = 2")
 
     allargs <- list(...)
     modelnames <- (c ( as.character(match.call(expand.dots=FALSE)$object),
           as.character(match.call(expand.dots=FALSE)$...) ))
-    if (any(sapply(allargs,class) != 'secr')) stop ('All arguments must be secr objects', call.=F)
+    if (any(sapply(allargs,class) != 'secr'))
+        stop ("arguments must be secr objects")
     allargs <- c(list(object), allargs)
 
+
+#    if (!all.equal(sapply (allargs, function(x) detector(traps(x$capthist)))))
+#    stop('Models not compatible')
+#    if (!all.equal(sapply (allargs, function(x) x$CL)))
+#    stop('Models not compatible')
+
+    output <- data.frame(t(sapply(allargs, oneline.secr)), stringsAsFactors=F)
+    for (i in 3:6)
+    output[,i] <- as.numeric(output[,i])
+    output$dAICc <- output$AICc - min(output$AICc)
+
+    OK <- abs(output$dAICc) < abs(dmax)
+    sumdAICc <- sum(exp(-output$dAICc[OK]/2))
+    output$AICwt <- ifelse ( OK, round(exp(-output$dAICc/2) / sumdAICc,4), 0)
+
+    row.names(output) <- modelnames
+    if (sort) output <- output [order(output$AICc),]
+
+    if (nrow(output)==1) { output$dAICc <- NULL; output$AICwt <- NULL}
+    output
+}
+############################################################################################
+############################################################################################
+
+## added 2010-10-21
+AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10) {
+
+    if (k != 2) stop ('AIC.secr defined only for k = 2')
+
+    if (length(list(...)) > 0)
+        warning ("... argument ignored in 'AIC.secrlist'")
+
+    modelnames <- names(object)
+    allargs <- object
+    if (any(sapply(allargs,class) != 'secr'))
+        stop ("components of 'object' must be 'secr' objects")
 
 #    if (!all.equal(sapply (allargs, function(x) detector(traps(x$capthist)))))
 #    stop('Models not compatible')

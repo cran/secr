@@ -27,13 +27,12 @@ LR.test(secr1, secr2)
   \item{data.name }{character string with names of secr models compared }
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz}  }
 \seealso{ \code{\link{AIC.secr}}, \code{\link{score.test}}  }
 \examples{
 
-    data(secrdemo)
-    AIC (secrdemo.0, secrdemo.b)
-    LR.test  (secrdemo.0, secrdemo.b)
+## two pre-fitted models
+AIC (secrdemo.0, secrdemo.b)
+LR.test  (secrdemo.0, secrdemo.b)
 
 }
 \keyword{ htest }

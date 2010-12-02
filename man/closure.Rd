@@ -75,7 +75,6 @@ White, G. C., Anderson, D. R., Burnham, K. P. and Otis, D. L. (1982)
 populations}. Los Alamos National Laboratory, Los Alamos, New Mexico.
 
 }
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \note{
   
@@ -92,7 +91,6 @@ used for this sort of data.
   \code{\link{capthist}}
 }
 \examples{
- data(secrdemo)
  closure.test(captdata)
 }
 \keyword{ htest }

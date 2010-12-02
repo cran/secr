@@ -8,7 +8,35 @@
 ## 2009 12 11 update integralprw1 call for nmix=1
 ## 2010 02 14 update integralprw1 call for spherical (no longer used)
 ## 2010 08 28 traps renamed to trps
+## 2010 11 01 naivesigma shifted outside autoini
 ############################################################################################
+
+naivesigma <- function (obsRPSV,trps,mask,detectfn,z) {
+    naiveRPSVcall <- function (sigma)
+    {
+        temp <- .C ("naiveRPSV",  PACKAGE = 'secr',
+          as.double (sigma),               # Parameter : detection scale
+          as.double (z),                   # Parameter : detection shape (fixed)
+          as.integer(k),
+          as.integer(m),
+          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
+          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
+          as.integer (detectfn),           # code 0 = halfnormal
+          value = double(1)                # return value
+        )
+        if (temp$value > 0)
+            obsRPSV - temp$value
+        else
+            obsRPSV                        # dummy value
+    }
+    if (is.null(mask))
+        mask <- make.mask(trps, buffer = 10 * obsRPSV, nx=32)
+    k <- nrow(trps)
+    m <- nrow(mask)
+    temp <- try(uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
+        tol=0.001)$root)
+    ifelse (inherits(temp,'try-error'), NA, temp)
+}
 
 autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
 
@@ -30,22 +58,22 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
         )
         db-temp$value
     }
-    naiveRPSVcall <- function (sigma)
-    {
-        temp <- .C ("naiveRPSV",  PACKAGE = 'secr',
-          as.double (sigma),               # Parameter : detection scale
-          as.integer(k),
-          as.integer(m),
-          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
-          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
-          as.integer (detectfn),           # code 0 = halfnormal
-          value = double(1)                # return value
-        )
-        if (temp$value > 0)
-            obsRPSV - temp$value
-        else
-            obsRPSV                        # dummy value
-    }
+#    naiveRPSVcall <- function (sigma)
+#    {
+#        temp <- .C ("naiveRPSV",  PACKAGE = 'secr',
+#          as.double (sigma),               # Parameter : detection scale
+#          as.integer(k),
+#          as.integer(m),
+#          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
+#          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
+#          as.integer (detectfn),           # code 0 = halfnormal
+#          value = double(1)                # return value
+#        )
+#        if (temp$value > 0)
+#            obsRPSV - temp$value
+#        else
+#            obsRPSV                        # dummy value
+#    }
     naivecap2 <- function (g0, sigma, cap)
     # using new algorithm for number of captures per animal 2009 04 21
     {
@@ -91,24 +119,27 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
           resultcode=integer(1))
       )
 
-      if (temp$resultcode != 0) stop ('Error in external function integralprw1; possibly the mask is too large', call.=F)
+      if (temp$resultcode != 0)
+          stop ("error in external function 'integralprw1'; possibly the mask is too large")
       temp$a
     }
 
 
-    if (nrow(capthist)<5) stop ('Too few values in session 1 to determine start; set manually')
+    if (nrow(capthist)<5)
+        stop ('too few values in session 1 to determine start; set manually')
 
     ## added 2010-07-01
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    if (! (detectfn %in% c(0))) stop ('only halfnormal detection function implemented in autoini')
+    if (! (detectfn %in% c(0)))
+        stop ("only halfnormal detection function implemented in 'autoini'")
 
     trps    <- traps(capthist)
     dettype <- detectorcode(trps)
     if (!(dettype %in% c(-1:5,8))) list(D=NA, g0=NA, sigma=NA)   ## 2009 11 18
     else {
-        prox     <- detector(trps) %in% c('proximity', 'count','quadratbinary','quadratcount','signal','times')
+        prox     <- detector(trps) %in% c('proximity', 'count','signal','times')
         n        <- nrow(capthist)    # number of individuals
         s        <- ncol(capthist)    # number of occasions
         k        <- nrow(trps)
@@ -131,11 +162,11 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
             db <- dbar(capthist)
             if (!is.null(attr(trps,'spacing'))) {
                 if (is.na(db)) {
-                    warning ('could not calculate dbar; using detector spacing')
+                    warning ("could not calculate 'dbar'; using detector spacing")
                     db <- attr(trps, 'spacing')
                 }
                 if (db < (attr(trps, 'spacing')/100)) {
-                    warning ('dbar close to zero; using detector spacing instead')
+                    warning ("'dbar' close to zero; using detector spacing instead")
                     db <- attr(trps, 'spacing')
                 }
             }
@@ -145,7 +176,9 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
                 tempsigma <- uniroot (naivedcall, lower = db/10, upper = db*10, tol=0.001)$root
         }
         else {
-            tempsigma <- uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10, tol=0.001)$root
+#            tempsigma <- uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
+#                                  tol=0.001)$root
+            tempsigma <- naivesigma(obsRPSV=obsRPSV, trps=trps, mask=mask, detectfn=detectfn, z=1  )
         }
         low <- naivecap2(0.001, sigma=tempsigma, cap=cpa)
         upp <- naivecap2(0.999, sigma=tempsigma, cap=cpa)
@@ -156,7 +189,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
             # not sure what conditions cause this 28/4/2008
             # observed number cap more than expected when g0=1 28/8/2010
             # maybe better in future to set g0 = 0.9
-            warning ('autoini failed to find g0; setting initial g0 = 0.1')
+            warning ("'autoini' failed to find g0; setting initial g0 = 0.1")
             tempg0 <- 0.1
         }
         else tempg0 <- uniroot (naivecap2, lower=0.001, upper=0.999,

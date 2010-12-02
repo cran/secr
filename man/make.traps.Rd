@@ -18,7 +18,8 @@ make.grid(nx = 6, ny = 6, spacex = 20, spacey = 20, spacing = NULL,
 make.circle (n = 20, radius = 100, spacing = NULL, 
     detector = "multi", originxy = c(0,0), IDclockwise = T)
 
-make.poly (polylist = NULL, x = c(-50,-50,50,50), y = c(-50,50,50,-50))
+make.poly (polylist = NULL, x = c(-50,-50,50,50),
+    y = c(-50,50,50,-50))
 
 make.transect (transectlist = NULL, x = c(-50,-50,50,50),
     y = c(-50,50,50,-50))
@@ -114,8 +115,6 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 255--269.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{read.traps}},\code{\link{detector}},
   \code{\link{print.traps}}, \code{\link{plot.traps}},

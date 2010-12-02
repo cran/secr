@@ -33,9 +33,6 @@ invlogit(y)
 
 }
 
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \examples{
 logit(0.5)
 invlogit(logit(0.2))

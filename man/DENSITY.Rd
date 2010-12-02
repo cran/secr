@@ -18,7 +18,8 @@ functions \code{read.traps} and \code{make.capthist}.
 \usage{
 
 read.capthist(captfile, trapfile, detector = "multi", fmt = "trapID",
-    noccasions = NULL, covnames = NULL, verify = TRUE, ...)
+    noccasions = NULL, covnames = NULL, trapcovnames = NULL,
+    cutval = NULL, verify = TRUE, ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
      sess = "1", ndec = 2, ...)
@@ -33,7 +34,11 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{fmt}{ character value for capture format (`XY' or `trapID') }
   \item{noccasions}{ number of occasions on which detectors were
     operated }
-  \item{covnames}{ character vector of names for individual covariate fields }
+  \item{covnames}{ character vector of names for individual covariate
+    fields in `captfile'}
+  \item{trapcovnames}{ character vector of names for detector covariate
+    fields in `trapfile'}
+  \item{cutval}{ numeric, threshold of signal strength for 'signal' detector type } 
   \item{verify}{ logical if TRUE then the resulting capthist object is
   checked with \code{\link{verify}}}
 
@@ -68,8 +73,10 @@ The \code{noccasions} argument is needed only if there were no
 detections on the final occasion; it may be a positive integer (constant
 across all sessions) or a vector of positive integers, one for each
 session. \code{covnames} is needed only when \code{captfile} includes
-individual covariates. Values of \code{noccasions} and \code{covnames}
-are passed directly to \code{make.capthist}.
+individual covariates. Likewise for \code{trapcovnames} and
+detector covariates. Values of \code{noccasions} and \code{covnames}
+are passed directly to \code{make.capthist}, and \code{trapcovnames} is
+passed to \code{read.traps}.
 
 A session identifier is required even for single-session
 capture data. In the case of data from multiple sessions,
@@ -78,8 +85,7 @@ capture data. In the case of data from multiple sessions,
 Additional data may be coded as for DENSITY. Specifically,
 \code{captfile} may include extra columns of individual covariates, and
 \code{trapfile} may code varying usage of each detector over occasions
-and detector covariates. [These features have yet to be thoroughly
-tested in 1.4.0].
+and detector covariates.
 
 \code{write.capthist}
 
@@ -117,9 +123,13 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 
 \note{
 
-  The DENSITY formats accommodate `single', `multi' and `proximity' data but
-  not the newer detector types `count', `signal', `polygon', `transect'
-  etc. See \code{\link{detector}} for more.
+  The DENSITY formats accommodate `single', `multi' and `proximity'
+  data. Data for the newer detector types `count', `signal', `polygon',
+  and `transect' may be input using minor variations on the DENSITY
+  formats. They may also be output with \code{write.capthist}, but a
+  warning is given that DENSITY does not understand these data
+  types. See \code{\link{detector}} and \url{../doc/secr-datainput.pdf}
+  for more.
 
   The \dots argument is useful for some special cases. For example, if
   your input uses `;' instead of `#' for comments (`;' is also valid in
@@ -137,8 +147,6 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
 
   \code{\link{read.traps}}, \code{\link{make.capthist}},
@@ -148,7 +156,7 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 
 \examples{
 
-data(ovenbird)
+## export ovenbird capture histories
 write.capthist(ovenCH)
 
 }

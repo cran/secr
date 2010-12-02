@@ -71,8 +71,6 @@ grid of plots to be displayed simultaneously (nr rows x nc columns).
 Efford, M. G. (2007) \emph{Density 4.1: software for spatially explicit capture--recapture}.  Department of Zoology, University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}} }
 
 \examples{

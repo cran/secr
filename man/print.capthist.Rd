@@ -31,8 +31,6 @@ at which the particular animal was not detected.
 Invisibly returns a dataframe (condense = TRUE) or array in the format printed.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{print}}, \code{\link{capthist}} }
 
 \examples{

@@ -58,9 +58,12 @@ Parameters may vary with time - for this provide a vector of length
 \code{noccasions}.  The default detection parameters are \code{list(g0 =
 0.2, sigma = 25, z = 1)}.
 
-\code{detectpar} may also include 'binomN' and other arguments for
-detectors that have yet to be documented. A zero value for \code{binomN}
-indicates that counts should be modelled with a Poisson distribution.
+\code{detectpar} may also include a value for
+\code{binomN}. \code{binomN} determines the statistical distribution of
+the number of detections of an individual at a particular `count'
+detector on a particular occasion. A Poisson distribution is indicated
+by \code{binomN = 0}; see \code{\link{secr.fit}} for more. (The
+distribution is always Bernoulli (0/1) for `proximity' detectors).
 
 \code{detectpar} may include a component 'truncate' for the distance
 beyond which detection probability is set to zero. By default this value
@@ -120,8 +123,6 @@ density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \note{
 

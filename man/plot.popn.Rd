@@ -18,8 +18,6 @@ Display animal locations from a \code{popn} object.
   \item{\dots}{ arguments passed to \code{eqscplot} and \code{points} }
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{popn}}, \code{\link{sim.popn}} }
 
 \examples{

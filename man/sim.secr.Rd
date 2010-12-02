@@ -75,10 +75,10 @@ The random number seed is managed as in \code{simulate.lm}.
 \code{simulate.secr} does not yet work with models fitted using
 conditional likelihood (\code{object$CL = TRUE}).  Detector type is
 determined by \code{detector(traps(object$capthist))}, which should be one of
-'single', 'multi', 'proximity', 'areasearch' or 'count'.
+`single', `multi', `proximity', `areasearch' or `count'.
 
 \code{sim.secr} is a wrapper function. If \code{data = NULL} (the
-default) then it calls \code{simulate.secr} to generate new datasets. If
+default) then it calls \code{simulate.secr} to generate \code{nsim} new datasets. If
 \code{data} is provided then \code{nsim} is taken to be
 \code{length(data)}. \code{secr.fit} is called to fit the original model
 to each new dataset. Results are summarized according to the
@@ -95,21 +95,20 @@ as its only argument.
 
 \code{tracelevel=0} suppresses most messages; \code{tracelevel=1} gives a
 terse message at the start of each fit; \code{tracelevel=2} also sets
-'details$trace = TRUE' for \code{secr.fit}, causing each likelihood
+`details$trace = TRUE' for \code{secr.fit}, causing each likelihood
 evaluation to be reported.
 
 It is OK (and faster) to use \code{hessian='none'} unless
 \code{extractfn} needs variances or covariances.
 
 \code{sim.capthist} is a more direct way to simulate data from a null
-model (i.e. one with constant parameters for density and detection). It
-is limited to a single session.
+model (i.e. one with constant parameters for density and detection).
 
 }
 \value{
 
 For \code{simulate.secr}, a list of data sets ('capthist' objects). This
-list has class=('list','secrdata'); the initial state of the random
+list has class \code{c('list','secrdata')}; the initial state of the random
 number generator (roughly, the value of .Random.seed) is stored as the
 attribute 'seed'.
 
@@ -118,7 +117,7 @@ returns a numeric vector of length \code{n.extract} then the value is a
 matrix with \code{dim = c(nsim, n.extract)} (i.e., the matrix has one
 row per replicate and one column for each extracted value). Otherwise,
 the value returned by \code{sim.secr} is a list with one component per
-replicate (strictly, an object of class = c('list','secrlist')). Each
+replicate (strictly, an object of class = \code{c('list','secrlist')}). Each
 simulated fit may be retrieved \emph{in toto} by specifying
 \code{extractfn = identity}, or slimmed down by specifying
 \code{extractfn = NULL} or \code{extractfn = trim}, which are
@@ -129,20 +128,20 @@ random number generator is stored as the attribute 'seed'.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
 \code{\link{sim.capthist}}, \code{\link{secr.fit}}, \code{\link[stats]{simulate}}
 }
 
 \note{
 
-The value returned by \code{simulate.secr} is a list of 'capthist'
+The value returned by \code{simulate.secr} is a list of `capthist'
 objects; if there is more than one session, each 'capthist' is itself a
 sort of list .
 
-The classes 'secrdata' and 'secrlist' are used only to override
-the ugly and usually unwanted printing of the seed attribute.
+The classes `secrdata' and `secrlist' are used only to override the ugly
+and usually unwanted printing of the seed attribute. However, a few
+other methods are available for `secrlist' objects
+(e.g. \code{plot.secrlist}).
 
 The default value for \code{start} in \code{sim.secr} is the previously
 fitted parameter vector. Alternatives are NULL or \code{object$start}.
@@ -151,7 +150,7 @@ fitted parameter vector. Alternatives are NULL or \code{object$start}.
 
 \examples{
 
-data(secrdemo)
+## previously fitted model
 simulate(secrdemo.0, nsim = 2)
 
 \dontrun{
