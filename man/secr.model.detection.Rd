@@ -162,8 +162,6 @@ Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling su
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{secr models}}, \code{\link{secr density models}}, \code{\link{secr.fit}} }
 
 \keyword{ models }

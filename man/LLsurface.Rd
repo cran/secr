@@ -65,8 +65,6 @@ Invisibly returns a matrix with the log likelihood evaluated at each
 grid point
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
 
   \code{LLsurface.secr} works for named `beta' parameters rather than
@@ -83,7 +81,6 @@ grid point
 
 \examples{
 \dontrun{
-data(secrdemo)
 LLsurface.secr(secrdemo.CL, xval = seq(0.16,0.40,0.02),
     yval = 25:35, nlevels = 20)
 

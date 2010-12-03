@@ -25,13 +25,13 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
                 names(centre) <- object$betanames
             else
                 if (any(names(centre) != object$betanames))
-                    stop ('names of centre do not match object$betanames')
+                    stop ("names of 'centre' do not match 'object$betanames'")
         }
         betaindices <- match(betapar, names(centre))
         if ((length(betapar) != 2) | (any(is.na(betaindices))))
-            stop ('require two named beta parameters')
+            stop ("requires two named beta parameters")
         if (realscale & any(is.na(match(betapar, names(object$link)))))
-            stop('link function not found - see Notes in help')
+            stop("link function not found - see Notes in help")
         linkx <- ifelse(realscale, object$link[[betapar[1]]], 'identity')
         linky <- ifelse(realscale, object$link[[betapar[2]]], 'identity')
         if (is.null(xval)) {

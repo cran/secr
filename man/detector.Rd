@@ -14,27 +14,27 @@ detector(object) <- value
 }
 
 \arguments{
-  \item{object}{ object with 'detector' attribute e.g. \code{traps} }
+  \item{object}{ object with `detector' attribute e.g. \code{traps} }
   \item{value}{ character string for detector type }
   \item{\dots}{ other arguments (not used) }
 }
 
 \details{
 
-Valid detector types in version 1.4 are 'single', 'multi', 'proximity', 
-'count', 'signal', 'quadratbinary', 'quadratcount', 'polygon', and
-'transect' (the last four are undocumented in 1.4.0). The detector type is 
-stored as an attribute of a \code{traps} object.  Detector types are 
-mostly described by Efford et al. (2009a,b). See also the documentation
-files 'secr-overview' and 'secr-sound'. 
+Valid detector types in \pkg{secr} 1.5 are `single', `multi',
+`proximity', `count', `signal', `polygon', and `transect' (the last two
+are poorly undocumented in 1.5). The detector type is stored as an
+attribute of a \code{traps} object.  Detector types are mostly described
+by Efford et al. (2009a,b). The `signal' detector type is used for
+acoustic data as described in the documentation file `secr-sound.pdf'
+(e.g., \code{RShowDoc(package='secr', 'secr-sound')}). See also
+`secr-overview.pdf'.
 
 }
 
 \value{
   character string for detector type
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ 
   \code{\link{traps}}, \code{\link{RShowDoc}}

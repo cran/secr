@@ -58,8 +58,6 @@ with one component for each type of count.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{dbar}}, \code{\link{RPSV}}, \code{\link{capthist}} }
 
 \examples{

@@ -69,8 +69,6 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz}}
-
 \note{
 
 \code{autoini} may in future include an option to use \code{\link{RPSV}} instead of \code{\link{dbar}}.

@@ -38,8 +38,6 @@ if these are present.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{traps}}, \code{\link{rbind.traps}} }
 
 \examples{

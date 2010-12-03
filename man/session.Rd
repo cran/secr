@@ -27,8 +27,6 @@ session(object) <- value
   a character vector with one value for each session in \code{capthist}
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
 
 Like Density, \pkg{secr} uses the term 'session' for a
@@ -71,7 +69,6 @@ Pollock, K. H. (1982) A capture-recapture design robust to unequal probability o
 }
 
 \examples{
-  data(secrdemo)
   session(captdata)
 }
 

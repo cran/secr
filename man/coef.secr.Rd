@@ -4,7 +4,10 @@
 \title{ Coefficients of secr Object }
 
 \description{
-  Extract coefficients (estimated beta parameters) from a spatially explicit capture--recapture model.
+  
+  Extract coefficients (estimated beta parameters) from a spatially
+  explicit capture--recapture model.
+  
 }
 
 \usage{
@@ -25,14 +28,11 @@ confidence limits.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
-\seealso{ \code{\link{secr.fit}} }
+\seealso{ \code{\link{secr.fit}}, \code{\link{esa.plot}} }
 
 \examples{
 
 ## load & extract coefficients of previously fitted null model
-data(secrdemo)  
 coef(secrdemo.0)
 
 }

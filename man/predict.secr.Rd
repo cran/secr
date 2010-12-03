@@ -1,5 +1,7 @@
 \name{predict.secr}
 \alias{predict.secr}
+\alias{predict.secrlist}
+\alias{detectpar}
 
 \title{ SECR Model Predictions }
 
@@ -10,6 +12,9 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the 're
 \usage{
 \method{predict}{secr}(object, newdata = NULL, se.fit = TRUE, alpha = 0.05, 
     savenew = FALSE, scaled = FALSE, \dots)
+
+detectpar (object, \dots) 
+
 }
 
 \arguments{
@@ -34,6 +39,16 @@ and sigma, and only to models fitted with \code{scalesigma} or
 its scale factor (1/D^0.5 and 1/sigma^2 respectively).
 
 The value of \code{newdata} is optionally saved as an attribute.
+
+\code{detectpar} is used to extract the detection parameter estimates
+from a simple model to pass to functions such as
+\code{esa.plot}. \code{detectpar} calls \code{predict.secr}. Parameters
+will be evaluated by default at base levels of the covariates, although
+this may be overcome by passing a one-line \code{newdata} to
+\code{predict} via the \dots argument. Groups and mixtures are a
+headache for \code{detectpar}: it merely returns the estimated detection
+parameters of the first group or mixture.
+
 }
 
 \value{
@@ -47,12 +62,17 @@ lcl         \tab lower 100(1--alpha)\% confidence limit \cr
 ucl         \tab upper 100(1--alpha)\% confidence limit \cr
 }
 
-When \code{newdata} has only one row, the structure of the list is 'dissolved' and the return value is one data frame.
+When \code{newdata} has only one row, the structure of the list is
+'dissolved' and the return value is one data frame.
+
+For \code{detectpar}, a list with the estimated values of detection
+parameters (e.g., g0 and sigma if detectfn = 'halfnormal'). In the case
+of multi-session data the result is a list of lists (one list per
+session).
+
 }
 \references{ 
 Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling survival and testing biological hypotheses using marked animals: a unified approach with case studies. \emph{Ecological Monographs} \bold{62}, 67--118. }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{secr.fit}} }
 
@@ -62,13 +82,13 @@ Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling su
 ## and extract estimates of 'real' parameters for both
 ## naive (b = 0) and previously captured (b = 1) animals
 
-data(secrdemo)
 predict (secrdemo.b, newdata = data.frame(b=0:1))
 
 temp <- predict (secrdemo.b, newdata = data.frame(b=0:1), 
     save = TRUE)
 attr(temp, 'newdata')
 
+detectpar(secrdemo.0)
 }
 
 \keyword{ models }

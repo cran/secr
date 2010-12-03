@@ -37,8 +37,6 @@ The bounding box is the smallest rectangular area with edges parallel to the x- 
   \item{covar }{summary of each covariate}
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{mask}} }
 
 \examples{

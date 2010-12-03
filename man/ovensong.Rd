@@ -105,7 +105,6 @@ from locations of individuals on a passive detector array. \emph{Ecology} \bold{
 
 \examples{
 
-data(ovensong)
 summary(signalCH)
 traps(signalCH)
 signal(signalCH)

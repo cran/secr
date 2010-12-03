@@ -33,8 +33,6 @@ predictors used by \code{object$model}.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
 
 \code{\link{predict.secr}}, \code{\link{secr.fit}}
@@ -43,7 +41,7 @@ predictors used by \code{object$model}.
 
 \examples{
 
-data(secrdemo)
+## from previously fitted model
 secr.make.newdata(secrdemo.b)
 
 }

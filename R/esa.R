@@ -53,13 +53,19 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
     m      <- length(masks$x)            ## need session-specific mask...
     cell   <- attr(masks,'area')
 
-    if (n==0) stop(paste('no data in capthist for session',session))
+    if (n==0)
+        stop(paste("no data in 'capthist' for session", session))
     if (is.null(beta)) {
-        if (is.null(real)) stop('Requires real parameter values')
+        if (is.null(real))
+            stop("requires real parameter values")
         PIA <- rep(1, n * s * K * nmix)    ## nmix added 2010 02 25
-        realparval0 <- matrix(real,nr=1)   ## UNTRANSFORMED
+
+## new code 2010-11-26
+        realparval0 <- matrix(rep(real, rep(n,length(real))),nr=n)   ## UNTRANSFORMED
+## replacing...
+##        realparval0 <- matrix(real,nr=1)   ## UNTRANSFORMED
+##        ncolPIA <- 1
         Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
-        ncolPIA <- 1
         details <- list(binomN=0, cutval=0, spherical=FALSE)
     }
     else {
@@ -72,6 +78,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
         #############################################
         ## trick to allow for changed data 2009 11 20
         ## nmix>1 needs further testing 2010 02 26
+        ## NOTE 2010-11-26 THIS LOOKS WEAK
         if (dim(PIA)[2] != n) {
             PIA <- array(rep(PIA[1,1,,,],n), dim=c(s,K,nmix,n))
             PIA <- aperm(PIA, c(4,1,2,3))   ## n,s,K,nmix
@@ -96,8 +103,13 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
 
     }
 
-    space <- attr(traps(capthists), 'spacing')
+    ## new code 2010-11-26
+    used <- usage(traps)
+    if (any(used==0))
+    PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
+    ncolPIA <- n
 
+    ## space <- attr(traps(capthists), 'spacing')
     ## searchcell <- ifelse (is.null(space), 1, space^2 / 10000)  ## ha
 
     temp <- .C("integralprw1", PACKAGE = 'secr',
@@ -121,8 +133,10 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
       resultcode=integer(1)
    )
 
-   if (temp$resultcode == 3) stop ('Groups not implemented in external function integralprw1')
-   if (temp$resultcode != 0) stop ('Error in external function integralprw1')
+   if (temp$resultcode == 3)
+       stop ("groups not implemented in external function 'integralprw1'")
+   if (temp$resultcode != 0)
+       stop ("error in external function 'integralprw1'")
    temp$a
 }
 ############################################################################################

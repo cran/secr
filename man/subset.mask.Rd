@@ -37,8 +37,6 @@ Covariates are ignored by \code{rbind.mask}.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{mask}} }
 
 \examples{

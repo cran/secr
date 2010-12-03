@@ -3,6 +3,7 @@
 
 \alias{possum}
 \alias{possumCH}
+\alias{possumarea}
 \alias{possummask}
 \alias{possum.model.1}
 \alias{possum.model.1b}
@@ -50,11 +51,23 @@ The data are provided as a single-session \code{capthist} object
 fitted models ('possum.model.1' & 'possum.model.1b') are provided for
 illustration.
 
+From secr 1.5 a dataframe \code{possumarea} is included to indicate the
+boundary of potential habitat, and this is used to clip
+\code{possummask}. \code{possumarea} comprises a single polygon
+representing the extent of terrestrial vegetation to the west, north and
+east, and an arbitrary straight southern boundary. The boundary is also
+included as a shapefile and as a text file (`possumarea.shp' etc. and
+`possumarea.txt' in the package `extdata' folder). See Examples in
+\code{\link{make.mask}}.
+
+Clipping of the mask, introduced in secr 1.5, slightly changes the
+fitted models (and hence the density estimates).
 
 \tabular{ll}{
   Object \tab Description \cr
   possumCH \tab capthist object \cr
   possummask \tab mask object \cr
+  possumarea \tab habitat perimeter \cr
   possum.model.1 \tab fitted secr model -- null \cr
   possum.model.1b \tab fitted secr model -- trap response g0 \cr
 }
@@ -93,28 +106,30 @@ Bulletin} \bold{33}, 731--738.
 
 \dontrun{
 
-setwd('d:\\density communication\\webtest\\foxton\\')
-possumtraps <- read.traps(file = 'foxtraps.txt', detector = 'single')
-temp <- read.table('foxton.txt', colClasses=c('character',
-    'character', 'numeric', 'character'))
-## drop within-day duplicates of animal 5861
-temp <- temp[-c(184,186),]
-
-possumCH <- make.capthist(temp, possumtraps)
-possummask <- make.mask(possumtraps, buffer = 300, type='pdot',
-    pdotmin = 0.001, detectpar = list(g0=0.2, sigma=60), spacing = 10)
-
-## fit constant-density model
-possum.model.1 <- secr.fit(possumCH, mask = possummask)
-## fit learned trap response model
-possum.model.1b <- secr.fit(possumCH, mask = possummask, model = list(g0~b))
+## code used to construct dataset
+setwd('d:\\density secr 1.5\\package data\\possum')
+possumCH <- read.capthist('foxton.txt', 'foxtraps.txt', detector = 'single')
+## drop within-day duplicates of tag 5861 in traps 11,12, to conform DENSITY
+possumCH['5861',] <- c(134, 133, 134, 133, 135)
+trps <- traps(possumCH)
+covariates(traps(possumCH)) <- data.frame(grid =
+    factor(substring(rownames(trps),1,2)))
+possumarea <- read.table ('possumarea.txt', header = TRUE)
+possummask <- make.mask(trps, buffer = 300, type='pdot', pdotmin =
+    0.001, detectpar = list(g0=0.2, sigma=60), spacing = 10, poly =
+    possumarea)
+possum.model.1 <- secr.fit(possumCH, mask = possummask, trace=F)
+possum.model.1b <- secr.fit(possumCH, mask = possummask, model =
+    list(g0~b), trace=F)
+save(possumCH, possummask, possumarea, possum.model.1, possum.model.1b,
+    file='d:\\density secr 1.5\\secr\\data\\possum.RData')
 }
 
-require (graphics)
-data(possum)
 plot(possummask)
 plot(possumCH, tracks = TRUE, add = TRUE)
 plot(traps(possumCH), add = TRUE)
+lines(possumarea)
+
 summary(possumCH)
 
 ## compare & average pre-fitted models

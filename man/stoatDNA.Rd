@@ -7,7 +7,7 @@
 \alias{stoat.model.HN}
 \alias{stoat.model.HZ}
 
-\title{ Stoat DNA data }
+\title{ Stoat DNA Data }
 
 \description{
 
@@ -74,9 +74,10 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 \references{
 
 Gleeson, D. M., Byrom, A. E. and Howitt, R. L. J. (2010) Non-invasive
-methods for genotyping of stoats (\emph{Mustela erminea}) in New Zealand:
-potential for field applications. \emph{New Zealand Journal of Ecology}
-in press. Available on-line at \url{http://www.newzealandecology.org}.
+methods for genotyping of stoats (\emph{Mustela erminea}) in New
+Zealand: potential for field applications. \emph{New Zealand Journal of
+Ecology} \bold{34}, 356--359. Available on-line at
+\url{http://www.newzealandecology.org}.
 
 }
 
@@ -101,7 +102,6 @@ in press. Available on-line at \url{http://www.newzealandecology.org}.
 }
 
 \examples{
-data(stoatDNA)
 summary(stoatCH)
 
 \dontrun{

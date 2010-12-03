@@ -63,13 +63,11 @@ For \code{signal}, a numeric vector with one element per detection.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}}, \code{\link{polyID}} }
 
 \examples{
 
-data(secrdemo)
+## 'captdata' is a demonstration dataset
 animalID(captdata)
 
 temp <- sim.capthist(popn=list(D=1), make.grid(detector='count'))

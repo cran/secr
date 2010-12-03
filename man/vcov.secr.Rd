@@ -42,13 +42,10 @@ matrices, one for each 'real' parameter.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{vcov}}, \code{\link{secr.fit}}, \code{\link{print.secr}} }
 
 \examples{
-## Use previosuly fitted secr object
-data(secrdemo)
+## previosuly fitted secr model
 vcov(secrdemo.0)
 }
 

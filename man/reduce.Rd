@@ -26,8 +26,6 @@ This is a generic method. A method exists for objects of class \code{capthist}.
 A matrix with number of columns equal to \code{length(columns)}.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}}, \code{\link{reduce.capthist}} }
 
 \examples{

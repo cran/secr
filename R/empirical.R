@@ -8,7 +8,7 @@
 empirical.varD <- function ( object, esa = NULL, se.esa = NULL ) {
     if (inherits (object, 'secr')) {
         if (!is.list(object$capthist) )
-            stop ('requires multi-session capthist object')
+            stop ("requires multi-session 'capthist' object")
         tempm <- object$model
         tempm$D <- NULL
         if (any (sapply(tempm, function (x) x != ~1)))
@@ -21,7 +21,7 @@ empirical.varD <- function ( object, esa = NULL, se.esa = NULL ) {
     else {
         nj <- object
         if (is.null(esa) | is.null(se.esa))
-            stop('requires valid esa and se.esa')
+            stop("requires valid 'esa' and 'se.esa'")
     }
     n <- sum (nj)                          ## total animals
     K <- length(nj)                        ## number of sessions

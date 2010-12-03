@@ -12,11 +12,11 @@ write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, fileste
 
     objectname <-  deparse(substitute(object), control=NULL)
     if (!is(object, 'capthist'))
-        stop ('write.SPACECAP requires a capthist object')
+        stop ("requires 'capthist' object")
     if (detector(traps(object)) != 'proximity')
-        stop ('require proximity detectors')
+        stop ("requires proximity detectors")
     if (inherits(object, 'list'))
-        stop ('multiple sessions not compatible with SPACECAP')
+        stop ("multiple sessions not compatible with SPACECAP")
 
     AC <- ifelse (filestem == '', '', paste(filestem,'AC.csv',sep='') )
     TD <- ifelse (filestem == '', '', paste(filestem,'TD.csv',sep='') )
@@ -55,9 +55,9 @@ write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, fileste
         mask <- make.mask(trps, buffer=buffer)
     else {
         if (!inherits(mask, 'mask'))
-            stop ('require valid secr mask')
+            stop ("requires valid 'mask'")
         if (inherits(mask, 'list'))
-            stop ('multi-session mask is not suitable')
+            stop ("multi-session 'mask' is not suitable")
     }
     mask$habitat <- rep(1,nrow(mask))
     cat (c('X_COORD','Y_COORD','HABITAT'), sep=',', file=SS)
@@ -75,9 +75,9 @@ read.SPACECAP <- function (AC, TD, detector = 'proximity', session = '1') {
     trps <- read.csv(TD)
 
     if (any (!(c('LOC_ID','ANIMAL_ID','SO') %in% names(capt))))
-        stop ('AC not valid')
+        stop ("AC not valid")
     if (any (!(c('LOC_ID', 'X_Coord','Y_Coord') %in% names(trps))))
-        stop ('TD not valid')
+        stop ("TD not valid")
 
     used <- trps[4:ncol(trps)]
     nocc <- ncol(used)
@@ -93,7 +93,7 @@ read.SPACECAP <- function (AC, TD, detector = 'proximity', session = '1') {
 
     capt$session <- rep(session,nrow(capt))
     capt <- capt[,c('session','ANIMAL_ID','SO','LOC_ID')]
-    make.capthist(capt, traps, fmt = 'trapID', noccasion = nocc)
+    make.capthist(capt, traps, fmt = 'trapID', noccasions = nocc)
 }
 
 ############################################################################################

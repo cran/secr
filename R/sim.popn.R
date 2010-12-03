@@ -1,4 +1,4 @@
-#########################################################################################
+########################################################################################
 ## package 'secr'
 ## sim.popn.R
 ## simulate spatially distributed population
@@ -61,7 +61,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 newpopn <- toroidal.wrap(newpopn)
 
             gam <- turnoverpar$lambda - turnoverpar$phi
-            if (gam<0) stop ('invalid gamma in turnover')
+            if (gam<0)
+                stop ("invalid gamma in turnover")
             nrecruit <- switch (turnoverpar$recrmodel,
                 constantN = nrow(oldpopn) - nsurv,
                 discrete = discrete(gam * nrow(oldpopn)),
@@ -119,9 +120,9 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
         if (model2D == 'IHP') {
             nr <- nrow(core)
             if (!inherits(core, 'mask'))
-                stop('for model2D=IHP, core should be a habitat mask')
+                stop("for model2D = IHP, 'core' should be a habitat mask")
             if (Ndist != 'poisson')
-                stop ('IHP not implemented for fixed or specified N')
+                stop ("IHP not implemented for fixed or specified N")
             nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per mask cell
             N <- sum(nm)
             jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), nc=2)
@@ -131,14 +132,17 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
             yl <- range(animals[,2])
         }
         else {
-            if (buffertype != 'rect') stop ('rect is only buffertype available in v1.4')
+            if (buffertype != 'rect')
+                stop (dQuote("rect"), " is only buffertype implemented")
             # population in arena +/- buffer from traps
             buff <- c(-buffer,+buffer)
             xl <- range(core$x) + buff
             yl <- range(core$y) + buff
             area <- diff(xl) * diff(yl) * 0.0001  # ha
-            if (!(Ndist %in% c('poisson','fixed','specified')))
-                stop ('Unrecognised Ndist - should be poisson, fixed or specified')
+            allowedNdist <- c('poisson','fixed','specified')
+            if (!(Ndist %in% allowedNdist))
+                stop ("'Ndist' should be one of ",
+                      paste(sapply(allowedNdist, dQuote), collapse=","))
             N  <- switch (Ndist,
                 poisson = rpois(1, lambda=D[1] * area),
                 fixed = discreteN (1, D[1] * area),
@@ -162,7 +166,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                          fixed = discreteN (1, D[1] * area / details$mu),
                          specified = discreteN (1, D[1] / details$mu))  ## here arg D is N
                      N <- nparent * details$mu
-                     if (nparent==0) warning ('no clusters in sim.popn')
+                     if (nparent==0)
+                         warning ("zero clusters")
                      parent <-  sweep(matrix(runif(2*nparent),nc=2),2,c(xrange,yrange),'*')
 
                      offspr <- matrix(rnorm(2*N),nc=2) * details$hsigma
@@ -178,7 +183,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 }
                 animals <- as.data.frame(sweep(offspr,2,c(xl[1],yl[1]),'+'))
             }
-            else stop ('unrecognised 2-D distribution')
+            else stop ("unrecognised 2-D distribution")
         }
         names(animals) <- c('x','y')
         row.names (animals) <- number.from : (nrow(animals)+number.from-1)

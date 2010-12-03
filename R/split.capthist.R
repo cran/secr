@@ -1,12 +1,14 @@
 ############################################################################################
-## package 'secr' 
+## package 'secr'
 ## split.capthist.R
 ## last changed 2009 06 11 2009 07 10 2009 10 05
 ############################################################################################
 
 split.capthist <- function (x, f, drop = FALSE, prefix='S', ...) {
-  if (!inherits(x, 'capthist')) stop ('argument to split.capthist does not have class capthist')
-  if (inherits(x, 'list')) stop ('split not suitable for multi-session capthist')
+  if (!inherits(x, 'capthist'))
+      stop ("argument to 'split.capthist' should have class 'capthist'")
+  if (inherits(x, 'list'))
+      stop ("split not suitable for multi-session 'capthist'")
   options(warn=-1)
   f <- factor(f)
   if (any(!is.na(as.numeric(levels(f))))) f <- factor(paste (prefix,f,sep=''))
@@ -27,7 +29,8 @@ split.capthist <- function (x, f, drop = FALSE, prefix='S', ...) {
 extract.estimates <- function (x, simplify = FALSE) {
 ## compile a dataframe (simplify = T) or list of data.frames of session-specific real parameter estimates
 ## from a list of separate secr model fits
-   if (!is.list(x) | !inherits(x[[1]], 'secr')) stop('require list of secr fits')
+   if (!is.list(x) | !inherits(x[[1]], 'secr'))
+       stop("requires list of fitted secr models")
    temp <- lapply(x, predict)
    temp <- lapply(temp, function(x) x[,-1])  ## drop unwanted 'link' column
    temp <- lapply(temp, function(x) {x$Parameter <- row.names(x); x})
@@ -43,7 +46,7 @@ extract.estimates <- function (x, simplify = FALSE) {
        row.names(temp3) <- NULL
    }
    else {
-      temp3 <- split(temp2[order(temp2$Session), c('Session','estimate', 'SE.estimate', 'lcl', 'ucl')], 
+      temp3 <- split(temp2[order(temp2$Session), c('Session','estimate', 'SE.estimate', 'lcl', 'ucl')],
           temp2$Parameter)
       temp3 <- lapply(temp3, function(x) {row.names(x) <- NULL; x})
    }

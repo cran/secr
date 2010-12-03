@@ -126,12 +126,10 @@ Stanley, T. R. and Richards, J. D. (2005) A program for testing
 
 \examples{
 
-require (graphics)
-data(deermouse)
 par(mfrow = c(1,2), mar = c(1,1,4,1))
 plot(deermouse.ESG, title = 'Peromyscus data from East Stuart Gulch',
     border = 10, gridlines = FALSE, tracks = TRUE)
-plot(deermouse.WSG, title = 'Peromyscus data from West Swizer Gulch',
+plot(deermouse.WSG, title = 'Peromyscus data from Wet Swizer Gulch',
     border = 10, gridlines = FALSE, tracks = TRUE)
 
 closure.test(deermouse.ESG, SB = TRUE)

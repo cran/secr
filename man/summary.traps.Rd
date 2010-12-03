@@ -43,8 +43,6 @@ off the computation with \code{getspacing} = FALSE.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{print}}, \code{\link{traps}} }
 
 \examples{

@@ -59,12 +59,11 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 255--269.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{traps}}, \code{\link{secr.fit}},
 \code{\link{read.capthist}}, \code{\link{make.capthist}},
-\code{\link{sim.capthist}}, \code{\link{subset.capthist}},
-\code{\link{rbind.capthist}}, \code{\link{MS.capthist}},
+\code{\link{sim.capthist}},
+\code{\link{subset.capthist}}, \code{\link{rbind.capthist}},
+\code{\link{MS.capthist}},
 \code{\link{reduce.capthist}}, \code{\link{mask}} }
 
 \keyword{ classes }

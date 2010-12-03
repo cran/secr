@@ -85,24 +85,21 @@ Press, Oxford.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
 \code{\link{derived}}, \code{\link{esa}} 
 }
 
 \examples{
 
-## The `ovensong' data are pooled from 75 replicate positions
-## of a 4-microphone array. The array positions are coded as
-## the first 4 digits of each sound identifier. We first
-## impose a 52.5 dB signal threshold as in Dawson & Efford
-## (2009, J. Appl. Ecol. 46:1201--1209). The vector nj includes
-## 33 positions at which no ovenbird was heard. The first and
-## second columns of `temp' hold the estimated effective
-## sampling area and its standard error.
+## The `ovensong' data are pooled from 75 replicate positions of a
+## 4-microphone array. The array positions are coded as the first 4
+## digits of each sound identifier. The sound data are initially in the
+## object 'signalCH'. We first impose a 52.5 dB signal threshold as in
+## Dawson & Efford (2009, J. Appl. Ecol. 46:1201--1209). The vector nj
+## includes 33 positions at which no ovenbird was heard. The first and
+## second columns of `temp' hold the estimated effective sampling area
+## and its standard error.
 
-data(ovensong)
 signalCH.525 <- subset(signalCH, cutval = 52.5)
 nonzero.counts <- table(substring(rownames(signalCH.525),1,4))
 nj <- c(nonzero.counts, rep(0, 75 - length(nonzero.counts)))

@@ -77,8 +77,6 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ 
 
 \code{\link{secr.fit}}, \code{\link{sim.secr}}
@@ -87,7 +85,6 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \examples{
 
-data(secrdemo)
 deviance(secrdemo.0)
 df.residual(secrdemo.0)
 

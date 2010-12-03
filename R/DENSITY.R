@@ -2,6 +2,10 @@
 ## package 'secr'
 ## DENSITY.R
 ## 2010 04 29, 2010 05 01
+## 2010-11-21 tweaked msg
+## 2010-11-21 added cutval to read.capthist
+## 2010-11-26 trapcovnames passed to read.traps covnames
+## 2010-12-01 suppressed warning re- detectors not recognised by Density
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
 
@@ -15,10 +19,14 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
         if (sep == ',')
             suffix <- '.csv'
 
-    if (!is(object, 'capthist')) stop ('write.capthist requires a capthist object')
+    if (!is(object, 'capthist'))
+        stop ("requires a 'capthist' object")
     det <- detector(traps(object))
-    if (det %in% c('polygon','transect','signal','count','quadratbinary','quadratcount'))
-        warning (paste('DENSITY cannot handle detector type',det))
+
+##    if (det %in% c('polygon','transect','signal','count','quadratbinary','quadratcount'))
+##    if (det %in% c('polygon','transect','signal','count'))
+##        warning ("Density does not recognise detector type '", det, "'")
+
     objectname <- deparse(substitute(object), control=NULL)
 
     if (filestem=='') {
@@ -66,12 +74,13 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 ############################################################################################
 
 read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID',
-                          noccasions = NULL, covnames = NULL, verify = TRUE, ...) {
+                          noccasions = NULL, covnames = NULL, trapcovnames = NULL,
+                          cutval = NULL, verify = TRUE, ...) {
 
     if (!(fmt %in% c('XY','trapID')))
-        stop ('allowed formats are XY and trapID')
+        stop (paste("allowed formats are", dQuote("XY"), "and", dQuote("trapID")))
     if (length(captfile) != 1)
-        stop ('require single captfile')
+        stop ("requires single 'captfile'")
     replacedefaults <- function (default, user) replace(default, names(user), user)
     filetype <- function(x) {
         nx <- nchar(x)
@@ -103,7 +112,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     else
         names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
     if (any(is.na(capt[,1:nvar])))
-        stop ('missing values not allowed')
+        stop ("missing values not allowed")
 
     ## assumes file= is first argument of read.traps
     ## allows for multiple trap files
@@ -111,12 +120,13 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
     dots <- replacedefaults (defaultdots, list(...))
     readtraps <- function (x)
-        do.call ('read.traps', c(list(file = x), detector = detector, dots) )
+        do.call ('read.traps', c(list(file = x), detector = detector,
+                                 list(covnames = trapcovnames), dots) )
     trps <- sapply(trapfile, readtraps, simplify = FALSE)
 
     if (length(trps)==1) trps <- trps[[1]]
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
-        covnames = covnames, sortrows = TRUE)
+        covnames = covnames, sortrows = TRUE, cutval = cutval)
     if (verify) verify(temp)
     temp
 }

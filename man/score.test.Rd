@@ -91,12 +91,10 @@ Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model selection
 Morgan, B. J. T., Palmer, K. J. and Ridout, M. S. (2007) Negative score test statistic. \emph{American statistician} \bold{61}, 285--288.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz}  }
 \seealso{ \code{\link{AIC}}, \code{\link{LR.test}} }
 \examples{
 
 \dontrun{
-    data(secrdemo)
     AIC (secrdemo.0, secrdemo.b)
     st <- score.test (secrdemo.0, g0 ~ b)
     st

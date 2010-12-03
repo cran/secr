@@ -101,8 +101,6 @@ Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
 
 All measures are affected by the arrangement of detectors. \code{dbar}
@@ -128,7 +126,6 @@ attraction of animal to detector) or 'detection at a distance'.
 \seealso{ \code{\link{autoini}} }
 
 \examples{
-data(secrdemo)
 dbar(captdata)
 RPSV(captdata)
 }

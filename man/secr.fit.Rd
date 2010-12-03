@@ -1,5 +1,6 @@
 \name{secr.fit}
 \alias{secr.fit}
+\alias{binomN}
 
 \title{ Spatially Explicit Capture--Recapture }
 
@@ -15,7 +16,7 @@ likelihood. Data must have been assembled as an object of class
 
 \usage{
 secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
-    mask = NULL, buffer = 100, CL = FALSE, detectfn = NULL,
+    mask = NULL, buffer = NULL, CL = FALSE, detectfn = NULL,
     start = NULL, link = list(), fixed = list(),
     timecov = NULL, sessioncov = NULL, groups = NULL,
     dframe = NULL, details = list(), method = 'Newton-Raphson',
@@ -25,7 +26,8 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
 \arguments{
   \item{capthist}{ \code{\link{capthist}} object including capture data and detector (trap) layout }
   \item{mask}{ \code{\link{mask}} object}
-  \item{buffer}{ scalar mask buffer radius if \code{mask} not specified}
+  \item{buffer}{ scalar mask buffer radius if \code{mask} not specified
+  (default 100 m)}
   \item{CL}{ logical, if true then the model is fitted by maximizing the conditional likelihood }
   \item{detectfn}{integer code or character string for shape of
   detection function 0 = halfnormal, 1 = hazard rate etc. -- see \link{detectfn}}
@@ -47,17 +49,20 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
 \details{
 
 \code{secr.fit} fits a SECR model by maximizing the likelihood. The
-likelihood depends on the detector type (`multi' or `proximity') of the
-\code{traps} attribute of \code{capthist} (Borchers and Efford 2008,
-Efford, Borchers and Byrom 2009, Efford, Dawson and Borchers 2009). The
-`multi' form of the likelihood is also used, with a warning, when
-detector type = `single' (see Efford et al. 2009). The default \code{model}
-is null (constant density and detection probability). The set of
-variables available for use in linear predictors includes some that are
-constructed automatically (t, T, b, B), group (g), and others that appear
-in the \code{covariates} of the input data. See \link{secr models} and
-\url{../doc/secr-overview.pdf} for
-more on defining models.
+likelihood depends on the detector type (`multi', `proximity', `count'
+etc.) of the \code{traps} attribute of \code{capthist} (Borchers and
+Efford 2008, Efford, Borchers and Byrom 2009, Efford, Dawson and
+Borchers 2009). The `multi' form of the likelihood is also used, with a
+warning, when detector type = `single' (see Efford et al. 2009). The
+default \code{model} is null (constant density and detection
+probability). The set of variables available for use in linear
+predictors includes some that are constructed automatically (t, T, b,
+B), group (g), and others that appear in the \code{covariates} of the
+input data. See \link{secr models} and \url{../doc/secr-overview.pdf}
+for more on defining models.
+
+\code{buffer} and \code{mask} are alternative ways to define the region
+of integration (see \link{mask}).
 
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
@@ -89,7 +94,8 @@ particular occasion) when the detectors are of type `count':
 \item{binomN > 1} {binomial with size binomN}
 \item{binomN = 1} {Bernoulli}
 \item{binomN = 0} {Poisson}
-\item{binomN < 0} {negative binomial with size abs(binomN) -- see help(dnbinom) }
+\item{binomN < 0} {negative binomial with size abs(binomN) -- see 
+  \code{\link[stats]{dnbinom}}}
 }
 
 In this version the `size' parameter of the negative binomial is not
@@ -115,7 +121,7 @@ evaluation of the log likelihood at the `start' values.
 to be centred on the centroid of the traps, computed separately for each
 session in the case of multi-session data. This may be necessary to
 overcome numerical problems when x- or y-coordinates are large
-numbers. The default (1.4.0) is not to centre coordinates.
+numbers. The default is not to centre coordinates.
 
 If \code{method = 'Newton-Raphson'} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood; otherwise
@@ -133,7 +139,7 @@ capthist and mask; analysis is aborted if errors are found.
 
 \value{
 The function \code{secr.fit} returns an object of class secr.  This has components
-  \item{call }{function call}
+  \item{call }{function call (as character string prior to secr 1.5) }
   \item{capthist }{saved input}
   \item{mask }{saved input}
   \item{detectfn }{saved input}
@@ -155,7 +161,9 @@ The function \code{secr.fit} returns an object of class secr.  This has componen
   \item{realnames }{names of fitted (real) parameters }
   \item{fit }{list describing the fit (output from \code{nlm} or \code{optim}) }
   \item{beta.vcv }{variance-covariance matrix of beta parameters }
-  \item{D }{ array of predicted densities of each group at each mask point in each session, dim(D) = c(nrow(mask), ngroups, nsessions) }
+  \item{D }{ if CL = FALSE, array of predicted densities of each group at
+    each mask point in each session, dim(D) = c(nrow(mask), ngroups,
+    nsessions), otherwise NULL }
   \item{version }{secr version number }
   \item{starttime }{character string of date and time at start of fit }
   \item{proctime }{processor time for model fit, in seconds }
@@ -181,8 +189,6 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
 
 One system of units is used throughout \pkg{secr}. Distances are in metres and
@@ -198,6 +204,11 @@ maximizing the conditional likelihood (CL = TRUE).
 Components `version' and `starttime' were introduced in version 1.2.7,
 and recording of the completion time in `fitted' was discontinued.
 
+A warning is generated when `buffer' appears to be too small (predicted
+    RB(D-hat) > 0.01). The prediction uses \code{\link{bias.D}}. No
+    check is performed when `mask' is specified, or when the detector
+    type is `polygon' or `transect'.
+    
 }
 
 \seealso{

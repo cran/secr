@@ -11,8 +11,8 @@ at given coordinates.
 }
 
 \usage{
-pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 20),
-    noccasions = 5) 
+pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
+    z = 1), noccasions = 5) 
 
 }
 
@@ -27,9 +27,14 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 20),
 
 The probability computed is \eqn{p.(\mathbf{X}) = 1 - \prod\limits _{k}
 \{1 - p_s(\mathbf{X},k)\}^{S}}{p.(X) = 1 - (1 - prod(p_s(X,k))^S} where
-the product is over the detectors in \code{traps}. The
-per-occasion detection function \eqn{p_s}{p\_s} is by default
-half-normal, and is assumed not to vary over the \eqn{S} occasions.
+the product is over the detectors in \code{traps}, excluding any not
+used on a particular occasion. The per-occasion detection function
+\eqn{p_s}{p_s} is halfnormal (0) by default, and is assumed not to vary
+over the \eqn{S} occasions.
+
+For detection functions (10) and (11) the signal threshold `cutval' should be
+included in \code{detectpar}, e.g., \code{detectpar = list(beta0 = 103, beta1
+= -0.11, sdS = 2, cutval = 52.5)}.
 
 The calculation is not valid for single-catch traps because
 \eqn{p.(\mathbf{X})}{p.(X)} is reduced by competition between animals.
@@ -40,15 +45,14 @@ The calculation is not valid for single-catch traps because
 A vector of probabilities, one for each row in X.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
-\seealso{ \code{\link{secr}}, \code{\link{make.mask}}, \code{\link{detection functions}} }
+\seealso{ \code{\link{secr}}, \code{\link{make.mask}},
+  \code{\link{detection functions}}, \code{\link{pdot.contour}} }
 
 \examples{
   temptrap <- make.grid()
   ## per-session detection probability for an individual centred
   ## at a corner trap. By default, noccasions = 5.
-  pdot (c(0,0), temptrap, detectpar = list(g0 = 0.2, sigma = 20))
+  pdot (c(0,0), temptrap, detectpar = list(g0 = 0.2, sigma = 25))
 }
 
 \keyword{ manip }

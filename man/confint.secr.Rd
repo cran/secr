@@ -68,8 +68,6 @@ profile-likelihood-based confidence intervals. \emph{Applied Statistics}
 
 } 
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
 
 Calculation may take a long time, so probably you will do it
@@ -90,7 +88,6 @@ the package \pkg{Bhat} for another \R implementation.
 
 \examples{
 \dontrun{
-data (secrdemo)
 ## Limits for the constant real parameter 'D'
 confint(secrdemo.0, 'D')   
 }

@@ -87,8 +87,6 @@ stored in the 'seed' attribute.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{  Other \code{buffertype}s will be defined later. (e.g. convex hull, concave) }
 
 \seealso{ \code{\link{popn}}, \code{\link[stats]{simulate}} }
@@ -120,7 +118,6 @@ for (m in c(1,4,16)) {
 par(oldpar)
 
 ## Inhomogeneous Poisson distribution
-data(secrdemo)
 xy <- secrdemo.0$mask$x + secrdemo.0$mask$y - 900
 tempD <- xy^2 / 1000
 plot(sim.popn(tempD, secrdemo.0$mask, model2D = 'IHP'))

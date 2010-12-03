@@ -23,8 +23,6 @@ rbind.popn(..., renumber = TRUE)
 An object of class \code{popn} with number of rows equal to the sum of the rows in the input objects.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{popn}} }
 
 \examples{

@@ -51,7 +51,7 @@ method is called when no specific method is available (i.e. class not
   \item Live detection(s) after reported dead
   \item More than one capture in single-catch trap(s)
   \item More than one detection per detector per occasion at proximity detector(s)
-  \item Count detector counts less than zero
+%  \item Count detector counts less than zero
   \item Signal detector signal(s) less than threshold or invalid threshold
   \item Number of rows in 'traps' object not compatible with reported detections
   \item Number of rows in dataframe of individual covariates differs from capthist
@@ -67,7 +67,7 @@ method is called when no specific method is available (i.e. class not
   \item Number of rows in dataframe of detector covariates differs from expected
   \item Number of detectors in usage matrix differs from expected
   \item Occasions with no used detectors
-  \item Area detectors, but quadrats overlap or no area specified
+  \item Area detectors, but areas overlap or no area specified
 }
 
 \code{verify.mask}
@@ -92,15 +92,12 @@ posted when no errors are found.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{
 \code{\link{capthist}}, \code{\link{secr.fit}}
 }
 
 \examples{
 
-data(secrdemo)
 verify(captdata)
 
 ## create null (complete) usage matrix, and mess it up

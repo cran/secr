@@ -6,7 +6,8 @@
 }
 \usage{
 secr.design.MS(capthist, models, timecov = NULL, sessioncov = NULL, 
-    groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE, ...)
+    groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
+    ...)
 }
 \arguments{
   \item{capthist}{ \code{capthist} object }
@@ -43,10 +44,7 @@ detector.
   \item{PIA}{ Parameter Index Array - index to row of parameterTable for a given session, animal, occasion and detector; dim(PIA) = c(R,n,S,K) }
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \examples{
-data(secrdemo)
 secr.design.MS (captdata, models = list(g0 = ~b))$designMatrices
 secr.design.MS (captdata, models = list(g0 = ~b))$parameterTable
 }

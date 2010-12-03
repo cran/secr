@@ -2,14 +2,15 @@
 # Input is 'capthist' object of package 'secr'
 # Murray Efford April 2010
 # Based on Otis et al. 1978, C code of Anne Chao etc.
+# modified 2010-09-05 for AICcwt
 
-# source('d:\\density secr 1.3\\secr\\r\\closedN.R')
+# source('d:\\density secr 1.4\\secr\\r\\closedN.R')
 
 ############################################################################
 
-closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7) {
+closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7, dmax = 10) {
     if (!inherits(object, 'capthist'))
-        stop ('require capthist object')
+        stop ("requires 'capthist' object")
     if (inherits(object, 'list'))
         lapply(object, closedN, estimator=estimator, level=level, maxN=maxN)
     else {
@@ -47,12 +48,20 @@ closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7) {
         temp$AICc <- -2 * temp$LL + 2 * temp$npar * temp$Mt1 / (temp$Mt1 - temp$npar - 1)
 
         temp$dAICc <- temp$AICc-min(temp$AICc, na.rm=T)
+
         temp$model <- models[match(estimator, allowed)]
-        temp <- temp[,c(11,4,5,8:10, 1:3,6,7)]
-        names(temp) <- c('model','npar','loglik','AIC','AICc','dAICc','Mt1','Nhat',
+
+        ## added 2010-09-05
+        OK <- abs(temp$dAICc) < abs(dmax)
+        sumdAICc <- sum(exp(-temp$dAICc[OK]/2), na.rm=T)
+        temp$AICwt <- ifelse ( OK, round(exp(-temp$dAICc/2) / sumdAICc,4), 0)
+
+        temp <- temp[,c(11,4,5,8:10, 12, 1:3,6,7)]
+        names(temp) <- c('model','npar','loglik','AIC','AICc','dAICc', 'AICcwt', 'Mt1','Nhat',
                          'seNhat','lclNhat', 'uclNhat')
         temp[,3] <- round(temp[,3], 3)
-        temp[,c(4:6,8:11)] <- round(temp[,c(4:6,8:11)], 2)
+        temp[,c(4:6,9:12)] <- round(temp[,c(4:6,9:12)], 2)
+        temp[,7] <- round(temp[,7], 3)
         temp
     }
 }
@@ -107,7 +116,7 @@ zip.est.c <- function (nt, ut, maxN=1e7) {
 }
 
 #################################
-## Darroch estimator Mb
+## Darroch estimator Mt
 ## continuous-N
 
 darr.est.c <- function (nt, Mt1, maxN=1e7) {

@@ -34,19 +34,21 @@ data set, possibly converting between detector types
 
 The first component of \code{columns} defines the columns of
 \code{object} for new occasion 1, the second for new occasion 2, etc. If
-\code{columns} is NULL then all occasions are output. When the output
-detector is one of the trap types ('single', 'multi'), reducing capture
-occasions can result in locational ambiguity for individuals caught on
-more than one occasion, and for single-catch traps there may also be
-conflicts between individuals at the same trap. The method for resolving
-conflicts among 'multi' detectors is determined by \code{select} which
-should be one of 'first', 'last' or 'random'. With 'single' detectors
-\code{select} is ignored and the method is: first, randomly select* one
-trap per animal per day; second, randomly select* one animal per trap
-per day; third, when collapsing multiple days use the first capture, if
-any, in each trap. With signal detectors, \code{select} determines how
-multiple signal measurements are combined; options 'min', 'max' or
-'mean' are also allowed.
+\code{columns} is NULL then all occasions are output. Subscripts in a
+component of \code{columns} that do not match an occasion in the input
+are ignored. When the output detector is one of the trap types
+('single', 'multi'), reducing capture occasions can result in locational
+ambiguity for individuals caught on more than one occasion, and for
+single-catch traps there may also be conflicts between individuals at
+the same trap. The method for resolving conflicts among 'multi'
+detectors is determined by \code{select} which should be one of 'first',
+'last' or 'random'. With 'single' detectors \code{select} is ignored and
+the method is: first, randomly select* one trap per animal per day;
+second, randomly select* one animal per trap per day; third, when
+collapsing multiple days use the first capture, if any, in each
+trap. With signal detectors, \code{select} determines how multiple
+signal measurements are combined; options 'min', 'max' or 'mean' are
+also allowed.
 
 Usage data in the \code{traps} attribute are also
 pooled if present; a trap is considered 'used' on a pooled occasion if
@@ -64,8 +66,6 @@ An object of class \code{capthist} with number of columns equal to
 unless a new type is specified with the argument \code{outputdetector}.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{capthist}}, \code{\link{subset.capthist}} }
 

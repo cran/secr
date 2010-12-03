@@ -65,6 +65,10 @@ Deaths are coded as negative values in the occasion field of
 default, the number of occasions is the maximum value of 'occasion' in
 \code{captures}.
 
+Signal strengths may be provided in the fifth (fmt = trapID) or sixth
+(fmt = XY) columns. Detections with signal strength missing (NA) or
+below `cutval' are discarded.
+
 }
 
 \value{
@@ -106,18 +110,15 @@ Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{capthist}}, \code{\link{traps}},
 \code{\link{read.capthist}}, \code{\link{secr.fit}},
 \code{\link{sim.capthist}} }
 
 \examples{
 
-## load demonstration data and peek at XY data
-data(secrdemo)
-captXY[1:5,]
-trapXY[1:5,]
+## peek at demonstration data
+head(captXY)
+head(trapXY)
 
 demotraps <- read.traps(data = trapXY)
 demoCHxy  <- make.capthist (captXY, demotraps, fmt = 'XY')
@@ -125,6 +126,17 @@ demoCHxy  <- make.capthist (captXY, demotraps, fmt = 'XY')
 demoCHxy            ## print method for capthist
 plot(demoCHxy)      ## plot method for capthist
 summary(demoCHxy)   ## summary method for capthist
+
+
+## To enter 'count' data without manually repeating rows
+## need a frequency vector f, length(f) == nrow(captXY)
+n <- nrow(captXY)
+f <- sample (1:5, size = n, prob = rep(0.2,5), replace = TRUE)
+## repeat rows as required...
+captXY <- captXY[rep(1:n, f),]
+counttraps <- read.traps(data = trapXY, detector = 'count')
+countCH  <- make.capthist (captXY, counttraps, fmt = 'XY')
+
 }
 
-\keyword{ models }
+\keyword{ manip }

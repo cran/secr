@@ -162,11 +162,6 @@ Statistical inference from capture data on closed animal populations.
 \emph{Wildlife Monographs} \bold{62}.
 
 }
-\author{
-
-Murray Efford \email{murray.efford@otago.ac.nz}
-
-}
 
 \note{
 
@@ -219,8 +214,6 @@ from a simple halfnormal model if variances are not required.
 
 \dontrun{
 ## these calculations may take several minutes
-
-data(secrdemo)
 
 ## default settings
 ip.secr (captdata)

@@ -1,3 +1,158 @@
+Changes in version 1.5.1 (2010-12-02)
+
+Changed defaults 
+
+    o   in secr.fit() the distribution fitted to counts now defaults to
+    Poisson rather than Bernoulli (i.e. by default details$binomN = 0
+    when detector(traps(capthist)) = 'count')
+    o   plot.secr() confidence limits are computed only if requested
+    explicitly ( default: limits = FALSE)
+    o   the argument `buffer' in secr.fit() now defaults to NULL; a
+    value of 100 is substituted if it is needed (i.e. neither mask nor
+    buffer specified). This allows a warning to be given when the
+    user relies on the default; it has no other effect.
+    o   in secr.fit() the default detection parameter values when
+    detectfn = 9 are now b0 = 2 and b1 = -0.1; this works for the
+    dataset 'captdata', but in general you need to set 'start'.
+    o   pdot() default 'detectpar' is now list(g0 = 0.2, sigma = 25, z =
+    1) (consistent with sim.capthist())
+
+Changed output
+
+    o   the single value of 'esa' returned by derived() is now the
+    harmonic mean (reciprocal of arithmetic mean of reciprocals)
+    rather than the arithmetic mean, following a suggestion by David
+    Borchers. This matters only when esa varies between individuals
+    due to the inclusion of individual covariates in the detection
+    model. Density estimates are unchanged.
+
+New functions
+
+    o   mask.check() evaluates the effect of varying buffer width and
+    mask spacing on either the likelihood or density estimates from
+    secr.fit(). This implements and extends the functionality of
+    'Tools | ML SECR log likelihood' in Density 4.
+    o   esa.plot() displays the effect of mask buffer width on effective
+    sampling area (esa) for fixed values of detection
+    parameters. Examine the asymptotic curve to choose a buffer width
+    for model fitting. 
+    o   suggest.buffer() proposes a buffer width to keep the
+    buffer-related relative bias of D-hat within a bound
+    o   detectpar() extracts the central estimates of detection function
+    parameters from a fitted model as a list
+    o   pdot.contour() display contours of the net probability of
+    detection p.(X)
+    o   buffer.contour() adds a conventional 'boundary strip' to a
+    detector (trap) array, where the argument 'buffer' represents the
+    strip width(s)
+    o   utility functions polyarea() to calculate the area of a simple
+    polygon and ms() to indicate whether an object has data from
+    multiple sessions
+    o   methods spacing.default() and 'spacing<-' to extract or replace
+    mean detector spacing attribute of a 'traps' or 'mask' object (or compute if 
+    NULL)
+    o   methods AIC.secrlist(), plot.secrlist() and predict.secrlist()
+    for lists of fitted models that have been assigned the class
+    c('list','secrlist')
+    o   method logLik.secr() for consistency with standard model fitting
+    functions
+
+New features in old functions
+
+    o   closedN() now computes AICc model weights for models within dmax
+    of the best model.
+    o   new detection functions (7) 'cumulative lognormal' and (8)
+    'cumulative gamma' are alternative 3-parameter functions. (8)
+    lacks the heavy tail of (1) 'hazard rate'.
+    o   pdot() uses compiled C code for ordinary detectors and is much faster 
+    o   pdot() should now work for all detection functions 
+    o   pdot() now takes account of incomplete 'usage' of detectors
+    o   'covariates<-' now allows replacement of individual covariates in
+    a multi-session capthist object (replacement value should be a list
+    of dataframes)
+    o   plot.mask() now handles multi-session masks
+    o   detectfnplot() and attenuationplot() now allow the argument 'pars'
+    to be a list from detectpar()
+    o   make.mask() now clips a masks constructed by any method to a
+    boundary polygon if one is provided (previously required type =
+    'polygon')
+    o   make.mask() and related functions now accept boundary polygons
+    in the form of a SpatialPolygonsDataFrame object from 'sp'. This
+    effectively adds support for ESRI shapefiles as readShapePoly() in
+    the maptools package reads a shapefile and creates a
+    SpatialPolygonsDataFrame object (see Examples in ?make.mask).
+    Polygons in a shapefile may have multiple parts and/or holes.
+    o   a new argument in make.mask() controls the saving or otherwise 
+    of a boundary polygon (keep.mask)
+    o   read.traps() has a new argument 'covnames' and can accept more
+    than one covariate 
+    o   read.capthist() has a new argument 'trapcovnames' that is passed
+    to read.traps()
+    o   read.capthist() has a new argument 'cutval' and can be used to
+    input signal strength data. Detections with signal strength
+    missing (NA) or below 'cutval' are discarded. Likewise in
+    make.capthist().
+
+Other
+
+    o secr.fit() generates a warning when the 'buffer' appears to be
+    too small (predicted RB(D-hat) > 0.01); applies only when 'mask'
+    not specified.
+    o   datasets now use 'lazy loading' so it is not necessary to call the
+    data() function before referring to data objects
+    o   the MASS and nlme packages have been shifted from Depends to
+    Suggests; they are now loaded as required (for eqscplot() and
+    fdHess()) 
+    o   the utils package is added under Depends for its function
+    packageVersion()
+    o   the sp, maptools and gpclib packages are added under Suggests
+    o   the warning from secr.fit() when the user relied on the default
+    detectfn (0) has been suppressed
+    o   substantial speed improvement in distancetotrap(), with benefits
+    for several other functions
+    o   output from secr.fit() now includes the actual call rather than
+    the just call as a character string, and print.secr() has been modified
+    to interpret call as a string (users should notice no difference)
+    o   secr.fit() now gives an explicit error message when individual
+    covariates appear in a full-likelihood model
+    o   definition of compound halfnormal detection function changed to
+    allow g(0) < 1, and now consistent with other functions
+    o	tweaked documentation of sim.secr
+    o	revised message for missing cutval in plot.secr and detectfnplot
+    o	suppressed `spacing not computed' message in summary.traps
+    o	documentation revised for detection functions, and tweaked for 
+    secr.fit wrt binomN
+    o	additions to vignette 'secr-datainput.pdf'
+    o	plot.secr() and detectfnplot() streamlined internally, and now
+    handle 'binary signal strength' function
+    o   help pages for flip(), rotate(), shiftxy(), flip.traps(),
+    rotate.traps() and shiftxy.traps() have been consolidated under
+    'transformations'
+    o   verify.capthist() no longer rejects negative counts (animal died)
+    o   undocumented detectors 'quadratbinary' and 'quadratcount' removed
+    o   cosmetic changes to many warning and error messages
+
+Bugs fixed
+
+    o	annular halfnormal detection function not working in sim.capthist()
+    o   confusion between detection functions 3 & 4 in ip.secr(),
+    plot.secr() and detectfnplot()
+    o   read.traps() did not set the 'spacing' attribute    
+    o   make.capthist() failed with 'polygon' detector when some points
+    outside any polygon; now discards such points, with a warning, as
+    originally intended
+    o   read.traps() could fail reading usage fields from a trap layout file
+    o   polyarea() could suffer from numeric overflow with integer
+    coordinates, so coordinates now coerced to floating point (solved
+    flow-on problem in summary.traps() with polygon detectors)
+    o   esa() sometimes ignored incomplete detector usage
+    o   sim.secr() failed with 'count' detector when traps object lacked a
+    'binomN' attribute, and did not work with negative 'binomN'; now
+    takes 'binomN' from 'details' of fitted secr object, default 0
+    (Poisson).
+    o   sim.secr() did not handle inhomogeneous Poisson density
+    correctly, and could make excessive memory demands
+
 Changes in version 1.4.1 (2010-08-29)
 
 New functions

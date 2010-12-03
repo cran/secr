@@ -58,8 +58,6 @@ Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum likelihood m
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{secr models}}, \code{\link{secr detection models}}, \code{\link{secr.fit}} }
 
 \examples{

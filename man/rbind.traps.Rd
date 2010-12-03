@@ -32,8 +32,6 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
 An object of class \code{traps} with number of rows equal to the sum of the rows in the input objects.
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{traps}}, \code{\link{subset.traps}} }
 
 \examples{

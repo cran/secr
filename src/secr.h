@@ -120,11 +120,23 @@ void simsecr (
     int    *resultcode
 );
 
-void pdotpoly (double *xy, int *nxy, double *traps, int *nk, 
-    int *kk, int *fn, int *nocc, double *par, double *value);
+double pfn (
+    int fn,
+    double d2val,
+    double g0,
+    double sigma,
+    double z,
+    double area,
+    double w2);
 
-void pdottransect (double *xy, int *nxy, double *traps, int *nk, 
-    int *kk, int *fn, int *nocc, double *par, double *value);
+void pdotpoint (double *xy, int *nxy, double *traps, int *used, int *kk,
+		int *fn, double *par, int *nocc, double *w2, double *value);
+
+void pdotpoly (double *xy, int *nxy, double *traps, int *used, int *nk, 
+    int *kk, int *fn, double *par, int *nocc, double *value);
+
+void pdottransect (double *xy, int *nxy, double *traps, int *used, int *nk, 
+    int *kk, int *fn, double *par, int *nocc, double *value);
 
 void trappingpolygon (
     double *lambda,      /* Parameter : expected detection events per hectare */
@@ -276,6 +288,7 @@ void naived (
 
 void naiveRPSV (
     double *sigma,      /* Parameter : detection scale */
+    double *z,          /* parameter : detection shape (probably fixed) */
     int    *kk,         /* number of traps */
     int    *nc,
     double *traps,      /* x,y locations of traps (first x, then y)   */
@@ -308,7 +321,8 @@ void makelookup (
 );
 
 void nearest (   
-    double *xy,         /* input point */
+    int    *nxy,        /* number of input points */
+    double *xy,         /* input points */
     int    *ntrap,      /* input */
     double *traps,      /* input */
     int    *p,          /* output index of nearest point */

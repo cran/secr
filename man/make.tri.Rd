@@ -1,8 +1,9 @@
 \name{make.tri}
 \alias{make.tri}
+% \alias{make.hex}
 \alias{clip.hex}
 
-\title{ Build Detector Array on Triangular Grid }
+\title{ Build Detector Array on Triangular or Hexagonal Grid }
 
 \description{
   Construct an array of detectors on a triangular grid and optionally
@@ -13,6 +14,9 @@
 
 make.tri (nx = 10, ny = 12, spacing = 20, detector = 'multi',
     binomN = 0, originxy = c(0,0))
+
+% make.hex (nx = 10, ny = 12, spacing = 20, detector = 'multi',
+%    binomN = 0, originxy = c(0,0))
 
 clip.hex (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     fuzz = 1e-3, ID = 'num', ...)
@@ -42,9 +46,15 @@ separations \code{spacing}. The bottom-left (southwest) corner is at
 \code{originxy}. Identifiers are numeric. See \code{\link{make.grid}}
 for further explanation.
 
-\code{clip.hex} clips a triangular grid of detectors, retaining only
+\code{clip.hex} clips a grid of detectors, retaining only
 those within a bounding hexagon. Detectors are re-labelled according to
 \code{ID} as follows:
+
+% \code{make.hex} generates coordinates for a hexagonal array obtained by
+% thinning an initial triangular array of \code{nx.ny} traps at
+% separations \code{spacing}. The bottom-left (southwest) corner is at
+% \code{originxy}. Identifiers are numeric. 
+
 
   \tabular{ll}{
      ID \tab Effect \cr
@@ -62,8 +72,6 @@ y-coordinates, the detector type ('single', 'multi', or 'proximity' etc.),
 and possibly other attributes.
 
 }
-
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
 
 \seealso{ \code{\link{make.grid}}, \code{\link{detector}}
 }

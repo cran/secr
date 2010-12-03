@@ -73,8 +73,6 @@ models. Version 1.0. Wildlife Conservation Society - India Program, Centre for
 Wildlife Studies, Bangalure, India.
 
 }
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \note{
   State-space csv files may be imported with \code{read.mask}.
 }
@@ -87,7 +85,6 @@ Wildlife Studies, Bangalure, India.
 
 \examples{
 \dontrun{
-data(secrdemo)
 
 ## coerce data to proximity detector type for export
 demo <- reduce(captdata, output = 'proximity') 

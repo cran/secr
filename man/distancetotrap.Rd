@@ -37,8 +37,6 @@ on a habitat mask.
 
 }
 
-\author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
 \seealso{ \code{\link{make.mask}} }
 
 \examples{

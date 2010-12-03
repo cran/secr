@@ -14,7 +14,8 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     ## boxsize may be vector of length np
     ## pfn defined below
 
-    if (is.list(capthist)) stop ('ip.secr not implemented for multi-session capthist')
+    if (is.list(capthist))
+        stop ("'ip.secr' not implemented for multi-session 'capthist'")
     ptm  <- proc.time()
     cl <- match.call(expand.dots = TRUE)
     cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
@@ -24,18 +25,17 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    if (!(detectfn %in% c(0,1,2,3))) stop ('unrecognised detectfn')
-    parnames <- switch (detectfn+1,
-        c('D', 'g0', 'sigma'),          ## detectfn 0 halfnormal
-        c('D', 'g0', 'sigma', 'z'),     ## detectfn 1 hazard rate
-        c('D', 'g0', 'sigma'),          ## detectfn 2 negative exponential
-        c('D', 'g0', 'sigma'))          ## detectfn 3 uniform
-    if (detectfn == 1) stop ('hazard rate detection not yet implemented')
-    np <- length(parnames)
+    if (!(detectfn %in% 0:11))
+        stop ('unrecognised detectfn')
+    if (!(detectfn %in% c(0,2,4)))
+        stop (paste(detectionfunctionname(detectfn),
+                    "detection function not implemented in ip.secr"))
+    np <- length(parnames(detectfn))
     traps <- traps(capthist)
-    noccasion <- ncol(capthist)
+    noccasions <- ncol(capthist)
     if (length(boxsize)==1) boxsize <- rep(boxsize, np)
-    else if (boxsize != np) stop ('invalid boxsize vector')
+    else if (boxsize != np)
+        stop ("invalid boxsize vector")
     if (is.null(mask)) core <- expand.grid(x=range(traps$x),y=range(traps$y))
 
     # to simulate one realization
@@ -48,7 +48,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
         else
             popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
-        simcapthist <- sim.capthist(traps, popn, detectfn, detectpar, noccasion)
+        simcapthist <- sim.capthist(traps, popn, detectfn, detectpar, noccasions)
         predictorfn (simcapthist, predictortype)
     }
 
@@ -57,7 +57,8 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
     ## target values of predictor
     y <- predictorfn(capthist, predictortype)
-    if (length(y) != np) stop(paste('need one predictor for each parameter',parnames, collapse=' '))
+    if (length(y) != np)
+        stop(paste("need one predictor for each parameter", parnames, collapse=" "))
 
     if (is.null(start)) {
         cat('\nFinding starting values ...\n')
@@ -110,7 +111,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             if (all(CV <= CVmax)) break
         }
         if (nrow(design)/(2^np+centre) > max.nsim) {
-            warning ('exceeded max allowable repl without achieving CVmax')
+            warning ("exceeded maximum allowable replicates without achieving 'CVmax'")
             return (NA)
         }
         else {
@@ -121,7 +122,8 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             if (all(sapply(1:np, within))) break
         }
     }
-    if (!all(sapply(1:np, within))) warning (paste('solution not found after', maxbox, 'attempts'))
+    if (!all(sapply(1:np, within)))
+        warning (paste("solution not found after", maxbox, "attempts"))
 
     names(par) <- parnames
 
