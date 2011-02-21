@@ -125,7 +125,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 stop ("IHP not implemented for fixed or specified N")
             nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per mask cell
             N <- sum(nm)
-            jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), nc=2)
+            jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), ncol = 2)
             animals <- core[rep(1:nr, nm),] + jitter
             animals <- as.data.frame(animals)
             xl <- range(animals[,1])
@@ -158,7 +158,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 yrange <- diff(yl)
                 if (details$mu<=0) {
                     nparent <- N   ## not clustered
-                    offspr <- sweep(matrix(runif(2*nparent),nc=2),2,c(xrange,yrange),'*')
+                    offspr <- sweep(matrix(runif(2*nparent), ncol = 2), 2, c(xrange,yrange), '*')
                 }
                 else {
                      nparent <- switch (Ndist,
@@ -168,9 +168,9 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                      N <- nparent * details$mu
                      if (nparent==0)
                          warning ("zero clusters")
-                     parent <-  sweep(matrix(runif(2*nparent),nc=2),2,c(xrange,yrange),'*')
+                     parent <-  sweep(matrix(runif(2*nparent), ncol = 2), 2, c(xrange,yrange), '*')
 
-                     offspr <- matrix(rnorm(2*N),nc=2) * details$hsigma
+                     offspr <- matrix(rnorm(2*N), ncol = 2) * details$hsigma
                      parentn <- rep(1:nparent, details$mu)
                      offspr <- offspr + parent[parentn,]
                      while (any ((offspr[,1]<0) | (offspr[,1]>xrange) | (offspr[,2]<0) |

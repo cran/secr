@@ -1,3 +1,124 @@
+Changes in version 2.0.0 (2011-02-21)
+
+New functions
+
+    o   sort method for capthist objects (sort.capthist)
+
+    o   alive() extracts the status of an animal at each detection
+
+    o   fxi.secr(), fxi.contour(), fxi.mode() for estimating the
+    location of an individual with a given detection history (these
+    require a fitted secr model)
+
+    o   read.DA(), write.DA() convert polygon data to and from BUGS
+    format for data augmentation & MCMC
+
+New features or changed behaviour of old functions
+
+    o   new likelihood implementation and many improvements to the
+    functionality of 'polygon' and 'transect' detectors; also new
+    vignette 'secr-polygondetectors.pdf'
+
+    o   new detector types 'polygonX' and 'transectX' for
+    non-independent (exclusive) polygon and transect searches. Animals
+    can be detected on at most one exclusive polygon or transect on
+    any occasion
+
+    o   in secr.fit() and sim.capthist() binomN has been elevated to a
+    named argument from a component of details (secr.fit) or detectpar
+    (sim.capthist). It is used to specify the discrete distribution
+    for counts. The default value of binomN is Poisson for count-type
+    detectors ('count', 'polygon', 'transect')
+
+    o   secr.fit() logical values TRUE and FALSE for argument
+    details$hessian may be used instead of 'auto' and 'none'
+
+    o   secr.fit() check on buffer width not performed when 'verify = FALSE'
+
+    o   secr.fit() allows user to choose Gardner & Royle
+    parameterisation of detection function for multi-catch detectors
+    (details = list(param = 1))
+
+    o   secr.fit() triggers warning when maximisation fails
+
+    o   make.poly() and make.transect() have new argument 'exclusive' to
+    create traps objects with detector types polygonX and transectX
+
+    o   verify.traps() now checks that polygons are not concave in
+    east-west direction
+
+    o   make.poly() has new argument 'verify to enforce shape check
+
+    o   log likelihood reported for fitted SECR models includes the
+    multinomial coefficient only for detector types 'multi' (including
+    'single'), 'proximity' and 'count'. The reported log likelihood
+    for 'signal' detectors will differ from previous versions by a
+    data-specific constant (given by logmultinom())
+
+    o   reduce.capthist() now retains row names from input (function has
+    been re-written and may show other subtle changes)
+
+    o   write.capthist(), write.traps() and write.captures() now export
+    covariates if requested. Also note changed position of dots argument.
+
+    o   secr.fit() the component 'distribution' of argument 'details'
+    may take a numeric value larger than nrow(capthist), rather than
+    'binomial' or 'poisson'. The likelihood then treats n as a
+    binomial draw from a superpopulation of this size, with
+    consequences for the variance of density estimates (cf data
+    augmentation)
+
+    o   make.capthist() and read.capthist() now coerce only character
+    covariates to factors; numeric covariates are left as numeric.
+
+    o   print.traps no longer adds a column for polygon or transect polyID
+
+New dataset
+
+    o   flat-tailed horned lizard polygon search from Royle & Young
+    (2008) (thanks to Andy Royle and Kevin Young for assistance with
+    this)
+
+Bugs fixed
+
+    o   read.table() sometimes failed when reading covariates -
+    mechanism now more robust
+
+    o   summary.traps() lost summary of usage and covariates
+
+    o   make.capthist() and read.capthist() stored signal strengths
+    incorrectly.
+
+    o   plot.capthist() labelled first captures incorrectly when used
+    with 'polygon' detectors; also several other bugs fixed in the
+    course of testing polygon detectors, and now fails gracefully
+    when the palette is inadequate for 'varycol'
+
+    o   simulate.secr() ignored 'distribution' of fitted secr model
+    (binomial or poisson), with consequences for sim.secr() (always
+    Poisson)
+
+    o   moves() did not work with transect data
+
+    o   summary.capthist() and counts() mis-reported the numbers of
+    detections and detectors visited for proximity and count detectors
+    when losses > 0 (no other known effects)
+
+    o   plot.secr() limits = TRUE not working
+
+    o   secr.fit() non-default settings of 'method' did not work
+    (e.g. method = 'BFGS')
+
+Other
+
+    o   check for too few observations when computing AICc (suggested by
+    Mike Meredith)
+
+    o   removed incorrect line ZipData: yes from package Description file
+
+    o   removed multinomial term from polygon, transect and signal likelihoods
+
+
 Changes in version 1.5.1 (2010-12-02)
 
 Changed defaults 
@@ -246,7 +367,7 @@ Bugs fixed
     causing errors in predict.secr(), collate() and model.average(). 
 
 Other
-    o	Displays startup message (see .onAttach)
+    o	Displays startup message
 
     o   Minor improvements to documentation (alias for detectfn, all
     data objects documented etc.)
@@ -258,97 +379,4 @@ Other
     o   print.mask() has been dropped as print.dataframe() works
     perfectly well with masks.
 
-
-Changes in version 1.4.0 (2010-05-07)
-
-New functions
-    o	write.capthist() exports capthist object as DENSITY text files.
-    o	read.capthist() imports capthist object from DENSITY text files.
-    o	write.SPACECAP() exports capthist object and mask as SPACECAP
-    text files.
-    o	read.SPACECAP() imports capthist object and mask from SPACECAP
-    text files.
-    o	write.captures() has been renamed from write.capthist.
-    o	closedN() computes various closed population estimators.
-    o	closure.test() tests for population closure of Otis et al.
-    (1978) and Stanley & Burnham (1999).
-    o	MMDM() computes observed (trap-revealed) range length (Otis et
-    al. 1978).
-    o	ARL() computes asympototic range length (Jett & Nichols 1987).
-    o	logmultinom() computes the multinomial coefficient of the SECR
-    likelihood (internal function, now exported).
-
-New datasets
-    o	'skink' lizard pitfall trapping (Efford, Thomas & Spencer unpubl)
-    o	'stoatDNA' stoat microsatellites (Efford, Borchers & Byrom 2009)
-    o	'housemouse' Coulombe Mus musculus (Otis et al. 1978)
-    o	'deermouse' Reid Peromyscus (Otis et al. 1978)
-
-New features in old functions
-    o	make.capthist() now sorts rows numerically if all values of
-    animalID are valid numbers.
-    o	make.capthist() now checks for missing values.
-    o	make.capthist() places multi-session capture data in order by
-    session before matching 'traps' objects.
-    o	print.capthist() now sorts rows numerically if all values of
-    animalID are valid numbers.
-    o	make.grid() has a new option for labeling detectors "xy".
-    o	secr.fit() has a new 'details' option to centre trap and mask
-    coordinates; this can solve some numerical problems fitting
-    coordinates with large absolute values.
-    o	plot.mask() produces more attractive images and does not call
-    image(), but is somewhat slower.
-    o	read.mask() has been tweaked to allow import from csv format as
-    used by SPACECAP.
-
-Defunct
-    o	read.captures() has been ditched - use read.table() instead.
-
-Bugs fixed
-    o	A bug in 'traps<-' has been fixed; replacement of traps for
-    multiple sessions should now work.
-
-Other
-    o	Dataset 'secrdemo' now incorporates 'rawdata' and 'captdata'.
-    o	Example text files 'capt.txt,'trap.txt','stoatcapt.txt',and
-    'stoattrap.txt' are provided in the package installation folder
-    'extdata' (e.g. setwd(system.file('extdata', package = 'secr'))).
-    o	New vignette: secr-datainput.pdf
-    o	Revised vignette: secr-overview.pdf
-
-
-Changes in version 1.3.0 (2010-03-11)
-
-New functions
-    o	ellipse.secr() computes and plots confidence ellipses of
-    fitted parameters.
-    o	LLsurface.secr() plots log-likelihood surface of SECR model
-    for 2 dimensions at a time.
-    o	attenuationplot() plots the sound attenuation function from
-    an acoustic SECR model.
-
-New datasets
-    o	ovensong - new acoustic dataset (Dawson & Efford J Appl Ecol;
-    see also 'secr-sound.pdf')
-
-New features in old functions
-    o	The handling of structural relationships in secr.fit() with
-    scaleg0 and scalesigma has been improved.
-    o	The 'start' argument of secr.fit() may now be a previously
-    fitted nested model.
-    o	The default algorithm for initial values in secr.fit() now
-    uses 'RPSV' instead of 'dbar' for spatial scale.
-    o	secr.fit() has a new pre-defined covariate term T for time
-    trend in detection parameter model formulae.
-
-Other
-    o	New detector types 'count', 'signal' ('polygon' and
-    'transect' are present but should be treated as 'under
-     development')
-    o	New detection functions 'binary signal strength', 'signal
-    strength', 'signal strength spherical'
-    o	Finite mixture models for heterogeneity in detection
-    parameters (use 'h2' in model formula)
-    o	New vignettes: secr-overview.pdf, secr-sound.pdf,
-    secr-finitemixtures.pdf
 

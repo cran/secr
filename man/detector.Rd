@@ -1,6 +1,15 @@
 \name{detector}
 \alias{detector}
 \alias{detector<-}
+\alias{polygon}
+\alias{polygonX}
+\alias{transect}
+\alias{transectX}
+\alias{single}
+\alias{multi}
+%\alias{signal}
+\alias{proximity}
+\alias{count}
 
 \title{ Detector Type }
 
@@ -21,14 +30,15 @@ detector(object) <- value
 
 \details{
 
-Valid detector types in \pkg{secr} 1.5 are `single', `multi',
-`proximity', `count', `signal', `polygon', and `transect' (the last two
-are poorly undocumented in 1.5). The detector type is stored as an
-attribute of a \code{traps} object.  Detector types are mostly described
-by Efford et al. (2009a,b). The `signal' detector type is used for
-acoustic data as described in the documentation file `secr-sound.pdf'
-(e.g., \code{RShowDoc(package='secr', 'secr-sound')}). See also
-`secr-overview.pdf'.
+Valid detector types in \pkg{secr} 2.0 are `single', `multi',
+`proximity', `count', `signal', `polygon', `transect', `polygonX', and
+`transectX'. The detector type is stored as an attribute of a
+\code{traps} object.  Detector types are mostly described by Efford et
+al. (2009a,b; see also \url{../doc/secr-overview.pdf}). Polygon and
+transect detector types are for area and linear searches as described in
+\url{../doc/secr-polygondetectors.pdf} and Efford (2011). The `signal'
+detector type is used for acoustic data as described in
+\url{../doc/secr-sound.pdf}.
 
 }
 
@@ -41,6 +51,10 @@ acoustic data as described in the documentation file `secr-sound.pdf'
 }
 
 \references{
+
+Efford, M. G. (2011) Estimation of population density by spatially
+explicit capture--recapture with area or transect searches. Unpublished
+manuscript.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009a) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

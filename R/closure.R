@@ -32,7 +32,7 @@ closure.test <- function (object, SB = FALSE, min.expected = 2) {
     else {
 
         chisq <- function (x) {
-            test <- suppressWarnings(chisq.test(matrix(x,nc=2), correct=F))
+            test <- suppressWarnings(chisq.test(matrix(x, ncol = 2), correct=F))
             if (any(test$expected<min.expected)) NA else test$statistic
         }
 

@@ -107,7 +107,7 @@ Bulletin} \bold{33}, 731--738.
 \dontrun{
 
 ## code used to construct dataset
-setwd('d:\\density secr 1.5\\package data\\possum')
+setwd('d:\\density secr 2.0\\package data\\possum')
 possumCH <- read.capthist('foxton.txt', 'foxtraps.txt', detector = 'single')
 ## drop within-day duplicates of tag 5861 in traps 11,12, to conform DENSITY
 possumCH['5861',] <- c(134, 133, 134, 133, 135)
@@ -122,7 +122,7 @@ possum.model.1 <- secr.fit(possumCH, mask = possummask, trace=F)
 possum.model.1b <- secr.fit(possumCH, mask = possummask, model =
     list(g0~b), trace=F)
 save(possumCH, possummask, possumarea, possum.model.1, possum.model.1b,
-    file='d:\\density secr 1.5\\secr\\data\\possum.RData')
+    file='d:\\density secr 2.0\\secr\\data\\possum.RData')
 }
 
 plot(possummask)

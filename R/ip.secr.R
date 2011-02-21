@@ -80,7 +80,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     for (m in 1:maxbox) {
         cat('\nFitting box', m, '...   (g0 on odds scale) \n')
         names(par) <- parnames
-        vertices <- sweep (1 + outer(c(-1,1), boxsize), MAR=2, FUN='*', STAT=par)
+        vertices <- sweep (1 + outer(c(-1,1), boxsize), MARGIN = 2, FUN = '*', STATS = par)
         vertices <- data.frame(vertices)
         names(vertices) <- parnames
         rownames(vertices) <- c('min','max')
@@ -88,7 +88,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         cat('\n')
         flush.console()
         design <- as.matrix(expand.grid (as.list(vertices)))
-        centrepoints <- matrix(par, nr=centre, nc=np, byrow=T)
+        centrepoints <- matrix(par, nrow = centre, ncol = np, byrow=T)
         design <- rbind(design, centrepoints)
         basedesign <- design[rep(1:nrow(design), min.nsim),]
         sim <- NULL
@@ -118,7 +118,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             B <- coef(sim.lm)[-1,]
             B <- solve(t(B))  ## invert
             lambda <- coef(sim.lm)[1,]   ## intercepts
-            par <- as.numeric(B %*% matrix((y - lambda), nc=1))
+            par <- as.numeric(B %*% matrix((y - lambda), ncol = 1))
             if (all(sapply(1:np, within))) break
         }
     }
@@ -131,7 +131,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         cat('Simulating for variance ...\n')
         flush.console()
         cat('\n')
-        vardesign <- matrix(par, nr = var.nsim, nc = np, byrow = T)
+        vardesign <- matrix(par, nrow = var.nsim, ncol = np, byrow = T)
         colnames(vardesign) <- parnames
         newsim <- t(apply(vardesign,1,simfn))
         V <- var(newsim)  ## additional simulations for var-covar matrix
@@ -145,7 +145,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         bootstrap <- data.frame (target = y, nsim = n, simulated = ymean, SE.simulated = yse)
 
         ## biasest not reported, yet
-        yest <- as.numeric(B %*% matrix((ymean - lambda), nc=1))
+        yest <- as.numeric(B %*% matrix((ymean - lambda), ncol = 1))
         biasest <- data.frame (estimate = 100 * (par - yest) / yest,
             SE = 100 * (par - yest) / yest)
 
@@ -156,7 +156,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         vcov <- tx %*% vcov %*% t(tx)
     }
     else {
-        vcov <- matrix(nr = np, nc = np)
+        vcov <- matrix(nrow = np, ncol = np)
         bootstrap <- NA
     }
 

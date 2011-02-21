@@ -2,6 +2,7 @@
 ## package 'secr'
 ## RPSV.R
 ## last changed 2010 03 30 streamlined
+## 2011 02 06 polygonX, transectX
 
 ############################################################################################
 
@@ -25,7 +26,7 @@ RPSV <- function (capthist)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
         traps <- traps(capthist)
-        if (detector(traps) %in% c('polygon','transect')) {
+        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
             lxy <- split ( xy(capthist), animalID(capthist))
             temp <- lapply (lxy, RPSVxy)
         }
@@ -33,7 +34,7 @@ RPSV <- function (capthist)
             w <- split(trap(capthist, names=F), animalID(capthist))
             temp <- lapply(w,RPSVx)
         }
-        temp <- matrix(unlist(temp), nr=3)
+        temp <- matrix(unlist(temp), nrow = 3)
         temp <- apply(temp,1,sum, na.rm=T)
         temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
         attr(temp,'names') <- NULL

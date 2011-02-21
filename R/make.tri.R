@@ -22,11 +22,10 @@ hexagon <- function (r = 20, centre = c(0,0)) {
     ## vertices of a closed hexagon
     theta <- seq(-4*pi/6, 9*pi/6, pi/3)
     temp <- data.frame(x= r * cos(theta), y = r * sin(theta))
-    sweep(temp, MAR=2, STAT=centre, '+')
+    sweep(temp, MARGIN = 2, STATS = centre, '+')
 }
 
-make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, originxy=c(0,0))
-# see make.grid for binomN
+make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', originxy=c(0,0))
 {
     if (!( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
@@ -37,7 +36,6 @@ make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, or
     oddrow <- as.logical(rep ((0:(ny-1)) %% 2, rep(nx, ny)))
     grid$x[oddrow] <- grid$x[oddrow] + spacing/2
     attr(grid, 'detector')   <- detector
-    attr(grid, 'binomN')     <- binomN
     attr(grid, 'class')      <- c('traps', 'data.frame')
     attr(grid, 'spacex')     <- NULL
     attr(grid, 'spacey')     <- NULL
@@ -48,7 +46,7 @@ make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, or
     grid
 }
 
-make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, originxy=c(0,0))
+make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi', originxy=c(0,0))
 {
     ##    if (!( detector %in% .localstuff$validdetectors ))
     ##        stop ('invalid detector type')
@@ -61,7 +59,6 @@ make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi', binomN=0, or
     grid$x[oddrow] <- grid$x[oddrow] + 3*spacing/2
     grid <- grid[third,]
     attr(grid, 'detector')   <- detector
-    attr(grid, 'binomN')     <- binomN
     attr(grid, 'class')      <- c('traps', 'data.frame')
     attr(grid, 'spacex')     <- NULL
     attr(grid, 'spacey')     <- NULL
@@ -93,7 +90,7 @@ ringID <- function (hextraps) {
 clip.hex <- function (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     fuzz = 1e-3, ID = 'num', ...) {
     hex <- hexagon(side+fuzz, centre)
-    hex <- matrix(unlist(hex), nc = 2)
+    hex <- matrix(unlist(hex), ncol = 2)
     OK <- insidepoly(traps, hex)
     temp <- subset(traps, OK, ...)
     if (!is.null(ID)) {

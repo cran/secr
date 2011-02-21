@@ -38,11 +38,11 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
         if (q<s) s <- q
     ##############################################
 
-    if (dettype == 6) {
+    if (dettype %in% c(3,6)) {
         k <- c(table(polyID(traps)),0)
         K <- length(k)-1
     }
-    else if (dettype == 7) {
+    else if (dettype %in% c(4,7)) {
         k <- c(table(transectID(traps)),0)
         K <- length(k)-1
     }
@@ -61,18 +61,17 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
         PIA <- rep(1, n * s * K * nmix)    ## nmix added 2010 02 25
 
 ## new code 2010-11-26
-        realparval0 <- matrix(rep(real, rep(n,length(real))),nr=n)   ## UNTRANSFORMED
+        realparval0 <- matrix(rep(real, rep(n,length(real))), nrow = n)   ## UNTRANSFORMED
 ## replacing...
-##        realparval0 <- matrix(real,nr=1)   ## UNTRANSFORMED
+##        realparval0 <- matrix(real, nrow = 1)   ## UNTRANSFORMED
 ##        ncolPIA <- 1
         Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
-        details <- list(binomN=0, cutval=0, spherical=FALSE)
     }
     else {
         ## allow for old design object
         if (length(dim(object$design0$PIA))==4)
             dim(object$design0$PIA) <- c(dim(object$design0$PIA),1)
-        PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]   ## modified 1:s 2009 10 24; extra dim 2009 12 11
+        PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]
         ncolPIA <- dim(object$design0$PIA)[2]
 
         #############################################
@@ -89,18 +88,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
         realparval0 <- makerealparameters (object$design0, beta,
             object$parindx, object$link, object$fixed)  # naive
 
-##        Xrealparval0 <- realparval0
-##        details <- object$details
-##        if (details$scaleg0) {
-##            realnames <- dimnames(realparval0)[2]
-##            sigmaindex <- match('sigma', realnames)
-##            g0index <- match('g0', realnames)
-##            if (is.na(g0index) | is.na(sigmaindex)) stop('scaleg0 requires both g0 and sigma in model')
-##            Xrealparval0[,g0index] <- Xrealparval0[,g0index] / Xrealparval0[,sigmaindex]^2
-##        }
-## simplified 2010 03 04:
-        Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
-
+        Xrealparval0 <- scaled.detection (realparval0, FALSE,
+            object$details$scaleg0, NA)
     }
 
     ## new code 2010-11-26
@@ -109,11 +98,13 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
     PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
     ncolPIA <- n
 
-    ## space <- attr(traps(capthists), 'spacing')
-    ## searchcell <- ifelse (is.null(space), 1, space^2 / 10000)  ## ha
-
+    param <- object$details$param
+    if (is.null(param))
+        param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
+    gamma <- 1  ## DUMMY
     temp <- .C("integralprw1", PACKAGE = 'secr',
       as.integer(dettype),
+      as.integer(param),
       as.double(Xrealparval0),
       as.integer(n),
       as.integer(s),
@@ -126,6 +117,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL)
       as.integer(PIA),                # index of nc*,S,K to rows in realparval0
       as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
       as.double(cell),
+      as.double(gamma),
       as.integer(object$detectfn),
       as.integer(object$details$binomN),
       as.double(object$details$cutval),

@@ -30,7 +30,6 @@
     }
     CHN <- function (pars, r, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-##        1 - (1 - g0 * exp (-r^2 / 2 / sigma^2)) ^ z    ## changed 2010-10-10
         g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
     }
     WEX <- function (pars, r, cutval) {
@@ -64,7 +63,7 @@
     BSS <- function (pars, r, cutval) {
         b0 <- pars[1]; b1 <- pars[2]
         gam <- -(b0 + b1 * r);
-        pnorm (gam, mean=0, sd=1, lower=FALSE)
+        pnorm (gam, mean=0, sd=1, lower.tail=FALSE)
     }
     SS <- function (pars, r, cutval) {
         beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
@@ -137,16 +136,18 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             if (limits & !rgr) {
                 ## delta method variance of g()
 
-                grad <- matrix(nr=length(xval), nc=length(x$fit$par))  ## beta pars
+                grad <- matrix(nrow = length(xval), ncol = length(x$fit$par))  ## beta pars
                 if (is.null(newdata)) newdata <- secr.make.newdata (x)
                 lkdfn <- function (beta, r) {
                     ## real g() from all beta pars and model.matrix
-                    real <- numeric(length(parnames))
-                    names(real) <- parnames
-                    for (rn in parnames) {
+                    parnamvec <- parnames(x$detectfn)
+                    real <- numeric(length(parnamvec))
+                    names(real) <- parnamvec
+
+                    for (rn in parnamvec) {
                          par.rn <- x$parindx[[rn]]
                          mat <- model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
-                         lp <- mat %*% matrix(beta[par.rn], nc = 1)
+                         lp <- mat %*% matrix(beta[par.rn], ncol = 1)
                          real[rn] <- untransform (lp, x$link[[rn]])
                     }
                     ## dfn(real, r)   # on natural scale
@@ -193,10 +194,12 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
                 # grad[i,] <- fdHess (pars = x$fit$par, fun = lkdfn, r = xval[i])$gradient
                 # grad[i,] <- grad (func = lkdfn, x = x$fit$par, r = xval[i])  ## needs numDeriv
                 grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'functions.R'
-
                 vc <- vcov (x)
-                se <- apply(grad, 1, function(gg) { gg <- matrix(gg,nr=1); gg %*% vc %*% t(gg) })^0.5
-
+                gfn <- function(gg) {
+                    gg <- matrix(gg, nrow = 1)
+                    gg %*% vc %*% t(gg)
+                    }
+                se <- apply(grad, 1, gfn)^0.5
                 ## lcl <- pmax(y - z*se,0)  # on natural scale
                 ## ucl <- pmin(y + z*se,1)
 
@@ -243,9 +246,8 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             xlab <- 'Distance  (m)'
         if (is.null(ylab)) {
            binomN <- ifelse(is.null(x$details$binomN),0,x$details$binomN)
-##           dlambda <- (detector(traps(x$capthist)) %in% c('quadratbinary', 'polygon')) |
-##               ((detector(traps(x$capthist)) %in% c('count','quadratcount')) & (binomN==0))
-           dlambda <- (detector(traps(x$capthist)) %in% c('polygon')) |
+## revisit this 2011-02-06
+           dlambda <- (detector(traps(x$capthist)) %in% c('polygon','polygonX')) |
                ((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
            if (dlambda)
                ylab <- 'Detection lambda'
@@ -290,12 +292,12 @@ detectfnplot <- function (detectfn, pars, details = NULL,
 
     if (is.list(pars)) {   ## 2010-10-26
         if (is.list(pars[[1]]))
-            pars <- matrix(unlist(pars), nr = length(pars), byrow = T)
+            pars <- matrix(unlist(pars), nrow = length(pars), byrow = T)
         else
             pars <- unlist(pars)
     }
 
-    if (!is.matrix(pars)) pars <- matrix(pars, nr=1)
+    if (!is.matrix(pars)) pars <- matrix(pars, nrow = 1)
 
     ## added 2010-07-01
     if (is.character(detectfn))
@@ -354,11 +356,11 @@ attenuationplot <- function (pars, add = FALSE, spherical = TRUE,
 
     if (is.list(pars)) {   ## 2010-10-26
         if (is.list(pars[[1]]))
-            pars <- matrix(unlist(pars), nr = length(pars), byrow = T)
+            pars <- matrix(unlist(pars), nrow = length(pars), byrow = T)
         else
             pars <- unlist(pars)
     }
-    if (!is.matrix(pars)) pars <- matrix(pars, nr=1)
+    if (!is.matrix(pars)) pars <- matrix(pars, nrow = 1)
 
     if (is.null(ylim)) {
         lower <- min(apply(pars, 1, mufn, r = max(xval)))

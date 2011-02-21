@@ -31,9 +31,11 @@ Covariates are ignored by \code{rbind.mask}.
 
 \value{
 
-  For \code{subset}, an object of class 'mask' with only the requested subset of rows and 'type' attribute set to 'subset'.
+  For \code{subset}, an object of class `mask' with only the requested
+  subset of rows and `type' attribute set to `subset'.
 
-  For \code{rbind}, an object of class 'mask' with all unique rows from the masks in \dots, and 'type' attribute set to 'rbind'.
+  For \code{rbind}, an object of class `mask' with all unique rows from
+  the masks in \dots, and `type' attribute set to `rbind'.
 
 }
 

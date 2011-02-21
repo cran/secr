@@ -29,7 +29,7 @@ counts(CHlist, counts = 'M(t+1)')
 
 \value{
 An object of class \code{summary.capthist}, a list with at least these components
-  \item{detector }{detector type in \{'single', 'multi', 'proximity'\} }
+  \item{detector }{\code{\link{detector}} type (`single', `multi', `proximity' etc.)}
   \item{ndetector }{number of detectors }
   \item{xrange }{range of x coordinates of detectors }
   \item{yrange }{range of y coordinates of detectors }

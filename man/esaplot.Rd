@@ -11,9 +11,9 @@ Plot effective sampling area (Borchers and Efford 2008) as a function of increas
 \usage{
 
 esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
-    detectfn, detectpar, noccasions, thin = 0.1, poly = NULL,
-    session = 1, plt = TRUE, as.density = TRUE, n = 1, add = FALSE,
-    overlay = TRUE, ...)
+    detectfn, detectpar, noccasions, binomN = NULL, thin = 0.1,
+    poly = NULL, session = 1, plt = TRUE, as.density = TRUE, n = 1,
+    add = FALSE, overlay = TRUE, ...)
 
 }
 
@@ -26,6 +26,8 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   detection function 0 = halfnormal etc. -- see \link{detectfn}}
   \item{detectpar}{ list of values for named parameters of detection function }
   \item{noccasions}{ number of sampling occasions}
+  \item{binomN}{ integer code for discrete distribution (see
+  \code{\link{secr.fit}}) }  
   \item{thin}{ proportion of mask points to retain in plot and output}
   \item{poly}{ matrix of two columns interpreted as the x and y
     coordinates of a bounding polygon (optional) }

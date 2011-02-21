@@ -13,7 +13,7 @@ spatially explicit capture-recapture model,
 \usage{
 
 \method{confint}{secr} (object, parm, level = 0.95, newdata = NULL,
-tracelevel = 1, tol = 0.0001, ...)
+tracelevel = 1, tol = 0.0001, bounds = NULL, ...)
 
 }
 
@@ -24,6 +24,7 @@ tracelevel = 1, tol = 0.0001, ...)
   \item{newdata}{ optional dataframe of values at which to evaluate model }
   \item{tracelevel}{ integer for level of detail in reporting (0,1,2) }
   \item{tol}{ absolute tolerance (passed to \link{uniroot}) }
+  \item{bounds}{ numeric vector of outer starting values -- optional } 
   \item{\dots}{ other arguments (not used) }
 }
 \details{
@@ -42,6 +43,8 @@ for real parameters use the method of Lagrange multipliers (Fletcher and
 Faddy 2007), except that limits for constant real parameters are
 backtransformed from the limits for the relevant beta parameter.
 
+If \code{bounds} is provided it should be a 2-vector or matrix of 2
+columns and length(parm) rows.
 } 
 
 \value{ 

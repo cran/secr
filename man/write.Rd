@@ -10,22 +10,23 @@
 
 \usage{
 
-write.captures(object, file = "", ..., deblank = TRUE, header = TRUE,
-    append = FALSE, sess = '1', ndec = 2)
+write.captures(object, file = '', deblank = TRUE, header = TRUE,
+    append = FALSE, sess = '1', ndec = 2, covariates = FALSE,  ...)
 
-write.traps(object, file = "", ..., deblank = TRUE,  header = TRUE,
-    ndec = 2)
+write.traps(object, file = '', deblank = TRUE,  header = TRUE,
+    ndec = 2, covariates = FALSE, ...)
 
 }
 \arguments{
   \item{object}{ \code{capthist} or \code{traps} object }
   \item{file}{ character name of output file }
-  \item{\dots}{ other arguments passed to \code{write.table} }
   \item{deblank}{ logical; if TRUE remove any blanks from character string used to identify detectors }
   \item{header}{ logical; if TRUE output descriptive header }
   \item{append}{ logical; if TRUE output is appended to an existing file }
   \item{sess}{ character session identifier }
   \item{ndec}{ number of digits after decimal point for x,y coordinates }
+  \item{covariates}{ logical or a character vector of covariates to export }
+  \item{\dots}{ other arguments passed to \code{write.table} }
 }
 \details{
   
@@ -35,6 +36,10 @@ write.traps(object, file = "", ..., deblank = TRUE,  header = TRUE,
 
   \code{\link{write.capthist}} is generally simpler to use if you want to export
   both the capture data and trap layout from a \code{capthist} object.
+
+  By default individual covariates are not exported. When exported they
+  are repeated for each detection of an individual. Factor covariates
+  are coerced to numeric before export.
   
 }
 \examples{

@@ -44,7 +44,7 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   \itemize{   
       \item the log-likelihood evaluated for given values of the
       parameters (\code{LLonly = TRUE})
-      \item estimates from maximising the likelihood with each mask
+      \item estimates from maximizing the likelihood with each mask
 	(\code{LLonly = FALSE})      
       }      
 
@@ -76,7 +76,7 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   The \dots argument may be used to override existing settings in
   \code{object} - for example, a conditional likelihood fit (\code{CL =
   T}) may be selected even if the original model was fitted by
-  maximising the full likelihood.
+  maximizing the full likelihood.
   
 }
 

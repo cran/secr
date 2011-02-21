@@ -7,29 +7,30 @@
 \description{
 
 A family of capture--recapture models (e.g. SECR) may include submodels
-that constrain variation in core parameters and include the
-effects of covariates. The language of generalised linear models is
-convenient for describing submodels (e.g. Huggins 1989,
-Lebreton et al. 1992). Each parameter is treated as a linear combination
-of effects on its transformed ('link') scale. This is useful for
-combining effects because, given a suitable link function, any
-combination maps to a feasible value of the parameter. The logit scale
-has this property for probabilities in (0,1), and the natural log scale
-works for positive parameters i.e. (0, +Inf).
+that constrain variation in core parameters and include the effects of
+covariates. The language of generalised linear models is convenient for
+describing submodels (e.g., Huggins 1989, Lebreton et al. 1992). Each
+parameter is treated as a linear combination of effects on its
+transformed (`link') scale. This is useful for combining effects
+because, given a suitable link function, any combination maps to a
+feasible value of the parameter. The logit scale has this property for
+probabilities in (0,1), and the natural log scale works for positive
+parameters i.e. (0, +Inf).
 
-Submodels for spatially explicit capture--recapture in \pkg{secr} are defined
-symbolically using the \R formula notation. A separate linear predictor
-is used for each core parameter. Core parameters are 'real' parameters
-in the terminology of MARK, and \pkg{secr} uses that term to reduce
-confusion. Four real parameters are commonly modelled in \pkg{secr}: D
-(density), g0, sigma and z. Only the last three real parameters, the
-ones jointly defining detection probability as a function of location,
-can be estimated directly when the model is fitted by maximizing the
-conditional likelihood. D is then a derived parameter. 'z' is a shape
-parameter used only for a 'hazard-rate' detection function (Hayes and
-Buckland 1983). Other real parameters are used for acoustic models
-(beta0, beta1; \url{../doc/secr-sound.pdf}) and for the mixture
-proportion (pmix) in finite mixture models (\url{../doc/secr-finitemixtures.pdf}).
+Submodels for spatially explicit capture--recapture in \pkg{secr} are
+defined symbolically using the \R formula notation. A separate linear
+predictor is used for each core parameter. Core parameters are 'real'
+parameters in the terminology of MARK, and \pkg{secr} uses that term to
+reduce confusion. Four real parameters are commonly modelled in
+\pkg{secr}: D (density), g0, sigma and z. Only the last three real
+parameters, the ones jointly defining detection probability as a
+function of location, can be estimated directly when the model is fitted
+by maximizing the conditional likelihood. D is then a derived
+parameter. `z' is a shape parameter used only when the detection
+function requires three parameters. Other real parameters are used for
+acoustic models (beta0, beta1; \url{../doc/secr-sound.pdf}) and for the
+mixture proportion (pmix) in finite mixture models
+(\url{../doc/secr-finitemixtures.pdf}).
 
 Each real parameter has a linear predictor of the form 
 
@@ -75,9 +76,8 @@ indicator of previous capture, mentioned in the previous paragraph).
 Real parameters fall into two groups: density (D) and detection (g0,
 sigma and z). Density and detection parameters are subject to different
 types of effect, so they use different design matrices and are described
-separately here:
-
-\code{\link{secr detection models}}, \code{\link{secr density models}}
+separately here \code{\link{secr detection models}} and here
+\code{\link{secr density models}}.
 
 }
 
@@ -96,11 +96,11 @@ as a function of habitat class). However, such variation may be modelled
 between detectors or between sessions. As an example, consider a measure
 of vegetation cover in a 50-m circle centred on each detector. This may
 be used as a detector covariate in models for g0 or sigma. A
-'detector-centred' view of habitat effects is almost as sensible as an
-'animal-centred' view; the one reservation is that the spatial scale
+`detector-centred' view of habitat effects is almost as sensible as an
+`animal-centred' view; the one reservation is that the spatial scale
 (radius of the circle) is arbitrary rather than being driven by sigma as
 you might like. Perhaps this could be fixed in future versions by
-computing the trap covariate 'on the fly' from covariates in the habitat
+computing the trap covariate `on the fly' from covariates in the habitat
 mask, given the current magnitude of sigma.
 
 }

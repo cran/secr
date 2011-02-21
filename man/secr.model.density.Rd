@@ -11,23 +11,23 @@ of animals.  This may be viewed as a surface of expected density across
 the study area.
 
 The log likelihood is evaluated in \code{secr.fit} by summing values at
-points on a 'habitat mask'.  Each point in a habitat mask represents a
+points on a `habitat mask'.  Each point in a habitat mask represents a
 grid cell of potentially occupied habitat (their combined area may be
 almost any shape and may include disjunct patches).  The full design
 matrix for density (D) has one row for each point in the mask.  The
 design matrix has one column for the intercept (constant) term and one
 for each predictor.
 
-Predictors may be based on Cartesian coordinates (e.g. 'x' for an
+Predictors may be based on Cartesian coordinates (e.g. `x' for an
 east-west trend), a continuous habitat variable (e.g. vegetation cover)
 or a categorical (factor) habitat variable.  Predictors must be known for
-all points in the mask (non-habitat excluded).  The variables 'x', 'y',
-'session' and 'g' are provided automatically.  Other covariates should be
-named columns in the 'covariates' attribute of the habitat mask.
+all points in the mask (non-habitat excluded).  The variables `x', `y',
+`session' and `g' are provided automatically.  Other covariates should be
+named columns in the `covariates' attribute of the habitat mask.
 
 The fitted model for density is linear on the link scale (see the
 \code{link} argument of \code{\link{secr.fit}}. The default link for
-density is 'log'.
+density is `log'.
 
 \tabular{lll}{
 Variable \tab Description \tab Data source \cr
@@ -47,8 +47,8 @@ formula notation by appending terms to \eqn{\sim{~}}{\~}.
 
 \note{
 
-This implementation is still experimental.  Note that no density model is
-fitted when \code{secr.fit} is called with CL = TRUE.
+Note that no density model is fitted when \code{secr.fit} is called with
+CL = TRUE.
 
 }
 

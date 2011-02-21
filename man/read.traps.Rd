@@ -45,13 +45,23 @@ animals can appear at only one detector per occasion. Detectors of type
 animals to be recorded at several detectors on one occasion. See
 \code{\link{detector}} for further detector types.
 
+For polygon and transect detector types, each line corresponds to a
+vertex and starts with a code to identify the polygon or transect (hence
+the same code appears on 2 or more lines). Also, usage and covariates
+are for the polygon or transect as a whole and not for each
+vertex. Usage and covariates are appended to the end of the line, just
+as for point detectors (traps etc.). The usage and covariates for each
+polygon or transect are taken from its first vertex. Although the
+end-of-line strings of other vertices are not used, they cannot be blank
+and should use the same spacing as the first vertex.
+
 }
 
 \value{
 
 An object of class \code{traps} comprising a data frame of x- and
-y-coordinates, the detector type (`single', `multi', `proximity' etc.),
-and possibly other attributes.
+y-coordinates, the detector type (`single', `multi', `proximity',
+`count', `polygon' etc.), and possibly other attributes.
 
 }
 

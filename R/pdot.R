@@ -10,10 +10,24 @@
 ## 2010 10 24 tweaking poly
 ## 2010 11 26 usage
 ## 2010 11 26 check for ms traps
+## 2010 12 19 more careful handling of detectpars
+## 2011 01 24 debugged pdotpoly
+## 2011 02 06 allow polygonX, transectX
 ############################################################################################
 
+getbinomN <- function (binomN, detectr) {
+    if (detectr %in% .localstuff$countdetectors) {
+        if (is.null(binomN))
+            0
+        else
+            binomN
+    }
+    else
+        1
+}
+
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                  noccasions = 5) {
+                  noccasions = 5, binomN = NULL) {
 
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
@@ -21,46 +35,58 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     ## added 2010-07-01
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
-    if ((detectfn > 9) & is.null(detectpar$cutval))
+    if ((detectfn > 9) & (detectfn!=20) & is.null(detectpar$cutval))
         stop ("requires 'cutval' for detectfn > 9")
     if (ms(traps))
         stop ("requires single-session traps")
 
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
+
+    detectpars <- unlist(detectpar[parnames(detectfn)])
+    if ((detectfn>9) & (detectfn!=20))  detectpars <- c(detectpars, detectpar$cutval)
+
     if (!is.null(usage(traps)))
         used <- unlist(usage(traps))
     else
-        used <- rep(1, nrow(traps) * noccasions)
+        used <- rep(1, nrow(traps) * noccasions) ## exceeds need length for polygons, transects
 
-    X <- matrix(unlist(X),nc=2)
-    if (detector(traps) == 'polygon') {
+    binomN <- getbinomN (binomN, detector(traps))
+
+    X <- matrix(unlist(X), ncol = 2)
+    if (detector(traps) %in% c('polygon','polygonX')) {
         k <- table(polyID(traps))
+        K <- length(k)
+        k <-  c(k,0)   ## zero terminate
         temp <- .C('pdotpoly', PACKAGE = 'secr',
             as.double(X),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
             as.integer(used),
-            as.integer(ndetector(traps)),
+            as.integer(K),
             as.integer(k),
             as.integer(detectfn),   ## hn
-            as.double(unlist(detectpar)),
+            as.double(detectpars),
             as.integer(noccasions),
+            as.integer(binomN),
             value = double(nrow(X))
         )
         temp$value
     }
-    else if (detector(traps) == 'transect') {
+    else if (detector(traps) %in% c('transect', 'transectX')) {
         k <- table(transectID(traps))
-        temp <- .C('pdottransect', PACKAGE = 'secr',
+        K <- length(k)
+        k <-  c(k,0)   ## zero terminate
+         temp <- .C('pdottransect', PACKAGE = 'secr',
             as.double(X),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
             as.integer(used),
-            as.integer(ndetector(traps)),
+            as.integer(K),
             as.integer(k),
             as.integer(detectfn),
-            as.double(unlist(detectpar)),
+            as.double(detectpars),
             as.integer(noccasions),
+            as.integer(binomN),
             value = double(nrow(X))
         )
         temp$value
@@ -73,9 +99,10 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
             as.integer(used),
             as.integer(ndetector(traps)),
             as.integer(detectfn),
-            as.double(unlist(detectpar)),
+            as.double(detectpars),
             as.integer(noccasions),
             as.double(truncate^2),
+            as.integer(binomN),
             value = double(nrow(X)))
         temp$value
     }
@@ -84,7 +111,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
 ############################################################################################
 
 esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL, detectfn,
-                      detectpar, noccasions, thin = 0.1, poly = NULL, session = 1,
+                      detectpar, noccasions, binomN = NULL, thin = 0.1, poly = NULL, session = 1,
                       plt = TRUE, as.density = TRUE, n = 1, add = FALSE, overlay = TRUE, ...) {
 
     if (inherits(object, 'secr')) {
@@ -102,9 +129,12 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
             max.mask <- make.mask (object, max.buffer, spacing,,  'trapbuffer', poly)
         }
         detectfn <- valid.detectfn(detectfn)
-        a <- pdot (max.mask, object, detectfn, detectpar, noccasions)
+        binomN <- getbinomN (binomN, detector(object))   ## must now be traps object
+        a <- pdot (max.mask, object, detectfn, detectpar, noccasions, binomN)
         d <- distancetotrap(max.mask, object)
-        ord <- order(d)
+        # 2011-01-24 in case equal d
+        # ord <- order(d)
+        ord <- order(d,a)
         cellsize <-  attr(max.mask, 'spacing')^2/10000
         a <- a[ord]
         output <- data.frame(buffer = d[ord], esa =  cumsum(a) * cellsize,
@@ -231,8 +261,9 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL, thin = 0.
                 }
             }
         }
+        binomN <- object$details$binomN
         esa.plot (trps, max.buffer, spacg, max.mask, object$detectfn, detpar,
-                  nocc, thin, poly, session, plt, as.density, n, add, overlay, ...)
+                  nocc, binomN, thin, poly, session, plt, as.density, n, add, overlay, ...)
     }
 }
 
@@ -240,24 +271,25 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL, thin = 0.
 
 pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                          noccasions = 5, levels = seq(0.1, 0.9, 0.1),
+                          noccasions = 5, binomN = NULL, levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, plt = TRUE, add = FALSE, ...) {
     if (is.null(border))
         border <- 5 * spatialscale(detectpar, detectfn)
     tempmask <- make.mask (traps, border, nx = nx, type = 'traprect')
     xlevels <- unique(tempmask$x)
     ylevels <- unique(tempmask$y)
-    z <- pdot(tempmask, traps, detectfn, detectpar, noccasions)
+    binomN <- getbinomN (binomN, detector(traps))
+    z <- pdot(tempmask, traps, detectfn, detectpar, noccasions, binomN)
     if (!is.null(poly)) {
         OK <- insidepoly(tempmask, poly)
         z[!OK] <- 0
     }
     if (plt) {
-        contour (xlevels, ylevels, matrix(z, nr = nx), add = add, levels = levels, ...)
-        invisible(contourLines(xlevels, ylevels, matrix(z, nr = nx), levels = levels))
+        contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, levels = levels, ...)
+        invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels))
     }
     else
-        contourLines(xlevels, ylevels, matrix(z, nr = nx), levels = levels)
+        contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels)
 }
 ############################################################################################
 
@@ -298,14 +330,15 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
             z[!OK] <- 1e20
         }
         if (plt) {
-            contour (xlevels, ylevels, matrix(z, nr = nx), add = add,
+            contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
                  drawlabels = FALSE, levels = buffer,...)
-            invisible(contourLines(xlevels, ylevels, matrix(z, nr = nx),
+            invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx),
                 levels = buffer))
         }
         else
-            contourLines(xlevels, ylevels, matrix(z, nr = nx),
+            contourLines(xlevels, ylevels, matrix(z, nrow = nx),
                 levels = buffer)
     }
 }
 ################################################################################
+

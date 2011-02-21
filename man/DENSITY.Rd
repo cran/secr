@@ -22,7 +22,7 @@ read.capthist(captfile, trapfile, detector = "multi", fmt = "trapID",
     cutval = NULL, verify = TRUE, ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
-     sess = "1", ndec = 2, ...)
+     sess = "1", ndec = 2, covariates = FALSE, ...)
 
 }
 
@@ -49,6 +49,7 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{filestem}{ character value used to form names of output files }
   \item{sess}{ character session identifier }
   \item{ndec}{ number of digits after decimal point for x,y coordinates }
+  \item{covariates}{ logical or a character vector of covariates to export }
 
 }
 
@@ -100,8 +101,16 @@ and detector covariates.
   \code{traps} then a separate trap layout file is exported for each
   session and each file name includes the session name. All capture data
   are exported to one file regardless of the number of sessions. The
-  DENSITY format used is `TrapID'.
+  DENSITY format used is `TrapID' except when x-y coordinates are
+  specific to a detection (i.e., polygon and transect detectors).
 
+  \code{covariates} controls the export of both detector and individual
+  covariates. If it is TRUE or FALSE then it is taken to apply to
+  both. A vector of covariate names is used as a lookup for both
+  detector and capthist covariate fields: covariates are exported if
+  their name matches; this may be used to export any combination of
+  (uniquely named) detector and capthist covariates.
+  
   Existing text files will be replaced without warning. In the case of a
   multi-session capthist file, session names are taken from
   \code{object} rather than \code{sess}. Session names are truncated to
@@ -124,12 +133,12 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 \note{
 
   The DENSITY formats accommodate `single', `multi' and `proximity'
-  data. Data for the newer detector types `count', `signal', `polygon',
-  and `transect' may be input using minor variations on the DENSITY
-  formats. They may also be output with \code{write.capthist}, but a
-  warning is given that DENSITY does not understand these data
-  types. See \code{\link{detector}} and \url{../doc/secr-datainput.pdf}
-  for more.
+  data. Data for the newer detector types (`count', `signal', `polygon',
+  `polygonX', `transect' and `transectX') may be input using the
+  DENSITY formats with minor variations. They may also be output with
+  \code{write.capthist}, but a warning is given that DENSITY does not
+  understand these data types. See \code{\link{detector}} and
+  \url{../doc/secr-datainput.pdf} for more.
 
   The \dots argument is useful for some special cases. For example, if
   your input uses `;' instead of `#' for comments (`;' is also valid in

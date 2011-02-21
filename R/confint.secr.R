@@ -2,12 +2,13 @@
 ## package 'secr'
 ## confint.secr.R
 ## last changed 2009 06 11, 2009 07 16 2009 10 20
+## 2011 01 31
 ## could be sped up by adopting Venzon & Moolgavkar algorithm e.g. in Bhat package
 
 ############################################################################################
 
 confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel = 1,
-    tol = 0.0001, ...) {
+    tol = 0.0001, bounds = NULL, ...) {
 
     ## profile likelihood interval for estimated secr parameters
     ## cf confint.glm in MASS
@@ -28,7 +29,6 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
                 indx = object$parindx[[parm]], beta = beta)[1,'estimate']
             untransform(temp, object$link[[parm]])
         }
-
         #######################
         ## case 1 - Lagrange
 
@@ -89,7 +89,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
             details$fixedbeta <- fb
             fit <- secr.fit (capthist = object$capthist, mask = object$mask,
                 buffer = object$buffer, CL = object$CL, detectfn = object$detectfn,
-                start = object$start,
+                start = object$fit$par, binomN= details$binomN,
                 link = object$link, fixed = object$fixed,  model = object$model,
                 timecov = object$timecov, sessioncov = object$sessioncov,
                 groups = object$groups, dframe = object$dframe,
@@ -101,7 +101,8 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
         getlimit <- function (start, step, trialvals) {
             OK <- FALSE
             bound.0 <- start
-            f.0 <- profileLL (start, parm)
+            f.0 <- profileLL (start, parm)   ## could use fitted LL 31/1/2011
+
             for (i in trialvals) {
                bound.1 <- start + step * i
                f.1 <- profileLL (bound.1, parm)
@@ -128,20 +129,42 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
 
         #######################
 
-        if (is.numeric(parm))
+        if (is.numeric(parm)) {
             profileLL <- profileLL3
-        else
-            profileLL <- profileLL.lagrange
-
-        estimate <- coef(object, alpha=1-level)[parm,]
-
-        if (is.numeric(parm))  {
-            startlow <- getlimit(estimate$beta, -2 * estimate$SE.beta, c(1,2,4,8))
-            startupp <- getlimit(estimate$beta, +2 * estimate$SE.beta, c(1,2,4,8))
         }
         else {
-            startlow <- getlimit (0, -1, c(2,5,40,200,1000))
-            startupp <- getlimit (0, +1, c(2,5,40,200,1000))
+            profileLL <- profileLL.lagrange
+        }
+
+            estimate <- coef(object, alpha=1-level)[parm,]
+            start <- estimate$beta
+            se.start <- estimate$SE.beta
+            pred <- predict(object)
+
+        if (is.null(bounds)) {
+            if (is.numeric(parm))  {
+                startlow <- getlimit(estimate$beta, -2 * estimate$SE.beta, c(1,2,4,8))
+                startupp <- getlimit(estimate$beta, +2 * estimate$SE.beta, c(1,2,4,8))
+            }
+            else {
+                startlow <- getlimit (0, -1, c(2,5,40,200,1000))
+                startupp <- getlimit (0, +1, c(2,5,40,200,1000))
+            }
+        }
+        else {
+            startlow <- c(lower = bounds[1],
+                          upper = estimate$beta,
+                          f.lower = profileLL(bounds[1], parm),
+                          f.upper = qchisq(level,1)/2)   ##  1.920729 for level=0.95
+            startupp <- c(lower = estimate$beta,
+                          upper = bounds[2],
+                          f.lower =  qchisq(level,1)/2,  ##  1.920729 for level=0.95
+                          f.upper = profileLL(bounds[2], parm))
+            validbound <- function(x) prod(sign(x[c('f.lower','f.upper')]))<0
+            if (!validbound(startlow))
+                stop ("'bounds' does not include lower limit")
+            if (!validbound(startupp))
+                stop ("'bounds' does not include upper limit")
         }
 
         temproot <- uniroot (profileLL,
@@ -184,20 +207,31 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
     ## case 2 - real parameter but model ~1 so 1:1 beta
     ## case 3 - beta parameter
 
+    case <- rep(3, length(parm))
+
     if (is.character(parm)) {
         OK <- (parm %in% object$realnames)
         if (any(!OK))
             stop ('requested parameter(s) not in model')
-        case <- ifelse (object$model[parm] != ~1, 1, 2)
+        for (i in 1:length(parm))
+            if (object$model[[parm[i]]] != ~1)
+                case[i] <- 1
+            else
+                case[i] <- 2
         if (any(case==1)) {
             if (is.null(newdata))
                 newdata <- secr.make.newdata (object)[1,, drop = FALSE]  ## default base levels
-            logmult <- logmultinom(object$capthist, group.factor(object$capthist, object$groups))
+            if (detector(traps(object$capthist)) %in% c('polygon','polygonX',
+                   'transect','transectX','signal','cue'))
+                logmult <- 0
+            else
+                logmult <- logmultinom(object$capthist, group.factor(object$capthist,
+                    object$groups))
 
             ## reconstruct density design matrix
             D.modelled <- !object$CL & is.null(object$fixed$D)
             if (!D.modelled) {
-                D.designmatrix <- matrix(nr=0, nc=0)
+                D.designmatrix <- matrix(nrow = 0, ncol = 0)
                 attr(D.designmatrix, 'dimD') <- NA
             }
             else {
@@ -212,21 +246,25 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
     else {
         if (any ((parm<1) | (parm>np)))
             stop ('invalid beta parameter number')
-        case <- rep(3, np)
     }
     #---------------------------------------------------------------------------------------
 
     targetLL <- - object$fit$value -  qchisq(level,1)/2   # -1.92 for 95% interval
     details <- replace (object$details, 'hessian', FALSE)  ## no need for vcov matrix
     details$trace <- tracelevel > 1
-    out <- matrix(nr=length(parm), nc=2)
+    out <- matrix(nrow = length(parm), ncol = 2)
+    if (is.character(parm) & !is.null(bounds)) {
+        bounds <- matrix(bounds, ncol = 2)
+        for (i in 1:nrow(bounds))
+             bounds[i,] <- transform(bounds,object$link[[parm[i]]])
+    }
 
     for (i in 1:length(parm)) {
         parmn <- ifelse (case[i] == 2, match(parm[i], object$betanames), parm[i])
         out[i,] <- profileInterval(parmn)   ## character value if 'real'
         if (case[i] == 2) out[i,] <- untransform(out[i,], object$link[[parm[i]]])
     }
-    if (case == 3)
+    if (all(case == 3))
         dimnames(out) <- list(object$betanames[parm], c('beta.lcl', 'beta.ucl'))
     else
         dimnames(out) <- list(parm, c('lcl', 'ucl'))

@@ -73,7 +73,7 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
         cat ('Evaluating log likelihood across grid of', nrow(grid), 'points...\n')
         flush.console()
         temp <- apply (grid, 1, LL)
-        temp <- matrix(temp, nr=length(xval))
+        temp <- matrix(temp, nrow=length(xval))
         if (realscale) {
             xval <- round(untransform(xval, linkx),4)
             yval <- round(untransform(yval, linky),4)

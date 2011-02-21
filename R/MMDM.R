@@ -22,7 +22,7 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE) {
                 max(dist(cbind(xy$x, xy$y)))
         }
         traps <- traps(capthist)
-        if (detector(traps) == 'polygon') {
+        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
             lxy <- split (xy(capthist), animalID(capthist))
             maxd <- unlist(lapply (lxy, MMDMxy))
             n <- unlist(lapply (lxy, nrow))

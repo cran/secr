@@ -1,3 +1,5 @@
+## added argument noccasions in calls to pdot 2010-12-19
+
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NULL) {
     gr <- function (r) {
         if (detectfn==7) {
@@ -21,7 +23,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
                 detectpar$g0 * ( plnorm(r, meanlog, sdlog, lower.tail = FALSE)),
                 detectpar$g0 * ( 1 - pgamma(r, shape = detectpar$z,
                     scale = detectpar$sigma/detectpar$z)),
-                pnorm (-(detectpar$b0 + detectpar$b1 * r), mean=0, sd=1, lower=FALSE),
+                pnorm (-(detectpar$b0 + detectpar$b1 * r), mean=0, sd=1, lower.tail = FALSE),
                 pnorm (q = detectpar$cutval, mean = detectpar$beta0 + detectpar$beta1 * r,
                    sd = detectpar$sdS, lower.tail = FALSE),
                 pnorm (q = detectpar$cutval, mean = mu, sd = detectpar$sdS, lower.tail = FALSE)
@@ -65,14 +67,14 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
         pts <- data.frame(x = buffer * cos(theta), y = buffer * sin(theta))
         centres <- split(traps,rownames(traps))
         polys <- lapply(centres, function (x) {
-            temp <- sweep(pts, MAR=2, FUN='+', STAT=unlist(x))
+            temp <- sweep(pts, MARGIN = 2, FUN='+', STATS = unlist(x))
         })
         lth(punion2(polys, ntheta))
     }
 
     detectfn <- valid.detectfn(detectfn)
     if (!(detector(traps) %in% .localstuff$pointdetectors))
-        stop ("bias.D() requires point detectors (not polygon etc.)")
+        stop ("bias.D() requires passive point detectors (not polygon or transect)")
 
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)
@@ -117,8 +119,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
 
         buff <- distancetotrap(temp2, traps)
 
+        temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions)
         if (control$method == 1) {
-            temp3 <- pdot(temp2, traps, detectfn, detectpar)
             tempfit <- nls ( temp3 ~ (1 - (1 - gr(buff))^ (noccasions*k) ), start=list(k=2))
             if (tempfit$convInfo$isConv)
                k <- coef(tempfit)
@@ -126,7 +128,6 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
                 stop ("failed to fit pdot vs buffer curve")
         }
         else if (control$method == 2) {
-            temp3 <- pdot(temp2, traps, detectfn, detectpar)
             temp3 <- logit(1 - (1 - temp3)^noccasions)
             OK <- is.finite(temp3)
             pdotr.spline <- smooth.spline(buff[OK],temp3[OK], df = control$spline.df)
@@ -255,7 +256,7 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         detectfn <- valid.detectfn(detectfn)
         detectpar <- valid.detectpar(detectpar, detectfn)
         if (!(detector(traps) %in% .localstuff$pointdetectors))
-            stop ("requires point detectors (not polygon etc.)")
+            stop ("requires passive point detectors (not polygon or transect)")
         fn <- function (w) {
             bias.D(w, traps, detectfn, detectpar, noccasions, ...)$RB.D - RBtarget
         }

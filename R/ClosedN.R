@@ -44,8 +44,12 @@ closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7, dmax = 
         tempCL <- apply(temp,2,LN.interval, level)
         temp <- as.data.frame(t(rbind(temp, tempCL)))
         temp[temp>maxN] <- NA
+
         temp$AIC <- -2*temp$LL + 2 * temp$npar
-        temp$AICc <- -2 * temp$LL + 2 * temp$npar * temp$Mt1 / (temp$Mt1 - temp$npar - 1)
+
+        temp$AICc <- ifelse ((temp$Mt1 - temp$npar - 1) > 0,
+            -2 * temp$LL + 2 * temp$npar * temp$Mt1 / (temp$Mt1 - temp$npar - 1),
+            NA)
 
         temp$dAICc <- temp$AICc-min(temp$AICc, na.rm=T)
 
@@ -199,7 +203,7 @@ Mh2.est <- function (fi) {
         covar <- try(solve(fit$hessian))
         if (inherits(covar, "try-error")) {
             warning ('could not invert Hessian to compute variance-covariance matrix')
-            covar <- matrix(rep(NA,16), nc=4)  # failed
+            covar <- matrix(rep(NA,16), ncol = 4)  # failed
         }
         senhat <-  exp(fit$estimate[1]) * sqrt(exp(covar[1,1]^2)-1)
     }
@@ -241,7 +245,7 @@ Mhbeta.est <- function (fi, maxN = 1e7) {
         covar <- try(solve(fit$hessian))
         if (inherits(covar, "try-error")) {
             warning ('could not invert Hessian to compute variance-covariance matrix')
-            covar <- matrix(rep(NA,16), nc=4)  # failed
+            covar <- matrix(rep(NA,16), ncol = 4)  # failed
         }
         senhat <-  exp(fit$estimate[1]) * sqrt(exp(covar[1,1]^2)-1)
     }
@@ -376,7 +380,7 @@ chao.th1.est <- function (X) {
     D <- nrow(X)
     ni <- apply(X,2,sum)
     Y <- apply(X,1,sum)
-    fi <- tabulate (Y, nbin=tt)
+    fi <- tabulate (Y, nbins = tt)
     i <- 1:tt
     temp1 <- sum (i * fi)
     temp2 <- sum (i * (i-1)*fi)
@@ -445,7 +449,7 @@ chao.th2.est <- function (X) {
     D <- nrow(X)
     ni <- apply(X,2,sum)
     Y <- apply(X,1,sum)
-    fi <- tabulate (Y, nbin=tt)
+    fi <- tabulate (Y, nbins = tt)
     i <- 1:tt
     temp1 <- sum (i * fi)
     temp2 <- sum (i * (i-1)*fi)

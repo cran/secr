@@ -24,7 +24,7 @@ logmultinom <- function (capthist, grp = NULL) {
         if (nc==0) stop(paste('no data for session'))
         if (is.null(grp)) grp <- rep(1,nc)
         # Count = number per unique capture history
-        if (dim3) capthist <- matrix(capthist, nr = nc)
+        if (dim3) capthist <- matrix(capthist, nrow = nc)
         groupeddata <- split.data.frame(capthist, grp)
         count <- function(x) table(make.lookup(x)$index)
         counts <- sapply(groupeddata, count)

@@ -53,7 +53,7 @@ model.
 
 }
 \value{
-  An object of class 'score.test' that inherits from 'htest', a list with components
+  An object of class `score.test' that inherits from `htest', a list with components
   \item{statistic }{the value the chi-squared test statistic (score statistic)}
   \item{parameter }{degrees of freedom of the approximate chi-squared distribution of the test statistic (difference in number of parameters H0, H1)}
   \item{p.value }{probability of test statistic assuming chi-square distribution}

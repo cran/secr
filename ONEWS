@@ -1,3 +1,96 @@
+Changes in version 1.4.0 (2010-05-07)
+
+New functions
+    o	write.capthist() exports capthist object as DENSITY text files.
+    o	read.capthist() imports capthist object from DENSITY text files.
+    o	write.SPACECAP() exports capthist object and mask as SPACECAP
+    text files.
+    o	read.SPACECAP() imports capthist object and mask from SPACECAP
+    text files.
+    o	write.captures() has been renamed from write.capthist.
+    o	closedN() computes various closed population estimators.
+    o	closure.test() tests for population closure of Otis et al.
+    (1978) and Stanley & Burnham (1999).
+    o	MMDM() computes observed (trap-revealed) range length (Otis et
+    al. 1978).
+    o	ARL() computes asympototic range length (Jett & Nichols 1987).
+    o	logmultinom() computes the multinomial coefficient of the SECR
+    likelihood (internal function, now exported).
+
+New datasets
+    o	'skink' lizard pitfall trapping (Efford, Thomas & Spencer unpubl)
+    o	'stoatDNA' stoat microsatellites (Efford, Borchers & Byrom 2009)
+    o	'housemouse' Coulombe Mus musculus (Otis et al. 1978)
+    o	'deermouse' Reid Peromyscus (Otis et al. 1978)
+
+New features in old functions
+    o	make.capthist() now sorts rows numerically if all values of
+    animalID are valid numbers.
+    o	make.capthist() now checks for missing values.
+    o	make.capthist() places multi-session capture data in order by
+    session before matching 'traps' objects.
+    o	print.capthist() now sorts rows numerically if all values of
+    animalID are valid numbers.
+    o	make.grid() has a new option for labeling detectors "xy".
+    o	secr.fit() has a new 'details' option to centre trap and mask
+    coordinates; this can solve some numerical problems fitting
+    coordinates with large absolute values.
+    o	plot.mask() produces more attractive images and does not call
+    image(), but is somewhat slower.
+    o	read.mask() has been tweaked to allow import from csv format as
+    used by SPACECAP.
+
+Defunct
+    o	read.captures() has been ditched - use read.table() instead.
+
+Bugs fixed
+    o	A bug in 'traps<-' has been fixed; replacement of traps for
+    multiple sessions should now work.
+
+Other
+    o	Dataset 'secrdemo' now incorporates 'rawdata' and 'captdata'.
+    o	Example text files 'capt.txt,'trap.txt','stoatcapt.txt',and
+    'stoattrap.txt' are provided in the package installation folder
+    'extdata' (e.g. setwd(system.file('extdata', package = 'secr'))).
+    o	New vignette: secr-datainput.pdf
+    o	Revised vignette: secr-overview.pdf
+
+
+Changes in version 1.3.0 (2010-03-11)
+
+New functions
+    o	ellipse.secr() computes and plots confidence ellipses of
+    fitted parameters.
+    o	LLsurface.secr() plots log-likelihood surface of SECR model
+    for 2 dimensions at a time.
+    o	attenuationplot() plots the sound attenuation function from
+    an acoustic SECR model.
+
+New datasets
+    o	ovensong - new acoustic dataset (Dawson & Efford J Appl Ecol;
+    see also 'secr-sound.pdf')
+
+New features in old functions
+    o	The handling of structural relationships in secr.fit() with
+    scaleg0 and scalesigma has been improved.
+    o	The 'start' argument of secr.fit() may now be a previously
+    fitted nested model.
+    o	The default algorithm for initial values in secr.fit() now
+    uses 'RPSV' instead of 'dbar' for spatial scale.
+    o	secr.fit() has a new pre-defined covariate term T for time
+    trend in detection parameter model formulae.
+
+Other
+    o	New detector types 'count', 'signal' ('polygon' and
+    'transect' are present but should be treated as 'under
+     development')
+    o	New detection functions 'binary signal strength', 'signal
+    strength', 'signal strength spherical'
+    o	Finite mixture models for heterogeneity in detection
+    parameters (use 'h2' in model formula)
+    o	New vignettes: secr-overview.pdf, secr-sound.pdf,
+    secr-finitemixtures.pdf
+
 Version 1.2.11 2009-12-22
 
 Bug fix for session names not in alphanumeric sequence

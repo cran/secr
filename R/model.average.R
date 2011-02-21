@@ -98,11 +98,11 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         nr   <- 1
         ests <- lapply (object, function(x) coef(x)[parnames, 'beta'])
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
-        wtd <- sweep(ests, MAR = 3, STAT = AICwt, FUN = '*')
+        wtd <- sweep(ests, MARGIN = 3, STATS = AICwt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
         vcvs <- lapply (object, function(x) { vcov(x)[parnames, parnames] })  ## fails if no dimnames on x$beta.vcv
         vcv1 <- array(unlist(vcvs), dim=c(np, np, nsecr))  ## between beta parameters
-        vcv <- sweep (vcv1, MAR=3, STAT=AICwt, FUN = '*')
+        vcv <- sweep (vcv1, MARGIN = 3, STATS = AICwt, FUN = '*')
         vcv <- apply(vcv, 1:2, sum)
         sewtd  <- diag(vcv)^0.5
     }
@@ -125,14 +125,14 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         }
 
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
-        wtd <- sweep(ests, MAR = 3, STAT = AICwt, FUN = '*')
+        wtd <- sweep(ests, MARGIN = 3, STATS = AICwt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
 
         ## variance from Burnham & Anderson 2004 eq (4)
         vcv1 <- array(unlist(vcvs), dim=c(nr, nr, np, nsecr))  ## between rows of newdata
         betak <- sweep(ests, MAR=1:2, STAT=wtd, FUN='-')
         vcv2 <- array(apply(betak, 2:3, function(x) outer(x,x)), dim=c(nr,nr,np,nsecr))
-        vcv <- sweep (vcv1 + vcv2, MAR=4, STAT=AICwt, FUN = '*')
+        vcv <- sweep (vcv1 + vcv2, MARGIN = 4, STATS = AICwt, FUN = '*')
         vcv <- apply(vcv, 1:3, sum)
         sewtd  <- apply(vcv, 3, function (x) diag(x)^0.5)
 
@@ -297,7 +297,7 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
             predict <- lapply(predict,
                 function(x) {
                     ## modified 2010 03 09
-                    temp <- matrix(x$pmix[,'estimate'], nc=nmix)
+                    temp <- matrix(x$pmix[,'estimate'], ncol = nmix)
                     if (nmix==2) temp[,x$pmix[,'h2']] <- x$pmix[,'estimate']
                     if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
                     temp2 <- apply(temp, 1, function(est) logit(mlogit.untransform(est, 1:nmix)))
