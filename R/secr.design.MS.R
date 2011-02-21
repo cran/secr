@@ -98,7 +98,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
     getnk <- function (object) {
-        ifelse (detector(object) %in% c('polygon','transect'),
+        ifelse (detector(object) %in% c('polygon','transect','polygonX','transectX'),
             length(table(polyID(object))),
             nrow(object))
     }
@@ -210,9 +210,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     ## general for behavioural response fields
 
-##    prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'quadratbinary', 'quadratcount',
-##      'polygon') ## assume all sessions same type
-    prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon') ## assume sessions same type
+    ## assume sessions same type
+    prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
     makeb <- function (caphist) {      ## global response
         if (prox) {
            temp0 <- apply(caphist, 1:2, sum)
@@ -400,7 +399,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## dim(indices) = c(R*n*S*K*nmix, npar)
     indices <- sapply (designMatrices, function(x) x$index)
 
-    indices <- matrix(unlist(indices), nc=npar)
+    indices <- matrix(unlist(indices), ncol = npar)
 
     # retain just the 'model' components of 'designMatrices'
     designMatrices <- lapply (designMatrices, function(x)x$model )

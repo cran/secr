@@ -2,6 +2,7 @@
 \alias{animalID}
 \alias{occasion}
 \alias{trap}
+\alias{alive}
 \alias{xy}
 \alias{signal}
 \alias{xy<-}
@@ -20,6 +21,7 @@
 animalID(object, names = TRUE)
 occasion(object)
 trap(object, names = TRUE)
+alive(object)
 xy(object)
 signal(object)
 xy(object) <- value
@@ -39,13 +41,14 @@ signal(object) <- value
 \details{
 
 These functions extract data on detections, ignoring occasions when an
-animal was not detected.
+animal was not detected. Detections are ordered by occasion, animalID
+and trap.
 
 \code{trap} returns polygon or transect numbers if \code{traps(object)}
 has detector type 'polygon' or 'transect'.
 
 Replacement values must precisely match \code{object} in number of
-detections in their order. \code{xy<-} expects a dataframe of x and y
+detections and in their order. \code{xy<-} expects a dataframe of x and y
 coordinates for points of detection within a 'polygon' or 'transect'
 detector.
 
@@ -54,12 +57,17 @@ detector.
 \value{
 For \code{animalID} and \code{trap} a vector of numeric or character values, one per detection.
 
+For \code{alive} a vector of logical values, one per detection.
+
 For \code{occasion}, a vector of numeric values, one per detection.
 
 For \code{xy}, a dataframe with one row per detection and columns 'x' and 'y'.
 
 %%For \code{signal} and \code{times}, a numeric vector with one element per detection.
 For \code{signal}, a numeric vector with one element per detection.
+
+If \code{object} has multiple sessions, the result is a list with one
+component per session.
 
 }
 

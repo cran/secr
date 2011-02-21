@@ -73,7 +73,11 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
                 }
                 if (chat > 1)
                     density <- density / chat
-                popn[[g]] <- sim.popn (D = density, core = mask, model2D = mod2D)
+                ND <- switch (object$details$distribution,
+                              binomial = 'fixed',
+                              poisson = 'poisson',
+                              'poisson')
+                popn[[g]] <- sim.popn (D = density, core = mask, model2D = mod2D, Ndist = ND)
 
                 ## following line replaces any previous individual covariates
                 ## ---groups only---
@@ -144,15 +148,15 @@ sim.secr <- function (object, nsim = 1,
         nc <-  sum(counts(sc)$'M(t+1)'[,'Total'])
         if (nc >= min.detections) {
             tempfit <- suppressWarnings( secr.fit(sc, model = object$model, mask = object$mask,
-                CL = object$CL, detectfn = object$detectfn, start = start, link = object$link,
-                fixed = object$fixed, timecov = object$timecov, sessioncov = object$sessioncov,
+                CL = object$CL, detectfn = object$detectfn, binomN = details$binomN,
+                start = start, link = object$link, fixed = object$fixed,
+                timecov = object$timecov, sessioncov = object$sessioncov,
                 groups = object$groups, dframe = object$dframe, details = details,
                 method = object$fit$method, verify = FALSE) )
             extractfn(tempfit)
         }
         else if (is.list(test)) list() else rep(NA, n.extract)
     }
-
     if (is.numeric(test)) {
         output <- data.frame(t(sapply (data, fitmodel)))
     }
@@ -249,18 +253,14 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
                   detector(session.traps),
                   " not implemented")
 
-        if (dettype %in% c(2)) {                      # count detectors
-            ## 2010-12-01
-            ## suspend use of traps attribute until resolve vector/scalar
-            ## binomN <- attr(session.traps, 'binomN')   # <0 negBin, 0 Poisson, >0 binomial
-            ## if (is.null(binomN))...
+        if (detector(session.traps) %in% .localstuff$countdetectors) {
             binomN <- object$details$binomN
             if (is.null(binomN))
                 binomN <- 0                           # default Poisson
         }
         else binomN <- 0   # not used, just place holder
 
-        if (dettype %in% c(6,7)) {
+        if (dettype %in% c(3,4,6,7)) {
             k <- c(table(polyID(session.traps)),0)
             K <- length(k)-1
         }
@@ -274,7 +274,6 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
 
         #------------------------------------------
         # allow for scaling of detection parameters
-
         Xrealparval1  <- realparval1
         Xrealparval0 <- realparval0
         ## D assumed constant over mask, groups
@@ -298,6 +297,13 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
 ## 2010-12-02 fixed by reducing safety margin for detectedXY, signal
 ##            from 100 to 10
 
+        if (dettype %in% c(0,3,4))
+            # exclusive detectors
+            maxdet <- NR * s
+        else
+            # safety margin : average 10 detections per animal per detector per occasion
+            maxdet <- NR * s * K * 10
+
         temp <- .C('simsecr', PACKAGE = 'secr',
             as.integer(dettype),
             as.double(Xrealparval0),
@@ -319,20 +325,20 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             as.integer(object$detectfn),
             n = integer(1),
             caught = integer(NR),
-            detectedXY = double (NR*s*K*20),  # safety margin 10 detections per animal per detector per occasion
-            signal = double (NR*s*K*10),      # safety margin 10 detections per animal per detector per occasion
+            detectedXY = double (maxdet*2),
+            signal = double (maxdet),
             value = integer(NR*s*K),
             resultcode = integer(1)
         )
 
         if (temp$resultcode != 0) {
-          if ((temp$resultcode == 2) && (dettype %in% (6:7)))
+          if ((temp$resultcode == 2) && (dettype %in% c(6,7)))
               stop (">100 detections per animal per polygon per occasion")
           else
               stop ("simulated detection failed, code ",
                     as.character(temp$resultcode))
         }
-        if (dettype %in% c(-1,0)) {
+        if (dettype %in% c(-1,0,3,4)) {
             w <- array(dim=c(s,temp$n), dimnames = list(1:s, NULL))
             if (temp$n>0)  w[,] <- temp$value[1:(temp$n*s)]
             w <- t(w)
@@ -359,9 +365,12 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             attr(w, 'signal') <- NULL
             attr(w, 'cutval') <- NULL
         }
-        if ((dettype %in% c(6:7)) && (temp$n>0)) {
-            nd <- sum(abs(w))
-            detectedXY <- data.frame(matrix(nc=2, temp$detectedXY[1:(2*nd)]))
+        if ((dettype %in% c(3,4,6,7)) && (temp$n>0)) {
+            if (dettype %in% c(3,4))
+                nd <- sum(abs(w)>0)
+            else
+                nd <- sum(abs(w))
+            detectedXY <- data.frame(matrix(ncol = 2, temp$detectedXY[1:(2*nd)]))
             names(detectedXY) <- c('x','y')
             attr(w, 'detectedXY') <- detectedXY
         }

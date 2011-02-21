@@ -64,7 +64,11 @@ prepare <- function (secr, newmodel) {
     if (!CL) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
     betanames <- sub('..(Intercept))','',betanames)
 
-    savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
+    if (detector(traps(capthist)) %in% c('polygon', 'polygonX', 'transect', 'transectX',
+                                         'signal','cue'))
+        savedlogmultinomial <- 0
+    else
+        savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
 
     ################
     list (
@@ -238,7 +242,9 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE) {
         H1    <- model.string(model)
         call0 <-  paste('[', format(secr$call), ']', sep = '')
         AIC   <- c(0, -statistic + 2 * parameter)
-        AICc  <- AIC + 2 * np * (np+1) / (n-np-1)
+        AICc  <- ifelse ((n-np-1)>0,
+            AIC + 2 * np * (np+1) / (n-np-1),
+            NA)
 ##        AICc  <- AICc - AICc[1]  # relative to simpler (constrained) model
         names(AIC) <- c('AIC.0','AIC.1')
         names(AICc) <- c('AICc.0','AICc.1')

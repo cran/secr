@@ -13,21 +13,23 @@ A place for hints and miscellaneous advice.
 Follow the usual procedure for installing binaries from CRAN, or ...
   
 Under Windows, install the package binary from the
-Rgui. Save the file secr_1.5.x.zip to a local folder (`x' is the release
+Rgui. Save the file secr_2.0.x.zip to a local folder (`x' is the release
 number) and use the menu option "Packages | Install packages(s) from
 local zip files...".
 
 For other systems you may need to install the source package
-secr_1.5.x.tar.gz.
+secr_2.0.x.tar.gz.
 
 Whatever your system, you also need to get the package \pkg{abind} (use
 Packages | Install package(s)... in Windows to download from
 CRAN). Other required packages (\pkg{MASS}, \pkg{nlme}, \pkg{stats})
 should be available as part of your \R installation.
 
-Like other contributed packages, \bold{secr} needs to be loaded before each use e.g.,\code{library(secr)}.
+Like other contributed packages, \bold{secr} needs to be loaded before
+each use e.g.,\code{library(secr)}.
 
-You can learn about changes in the current version with \code{news(package = 'secr')}.
+You can learn about changes in the current version with
+\code{news(package = "secr")}.
 
 }
 
@@ -59,7 +61,7 @@ See below for more \R tips.
 
 If you get really stuck or find something you think is a bug then please
 report the problem. There is a support forum at
-\url{www.phidot.org/forum} under 'DENSITY/secr'. Please read the FAQ
+\url{www.phidot.org/forum} under `DENSITY|secr'. Please read the FAQ
 there before posting.
 
 You may be asked to send an actual dataset - ideally, the simplest one
@@ -103,11 +105,11 @@ separate estimate for each session even if the detection parameters are
 constant across sessions).
 
 Check the extent and spacing of the habitat mask that you are using.
-Execution time is roughly proportional to the number of mask points.
-Default settings can lead to very large masks for detector arrays that
-are elongated `north-south' because the number of points in the
-east-west direction is fixed. Compare results with a much sparser mask
-(e.g., nx = 32 instead of nx = 64).
+Execution time is roughly proportional to the number of mask points
+(\code{nrow(mymask)}).  Default settings can lead to very large masks
+for detector arrays that are elongated `north-south' because the number
+of points in the east-west direction is fixed. Compare results with a
+much sparser mask (e.g., nx = 32 instead of nx = 64).
 
 Do you really need to fit that complex model? Chasing down small
 decrements in AIC is so last-century. Remember that detection parameters
@@ -151,7 +153,12 @@ the demonstration capture history data `captdata':
 
 
 \code{traps(captdata)       ## extraction method for 'traps'}
+
 \code{attributes(captdata)  ## all attributes}
+
+Also, the function \code{str} provides a compact summary of any object:
+
+\code{str(captdata)}
 
 }
 

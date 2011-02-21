@@ -25,6 +25,11 @@
 The subscripts in \code{subset} may be of type integer, character or
 logical as described in \code{\link{Extract}}.
 
+In the case of `polygon' and `transect' detectors, subsetting is done at
+the level of whole polygons or transects. \code{subset} should therefore
+have the same length as \code{levels(polyID(x))} or
+\code{levels(transectID(x))}.
+
 \code{split} generates a list in which each component is a
 \code{traps} object. Each component corresponds to a level of
 \code{f}.  The argument 'x' of \code{split} cannot be a list.

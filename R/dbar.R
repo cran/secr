@@ -4,6 +4,8 @@
 ## last changed 2009 07 10 (multi-session)  2009 10 07 (prox) 2009 11 13 (polygon)
 ## streamlined 2010 03 30
 ## added function moves 2010 06 04
+## extended for transect data 2011 02 04
+## polygonX, transectX 2011 02 06
 ############################################################################################
 
 dbar <- function (capthist) {
@@ -19,7 +21,7 @@ dbar <- function (capthist) {
         dbarxy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
-        if (detector(traps) == 'polygon') {
+        if (detector(traps) %in% c('polygon','polygonX', 'transect','transectX')) {
             lxy <- split (xy(capthist), animalID(capthist))
             mean(unlist(lapply (lxy, dbarxy)), na.rm=T)
         }
@@ -44,7 +46,7 @@ moves <- function (capthist) {
         movexy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
-        if (detector(traps) == 'polygon') {
+        if (detector(traps) %in% c('polygon', 'transect', 'polygonX', 'transectX')) {
             lxy <- split (xy(capthist), animalID(capthist))
             lapply (lxy, movexy)
         }

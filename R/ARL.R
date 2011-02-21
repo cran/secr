@@ -2,6 +2,7 @@
 ## package 'secr'
 ## ARL.R
 ## last changed 2010 03 30
+## polygonX, transectX, transect
 ############################################################################################
 
 ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE) {
@@ -23,7 +24,7 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE) {
         }
         traps <- traps(capthist)
         prox  <- length(dim(capthist)) > 2
-        if (detector(traps) == 'polygon') {
+        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
             lxy <- split (xy(capthist), animalID(capthist))
             maxd <- unlist(lapply (lxy, MMDMxy))
             n <- unlist(lapply (lxy, nrow))

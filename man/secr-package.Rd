@@ -6,37 +6,44 @@
 
 \title{Spatially Explicit Capture--Recapture Models }
 
-\description{ Analyse data from a spatially distributed animal
-population sampled with an array of passive detectors, such as traps. }
+\description{ Functions to estimate the density of a spatially distributed animal
+population sampled with an array of passive detectors, such as traps, or
+by searching polygons or transects. }
 
 \details{
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 1.5.1\cr
-Date: \tab 2010-12-02\cr
+Version: \tab 2.0.0\cr
+Date: \tab 2011-02-21\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
-Data comprise the locations of detectors (traps) in an object of class
-'traps' and the detection histories of individually marked animals; both
-are stored in an object of class 'capthist'. Models for population
-density (animals per hectare) and detection are defined using symbolic
-formula notation. Possible predictors for detection probability include
-several pre-defined variables (t, b etc.)  corresponding to 'time',
-'behaviour' and other effects. Habitat is distinguished from nonhabitat
-with an object of class 'mask'. Models are fitted by maximizing either
-the full likelihood or the likelihood conditional on the number of
-individuals observed (\eqn{n}). Conditional likelihood models, while
-limited to homogeneous Poisson density, allow continuous individual
-covariates for detection. Fitting creates an object of class
-\code{secr}. Generic methods (plot, print, summary etc.) are available
-for each object class.
+Data comprise the locations of detectors (traps, searched areas, etc.)
+in an object of class `traps', and the detection histories of
+individually marked animals; both are stored in an object of class
+`capthist'. Models for population density (animals per hectare) and
+detection are defined using symbolic formula notation. Possible
+predictors for detection probability include several pre-defined
+variables (t, b etc.)  corresponding to `time', 'behaviour' and other
+effects. Habitat is distinguished from nonhabitat with an object of
+class `mask'. Models are fitted by maximizing either the full likelihood
+or the likelihood conditional on the number of individuals observed
+(\eqn{n}). Conditional likelihood models, while limited to homogeneous
+Poisson density, allow continuous individual covariates for
+detection. Fitting (function \code{\link{secr.fit}}) creates an object
+of class \code{secr}. Generic methods (plot, print, summary etc.) are
+available for each object class.
 
-A more extensive overview can be found here \url{../doc/secr-overview.pdf}
+Several vignettes complement the help pages:
 
-\code{secr} is also the class of object that is produced by
-\code{\link{secr.fit}}, the central function of the package.
+\tabular{ll}{
+  \url{../doc/secr-overview.pdf} \tab general documentation \cr
+  \url{../doc/secr-datainput.pdf} \tab data formats and input functions \cr
+  \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
+  \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
+  \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
+}
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see \url{www.otago.ac.nz/density} for the most recent version
@@ -67,6 +74,10 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
+
+Efford, M. G. (2011) Estimation of population density by spatially
+explicit capture--recapture with area or transect searches. Unpublished
+manuscript.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

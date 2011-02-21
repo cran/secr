@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## make.capthist.R
-## last changed 2010 05 02 (transferred from methods.R) 2010 05 03, 2010-11-21
+## last changed 2010 05 02 (transferred from methods.R) 2010 05 03, 2010-11-21, 2011-01-21
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
@@ -13,7 +13,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 #   column 2	AnimalID
 #   column 3	Occasion
 #   column 4	TrapID
-#   column 5    Signal    (optional)
+#   column 5    Signal   (optional)
 
 # fmt = 'XY'
 #   column 1	Session
@@ -73,7 +73,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
         if (fmt!='trapID') {
           if (ncol(captures)<5) stop ("too few columns in capture matrix")
 
-          if (detector(traps)=='polygon') {
+          if (detector(traps) %in% c('polygon','polygonX')) {
               captTrap <- xyinpoly(captures[,4:5], traps)
               if (any(captTrap==0)) {
                   captures <- captures[captTrap>0,]  ## first! 20110-11-17
@@ -81,7 +81,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                   warning ("detections with coordinates outside polygon(s) were dropped")
               }
           }
-          else if (detector(traps)=='transect') {
+          else if (detector(traps) %in% c('transect','transectX')) {
               captTrap <- xyontransect(captures[,4:5], traps, tol)
               if (any(captTrap==0)) {
                   captTrap <- captTrap[captTrap>0]
@@ -97,7 +97,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
           }
         }
         else {
-          if (detector(traps) %in% c('polygon', 'transect'))
+          if (detector(traps) %in% c('polygon', 'transect','polygonX', 'transectX'))
               stop ('use fmt XY to input detections from polygons or transects')
           captTrap <- match(captures[,4], row.names(traps))
         }
@@ -111,7 +111,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
-        if (is.null(cutval) && detector(traps)=='signal')
+        if (is.null(cutval) && detector(traps)  %in% c('cue','signal'))
             stop ("missing 'cutval' (signal threshold) for signal data")
 
         wout <- NULL
@@ -139,14 +139,16 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
             #################################
         }
         else {
-            w     <- matrix(nr=nID, nc=nocc)
+            w     <- matrix(nrow = nID, ncol = nocc)
             w[,]  <- 0
 
-            ## adjusted 2009 08 13 to ensure first occurrence selected when more than one per occasion
+            ## adjusted 2009 08 13 to ensure first occurrence selected when
+            ## more than one per occasion
             indices <- cbind(captID, abs(captures[,3]))
             values <- captTrap * sign(captures[,3])
             ord <- order (captID, 1:length(captID), decreasing=TRUE)
-            w[indices[ord,, drop=F]] <- values[ord]    ## drop=F is critical to ensure retains dim2
+            ## drop=F is critical in next line to ensure retains dim2
+            w[indices[ord,, drop=F]] <- values[ord]
         }
 
         wout <- abind(wout, w, along=1)
@@ -192,7 +194,10 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 ## levels=uniqueID to retain sort order
                 tempj <- split(zi[,j], factor(captures[,2], levels=uniqueID))
                 tempj2 <- sapply(tempj, nonmissing)
-                temp[,j] <- factor(tempj2)
+                ## 2011-01-20 only convert to factor if character
+                if (is.character(tempj2))
+                   tempj2 <- factor(tempj2)
+                temp[,j] <- tempj2
                 rownames(temp) <- names(tempj)          ## 2010 02 26
             }
             if (is.null(covnames)) names(temp) <- names(zi)
@@ -201,7 +206,8 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                     stop("number of covariate names does not match")
                 names(temp) <- covnames
             }
-            if (sortrows) temp <- temp[roworder,,drop = FALSE]   ## added 'FALSE' 2010 02 24
+            ## added 'FALSE' 2010 02 24 -
+            if (sortrows) temp <- temp[roworder,,drop = FALSE]
             attr(wout,'covariates') <- temp
         }
         else attr(wout,'covariates') <- data.frame()
@@ -209,9 +215,9 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
         class (wout) <- 'capthist'
         traps(wout) <- traps
         session(wout)  <- as.character(captures[1,1])
-
-        if (detector(traps) %in% c('polygon','transect')) {
-            xy <- captures[order(captures[,2],captures[,3],captTrap),4:5]
+        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+            ## 2011-01-21
+            xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
             names(xy) <- c('x','y')
             attr(wout,'detectedXY') <- xy
         }
@@ -224,6 +230,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
             else
                 signl <- captures[,5]
             signl[is.na(signl)] <- -Inf
+            signl <- signl[order(captTrap, abs(captures[,3]), captID)]
             attr(wout, 'signal') <- signl
             attr(wout, 'cutval')   <- cutval
             wout <- subset(wout, cutval = cutval)

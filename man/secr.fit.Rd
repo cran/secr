@@ -17,7 +17,7 @@ likelihood. Data must have been assembled as an object of class
 \usage{
 secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     mask = NULL, buffer = NULL, CL = FALSE, detectfn = NULL,
-    start = NULL, link = list(), fixed = list(),
+    binomN = NULL, start = NULL, link = list(), fixed = list(),
     timecov = NULL, sessioncov = NULL, groups = NULL,
     dframe = NULL, details = list(), method = 'Newton-Raphson',
     verify = TRUE, trace = NULL, ...)
@@ -30,7 +30,9 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   (default 100 m)}
   \item{CL}{ logical, if true then the model is fitted by maximizing the conditional likelihood }
   \item{detectfn}{integer code or character string for shape of
-  detection function 0 = halfnormal, 1 = hazard rate etc. -- see \link{detectfn}}
+  detection function 0 = halfnormal, 1 = hazard rate etc. -- see
+  \link{detectfn}}
+  \item{binomN}{ integer code for distribution of counts (see Details) }
   \item{start}{ vector of initial values for beta parameters, or \code{secr} object from which they may be derived }
   \item{link}{ list with optional components `D', `g0', `sigma' and `z', each a character string in \{`log', `logit', `identity', `sin'\} for the link function of the relevant real parameter }
   \item{fixed}{ list with optional components corresponding to each `real' parameter (e.g., `D', `g0', `sigma'), the scalar value to which parameter is to be fixed }
@@ -49,17 +51,17 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
 \details{
 
 \code{secr.fit} fits a SECR model by maximizing the likelihood. The
-likelihood depends on the detector type (`multi', `proximity', `count'
-etc.) of the \code{traps} attribute of \code{capthist} (Borchers and
-Efford 2008, Efford, Borchers and Byrom 2009, Efford, Dawson and
-Borchers 2009). The `multi' form of the likelihood is also used, with a
-warning, when detector type = `single' (see Efford et al. 2009). The
-default \code{model} is null (constant density and detection
-probability). The set of variables available for use in linear
-predictors includes some that are constructed automatically (t, T, b,
-B), group (g), and others that appear in the \code{covariates} of the
-input data. See \link{secr models} and \url{../doc/secr-overview.pdf}
-for more on defining models.
+likelihood depends on the detector type (`multi', `proximity', `count',
+`polygon' etc.) of the \code{traps} attribute of \code{capthist}
+(Borchers and Efford 2008, Efford, Borchers and Byrom 2009, Efford,
+Dawson and Borchers 2009, Efford 2011). The `multi' form of the
+likelihood is also used, with a warning, when detector type = `single'
+(see Efford et al. 2009 for justification). The default \code{model} is
+null (constant density and detection probability). The set of variables
+available for use in linear predictors includes some that are
+constructed automatically (t, T, b, B), group (g), and others that
+appear in the \code{covariates} of the input data. See \link{secr models} and
+\url{../doc/secr-overview.pdf} for more on defining models.
 
 \code{buffer} and \code{mask} are alternative ways to define the region
 of integration (see \link{mask}).
@@ -78,17 +80,10 @@ from the nested model and additional betas are set to zero. Mapping of
 parameters follows the default in \code{\link{score.test}}, but user
 intervention is not allowed.
 
-\code{details} is used for various specialized settings --
-
-\code{details$distribution} specifies the distribution of the number of
-individuals detected; this may be conditional on the number in the
-masked area (`binomial') or unconditional (`poisson').
-\code{distribution} affects the sampling variance of the estimated
-density. The default is `poisson'.
-
-\code{details$binomN} determines the distribution that is fitted to each
-count (detections of an individual at a particular detector, on a
-particular occasion) when the detectors are of type `count':
+\code{binomN} (previously a component of \code{details}) determines the
+distribution that is fitted for the number of detections of an individual
+at a particular detector, on a particular occasion, when the detectors
+are of type `count', `polygon' or `transect':
 
 \itemize{
 \item{binomN > 1} {binomial with size binomN}
@@ -98,9 +93,17 @@ particular occasion) when the detectors are of type `count':
   \code{\link[stats]{dnbinom}}}
 }
 
-In this version the `size' parameter of the negative binomial is not
-estimated: it must be supplied. \code{binomN} should be an integer
-unless negative.
+The default with these detectors is to fit a Poisson distribution. The
+`size' parameter of the negative binomial is not estimated: it must be
+supplied. \code{binomN} should be an integer unless negative.
+
+\code{details} is used for various specialized settings --
+
+\code{details$distribution} specifies the distribution of the number of
+individuals detected; this may be conditional on the number in the
+masked area (`binomial') or unconditional (`poisson').
+\code{distribution} affects the sampling variance of the estimated
+density. The default is `poisson'. See also Notes.
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.
@@ -123,17 +126,23 @@ session in the case of multi-session data. This may be necessary to
 overcome numerical problems when x- or y-coordinates are large
 numbers. The default is not to centre coordinates.
 
+\code{details$param} = 1 causes the Gardner & Royle parameterisation of
+the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) to be
+used for multi-catch detectors (default 0 for Borchers and Efford). This
+parameterisation does not allow detector covariates.
+
 If \code{method = 'Newton-Raphson'} then \code{\link[stats]{nlm}} is
-used to maximize the log likelihood; otherwise
-\code{\link[stats]{optim}} is used with the chosen method
-(`BFGS', `Nelder-Mead', etc.).  A feature of \code{nlm} is that it takes a
-large step early on in the maximization that may cause floating point
-underflow or overflow in one or more real parameters.  This can be
-controlled by passing the `stepmax' argument of \code{nlm} in the \dots
-argument of \code{secr.fit} (see first example).
+used to maximize the log likelihood (minimize the negative log
+likelihood); otherwise \code{\link[stats]{optim}} is used with the
+chosen method (`BFGS', `Nelder-Mead', etc.).  If maximization fails a
+warning is given appropriate to the method.  A feature of \code{nlm} is
+that it takes a large step early on in the maximization that may cause
+floating point underflow or overflow in one or more real parameters.
+This can be controlled by passing the `stepmax' argument of \code{nlm}
+in the \dots argument of \code{secr.fit} (see first example).
 
 If \code{verify} = TRUE then \code{\link{verify}} is called to check
-capthist and mask; analysis is aborted if errors are found.
+capthist and mask; analysis is aborted if errors are found. See also Notes.
 
 }
 
@@ -147,23 +156,29 @@ The function \code{secr.fit} returns an object of class secr.  This has componen
   \item{timecov }{saved input}
   \item{sessioncov }{saved input}
   \item{groups }{saved input}
-  \item{dframe }{saved input}
-  \item{design }{reduced design matrices, parameter table and parameter index array for actual animals (see \code{\link{secr.design.MS}})}
-  \item{design0 }{reduced design matrices, parameter table and parameter index array for `naive' animal (see \code{\link{secr.design.MS}})}
-  \item{start }{vector of starting values for beta parameters}
-  \item{link }{list with components for each real parameter (e.g., `D', `g0'), the name of the link function used for each real parameter. Component `z' is NULL unless detectfn = 1 (hazard-rate). }
-  \item{fixed }{saved input}
-  \item{parindx }{list with possible components `D', `g0', `sigma' and `z', for the indices of the `beta' parameters associated with each real parameter (`z' NULL unless detectfn = 1).}
+  \item{dframe }{saved input}  
+  \item{design }{reduced design matrices, parameter table and parameter
+    index array for actual animals (see \code{\link{secr.design.MS}})}  
+  \item{design0 }{reduced design matrices, parameter table and parameter
+    index array for `naive' animal (see \code{\link{secr.design.MS}})}
+  \item{start }{vector of starting values for beta parameters} 
+  \item{link }{list with one component for each real parameter
+  (typically `D', `g0', `sigma'),giving the name of the link function
+  used for each real parameter.}
+  \item{fixed }{saved input}  
+  \item{parindx }{list with one component for each real parameter giving
+    the indices of the `beta' parameters associated with each real
+    parameter}  
   \item{model }{saved input}
   \item{details }{saved input}
   \item{vars }{vector of unique variable names in \code{model} }
   \item{betanames }{names of beta parameters}
   \item{realnames }{names of fitted (real) parameters }
   \item{fit }{list describing the fit (output from \code{nlm} or \code{optim}) }
-  \item{beta.vcv }{variance-covariance matrix of beta parameters }
+  \item{beta.vcv }{variance-covariance matrix of beta parameters }  
   \item{D }{ if CL = FALSE, array of predicted densities of each group at
     each mask point in each session, dim(D) = c(nrow(mask), ngroups,
-    nsessions), otherwise NULL }
+    nsessions), otherwise NULL }  
   \item{version }{secr version number }
   \item{starttime }{character string of date and time at start of fit }
   \item{proctime }{processor time for model fit, in seconds }
@@ -178,6 +193,10 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
 
+Efford, M. G. (2011) Estimation of population density by spatially
+explicit capture--recapture with area or transect searches. Unpublished
+manuscript.
+
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture--recapture: likelihood-based methods. In:
 D. L. Thompson, E. G. Cooch and M. J. Conroy (eds) \emph{Modeling
@@ -186,6 +205,10 @@ Demographic Processes in Marked Populations}. Springer. Pp. 255--269.
 Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
+
+Gardner, B., Royle, J. A. and Wegan, M. T. (2009) Hierarchical models
+for estimating density from DNA mark-recapture studies. \emph{Ecology}
+\bold{90}, 1106--1115.
 
 }
 
@@ -201,14 +224,27 @@ are provided. \code{derived} is used to compute the derived parameters
 `esa' (effective sampling area) and `D' (density) for models fitted by
 maximizing the conditional likelihood (CL = TRUE).
 
+The component `distribution' of argument `details' may also take a
+    numeric value larger than nrow(capthist), rather than 'binomial' or
+    'poisson'. The likelihood then treats n as a binomial draw from a
+    superpopulation of this size, with consequences for the variance of
+    density estimates. This can help to reconcile MLE with Bayesian
+    estimates using data augmentation.
+    
 Components `version' and `starttime' were introduced in version 1.2.7,
 and recording of the completion time in `fitted' was discontinued.
 
 A warning is generated when `buffer' appears to be too small (predicted
     RB(D-hat) > 0.01). The prediction uses \code{\link{bias.D}}. No
-    check is performed when `mask' is specified, or when the detector
-    type is `polygon' or `transect'.
-    
+    check is performed when `mask' is specified, when `verify' = FALSE,
+    or when the detector type is `polygon', `transect', `polygonX' or
+    `transectX'.
+
+ The Newton-Raphson algorithm is fast, but it sometimes fails to compute the information
+matrix correctly, causing some standard errors to be set to `NA'. The alternative
+\code{method = 'BFGS'} often works better in these cases, or use
+\code{details = list(hessian = 'fdhess')}.
+
 }
 
 \seealso{

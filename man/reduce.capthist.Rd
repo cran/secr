@@ -1,7 +1,7 @@
 \name{reduce.capthist}
 \alias{reduce.capthist}
 
-\title{ Combine Occasions }
+\title{ Combine Occasions Or Convert Detector Types }
 
 \description{
 
@@ -46,9 +46,7 @@ detectors is determined by \code{select} which should be one of 'first',
 the method is: first, randomly select* one trap per animal per day;
 second, randomly select* one animal per trap per day; third, when
 collapsing multiple days use the first capture, if any, in each
-trap. With signal detectors, \code{select} determines how multiple
-signal measurements are combined; options 'min', 'max' or 'mean' are
-also allowed.
+trap.
 
 Usage data in the \code{traps} attribute are also
 pooled if present; a trap is considered 'used' on a pooled occasion if

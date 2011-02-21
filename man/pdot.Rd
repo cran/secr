@@ -11,8 +11,8 @@ at given coordinates.
 }
 
 \usage{
-pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
-    z = 1), noccasions = 5) 
+pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
+    sigma = 25, z = 1), noccasions = 5, binomN = NULL) 
 
 }
 
@@ -22,6 +22,8 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
   \item{detectfn}{ integer code for detection function q.v. }
   \item{detectpar}{ a list giving a value for each named parameter of detection function }
   \item{noccasions}{ number of intervals (occasions) }
+  \item{binomN}{ integer code for discrete distribution (see
+  \code{\link{secr.fit}} }
 }
 \details{
 

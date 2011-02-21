@@ -9,6 +9,7 @@
 ## 2010 02 14 update integralprw1 call for spherical (no longer used)
 ## 2010 08 28 traps renamed to trps
 ## 2010 11 01 naivesigma shifted outside autoini
+## 2011 01 24 minor editing
 ############################################################################################
 
 naivesigma <- function (obsRPSV,trps,mask,detectfn,z) {
@@ -94,12 +95,13 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
     naiveesa <- function (g0, sigma)
     {
       nc <- 1
-      g0sigma0 <- matrix(rep(c(g0,sigma),c(2,2)),nr=2)
+      g0sigma0 <- matrix(rep(c(g0,sigma), c(2,2)), nrow = 2)
       gs0 <- rep(1,2*s*k)
       area <- attr(mask,'area')  # area of single mask cell
-
+      param <- 0    ## default Borchers & Efford parameterisation
       temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
           as.integer(dettype),
+          as.integer(param),
           as.double(g0sigma0),
           as.integer(nc),
           as.integer(s),
@@ -112,6 +114,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
           as.integer(gs0), # index of nc+1,S,K to rows in g0sigma0
           as.integer(1),
           as.double(area),
+          as.double(1),      # gamma (dummy)
           as.integer(detectfn),
           as.integer(0),     # binomN
           as.double(0),      # cut
@@ -137,7 +140,8 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
 
     trps    <- traps(capthist)
     dettype <- detectorcode(trps)
-    if (!(dettype %in% c(-1:5,8))) list(D=NA, g0=NA, sigma=NA)   ## 2009 11 18
+    if (!(dettype %in% c(-1:5,8)))
+        list(D=NA, g0=NA, sigma=NA)
     else {
         prox     <- detector(trps) %in% c('proximity', 'count','signal','times')
         n        <- nrow(capthist)    # number of individuals
@@ -176,8 +180,6 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
                 tempsigma <- uniroot (naivedcall, lower = db/10, upper = db*10, tol=0.001)$root
         }
         else {
-#            tempsigma <- uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
-#                                  tol=0.001)$root
             tempsigma <- naivesigma(obsRPSV=obsRPSV, trps=trps, mask=mask, detectfn=detectfn, z=1  )
         }
         low <- naivecap2(0.001, sigma=tempsigma, cap=cpa)

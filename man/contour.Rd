@@ -17,7 +17,7 @@ adds a conventional `boundary strip' to a detector (trap) array, where
 
 pdot.contour(traps, border = NULL, nx = 64, detectfn = 0,
     detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = 5,
-    levels = seq(0.1, 0.9, 0.1), poly = NULL, plt = TRUE,
+    binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly = NULL, plt = TRUE,
     add = FALSE, ...)
 
 buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
@@ -34,6 +34,8 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
   \item{detectpar}{ list of values for named parameters of detection
   function }
   \item{noccasions}{ number of sampling occasions}
+  \item{binomN}{ integer c ode for discrete distribution (see
+  \code{\link{secr.fit}}) }
   \item{levels}{ vector of levels for p.(X)}
   \item{poly}{ matrix of two columns, the x and y
     coordinates of a bounding polygon (optional) }
@@ -45,7 +47,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
   \item{ntheta}{ integer value for smoothness of convex contours }
 }
 \details{
-\code{pdot.contour} constructs a rectangular mask and applies\code{\link{pdot}} to
+\code{pdot.contour} constructs a rectangular mask and applies \code{\link{pdot}} to
 compute the p.(X) at each mask point.
 
 if \code{convex = FALSE}, \code{buffer.contour} constructs a mask and
@@ -56,6 +58,8 @@ if \code{convex = TRUE}, \code{buffer.contour} constructs a set of
 potential vertices by adding points on a circle of radius =
 \code{buffer} to each detector location; the desired contour is the
 convex hull of these points (this algorithm derives from Efford, 2009).
+
+Increase \code{nx} for smoother lines, at the expense of speed.
 
 }
 \value{

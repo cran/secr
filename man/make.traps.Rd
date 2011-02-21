@@ -12,17 +12,17 @@
 
 \usage{
 make.grid(nx = 6, ny = 6, spacex = 20, spacey = 20, spacing = NULL,
-    detector = "multi", binomN = 0, originxy = c(0,0), hollow = F,
+    detector = "multi", originxy = c(0,0), hollow = F,
     ID = 'alphay')
 
 make.circle (n = 20, radius = 100, spacing = NULL, 
     detector = "multi", originxy = c(0,0), IDclockwise = T)
 
 make.poly (polylist = NULL, x = c(-50,-50,50,50),
-    y = c(-50,50,50,-50))
+    y = c(-50,50,50,-50), exclusive = FALSE, verify = TRUE)
 
 make.transect (transectlist = NULL, x = c(-50,-50,50,50),
-    y = c(-50,50,50,-50))
+    y = c(-50,50,50,-50), exclusive = FALSE)
 
 }
 
@@ -33,7 +33,6 @@ make.transect (transectlist = NULL, x = c(-50,-50,50,50),
   \item{spacey}{ distance between detectors in 'y' direction (nominally in metres)}
   \item{spacing}{ distance between detectors (x and y directions)}
   \item{detector}{ character value for detector type - 'single', 'multi' etc. }
-  \item{binomN}{ maximum value when detector == 'count' }
   \item{originxy}{ vector origin for x-y coordinates }
   \item{hollow}{ logical for hollow grid }
   \item{ID}{ character string to control row names }
@@ -44,6 +43,11 @@ make.transect (transectlist = NULL, x = c(-50,-50,50,50),
   \item{transectlist}{ list of dataframes with coordinates for transects }
   \item{x}{ x coordinates of vertices }
   \item{y}{ y coordinates of vertices }
+  \item{exclusive}{ logical; if TRUE animal can be detected only once
+  per occasion }
+  \item{verify}{ logical if TRUE then the resulting traps object is
+  checked with \code{\link{verify}}}
+    
 }
 
 \details{

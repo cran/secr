@@ -18,9 +18,9 @@ consider them in the array.
 
 In a null (constant) model, all \eqn{n.S.K} detection probabilities are the
 same. The conventional sources of variation in capture probability (Otis
-et al. 1978) appear as variation in the \eqn{n} dimension ('individual
-heterogeneity' h), in the \eqn{S} dimension ('time variation' t) or as a
-particular interaction in these two dimensions ('behavioural response to
+et al. 1978) appear as variation in the \eqn{n} dimension (`individual
+heterogeneity' h), in the \eqn{S} dimension (`time variation' t) or as a
+particular interaction in these two dimensions (`behavioural response to
 capture' b). Combined effects are possible.
 
 Spatially explicit capture--recapture introduces two sorts of additional
@@ -38,7 +38,7 @@ detection probability.
 
 The full design matrix for each detection submodel has one row for each
 combination of \eqn{i}, \eqn{s} and \eqn{k} (animal, occasion and trap).
-Allowing a distinct probability for each animal (the '\eqn{n}'
+Allowing a distinct probability for each animal (the `\eqn{n}'
 dimension) may seem excessive, as continuous individual-specific
 covariates are feasible only when a model is fitted by maximizing the
 conditional likelihood (cf Huggins 1989). However, the full \eqn{n.S.K}
@@ -46,7 +46,7 @@ array is convenient for coding both group membership (Lebreton et al.
 1992, Cooch and White 2008) and experience of capture, even when
 individual-level heterogeneity cannot be modelled.
 
-Variation between 'sessions' and between latent classes in a finite
+Variation between `sessions' and between latent classes in a finite
 mixture adds two further dimensions: in principle there is an
 \eqn{n.S.K} array for each latent class (classes are numbered
 1..\eqn{M}), and an \eqn{n.S.K.M} array for each session (sessions are
@@ -82,19 +82,19 @@ Session  \tab session number 0:(R-1) \tab automatic \tab \eqn{R} \cr
 [user]   \tab detector covariate \tab \code{covariates (traps)} \tab \eqn{K} \cr
 }
 
-The classic 'learned response' is a step change following first
-detection; this is implemented with the predictor variable 'b' which is
+The classic `learned response' is a step change following first
+detection; this is implemented with the predictor variable `b' which is
 FALSE up to and including the time of first capture and TRUE afterwards.
 An alternative is a response that depends only on detection at the last
-opportunity ('B').
+opportunity (`B').
 
-Groups ('g') are defined by the interaction of the \code{capthist}
+Groups (`g') are defined by the interaction of the \code{capthist}
 categorical (factor) individual covariates identified in \code{secr.fit}
-argument 'groups'. Groups are redundant with conditional likelihood
+argument `groups'. Groups are redundant with conditional likelihood
 because individual covariates of whatever sort (continuous or
 categorical) may be included freely in the model.
 
-Individual heterogeneity ('h' in the notation of Otis et al. 1978) may
+Individual heterogeneity (`h' in the notation of Otis et al. 1978) may
 modelled by treating any detection parameter as a 2-part or 3-part finite mixture e.g. g0 \eqn{\sim{~}}{~}
   h2. See \url{../doc/secr-finitemixtures.pdf}.
 
@@ -105,11 +105,11 @@ covariates, in that order (remembering that individual covariates other
 than groups are allowed only when the model is fitted by maximizing the
 conditional likelihood). The type of the predictor is inferred from the
 data frame in which it first occurs. Thus if the model included the
-formula 'g0 ~ wetness', and 'wetness' was a column in the data frame of
+formula `g0 ~ wetness', and `wetness' was a column in the data frame of
 time covariates (timecov), then 'wetness' would be interpreted as a time
 covariate, and a column of the same name in covariates(traps) would be
 ignored. In this case, renaming the column in timecov would expose the
-traps covariate, and 'wetness' would be interpreted as an attribute of
+traps covariate, and `wetness' would be interpreted as an attribute of
 detectors, rather than sample intervals. This is a good reason to give
 covariates distinctive names!
 
@@ -117,7 +117,7 @@ The design matrix for detection parameters may also
 be provided manually in the argument \code{dframe}. This feature is
 untested.
 
-The submodels for 'g0', 'sigma' and 'z' are named components of the
+The submodels for `g0', `sigma' and `z' are named components of the
 \code{model} argument of \code{secr.fit}. They are expressed in \R
 formula notation by appending terms to \eqn{\sim{~}}{~}.
 The name of the response may optionally appear on the left hand side of
@@ -144,7 +144,7 @@ list(g0 = ~ kcov)
 
 \note{
 
-The parameter 'z' was previously called 'b'; it was renamed to
+The parameter `z' was previously called `b'; it was renamed to
 avoid confusion with the predictor b used in a formula for a learned
 trap response.
 

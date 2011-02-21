@@ -9,7 +9,7 @@ deviance.secr <- function (object, ...) {
     ## object - an secr object, including capthist
 
     session.deviance <- function (capthist, grp, N) {
-        capthist <- matrix(capthist, nr=nrow(capthist))
+        capthist <- matrix(capthist, nrow = nrow(capthist))
         groupeddata <- split.data.frame(capthist, grp)
         ngrp <- length(groupeddata)
         count <- function(x) table(make.lookup(x)$index)

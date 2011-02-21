@@ -34,7 +34,7 @@ The data are from a pilot study of stoats in red beech (\emph{Nothofagus fusca})
   did not yield sufficient DNA for genotyping.
 
 The data are provided as a single-session \code{capthist} object
-'stoatCH'. Hair tubes are treated as 'proximity' detectors which allow
+`stoatCH'. Hair tubes are treated as `proximity' detectors which allow
 an individual to be detected at multiple detectors on one occasion
 (day), although there are no multiple detections in this dataset. Three
 pre-fitted models are included: \code{stoat.model.HN},

@@ -29,16 +29,15 @@ replaces the \code{traps} attribute of a \code{capthist} object.
 
 An object of class \code{traps} holds detector (trap) locations as a
 data frame of x-y coordinates. Trap identifiers are used as row names.
-The required attribute 'detector' records the type of detector
-('single', 'multi' or 'proximity' etc.; see \code{\link{detector}} for
+The required attribute `detector' records the type of detector
+(`single', `multi' or `proximity' etc.; see \code{\link{detector}} for
 more).
 
 Other possible attributes of a \code{traps} object are average
-\code{\link{spacing}}, trap-specific
-covariates (\code{covariates}), and a matrix of binary (0/1) codes
-indicating whether each detector was used on each occasion
-(\code{usage}). If usage is specified, at least one detector must be
-'used' on each occasion.
+\code{\link{spacing}}, trap-specific covariates (\code{covariates}), and
+a matrix of binary (0/1) codes indicating whether each detector was used
+on each occasion (\code{usage}). If usage is specified, at least one
+detector must be `used' on each occasion.
 
 }
 
@@ -56,8 +55,15 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 }
 
-\note{ 
-Generic methods are provided to select rows (\code{\link{subset.traps}}), combine two or more arrays (\code{\link{rbind.traps}}), shift an array (\code{\link{shift.traps}}), and to rotate an array (\code{\link{rotate.traps}}).  The attributes \code{usage} and \code{covariates} may be extracted or replaced using generic methods of the same name.
+\note{
+  
+Generic methods are provided to select rows
+(\code{\link{subset.traps}}), combine two or more arrays
+(\code{\link{rbind.traps}}), shift an array (\code{\link{shift.traps}}),
+and to rotate an array (\code{\link{rotate.traps}}).  The attributes
+\code{usage} and \code{covariates} may be extracted or replaced using
+generic methods of the same name.
+
 }
 
 \seealso{ \code{\link{make.grid}}, \code{\link{read.traps}},

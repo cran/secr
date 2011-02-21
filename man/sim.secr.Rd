@@ -49,7 +49,7 @@ optional list of simulated data saved from previous call to \code{simulate.secr}
 integer for level of detail in reporting (0,1,2)
 }
   \item{hessian}{
-character string controlling the computation of the Hessian matrix
+character or logical controlling the computation of the Hessian matrix
 }
   \item{start}{
 vector of starting 'beta' values for \code{secr.fit}
@@ -98,8 +98,13 @@ terse message at the start of each fit; \code{tracelevel=2} also sets
 `details$trace = TRUE' for \code{secr.fit}, causing each likelihood
 evaluation to be reported.
 
-It is OK (and faster) to use \code{hessian='none'} unless
-\code{extractfn} needs variances or covariances.
+\code{hessian} controls computation of the Hessian matrix from which
+variances and covariances are obtained. \code{hessian} replaces the
+value in \code{object\$details}.  Options are `none' (no variances),
+`auto' (the default) or `fdhess' (see \code{\link{secr.fit}}). It is OK
+(and faster) to use \code{hessian='none'} unless \code{extractfn} needs
+variances or covariances. Logical TRUE and FALSE are interpreted by
+\code{secr.fit} as `auto' and `none'.
 
 \code{sim.capthist} is a more direct way to simulate data from a null
 model (i.e. one with constant parameters for density and detection).
@@ -124,7 +129,7 @@ simulated fit may be retrieved \emph{in toto} by specifying
 equivalent.
 
 For either form of output from \code{sim.secr} the initial state of the
-random number generator is stored as the attribute 'seed'.
+random number generator is stored as the attribute `seed'.
 
 }
 
@@ -135,7 +140,7 @@ random number generator is stored as the attribute 'seed'.
 \note{
 
 The value returned by \code{simulate.secr} is a list of `capthist'
-objects; if there is more than one session, each 'capthist' is itself a
+objects; if there is more than one session, each `capthist' is itself a
 sort of list .
 
 The classes `secrdata' and `secrlist' are used only to override the ugly
@@ -162,9 +167,10 @@ devs <- c(deviance(secrdemo.0),sims$deviance)
 quantile(devs, probs=c(0.95))
 rank(devs)[1] / length(devs)
 
-## to assess bias
+## to assess bias and CI coverage
 extrfn <- function (object) unlist(predict(object)['D',-1])
-sims <- sim.secr(secrdemo.0, nsim = 50, extractfn=extrfn)
+sims <- sim.secr(secrdemo.0, nsim = 50, hessian = 'auto',
+    extractfn = extrfn)
 sims
 
 ## with a larger sample, could get parametric bootstrap CI

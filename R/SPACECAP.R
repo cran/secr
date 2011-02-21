@@ -34,11 +34,11 @@ write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, fileste
     if (!is.null(usage(trps)))
         temp <- cbind(temp,usage(trps))
     else
-        temp <- cbind(temp, matrix(1, nr=ntrap, nc=nocc))
+        temp <- cbind(temp, matrix(1, nrow = ntrap, ncol = nocc))
     cat (c('LOC_ID', 'X_Coord','Y_Coord',1:nocc), sep=',', file=TD)
     cat ('\n', append = TRUE, file=TD)
-    write.table(temp, file = TD, append = TRUE, quote = FALSE, sep=',', row=1:ntrap,
-        col.names = FALSE)
+    write.table(temp, file = TD, append = TRUE, quote = FALSE, sep=',',
+        row.names = 1:ntrap, col.names = FALSE)
 
     ## animals
     trap <- rep(rep( 1:ntrap, rep(nanimal * nocc, ntrap)), abs(object))
@@ -62,8 +62,8 @@ write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, fileste
     mask$habitat <- rep(1,nrow(mask))
     cat (c('X_COORD','Y_COORD','HABITAT'), sep=',', file=SS)
     cat ('\n', append = TRUE, file=SS)
-    write.table(mask, file = SS, append = TRUE, quote = FALSE, sep=',', row = FALSE,
-        col.names = FALSE)
+    write.table(mask, file = SS, append = TRUE, quote = FALSE, sep=',',
+        row.names = FALSE, col.names = FALSE)
 
 }
 

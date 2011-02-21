@@ -4,6 +4,7 @@
 ## 2009 09 18, 2009 09 19, 2009 09 20 2009 10 02 2009 11 05
 ## 2009 11 13
 ## 2010 05 02 removed erroneous ref to 'areabinary' detector
+# 2011 02 15 validpoly
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -46,8 +47,8 @@ overlapcells <- function (xy) {
     if (nr<2)
         FALSE
     else {
-        pixel <- matrix(nc=2, c(-spx2,-spx2,spx2,spx2,-spx2,-spy2,spy2,spy2,-spy2,-spy2))
-        overlap <- matrix(FALSE, nrow=nr, ncol=nr)
+        pixel <- matrix(ncol = 2, c(-spx2,-spx2,spx2,spx2,-spx2,-spy2,spy2,spy2,-spy2,-spy2))
+        overlap <- matrix(FALSE, nrow = nr, ncol = nr)
         for (i in 1:(nr-1))
             for (j in (i+1):nr)
                 {
@@ -96,7 +97,7 @@ overlappoly <- function (xy, polyID) {
     if (nr<2)
         FALSE
     else {
-        overlap <- matrix(FALSE, nrow=nr, ncol=nr)
+        overlap <- matrix(FALSE, nrow = nr, ncol = nr)
         for (i in 1:(nr-1))
             for (j in (i+1):nr)
                 {
@@ -104,6 +105,23 @@ overlappoly <- function (xy, polyID) {
                 }
         any (overlap, na.rm=T)
     }
+}
+############################################################################################
+
+validpoly <- function (xy, polyID, nx = 500) {
+    ## check intersections of perimeters with vertical lines
+    OKpoly <- function (xy) {
+        cross <- rep(0, nx)
+        x <- seq(min(xy[,1]), max(xy[,1]), length=nx)
+        for (i in 1:nx) {
+            tempx <- xy[,1] - x[i]
+            cross[i] <- sum (sign(tempx[-1]) != sign(tempx[-length(tempx)]))
+        }
+        cross <= 2
+    }
+    lxy <- split (xy, polyID)
+    temp <- lapply(lxy, OKpoly)
+    all(unlist(temp))
 }
 ############################################################################################
 
@@ -121,7 +139,7 @@ xyinpoly <- function (xy, trps) {
             result = integer(1))
         as.logical(temp$result)
     }
-    lxy <- split (trps, polyID(trps))
+    lxy <- split (trps, levels(polyID(trps)))
     firstinside <- function (i) {
         for (k in 1:length(lxy))
             if (ptinside(i,k)) return(k)
@@ -146,7 +164,7 @@ xyontransect <- function (xy, trps, tol=0.01) {
             result = integer(1))
         as.logical(temp$result)
     }
-    lxy <- split (trps, transectID(trps))
+    lxy <- split (trps, levels(transectID(trps)))
     firsttransect <- function (i) {
         for (k in 1:length(lxy))
             if (ptontransect(i,k)) return(k)
@@ -178,14 +196,14 @@ verify.traps <- function (object, report = 2, ...) {
     else {
 
         single <- detector(object) %in% c('single')
-##        area <- detector(object) %in% c('quadratcount','quadratbinary')
         area <- FALSE
-        poly <- detector(object) %in% c('polygon')
+        poly <- detector(object) %in% c('polygon','polygonX')
 
         usagedetectorsOK <- TRUE
         usagenonzeroOK <- TRUE
         areaOK <- TRUE
         polyIDOK <- TRUE
+        polyconvexOK <- TRUE
 
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
@@ -196,12 +214,12 @@ verify.traps <- function (object, report = 2, ...) {
 
         ## 2
         trapcovariatesOK <- ifelse (is.null(covariates(object)),
-            TRUE, nrow(covariates(object)) == nrow(object))
+            TRUE, nrow(covariates(object)) == ndetector(object))
 
         ## 'usage' of traps
         if (!is.null(usage(object))) {
             ## 3
-            usagedetectorsOK <- nrow(usage(object)) == nrow(object)
+            usagedetectorsOK <- nrow(usage(object)) == ndetector(object)
 
             ## 4
             usagecount <- apply(usage(object),2,sum)
@@ -217,7 +235,7 @@ verify.traps <- function (object, report = 2, ...) {
         }
         else
         if (poly) {
-            areaOK <- !overlappoly (object, polyID(object))
+            areaOK <- !overlappoly (object, levels(polyID(object)))
         }
 
         ## 6
@@ -226,7 +244,13 @@ verify.traps <- function (object, report = 2, ...) {
                 is.factor(polyID(object))
         }
 
-        errors <- !all(c(trapNAOK, trapcovariatesOK, usagedetectorsOK, usagenonzeroOK, areaOK, polyIDOK))
+        ## 7
+        if (poly) {
+            polyconvexOK <- validpoly (object, polyID(object))
+        }
+
+        errors <- !all(c(trapNAOK, trapcovariatesOK, usagedetectorsOK, usagenonzeroOK,
+                         areaOK, polyIDOK, polyconvexOK))
 
         if (report > 0) {
             if (errors) {
@@ -235,12 +259,12 @@ verify.traps <- function (object, report = 2, ...) {
                 }
                 if (!trapcovariatesOK) {
                     cat ('Wrong number of rows in dataframe of detector covariates\n')
-                    cat ('traps(capthist) :', nrow(traps(object)), 'detectors\n')
+                    cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
                     cat ('covariates(traps(capthist)) :', nrow(covariates(traps(object))), 'detectors\n')
                 }
                 if (!usagedetectorsOK) {
                     cat ('Conflicting number of detectors in usage matrix\n')
-                    cat ('traps(capthist) :', nrow(traps(object)), 'detectors\n')
+                    cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
                     cat ('usage(traps(capthist)) :', nrow(usage(traps(object))), 'detectors\n')
                 }
                 if (!usagenonzeroOK) {
@@ -253,6 +277,9 @@ verify.traps <- function (object, report = 2, ...) {
                 if (!polyIDOK) {
                     cat ("Invalid polyID \n")
                 }
+                if (!polyconvexOK) {
+                    cat ("The boundary of at least one polygon is concave east-west \n")
+                }
             }
         }
 
@@ -264,6 +291,8 @@ verify.traps <- function (object, report = 2, ...) {
             usagedetectorsOK = usagedetectorsOK,
             usagenonzeroOK = usagenonzeroOK,
             areaOK = areaOK,
+            polyIDOK = polyIDOK,
+            polyconvexOK = polyconvexOK,
             usagecount = usagecount
         )
 
@@ -301,17 +330,14 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
     else {
 
         ## preliminaries
-##        dim3 <- detector(traps(object)) %in% c('proximity', 'count', 'quadratbinary', 'quadratcount', 'signal', 'polygon','transect')
         dim3 <- length(dim(object)) == 3
         count <- detector(traps(object)) %in% c('count', 'polygon','transect')
-##        area <- detector(traps(object)) %in% c('quadratbinary', 'quadratcount')
         area <- FALSE
-##        binary <- detector(traps(object)) %in% c('proximity', 'quadratbinary')
         binary <- detector(traps(object)) %in% c('proximity')
         single <- detector(traps(object)) %in% c('single')
         signal <- detector(traps(object)) %in% c('signal')
-        poly <- detector(traps(object)) %in% c('polygon')
-        transect <- detector(traps(object)) %in% c('transect')
+        poly <- detector(traps(object)) %in% c('polygon', 'polygonX')
+        transect <- detector(traps(object)) %in% c('transect', 'transectX')
 
         NAOK <- TRUE
         deadOK <- TRUE
@@ -343,7 +369,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             trapcheck <- verify(traps(object), report = 0)  ## delay reporting
         else
             trapcheck <- list(errors=TRUE)
-
         ## 2
         trapsOK <- !trapcheck$errors
 
@@ -403,8 +428,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 10
-        if (poly | transect)
-            detectornumberOK <- length(table(polyID(traps(object)))) == dim(object)[3]
+        if (poly | transect) {
+            detectornumberOK <- ifelse (dim3,
+                length(levels(polyID(traps(object)))) == dim(object)[3],
+                max(abs(object)) <= ndetector(traps(object)))
+        }
         else
             detectornumberOK <- ifelse (dim3,
               dim(object)[3] == nrow(traps(object)),
@@ -457,27 +485,30 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## 14
         if (poly) {
             xy <- xy(object)
-            xyOK <- nrow(xy) == sum(abs(object))
+            if (detector(traps(object))=='polygon')
+                xyOK <- nrow(xy) == sum(abs(object))
+            else
+                xyOK <- nrow(xy) == sum(abs(object)>0)
             inpoly <- xyinpoly(xy(object), traps(object))
-            inpoly <- inpoly == trap(object, name = F)
+            inpoly <- inpoly == trap(object, names = F)
             xyinpolyOK <- all(inpoly)
-## check dropped 2010-11-17
-##            ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
-##            IDOK <- all(table(ID) == apply(object,1,sum))
         }
         if (transect) {
             xy <- xy(object)
             ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
-            xyOK <- nrow(xy) == sum(abs(object))
+            if (detector(traps(object))=='transect')
+                xyOK <- nrow(xy) == sum(abs(object))
+            else
+                xyOK <- nrow(xy) == sum(abs(object)>0)
             ontransect <- xyontransect(xy(object), traps(object), tol = tol)
             ontransect <- ontransect == trap(object, name = F)
             xyontransectOK <- all(ontransect)
-            IDOK <- all(table(ID) == apply(object,1,sum))
         }
 
-        errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK, deadOK, singleOK, binaryOK,
-            countOK, cutvalOK, signalOK, detectornumberOK, covariatesOK, usageoccasionsOK, usageOK, xyOK,
-            xyinpolyOK, xyontransectOK, IDOK))
+        errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,
+            deadOK, singleOK, binaryOK, countOK, cutvalOK, signalOK,
+            detectornumberOK, covariatesOK, usageoccasionsOK, usageOK,
+            xyOK, xyinpolyOK, xyontransectOK, IDOK))
 
         if (report > 0) {
             if (errors) {
@@ -493,12 +524,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     }
                     if (!trapcheck$trapcovariatesOK) {
                         cat ('Wrong number of rows in dataframe of detector covariates\n')
-                        cat ('traps(capthist) :', nrow(traps(object)), 'detectors\n')
+                        cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
                         cat ('covariates(traps(capthist)) :', nrow(covariates(traps(object))), 'detectors\n')
                     }
                     if (!trapcheck$usagedetectorsOK) {
                         cat ('Conflicting number of detectors in usage matrix\n')
-                        cat ('traps(capthist) :', nrow(traps(object)), 'detectors\n')
+                        cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
                         cat ('usage(traps(capthist)) :', nrow(usage(traps(object))), 'detectors\n')
                     }
                     if (!trapcheck$usagenonzeroOK) {

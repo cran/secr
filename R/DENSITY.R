@@ -10,7 +10,7 @@
 ############################################################################################
 
 write.capthist <- function (object, filestem = deparse(substitute(object)),
-   sess = '1', ndec = 2, ...)
+   sess = '1', ndec = 2, covariates = FALSE, ...)
 
 {
     sep <- list(...)$sep
@@ -23,12 +23,7 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
         stop ("requires a 'capthist' object")
     det <- detector(traps(object))
 
-##    if (det %in% c('polygon','transect','signal','count','quadratbinary','quadratcount'))
-##    if (det %in% c('polygon','transect','signal','count'))
-##        warning ("Density does not recognise detector type '", det, "'")
-
     objectname <- deparse(substitute(object), control=NULL)
-
     if (filestem=='') {
         captfile <- ''
         trapfile <- ''
@@ -50,25 +45,29 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
         }
         tempname <- ifelse(same, paste('traps(',objectname,')',sep=''),
             paste('traps(',objectname,') Session ',session(object)[1], sep=''))
-        write.traps (traps(object)[[1]], file = trapfile, ..., header = tempname)
-        write.captures (object[[1]], file = captfile, ..., deblank = TRUE,
+        write.traps (traps(object)[[1]], file = trapfile, deblank = TRUE,
+                     header = tempname, ndec = ndec, covariates = covariates, ...)
+        write.captures (object[[1]], file = captfile, deblank = TRUE,
             header = deparse(substitute(object), control=NULL), append = FALSE,
-            sess = session(object)[1], ndec = ndec)
+            sess = session(object)[1], ndec = ndec, covariates = covariates, ...)
         for (i in 2:length(object)) {
             if (!same) {
                 trapfile <- paste(filestem, 'trap', session(object)[i], suffix, sep='')
-                write.traps (traps(object)[[i]], file = trapfile, ...)
+                write.traps (traps(object)[[i]], file = trapfile, deblank = TRUE,
+                             header = FALSE, ndec = ndec, covariates = covariates,...)
             }
-            write.captures (object[[i]], file = captfile, ..., deblank = TRUE,
-                header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec)
+
+            write.captures (object[[i]], file = captfile, deblank = TRUE,
+                header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec,
+                            covariates = covariates, ...)
         }
     }
     else {
         tempname <- paste('traps(',objectname,')',sep='')
         write.captures (object, file = captfile, ..., deblank = TRUE,
             header = deparse(substitute(object), control=NULL), append = FALSE,
-            sess = session(object), ndec = ndec)
-        write.traps (traps(object), file = trapfile, ..., header = tempname)
+            sess = session(object), ndec = ndec, covariates = covariates)
+        write.traps (traps(object), file = trapfile, header = tempname, covariates = covariates,  ...)
     }
 }
 ############################################################################################
@@ -119,6 +118,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     defaultdots <- list(sep = '', comment.char = '#')
     if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
     dots <- replacedefaults (defaultdots, list(...))
+
     readtraps <- function (x)
         do.call ('read.traps', c(list(file = x), detector = detector,
                                  list(covnames = trapcovnames), dots) )
@@ -127,6 +127,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     if (length(trps)==1) trps <- trps[[1]]
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval)
+
     if (verify) verify(temp)
     temp
 }

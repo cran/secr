@@ -14,9 +14,9 @@ object
 
 \usage{
 
-esa.plot.secr (object, max.buffer = NULL, max.mask = NULL, thin = 0.1,
-    poly = NULL, session = 1, plt = TRUE, as.density = TRUE, add = FALSE,
-    overlay = TRUE, ...)
+esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
+    thin = 0.1, poly = NULL, session = 1, plt = TRUE, as.density
+    = TRUE, add = FALSE, overlay = TRUE, ...)
 
 }
 

@@ -27,6 +27,7 @@ sim.capthist <- function (
     detectfn = 0,
     detectpar = list(),
     noccasions = 5,
+    binomN = NULL,
     renumber = TRUE,
     seed = NULL
     )
@@ -95,12 +96,15 @@ sim.capthist <- function (
 
         usage <- usage(traps)
         if (is.null(usage))
-            usage <- matrix (1, nrow = nrow(traps), ncol = noccasions)
-        else
+            usage <- matrix (1, nrow = ndetector(traps), ncol = noccasions)
+        else {
+            if (nrow(usage) != ndetector(traps))
+                stop("invalid usage matrix; number of rows must match number of detectors")
             if (ncol(usage) != noccasions) {
                 noccasions <- ncol(usage)
                 warning ("'noccasions' does not match usage attribute of 'traps'; ignored")
             }
+        }
 
 
         validatepar <- function (x, xrange) {
@@ -118,7 +122,7 @@ sim.capthist <- function (
         ## added 2010-07-01
         if (is.character(detectfn))
             detectfn <- detectionfunctionnumber(detectfn)
-        if (detector(traps) == 'signal') {
+        if (detector(traps) %in% c('cue','signal')) {
             if (detectfn != 10)
                 warning ("forcing detection function = 10 for signal detectors")
             detectfn <- 10
@@ -138,10 +142,8 @@ sim.capthist <- function (
         ##   10  signal strength (signal detectors only)
         ##   11  signal strength with spherical spreading (signal detectors only)
 
-    ## extended for uniform (detectfn=4) 2010-06-13
-    ##    if (detectfn %in% c(0:3))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
+        ## extended for uniform (detectfn=4) 2010-06-13
         if (detectfn %in% c(0:4))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
-
         if (detectfn %in% c(5))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
         if (detectfn %in% c(6))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
         if (detectfn %in% c(7))    defaults <- list(g0 = 0.2, sigma = 25, z = 5)
@@ -151,26 +153,20 @@ sim.capthist <- function (
             sdS = 2, cutval = 60, sdM = 0, tx = 'identity')
         else defaults <- c(defaults, list(truncate = 1e+10))
 
-        if (detector(traps) == 'proximity') defaults <- c(defaults, list(binomN = 1))
-        if (detector(traps) == 'count') defaults <- c(defaults, list(binomN = 0))
-##        if (detector(traps) == 'quadratbinary') defaults <- c(defaults, list(binomN = 1))
-##        if (detector(traps) == 'quadratcount') defaults <- c(defaults, list(binomN = 0))
-        if (detector(traps) == 'signal') defaults <- c(defaults, list(binomN = 1))
-
-        if (detector(traps) == 'polygon') defaults <- c(defaults, list(maxone = FALSE))
-        if (detector(traps) == 'transect') defaults <- c(defaults, list(maxone = FALSE))
-
+        ## changed 2011-01-28
+        defaults$binomN <- 0
+        if (detector(traps) == 'proximity') defaults$binomN <- 1
+        if (detector(traps) == 'signal') defaults$binomN <- 1
+        if (detector(traps) == 'cue') defaults$cuerate <- 3
+        if (!is.null(binomN)) detectpar$binomN <- binomN
         detectpar <- replacedefaults(defaults, detectpar)
 
-    ## extended for uniform (detectfn=4) 2010-06-13
-    ## extended for annualr normal and cum lognormal 2010-10-09
-    ##    if (detectfn %in% c(0,1,2,3,5)) {
         if (detectfn %in% c(0,1,2,3,4,5,6,7)) {
             g0    <- expand(detectpar$g0, noccasions)
             sigma <- expand(detectpar$sigma, noccasions)
             z     <- expand(ifelse(detectfn %in% c(5,6), detectpar$w, detectpar$z), noccasions)
-##            if (detector(traps) %in% c('count', 'quadratbinary','quadratcount', 'polygon'))
-            if (detector(traps) %in% c('count', 'polygon'))
+            if ((detector(traps) %in% .localstuff$countdetectors) &
+               (detectpar$binomN != 1))
                 validatepar(g0, c(0,Inf))
             else validatepar(g0, c(0,1))
             validatepar(sigma, c(1e-10,Inf))
@@ -203,14 +199,32 @@ sim.capthist <- function (
         if (!inherits(popn,'popn')) # generate if not provided
         {
             popn <- replacedefaults(list(D = 5, buffer = 100, Ndist = 'poisson'), popn)
-            popn <- sim.popn (popn$D, core=traps, buffer=popn$buffer, covariates=NULL, Ndist = popn$Ndist)
+            popn <- sim.popn (popn$D, core=traps, buffer=popn$buffer, covariates=NULL,
+                              Ndist = popn$Ndist)
         }
-        N <- nrow(popn)
-        animals <- unlist(popn)
-        k <- nrow(traps)
 
-        if (detector(traps)=='single') {
-            temp <- .C("trappingsingle", PACKAGE = 'secr',
+        ################################
+        ################################
+        if (detector(traps) == 'cue') {
+            rowi <- 1:nrow(popn)
+            ncue <- rpois(nrow(popn), detectpar$cuerate)
+            OK <- ncue>0
+            group <- rowi[OK]   ## drop zeros
+            ncue <- ncue[OK]
+            ind <- rep(group, ncue)
+            N <- length(ind)
+            animals <- unlist(popn[ind,])
+        }
+        else {
+            N <- nrow(popn)
+            animals <- unlist(popn)
+        }
+        k <- nrow(traps)
+        ################################
+
+        if (detector(traps) %in% c('single','multi')) {
+            simfunctionname <- paste('trapping', detector(traps), sep='')
+            temp <- .C(simfunctionname, PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
                 as.double(z),
@@ -228,18 +242,29 @@ sim.capthist <- function (
                 resultcode = integer(1)
             )
             if (temp$resultcode != 0)
-                stop ("call to 'trappingsingle' failed")
-            w <- matrix(nc = temp$n, nr=noccasions, dimnames = list(1:noccasions, NULL))
+                stop ("call to '", simfunctionname, "' failed")
+            w <- matrix(ncol = temp$n, nrow = noccasions, dimnames = list(1:noccasions, NULL))
             if (temp$n > 0) w[,] <- temp$value[1:(temp$n*noccasions)]
             w <- t(w)
         }
+
         else
-        if (detector(traps)=='multi') {
-            temp <- .C("trappingmulti", PACKAGE = 'secr',
+        if (detector(traps) %in% c('polygonX','transectX')) {
+            simfunctionname <- paste('trapping', detector(traps), sep='')
+            if (simfunctionname == 'trappingpolygonX') {
+                nk <- length(levels(polyID(traps)))
+                k <- table(polyID(traps))
+            }
+            else {
+                nk <- length(levels(transectID(traps)))
+                k <- table(transectID(traps))
+            }
+            temp <- .C(simfunctionname, PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
+                as.integer(nk),
                 as.integer(k),
                 as.integer(N),
                 as.double(animals),
@@ -249,19 +274,29 @@ sim.capthist <- function (
                 as.double(truncate^2),
                 n = integer(1),
                 caught = integer(N),
-                value=integer(N*noccasions),
+                detectedXY = double (N*noccasions),
+                value = integer(N*noccasions),
                 resultcode = integer(1)
             )
             if (temp$resultcode != 0)
-                stop ("call to 'trappingmulti' failed")
-            w <- matrix(nc = temp$n, nr = noccasions, dimnames = list(1:noccasions, NULL))
-            if (temp$n > 0) w[,] <- temp$value[1:(temp$n*noccasions)]
+                stop ("call to '", simfunctionname, "' failed")
+
+            w <- matrix(ncol = temp$n, nrow = noccasions, dimnames = list(1:noccasions, NULL))
+            if (temp$n > 0) {
+                w[,] <- temp$value[1:(temp$n*noccasions)]
+                ## put XY coordinates in attribute
+                nd <- sum(abs(w) > 0)
+                detectedXY <- data.frame(matrix(ncol = 2, temp$detectedXY[1:(2*nd)]))
+                names(detectedXY) <- c('x','y')
+                attr(w, 'detectedXY') <- detectedXY
+            }
+            else
+                attr(w, 'detectedXY') <- NULL
             w <- t(w)
+
         }
+
         else
-##        if (detector(traps) %in% c('proximity', 'count', 'quadratbinary', 'quadratcount')) {
-##            binomN <- switch(detector(traps), proximity=1, count=detectpar$binomN,
-##                quadratbinary=1, quadratcount=detectpar$binomN)
         if (detector(traps) %in% c('proximity', 'count')) {
             binomN <- switch(detector(traps), proximity=1, count=detectpar$binomN)
             temp <- .C("trappingcount", PACKAGE = 'secr',
@@ -282,7 +317,6 @@ sim.capthist <- function (
                 value = integer(N*noccasions*k),
                 resultcode = integer(1)
             )
-
             if (temp$resultcode != 0)
                 stop ("call to 'trappingcount' failed")
             w <- array(dim=c(noccasions, k, temp$n), dimnames = list(1:noccasions,NULL, NULL))
@@ -292,7 +326,10 @@ sim.capthist <- function (
             }
         }
         else
-        if (detector(traps) == 'signal') {
+
+        if (detector(traps) %in% c('signal','cue')) {
+            if (detectpar$binomN != 1)
+                stop ("binomN != 1 not yet implemented for signal detectors")
             temp <- .C("trappingsignal", PACKAGE = 'secr',
                 as.double(beta0),
                 as.double(beta1),
@@ -350,91 +387,65 @@ sim.capthist <- function (
                 attr(w, 'times') <- temp$times[1:sum(w)]
             }
         }
-        else if (detector(traps) %in% c('polygon')) {
-            npoly <- length(levels(polyID(traps)))
-            k <- table(polyID(traps))
-            temp <- .C("trappingpolygon", PACKAGE = 'secr',
+        else if (detector(traps) %in% c('polygon','transect')) {
+            simfunctionname <- paste('trapping', detector(traps), sep='')
+            if (simfunctionname == 'trappingpolygon') {
+                nk <- length(levels(polyID(traps)))
+                k <- table(polyID(traps))
+            }
+            else {
+                nk <- length(levels(transectID(traps)))
+                k <- table(transectID(traps))
+            }
+            temp <- .C(simfunctionname, PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
-                as.integer(npoly),
+                as.integer(nk),
                 as.integer(k),
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
+                as.integer(usage),
                 as.integer(detectfn),
                 as.double(truncate^2),
-                as.integer(detectpar$maxone),
+                as.integer(detectpar$binomN),
                 n = integer(1),
                 caught = integer(N),
-                detectedXY = double (N*noccasions*npoly*200),    ## safety margin 200 detections per animal per poly per occasion
-                value = integer(N*noccasions*npoly),
+                ## safety margin 200 detections per animal per poly per occasion
+                detectedXY = double (N*noccasions*nk*200),
+                value = integer(N*noccasions*nk),
                 resultcode = integer(1)
             )
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)
                     stop (">200 detections per animal per polygon per occasion")
                 else
-                    stop ("call to trappingpolygon failed")
+                    stop ("call to ",simfunctionname, " failed")
             }
-            w <- array(dim=c(noccasions, npoly, temp$n), dimnames = list(1:noccasions,
+            w <- array(dim=c(noccasions, nk, temp$n), dimnames = list(1:noccasions,
                 levels(polyID(traps)), NULL))
             if (temp$n > 0) {
                 w[,,] <- temp$value[1:prod(dim(w))]
                 w <- aperm(w, c(3,1,2))
                 ## put XY coordinates in attribute
                 nd <- sum(abs(w))
-                detectedXY <- data.frame(matrix(nc=2, temp$detectedXY[1:(2*nd)]))
+                detectedXY <- data.frame(matrix(ncol = 2, temp$detectedXY[1:(2*nd)]))
                 names(detectedXY) <- c('x','y')
                 attr(w, 'detectedXY') <- detectedXY
             }
             else
                 attr(w, 'detectedXY') <- NULL
         }
-        else if (detector(traps) %in% c('transect')) {
-            ntransect <- length(levels(transectID(traps)))
-            k <- table(transectID(traps))
-            temp <- .C("trappingtransect", PACKAGE = 'secr',
-                as.double(g0),
-                as.double(sigma),
-                as.double(z),
-                as.integer(noccasions),
-                as.integer(ntransect),
-                as.integer(k),
-                as.integer(N),
-                as.double(animals),
-                as.double(unlist(traps)),
-                as.integer(detectfn),
-                as.double(truncate^2),
-                as.integer(detectpar$maxone),
-                n = integer(1),
-                caught = integer(N),
-                detectedXY = double (N*noccasions*ntransect*200),    ## safety margin 200 detections per animal per transect per occasion
-                value = integer(N*noccasions*ntransect),
-                resultcode = integer(1)
-            )
-            if (temp$resultcode != 0) {
-                if (temp$resultcode == 2)
-                    stop (">200 detections per animal per transect per occasion")
-                else
-                    stop ("call to trappingtransect failed")
-            }
-            w <- array(dim=c(noccasions, ntransect, temp$n), dimnames = list(1:noccasions,
-                levels(transectID(traps)), NULL))
-            if (temp$n > 0) {
-                w[,,] <- temp$value[1:prod(dim(w))]
-                w <- aperm(w, c(3,1,2))
-                nd <- sum(abs(w))
-                detectedXY <- data.frame(matrix(nc=2, temp$detectedXY[1:(2*nd)]))
-                names(detectedXY) <- c('x','y')
-                attr(w, 'detectedXY') <- detectedXY
-            }
-        }
         else stop ('Unrecognised detector type')
 
         if (!is.null(covariates(popn))) {
             covariates(w) <- covariates(popn)[as.logical(temp$caught),, drop=F]
+        }
+        if (detector(traps)=='cue') {
+            group <- ind[as.logical(temp$caught)]
+            covariates(w) <- data.frame(animal = factor(group))   ## overrides
         }
 
         class(w)             <- 'capthist'    ## NOT data.frame
@@ -485,7 +496,7 @@ sim.resight <- function (traps, ..., q = 1, pID = 1, unmarked = TRUE, nonID = TR
     dimnames(M)[[2]] <- 1:S
     countfn <- function(x) {
         x <- x * col(x)   ## x 0/1
-        tabulate(x[x>0], nbin=K)
+        tabulate(x[x>0], nbins = K)
     }
 
     if (unmarked) {

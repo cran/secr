@@ -8,6 +8,8 @@
 ## 2010 02 25 insertdim factor handling improved to retain ordering of levels
 ## 2010-10-09 allow detectfn 6,7
 ## 2010-12-02
+## 2011-01-23 distancetotrap updated for polygons
+## 2011-02-06 distancetotrap updated for polygonX
 ############################################################################################
 
 ############################################################################################
@@ -45,7 +47,7 @@ get.nmix <- function (model) {
 ## distancetotrap <- function (X, traps) {
 ##     ## X should be 2-column dataframe, mask, matrix or similar
 ##     ## with x coord in col 1 and y coor in col 2
-##     X <- matrix(unlist(X),nc=2)
+##     X <- matrix(unlist(X), ncol = 2)
 ##     disttotrap <- function (xy) {
 ##         temp <- .C("nearest",  PACKAGE = 'secr',
 ##         as.double(xy),
@@ -62,7 +64,7 @@ get.nmix <- function (model) {
 ## nearesttrap <- function (X, traps) {
 ##     ## X should be 2-column dataframe, mask, matrix or similar
 ##     ## with x coord in col 1 and y coor in col 2
-##     X <- matrix(unlist(X),nc=2)
+##     X <- matrix(unlist(X), ncol = 2)
 ##     nearest <- function (xy) {
 ##         temp <- .C("nearest",  PACKAGE = 'secr',
 ##         as.double(xy),
@@ -79,23 +81,48 @@ get.nmix <- function (model) {
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
-    X <- matrix(unlist(X),nc=2)
+    X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
+    if (detector(traps) %in% c('polygon', 'transect', 'polygonX', 'transectX')) {
+        ## approximate only
+        traps <- split(traps, polyID(traps))
+        trpi <- function (i, n=100) {
+            intrp <- function (j) {
+                tmp <- data.frame(traps[[i]][j:(j+1),])
+                if (tmp$x[1] == tmp$x[2])
+                    data.frame(x=rep(tmp$x[1], n),
+                               y=seq(tmp$y[1], tmp$y[2], length=n))
+                else
+                    data.frame(approx(tmp, n=n))
+            }
+            tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)
+            do.call(rbind, tmp)
+        }
+        trps <- do.call(rbind, lapply(1:length(traps), trpi))
+        trps <- matrix(unlist(trps), nc=2)
+    }
+    else
+        trps <- traps
     temp <- .C("nearest",  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
-        as.integer(nrow(traps)),
-        as.double(unlist(traps)),
+        as.integer(nrow(trps)),
+        as.double(unlist(trps)),
         index = integer(nxy),
         distance = double(nxy)
     )
+    if (detector(traps) %in% c('polygon', 'polygonX')) {
+        inside <- lapply(traps, insidepoly, xy=X)
+        inside <- do.call(rbind, inside)
+        temp$distance [apply(inside,2,any)] <- 0
+    }
     temp$distance
 }
 
 nearesttrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
-    X <- matrix(unlist(X),nc=2)
+    X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
     temp <- .C("nearest",  PACKAGE = 'secr',
         as.integer(nxy),
@@ -164,12 +191,6 @@ stdform <- function (flist) {
     if (is.null(names(flist))) names(temp) <- lhs
     else names(temp) <- ifelse(names(flist) == '', lhs, names(flist))
     temp
-}
-
-memo <- function (text, trace) {
-    ## could use message(text), but does not immediately flush console
-    if (trace) { cat (text, '\n')
-    flush.console() }
 }
 
 transform <- function (x, link) {
@@ -439,7 +460,8 @@ disinteraction <- function (capthist, groups, sep='.') {
     ngv <- length(groups)
     f <- group.levels(capthist, groups, sep=sep)
     if (ngv>1)
-        temp <- matrix(unlist(strsplit(as.character(f), sep, fixed=TRUE)), byrow=T, nc=ngv)
+        temp <- matrix(unlist(strsplit(as.character(f), sep, fixed=TRUE)),
+                       byrow = T, ncol = ngv)
     else temp <- f
     temp <- data.frame(temp)
     names(temp) <- groups
@@ -453,7 +475,7 @@ secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
     if (any(!(vars %in% names(newdata))))
         stop("one or more model covariates not found in 'newdata'")
     newdata <- as.data.frame(newdata)
-    lpred <- matrix(nc=2,nr=nrow(newdata),dimnames=list(NULL,c('estimate','se')))
+    lpred <- matrix(ncol = 2, nrow = nrow(newdata),dimnames=list(NULL,c('estimate','se')))
     mat <- model.matrix(model, data=newdata)
     ## drop pmix beta0 column from design matrix (always zero)
     if (field=='pmix') {
@@ -467,7 +489,7 @@ secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
         nrw <- 1:nrow(mat)
         vcv <- apply(expand.grid(nrw, nrw), 1, function(ij)
             mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
-        vcv <- matrix (vcv, nr = nrw)
+        vcv <- matrix (vcv, nrow = nrw)
         lpred[,2] <- diag(vcv)^0.5
         temp <- cbind(newdata,lpred)
         attr(temp, 'vcv') <- vcv
@@ -531,7 +553,7 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
     if (nrow(design$parameterTable)==1) temp <- t(temp)
     nrw <- nrow(temp)
     ## make new matrix and insert columns in right place
-    temp2 <- as.data.frame(matrix(nr=nrw, nc=length(detectionparameters)))
+    temp2 <- as.data.frame(matrix(nrow = nrw, ncol = length(detectionparameters)))
     names(temp2) <- detectionparameters
     temp2[ , names(design$designMatrices)] <- temp          ## modelled
     if (!is.null(fixed.dp) & length(fixed.dp)>0)
@@ -584,6 +606,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
                            capthist, mask, detectfn = 0, CL = T, groups = NULL,
                            details, logmult, dig = 3, betaw = 10)
 
+## 2011-01-04 param=1 GR parameterisation
+
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
 
 # Transformed parameter values (density, g0, sigma, z etc.) are passed in the vector 'beta'
@@ -594,7 +618,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
 # details$trace=T sends a one-line report to the screen
 
 {
-    MS <- inherits(capthist,'list')
+    MS <- ms(capthist)    ## updated 2011-01-07
     if (MS) sessionlevels <- session(capthist)   ## was names(capthist) 2009 08 15
     else sessionlevels <- 1
     nsession <- length(sessionlevels)
@@ -665,7 +689,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
 
         dettype <- detectorcode(session.traps)
 
-        if (dettype == 5) {    # signal strength
+        if (dettype %in% c(5,9)) {    # cue or signal strength
             session.signal <- signal(session.capthist)
             session.signal <- switch( details$tx,
                 log = log(session.signal),
@@ -676,9 +700,22 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
         else
             session.signal <- 0
 
-        if (dettype %in% c(6,7)) {
-            k <- c(table(polyID(session.traps)),0)
-            K <- length(k)-1
+        if (dettype == 9)   ## cue
+            cuerate <- exp(beta[max(unlist(parindx))+1])   ## fudge: last
+        else
+            cuerate <- 1 ## dummy
+
+        if (dettype %in% c(3,6)) {
+            k <- table(polyID(session.traps))
+            K <- length(k)
+            k <- c(k,0)   ## zero terminate
+            session.xy <- xy(session.capthist)
+        }
+        else
+        if (dettype %in% c(4,7)) {
+            k <- table(transectID(session.traps))
+            K <- length(k)
+            k <- c(k,0) ## zero terminate
             session.xy <- xy(session.capthist)
         }
         else {
@@ -728,7 +765,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
         # cat ('session.grp = ', session.grp, '\n')
         # cat('Mask\n')
         # print(summary(session.mask))
-        ## PIA = parameter index array
+        # PIA = parameter index array
         # cat ('design$PIA','\n')
         # print(table(design$PIA[sessg,1:nc,1:s,1:k]))
         # cat ('design0$PIA','\n')
@@ -739,6 +776,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
         # print (table(D[1:m,,sessD]))
         # cat ('sessg = ', sessg, '\n')
         # cat ('cell  = ', cell, '\n')
+        # cat ('cuerate  = ', cuerate, '\n')
         # cat ('CL = ', CL, '\n')
         # cat ('density ', density, '\n')
         # stop('Debug stop')
@@ -746,22 +784,30 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
         ## For conditional likelihood, supply a value for each
         ##  animal, not just groups
 
-        K <- ifelse (detector(session.traps) %in% c('polygon', 'transect'),
+        K <- ifelse (detector(session.traps) %in% c('polygon', 'transect','polygonX', 'transectX'),
             length(k)-1, k)
         if (CL) tempPIA0 <- design0$PIA[sessg,1:nc,1:s,1:K, ]
         else tempPIA0 <- design0$PIA[sessg,1:ngrp,1:s,1:K, ]     ## drop=FALSE unnecessary?
-        distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
+        if (is.numeric(details$distribution)) {
+            if (details$distribution < nc)
+                stop ("superpopulation (details$distribution) is less than number observed")
+            distrib <- details$distribution
+        }
+        else
+            distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
+
         temp <- .C('secrloglik', PACKAGE = 'secr',
             as.integer(CL),       # 0 = full, 1 = CL
             as.integer(dettype),  # 0 = multicatch, 1 = proximity, etc
+            as.integer(details$param), # 0 = Borchers & Efford, 1 Gardner & Royle
             as.integer(distrib),  # Poisson = 0 vs binomial = 1 (distribution of n)
             as.integer(session.capthist),
-            as.double(unlist(session.xy)),                 # polygon or transect detection locations
+            as.double(unlist(session.xy)),         # polygon or transect detection locations
             as.double(session.signal),
             as.integer(session.grp),
             as.integer(nc),
             as.integer(s),
-            as.integer(k),                                 # may be zero-terminated vector for parts of polygon or transect detector
+            as.integer(k), # may be zero-terminated vector for parts of polygon or transect detector
             as.integer(m),
             as.integer(ngrp),
             as.integer(details$nmix),
@@ -775,6 +821,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
             as.integer(design$PIA[sessg,1:nc,1:s,1:K,]),   # index of nc,S,K,mix to rows in Xrealparval
             as.integer(tempPIA0),                          # index of ngrp,S,K,mix to rows in Xrealparval0
             as.double(cell),                               # mask cell area
+            as.double(cuerate),                            # miscellaneous parameter
             as.integer(detectfn),
             as.integer(details$binomN),
             as.double(details$cutval),
@@ -792,6 +839,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 
 
     ####################################################
 
+    if (!(dettype==9))
     loglik <- loglik + logmult   ## term calc before and saved as global variable
 
     if (details$trace) {
@@ -976,9 +1024,8 @@ MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design
 
         ## 2009 08 21
         distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
-
         temp <- .C('MRsecrloglik', ## PACKAGE = 'secr',
-            as.integer(dettype),  # 0 = multicatch, 1 = proximity, 2 = signal, 3 = count, 4 = area search
+            as.integer(dettype),  # 0 = multicatch, 1 = proximity, 2 = signal, 3 = count etc.
             as.integer(distrib),  # Poisson = 0 vs binomial = 1 (distribution of n)
             as.integer(session.capthist),
             as.integer(session.Tu),
@@ -1049,7 +1096,7 @@ make.lookup <- function (tempmat) {
 
     if (temp$result != 0)
         stop ("error in external function 'makelookup'; perhaps problem is too large")
-    lookup <- matrix(temp$y[1:(ncl*temp$unique)], nr=temp$unique, byrow=T)
+    lookup <- matrix(temp$y[1:(ncl*temp$unique)], nrow = temp$unique, byrow = T)
 
     colnames(lookup) <- colnames(tempmat)
     list (lookup=lookup, index=temp$index)

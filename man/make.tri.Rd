@@ -13,10 +13,7 @@
 \usage{
 
 make.tri (nx = 10, ny = 12, spacing = 20, detector = 'multi',
-    binomN = 0, originxy = c(0,0))
-
-% make.hex (nx = 10, ny = 12, spacing = 20, detector = 'multi',
-%    binomN = 0, originxy = c(0,0))
+    originxy = c(0,0))
 
 clip.hex (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     fuzz = 1e-3, ID = 'num', ...)
@@ -28,7 +25,6 @@ clip.hex (traps, side = 20, centre = c(50, 60*cos(pi/6)),
   \item{ny}{ number of rows of detectors }
   \item{spacing}{ distance between detectors (x and y directions)}
   \item{detector}{ character value for detector type - 'single', 'multi' etc. }
-  \item{binomN}{ maximum value when detector == 'count' }
   \item{originxy}{ vector origin for x-y coordinates }
 
   \item{traps}{ traps object }
