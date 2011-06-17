@@ -1,0 +1,118 @@
+\name{writeGPS}
+\alias{writeGPS}
+
+\title{
+Upload to GPS
+}
+\description{
+
+  Upload a set of point locations as waypoints to a GPS unit connected
+by USB or via a serial port. Intended primarily for detector locations
+in a traps object. Uses the GPSBabel package which must have been
+installed. Coordinates are first inverse-projected to latitude and
+longitude using function \code{project} from \pkg{rgdal}.
+
+}
+\usage{
+
+writeGPS(xy, o = "garmin", F = "usb:", proj = "+proj=nzmg")
+
+}
+
+\arguments{
+  \item{xy}{2-column matrix or dataframe of x-y coordinates}
+  \item{o}{character output format (see GPSBabel documentation)}
+  \item{F}{character for destination (see Details)}
+  \item{proj}{character string describing projection}
+}
+\details{
+  
+This function is derived in part from \code{readGPS} in \pkg{maptools}.
+
+For users of Garmin GPS units, useful values of \code{o} are `garmin'
+for direct upload via USB or serial ports, and `gdb' for a file in
+Mapsource database format.
+
+\code{F} may be `usb:' or `com4:' etc. for upload via USB or serial
+ports, or the name of a file to create.
+
+The \code{proj} argument may be complex. For further information see the
+Examples, \url{http://www.remotesensing.org/geotiff/proj_list/} and the
+help for related package \pkg{rgdal}. If \code{proj} is an empty string
+then coordinates are assumed already to be latitudes (column 1) and
+longitudes (column 2).
+
+Waypoint names are derived from the rownames of \code{xy}.
+
+}
+
+\value{
+  
+No value is returned. The effect is to upload waypoints to an attached
+  GPS or file. 
+
+}
+
+\seealso{
+
+  \code{\link{make.systematic}}, \code{\link[maptools]{readGPS}},
+  \code{\link[rgdal]{project}}
+ 
+}
+
+\note{
+  
+  GPSBabel is available free from
+\url{http://www.gpsbabel.org/}. Remember to add it to the Path. On
+Windows this means following something like Settings > Control panel >
+System > Advanced settings > Environment variables > (select Path) Edit
+and adding `;C:/Program Files (x86)/gpsbabel' to the end (without the
+quotes). Or `;C:/Program Files/gpsbabel' on 32-bit systems.
+  
+}
+
+\examples{
+
+## Example using shapefile "possumarea.shp" in
+## "extdata" folder. As 'cluster' is not specified,
+## the grid comprises single multi-catch detectors.
+
+\dontrun{
+require(maptools)
+setwd(system.file("extdata", package = "secr"))
+possumarea <- readShapePoly('possumarea')  
+possumgrid <- make.systematic(spacing = 100, region =
+    possumarea, plt = TRUE)
+
+## May upload directly to GPS...
+writeGPS(possumgrid, proj = "+proj=nzmg")
+
+## ...or save as Mapsource file
+writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
+    proj = "+proj=nzmg")
+
+## If 'region' had been specified in another projection
+## we would need to specify this as in Proj.4. Here is
+## an example for New Zealand Transverse Mercator with
+## datum NZGD2000.
+
+NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
+    "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
+    " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+
+writeGPS(possumgridNZTM, o = "gdb", F = "tempNZTM.txt", 
+    proj = NZTM)
+
+## Or to upload coordinates from UTM Zone 18 in eastern
+## Maryland, USA...
+
+writeGPS(MarylandUTMgrid, proj =
+    "+proj=utm +zone=18 +ellps=WGS84")
+
+}
+
+}
+
+\keyword{ manip }
+
+

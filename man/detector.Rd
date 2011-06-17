@@ -30,12 +30,12 @@ detector(object) <- value
 
 \details{
 
-Valid detector types in \pkg{secr} 2.0 are `single', `multi',
-`proximity', `count', `signal', `polygon', `transect', `polygonX', and
-`transectX'. The detector type is stored as an attribute of a
-\code{traps} object.  Detector types are mostly described by Efford et
-al. (2009a,b; see also \url{../doc/secr-overview.pdf}). Polygon and
-transect detector types are for area and linear searches as described in
+Valid detector types are `single', `multi', `proximity', `count',
+`signal', `polygon', `transect', `polygonX', and `transectX'. The
+detector type is stored as an attribute of a \code{traps} object.
+Detector types are mostly described by Efford et al. (2009a,b; see also
+\url{../doc/secr-overview.pdf}). Polygon and transect detector types are
+for area and linear searches as described in
 \url{../doc/secr-polygondetectors.pdf} and Efford (2011). The `signal'
 detector type is used for acoustic data as described in
 \url{../doc/secr-sound.pdf}.

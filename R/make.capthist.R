@@ -5,7 +5,8 @@
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
-    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01)
+    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01,
+    noncapt = 'NONE')
 
 # captures is a dataframe with the structure:
 # fmt = 'trapID'
@@ -34,7 +35,6 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
     else
         sessionlevels <- sort(sessionlevels)
     session <- factor(session, levels=sessionlevels)
-
 
     MS <- bysession & ( length(sessionlevels) > 1)
     if (MS) {  # recursive call of make.capthist
@@ -69,16 +69,19 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
     else ## single-session call
     {
-        if (!(fmt %in% c('trapID','XY'))) stop ("capture format not recognised")
+        if (!(fmt %in% c('trapID','XY')))
+            stop ("capture format not recognised")
         if (fmt!='trapID') {
-          if (ncol(captures)<5) stop ("too few columns in capture matrix")
+          if (ncol(captures)<5)
+              stop ("too few columns in capture matrix")
 
           if (detector(traps) %in% c('polygon','polygonX')) {
               captTrap <- xyinpoly(captures[,4:5], traps)
               if (any(captTrap==0)) {
                   captures <- captures[captTrap>0,]  ## first! 20110-11-17
                   captTrap <- captTrap[captTrap>0]
-                  warning ("detections with coordinates outside polygon(s) were dropped")
+                  warning ("detections with coordinates outside ",
+                           "polygon(s) were dropped")
               }
           }
           else if (detector(traps) %in% c('transect','transectX')) {
@@ -86,19 +89,21 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
               if (any(captTrap==0)) {
                   captTrap <- captTrap[captTrap>0]
                   captures <- captures[captTrap>0,]
-                  warning ("detections with coordinates not on any transect were dropped")
+                  warning ("detections with coordinates not on ",
+                           "any transect were dropped")
               }
           }
           else {
               trapID    <- interaction(traps$x, traps$y)
               captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
               if (any(is.na(captTrap)))
-                  stop ("failed to match some capture locations to detector sites")
+                  stop ("failed to match some capture locations ",
+                        "to detector sites")
           }
         }
         else {
           if (detector(traps) %in% c('polygon', 'transect','polygonX', 'transectX'))
-              stop ('use fmt XY to input detections from polygons or transects')
+              stop ("use fmt XY to input detections from polygons or transects")
           captTrap <- match(captures[,4], row.names(traps))
         }
 
@@ -123,117 +128,143 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
 
         dim3 <- detector(traps) %in% c('proximity', 'signal', 'count',
-            'polygon','transect')
+            'polygon','transect','unmarked')
         if (dim3) {
             w <- array (0, dim=c(nID, nocc, ndetector(traps)))
-            dimnames(w) <- list(1:nID, 1:nocc, 1:ndetector(traps))
-            temp <- table (captID, abs(captures[,3]), captTrap)
-            d <- dimnames(temp)
-            d <- lapply(d, as.numeric)
-            w[d[[1]], d[[2]], d[[3]]] <- temp
+            ## 2011-03-19, 2011-03-27
+            ## drop rows if dummy input row indicates no captures
+            if (any(uniqueID == noncapt)) {
+                if (any(uniqueID != noncapt))
+                    stop ("cannot combine data and noncapt")
+                w <- w[FALSE, , , drop = FALSE]
+                dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
+            }
+            else {
+                dimnames(w) <- list(1:nID, 1:nocc, 1:ndetector(traps))
+                temp <- table (captID, abs(captures[,3]), captTrap)
+                d <- dimnames(temp)
+                d <- lapply(d, as.numeric)
+                w[d[[1]], d[[2]], d[[3]]] <- temp
 
-            ## fix to retain deads 2010-08-06
-            dead <- captures[,3]<0
-            deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
-            w[deadindices] <- w[deadindices] * -1
-            #################################
+                ## fix to retain deads 2010-08-06
+                dead <- captures[,3]<0
+                deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
+                w[deadindices] <- w[deadindices] * -1
+                #################################
+            }
         }
         else {
-            w     <- matrix(nrow = nID, ncol = nocc)
-            w[,]  <- 0
-
-            ## adjusted 2009 08 13 to ensure first occurrence selected when
-            ## more than one per occasion
-            indices <- cbind(captID, abs(captures[,3]))
-            values <- captTrap * sign(captures[,3])
-            ord <- order (captID, 1:length(captID), decreasing=TRUE)
-            ## drop=F is critical in next line to ensure retains dim2
-            w[indices[ord,, drop=F]] <- values[ord]
+            w     <- matrix(0, nrow = nID, ncol = nocc)
+            ## 2011-03-19, 2011-03-27
+            ## drop rows if dummy input row indicates no captures
+            if (any(uniqueID == noncapt)) {
+                if (any(uniqueID != noncapt))
+                    stop ("cannot combine data and noncapt")
+                w <- w[FALSE, , drop = FALSE]
+            }
+            else {
+                ## adjusted 2009 08 13 to ensure first occurrence selected when
+                ## more than one per occasion
+                indices <- cbind(captID, abs(captures[,3]))
+                values <- captTrap * sign(captures[,3])
+                ord <- order (captID, 1:length(captID), decreasing=TRUE)
+                ## drop=F is critical in next line to ensure retains dim2
+                w[indices[ord,, drop=F]] <- values[ord]
+            }
         }
 
         wout <- abind(wout, w, along=1)
-        dimnames(wout)[[1]] <- uniqueID
         dimnames(wout)[[2]] <- 1:nocc
 
-        ## check added 2010 05 01
-        if (any(is.na(wout))) {
-            rw <- row(wout)[is.na(wout)]
-            if (dim3)
-                print (wout[rw,,,drop=F])
-            else
-                print (wout[rw,,drop=F])
-            stop ('missing values not allowed')
-        }
+        if (nrow(wout) > 0) {
 
-        ## optional row sort 2009 09 26, tweaked 2010 05 01
-        if (sortrows) {
-            if (suppressWarnings( all(!is.na(as.numeric(uniqueID)))))
-                roworder <- order(as.numeric(uniqueID))
-            else
-                roworder <- order (uniqueID)
-            if (length(dim(wout))==3)
-                wout[,,] <- wout[roworder,,]
-            else
-                wout[,] <- wout[roworder,]
-            dimnames(wout)[[1]] <- dimnames(wout)[[1]][roworder]
-        }
+            dimnames(wout)[[1]] <- uniqueID
 
-        ## code to input permanent individual covariates if these are present
-        zi <- NULL
-        startcol <- ifelse (fmt=='trapID', 5, 6)
-        if (detector(traps) %in% c('signal')) startcol <- startcol+1
-        if (ncol(captures) >= startcol)
-            zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
-        if (!is.null(zi)) {
-            # find first match of ID with positive value for each covar
-            temp <- zi[1:length(uniqueID),,drop=FALSE]
-            temp[,] <- NA
-
-            for (j in 1:ncol(zi)) {
-                nonmissing <- function(x) x[!is.na(x)][1]
-                ## levels=uniqueID to retain sort order
-                tempj <- split(zi[,j], factor(captures[,2], levels=uniqueID))
-                tempj2 <- sapply(tempj, nonmissing)
-                ## 2011-01-20 only convert to factor if character
-                if (is.character(tempj2))
-                   tempj2 <- factor(tempj2)
-                temp[,j] <- tempj2
-                rownames(temp) <- names(tempj)          ## 2010 02 26
+            ## check added 2010 05 01
+            if (any(is.na(wout))) {
+                rw <- row(wout)[is.na(wout)]
+                if (dim3)
+                    print (wout[rw,,,drop=F])
+                else
+                    print (wout[rw,,drop=F])
+                stop ("missing values not allowed")
             }
-            if (is.null(covnames)) names(temp) <- names(zi)
-            else {
-                if (ncol(temp) != length(covnames))
-                    stop("number of covariate names does not match")
-                names(temp) <- covnames
+
+            ## optional row sort 2009 09 26, tweaked 2010 05 01
+            if (sortrows) {
+                if (suppressWarnings( all(!is.na(as.numeric(uniqueID)))))
+                    roworder <- order(as.numeric(uniqueID))
+                else
+                    roworder <- order (uniqueID)
+                if (length(dim(wout))==3)
+                    wout[,,] <- wout[roworder,,]
+                else
+                    wout[,] <- wout[roworder,]
+                dimnames(wout)[[1]] <- dimnames(wout)[[1]][roworder]
             }
-            ## added 'FALSE' 2010 02 24 -
-            if (sortrows) temp <- temp[roworder,,drop = FALSE]
-            attr(wout,'covariates') <- temp
+
+            ## code to input permanent individual covariates if these are present
+            zi <- NULL
+            startcol <- ifelse (fmt=='trapID', 5, 6)
+            if (detector(traps) %in% c('signal')) startcol <- startcol+1
+            if (ncol(captures) >= startcol)
+                zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
+            if (!is.null(zi)) {
+                # find first match of ID with positive value for each covar
+                temp <- zi[1:length(uniqueID),,drop=FALSE]
+                temp[,] <- NA
+
+                for (j in 1:ncol(zi)) {
+                    nonmissing <- function(x) x[!is.na(x)][1]
+                    ## levels=uniqueID to retain sort order
+                    tempj <- split(zi[,j], factor(captures[,2], levels=uniqueID))
+                    tempj2 <- sapply(tempj, nonmissing)
+                    ## 2011-01-20 only convert to factor if character
+                    if (is.character(tempj2))
+                       tempj2 <- factor(tempj2)
+                    temp[,j] <- tempj2
+                    rownames(temp) <- names(tempj)          ## 2010 02 26
+                }
+                if (is.null(covnames)) names(temp) <- names(zi)
+                else {
+                    if (ncol(temp) != length(covnames))
+                        stop ("number of covariate names does not match")
+                    names(temp) <- covnames
+                }
+                ## added 'FALSE' 2010 02 24 -
+                if (sortrows) temp <- temp[roworder,,drop = FALSE]
+                attr(wout,'covariates') <- temp
+            }
+            else attr(wout,'covariates') <- data.frame()
+
         }
-        else attr(wout,'covariates') <- data.frame()
 
         class (wout) <- 'capthist'
         traps(wout) <- traps
         session(wout)  <- as.character(captures[1,1])
-        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
-            ## 2011-01-21
-            xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
-            names(xy) <- c('x','y')
-            attr(wout,'detectedXY') <- xy
-        }
 
-        if (detector(traps) == 'signal') {
-            if (is.null(cutval))
-                stop ("missing value for signal threshold")
-            if (fmt=='XY')
-                signl <- captures[,6]
-            else
-                signl <- captures[,5]
-            signl[is.na(signl)] <- -Inf
-            signl <- signl[order(captTrap, abs(captures[,3]), captID)]
-            attr(wout, 'signal') <- signl
-            attr(wout, 'cutval')   <- cutval
-            wout <- subset(wout, cutval = cutval)
+        if (nrow(wout) > 0) {
+
+            if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+                ## 2011-01-21
+                xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
+                names(xy) <- c('x','y')
+                attr(wout,'detectedXY') <- xy
+            }
+
+            if (detector(traps) == 'signal') {
+                if (is.null(cutval))
+                    stop ("missing value for signal threshold")
+                if (fmt=='XY')
+                    signl <- captures[,6]
+                else
+                    signl <- captures[,5]
+                signl[is.na(signl)] <- -Inf
+                signl <- signl[order(captTrap, abs(captures[,3]), captID)]
+                attr(wout, 'signal') <- signl
+                attr(wout, 'cutval')   <- cutval
+                wout <- subset(wout, cutval = cutval)
+            }
         }
 
         wout

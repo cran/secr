@@ -11,7 +11,7 @@
 \method{plot}{traps}(x, border = 100, label = FALSE, offset = c(6,6), add = FALSE,
   hidetr = FALSE, detpar = list(), txtpar = list(), bg = "white",
   gridlines = TRUE, gridspace = 100, gridcol = "grey", 
-  markvarying = FALSE, ...)
+  markused = FALSE, markvarying = FALSE, ...)
 }
 
 \arguments{
@@ -27,7 +27,9 @@
   \item{gridlines}{ logical for plotting grid lines }
   \item{gridspace}{ spacing of gridlines }
   \item{gridcol}{ colour of gridlines }
-  \item{markvarying}{ logical to distinguish detectors whose usage varies among ocasions }
+  \item{markused}{ logical to distinguish detectors used on at least one
+  occasion}
+  \item{markvarying}{ logical to distinguish detectors whose usage varies among occasions }
   \item{\dots}{ arguments to pass to \code{eqscplot} }
 }
 \details{

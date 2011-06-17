@@ -28,7 +28,7 @@ Data of V. H. Reid from live trapping of deermice (\emph{Peromyscus
 
 Two datasets of V. H. Reid were described by Otis et al. (1978) and
 distributed with their CAPTURE software (now available from
-\url{www.mbr-pwrc.usgs.gov/software.html}). They have been used in
+\url{http://www.mbr-pwrc.usgs.gov/software.html}). They have been used in
 several other papers on closed population methods (e.g., Huggins 1991,
 Stanley and Richards 2005). This description is based on pages 32 and
 87--93 of Otis et al. (1978).
@@ -80,6 +80,9 @@ WSG.0, WSG.b, WSG.t, WSG.h2, each with the indicated effect on g0). Otis
 et al. (1978) draw attention to the tendency of \emph{Peromyscus} to become
 `trap happy', and we observe that models with a behavioural response
 (ESG.b, WSG.b) have the lowest AIC among those fitted here.
+
+Some components of the fitted secr models have been removed with
+\code{\link{trim}} to save space.
 
 \tabular{ll}{
   Object \tab Description \cr

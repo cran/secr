@@ -4,6 +4,8 @@
 ## last changed 2009 12 02, 2010-12-01 ms()
 ## 2010-12-01 check for overlapping columns
 ## 2011-02-08 rewritten to include polygonX and transectX detectors, and simplified
+## 2011-03-18 output to unmarked
+## 2011-03-21 'by' argument
 ############################################################################################
 
 #----------------------------------------------------------------------------------------------------
@@ -68,9 +70,23 @@
         temp
     }
 
+## function to make list in which each component is a
+## subset of occasions (for use in reduce.capthist)
+## MGE 2011-03-10
+
+split.by <- function (x, by) {
+    if ((length(x) == 1) & (x[1] > 1))
+        x <- 1:x
+    if (by < 1)
+        stop ("invalid 'by' argument")
+    index <- 1:length(x)
+    gp <- trunc((index-1)/by) + 1
+    split (index, gp)
+}
+
 reduce.capthist <- function (object, columns = NULL, outputdetector =
     detector(traps(object)), select='last', dropunused = TRUE, verify = TRUE, sessions =
-    NULL, ...) {
+    NULL, by = 1, ...) {
 
     # columns - list, each element gives occasions to include in new capthist
 
@@ -132,7 +148,9 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
             outputdetector = outputdetector,
             select = select,
             dropunused = dropunused,
-            verify = verify, ...)
+            verify = verify,
+            by = by,
+            ...)
         class(temp) <- c('list', 'capthist')
         if (length(temp) == 1) temp <- temp[[1]]
         return(temp)
@@ -145,18 +163,25 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
         nrw <- nrow(object)
         cutval <- attr(object, 'cutval')
-        if (is.null(columns)) columns <- as.list(1:ncol(object))
+        if (is.null(columns)) {
+##          columns <- as.list(1:ncol(object))
+            columns <- split.by (1:ncol(object), by)
+            if ((ncol(object) %% by) > 0)
+                warning ("number of occasions is not a multiple of 'by'")
+        }
+
         if (is.null(outputdetector)) outputdetector <- inputdetector
         if (!(outputdetector %in% .localstuff$validdetectors))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
+        if (inputdetector == 'unmarked')
+            stop ("'unmarked' not allowed as input to reduce.capthist")
         if ((inputdetector != 'signal') && (outputdetector == 'signal'))
                 stop ("cannot convert non-signal data to signal data")
         if ((!(inputdetector %in% polygons)) && (outputdetector %in% polygons))
                 stop ("cannot convert non-polygon data to 'polygon' data")
         if ((!(inputdetector %in% transects)) && (outputdetector %in% transects))
                 stop ("cannot convert non-transect data to 'transect' data")
-
 
         ####################################
         ## check columns
@@ -179,9 +204,9 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         ################################
 
         df <- data.frame(
-            trap = trap(object,name=F),
+            trap = trap(object, names = F),
             occ = occasion(object),
-            ID = animalID(object,name=F),
+            ID = animalID(object, names = F),
             alive = alive(object))
 
         if (outputdetector %in% c(polygons, transects)) {
@@ -271,27 +296,43 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         dimnames(tempnew)[[1]] <- 1:nrow(tempnew)    ## temporary, for animalID in subset
         if (!is.null(usage(traps(tempnew)))) {
             usagematrix <- unlist(sapply (columns, fnused, max))
-            usagematrix <- matrix(usagematrix, nr=nrow(traps(tempnew)))
+            usagematrix <- matrix(usagematrix, nrow = nrow(traps(tempnew)))
             usage(traps(tempnew)) <- usagematrix
             if (dropunused) {
                 OK <- apply(usagematrix, 1, sum) > 0
-                tempnew <- subset(tempnew, traps=OK)
+                tempnew <- subset(tempnew, traps = OK)
             }
         }
         tempnew[is.na(tempnew)] <- 0
 
         ################################
-        ## dimnames
-        if (nrow(tempnew)>0) {
-            indices <- (1:length(validrows))[validrows]
-            rowname <- rownames(object)[indices]
+        ## output to unmarked
+        ## 2011-03-18
+        if (outputdetector == 'unmarked') {
+            counts <- apply(tempnew,2:3,sum, drop = F)
+            ## trap x occasion matrix
+            attr(tempnew, 'Tu') <- t(counts)
+            covariates(tempnew) <- NULL
+            tempnew1 <- array(dim = c(0, dim(tempnew)[2:3]))
+            mostattributes(tempnew1) <- attributes(tempnew)
+            dim (tempnew1) <- c(0, dim(tempnew)[2:3])
+            tempnew <- tempnew1
         }
-        else
-            rowname <- NULL
-        if (length(dim(tempnew)) == 3)
-            dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
-        else
-            dimnames(tempnew) <- list(rowname,1:nnew)
+
+        ################################
+        ## dimnames
+        if (!(outputdetector == 'unmarked')) {
+            if (nrow(tempnew)>0) {
+                indices <- (1:length(validrows))[validrows]
+                rowname <- rownames(object)[indices]
+            }
+            else
+                rowname <- NULL
+            if (length(dim(tempnew)) == 3)
+                dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
+            else
+                dimnames(tempnew) <- list(rowname,1:nnew)
+        }
 
         if (verify) verify(tempnew, report=1)
 

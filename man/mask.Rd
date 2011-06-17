@@ -39,7 +39,7 @@ number of rows equals the number of points.
 Possible mask attributes
 \tabular{ll}{
   Attribute \tab Description \cr
-  type \tab `traprect', `trapbuffer', `pdot', `polygon' (see make.mask) or `user' \cr
+  type \tab `traprect', `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer' (see make.mask) or `user' \cr
 polygon \tab vertices of polygon defining habitat boundary, for type = `polygon' \cr
 pdotmin \tab threshold of \eqn{p.(\mathbf{X})}{p.(X)} for type = `pdot' \cr
 covariates \tab dataframe of site-specific covariates \cr

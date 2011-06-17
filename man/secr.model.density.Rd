@@ -20,10 +20,11 @@ for each predictor.
 
 Predictors may be based on Cartesian coordinates (e.g. `x' for an
 east-west trend), a continuous habitat variable (e.g. vegetation cover)
-or a categorical (factor) habitat variable.  Predictors must be known for
-all points in the mask (non-habitat excluded).  The variables `x', `y',
-`session' and `g' are provided automatically.  Other covariates should be
-named columns in the `covariates' attribute of the habitat mask.
+or a categorical (factor) habitat variable.  Predictors must be known
+for all points in the mask (non-habitat excluded).  The variables `x',
+`y', `x2', `y2', `xy', `session' and `g' are provided automatically.
+Other covariates should be named columns in the `covariates' attribute
+of the habitat mask.
 
 The fitted model for density is linear on the link scale (see the
 \code{link} argument of \code{\link{secr.fit}}. The default link for
@@ -33,6 +34,9 @@ density is `log'.
 Variable \tab Description \tab Data source \cr
 x        \tab x-coordinate   \tab automatic \cr
 y        \tab y-coordinate   \tab automatic \cr
+x2        \tab x-coordinate^2   \tab automatic \cr
+y2        \tab y-coordinate^2   \tab automatic \cr
+xy        \tab x-coordinate * y-coordinate   \tab automatic \cr
 session  \tab session factor \tab automatic \cr
 Session  \tab session number 0:(\eqn{R}-1) \tab automatic \cr
 g        \tab group factor   \tab automatic \cr

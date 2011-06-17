@@ -1,9 +1,10 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## ip.secr.R
 ## last changed 2009 09 12, 2009 09 14
 ## 2010 07 01 alpha detection function
-############################################################################################
+## 2011 06 15 tidy up
+###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3,
@@ -26,11 +27,12 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         detectfn <- detectionfunctionnumber(detectfn)
 
     if (!(detectfn %in% 0:11))
-        stop ('unrecognised detectfn')
+        stop ("unrecognised detectfn")
     if (!(detectfn %in% c(0,2,4)))
-        stop (paste(detectionfunctionname(detectfn),
-                    "detection function not implemented in ip.secr"))
-    np <- length(parnames(detectfn))
+        stop (detectionfunctionname(detectfn),
+            " detection function not implemented in ip.secr")
+    pnames <- c('D', parnames(detectfn))
+    np <- length(pnames)
     traps <- traps(capthist)
     noccasions <- ncol(capthist)
     if (length(boxsize)==1) boxsize <- rep(boxsize, np)
@@ -42,23 +44,26 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     simfn <- function (parval) {
         D <- parval[1]
         detectpar <- as.list(parval[-1])
-        names(detectpar) <- parnames[-1]
+        names(detectpar) <- pnames[-1]
         detectpar[['g0']] <- invodds(detectpar[['g0']])
         if (is.null(mask))
             popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
         else
             popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
-        simcapthist <- sim.capthist(traps, popn, detectfn, detectpar, noccasions)
+        simcapthist <- sim.capthist(traps, popn, detectfn, detectpar,
+            noccasions)
         predictorfn (simcapthist, predictortype)
     }
 
     ## to test if current solution is within box
-    within <- function (i) (par[i] >= vertices[[i]][1]) & (par[i] <= vertices[[i]][2])
+    within <- function (i) (par[i] >= vertices[[i]][1]) & (par[i] <=
+                               vertices[[i]][2])
 
     ## target values of predictor
     y <- predictorfn(capthist, predictortype)
     if (length(y) != np)
-        stop(paste("need one predictor for each parameter", parnames, collapse=" "))
+        stop ("need one predictor for each parameter ",
+             paste(pnames, collapse=" "))
 
     if (is.null(start)) {
         cat('\nFinding starting values ...\n')
@@ -70,19 +75,21 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         else
             start <- unlist(autoini(capthist, mask))
         ## ad hoc bias adjustment
-        if (detector(traps)=='single') start[2] <- invodds(odds(start[2]) * 1.4)
+        if (detector(traps)=='single')
+            start[2] <- invodds(odds(start[2]) * 1.4)
         if (detectfn %in% 1) start <- c(start,5)  ## z
     }
     par <- start
-    names(par) <- parnames
+    names(par) <- pnames
     par['g0'] <- odds(par['g0'])
 
     for (m in 1:maxbox) {
         cat('\nFitting box', m, '...   (g0 on odds scale) \n')
-        names(par) <- parnames
-        vertices <- sweep (1 + outer(c(-1,1), boxsize), MARGIN = 2, FUN = '*', STATS = par)
+        names(par) <- pnames
+        vertices <- sweep (1 + outer(c(-1,1), boxsize), MARGIN = 2,
+                           FUN = '*', STATS = par)
         vertices <- data.frame(vertices)
-        names(vertices) <- parnames
+        names(vertices) <- pnames
         rownames(vertices) <- c('min','max')
         print(vertices)
         cat('\n')
@@ -104,14 +111,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             design <- rbind(design,basedesign[OK,])
             if ((nrow(design) > max.nsim)) break
             sim.lm <- lm ( sim ~ design )
-            CV <- sapply(summary(sim.lm), function(x) x$sigma) / y / sqrt(nrow(sim))
+            CV <- sapply(summary(sim.lm), function(x) x$sigma) / y /
+                sqrt(nrow(sim))
             ## following is almost identical in effect; requires 'indices'
             ## CV <- apply (sim,2, function (x) tapply(x, indices, function(y)
             ##       sd(y)/mean(y)/sqrt(nrow(sim))))
             if (all(CV <= CVmax)) break
         }
         if (nrow(design)/(2^np+centre) > max.nsim) {
-            warning ("exceeded maximum allowable replicates without achieving 'CVmax'")
+            warning ("exceeded maximum allowable replicates ",
+                     "without achieving 'CVmax'")
             return (NA)
         }
         else {
@@ -123,16 +132,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         }
     }
     if (!all(sapply(1:np, within)))
-        warning (paste("solution not found after", maxbox, "attempts"))
+        warning ("solution not found after ", maxbox, " attempts")
 
-    names(par) <- parnames
+    names(par) <- pnames
 
     if (var.nsim>1) {
         cat('Simulating for variance ...\n')
         flush.console()
         cat('\n')
         vardesign <- matrix(par, nrow = var.nsim, ncol = np, byrow = T)
-        colnames(vardesign) <- parnames
+        colnames(vardesign) <- pnames
         newsim <- t(apply(vardesign,1,simfn))
         V <- var(newsim)  ## additional simulations for var-covar matrix
         vcov <- B %*% V %*% t(B)
@@ -142,7 +151,8 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         ymean <- apply(newsim, 2, mean, na.rm=T)
         yse <- apply(newsim, 2, function(x) sd(x, na.rm=T) / sum(!is.na(x)))
 
-        bootstrap <- data.frame (target = y, nsim = n, simulated = ymean, SE.simulated = yse)
+        bootstrap <- data.frame (target = y, nsim = n, simulated = ymean,
+            SE.simulated = yse)
 
         ## biasest not reported, yet
         yest <- as.numeric(B %*% matrix((ymean - lambda), ncol = 1))
@@ -151,7 +161,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
         ## adjust var-covar matrix for g0 using delta method
         tx <- diag(np)
-        dimnames (tx) <- list(parnames, parnames)
+        dimnames (tx) <- list(pnames, pnames)
         tx['g0','g0'] <- -(1/(1 + par['g0'])^2)  ## gradient invodds(y) wrt y
         vcov <- tx %*% vcov %*% t(tx)
     }
@@ -160,7 +170,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         bootstrap <- NA
     }
 
-    dimnames(vcov) <- list(parnames, parnames)
+    dimnames(vcov) <- list(pnames, pnames)
     par['g0'] <- invodds(par['g0'])
 
     list(call = cl,

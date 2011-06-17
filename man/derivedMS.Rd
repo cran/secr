@@ -12,7 +12,7 @@ Density is a derived parameter when a model is fitted by maximizing the conditio
 derived(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
     se.esa = FALSE, se.D = TRUE, loginterval = TRUE, 
     distribution = NULL)
-esa(object, sessnum = 1, beta = NULL, real = NULL)
+esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
 }
 
 \arguments{
@@ -27,6 +27,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL)
   \item{distribution}{ character string for distribution of the number of individuals detected }
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
+  \item{noccasions}{ integer number of sampling occasions (see Details) } 
 }
 
 \details{
@@ -63,6 +64,10 @@ p.(\mathbf{X};\mathbf{z}_i, \mathbf{\hat{\theta}}) \; \mathrm{d}
 detected at least once and the \eqn{\mathbf{z}_i}{z_i} are optional
 individual covariates. Integration is over the area \eqn{A} of the
 habitat mask.
+
+The argument \code{noccasions} may be used to vary the number of
+sampling occasions; it works only when detection parameters are constant
+across individuals and across time.
 
 The effective sampling area `esa' (\eqn{a(\hat{\theta})}{a(theta-hat)})
 reported by \code{derived} is equal to the harmonic mean of the
@@ -104,8 +109,11 @@ estimate    \tab estimate of derived parameter \cr
 SE.estimate \tab standard error of the estimate \cr
 lcl         \tab lower 100(1--alpha)\% confidence limit \cr
 ucl         \tab upper 100(1--alpha)\% confidence limit \cr
-varcomp1    \tab variance due to variation in \eqn{n} (Huggins' \eqn{s^2}) \cr
-varcomp2    \tab variance due to uncertainty in estimates of detection parameters \cr
+CVn         \tab relative SE of number observed (Poisson or binomial assumption) \cr
+CVa         \tab relative SE of effective sampling area \cr
+CVD         \tab relative SE of density estimate \cr
+%varcomp1    \tab variance due to variation in \eqn{n} (Huggins' \eqn{s^2}) \cr
+%varcomp2    \tab variance due to uncertainty in estimates of detection parameters \cr
 }
 
 For a multi-session or multi-group analysis the value is a list
@@ -124,7 +132,27 @@ Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{
 
 }
 
-\seealso{ \code{\link{predict.secr}}, \code{\link{print.secr}}, \code{\link{secr.fit}} }
+\seealso{ \code{\link{predict.secr}}, \code{\link{print.secr}},
+  \code{\link{secr.fit}}, \code{\link{empirical.varD}} }
+
+\note{
+
+  Before version 2.1, the output table had columns for `varcomp1' (the
+variance in \eqn{\hat{D}}{D-hat} due to variation in \eqn{n}, i.e.,
+Huggins' \eqn{s^2}), and `varcomp2' (the variance in
+\eqn{\hat{D}}{D-hat} due to uncertainty in estimates of detection
+parameters).
+
+These quantities are related to CVn and CVa as follows:
+
+\eqn{\mbox{CVn} = \sqrt{ \mbox{varcomp1} } / \hat{D} }{ CVn =
+  sqrt(varcomp1) / D-hat}
+
+\eqn{\mbox{CVa} = \sqrt{ \mbox{varcomp2} } / \hat{D} }{ CVa =
+  sqrt(varcomp2) / D-hat}
+
+
+}
 
 \examples{
 ## extract derived parameters from a model fitted previously

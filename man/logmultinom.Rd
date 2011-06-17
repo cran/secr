@@ -19,7 +19,9 @@ logmultinom(capthist, grp = NULL)
   a constant; it does not depend on the parameters and may be ignored
   when maximizing the likelihood to obtain parameter
   estimates. Nevertheless, the log likelihood reported by
-  \code{secr.fit} includes this component.
+  \code{secr.fit} includes this component \emph{unless} the
+  detector type is `signal', `polygon', `polygonX', `transect' or
+  `transectX' (from 2.0.0).
 
   If \code{grp} is NULL then all animals are assumed to belong to one
   group. Otherwise, the length of \code{grp} should equal the number of rows of

@@ -27,7 +27,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
     if (!all(sapply(object$fixed, is.null)))
         stop ("not implemented for fixed parameters")
     if (is.null(object$D))
-        stop("old 'secr' object does not have 'D' component")
+        stop ("old 'secr' object does not have 'D' component")
 
 ## setup
     # dim(object$D)[1] is number of mask points
@@ -335,8 +335,7 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
           if ((temp$resultcode == 2) && (dettype %in% c(6,7)))
               stop (">100 detections per animal per polygon per occasion")
           else
-              stop ("simulated detection failed, code ",
-                    as.character(temp$resultcode))
+              stop ("simulated detection failed, code ", temp$resultcode)
         }
         if (dettype %in% c(-1,0,3,4)) {
             w <- array(dim=c(s,temp$n), dimnames = list(1:s, NULL))

@@ -8,13 +8,14 @@
   Retain selected rows of a traps object.
 }
 \usage{
-\method{subset}{traps}(x, subset, \dots)
+\method{subset}{traps}(x, subset = NULL, occasions = NULL, \dots)
 \method{split}{traps}(x, f, drop = FALSE, prefix = 'S', \dots)
 }
 
 \arguments{
   \item{x}{ \code{traps} object }
   \item{subset}{ vector to subscript the rows of \code{x} }
+  \item{occasions}{ vector to subscript columns in \code{usage(x)}}
   \item{\dots}{ arguments passed to other functions }
   \item{f}{ factor or object that may be coerced to a factor }
   \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
@@ -23,7 +24,7 @@
 \details{
 
 The subscripts in \code{subset} may be of type integer, character or
-logical as described in \code{\link{Extract}}.
+logical as described in \code{\link{Extract}}. By default, all rows are retained.
 
 In the case of `polygon' and `transect' detectors, subsetting is done at
 the level of whole polygons or transects. \code{subset} should therefore

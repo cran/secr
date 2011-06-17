@@ -1,8 +1,24 @@
+/* 2011-03-19 */
+/* pmix does not work with nc = 0 */
+
+/* 2011-04-05 allow 'partial likelihood' option in secrloglik */
+/* *like == 2 */
+
+/* 2011-05-05 tweak integralprw1 to admit factor of D */
+/* integralprw1 acquires *useD argument 0/1 */
+/* D may be provided as a third column of *mask */
+
+/* 2011-05-12 clean l 726, 4136 */
+
+/* 2011-06-07 alongtransect */
+
 /*
    External procedures for secr package
 
    can compile with gcc 4.2.1-sjlj :
-   gcc -Ic:/progra~1/R/R-2.9.2/include -c secr.c -Wall -pedantic -std=gnu99
+   gcc -Ic:/R/R-2.13.0/include -c secr.c -Wall -pedantic -std=gnu99
+
+   [confirmed 2011-06-13 0059]
 
 */
 
@@ -323,8 +339,7 @@ double gan
     g0 = gsbval[c];
     sigma = gsbval[cc + c];
     w = gsbval[cc * 2 + c];
-    return (gsbval[c] * exp(-(d-w)*(d-w) / 2 /
-        gsbval[cc + c] / gsbval[cc + c]));
+    return (g0 * exp(-(d-w)*(d-w) / 2 / sigma / sigma));
 }
 /* cumulative lognormal 2010-10-10 */
 double gcln
@@ -713,7 +728,6 @@ void integral2Dtest
     double work[400];
     int k;
     int ns;
-    double par[4];
 
     /* limits from bounding box of this polygon */
     ns = *n2 - *n1 + 1;
@@ -721,13 +735,8 @@ void integral2Dtest
         ax = fmin2(ax, traps[k+ns]);
         bx = fmax2(bx, traps[k+ns]);
     }
-
-    par[0] = 1;
-    par[1] = gsbval[*cc + *c];
-    par[2] = gsbval[2* *cc + *c];
-
     ex = (double *) R_alloc(10 + 2 * *kk, sizeof(double));
-    ex[0] = gsbval[*c];
+    ex[0] = gsbval[*c];   /* 1.0? */
     ex[1] = gsbval[*cc + *c];
     ex[2] = gsbval[2* *cc + *c];
     ex[3] = *fn;
@@ -992,6 +1001,7 @@ void integralprw1 (
                           11 = signal strength spher, */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
     double *cut,       /* transformed signal strength threshold for detection */
+    int    *useD,      /* logical : does third column of mask contain D weight? 2011-05-05 */
     double *a,         /* return value integral of pr(w0) */
     int    *resultcode /* 0 for successful completion */
 )
@@ -1006,6 +1016,7 @@ void integralprw1 (
     double lambda;
     double hk;
     double par0[4];
+    double D = 1.0;
     int cumk[1001];
     int nk = 0;
     double *pmix;      /* proportion in each mixture */
@@ -1124,6 +1135,10 @@ void integralprw1 (
        }
     }
 
+    /* in case of zero detections 2011-03-19 */
+    if (*nc == 0) 
+        *nc = 1;
+
     for (n=0; n<*nc; n++) {            /* CH numbered 0 <= n < *nc */
         if ((*ncol > 1) | (n == 0)) {  /* no need to repeat if constant */
             if ((n+1) > *ncol) {       /* groups not implemented */
@@ -1133,9 +1148,9 @@ void integralprw1 (
             asum = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
-                    asum += pmix[*nmix * n + x] * 
-			pndot (m, n, 1, *ss, x, *ncol, gsb0, gk0, *ss, nk, *cc0, *nmix,
-			       gsb0val, *param);
+                    if (*useD>0) D = mask[2 * *mm + m];
+                    asum += pmix[*nmix * n + x] * D * pndot (m, n, 1, *ss, x, 
+                        *ncol, gsb0, gk0, *ss, nk, *cc0, *nmix, gsb0val, *param);
                 }
             }
         }
@@ -1559,11 +1574,11 @@ double prwipolygonX
     double result = 1.0;
     int j, wi;
     int offset;
-    int nk;
+    /* int nk; */
     int nd;
     double H;
 
-    nk = round(detspec[0]);
+    /* nk = round(detspec[0]); */
     nd = round(detspec[1]);
     offset = 2 + cc + nc * ss;
 
@@ -1622,11 +1637,11 @@ double prwitransectX
     double result = 1.0;
     int j, wi;
     int offset;
-    int nk;
+    /* int nk; */
     int nd;
     double H;
 
-    nk = round(detspec[0]);
+    /* nk = round(detspec[0]); */
     nd = round(detspec[1]);
     offset = 2 + cc + nc * ss;
 
@@ -1805,7 +1820,7 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *used, int *kk,
                           (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]);
                     tempval *= 1 - pfn(*fn, dk2, g0, sigma, z, cutval, *w2);
                 }
-                value[i] = 1 - pow(tempval, *nocc);
+                value[i] += 1 - pow(tempval, *nocc);
             }
         }
     }
@@ -2019,14 +2034,25 @@ void secrloglik (
     double dp, pd, tempg;
     double stdint = 1;
     int offset = 0;
+    int nc1;
+
     /*===============================================================*/
 
     /* MAINLINE */
 
+/* 
+   fails with nc=0 because *nc also used to dimension arrays etc.
+   replace tempnc = max(1, *nc)
+*/
+    
+
     *resultcode = 1;  /* generic failure code */
                       /* reset to 0 at end */
 
-    if ((*gg > 1) & (*like > 0)) nested = 1;    /* 2011-01-11 */
+    nc1 = *nc;
+    if (nc1 == 0) nc1 = 1;
+
+    if ((*gg > 1) & (*like == 1)) nested = 1;    /* 2011-01-11 */
 
     /* determine number of polygons if polygon detector */
     /* for polygon detectors, kk is vector ending in zero */
@@ -2041,10 +2067,15 @@ void secrloglik (
     else
         nk = *kk;
 
+    /* use R_alloc for robust exit on interrupt */
+    gk = (double *) R_alloc(*cc * nk * *mm, sizeof(double));
+    gk0 = (double *) R_alloc(*cc0 * nk * *mm, sizeof(double));
+    pmix = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
+
     if ((*detect>=5) && (*detect<=9)) {
         /* start[z] indexes the first row in xy (or element in signal)
            for each possible count z, where z is w-order (isk) */
-        start = (int *) R_alloc(*nc * *ss * nk, sizeof(int));
+        start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
         for (k=0; k<nk; k++) {
             for (s=0; s< *ss; s++) {
                 for (i=0; i< *nc; i++) {
@@ -2060,7 +2091,7 @@ void secrloglik (
     if ( (*detect == 3) | (*detect==4) ) {
         /* start[z] indexes the row in xy
            for each detection z, where z is w-order (is) */
-        start = (int *) R_alloc(*nc * *ss, sizeof(int));
+        start = (int *) R_alloc(nc1 * *ss, sizeof(int));
         for (s=0; s< *ss; s++) {
             for (i=0; i< *nc; i++) {
                 wi = *nc * s + i;
@@ -2073,21 +2104,18 @@ void secrloglik (
     if (*detect==0)
         nval = *cc * *mm * *ss;
     else if ((*detect==3) | (*detect==4))
-        nval = 2 + *cc + *nc * *ss  +  *cc * *mm * *ss; 
+        nval = 2 + *cc + nc1 * *ss  +  *cc * *mm * *ss; 
     else if ((*detect==5) | (*detect==9))
-        nval = 2 + *nc * *ss * nk;
+        nval = 2 + nc1 * *ss * nk;
     else if ((*detect==6) | (*detect==7))
-        nval = 2 + *cc + *nc * *ss * nk;
+        nval = 2 + *cc + nc1 * *ss * nk;
     else if (*detect==8)
-        nval = *nc * *ss * nk;
+        nval = nc1 * *ss * nk;
     else
         nval = 4;    /* 1-4, mostly not used */
 
     /* use R_alloc for robust exit on interrupt */
-    gk = (double *) R_alloc(*cc * nk * *mm, sizeof(double));
-    gk0 = (double *) R_alloc(*cc0 * nk * *mm, sizeof(double));
     detspec = (double *) R_alloc(nval, sizeof(double));
-    pmix = (double *)  R_alloc(*nc * *nmix, sizeof (double));
 
     /*
         *fn may take values -
@@ -2096,10 +2124,10 @@ void secrloglik (
         2  exponential
         3  compound halfnormal
         5  w-exponential
-6
-7
-8
-9
+        6
+        7
+        8
+        9
         10 signal strength (signal detectors only)
         11 binary signal strength
     */
@@ -2240,6 +2268,24 @@ void secrloglik (
     R_CheckUserInterrupt();
 
     /*===============================================================*/
+    /* mixture proportions */
+
+    for (i=0; i < nc1 * *nmix; i++) pmix[i] = 1; /* default */
+    if (*nmix>1) {
+        for (n=0; n<nc1; n++) {
+            for (x=0; x<*nmix; x++) {
+                wxi = i4(n,0,0,x,*nc,*ss,nk);
+                c = gsb[wxi] - 1;
+                if (*like != 1) {
+                    g = grp[n]-1;
+                    pmix[*nmix * g + x] = gsbval[*cc * (gpar-1) + c];
+                }
+                else
+                    pmix[*nmix * n + x] = gsbval[*cc * (gpar-1) + c];
+            }
+        }
+    }
+    /*=================================================================*/
 
     prwfn = prwicount;   /* default */
     if ((*detect == 0) & (*param == 0)) 
@@ -2258,12 +2304,16 @@ void secrloglik (
         prwfn = prwitransect;
     if (*detect == 8) 
         prwfn = prwitimes;
+  
+    /*=================================================================*/
+    /* need nk, pmix and gk0 for pndot() in case there are no captures */
+    if (*nc == 0) goto eval;
 
-    /*===============================================================*/
+    /*=================================================================*/
     /* detector-specific data to pass to prwi functions */
 
     /* check if any traps not set */
-    nSK = *nc * *ss * nk;
+    nSK = nc1 * *ss * nk;
     for (i=0; i<nSK; i++)
         if (gsb[i]==0) notset++;
 
@@ -2273,7 +2323,7 @@ void secrloglik (
         if (*detect > 0) {
             detspec[0] = (double) nk;
             detspec[1] = (double) nd;
-            for (i=0; i< (*nc* *ss); i++)
+            for (i=0; i< (*nc * *ss); i++)
                 detspec[2+*cc+i] = (double) start[i];
             offset = 2 + *cc + *nc * *ss;
         }
@@ -2300,39 +2350,22 @@ void secrloglik (
     else if ((*detect == 5) | (*detect==9)) {
         detspec[0]= *cut;
         detspec[1]= (*fn == 11);     /* spherical */
-        for (i=0; i< (*nc* *ss * nk); i++)
+        for (i=0; i< (*nc * *ss * nk); i++)
             detspec[2+i] = (double) start[i];
     }
     else if ((*detect == 6) | (*detect == 7)) {
         detspec[0] = (double) nk;
         detspec[1] = (double) nd;
-        for (i=0; i< (*nc* *ss * nk); i++)
+        for (i=0; i< (*nc * *ss * nk); i++)
             detspec[2+*cc+i] = (double) start[i];
     }
     else if (*detect == 8) {
         for (i=0; i< (*nc* *ss * nk); i++)
             detspec[i] = (double) start[i];
     }
-
     /*===============================================================*/
-    /* mixture proportions */
 
-    for (i=0; i < *nc * *nmix; i++) pmix[i] = 1; /* default */
-    if (*nmix>1) {
-        for (n=0; n<*nc; n++) {
-            for (x=0; x<*nmix; x++) {
-                wxi = i4(n,0,0,x,*nc,*ss,nk);
-                c = gsb[wxi] - 1;
-                if (*like==0) {
-                    g = grp[n]-1;
-                    pmix[*nmix * g + x] = gsbval[*cc * (gpar-1) + c];
-                }
-                else
-                    pmix[*nmix * n + x] = gsbval[*cc * (gpar-1) + c];
-            }
-        }
-    }
-    /*===============================================================*/
+eval:    /* skip to here if no captures */
 
     if (*like==1)    /* Conditional likelihood */
     {
@@ -2455,7 +2488,7 @@ void secrloglik (
     }
     /*-------------------------------------------------------------------------------------------*/
 
-    else {  /* *like==0  Full likelihood */
+    else {  /* *like==0,2  Full or Partial likelihood */
 
         for (g=0; g<*gg; g++) {
             ng[g] = 0;  /* zero for later */
@@ -2468,10 +2501,18 @@ void secrloglik (
 			 *ss, nk, *cc0, *nmix, gsb0val, *param) * Dmask[*mm * g + m];
             }
         }
-        *value = 0;
-        for (n=0; n<*nc; n++) {  /* CH are numbered 0 <= n < *nc in C code */
+
+        /* count number per group */
+        for (n=0; n < *nc; n++) {  /* CH are numbered 0 <= n < *nc in C code */
             g = grp[n]-1;
             ng[g]++;
+        }
+
+        *value = 0;
+        /* compute likelihood component from pr(wi) */
+        if (*like == 0)   /* Full likelihood only */
+        for (n=0; n < *nc; n++) {  
+            g = grp[n]-1;
             temp = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
@@ -2497,6 +2538,8 @@ void secrloglik (
             }
             R_CheckUserInterrupt();
         }
+
+        /* compute likelihood component due to n */
         for (g=0; g<*gg; g++) {
             *value -= ng[g] * log(sumDp[g]);
             /* Poisson */
@@ -4094,7 +4137,8 @@ void simsecr (
                 par[2] = z;
                 
                 if (maybecaught) {
-                    gxy (&np, fn, par, &w, xy);                 /* simulate location */
+/* 2011-05-10          gxy (&np, fn, par, &w, xy);   */
+                    gxy (&np, fn, par, &ws, xy);                 /* simulate location */
                     xy[0] = xy[0] + animals[i];
                     xy[1] = xy[1] + animals[*N + i];
                     for (k=0; k<nk; k++) {                      /* each polygon */
@@ -4742,6 +4786,58 @@ void ontransect (
     else
         *on = 0;    /* off transect */
 }
+
+void alongtransect (
+    double *xy,
+    int    *n1,
+    int    *n2,
+    int    *npts,
+    double *transect,
+    double *tol,
+    double *along)
+{
+/*
+    How far is point xy from start of transect? 2011-06-07
+    We assume transect coordinates are in col-major order (x's then y's)
+    http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/ 29/11/09
+*/
+    int k;
+    double r;
+    double u;
+    struct rpoint p,p1,p2,p3;
+
+    p3.x = xy[0];
+    p3.y = xy[1];
+
+    *along = 0;
+
+    for (k= *n1; k < *n2; k++)
+    {
+        p1.x = transect[k];
+        p1.y = transect[k+*npts];
+        r = distance (p1,p3);
+        if (r < *tol) {
+            return;
+        } 
+
+        p2.x = transect[k+1];
+        p2.y = transect[k+1+*npts];
+        if (distance(p1,p2) > 0) {
+            u = ((p3.x-p1.x) * (p2.x-p1.x) + (p3.y-p1.y) * (p2.y-p1.y)) /
+                ((p2.x-p1.x) * (p2.x-p1.x) + (p2.y-p1.y) * (p2.y-p1.y));
+            if ((u>=0) && (u<=1)) {
+                p.x = p1.x + u * (p2.x-p1.x);
+                p.y = p1.y + u * (p2.y-p1.y);
+                r = distance (p,p3);
+                if (r < *tol) {
+		    *along += distance(p,p1);
+                    return;
+                } 
+            }
+            *along += distance(p1,p2);
+        }
+    }
+}
 /*==============================================================================*/
 
 
@@ -4818,7 +4914,7 @@ void pwuniform (
     *resultcode = 1;  /* generic failure code */
                       /* reset to 0 at end */
 
-    if ((*gg > 1) & (*like > 0)) nested = 1;    /* 2011-01-12 */
+    if ((*gg > 1) & (*like == 1)) nested = 1;    /* 2011-01-12 */
 
     /* determine number of polygons or transects */
     /* for these detectors, kk is vector ending in zero */
@@ -5075,7 +5171,7 @@ void pwuniform (
             for (x=0; x<*nmix; x++) {
                 wxi = i4(n,0,0,x,*nc,*ss,nk);
                 c = gsb[wxi] - 1;
-                if (*like==0) {
+                if (*like != 1) {
                     g = grp[n]-1;
                     pmix[*nmix * g + x] = gsbval[*cc * (gpar-1) + c];
                 }
@@ -5258,3 +5354,85 @@ void pwuniform (
     *resultcode = 0;   /* successful termination pwuniform */
 }
 /*==============================================================================*/
+
+/* temporary unmarked code 2011-03-18 */
+/* only constant model *cc == 1 */
+/* assume w is k x s matrix of unmarked counts Tu */
+
+void secrloglikUM (
+    int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
+    int    *ss,          /* number of occasions */
+    int    *kk,          /* number of traps */
+    int    *mm,          /* number of points on mask */
+    double *traps,       /* x,y locations of traps (first x, then y) */
+    double *mask,        /* x,y points on mask (first x, then y) */
+    double *Dmask,       /* density at each point on mask */
+    double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
+    int    *cc,          /* number of g0/sigma/b combinations  */
+    int    *gsb,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+    double *area,        /* area associated with each mask point (ha) */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *value,       /* return value integral */
+    int    *resultcode   /* 0 if OK */
+)
+{
+    gfnptr gfn;
+    int    k,m,s;
+    int    sumw;
+/*  int    notset = 0;  */
+    double temp;
+    double lambda;
+    /*===============================================================*/
+
+    /* MAINLINE */
+
+    *resultcode = 1;  /* generic failure code */
+                      /* reset to 0 at end */
+
+    /*
+        *fn may take values -
+        0  halfnormal
+        1  hazard rate
+        2  exponential
+        3  compound halfnormal
+        5  w-exponential
+        6
+        7
+        8
+        9
+        10 signal strength (signal detectors only)
+        11 binary signal strength
+    */
+
+    if (*fn == 0)       { gfn = ghn; }
+    else if (*fn == 1)  { gfn = ghz; }
+    else if (*fn == 2)  { gfn = ghe; }
+    else if (*fn == 3)  { gfn = ghnc;}
+    else if (*fn == 5)  { gfn = ghf; }
+    else if (*fn == 6)  { gfn = gan; }
+    else if (*fn == 7)  { gfn = gcln; }
+    else if (*fn == 8)  { gfn = gcg; }
+    else if (*fn == 9)  { gfn = gsigbin; }
+    else if (*fn == 10) { gfn = gsig; }
+    else if (*fn == 11) { gfn = gsigsph; }
+    else return;
+
+    *value = 0;
+
+        for (s=0; s<*ss; s++) {
+            sumw = 0;
+            lambda = 0;
+            for (k=0; k<*kk; k++) {
+                for (m=0; m<*mm; m++) {
+                    temp = gfn(k, m, 0, gsbval,
+                        *cc, traps, mask, *kk, *mm, 0);
+                    lambda += temp * Dmask[m] * *area;
+                }
+                sumw += w[s * *kk + k];
+            }
+            *value += dpois(sumw, lambda, 1);
+        }
+    *resultcode = 0;   /* successful termination secrloglikUM */
+}
+/*==============================================================================*/
+

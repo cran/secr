@@ -32,9 +32,9 @@ evening, for 5 days.
 
 The dataset was described by Otis et al. (1978) and distributed with
 their CAPTURE software (now available from
-\url{www.mbr-pwrc.usgs.gov/software.html}). Otis et al. (1978 p. 62, 68)
-cite Coulombe's unpublished 1965 master's thesis from the University of
-California, Los Angeles, California.
+\url{http://http://www.mbr-pwrc.usgs.gov/software.html}). Otis et
+al. (1978 p. 62, 68) cite Coulombe's unpublished 1965 master's thesis
+from the University of California, Los Angeles, California.
 
 The data are provided as a single-session \code{capthist} object. There
 are two individual covariates: sex (factor levels `f', `m') and age
@@ -58,7 +58,11 @@ Otis et al. (1978) report various analyses including a closure test on
 the full data, and model selection and density estimation on data from
 the mornings only. We include several secr models fitted to the
 `morning' data (\code{morning.0}, \code{morning.b} etc.). Of these, a model
-including individual heterogeneity in both g0 and sigma has the lowest AIC.
+including individual heterogeneity in both g0 and sigma has the lowest
+AIC.
+
+Some components of the fitted secr models have been removed with
+\code{\link{trim}} to save space.
 
 \tabular{ll}{
   Object \tab Description \cr

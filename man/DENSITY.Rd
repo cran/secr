@@ -19,7 +19,7 @@ functions \code{read.traps} and \code{make.capthist}.
 
 read.capthist(captfile, trapfile, detector = "multi", fmt = "trapID",
     noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-    cutval = NULL, verify = TRUE, ...)
+    cutval = NULL, verify = TRUE, noncapt = 'NONE', ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
      sess = "1", ndec = 2, covariates = FALSE, ...)
@@ -38,12 +38,12 @@ write.capthist(object, filestem = deparse(substitute(object)),
     fields in `captfile'}
   \item{trapcovnames}{ character vector of names for detector covariate
     fields in `trapfile'}
-  \item{cutval}{ numeric, threshold of signal strength for 'signal' detector type } 
+  \item{cutval}{ numeric, threshold of signal strength for `signal' detector type } 
   \item{verify}{ logical if TRUE then the resulting capthist object is
   checked with \code{\link{verify}}}
-
-  \item{\dots}{ other arguments passed to \code{read.table}, \code{write.table} and
-      \code{count.fields} }
+  \item{noncapt}{ character value; animal ID used for `no captures' }
+  \item{\dots}{ other arguments passed to \code{read.table},
+    \code{write.table} and \code{count.fields} }
 
   \item{object}{ \code{capthist} object with the captures and trap locations to export }
   \item{filestem}{ character value used to form names of output files }

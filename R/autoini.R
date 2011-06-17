@@ -118,18 +118,20 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
           as.integer(detectfn),
           as.integer(0),     # binomN
           as.double(0),      # cut
+          as.integer(0),     # useD
           a=double(nc),
           resultcode=integer(1))
       )
 
       if (temp$resultcode != 0)
-          stop ("error in external function 'integralprw1'; possibly the mask is too large")
+          stop ("error in external function 'integralprw1'; ",
+                "possibly the mask is too large")
       temp$a
     }
 
 
     if (nrow(capthist)<5)
-        stop ('too few values in session 1 to determine start; set manually')
+        stop ("too few values in session 1 to determine start; set manually")
 
     ## added 2010-07-01
     if (is.character(detectfn))
@@ -157,8 +159,6 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
             cpa     <- sum(abs(capthist))/n      ## captures per animal
         else
             cpa     <- sum(abs(capthist)>0)/n    ## captures per animal
-
-        # if (cpa<=1.0) stop ('No recaptures')
 
         obsRPSV <- RPSV(capthist)
 

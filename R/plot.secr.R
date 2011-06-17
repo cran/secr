@@ -6,73 +6,70 @@
 ## 2010 07 01 alpha detectfn
 ## 2010 09 15 amend message for missing cutval
 ## 2010 11 01 enabled plot detectfn=9
+## 2011 03 26 reversed order of first two arguments of dfn's
 ## default of limits changed to FALSE in plot.secr()
 ############################################################################################
 
 
-    HN <- function (pars, r, cutval) {
+    HN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]
         g0 * exp (-r^2 / 2 / sigma^2)
     }
 
-    HZ <- function (pars, r, cutval) {
+    HZ <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * (1 - exp (-(r / sigma)^-z))
     }
 
-    EX <- function (pars, r, cutval) {
+    EX <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * exp (-r / sigma)
     }
-    UN <- function (pars, r, cutval) {
+    UN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]
         ifelse (r<=sigma, g0, 0)
     }
-    CHN <- function (pars, r, cutval) {
+    CHN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
     }
-    WEX <- function (pars, r, cutval) {
+    WEX <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
         ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
     }
-    ANN <- function (pars, r, cutval) {
+    ANN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
         g0 * exp (-(r-w)^2 / 2 / sigma^2)
     }
-    CLN <- function (pars, r, cutval) {
+    CLN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         CV2 <- (z/sigma)^2
         sdlog <- log(1 + CV2)^0.5
         meanlog <- log(sigma) - sdlog^2/2
         g0 * plnorm(r, meanlog, sdlog, lower.tail = FALSE)
     }
-##    CN <- function (pars, r, cutval) {
-##        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-##        g0 * pnorm(r, sigma, z, lower.tail = FALSE)
-##    }
-    CG <- function (pars, r, cutval) {
+    CG <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         g0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
     }
-    CN <- function (pars, r, cutval) {
+    CN <- function (r, pars, cutval) {
         g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
         x <- z * (r - sigma)
         g0 * (1 + (1 - exp(x)) / (1 + exp(x)))/2
     }
-    BSS <- function (pars, r, cutval) {
+    BSS <- function (r, pars, cutval) {
         b0 <- pars[1]; b1 <- pars[2]
         gam <- -(b0 + b1 * r);
         pnorm (gam, mean=0, sd=1, lower.tail=FALSE)
     }
-    SS <- function (pars, r, cutval) {
+    SS <- function (r, pars, cutval) {
         beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
         if (is.null(cutval))
             stop ("require 'details$cutval' for signal strength plot")
         mu <- beta0 + beta1 * r
         1 - pnorm (q=cutval, mean=mu, sd=sdS)
     }
-    SSS <- function (pars, r, cutval) {
+    SSS <- function (r, pars, cutval) {
         beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
         if (is.null(cutval))
             stop ("require 'details$cutval' for signal strength plot")
@@ -119,12 +116,12 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             dfn <- switch (x$detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
             if (sigmatick) {
               sigma <- pars[2]
-              y <- dfn(pars, sigma, x$details$cutval)
+              y <- dfn(sigma, pars, x$details$cutval)
               dy <- par()$usr[4]/20
               segments (sigma, y-dy, sigma, y+dy)
             }
 
-            y <- dfn(pars, xval, x$details$cutval)
+            y <- dfn(xval, pars, x$details$cutval)
 
             if (rgr) {
               y <- xval * y
@@ -151,7 +148,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
                          real[rn] <- untransform (lp, x$link[[rn]])
                     }
                     ## dfn(real, r)   # on natural scale
-                    logit(dfn(real, r))
+                    logit(dfn(r, real))
                 }
 
                 for (i in 1:length(xval))
@@ -276,7 +273,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
             dy <- par()$usr[4]/20
             segments (sigma, y-dy, sigma, y+dy)
         }
-        y <- dfn(pars, xval, details$cutval)
+        y <- dfn(xval, pars, details$cutval)
         if (rgr) {
             y <- xval * y
             ymax <- par()$usr[4]
@@ -306,8 +303,8 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     needp <- c(2,3,2,3,2,3,3,3,3,2,3,3)[detectfn+1]
 
     if (ncol(pars) != needp)
-        stop(paste("require", needp, "parameters for", detectionfunctionname(detectfn),
-                   "detection function"))
+        stop ("require ", needp, " parameters for ",
+             detectionfunctionname(detectfn), " detection function")
 
     if (is.null(ylim)) {
         if (detectfn %in% c(10,11)) {

@@ -30,7 +30,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     }
 
     if (!( detector %in% .localstuff$validdetectors ))
-        stop ('invalid detector type')
+        stop ("invalid detector type")
     if (is.null(file) & is.null(data))
         stop ("requires 'file' or 'data'")
     ## file input
@@ -108,14 +108,16 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                     used <- used[tempindex]
                     nocc <- max(nchar(used))   ## recompute
                     if (any(nchar(used) != nocc))
-                        stop ("'usage' fields suggest varying number of occasions")
+                        stop ("'usage' fields suggest varying number ",
+                              "of occasions")
                     usage(traps) <- matrix(unlist(strsplit(used,split='')),
                                            byrow=T, ncol = nocc)>0
                     dimnames(attr(traps, 'usage')) <- list( tempID, 1:nocc)
                 }
                 else {
                     if (any(nchar(used) != nocc))
-                        stop ("'usage' fields suggest varying number of occasions")
+                        stop ("'usage' fields suggest varying number ",
+                              "of occasions")
                     usage(traps) <- matrix(unlist(strsplit(used,split='')),
                                            byrow=T, ncol = nocc)>0
                     dimnames(attr(traps, 'usage')) <- list(dimnames(traps)[[1]],
@@ -140,8 +142,8 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 if (!is.null(covnames)) {
                      ncc <- ncol(covariates(traps))
                      if (length(covnames) != ncc)
-                         stop("number of covariate names does",
-                              "not match number of columns", ncc )
+                         stop ("number of covariate names does ",
+                              "not match number of columns ", ncc )
                      names (covariates(traps)) <- covnames
                  }
             }

@@ -1,9 +1,9 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## ARL.R
 ## last changed 2010 03 30
 ## polygonX, transectX, transect
-############################################################################################
+###############################################################################
 
 ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE) {
     if (inherits (capthist, 'list')) {
@@ -41,7 +41,7 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE) {
             start= list (aa = max(maxd)*1.2, bb = -0.4))))
 
         if (inherits(temp, "try-error")) {
-            warning ('nls failure')
+            warning ("nls failure")
             aa <- NA
             bb <- NA
         }

@@ -1,9 +1,9 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## mask.check.R
 ## Evaluate alternative mask buffer width and spacing
-## 2010 10 15, 2010-10-17, 2010-10-18, 2010-10-20, 2010-10-31
-############################################################################################
+## 2010 10 15, 2010-10-17, 2010-10-18, 2010-10-20, 2010-10-31, 2011-06-17
+###############################################################################
 
 bisect <- function(f, a, b, tol = 1e-6) {
     x1 <- a
@@ -88,8 +88,9 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         else
             temp <- NULL
         for (i in session) {
-            mask.check.outputs[[i]] <- mask.check (object, buffers, spacings, poly,
-                LLonly, realpar, session = i, file = temp, drop, tracelevel, ...)
+            mask.check.outputs[[i]] <- mask.check (object, buffers, spacings,
+                poly, LLonly, realpar, session = i, file = temp, drop,
+                tracelevel, ...)
             if (!LLonly & !is.null(file)) {
                 load(temp)
                 mask.check.fits[[i]] <- mask.check.fit
@@ -103,10 +104,10 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         }
         mask.check.outputs
     }
-    else {
+    else {                        ## single session
         if (refit) {
             if (!is.call(object$call))
-                stop("requires fitted object from secr 1.5.0 or later")
+                stop ("requires fitted object from secr 1.5.0 or later")
             trps <- traps(object$capthist)
             msk <- object$mask
             cpts <- object$capthist
@@ -115,15 +116,14 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 msk <- msk[[session]]
                 cpts <- cpts[[session]]
             }
-
             newcall <- as.list(object$call)[-1]
             newcall <- replace(newcall, names(dots), dots)
             newcall <- replace(newcall, 'capthist', list(quote(cpts)))
-
             if (is.null(realpar)) {
                 predicted <- predict(object)
                 if (MS) {
-                    sessnum <- (1:length(predicted))[grepl(session, names(predicted))]
+                    sessnum <- (1:length(predicted))[grepl(session,
+                        names(predicted))]
                     predicted <- predicted[[sessnum]]   ## unreliable?
                 }
                 realpar <- predicted[,'estimate']
@@ -135,10 +135,14 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             }
             one <- is.null(buffers) != is.null(spacings)
             if (is.null(buffers)) {
+                distfromedge <- mindistfromedge (msk, trps)
+                ## fix 2011-06-17
+                if (distfromedge < 1e-10)
+                    stop ("specify 'buffers' if detector(s) on edge")
                 if (one)
-                    buffers <- mindistfromedge (msk, trps)
+                    buffers <- distfromedge
                 else
-                    buffers <- c(1, 1.5, 2) * mindistfromedge (msk, trps)
+                    buffers <- c(1, 1.5, 2) * distfromedge
             }
             if (is.null(spacings)) {
                 if (one)
@@ -168,10 +172,10 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         nspacing <- length(spacings)
 
         if (LLonly) {
-            defaultlink <- list(D='log', g0='logit', sigma='log', z='log', w='log', pID='logit',
-                beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit')
-            anycount <- detector(trps) %in% c('count', 'polygon',
-                'transect', 'times')
+            defaultlink <- list(D='log', g0='logit', sigma='log', z='log',
+                w='log', pID='logit', beta0='identity', beta1='neglog',
+                sdS='log', b0='log', b1='neglog', pmix='logit')
+            anycount <- detector(trps) %in% .localstuff$countdetectors
             if (is.null(newcall$details$scaleg0))
                 scaledg0 <- FALSE
             else
@@ -180,25 +184,30 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             newcall$link <- defaultlink
             if (is.null(realpar))
                 stop ("'LLonly' requires either 'realpar' or fitted model")
-            startbeta <- Xtransform(unlist(realpar), defaultlink, names(realpar))
+            startbeta <- Xtransform(unlist(realpar), defaultlink,
+                names(realpar))
             newcall <- replace(newcall, 'start', list(start=startbeta))
-            if (refit) {
-                if (is.null(newcall$details))
+
+## 2011-06-15
+## condition seems to cause problem
+##            if (refit) {
+                if (is.null(newcall$details)) {
                     newcall$details <- list(LLonly = TRUE)
+                }
                 else
                     newcall$details <- replace(newcall$details, 'LLonly', TRUE)
-            }
-            else {
-                newcall$details <- replace(newcall$details, 'LLonly', TRUE)
-            }
+##            }
+##            else {
+##                newcall$details <- replace(newcall$details, 'LLonly', TRUE)
+##            }
             mask.check.output <- array(dim=c(nbuffer, nspacing))
             dimnames(mask.check.output) <- list(buffers, spacings)
             cat('Computing log likelihoods... \n')
         }
         else {
             mask.check.output <- array(dim=c(nbuffer, 4, nspacing))
-            dimnames(mask.check.output) <- list(buffers, c('esa','LL','D-hat','se(D-hat)'),
-                spacings)
+            dimnames(mask.check.output) <- list(buffers,
+                c('esa','LL','D-hat','se(D-hat)'), spacings)
             if (!is.null(file)) {
                 mask.check.fit <- vector(mode = 'list')
                 class(mask.check.fit) <- c('list','secrlist')
@@ -208,7 +217,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         if (!is.null(newcall$model))
             if (any(c('session','Session') %in% as.character(newcall$model)) |
                 !is.null(newcall$sessioncov)) {
-                stop("mask.check cannot handle models with session structure")
+                stop ("mask.check cannot handle models with session structure")
             }
 
         flush.console()
@@ -216,12 +225,13 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             spacing <- spacings[j]
             for (i in 1:nbuffer) {
                 buffer <- buffers[i]
-                msk <- make.mask(trps, buffer, spacing, type = 'trapbuffer', poly = poly)
+                msk <- make.mask(trps, buffer, spacing, type = 'trapbuffer',
+                                 poly = poly)
                 ## quote passes name... avoids bulky call
                 newcall <- replace(newcall, 'mask', list(quote(msk)))
                 if (tracelevel<2) old <- options(warn=-1)
                 if (LLonly) {
-                     mask.check.output[i,j] <- do.call(secr.fit, newcall)
+                    mask.check.output[i,j] <- do.call(secr.fit, newcall)
                 }
                 else {
                     newfit <- do.call(secr.fit, newcall)
@@ -234,13 +244,14 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                     else {
                         mask.check.output[i,1,j] <- esa(newfit)[1]
                         mask.check.output[i,2,j] <- -newfit$fit$minimum
-                        mask.check.output[i,3:4,j] <- unlist(predict(newfit)['D',
-                            c('estimate','SE.estimate')])
+                        mask.check.output[i,3:4,j] <- unlist(predict(newfit)
+                            ['D', c('estimate','SE.estimate')])
                     }
                 }
                 options(old)
                 if (tracelevel>0)
-                    cat('Completed buffer', buffers[i], 'spacing', spacings[j], date(), '\n')
+                    cat('Completed buffer', buffers[i], 'spacing',
+                        spacings[j], date(), '\n')
                 flush.console()
                 if (!is.null(file)) {
                     if (LLonly) {
@@ -258,12 +269,13 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         }
         if (!LLonly)
         {
-            if ((nbuffer == 1) & (nspacing>1))
-                mask.check.output <- t(mask.check.output[1,,]) ## drop first dim
+            if ((nbuffer == 1) & (nspacing>1)) ## drop first dim
+                mask.check.output <- t(mask.check.output[1,,])
             else
-                if (nspacing == 1) mask.check.output <- mask.check.output[,,1]    ## drop third dim
+                if (nspacing == 1)             ## drop third dim
+                    mask.check.output <- mask.check.output[,,1]
         }
         mask.check.output
     }
 }
-############################################################################################
+###############################################################################

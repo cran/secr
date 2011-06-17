@@ -11,7 +11,7 @@ A mask object is a set of points with optional attributes.
 \usage{
 make.mask(traps, buffer = 100, spacing = NULL, nx = 64, 
     type = "traprect", poly = NULL, keep.poly = TRUE,
-    pdotmin = 0.001, ...)
+    check.poly = TRUE, pdotmin = 0.001, ...)
 }
 
 \arguments{
@@ -19,10 +19,13 @@ make.mask(traps, buffer = 100, spacing = NULL, nx = 64,
   \item{buffer}{ width of buffer in metres }
   \item{spacing}{ spacing between grid points (metres) }
   \item{nx}{ number of grid points in `x' direction }
-  \item{type}{ character string for method to use (`traprect', `trapbuffer', `pdot', `polygon') }
+  \item{type}{ character string for method to use (`traprect',
+  `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer') }
   \item{poly}{ bounding polygon to which mask should be clipped (see Details) }
   \item{keep.poly}{ logical; if TRUE any bounding polygon is saved as the
   attribute `polygon' }
+  \item{check.poly}{ logical; if TRUE a warning is given for traps that
+  lie outside a bounding polygon }
   \item{pdotmin}{ minimum detection probability for inclusion in mask when type = 'pdot' (optional) }
   \item{...}{ additional arguments passed to \code{pdot} when \code{type} = `pdot' }
 }
@@ -44,6 +47,13 @@ are used by \code{pdot} (detectpar, noccasions). Set these with the
 \dots argument; otherwise \code{make.mask} will silently use the
 arbitrary defaults. \code{pdot} is currently limited to a halfnormal
 detection function.
+
+The `clusterrect' method constructs a grid of rectangular submasks
+centred on `clusters' of detectors generated with
+\code{\link{trap.builder}} (possibly indirectly by
+\code{\link{make.systematic}}). The `clusterbuffer' method resembles
+`trapbuffer', but is usually faster when traps are arranged in clusters
+because it starts with a `clusterrect' mask.
 
 If \code{poly} is specified, points outside \code{poly} are dropped. The
 `polygon' method places points on a rectangular grid clipped to the

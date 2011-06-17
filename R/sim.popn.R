@@ -1,10 +1,13 @@
-########################################################################################
+###############################################################################
 ## package 'secr'
 ## sim.popn.R
 ## simulate spatially distributed population
 ## transferred from methods.R 2010-06-08
-## last changed 2010-06-14  added Ndist = 'specified', using D to carry N
-#########################################################################################
+## last changed
+## 2010-06-14  added Ndist = 'specified', using D to carry N
+## 2011-03-27  conditional attachment of rownames (correct bug when N = 0)
+## 2011-04-06  coastal beta option
+###############################################################################
 
 toroidal.wrap <- function (pop) {
     bb <- attr(pop, 'boundingbox')
@@ -120,7 +123,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
         if (model2D == 'IHP') {
             nr <- nrow(core)
             if (!inherits(core, 'mask'))
-                stop("for model2D = IHP, 'core' should be a habitat mask")
+                stop ("for model2D = IHP, 'core' should be a habitat mask")
             if (Ndist != 'poisson')
                 stop ("IHP not implemented for fixed or specified N")
             nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per mask cell
@@ -133,7 +136,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
         }
         else {
             if (buffertype != 'rect')
-                stop (dQuote("rect"), " is only buffertype implemented")
+                stop ("'rect' is the only buffertype implemented")
             # population in arena +/- buffer from traps
             buff <- c(-buffer,+buffer)
             xl <- range(core$x) + buff
@@ -151,6 +154,39 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
             if (model2D=='poisson') {
                 animals <- data.frame (x = runif(N)*diff(xl)+xl[1], y =
                     runif(N)*diff(yl)+yl[1])
+            }
+            else if (model2D=='coastal') {
+                if (is.null(details$Beta))
+                    details$Beta <- c(1,1.5,5,1)
+                a1 <- details$Beta[1]
+                b1 <- details$Beta[2]
+                a2 <- details$Beta[3]
+                b2 <- details$Beta[4]
+                animals <- data.frame (x = rbeta(N,a1,b1)*diff(xl)+xl[1],
+                                       y = rbeta(N,a2,b2)*diff(yl)+yl[1])
+            }
+            else if (model2D=='hills') {
+                hills <- details$hills
+                if (is.null(hills)) hills <- c(1,1)
+                hills <- c(hills, rep(0,4-length(hills)))
+                nhillx <- abs(hills[1])
+                nhilly <- abs(hills[2])
+                offset <- any(hills[1:2]<0)
+                dx <- hills[3]
+                dy <- hills[4]
+                dx <- ifelse (dx<0, runif(1), dx)
+                dy <- ifelse (dy<0, runif(1), dy)
+                xhill <- sample(0:(nhillx-1), N, replace=TRUE)
+                yhill <- sample(0:(nhilly-1), N, replace=TRUE)
+                x <- asin(runif(N)*2 - 1)/pi + 0.5 + xhill
+                y <- asin(runif(N)*2 - 1)/pi + 0.5 + yhill
+                if (offset) x <- x + (yhill %% 2) * 0.5
+                x <- x/nhillx + dx
+                y <- y/nhilly + dy
+                x <- ifelse (x>1, x-1, x)
+                y <- ifelse (y>1, y-1, y)
+                animals <- data.frame (x = x * diff(xl)+xl[1],
+                                       y = y * diff(yl)+yl[1])
             }
             else if (model2D=='cluster') {
                 ## Neyman-Scott distribution with wrapping
@@ -186,13 +222,16 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
             else stop ("unrecognised 2-D distribution")
         }
         names(animals) <- c('x','y')
-        row.names (animals) <- number.from : (nrow(animals)+number.from-1)
+        if (nrow(animals) > 0)   ## condition added 2011-03-27
+            row.names (animals) <- number.from : (nrow(animals)+number.from-1)
         attr(animals,'covariates') <- NULL
         if (!is.null(covariates)) {
             tempcov <- list()
             for (i in 1:length(covariates)) {
-               covi <- sample (names(covariates[[i]]), replace=T, size=N, prob=covariates[[i]])
-               temptxt <- paste ('tempcov$', names(covariates[i]), '<- covi', sep='')
+               covi <- sample (names(covariates[[i]]), replace=T, size=N,
+                               prob=covariates[[i]])
+               temptxt <- paste ('tempcov$', names(covariates[i]), '<- covi',
+                               sep = '')
                eval(parse(text=temptxt))
             }
             attr(animals,'covariates') <- as.data.frame(tempcov)

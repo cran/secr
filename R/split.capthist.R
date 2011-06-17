@@ -30,7 +30,7 @@ extract.estimates <- function (x, simplify = FALSE) {
 ## compile a dataframe (simplify = T) or list of data.frames of session-specific real parameter estimates
 ## from a list of separate secr model fits
    if (!is.list(x) | !inherits(x[[1]], 'secr'))
-       stop("requires list of fitted secr models")
+       stop ("requires list of fitted secr models")
    temp <- lapply(x, predict)
    temp <- lapply(temp, function(x) x[,-1])  ## drop unwanted 'link' column
    temp <- lapply(temp, function(x) {x$Parameter <- row.names(x); x})

@@ -4,8 +4,11 @@
 \alias{trap}
 \alias{alive}
 \alias{xy}
+\alias{alongtransect}
+\alias{unmarked}
 \alias{signal}
 \alias{xy<-}
+\alias{unmarked<-}
 \alias{signal<-}
 %% \alias{times}
 %% \alias{times<-}
@@ -22,10 +25,13 @@ animalID(object, names = TRUE)
 occasion(object)
 trap(object, names = TRUE)
 alive(object)
+alongtransect(object, tol = 0.01)
 xy(object)
-signal(object)
 xy(object) <- value
+signal(object)
 signal(object) <- value
+unmarked(object)
+unmarked(object) <- value
 %% times(object)
 %% times(object) <- value
 
@@ -34,7 +40,9 @@ signal(object) <- value
 \arguments{
 
   \item{object}{ a 'capthist' object }
-  \item{names}{ if FALSE the values returned are numeric indices rather than names }
+  \item{names}{ if FALSE the values returned are numeric indices rather
+    than names }
+  \item{tol}{ tolerance for snapping to transect line (m) }
   \item{value}{ replacement value (see Details) }
 
 }
@@ -47,11 +55,16 @@ and trap.
 \code{trap} returns polygon or transect numbers if \code{traps(object)}
 has detector type 'polygon' or 'transect'.
 
+\code{alongtransect} returns the distance of each detection from the
+start of the transect with which it is associated.
+
 Replacement values must precisely match \code{object} in number of
 detections and in their order. \code{xy<-} expects a dataframe of x and y
 coordinates for points of detection within a 'polygon' or 'transect'
 detector.
 
+\code{unmarked} extracts or replaces the counts of unmarked animals that
+are saved as attribute `Tu' of \code{object}.
 }
 
 \value{
@@ -62,6 +75,10 @@ For \code{alive} a vector of logical values, one per detection.
 For \code{occasion}, a vector of numeric values, one per detection.
 
 For \code{xy}, a dataframe with one row per detection and columns 'x' and 'y'.
+
+For \code{unmarked}, a matrix with one row per detector and one column
+for each occasion. The number of occasions should match the number of
+columns in \code{object} (noting that \code{object} has no rows).
 
 %%For \code{signal} and \code{times}, a numeric vector with one element per detection.
 For \code{signal}, a numeric vector with one element per detection.

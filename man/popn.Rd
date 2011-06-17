@@ -26,7 +26,7 @@ on \code{Ndist} and \code{model2D}.
 
 \note{ The \code{popn} class is used only occasionally: it is not central to spatially explicit capture recapture. }
 
-\seealso{ \code{\link{sim.popn}}, \code{\link{plot.popn}} }
+\seealso{ \code{\link{sim.popn}}, \code{\link{plot.popn}}, \code{\link{transformations}} }
 
 \keyword{ classes }
 

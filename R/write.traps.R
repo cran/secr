@@ -13,7 +13,8 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
         header, deparse(substitute(object), control=NULL))
     header <- ifelse (is.character(header), TRUE, header)
 
-    if (!is(object, 'traps')) stop ("requires a 'traps' object")
+    if (!is(object, 'traps'))
+        stop ("requires a 'traps' object")
     n <- nrow(object)
     object$x <- round(object$x,ndec)
     object$y <- round(object$y,ndec)
@@ -59,8 +60,10 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
     }
 
     if (header) {
-        cat ("# Detector locations exported from '", objectname, "' \n", sep="", file=file)
-        cat ('#', format(Sys.time(), "%a %b %d %X %Y"), '\n', append = TRUE, file=file)
+        cat ("# Detector locations exported from '", objectname, "' \n",
+             sep = "", file = file)
+        cat ('#', format(Sys.time(), "%a %b %d %X %Y"), '\n', append = TRUE,
+             file = file)
         if (poly)
             headtext <- '# polyID  x  y'
         else
@@ -69,7 +72,7 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
         else
             headtext <- '# Detector  x  y'
         if (length(covlist)>0)
-            headtext <- paste(header, covnames, sep = ' / ')
+            headtext <- paste(headtext, covnames, sep = ' / ')
 
         cat (headtext, '\n', append = TRUE, file=file)
     }
@@ -78,4 +81,4 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
         row.names = !poly & !transect, col.names = FALSE, quote = FALSE, ...)
 
 }
-############################################################################################
+###############################################################################

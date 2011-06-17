@@ -4,6 +4,7 @@
 \alias{possum}
 \alias{possumCH}
 \alias{possumarea}
+\alias{possumregion}
 \alias{possummask}
 \alias{possum.model.1}
 \alias{possum.model.1b}
@@ -60,6 +61,9 @@ included as a shapefile and as a text file (`possumarea.shp' etc. and
 `possumarea.txt' in the package `extdata' folder). See Examples in
 \code{\link{make.mask}}.
 
+% From secr 2.1 a further dataframe \code{possumregion} is included that
+% equates to the nominal removal study area (Efford et al. 2005 Fig. 1).
+
 Clipping of the mask, introduced in secr 1.5, slightly changes the
 fitted models (and hence the density estimates).
 
@@ -68,10 +72,14 @@ fitted models (and hence the density estimates).
   possumCH \tab capthist object \cr
   possummask \tab mask object \cr
   possumarea \tab habitat perimeter \cr
+%  possumregion \tab nominal boundary of removal region \cr
   possum.model.1 \tab fitted secr model -- null \cr
   possum.model.1b \tab fitted secr model -- trap response g0 \cr
 }
- 
+
+Some components of the fitted secr models have been removed with
+\code{\link{trim}} to save space.
+
 }
 
 \source{
@@ -107,7 +115,7 @@ Bulletin} \bold{33}, 731--738.
 \dontrun{
 
 ## code used to construct dataset
-setwd('d:\\density secr 2.0\\package data\\possum')
+setwd('d:\\density secr 2.1\\package data\\possum')
 possumCH <- read.capthist('foxton.txt', 'foxtraps.txt', detector = 'single')
 ## drop within-day duplicates of tag 5861 in traps 11,12, to conform DENSITY
 possumCH['5861',] <- c(134, 133, 134, 133, 135)

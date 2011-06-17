@@ -10,7 +10,7 @@
 \usage{
 make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE,
-    cutval = NULL, tol = 0.01)
+    cutval = NULL, tol = 0.01, noncapt = 'NONE')
 }
 
 \arguments{
@@ -23,6 +23,7 @@ make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
   \item{sortrows}{ logical, if true then rows are sorted in ascending order of animalID }
   \item{cutval}{ numeric, threshold of signal strength for 'signal' detector type }
   \item{tol}{ numeric, tolerance in metres when assigning coordinates for 'transect' detector type }
+  \item{noncapt}{ character value; animal ID used for `no captures' }
 }
 
 \details{
@@ -68,6 +69,12 @@ default, the number of occasions is the maximum value of 'occasion' in
 Signal strengths may be provided in the fifth (fmt = trapID) or sixth
 (fmt = XY) columns. Detections with signal strength missing (NA) or
 below `cutval' are discarded.
+
+A session may result in no detections. In this case a null line is
+included in \code{captures} using the animal ID field given by
+\code{noncapt}, the maximum occasion number, and any trapID (e.g. "sess1
+NONE 5 1" for a 5-occasion session) (or equivalently "sess1 NONE 5 10
+10" for fmt = XY).
 
 }
 

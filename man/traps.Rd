@@ -39,6 +39,10 @@ a matrix of binary (0/1) codes indicating whether each detector was used
 on each occasion (\code{usage}). If usage is specified, at least one
 detector must be `used' on each occasion.
 
+Various array geometries may be constructed with functions such as
+\code{\link{make.grid}} and \code{\link{make.circle}}, and these may be
+combined or placed randomly with \code{\link{trap.builder}}. 
+
 }
 
 \references{ 
@@ -68,7 +72,8 @@ generic methods of the same name.
 
 \seealso{ \code{\link{make.grid}}, \code{\link{read.traps}},
   \code{\link{plot.traps}}, \code{\link{secr.fit}},
-  \code{\link{spacing}}, \code{\link{detector}} }
+  \code{\link{spacing}}, \code{\link{detector}},
+  \code{\link{covariates}}, \code{\link{trap.builder}} }
 
 \examples{
 

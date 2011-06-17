@@ -1,34 +1,144 @@
 \name{empirical.varD}
 \alias{empirical.varD}
+\alias{derived.nj}
+\alias{derived.session}
+\alias{derived.mash}
+\alias{derived.cluster}
+\alias{derived.external}
 \title{
-Design-based Variance of Density
+Empirical Variance of H-T Density Estimate
 }
 \description{
 
-  Compute the variance of a density estimate from a fitted spatially
-  explicit model, using the empirical spatial variance of the number
-  observed in replicated sampling units.
+  Compute Horvitz-Thompson-like estimate of population density from a
+  previously fitted spatial detection model, and estimate its sampling
+  variance using the empirical spatial variance of the number observed
+  in replicate sampling units. Wrapper functions are provided for
+  several different scenarios, but all ultimately call
+  \code{derived.nj}. The function \code{derived} also computes
+  Horvitz-Thompson-like estimates, but it assumes a Poisson or binomial
+  distribution of total number when computing the sampling variance.
 
 }
 
 \usage{
-empirical.varD(object, esa = NULL, se.esa = NULL)
+
+derived.nj ( nj, esa, se.esa,  method = 'SRS', xy = NULL,
+    alpha = 0.05, loginterval = TRUE ) 
+
+derived.mash ( object, sessnum = NULL,  method = 'SRS',
+    alpha = 0.05, loginterval = TRUE)
+
+derived.cluster ( object, sessnum = NULL,  method = 'SRS',
+    alpha = 0.05, loginterval = TRUE)
+
+derived.session ( object,  method = 'SRS', xy = NULL,
+    alpha = 0.05, loginterval = TRUE )
+
+derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
+    mask = NULL, noccasions = NULL,  method = 'SRS', xy = NULL,
+    alpha = 0.05, loginterval = TRUE)
+
 }
 
 \arguments{
-  \item{object}{
-fitted secr model object or vector of number observed in each sampling unit
-}
-  \item{esa}{
-scalar estimate of effective sampling area (\eqn{\hat{a}}{a-hat})
-}
-  \item{se.esa}{
-estimated standard error of effective sampling area (\eqn{\widehat{SE}(\hat{a})}{SE-hat(a-hat)})
-}
+  \item{object}{fitted secr model }
+  \item{nj}{ vector of number observed in each sampling unit (cluster)}
+  \item{esa}{scalar estimate of effective sampling area (\eqn{\hat{a}}{a-hat})}
+  \item{se.esa}{ estimated standard error of effective sampling
+    area (\eqn{\widehat{SE}(\hat{a})}{SE-hat(a-hat)})}
+  \item{method}{ character string `SRS' or `local' }
+  \item{xy}{ dataframe of x- and y- coordinates (\code{method = 'local'} only)}
+  \item{alpha}{ alpha level for confidence intervals }
+  \item{loginterval}{ logical for whether to base interval on log(N)}
+  \item{sessnum}{ index of session in object$capthist for which output required }
+  \item{cluster}{ `traps' object for a single cluster}
+  \item{buffer}{ width of buffer in metres (ignored if \code{mask}
+  provided) } 
+  \item{mask}{ mask object for a single cluster of detectors }
+  \item{noccasions}{number of occasions (for \code{nj}) }
+  
 }
 
 \details{
 
+  \code{derived.cluster} accepts a model fitted to data from clustered
+  detectors; each \link{cluster} is interpreted as a replicate
+  sample. It is assumed that the sets of individuals sampled by
+  different clusters do not intersect, and that all clusters have the
+  same geometry (spacing, detector number etc.).
+  
+  \code{derived.mash} accepts a model fitted to clustered data that have
+  been `mashed' for fast processing (see \code{\link{mash}}); each
+  cluster is a replicate sample: the function uses the vector of cluster
+  frequencies (\eqn{n_j}) stored as an attribute of the mashed
+  \code{capthist} by \code{mash}.
+
+  \code{derived.nj} accepts a vector of counts (\code{nj}), along with
+  \eqn{\hat{a}}{a-hat} and \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}.  The
+  argument \code{esa} may include both \eqn{\hat{a}}{a-hat} and
+  \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}) - any form will do if it can
+  be coerced to a vector of length 2.
+
+  \code{derived.external} combines detection parameter estimates from a
+  fitted model with a vector of frequencies \code{nj} from replicate
+  sampling units configured as in \code{cluster}. Detectors in
+  \code{cluster} are assumed to match those in the fitted model with
+  respect to type and efficiency, but sampling duration
+  (\code{noccasions}), spacing etc. may differ. The \code{mask} should
+  match \code{cluster}; if \code{mask} is missing, one will be
+  constructed using the \code{buffer} argument and defaults from
+  \code{make.mask}.
+
+  \code{derived.session} accepts a single fitted model that must span
+  multiple sessions; each session is interpreted as a replicate sample.
+
+  Spatial variance may be calculated assuming simple random sampling
+  (\code{method = 'SRS'}) or using the neighbourhood variance estimator
+  recommended by Stevens and Olsen (2003) for generalized random
+  tessellation stratified (GRTS) samples and implemented in package
+  \pkg{spsurvey} (\code{method = 'local'}). For
+  `local' variance estimates, the centre of each replicate must be
+  provided in \code{xy}, except where centres may be inferred from the
+  data.
+   
+  }
+
+\value{
+
+  A dataframe with one row and the columns --
+\item{estimate }{Horvitz-Thompson-like estimate of population density}
+\item{SE.estimate }{SE of density estimate}
+\item{lcl}{lower 100(1--alpha)\% confidence limit}
+\item{ucl}{upper 100(1--alpha)\% confidence limit}
+\item{CVn }{relative SE of number observed (across sampling units) }
+\item{CVa }{relative SE of effective sampling area }
+\item{CVD }{relative SE of density estimate}
+
+}
+\references{
+
+Buckland, S. T., Anderson, D. R., Burnham, K. P., Laake, J. L., Borchers,
+D. L. and Thomas, L. (2001) \emph{Introduction to Distance Sampling:
+Estimating Abundance of Biological Populations}. Oxford University
+Press, Oxford.
+
+Stevens, D. L. Jr and Olsen, A. R. (2003) Variance estimation for
+spatially balanced samples of environmental resources.
+\emph{Environmetrics} \bold{14}, 593--610.
+
+}
+
+\seealso{
+\code{\link{derived}}, \code{\link{esa}} 
+}
+
+\note{
+
+  In versions before 2.1, the functionality of \code{derived.nj} and
+  \code{derived.session} was provided by \code{empirical.VarD}, which
+  has been removed.
+  
   The variance of a Horvitz-Thompson-like estimate of density may be
   estimated as the sum of two components, one due to uncertainty in the
   estimate of effective sampling area (\eqn{\hat{a}}{a-hat}) and the
@@ -59,34 +169,7 @@ where \eqn{\widehat{\mbox{var}}(n) = \frac{J}{J-1}
   numerical estimate of the gradient of \eqn{a(\theta)}{a(theta)} with
   respect to \eqn{\theta}{theta}. This calculation is performed in
   \code{\link{derived}}.
-
-  Input may be either a single fitted model or a vector of counts (the
-  \eqn{n_j}) along with \eqn{\hat{a}}{a-hat} and
-  \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}. If \code{object} is a single
-  fitted model then it must span multiple sessions and each session is
-  interpreted as a replicate sample. This form does not allow zero
-  counts; if some units have zero counts use the second style of input.
-  }
-
-\value{
-A vector of values --
-\item{D }{Horvitz-Thompson-like estimate of population density}
-\item{seD }{SE of density estimate}
-\item{CVD }{relative SE of density estimate}
-\item{CVn }{relative SE of number observed (across sampling units) }
-\item{CVa }{relative SE of effective sampling area }
-}
-\references{
-
-  Buckland, S. T., Anderson, D. R., Burnham, K. P., Laake, J. L., Borchers,
-D. L. and Thomas, L. (2001) \emph{Introduction to Distance Sampling:
-Estimating Abundance of Biological Populations}. Oxford University
-Press, Oxford.
-
-}
-
-\seealso{
-\code{\link{derived}}, \code{\link{esa}} 
+  
 }
 
 \examples{
@@ -104,10 +187,85 @@ signalCH.525 <- subset(signalCH, cutval = 52.5)
 nonzero.counts <- table(substring(rownames(signalCH.525),1,4))
 nj <- c(nonzero.counts, rep(0, 75 - length(nonzero.counts)))
 temp <- derived(ovensong.model.1, se.esa = TRUE)
-empirical.varD(nj, temp['esa',1], temp['esa',2])
+derived.nj(nj, temp['esa',1:2])
 
 ## The result is very close to that reported by Dawson & Efford
 ## from a 2-D Poisson model fitted by maximizing the full likelihood.
+
+
+\dontrun{
+
+## Set up an array of small (4 x 4) grids,
+## simulate a Poisson-distributed population,
+## sample from it, plot, and fit a model.
+## mash() condenses clusters to a single cluster
+
+testregion <- data.frame(x = c(0,2000,2000,0),
+    y = c(0,0,2000,2000))
+t4 <- make.grid(nx = 4, ny = 4, spacing = 40)
+t4.16 <- make.systematic (n = 16, cluster = t4,
+    region = testregion)
+popn1 <- sim.popn (D = 5, core = testregion,
+    buffer = 0)
+capt1 <- sim.capthist(t4.16, popn = popn1)
+fit1 <- secr.fit(mash(capt1), CL = TRUE)
+
+## Visualize sampling
+tempmask <- make.mask(t4.16, spacing = 10, type =
+    'clusterbuffer')
+plot(tempmask)
+plot(t4.16, add = TRUE)
+plot(capt1, add = TRUE)
+
+## Compare model-based and empirical variances.
+## Here the answers are similar because the data
+## were simulated from a Poisson distribution,
+## as assumed by \code{derived}
+
+derived(fit1)
+derived.mash(fit1)
+
+## Now simulate a patchy distribution; note the
+## larger (and more credible) SE from derived.mash().
+
+popn2 <- sim.popn (D = 5, core = testregion, buffer = 0,
+    model2D = 'hills', details = list(hills = c(-2,3)))
+capt2 <- sim.capthist(t4.16, popn = popn2)
+fit2 <- secr.fit(mash(capt2), CL = TRUE)
+derived(fit2)
+derived.mash(fit2)
+
+## The detection model we have fitted may be extrapolated to
+## a more fine-grained systematic sample of points, with
+## detectors operated on a single occasion at each...
+## Total effort 400 x 1 = 400 detector-occasions, compared
+## to 256 x 5 = 1280 detector-occasions for initial survey.
+
+t1 <- make.grid(nx = 1, ny = 1)
+t1.100 <- make.systematic (cluster = t1, spacing = 100,
+    region = testregion)
+capt2a <- sim.capthist(t1.100, popn = popn2, noccasions = 1)
+## one way to get number of animals per point
+nj <- attr(mash(capt2a), 'n.mash')
+derived.external (fit2, nj = nj, cluster = t1, buffer = 100,
+    noccasions = 1)
+
+## Review plots
+base.plot <- function() {
+    eqscplot( testregion, axes = FALSE, xlab = '',
+        ylab = '', type = 'n')
+    polygon(testregion)
+}
+par(mfrow = c(1,3), xpd = T, xaxs = 'i', yaxs = 'i')
+base.plot()
+plot(popn2, add = TRUE, col = 'blue')
+mtext(side=3, line=0.5, 'Population', cex=0.8, col='black')
+base.plot()
+cluster.plot (capt2a, add = TRUE,title = 'Extensive survey')
+base.plot()
+plot(capt2, add = TRUE, title = 'Intensive survey')
+
+}
 
 }
 

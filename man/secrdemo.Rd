@@ -69,7 +69,7 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 }
 
-\seealso{ \code{\link{capthist}} }
+\seealso{ \code{\link{capthist}}, \code{\link{read.capthist}} }
 
 \examples{
 
@@ -81,11 +81,8 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 temptrap <- read.traps(data = trapXY, detector = 'single')
 plot(temptrap)
 
-\dontrun{
 ## construct a capthist object
 captdata <- make.capthist(captXY, temptrap, fmt='XY')
-}
-
 plot(captdata, tracks = TRUE)
 
 ## display the null model fit, using the print method for secr

@@ -46,10 +46,8 @@ make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', originxy=c(0
     grid
 }
 
-make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi', originxy=c(0,0))
-{
-    ##    if (!( detector %in% .localstuff$validdetectors ))
-    ##        stop ('invalid detector type')
+make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi',
+    originxy=c(0,0)) {
     dy2 <- spacing * cos (pi / 6)
     xvals <- seq(from = originxy[1], length = nx, by = spacing)
     yvals <- seq(from = originxy[2], length = ny, by = dy2)
@@ -95,7 +93,7 @@ clip.hex <- function (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     temp <- subset(traps, OK, ...)
     if (!is.null(ID)) {
         if (!(ID %in% c('num', 'alpha')))
-            stop (paste("ID must be", dQuote("num"), "or", dQuote("alpha")))
+            stop ("ID must be 'num' or 'alpha'")
         if (ID == 'num') row.names(temp) <- 1:nrow(temp)
         if (ID == 'alpha') temp <- ringID(temp)
     }

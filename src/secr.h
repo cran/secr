@@ -26,6 +26,7 @@ void integralprw1 (
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 10 = signal strength, 11 = binary signal strength */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
     double *cut,       /* transformed signal strength threshold for detection */
+    int    *useD,      /* logical : does third column of mask contain D weight? 2011-05-05 */
     double *a,         /* return value integral of pr(w0) */
     int    *resultcode /* 0 for successful completion */
 );
@@ -379,7 +380,23 @@ void nearest (
 
 void inside (double *xy, int *n1, int *n2, int *np, double *poly, int *in);
 
-void ontransect (double *xy, int *n1, int *n2, int *npts, double *transect, double *tol, int *on);
+void ontransect (
+    double *xy, 
+    int    *n1, 
+    int    *n2, 
+    int    *npts, 
+    double *transect,
+    double *tol, 
+    int    *on);
+
+void alongtransect (
+    double *xy,
+    int    *n1,
+    int    *n2,
+    int    *npts,
+    double *transect,
+    double *tol,
+    double *along);
 
 void secrcellprob (
     int    *detect,      /* detector 0 multi, 1 proximity */
@@ -440,5 +457,23 @@ void pwuniform (
     double *cut,         /* transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *value,       /* return values */
+    int    *resultcode   /* 0 if OK */
+    );
+
+
+void secrloglikUM (
+    int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
+    int    *ss,          /* number of occasions */
+    int    *kk,          /* number of traps */
+    int    *mm,          /* number of points on mask */
+    double *traps,       /* x,y locations of traps (first x, then y) */
+    double *mask,        /* x,y points on mask (first x, then y) */
+    double *Dmask,       /* density at each point on mask, possibly x group */
+    double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
+    int    *cc,          /* number of g0/sigma/b combinations  */
+    int    *gsb,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+    double *area,        /* area associated with each mask point (ha) */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *value,       /* return value integral */
     int    *resultcode   /* 0 if OK */
     );

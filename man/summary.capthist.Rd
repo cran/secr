@@ -9,7 +9,7 @@
   Concise description of \code{capthist} object.
 }
 \usage{
-\method{summary}{capthist}(object, ...)
+\method{summary}{capthist}(object, terse = FALSE, ...)
 
 \method{print}{summary.capthist}(x, ...)
 
@@ -19,6 +19,8 @@ counts(CHlist, counts = 'M(t+1)')
 
 \arguments{
   \item{object }{ \code{\link{capthist}} object }
+  \item{terse }{ logical; provide only summary counts for multi-session
+  object }
   \item{x }{ \code{summary.capthist} object }
   \item{\dots}{ arguments passed to other functions }
 
@@ -28,7 +30,10 @@ counts(CHlist, counts = 'M(t+1)')
 }
 
 \value{
-An object of class \code{summary.capthist}, a list with at least these components
+
+From \code{summary.capthist}, an object of class
+\code{summary.capthist}, a list with at least these components
+
   \item{detector }{\code{\link{detector}} type (`single', `multi', `proximity' etc.)}
   \item{ndetector }{number of detectors }
   \item{xrange }{range of x coordinates of detectors }
@@ -37,6 +42,10 @@ An object of class \code{summary.capthist}, a list with at least these component
   \item{counts }{matrix of summary counts (rows) by occasion (columns).  See Details.}
   \item{dbar }{mean recapture distance }
   \item{RPSV }{root pooled spatial variance }
+
+  or, when \code{terse = TRUE} and \code{object} contains multiple
+  sessions, a dataframe of counts per session.
+  
 }
 
 \details{

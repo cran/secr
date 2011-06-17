@@ -145,7 +145,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
             control$maxinterp <- trapspacing/2^0.5
         critx <- c(seq(trapspacing/2, control$maxinterp, len=control$ninterp),
                    trapspacing * control$scale)
-        require(gpclib, quietly = TRUE)
+        if (!require(gpclib, quietly = TRUE))
+            stop ("package 'gpclib' required in bias.D")
         crity <- sapply(critx, perimeterfn, traps)
     }
     else {

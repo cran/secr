@@ -14,7 +14,7 @@ of a 2-D population using an array of detectors.
 \usage{
 sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = 'poisson'), detectfn = 0, detectpar = list(),
-    noccasions = 5, binomN = NULL, renumber = TRUE, seed = NULL)
+    noccasions = 5, nsessions = 1, binomN = NULL, renumber = TRUE, seed = NULL)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
     nonID = TRUE)
 
@@ -28,6 +28,7 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   detection function 0 = halfnormal etc. -- see \link{detectfn}}
   \item{detectpar}{ list of values for named parameters of detection function }
   \item{noccasions}{ number of occasions to simulate }
+  \item{nsessions}{ number of sessions to simulate }
   \item{binomN}{ integer code for distribution of counts (see Details) }
   \item{renumber}{ logical for whether output rows should labeled sequentially (TRUE) or
  retain the numbering of the population from which they were drawn (FALSE) }
@@ -58,6 +59,13 @@ function, which is indicated by a numeric code (\code{\link{detectfn}}).
 Parameters may vary with time - for this provide a vector of length
 \code{noccasions}.  The default detection parameters are \code{list(g0 =
 0.2, sigma = 25, z = 1)}.
+
+The default is to simulate a single session. This may be overridden by
+providing a list of populations to sample (argument \code{popn}) or by
+specifying \code{nsessions} > 1 (if both then the number of sessions must
+match). Using \code{nsessions} > 1 results in replicate samples of
+populations with the same density etc. as specified directly in the
+\code{popn} argument.
 
 \code{binomN} determines the statistical distribution of the number of
 detections of an individual at a particular `count' detector or polygon
@@ -162,6 +170,11 @@ temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector =
     'proximity')
 summary(sim.capthist (temptrap, detectpar =
     list(g0 = 0.2, sigma = 20)))
+
+## multiple sessions
+grid4 <- make.grid(nx = 2, ny = 2)
+temp <- sim.capthist (grid4, popn = list(D = 1), nsessions = 20)
+summary(temp, terse = TRUE)
 
 }
 \keyword{ datagen }

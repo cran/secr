@@ -2,20 +2,27 @@
 \alias{polyarea}
 
 \title{
-Area of simple polygon
+Area of Polygon(s)
 }
 \description{
-Area of a closed polygon
+Area of a single closed polygon (simple x-y coordinate input) or of
+multiple polygons, possibly with holes.
 }
 \usage{
 polyarea(xy, ha = TRUE)
 }
+
 \arguments{
-  \item{xy}{dataframe or list with components `x' and `y'}
+  \item{xy}{dataframe or list with components `x' and `y', or a
+    SpatialPolygons or SpatialPolygonsDataFrame object from package \pkg{sp}}
   \item{ha}{logical if TRUE output is converted from square metres to hectares}
 }
+\details{
+  For SpatialPolygons or SpatialPolygonsDataFrame objects it is
+  necessary to have installed the packages \pkg{sp} and \pkg{rgeos}.
+}
 \value{
-  A scalar
+  A scalar.
 }
 \seealso{
   \code{\link{buffer.contour}}

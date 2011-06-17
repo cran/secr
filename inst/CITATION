@@ -1,14 +1,19 @@
 citHeader("To cite package 'secr' in publications use:")
+
 desc <- packageDescription("secr")
 year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", desc$Date)
 vers <- paste("R package version", desc$Version)
+url <- "http://CRAN.R-project.org/package=secr"
+
 citEntry(entry="Manual",
-title = "secr: Spatially Explicit Capture-Recapture Models",
-author = personList(as.person("Murray Efford")),
-year = year,
-note = vers,
-textVersion =
-paste("Efford, M. G. (",
-year,
-"). secr: Spatially Explicit Capture-Recapture Models. ",
-vers, ".", sep=""))
+    title = "secr: Spatially Explicit Capture-Recapture Models",
+    author = personList(as.person("Murray Efford")),
+    year = year,
+    note = vers,
+    url = url,
+    textVersion =
+        paste("Efford, M. G. (", year,
+        "). secr: Spatially Explicit Capture-Recapture Models. ",
+        vers, ". ", url, 
+        sep = "")
+)
