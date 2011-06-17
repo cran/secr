@@ -4,7 +4,8 @@
 ## 2009 09 18, 2009 09 19, 2009 09 20 2009 10 02 2009 11 05
 ## 2009 11 13
 ## 2010 05 02 removed erroneous ref to 'areabinary' detector
-# 2011 02 15 validpoly
+## 2011 02 15 validpoly
+## 2011 03 19 adjustments to allow unmarked; need more complete check of unmarked
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -338,6 +339,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         signal <- detector(traps(object)) %in% c('signal')
         poly <- detector(traps(object)) %in% c('polygon', 'polygonX')
         transect <- detector(traps(object)) %in% c('transect', 'transectX')
+        unmarked <- detector(traps(object)) %in% c('unmarked')
 
         NAOK <- TRUE
         deadOK <- TRUE
@@ -345,6 +347,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         usageoccasionsOK <- TRUE
         usagedetectorsOK <- TRUE
         usagenonzeroOK <- TRUE
+        detectornumberOK <- TRUE
         detectorconflcts <- NULL
         singleOK <- TRUE
         binaryOK <- TRUE
@@ -373,8 +376,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         trapsOK <- !trapcheck$errors
 
         ## 3
-        if (length(object)==0)
-            detectionsOK <- FALSE
+        if (length(object)==0) {
+            detectionsOK <- unmarked
+        }
         else  {
 
             detectionsOK <- sum(object[object>0]) > 0
@@ -428,15 +432,17 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 10
-        if (poly | transect) {
-            detectornumberOK <- ifelse (dim3,
-                length(levels(polyID(traps(object)))) == dim(object)[3],
-                max(abs(object)) <= ndetector(traps(object)))
+        if (nrow(object) > 0) {
+            if (poly | transect) {
+                detectornumberOK <- ifelse (dim3,
+                    length(levels(polyID(traps(object)))) == dim(object)[3],
+                    max(abs(object)) <= ndetector(traps(object)))
+            }
+            else
+                detectornumberOK <- ifelse (dim3,
+                  dim(object)[3] == nrow(traps(object)),
+                  max(abs(object)) <= nrow(traps(object)))
         }
-        else
-            detectornumberOK <- ifelse (dim3,
-              dim(object)[3] == nrow(traps(object)),
-              max(abs(object)) <= nrow(traps(object)))
 
         ## 11
         covariatesOK <- ifelse(is.null(covariates(object)),
@@ -467,10 +473,14 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
                 else {
                     if (usagedetectorsOK && usageoccasionsOK) {
-                        OK <- as.numeric(object)>0
-                        occasion <- as.numeric(col(object))[OK]
-                        ID <- row.names(object)[as.numeric(row(object))[OK]]
-                        detector <- as.numeric(object)[OK]
+## 2011-03-29
+##                        OK <- as.numeric(object)>0
+##                        occasion <- as.numeric(col(object))[OK]
+##                        ID <- row.names(object)[as.numeric(row(object))[OK]]
+##                        detector <- as.numeric(object)[OK]
+                        occasion <- occasion(object)
+                        ID <- animalID(object, names = FALSE)
+                        detector <- trap(object, names = FALSE)
                         conflcts <- notused[cbind(detector, occasion)] > 0
                         detectorconflcts <- as.data.frame(cbind(ID,detector,occasion)[conflcts,])
                     }
@@ -501,7 +511,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
             ontransect <- xyontransect(xy(object), traps(object), tol = tol)
-            ontransect <- ontransect == trap(object, name = F)
+            ontransect <- ontransect == trap(object, names = F)
             xyontransectOK <- all(ontransect)
         }
 

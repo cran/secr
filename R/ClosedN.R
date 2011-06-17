@@ -3,6 +3,7 @@
 # Murray Efford April 2010
 # Based on Otis et al. 1978, C code of Anne Chao etc.
 # modified 2010-09-05 for AICcwt
+# modified 2011-05-04 for only non-ML estimators
 
 # source('d:\\density secr 1.4\\secr\\r\\closedN.R')
 
@@ -19,7 +20,8 @@ closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7, dmax = 
         models <- c('M0','Mb','Mt','Mh','Mh', 'Mh','Mh','Mh','Mth','Mth')
         if (is.null(estimator)) estimator <- allowed
         else if ('ML' %in% estimator) estimator <- allowed[1:5]
-        if (any(! estimator %in% allowed)) stop ('estimator not recognised')
+        if (any(! estimator %in% allowed)) stop ("estimator not recognised")
+        anyML <- any(estimator %in% allowed[1:5])
         ## Chao's Mth estimators need conventional capture histories
         if (any(estimator %in% c('chao.th1', 'chao.th2')))
             X <- apply(abs(object), 1:2, sum) > 0
@@ -44,28 +46,36 @@ closedN <- function (object, estimator = NULL, level = 0.95, maxN = 1e7, dmax = 
         tempCL <- apply(temp,2,LN.interval, level)
         temp <- as.data.frame(t(rbind(temp, tempCL)))
         temp[temp>maxN] <- NA
-
-        temp$AIC <- -2*temp$LL + 2 * temp$npar
-
-        temp$AICc <- ifelse ((temp$Mt1 - temp$npar - 1) > 0,
-            -2 * temp$LL + 2 * temp$npar * temp$Mt1 / (temp$Mt1 - temp$npar - 1),
-            NA)
-
-        temp$dAICc <- temp$AICc-min(temp$AICc, na.rm=T)
+        novalue <- rep(NA, nrow(temp))
 
         temp$model <- models[match(estimator, allowed)]
 
-        ## added 2010-09-05
-        OK <- abs(temp$dAICc) < abs(dmax)
-        sumdAICc <- sum(exp(-temp$dAICc[OK]/2), na.rm=T)
-        temp$AICwt <- ifelse ( OK, round(exp(-temp$dAICc/2) / sumdAICc,4), 0)
+        if (anyML) {
+            temp$AIC <- -2*temp$LL + 2 * temp$npar
+            temp$AICc <- ifelse ((temp$Mt1 - temp$npar - 1) > 0,
+                -2 * temp$LL + 2 * temp$npar * temp$Mt1 / (temp$Mt1 - temp$npar - 1),
+                NA)
+            temp$dAICc <- temp$AICc-min(temp$AICc, na.rm=T)
+            OK <- abs(temp$dAICc) < abs(dmax)
+            sumdAICc <- sum(exp(-temp$dAICc[OK]/2), na.rm=T)
+            temp$AICwt <- ifelse ( OK, round(exp(-temp$dAICc/2) / sumdAICc,4), 0)
+        }
+        else {
+            ## 2011-05-04
+            temp$AIC <- novalue
+            temp$AICc <- novalue
+            temp$dAICc <- novalue
+            temp$AICwt <- novalue
+        }
 
-        temp <- temp[,c(11,4,5,8:10, 12, 1:3,6,7)]
+        ## added 2010-09-05
+
+        temp <- temp[,c(8,4,5,9:12, 1:3,6,7)]
         names(temp) <- c('model','npar','loglik','AIC','AICc','dAICc', 'AICcwt', 'Mt1','Nhat',
                          'seNhat','lclNhat', 'uclNhat')
-        temp[,3] <- round(temp[,3], 3)
-        temp[,c(4:6,9:12)] <- round(temp[,c(4:6,9:12)], 2)
-        temp[,7] <- round(temp[,7], 3)
+        temp[,3] <- round(as.matrix(temp[,3]), 3)
+        temp[,c(4:6,9:12)] <- round(as.matrix(temp[,c(4:6,9:12)]), 2)
+        temp[,7] <- round(as.matrix(temp[,7]), 3)
         temp
     }
 }
@@ -202,7 +212,8 @@ Mh2.est <- function (fi) {
     if (!is.null(fit$hessian)) {
         covar <- try(solve(fit$hessian))
         if (inherits(covar, "try-error")) {
-            warning ('could not invert Hessian to compute variance-covariance matrix')
+            warning ("could not invert Hessian to compute ",
+                     "variance-covariance matrix")
             covar <- matrix(rep(NA,16), ncol = 4)  # failed
         }
         senhat <-  exp(fit$estimate[1]) * sqrt(exp(covar[1,1]^2)-1)
@@ -244,7 +255,8 @@ Mhbeta.est <- function (fi, maxN = 1e7) {
     if (!is.null(fit$hessian)) {
         covar <- try(solve(fit$hessian))
         if (inherits(covar, "try-error")) {
-            warning ('could not invert Hessian to compute variance-covariance matrix')
+            warning ("could not invert Hessian to compute ",
+                     "variance-covariance matrix")
             covar <- matrix(rep(NA,16), ncol = 4)  # failed
         }
         senhat <-  exp(fit$estimate[1]) * sqrt(exp(covar[1,1]^2)-1)
@@ -352,7 +364,7 @@ jackknife.est <- function (fi, full = F) {
                  N <- nj[1]
                  varN <- NA
                  Pi <- NA
-                 warning ('data illconditioned for jackknife')
+                 warning ("data illconditioned for jackknife")
              }
              else {
                  k1 <- occ5 - 1

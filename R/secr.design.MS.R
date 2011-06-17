@@ -1,4 +1,4 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## secr.design.MS.R
 ## 2009 08 20 disable bk, Bk
@@ -6,9 +6,9 @@
 ## 2009 12 10 mixtures
 ## 2009 12 13 mixtures pmix ~ h2
 
-############################################################################################
+################################################################################
 ## source ('d:\\density secr 1.5\\secr\\R\\secr.design.MS.R')
-############################################################################################
+################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE, ...) {
@@ -115,13 +115,15 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         S <- ncol(capthist)
         K <- getnk(trps)
     }
+    ## cover unmarked case
+    if (n == 0) n <- 1
 
     ## timecov may be a vector or a dataframe or a list of vectors or a list of data frames
     ## conform to either dataframe or list of dataframes (1 per session)
     if (!is.data.frame(timecov)) {
         if (is.list(timecov)) {
             if (length(timecov) != R)
-                stop("wrong number of sessions in 'timecov' list")
+                stop ("wrong number of sessions in 'timecov' list")
             timecov <- lapply(timecov, as.data.frame)
         }
         else timecov <- as.data.frame(timecov)
@@ -130,7 +132,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     if (!is.null(sessioncov)) {
         sessioncov <- as.data.frame(sessioncov)
         if (nrow(sessioncov) != R)
-            stop("number of rows in 'sessioncov' should equal number of sessions")
+            stop("number of rows in 'sessioncov' should equal ",
+                 "number of sessions")
     }
 
     dims <- c(R,n,S,K,nmix)  # 'virtual' dimensions
@@ -323,7 +326,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
     if ('kcov' %in% vars) {
         if (is.null(trapcov))
-            stop ("model uses trap covariates, but valid covariate data not found")
+            stop ("model uses trap covariates, but valid covariate ",
+                  "data not found")
         if (is.data.frame(trapcov)) trapcov <- trapcov[,1,drop=F]  ## retain only first
         else trapcov <- lapply (trapcov, function(x) pad1(x[,1], K))
         dframe$kcov <- insertdim(unlist(trapcov), c(4,1), dims)
@@ -345,7 +349,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # add zcov, sessioncov, trapcov, timecov
 
     if ((length(vars)>1) & (R>1))
-        warning ("implementation of user covariates with multi-session data is not fully tested")
+        warning ("implementation of user covariates with multi-session ",
+                 "data is not fully tested")
 
     if (!bygroup) findvars.MS (zcov, vars, 2)   ## CL only
     ## possible alternative for consideration 2009 09 25
@@ -362,7 +367,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             else
                 znames <- unlist(lapply(zcov, names))
             if (any (vars %in% znames))
-                stop ("seems you are trying to use individual covariates",
+                stop ("seems you are trying to use individual covariates ",
                       " in a full-likelihood model")
         }
         stop ("covariate(s) ", paste(vars,collapse=","), " not found")
@@ -440,14 +445,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         if (!is.null(allused))
         if (any(!allused)) {
             if (!MS) {
-##                PIA[1, , ,] <- PIA[1, , ,] * rep(t(used),rep(n,S*K))
                 PIA[1, , , ,] <- PIA[1, , , ,] * rep(rep(t(used),rep(n,S*K)),nmix)
             }
             else for (r in 1:R) {
                 use <- array (0, dim=c(S,K))
                 temp <- t(used[[r]])  # dim (S',K')
                 use[1:nrow(temp), 1:ncol(temp)] <- temp  # padding
-##                PIA[r, , , ] <- PIA[r, , , ] * rep(use,rep(n,S*K))
                 PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
             }
         }

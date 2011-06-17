@@ -6,16 +6,25 @@
   Read coordinates of points on a habitat mask from a text file.
 }
 \usage{
-read.mask(file, spacing = NULL, ...)
+read.mask(file = NULL, data = NULL, spacing = NULL, ...)
 }
 
 \arguments{
   \item{file}{ character string with name of text file }
+  \item{data}{ dataframe } 
   \item{spacing}{ spacing of grid points in metres }
   \item{...}{ other arguments to pass to \code{read.table} }
 }
 \details{
-Usually, the x and y coordinates are the first two values on each line, separated by white space. If the file starts with a line of column headers and 'header = TRUE' is passed to \code{read.table} in the \dots argument then 'x' and 'y' need not be the first two fields.
+
+For file input, the x and y coordinates are usually the first two values
+on each line, separated by white space. If the file starts with a line
+of column headers and 'header = TRUE' is passed to \code{read.table} in
+the \dots argument then 'x' and 'y' need not be the first two fields.
+
+  \code{data} is an alternative input route if the x and y coordinates
+  already exist in \R as columns in a dataframe. Only one of \code{data}
+  or \code{file} should be specified.
 
 If the grid cell size \code{spacing} is not provided then an attempt is
 made to infer it from the minimum spacing of points.  This can be slow

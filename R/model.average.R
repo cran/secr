@@ -22,7 +22,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
     if ( length(object) < 2 )
         warning ("only one model")
     if (!is.list(object) | !inherits(object[[1]], 'secr'))
-        stop("object must be secr or list of secr")
+        stop ("object must be secr or list of secr")
 
     type <- 'real'                     ## default
     parnames <- object[[1]]$realnames  ## default
@@ -42,7 +42,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         objnames <- function(i) switch (type, real=object[[i]]$realnames, beta=object[[i]]$betanames)
         test <- sapply (2:nsecr, function(i) sum(match(parnames, objnames(i), nomatch=0)>0) == np)
         if (!all(test))
-            stop ("requested parameters not found in all models, or models incompatible")
+            stop ("requested parameters not found in all models, ",
+                  "or models incompatible")
     }
 
     if (is.null(newdata)) {
@@ -130,7 +131,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
 
         ## variance from Burnham & Anderson 2004 eq (4)
         vcv1 <- array(unlist(vcvs), dim=c(nr, nr, np, nsecr))  ## between rows of newdata
-        betak <- sweep(ests, MAR=1:2, STAT=wtd, FUN='-')
+        betak <- sweep(ests, MARGIN = 1:2, STATS = wtd, FUN='-')
         vcv2 <- array(apply(betak, 2:3, function(x) outer(x,x)), dim=c(nr,nr,np,nsecr))
         vcv <- sweep (vcv1 + vcv2, MARGIN = 4, STATS = AICwt, FUN = '*')
         vcv <- apply(vcv, 1:3, sum)
@@ -202,7 +203,7 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
 
         if (length(object)>1)
-            warning('using first argument (list) and discarding others')
+            warning ("using first argument (list) and discarding others")
         object <- object[[1]]
         modelnames <- names(object)
     }
@@ -210,15 +211,16 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
 
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
-        stop ('require fitted secr objects')
+        stop ("require fitted secr objects")
     if ( length(object) < 2 )
-        warning ('only one model')
+        warning ("only one model")
     if (!is.list(object) | !inherits(object[[1]], 'secr'))
-        stop('object must be secr or list of secr')
+        stop("object must be secr or list of secr")
 
     type <- 'real'                     ## default
 
-    parnames <- unique(as.vector(unlist(sapply(object, function(x) x$realnames))))  ## default
+    parnames <- unique(as.vector(unlist(sapply(object,
+        function(x) x$realnames))))  ## default
 
     if (!is.null(realnames))
         parnames <- realnames
@@ -232,9 +234,12 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     ## rudimentary checks for compatible models
     if (nsecr > 1) {
-        objnames <- function(i) switch (type, real=object[[i]]$realnames, beta=object[[i]]$betanames)
-        test <- sapply (2:nsecr, function(i) sum(match(parnames, objnames(i), nomatch=0)>0) == np)
-        if (!all(test)) stop ('parameters not found in all models, or incompatible models')
+        objnames <- function(i) switch (type,
+            real = object[[i]]$realnames, beta = object[[i]]$betanames)
+        test <- sapply (2:nsecr, function(i)
+            sum(match(parnames, objnames(i), nomatch=0)>0) == np)
+        if (!all(test))
+            stop ("parameters not found in all models, or incompatible models")
     }
 
     getLP <- function (object1) {  ## for predicted values of real parameters

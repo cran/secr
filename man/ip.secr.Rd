@@ -53,7 +53,7 @@ pfn(capthist, N.estimator)
 of a detection function (usually g0 and sigma) by 'matching' statistics
 from \code{predictorfn(capthist)} (the target vector) and statistics
 from simulations of a 2-D population using the postulated detection
-model. Statistics (see Notes) are defined by the predictor function,
+model. Statistics (see Note) are defined by the predictor function,
 which should return a vector equal in length to the number of parameters
 (np = 3). Simulations of the 2-D population use \code{\link{sim.popn}}.
 The simulated population is sampled with \code{\link{sim.capthist}}

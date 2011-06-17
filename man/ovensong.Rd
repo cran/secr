@@ -64,8 +64,10 @@ inclined to settle on a local maximum; in the example below we use a set
 of starting values that have been found by trial and error to yield the
 global maximum.
 
-Two fitted models are included (ovensong.model.1 and
-ovensong.model.2). See Examples for details.
+Two fitted models are included (see Examples for details). Some
+components of the fitted secr models have been removed with
+\code{\link{trim}} to save space.
+
 
 
 \tabular{ll}{

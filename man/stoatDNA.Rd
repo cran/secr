@@ -39,7 +39,9 @@ an individual to be detected at multiple detectors on one occasion
 (day), although there are no multiple detections in this dataset. Three
 pre-fitted models are included: \code{stoat.model.HN},
 \code{stoat.model.HZ}, and \code{stoat.model.EX} (with halfnormal,
-hazard-rate and negative exponential detection functions, respectively).
+hazard-rate and negative exponential detection functions,
+respectively). Some components of the fitted secr models have been
+removed with \code{\link{trim}} to save space.
 
 \tabular{ll}{
   Object \tab Description \cr

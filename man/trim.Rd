@@ -33,7 +33,10 @@ Drop unwanted components from a \code{list} object, usually to save space.
 \code{drop} may be a character vector of names or a numeric vector of
 indices. If both \code{drop} and \code{keep} are given then the action
 is conservative, dropping only components in \code{drop} and not in
-\code{keep}. 
+\code{keep}.
+
+Be warned that some further operations on fitted secr objects become
+impossible once you have discarded the default components.
 
 }
 

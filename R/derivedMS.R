@@ -1,8 +1,8 @@
 ############################################################################################
 ## package 'secr'
 ## derived.R
-## Last changed 2009 07 23
 ## 2010-10-22 allow object to be secrlist
+## 2011-03-27 adjustments for zero capthist
 ############################################################################################
 
 derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
@@ -32,7 +32,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
         if (!is.null(distribution)) {
             if (tolower(distribution) %in% c('poisson','binomial'))
                 object$details$distribution <- distribution
-            else stop ('distribution not recognised')
+            else stop ("distribution not recognised")
         }
 
         if (is.list(object$capthist) & is.null(sessnum)) {
@@ -91,33 +91,41 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                         row.names = c('esa','D'),
                         estimate = derivedmean,
                         SE.estimate = derivedSE)
-                    if (loginterval) {
-                        temp$lcl <- derivedmean / exp(z * sqrt(log(1 + derivedSE^2 /
-                                     derivedmean^2)))
-                        temp$ucl <- derivedmean * exp(z * sqrt(log(1 + derivedSE^2 /
-                                     derivedmean^2)))
+                    nmash <- attr(capthist, 'n.mash')
+                    temp <- add.cl(temp, alpha, loginterval)
+
+                    temp$CVn <- varcomp1^0.5 / temp$estimate
+                    temp$CVa <- varcomp2^0.5 / temp$estimate
+                    temp$CVD <- temp$SE.estimate / temp$estimate
+                    temp$CVD[1] <- NA   ## not for esa
+
+                    if (!is.null(nmash)) {
+                        temp[2,1:4] <- temp[2,1:4] / length(nmash)
+                        ## message ("D was adjusted for ", length(nmash), " mashed clusters\n")
                     }
-                    else {
-                        temp$lcl <- pmax(0, derivedmean - z*derivedSE)
-                        temp$ucl <- derivedmean + z*derivedSE
-                    }
-                    temp$varcomp1 <- varcomp1
-                    temp$varcomp2 <- varcomp2
+
                     temp
             }
 
-            z <- abs(qnorm(1-alpha/2))
-            n <- nrow(object$capthist)
-            if (is.null(sessnum)) capthist <- object$capthist
-            else capthist <- object$capthist[[sessnum]]
+            if (is.null(sessnum))
+                capthist <- object$capthist
+            else
+                capthist <- object$capthist[[sessnum]]
             grp <- group.factor(capthist, groups)  ## see functions.R
-            individuals <- split (1:nrow(capthist), grp)
-
-            if ( length(individuals) > 1) lapply (individuals, getderived)
-            else getderived(individuals[[1]])
+            if (nrow(capthist)>0)
+                individuals <- split (1:nrow(capthist), grp)
+            else
+                individuals <-  split (numeric(0), grp) ## list of empty grp levels
+            n <- length(individuals)
+            if ( n > 1)
+                lapply (individuals, getderived)
+            else
+                if (n == 1)
+                    getderived(individuals[[1]])
+                else
+                    getderived(numeric(0))
         }
     }
 }
 ############################################################################################
-
 

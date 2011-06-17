@@ -83,7 +83,7 @@ separately here \code{\link{secr detection models}} and here
 
 \references{ 
 
-Laake, J. and Rexstad E. (2008) Appendix C. RMark - an alternative approach to building linear models in MARK. In: Cooch, E. and White, G. (eds) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{www.phidot.org}.
+Laake, J. and Rexstad E. (2008) Appendix C. RMark - an alternative approach to building linear models in MARK. In: Cooch, E. and White, G. (eds) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{http://www.phidot.org}.
 
 }
 

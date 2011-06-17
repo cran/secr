@@ -23,7 +23,7 @@ N.Mt <- function (ni, Mt1) {
 closure.test <- function (object, SB = FALSE, min.expected = 2) {
 
     if (!inherits(object, 'capthist'))
-        stop("requires 'capthist' object")
+        stop ("requires 'capthist' object")
 
     if (inherits(object,'list')) {
         ## multiple sessions

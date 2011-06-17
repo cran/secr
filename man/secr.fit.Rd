@@ -103,7 +103,7 @@ supplied. \code{binomN} should be an integer unless negative.
 individuals detected; this may be conditional on the number in the
 masked area (`binomial') or unconditional (`poisson').
 \code{distribution} affects the sampling variance of the estimated
-density. The default is `poisson'. See also Notes.
+density. The default is `poisson'. See also Note.
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.
@@ -142,7 +142,10 @@ This can be controlled by passing the `stepmax' argument of \code{nlm}
 in the \dots argument of \code{secr.fit} (see first example).
 
 If \code{verify} = TRUE then \code{\link{verify}} is called to check
-capthist and mask; analysis is aborted if errors are found. See also Notes.
+capthist and mask; analysis is aborted if "errors" are found. Some
+conditions that trigger an "error" are benign (e.g., no detections in
+some sessions of a multi-session study of a sparse population); use
+\code{verify = FALSE} to avoid the check. See also Note.
 
 }
 
@@ -240,8 +243,10 @@ A warning is generated when `buffer' appears to be too small (predicted
     or when the detector type is `polygon', `transect', `polygonX' or
     `transectX'.
 
- The Newton-Raphson algorithm is fast, but it sometimes fails to compute the information
-matrix correctly, causing some standard errors to be set to `NA'. The alternative
+ The Newton-Raphson algorithm is fast, but it sometimes fails to compute
+the information matrix correctly, causing some or all standard errors to
+be set to `NA'. This usually indicates a major problem in fitting the
+model, and parameter estimates should not be trusted. The alternative
 \code{method = 'BFGS'} often works better in these cases, or use
 \code{details = list(hessian = 'fdhess')}.
 

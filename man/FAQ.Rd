@@ -13,12 +13,12 @@ A place for hints and miscellaneous advice.
 Follow the usual procedure for installing binaries from CRAN, or ...
   
 Under Windows, install the package binary from the
-Rgui. Save the file secr_2.0.x.zip to a local folder (`x' is the release
+Rgui. Save the file secr_2.1.x.zip to a local folder (`x' is the release
 number) and use the menu option "Packages | Install packages(s) from
 local zip files...".
 
 For other systems you may need to install the source package
-secr_2.0.x.tar.gz.
+secr_2.1.x.tar.gz.
 
 Whatever your system, you also need to get the package \pkg{abind} (use
 Packages | Install package(s)... in Windows to download from
@@ -42,7 +42,7 @@ command prompt.  For example:
 \code{? secr.fit}
 
 Secondly, help.search() lets you ask for a list of the help pages on a
-vague topic. From \R version 2.8.0 you can use just ??.  For example:
+vague topic (or just use ?? at the prompt).  For example:
 
 \code{?? 'linear models'}
 
@@ -56,12 +56,11 @@ See below for more \R tips.
 
 }
 
-
 \section{ How should I report a problem? }{
 
 If you get really stuck or find something you think is a bug then please
 report the problem. There is a support forum at
-\url{www.phidot.org/forum} under `DENSITY|secr'. Please read the FAQ
+\url{http://www.phidot.org/forum} under `DENSITY|secr'. Please read the FAQ
 there before posting.
 
 You may be asked to send an actual dataset - ideally, the simplest one
@@ -118,6 +117,9 @@ may barely differ in their density estimates. This is a good topic for
 further research - we seem to need a `focussed information criterion'
 (Claeskens and Hjort 2008) to discern the differences that matter.
 
+If your detectors are arranged in similar clusters (e.g., small square
+grids) then try the function \code{\link{mash}}.
+
 Use \code{score.test} to compare nested models. At each stage this
 requires only the more simple model to have been fitted in full; further
 processing is required to obtain a numerical estimate of the gradient of
@@ -133,7 +135,7 @@ R functions by matching text in their documentation.
 
 There is now a vast amount of \R advice available on the web. For the
 terminally frustrated, `R inferno' by Patrick Burns is recommended
-(\url{www.burns-stat.com/pages/Tutor/R_inferno.pdf}). "If you are using
+(\url{http://www.burns-stat.com/pages/Tutor/R_inferno.pdf}). "If you are using
 R and you think you're in hell, this is a map for you".
 
 Method functions for S3 classes cannot be listed in the usual way by

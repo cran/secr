@@ -1,8 +1,8 @@
-############################################################################################
+################################################################################
 ## package 'secr'
 ## secr.fit.R
 ## moved from methods.R 2011-01-30
-############################################################################################
+################################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     buffer = NULL, CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL,
@@ -71,7 +71,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     defaultdetails <- list(distribution = 'poisson', scalesigma = FALSE,
         scaleg0 = FALSE, hessian = 'auto', trace = TRUE, LLonly = FALSE,
-        cellprob = FALSE, centred = FALSE, binomN = 1, cutval = 0,
+        centred = FALSE, binomN = 1, cutval = 0,
         minprob = 1e-50, tx = 'identity', param = 0)
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
         defaultdetails$binomN <- 0   ## Poisson
@@ -158,7 +158,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
 
     nc <- ifelse (MS, sum(sapply(capthist, nrow)), nrow(capthist))
-    if (nc < 1) stop (paste(nc,"detection histories"))
+    if (nc < 1)
+        warning (nc, " detection histories")
 
     if (MS) {
         q  <- attr(capthist[[1]],'q')
@@ -169,7 +170,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         Tm <- attr(capthist,'Tm')
     }
     nonID <- !is.null(Tm)   ## were marked animals recorded if unidentified?
-    if (!is.null(q) & CL) stop ("mark-resight incompatible with CL")
+    if (!is.null(q) & CL)
+        stop ("mark-resight incompatible with CL")
 
     #################################################
     ## optional centring of traps and mask 2010 04 27
@@ -242,16 +244,20 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     vars <-  unlist(lapply(model, all.vars))
 
     if (details$scalesigma) {
-        if (CL) stop ("cannot use 'scalesigma' with 'CL'")
-        if (!is.null(fixed$D)) stop ("cannot use 'scalesigma' with fixed density")
+        if (CL)
+            stop ("cannot use 'scalesigma' with 'CL'")
+        if (!is.null(fixed$D))
+            stop ("cannot use 'scalesigma' with fixed density")
         if (!(model$D == formula(~1) |
-              model$D == formula(~session))
-           ) stop ("cannot use 'scalesigma' with inhomogenous density or groups")
-        if (!is.null(groups)) stop ("cannot use 'scalesigma' with groups")
+              model$D == formula(~session)))
+            stop ("cannot use 'scalesigma' with inhomogenous density or groups")
+        if (!is.null(groups))
+            stop ("cannot use 'scalesigma' with groups")
     }
 
     if (details$scaleg0) {
-        if (!is.null(groups)) stop ('Cannot use scaleg0 with groups')
+        if (!is.null(groups))
+            stop ('Cannot use scaleg0 with groups')
     }
 
     ########################################
@@ -265,13 +271,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (details$nmix == 3)
         warning ("implementation of 3-part finite mixtures is not reliable")
     if (!all(all.vars(model$pmix) %in% c('session','g','h2','h3')))
-        stop("formula for pmix may include only 'session', 'g' or '1'")
-
+        stop ("formula for pmix may include only 'session', 'g' or '1'")
     #################################
     # Link functions (model-specific)
     #################################
     defaultlink <- list(D='log', g0='logit', sigma='log', z='log', w='log', pID='logit',
-        beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit')
+        beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit',
+        cuerate='log')
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
@@ -283,6 +289,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (!(detectfn %in% 0:8)) { link$g0 <- NULL; link$sigma <- NULL }
     if (is.null(q) | !nonID) link$pID <- NULL
     if (details$nmix==1) link$pmix <- NULL
+    if (!(detector(traps(capthist))=='cue')) link$cuerate <- NULL
 
     ##############################################
     # Prepare detection design matrices and lookup
@@ -330,15 +337,17 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         start <- mapbeta(start$parindx, parindx, coef(start)$beta, NULL)
     }
 
-    ############################
-    # log multinomial constant #
-    ############################
-
-    if (detector(traps(capthist)) %in% c('polygon','polygonX',
-                   'transect','transectX','signal','cue'))
-        savedlogmultinomial <- 0
-    else
-        savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
+## shifted to secrloglik 2011-03-19
+##    ############################
+##    # log multinomial constant #
+##    ############################
+##
+##    if (detector(traps(capthist)) %in% c('polygon','polygonX',
+##                   'transect','transectX','signal','cue','unmarked'))
+##        savedlogmultinomial <- 0
+##    else
+##        savedlogmultinomial <- logmultinom(capthist,
+##            group.factor(capthist, groups))
 
     #############################
     # Single evaluation option
@@ -346,9 +355,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     .localstuff$iter <- 0
     if (details$LLonly) {
       if (is.null(start))
-          stop("must provide transformed parameter values in 'start'")
+          stop ("must provide transformed parameter values in 'start'")
       if (!is.null(q))
           stop ("not for mark-resight")
+
       LL <- - secr.loglikfn (beta = start,
                        parindx    = parindx,
                        link       = link,
@@ -362,23 +372,12 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        CL         = CL,
                        groups     = groups,
                        details    = details,
-                       logmult    = savedlogmultinomial
+##                     logmult    = savedlogmultinomial
+                       logmult    = TRUE,     ## add if possible
                        )
 
       return(c(logLik=LL))
     }
-
-    ## 2009 10 17 tentative insertion
-    if (details$cellprob) {
-      if (is.null(start)) stop("must provide transformed parameter values in 'start'")
-      if (!is.null(q)) stop ('not for mark-resight')
-      pi.n <- secr.cellprob (beta = start, link = link, fixed = fixed,
-          parindx = parindx, capthist = capthist, mask = mask, CL = CL,
-          detectfn = detectfn, designD = D.designmatrix, design = design,
-          design0 = design0, groups = groups, details = details)
-      return(pi.n)
-    }
-    ## 2009 10 17 tentative insertion ends
 
     ###############################
     # Start values (model-specific)
@@ -403,8 +402,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             else
                 start3 <- autoini (capthist, mask)
             if (any(is.na(unlist(start3)))) {
-                warning (paste("'secr.fit' failed because initial values not found (data sparse?);",
-                         "specify transformed values in 'start'"))
+                warning ("'secr.fit' failed because initial values not found",
+                    " (data sparse?); specify transformed values in 'start'")
                 return (list(call=cl, fit=NULL))
             }
 
@@ -414,9 +413,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             if (details$scaleg0) start3$g0 <- start3$g0 * start3$sigma^2
             if (details$scalesigma) start3$sigma <- start3$sigma * start3$D^0.5
 
-            memo(paste('Initial values ', paste(paste(c('D', 'g0', 'sigma'), '=',
-                                                      round(unlist(start3),5)),collapse=', ')),
-                 details$trace)
+            memo(paste('Initial values ', paste(paste(c('D', 'g0', 'sigma'),
+                '=', round(unlist(start3),5)),collapse=', ')),
+                details$trace)
         }
         else warning ("using default starting values")
 
@@ -558,7 +557,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         design0    = design0,
                         groups     = groups,
                         details    = details,
-                        logmult    = savedlogmultinomial,
+##                     logmult    = savedlogmultinomial
+                        logmult    = TRUE,     ## add if possible
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
                         stepmax    = 10)
@@ -585,7 +585,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         design0    = design0,
                         groups     = groups,
                         details    = details,
-                        logmult    = savedlogmultinomial,
+##                     logmult    = savedlogmultinomial
+                        logmult    = TRUE,     ## add if possible
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
                         method     = method)
@@ -628,8 +629,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                             design0    = design0,
                             groups     = groups,
                             details    = details,
-                            logmult    = savedlogmultinomial,
-                            betaw      = betaw,   # for trace format
+##                     logmult    = savedlogmultinomial
+                            logmult    = TRUE,     ## add if possible
+                            betaw      = betaw,    ## for trace format
                      )
             }
             grad.Hess <- fdHess(this.fit$par, fun = loglikfn, .relStep = 0.001, minAbsPar=0.1)
@@ -639,7 +641,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (!is.null(this.fit$hessian)) {
             covar <- try(solve(this.fit$hessian))
             if (inherits(covar, "try-error")) {
-                warning ('could not invert Hessian to compute variance-covariance matrix')
+                warning ("could not invert Hessian to compute ",
+                         "variance-covariance matrix")
                 covar <- matrix(nrow = NP, ncol = NP)
             }
             if (any(diag(covar)<0)) {
@@ -647,7 +650,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                     suffix <- ""
                 else
                     suffix <- " - try method = 'BFGS'"
-                warning ("variance calculation failed", suffix)
+                warning ("variance calculation failed ", suffix)
                 covar <- matrix(nrow = NP, ncol = NP)
             }
             dimnames(covar) <- list(betanames, betanames)
@@ -710,13 +713,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                     detectpar = detectpar(temp)[[i]], noccasions = ncol(capthist[[i]]))$RB.D
             }
             if (any(bias > 0.01))
-                warning ("predicted relative bias exceeds 0.01 with buffer = ", buffer)
+                warning ("predicted relative bias exceeds 0.01 with ",
+                         " buffer = ", buffer)
         }
         else {
             bias <- bias.D(buffer, traps(capthist), detectfn=temp$detectfn,
                 detectpar = detectpar(temp), noccasions = ncol(capthist))$RB.D
             if (bias > 0.01)
-                warning ("predicted relative bias exceeds 0.01 with buffer = ", buffer)
+                warning ("predicted relative bias exceeds 0.01 with ",
+                         "buffer = ", buffer)
         }
     }
 

@@ -11,7 +11,7 @@ write.DA <- function (capthist, buffer, nzeros = 200, units = 1) {
     }
     else {
         if (!(detector(traps(capthist)) %in% c('polygon','polygonX')))
-            stop("data should be capthist with polygon detector type")
+            stop ("data should be capthist with polygon detector type")
         if (!inherits(capthist, 'capthist'))
             stop ("requires 'capthist' object")
         if (!((detector(traps(capthist)) == 'polygonX') | (max(abs(capthist))==1)))
@@ -70,7 +70,7 @@ read.DA <- function (DAlist, detector = 'polygonX', units = 1, session = 1,
     yl <- DAlist[[ymin]] + buffer
     yu <- DAlist[[ymax]] - buffer
     trapdata <- data.frame(
-        poly = c(1,1,1,1,1),
+        polyID = c(1,1,1,1,1),
         x = c(xl,xl,xu,xu,xl) * units,
         y = c(yl,yu,yu,yl,yl) * units
     )

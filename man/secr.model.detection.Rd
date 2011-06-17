@@ -152,7 +152,7 @@ trap response.
 
 \references{
 
-Cooch, E. and White, G. (eds) (2008) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{www.phidot.org}.
+Cooch, E. and White, G. (eds) (2008) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{http://www.phidot.org}.
 
 Hayes, R. J. and Buckland, S. T. (1983) Radial-distance models for the line-transect method. \emph{Biometrics} \bold{39}, 29--42.
 

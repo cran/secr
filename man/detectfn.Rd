@@ -19,7 +19,7 @@ the pose problems for maximum likelihood.
 For function (7), `F' is the standard normal distribution function and
 \eqn{\mu}{\mu} and \eqn{s}{s} are the mean and standard deviation on the
 log scale of a latent variable representing a threshold of detection
-distance. See Notes for the relationship to the fitted parameters sigma
+distance. See Note for the relationship to the fitted parameters sigma
 and z.
 
 For function (8), `G' is the cumulative distribution function of the

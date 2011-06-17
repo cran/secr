@@ -2,10 +2,13 @@
 \alias{transformations}
 \alias{flip}
 \alias{flip.traps}
+\alias{flip.popn}
 \alias{rotate}
 \alias{rotate.traps}
+\alias{rotate.popn}
 \alias{shift}
 \alias{shift.traps}
+\alias{shift.popn}
 
 \title{ Transform Point Array }
 
@@ -27,6 +30,10 @@ shift (object, shiftxy, ...)
 \method{flip}{traps} (object, lr = F, tb = F, ...)
 \method{rotate}{traps}(object, degrees, centrexy = NULL, \dots)
 \method{shift}{traps}(object, shiftxy, \dots)
+
+\method{flip}{popn} (object, lr = F, tb = F, ...)
+\method{rotate}{popn}(object, degrees, centrexy = NULL, \dots)
+\method{shift}{popn}(object, shiftxy, \dots)
 
 }
 
@@ -63,18 +70,20 @@ default arguments result in no change.
 on each axis.
 
 \code{rotate} rotates the array about a designated point. If
-\code{centrexy} is NULL then rotation is about (0,0).
+\code{centrexy} is NULL then rotation is about (0,0)
+(\code{rotate.default}), the array centre (\code{rotate.traps}), or the
+centre of the bounding box (\code{rotate.popn}).
 
 }
 
 \value{
   
-A matrix or object of class `traps' with the coordinates of each point
+A matrix or object of class `traps' or `popn' with the coordinates of each point
 transformed as requested.
 
 }
 
-\seealso{ \code{\link{traps}} }
+\seealso{ \code{\link{traps}}, \code{\link{popn}} }
 
 \examples{
 

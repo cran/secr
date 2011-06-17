@@ -74,13 +74,14 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 
 read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID',
                           noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-                          cutval = NULL, verify = TRUE, ...) {
+                          cutval = NULL, verify = TRUE, noncapt = 'NONE', ...) {
 
     if (!(fmt %in% c('XY','trapID')))
-        stop (paste("allowed formats are", dQuote("XY"), "and", dQuote("trapID")))
+        stop ("allowed formats are 'XY' and 'trapID'")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
-    replacedefaults <- function (default, user) replace(default, names(user), user)
+    replacedefaults <- function (default, user) replace(default, names(user),
+        user)
     filetype <- function(x) {
         nx <- nchar(x)
         tolower(substring(x, nx-3, nx))
@@ -126,7 +127,8 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
 
     if (length(trps)==1) trps <- trps[[1]]
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
-        covnames = covnames, sortrows = TRUE, cutval = cutval)
+        covnames = covnames, sortrows = TRUE, cutval = cutval,
+        noncapt = noncapt)
 
     if (verify) verify(temp)
     temp

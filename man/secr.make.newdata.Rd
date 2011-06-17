@@ -7,7 +7,10 @@ Create Default Design Data
 }
 
 \description{
-Generate a dataframe containing design data for the base levels of all predictors in an secr object.
+  
+Internal function used to generate a dataframe containing design data
+for the base levels of all predictors in an secr object.
+
 }
 
 \usage{

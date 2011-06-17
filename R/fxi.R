@@ -7,7 +7,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     if (MS) sessionlevels <- session(object$capthist)   ## was names(capthist) 2009 08 15
     else sessionlevels <- 1
 
-    X <- matrix(unlist(X), nc=2)
+    X <- matrix(unlist(X), ncol = 2)
     beta <- coef(object)$beta
     details <- object$details
     if (is.null(details$param)) details$param <- 0
@@ -42,16 +42,16 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     used <- usage(session.traps)
     if (!is.null(used)) {
         if (sum (used) != (ndetector(session.traps) * ncol(used)))
-            stop("fxi.secr is not implemented for incomplete usage")
+            stop ("fxi.secr is not implemented for incomplete usage")
     }
 
     if (nrow(session.capthist)==0)
-        stop(paste("no data for session", sessnum))
+        stop ("no data for session ", sessnum)
 
     if (is.character(i))
         i <- match(i, row.names(session.capthist))
     if (is.na(i) | (i<1) | (i>nrow(session.capthist)))
-        stop("invalid i in fxi.secr")
+        stop ("invalid i in fxi.secr")
 
     nc   <- nrow(session.capthist)
     s    <- ncol(session.capthist)
@@ -79,7 +79,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
             identity = session.signal
         )
         if (object$detectfn == 11)
-            stop("fxi.secr does not work with spherical spreading in 2.0")
+            stop ("fxi.secr does not work with spherical spreading in 2.0")
     }
     else
         session.signal <- 0
@@ -189,10 +189,11 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 
     temp$value
 }
-############################################################################################
+###############################################################################
+
 fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
-    levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode = FALSE,
-    plotmode = FALSE, normal = TRUE, ...) {
+    levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode =
+    FALSE, plotmode = FALSE, normal = TRUE, ...) {
 
     if (ms(object)) {
         session.traps <- traps(object$capthist)[[sessnum]]
@@ -209,8 +210,8 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     fxi <- function (ni) {
         z <- fxi.secr(object, i = ni, X = tempmask, normal = normal)
         if (is.null(levels)) {
-            temp <- sort(z, dec=T)
-            levels <- approx (x=cumsum(temp)/sum(temp), y = temp, xout= p)$y
+            temp <- sort(z, decreasing = T)
+            levels <- approx (x = cumsum(temp)/sum(temp), y = temp, xout= p)$y
             labels <- p
         }
         else
@@ -226,20 +227,23 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         templines <- label.levels(templines)
 
         wh <- which.max(unlist(lapply(templines, function(y) y$level)))
-        cc <- templines[[wh]]
-        cc <- data.frame(cc[c('x','y')])
-        templines$mode <- data.frame(x=mean(cc$x), y=mean(cc$y))
-        if (fitmode)
-            templines$mode <- fxi.mode(object, start=templines$mode, i = ni)
-        if (plt) {
-            labels <- labels[!is.na(levels)]
-            levels <- levels[!is.na(levels)]
-            contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
-                     levels = levels, labels = labels, ...)
-            if (plotmode) {
-                points(templines$mode, col = 'red', pch = 16)
-            }
 
+        if (length(templines) > 0) {   ## 2011-04-14
+            cc <- templines[[wh]]
+            cc <- data.frame(cc[c('x','y')])
+            templines$mode <- data.frame(x=mean(cc$x), y=mean(cc$y))
+            if (fitmode)
+                templines$mode <- fxi.mode(object, start=templines$mode, i = ni)
+            if (plt) {
+                labels <- labels[!is.na(levels)]
+                levels <- levels[!is.na(levels)]
+                contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
+                         levels = levels, labels = labels, ...)
+                if (plotmode) {
+                    points(templines$mode, col = 'red', pch = 16)
+                }
+
+            }
         }
         templines
     }
@@ -250,7 +254,7 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         temp
 }
 
-############################################################################################
+###############################################################################
 
 fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
     if (ms(object))
@@ -267,11 +271,11 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
     if (is.character(i))
         i <- match(i, row.names(session.capthist))
     if (is.na(i) | (i<1) | (i>nrow(session.capthist)))
-        stop("invalid i in fxi.secr")
+        stop ("invalid i in fxi.secr")
 
     fn <- function(xy,i) -fxi.secr(object, i = i, sessnum = sessnum, X = xy, normal = FALSE)
     temp <- nlm(f = fn, p = start, i = i, typsize = start, ...)$estimate
     data.frame(x=temp[1], y=temp[2])
 }
 
-############################################################################################
+###############################################################################

@@ -47,7 +47,8 @@ animals to be recorded at several detectors on one occasion. See
 
 For polygon and transect detector types, each line corresponds to a
 vertex and starts with a code to identify the polygon or transect (hence
-the same code appears on 2 or more lines). Also, usage and covariates
+the same code appears on 2 or more lines). For input from a dataframe
+the code column should be named `polyID'. Also, usage and covariates
 are for the polygon or transect as a whole and not for each
 vertex. Usage and covariates are appended to the end of the line, just
 as for point detectors (traps etc.). The usage and covariates for each

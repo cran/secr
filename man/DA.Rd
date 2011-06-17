@@ -130,13 +130,14 @@ write.DA (hornedlizardCH, buffer = 100, units = 100)
 ## for the limits of the plot itself, so buffer = 0.
 ## Input is in hundreds of metres.
 ## First, obtain the list lzdata
-setwd (system.file('extdata', package='secr'))
+olddir <- setwd (system.file('extdata', package='secr'))
 source ('lizarddata.R')
 str(lzdata)
 ## Now convert to capthist
 tempcapt <- read.DA(lzdata, Y = 'H', xcoord = 'X',
     ycoord = 'Y', buffer = 0, units = 100)
 summary(tempcapt)
+setwd(olddir)
 
 \dontrun{
 plot(tempcapt)

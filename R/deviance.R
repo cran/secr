@@ -30,7 +30,8 @@ deviance.secr <- function (object, ...) {
 
     if (!object$CL & (object$details$distribution=='binomial')) {
         if(is.null(object$D))
-            stop ("component 'D' not found - is fitted model from an old version of 'secr'?")
+            stop ("component 'D' not found - is fitted model ",
+                  "from an old version of 'secr'?")
         N <- t(apply(object$D, 2:3, sum, drop = FALSE))
     }
 

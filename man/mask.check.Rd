@@ -38,7 +38,9 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   (`traps') from either a capthist object or a previous execution of
   \code{secr.fit}. Default values are provided for \code{buffers} and
   \code{spacings} if \code{object} is of class `secr' (respectively c(1,
-  1.5, 2) and c(1, 0.75, 0.5) times the values in the existing mask).
+  1.5, 2) and c(1, 0.75, 0.5) times the values in the existing
+  mask). The default for \code{buffers} will not work if a detector is
+  on the mask boundary, as the inferred buffer is then 0.
 
   Variation in the mask may be assessed for its effect on --
   \itemize{   

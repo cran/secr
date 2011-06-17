@@ -1,4 +1,4 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## pdot.R
 ## return net detection probability in 'traps' for home ranges centred at X
@@ -13,7 +13,8 @@
 ## 2010 12 19 more careful handling of detectpars
 ## 2011 01 24 debugged pdotpoly
 ## 2011 02 06 allow polygonX, transectX
-############################################################################################
+## 2011 06 13 moved spatialscale to utility.R
+###############################################################################
 
 getbinomN <- function (binomN, detectr) {
     if (detectr %in% .localstuff$countdetectors) {
@@ -172,44 +173,14 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
     }
 }
 
-############################################################################################
+###############################################################################
 
-spatialscale <- function (object, detectfn, session = '') {
-    if (inherits(object, 'secr')) {
-        if (ms(object))
-            detpar <- detectpar(object)[[session]]
-        else
-            detpar <- detectpar(object)
-        cutval <- object$details$cutval
-    }
-    else {
-        detpar <- object
-        cutval <- object$cutval
-    }
-    if (!is.null(detpar$sigma)) detpar$sigma
-    else if (detectfn == 10) {
-        (cutval - detpar$beta0) / detpar$beta1
-    }
-    else if (detectfn == 11) {
-        d11 <- function(d, beta0, beta1, c) beta0 + beta1 * (d-1) - 10 * log10(d^2) - c
-        interval <- c(0,10 * (cutval - detpar$beta0) / detpar$beta1)
-        uniroot (d11, interval, detpar$beta0, detpar$beta1, cutval)$root
-    }
-    else if (detectfn == 9) {
-#        (0.5 - detpar$b0) / detpar$b1
-        - 1 / detpar$b1   ## 2010-11-01
-    }
-    else stop ('unrecognised detectfn')
-}
-
-############################################################################################
-
-esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL, thin = 0.1,
-                           poly = NULL, session = 1, plt = TRUE, as.density = TRUE,
-                           add = FALSE, overlay = TRUE, ...) {
+esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
+    thin = 0.1, poly = NULL, session = 1, plt = TRUE, as.density = TRUE,
+    add = FALSE, overlay = TRUE, ...) {
 
     if (!inherits(object,'secr'))
-        stop('require secr object')
+        stop("require secr object")
 
     MS <- ms(object)
     if (MS) {
@@ -224,9 +195,11 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL, thin = 0.
         esa.plot.outputs <- vector(mode='list')
 
         for (i in session) {
-            addthisone <- ifelse (add | (overlay & (i != session[1])), TRUE, FALSE)
-            esa.plot.outputs[[i]] <- esa.plot.secr (object, max.buffer, max.mask,
-                thin, poly, i, plt, as.density, addthisone, overlay, ...)
+            addthisone <- ifelse (add | (overlay & (i != session[1])),
+                                  TRUE, FALSE)
+            esa.plot.outputs[[i]] <- esa.plot.secr (object, max.buffer,
+                max.mask, thin, poly, i, plt, as.density, addthisone,
+                overlay, ...)
         }
         if (plt)
             invisible(esa.plot.outputs)
@@ -293,6 +266,9 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
 }
 ############################################################################################
 
+
+## SEE ALSO gBuffer in rgeos
+
 buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
                             plt = TRUE, add = FALSE, poly = NULL, ...) {
     oneconvexbuffer <- function (buffer) {
@@ -306,10 +282,10 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
         temp
     }
     if (!inherits(traps, 'traps'))
-        stop("requires 'traps' object")
+        stop ("requires 'traps' object")
     if (convex) {
         if (!is.null(poly))
-            warning("'poly' ignored when convex = TRUE")
+            warning ("'poly' ignored when convex = TRUE")
         ## could use maptools etc. to get intersection?
         theta <- (2*pi) * (1:ntheta) / ntheta
         if (!add & plt)

@@ -7,6 +7,7 @@
 \alias{ovenbird.model.1b}
 \alias{ovenbird.model.1T}
 \alias{ovenbird.model.h2}
+\alias{ovenbird.model.D}
 \alias{ovenmask}
 
 \title{ Ovenbird Mist-netting Dataset }
@@ -66,7 +67,8 @@ estimates of density; pooling of detection parameters across years
 helped to improve precision.
 
 Included with the data are a mask and four models fitted as in
-Examples.
+Examples. Some components of the fitted secr models have been removed
+with \code{\link{trim}} to save space.
 
 \tabular{ll}{
   Object \tab Description \cr
@@ -76,6 +78,8 @@ Examples.
   ovenbird.model.1T \tab fitted secr model -- g0 time trend within years
   \cr
   ovenbird.model.h2 \tab fitted secr model -- g0 finite mixture \cr
+  ovenbird.model.D \tab fitted secr model -- trend in density across years
+  \cr
   ovenmask \tab mask object \cr
 }
 

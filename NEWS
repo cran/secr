@@ -1,3 +1,163 @@
+Changes in version 2.1.0 (2011-06-17)
+
+New functions
+
+    o   circular.r() reports the radius (quantile) containing a
+    specified fraction of a bivariate distribution; circular.p() is
+    its inverse (fraction within specified radius)
+
+    o   trap.builder() builds complex detector arrays. Combined with
+    make.grid() etc., it provides capability similar to the Trap
+    Builder in Density. make.systematic() generates rectangular arrays
+    of detector clusters with a random origin.
+
+    o   region.N() calculates the expected number of individuals in a
+    user-defined region from a fitted secr model
+
+    o   expected.n() calculates the expected number of detected
+    individuals given a fitted secr model; may be stratified by
+    cluster.
+
+    o   writeGPS() uploads detector coordinates to a connected GPS
+    (assumes GPSBabel software installed).
+
+    o   clusterID(), clusterID<-, clustertrap(), and clustertrap<- for
+    extracting and replacing cluster attributes of a compound traps
+    object (clusterID() and clustertrap() also work with capthist
+    objects)
+
+    o   derived.cluster(), derived.mash(), derived.external(),
+    derived.nj(), derived.session() for empirical variance estimation
+    from various designs (replacing empirical.varD())
+
+    o   mash() to collapse multi-cluster capthist objects. Mashed input
+    is 'unmashed' by the predict method for secr objects, derived()
+    and derived.mash()
+
+    o   cluster.counts() returns the number of individuals detected per
+    cluster in a single-session multi-cluster capthist object
+
+    o   cluster.centres() returns the x- and y-coordinates of cluster
+    centres in a single-session multi-cluster traps object
+
+    o   alongtransect() returns the distance of each detection along the
+    transect with which it is associated (transect data only)
+
+New features or changed behaviour of old functions
+
+    o   reduce.capthist() has new argument 'by' for grouping occasions
+
+    o   sim.capthist() has a new argument 'nsessions' for simulating a
+    multiple session capthist object, and the existing option of
+    providing in argument 'popn' a list of populations to sample has
+    been documented (this also generates multi-session output)
+
+    o   sim.popn() argument 'model2D' has a new options 'coastal' and
+    'hills'. 'coastal' simulates a density gradient (Fewster and
+    Buckland 2004 ADS Ch 10)
+
+    o   subset.traps() has new argument 'occasions' to select
+    columns from the usage matrix; also default NULL value of 'subset'
+    argument causes all rows to be selected.
+
+    o   plot.popn() has new argument 'circles' for plotting a circle of
+    given radius (in metres) around each animal location
+
+    o   plot.capthist() new argument 'type' is used to specify new
+    colour-coded frequency plots 'n.per.detector', 'n.per.cluster'
+
+    o   make.mask() argument 'type' has new options 'clusterrect' and
+    'clusterbuffer' for efficient masks around dispersed clusters of
+    detectors; also new argument 'check.poly' for whther to warn if
+    traps lie outside polygon
+
+    o   esa() new argument 'noccasions' to compute effective sampling
+    area when the number of occasions differs from the fitted model
+    (assuming constant detection parameters)
+
+    o   derived() output fields 'varcomp1' and 'varcomp2' have been
+    replaced with their more familiar equivalents 'CVn' and 'CVa', and
+    'CVD' is added
+
+    o   animalID() returns a zero-length character value instead of ''
+    when argument has no detections, for consistency with similar
+    functions
+
+    o   polyarea() extended for polygon classes from package 'sp', using
+    package 'rgeos'
+
+    o   read.mask() has 'data' argument (like read.traps) for mask input
+    directly from a dataframe
+
+    o   read.capthist() and make.capthist() have new argument 'noncapt'
+    that allows a session to be recorded in which there were no
+    detections
+
+    o   logmultinom() returns 0 if there were no detections
+
+    o   secr.fit() recalculates the multinomial coefficient for each
+    likelihood evaluation. This is more flexible, but less efficient,
+    and it is possible that reported log likelihoods will differ from
+    previous versions
+
+    o   summary.capthist() has new argument 'terse' for summary table
+    from multi-session capthist objects
+
+    o   plot.traps() has new argument 'markused' to show detectors used on
+    at least one occasion
+
+Other
+
+    o   LazyDataCompression: xz
+
+    o   New detector type 'unmarked' partially implemented (counts of
+    unmarked animals per detector); functions unmarked() and unmarked()<-
+
+    o   Allow zero detections per session
+
+    o   flip, shift and rotate methods for popn objects
+
+    o   ovenbird dataset includes additional fitted model
+    ovenbird.model.D for trend in density across years
+
+    o   'Not run' code in Examples checked for errors
+
+Bugs fixed
+
+    o   ip.secr() not working
+
+    o   mask.check() sometimes failed when asked to compute likelihoods
+
+    o   write.traps() header in output file faulty when covariates
+    present
+
+    o   sim.popn() failed when population was empty; now returns popn
+    with zero rows
+
+    o   plot.traps() 'markvarying' argument showed all used detectors
+
+    o   plot.mask() 'add' argument was ignored
+
+    o   make.grid() with hollow = TRUE and nx<3 or ny<3 caused an error
+
+    o   subset.capthist() could fail with trapping data (single, multi)
+    when unused trap sites were dropped, because trap numbers were not
+    reassigned
+
+    o   sim.capthist() with renumber = FALSE mislabelled rows in the
+    capthist object
+
+    o   closedN() failed when used with non-ML estimators alone
+
+    o   distancetotrap() had ceased to work with non-trap objects
+
+    o   rbind.capthist() ignored xy and signal, so failed with polygon,
+    transect or acoustic data
+
+    o   mask.check() failed in the unusual case that a detector was on
+    the edge of the fitted mask and 'buffers' defaulted to a multiple
+    of the buffer inferred from that mask
+
 Changes in version 2.0.0 (2011-02-21)
 
 New functions
@@ -39,7 +199,7 @@ New features or changed behaviour of old functions
     parameterisation of detection function for multi-catch detectors
     (details = list(param = 1))
 
-    o   secr.fit() triggers warning when maximisation fails
+    o   secr.fit() triggers warning when maximization fails
 
     o   make.poly() and make.transect() have new argument 'exclusive' to
     create traps objects with detector types polygonX and transectX
@@ -47,7 +207,7 @@ New features or changed behaviour of old functions
     o   verify.traps() now checks that polygons are not concave in
     east-west direction
 
-    o   make.poly() has new argument 'verify to enforce shape check
+    o   make.poly() has new argument 'verify' to enforce shape check
 
     o   log likelihood reported for fitted SECR models includes the
     multinomial coefficient only for detector types 'multi' (including

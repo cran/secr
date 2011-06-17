@@ -1,14 +1,14 @@
-############################################################################################
+###############################################################################
 ## package 'secr'
 ## confint.secr.R
 ## last changed 2009 06 11, 2009 07 16 2009 10 20
 ## 2011 01 31
-## could be sped up by adopting Venzon & Moolgavkar algorithm e.g. in Bhat package
+## could be sped up by adopting Venzon & Moolgavkar algorithm
+## e.g. in Bhat package
+###############################################################################
 
-############################################################################################
-
-confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel = 1,
-    tol = 0.0001, bounds = NULL, ...) {
+confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
+    tracelevel = 1, tol = 0.0001, bounds = NULL, ...) {
 
     ## profile likelihood interval for estimated secr parameters
     ## cf confint.glm in MASS
@@ -117,14 +117,18 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
             }
             if (!OK) {
                 if (is.character(parm))
-                    stop(paste('did not find root within', max(trialvals), 'units of MLE'))
+                    stop ("did not find root within ", max(trialvals),
+                         " units of MLE")
                 else
-                    stop(paste('did not find root within', max(trialvals), 'SE of MLE'))
+                    stop ("did not find root within ", max(trialvals),
+                         " SE of MLE")
             }
             if (step < 0)
-                c(lower = bound.1, upper = bound.0, f.lower = f.1, f.upper = f.0)
+                c(lower = bound.1, upper = bound.0, f.lower = f.1,
+                  f.upper = f.0)
             else
-                c(lower = bound.0, upper = bound.1, f.lower = f.0, f.upper = f.1)
+                c(lower = bound.0, upper = bound.1, f.lower = f.0,
+                  f.upper = f.1)
         }
 
         #######################
@@ -200,7 +204,8 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
 
     memo ('Profile likelihood interval(s)...', tracelevel > 0)
 
-    if (!inherits(object, 'secr')) stop ("requires 'secr' object")
+    if (!inherits(object, 'secr'))
+        stop ("requires 'secr' object")
     np <- length(object$betanames)  ## number of beta parameters
 
     ## case 1 - real parameter not 1:1 beta so require lagrange
@@ -212,7 +217,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
     if (is.character(parm)) {
         OK <- (parm %in% object$realnames)
         if (any(!OK))
-            stop ('requested parameter(s) not in model')
+            stop ("requested parameter(s) not in model")
         for (i in 1:length(parm))
             if (object$model[[parm[i]]] != ~1)
                 case[i] <- 1
@@ -245,7 +250,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL, tracelevel
     }
     else {
         if (any ((parm<1) | (parm>np)))
-            stop ('invalid beta parameter number')
+            stop ("invalid beta parameter number")
     }
     #---------------------------------------------------------------------------------------
 
