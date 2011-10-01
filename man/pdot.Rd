@@ -17,13 +17,13 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
 }
 
 \arguments{
-  \item{X}{ coordinates }
+  \item{X}{ vector or 2-column matrix of coordinates }
   \item{traps}{ \code{traps} object }
   \item{detectfn}{ integer code for detection function q.v. }
   \item{detectpar}{ a list giving a value for each named parameter of detection function }
   \item{noccasions}{ number of intervals (occasions) }
   \item{binomN}{ integer code for discrete distribution (see
-  \code{\link{secr.fit}} }
+  \code{\link{secr.fit}}) }
 }
 \details{
 

@@ -15,8 +15,8 @@ by searching polygons or transects. }
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.1.0\cr
-Date: \tab 2011-06-17\cr
+Version: \tab 2.2.0\cr
+Date: \tab 2011-09-28\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -71,8 +71,9 @@ likelihood, and I'm grateful for his continuing advice. Jeff Laake
 provided encouragement and reviewed an early version. Ray Brownrigg got
 my Windows code running under Unix. Deanna Dawson edited some of the
 documentation (the cleaner bits!) and her support and collaboration were
-important throughout. Tiago Marques suggested many improvements to the
-help pages.
+important throughout. Tiago Marques and Mike Meredith suggested many
+improvements to the documentation and provided valued criticism and
+support.
 
 }
 
@@ -86,8 +87,7 @@ Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
 
 Efford, M. G. (2011) Estimation of population density by spatially
-explicit capture--recapture with area or transect searches. Unpublished
-manuscript.
+explicit capture--recapture with area searches. \emph{Ecology} in press.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

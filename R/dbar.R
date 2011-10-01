@@ -1,11 +1,15 @@
 ############################################################################################
 ## package 'secr'
 ## dbar.R
-## last changed 2009 07 10 (multi-session)  2009 10 07 (prox) 2009 11 13 (polygon)
-## streamlined 2010 03 30
-## added function moves 2010 06 04
-## extended for transect data 2011 02 04
-## polygonX, transectX 2011 02 06
+## 2009 07 10 (multi-session)
+## 2009 10 07 (prox)
+## 2009 11 13 (polygon)
+## 2010 03 30 streamlined
+## 2010 06 04 added function moves
+## 2011 02 04 extended for transect data
+## 2011 02 06 polygonX, transectX
+## 2011 09 26 detector type check
+
 ############################################################################################
 
 dbar <- function (capthist) {
@@ -14,6 +18,8 @@ dbar <- function (capthist) {
     }
     else {
         traps <- traps(capthist)
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require individual detector type for dbar")
         dbarx    <- function (x) {
             x <- abs(unlist(x))
             sqrt(diff(traps$x[x])^2 + diff(traps$y[x])^2)
@@ -21,7 +27,7 @@ dbar <- function (capthist) {
         dbarxy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
-        if (detector(traps) %in% c('polygon','polygonX', 'transect','transectX')) {
+        if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
             mean(unlist(lapply (lxy, dbarxy)), na.rm=T)
         }
@@ -38,7 +44,6 @@ moves <- function (capthist) {
         lapply(capthist, moves)   ## recursive
     }
     else {
-        traps <- traps(capthist)
         movex    <- function (x) {
             x <- abs(unlist(x))
             sqrt(diff(traps$x[x])^2 + diff(traps$y[x])^2)
@@ -46,7 +51,10 @@ moves <- function (capthist) {
         movexy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
-        if (detector(traps) %in% c('polygon', 'transect', 'polygonX', 'transectX')) {
+        traps <- traps(capthist)
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require individual detector type for moves")
+        if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
             lapply (lxy, movexy)
         }

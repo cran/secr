@@ -5,76 +5,131 @@
 \title{ Combine capthist Objects }
 
 \description{
-Form a single \code{capthist} object from two or more compatible \code{capthist} objects.
+  Form a single \code{capthist} object from two or more compatible \code{capthist} objects.
 }
+
 \usage{
-rbind.capthist(..., renumber = TRUE, pool = NULL)
-MS.capthist(...)
+  MS.capthist(...)
+  rbind.capthist(..., renumber = TRUE, pool = NULL, verify = TRUE)
 }
 
 \arguments{
-\item{\dots}{ one or more simple \code{capthist} objects (i.e., single-session) }
-\item{renumber}{ assign new composite individual ID: sourceobject.oldID }
-\item{pool}{ list of vectors of indices }
+  \item{\dots}{ one or more \code{capthist} objects or lists of
+      \code{capthist} objects }
+  \item{renumber}{ logical, if TRUE assigns new composite individual ID }
+  \item{pool}{ list of vectors of session indices or names }
+  \item{verify}{ logical, if TRUE the output is checked with \code{\link{verify}} }
 }
 
 \details{
 
-In its simplest usage, the source objects in \dots each provide
-detection histories from a single session, and the result is a
-single-session object. For this to work the objects must be compatible.
-\code{capthist} objects are compatible if they use the same detectors
-(traps) and have consistent \code{covariates and other attributes. }
+  \code{MS.capthist} concatenates the sessions in the input objects as
+  one multi-session capthist object. Each session may use a different
+  detector array (traps) and a different number of sampling
+  occasions. Session names are derived implicitly from the inputs, or
+  may be given explicitly (see Examples); if any name is duplicated, all
+  will be replaced with sequential integers. The \dots argument may include
+  lists of single-session capthist objects.
+  
+  \code{rbind.capthist} is used to pool capture data from more than one
+  session into a single session. The number of rows in the output
+  session is the sum of the number of rows in the input sessions
+  (i.e. each animal appears in only one session).
 
-If the \dots argument includes at least one multi-session capthist
-object then the elements will be formed into a single multi-session
-capthist object. If \dots is a single multi-session object then the
-components of \code{pool} are used to define combinations of old
-sessions (e.g. pool = list(1:3, 4:5) forms two new sessions from 5 old ones).
+  For \code{rbind.capthist}, the \dots argument may be \enumerate{
+      \item A series of single-session capthist objects, which are
+    pooled to form one new single-session object, or
+      \item One multi-session capthist object, when the components of
+    `pool' are used to define combinations of old sessions; e.g. \code{pool =
+    list(A=1:3, B=4:5)} produces an object with two sessions (named `A'
+    and `B') from 5 old ones. If \code{pool = NULL} (the default) then all the
+    sessions are pooled to form one single-session capthist object.
+    }
 
-Although \code{rbind.capthist} looks like an S3 method, it isn't. The
-full function name must be used.
+    Sessions to be pooled must have the same number of capture occasions
+    and use the same detectors (traps). At present there is no function
+    to pool data from different detector arrays.
 
-\code{MS.capthist} treats each source object as the data for a separate
-session. Compatibility is not required. The \dots argument may include
-lists of single-session capthist objects regardless of whether the list
-has the class ('list','capthist').
+    The names of arguments other than \dots should be given in full. If
+\code{renumber = TRUE} (the default), the session name will be prepended
+to the animal ID before pooling: animals 1, 2 and 3 in Session A will
+become A.1, A.2 and A.3, while those in Session B become B.1, B.2 and
+B.3. This ensures that each animal has a unique ID. If \code{renumber =
+FALSE}, the animal IDs will not change.
+
+  Other attributes (xy, signal) are handled appropriately. If the signal
+    threshold (attribute 'cutval') differs among sessions, the maximum is
+    used and detections of lower signal strength are discarded.
+    
+The use of \code{rbind.capthist} to concatenate sessions is now deprecated: 
+use \code{MS.capthist}. 
+
+Although \code{MS.capthist} and \code{rbind.capthist} look like S3
+methods, they aren't. The full function names must be used.
 
 }
 
 \value{
 
-For \code{rbind.capthist}, an object of class \code{capthist} with
-number of rows equal to the sum of the rows in the input objects.
+For \code{MS.capthist}, a multi-session object of class `capthist' with
+number of sessions equal to the number of sessions in the objects in
+\dots.
 
-For \code{MS.capthist}, a multi-session object of class \code{capthist}
-with number sessions equal to the number of objects in \dots.
-
+For \code{rbind.capthist}, either an object of class `capthist' with one 
+session formed by pooling the sessions in the input objects, or a 
+capthist object with more than one session, each formed by pooling 
+groups of sessions defined by the `pool' argument. Covariate columns that appear in
+    all input sessions are retained in the output. 
 }
 
 \seealso{ \code{\link{capthist}}, \code{\link{subset.capthist}} }
 
 \examples{
 
-## simulate 2-part mixture
+## extend a multi-session object
+## we fake the 2010 data by copying from 2005
+## note how we name the appended session
+fakeCH <- ovenCH[['2005']]
+MS.capthist(ovenCH, '2010' = fakeCH)
+
+## simulate sessions for 2-part mixture
 temptrap <- make.grid(nx = 8, ny = 8)
 temp1 <- sim.capthist(temptrap,
     detectpar = list(g0 = 0.1, sigma = 40))
 temp2 <- sim.capthist(temptrap,
     detectpar = list(g0 = 0.2, sigma = 20))
-temp3 <- rbind.capthist(temp1, temp2)
+
+## concatenate sessions
+temp3 <- MS.capthist(large.range = temp1, small.range = temp2)
+summary(temp3)
+## session-specific movement statistic
+RPSV(temp3)
+
+## pool sessions
+temp4 <- rbind.capthist(temp1, temp2)
+summary(temp4)
+RPSV(temp4)
 
 ## compare mixture to sum of components
-## note 'traps visited' is not additive for 'multi' detector
-## nor is 'traps set'
+## note 'detectors visited' is not additive for 'multi' detector
+## nor is 'detectors used'
 (summary(temp1)$counts +  summary(temp2)$counts) -
-    summary(temp3)$counts
+    summary(temp4)$counts
 
-## assemble a multi-session object
-## we fake the 2010 data by copying from 2005
-## note must provide name each session
-fakeCH <- ovenCH[['2005']]
-MS.capthist(ovenCH, '2010' = fakeCH)
+\dontrun{
+## compare two different model fits 
+tempfit3 <- secr.fit(temp3, CL = T, buffer = 150, model = list
+    (g0 ~ session, sigma ~ session), trace = FALSE)
+predict(tempfit3)
+
+## if we can tell which animals had large ranges...
+covariates(temp4) <- data.frame(range.size = rep(c('large',
+    'small'), c(nrow(temp1), nrow(temp2))))
+tempfit4 <- secr.fit(temp4, CL = T, buffer = 150, model = list
+    (g0 ~ range.size, sigma ~ range.size), trace = FALSE)
+predict(tempfit4, newdata = data.frame(range.size = c('large',
+    'small')))
+}
 
 }
 

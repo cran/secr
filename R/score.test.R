@@ -64,11 +64,10 @@ prepare <- function (secr, newmodel) {
     if (!CL) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
     betanames <- sub('..(Intercept))','',betanames)
 
-    if (detector(traps(capthist)) %in% c('polygon', 'polygonX', 'transect', 'transectX',
-                                         'signal','cue'))
-        savedlogmultinomial <- 0
-    else
+    if (detector(traps(capthist)) %in% .localstuff$simpledetectors)
         savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
+    else
+        savedlogmultinomial <- 0
 
     ################
     list (

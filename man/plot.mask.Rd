@@ -8,8 +8,8 @@
 }
 
 \usage{
-\method{plot}{mask}(x, border = 20, add = F, covariate = NULL, axes = F,
-    dots = T, col = "grey", breaks = 12, ppoly = T,
+\method{plot}{mask}(x, border = 20, add = FALSE, covariate = NULL, axes = FALSE,
+    dots = TRUE, col = "grey", breaks = 12, ppoly = TRUE,
     polycol = "red", \dots)
 }
 
@@ -58,10 +58,10 @@ tempmask <- subset(tempmask, pdot(tempmask,temptrap)>0.001)
 covariates (tempmask) <- data.frame(circle = 
     exp(-(tempmask$x^2 + tempmask$y^2)/10000) )
 
-par(fg='white')
+par(fg = 'white')
 plot (tempmask, covariate = 'circle', dots = FALSE, axes = TRUE, 
     add = TRUE, breaks = 8, col = terrain.colors(8))
-par(fg='black')
+par(fg = 'black')
 
 plot (temptrap, add = TRUE)
 

@@ -183,6 +183,7 @@ origins <- expand.grid(x = seq(0, 900, 100),
 XY <- origins + runif(10 * 12 * 2) * 100
 temp <- trap.builder (frame = XY, method = 'all',
     detector = 'multi')
+## same as temp <- read.traps(data = XY)
 plot(temp, border = 0)  ## default grid is 100 m
 
 ## regular lattice of mini-arrays
@@ -224,6 +225,7 @@ temp <- trap.builder(10, frame = traps(CH), cluster = t4,
     ranks = cluster.counts(CH), method = 'rank',
     edgemethod = 'allowoverlap', plt = TRUE, add = TRUE)
 }
+
 }
 
 \keyword{ manip }

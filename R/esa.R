@@ -32,6 +32,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         beta <- object$fit$par
 
     traps   <- attr(capthists, 'traps')  ## need session-specific traps
+    if (!(detector(traps) %in% .localstuff$individualdetectors))
+        stop ("require individual detector type for esa")
     dettype <- detectorcode(traps)
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)

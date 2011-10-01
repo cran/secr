@@ -225,6 +225,9 @@ ip2 <- ip.secr (captdata, start = ip1$IP[,'estimate'],
     boxsize = 0.1, CVmax=0.002, var=1000)
 ip2
 
+## compare to MLE of same data using multi-catch assumption
+predict(secrdemo.0)
+
 ## improvise another predictor function (dbar instead of RPSV)
 pfn2 <- function (capthist, v) {  ## v is not used
     sumni <- sum(capthist!=0)   ## total detections

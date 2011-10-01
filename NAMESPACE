@@ -118,7 +118,6 @@ export (animalID)
 export (alive)
 export (xy)
 export (alongtransect)
-export (unmarked)
 export (signal)
 export (occasion)
 export (trap)
@@ -141,13 +140,11 @@ export ('detector<-')
 export ('clusterID<-')
 export ('clustertrap<-')
 export ('spacing<-')
-## export ('searcharea<-')
 export ('polyID<-')
 export ('transectID<-')
 export ('traps<-')
 export ('session<-')
 export ('xy<-')
-export ('unmarked<-')
 export ('signal<-')
 
 ## suppress export because no current use
@@ -182,6 +179,7 @@ S3method(rotate, popn)
 S3method(flip, popn)
 S3method(shift, popn)
 S3method(plot, popn)
+S3method(subset, popn)
 export (rbind.popn)   ## stopgap until can sort out dispatching
 
 S3method(print, capthist)
@@ -230,6 +228,7 @@ useDynLib (
     simsecr,
     naived,
     naivecap2,
-    makelookup
+    makelookup,
+    SegCircle
 )
 

@@ -61,6 +61,7 @@ method is called when no specific method is available (i.e. class not
   \item Coordinates of detection(s) outside polygons (`polygon' or `polygonX' detectors)
   \item Coordinates of detection(s) do not lie on any transect
   (`transect' or `transectX' detectors)
+  \item Row names (animal identifiers) not unique
 }
 
 \code{verify.traps}

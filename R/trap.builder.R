@@ -4,7 +4,7 @@
 ## repeat trap layout systematically, by GRTS, or at simple random centres
 ## across a region
 ## Also make.systematic, mash(), cluster.counts(), cluster.centres()
-## last changed 2011 06 15
+## last changed 2011-08-16 (full argument names)
 ###############################################################################
 
 ## spsurvey uses sp
@@ -171,7 +171,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         cxy <- apply(cluster,2,mean)
     else
         cxy <- unlist(cluster)    ## assume one detector
-    cluster[,] <- sweep(cluster, MAR=2, FUN='-', STATS=cxy)
+    cluster[,] <- sweep(cluster, MARGIN=2, FUN='-', STATS=cxy)
     #######################################################
 
     .local$clusteri <- 1    ## updated within position()

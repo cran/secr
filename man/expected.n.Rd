@@ -7,15 +7,15 @@ Expected Number of Individuals
 
 \description{
 
-  Computes the expected number of individuals detected at each detector
-or at each cluster of detectors.
+  Computes the expected number of individuals detected across a detector
+  layout or at each cluster of detectors. 
 
 }
 
 \usage{
 
 expected.n(object, session = NULL, group = NULL, bycluster
-    = TRUE, splitmask = FALSE)
+    = FALSE, splitmask = FALSE)
 
 }
 
@@ -24,7 +24,7 @@ expected.n(object, session = NULL, group = NULL, bycluster
   \item{session}{ character session vector }
   \item{group}{ group -- for future use }
   \item{bycluster}{ logical to output the expected number for
-  clusters of detectors rather than separate detectors }
+  clusters of detectors rather than whole array }
   \item{splitmask}{logical for computation method (see Details)}
 }
 
@@ -40,29 +40,37 @@ expected.n(object, session = NULL, group = NULL, bycluster
   constant (i.e. density surface flat) if \code{object$CL == TRUE} or
   \code{object$model$D == ~1}, and for some other possible models.
 
-If the \code{bycluster} option is selected and detectors are not,
-in fact, clustered then each detector will be treated as a cluster, with a
-warning.
+If the \code{bycluster} option is selected and detectors are not, in
+fact, assigned to clusters then each detector will be treated as a
+cluster, with a warning.
 
-By default, a full habitat mask is used for each detector or
-cluster. This is the more robust option. Alternatively, the mask may be
-split into subregions defined by the cells closest to each detector or
-cluster.
+By default, a full habitat mask is used for each cluster. This is the
+more robust option. Alternatively, the mask may be split into subregions
+defined by the cells closest to each cluster.
 
 The calculation takes account of any fitted continuous model for spatial
-variation in density (note warning).
+variation in density (note Warning).
 
 }
 
 \section{Warning}{
+
+  This function changed slightly between 2.1.0 and 2.1.1, and now
+  performs as indicated here when bycluster = TRUE and
+  clusters are not specified.
+
+  Detectors are assumed to be independent (as with detector types
+  'proximity', 'count' etc.). The computed E(n) does not apply when
+  there is competition among detectors, e.g., when detector = 'multi'.
+  
 The prediction of density at present considers only the base level of
-density covariates, such as pixel-specific habitat variables.
+density covariates, such as cell-specific habitat variables.
 }
 
 \value{
 
-Vector of expected count with length equal to the number of detectors or
-the number of clusters. For multi-session data, a list of such vectors.
+The expected count (bycluster = FALSE) or a vector of expected counts,
+one per cluster. For multi-session data, a list of such vectors.
 
 }
 
@@ -73,6 +81,7 @@ the number of clusters. For multi-session data, a list of such vectors.
 \examples{
 
 expected.n(secrdemo.0)
+expected.n(secrdemo.0, bycluster = TRUE)
 expected.n(ovenbird.model.D)
 
 \dontrun{
@@ -85,7 +94,7 @@ capt <- sim.capthist(tempgrids, popn = list(D = 2))
 tempmask <- make.mask(tempgrids, buffer = 100,
     type = "clusterbuffer")
 fit <- secr.fit(capt, mask = tempmask, trace = FALSE)
-En <- expected.n(fit)
+En <- expected.n(fit, bycluster = TRUE)
 
 ## GoF or overdispersion statistic
 p <- length(fit$fit$par)

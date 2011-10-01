@@ -98,7 +98,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
     getnk <- function (object) {
-        ifelse (detector(object) %in% c('polygon','transect','polygonX','transectX'),
+        ifelse (detector(object) %in% .localstuff$polydetectors,
             length(table(polyID(object))),
             nrow(object))
     }
@@ -214,7 +214,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## general for behavioural response fields
 
     ## assume sessions same type
-    prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
+    #  prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
+    ## 2011-09-26
+    prox <- detector(trps)[[1]] %in% .localstuff$detectors3D
     makeb <- function (caphist) {      ## global response
         if (prox) {
            temp0 <- apply(caphist, 1:2, sum)

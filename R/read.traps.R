@@ -7,7 +7,7 @@
 
 renamepolyrows <- function (tr) {
     # update vertex labels for polygon and transect detectors
-    if (detector(tr) %in% c('polygon','polygonX','transect','transectX')) {
+    if (detector(tr) %in% .localstuff$polydetectors) {
         tr.freq <- table(polyID(tr))
         vertex <- unlist(sapply(tr.freq, function(x) 1:x))
         rownames(tr) <-  paste(polyID(tr),vertex,sep='.')
@@ -41,7 +41,8 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         if (min(nfld) == 3) colcl <- c('character',NA,NA)
         else colcl <- c('character',NA,NA,'character')
         if (detector %in% c('polygon', 'polygonX')) {
-            temp <- read.table (file, row.names=NULL, as.is=T, colClasses=colcl, ...)
+            temp <- read.table (file, row.names=NULL, as.is=T,
+                colClasses = colcl, ...)
             names(temp)[1:3] <- c('polyID','x','y')
 
             tempID <- levels(factor(temp$polyID))
@@ -55,7 +56,8 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             temp <- temp[,-1,drop=FALSE]   ## discard polyID so usage >= col3
         }
         else if (detector %in% c('transect', 'transectX')) {
-            temp <- read.table (file, row.names=NULL, as.is=T, colClasses=colcl, ...)
+            temp <- read.table (file, row.names=NULL, as.is=T,
+                                colClasses = colcl, ...)
             names(temp)[1:3] <- c('transectID','x','y')
             tempID <- levels(factor(temp$transectID))
             tempindex <- match (tempID, as.character(temp$transectID))
@@ -65,7 +67,8 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             temp <- temp[,-1,drop=FALSE]   ## discard transectID so usage >= col3
         }
         else {
-            temp <- read.table (file, row.names=1, as.is=T, colClasses=colcl, ...)
+            temp <- read.table (file, row.names = 1, as.is = T,
+                                colClasses = colcl, ...)
             traps <- temp[,1:2,drop=FALSE]
             class(traps)    <- c('traps', 'data.frame')
         }
@@ -76,7 +79,8 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         ## close polygons; tempindex used later to match covariates & usage
         if ('polyID' %in% names(data)) {
             temp <- split (data[,c('x','y','polyID'),drop=FALSE], data$polyID)
-            data <- as.data.frame(abind(lapply(temp, closepoly), along=1), force.array=F)
+            data <- as.data.frame(abind(lapply(temp, closepoly), along = 1),
+                                  force.array = FALSE)
         }
         traps <- data[,c('x','y'), drop=FALSE]
         class(traps)    <- c('traps', 'data.frame')
@@ -104,7 +108,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             nocc <- max(nchar(used))
 
             if (nocc>0) {
-                if (detector %in% c('polygon','polygonX','transect','transectX')) {
+                if (detector %in% .localstuff$polydetectors) {
                     used <- used[tempindex]
                     nocc <- max(nchar(used))   ## recompute
                     if (any(nchar(used) != nocc))
@@ -126,7 +130,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             }
 
             if (ncol(splitfield)>1) {
-                if (detector %in% c('polygon','polygonX','transect','transectX')) {
+                if (detector %in% .localstuff$polydetectors) {
                     splitfield <- splitfield[tempindex,, drop = FALSE]
                     rownam <- tempID
                 }

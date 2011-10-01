@@ -75,6 +75,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
     detectfn <- valid.detectfn(detectfn)
     if (!(detector(traps) %in% .localstuff$pointdetectors))
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
+    if (!(detector(traps) %in% .localstuff$individualdetectors))
+        stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
 
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)
@@ -257,7 +259,10 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         detectfn <- valid.detectfn(detectfn)
         detectpar <- valid.detectpar(detectpar, detectfn)
         if (!(detector(traps) %in% .localstuff$pointdetectors))
-            stop ("requires passive point detectors (not polygon or transect)")
+            stop ("require passive point detectors (not polygon or transect)")
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require passive individual detectors (not unmarked or presence)")
+
         fn <- function (w) {
             bias.D(w, traps, detectfn, detectpar, noccasions, ...)$RB.D - RBtarget
         }

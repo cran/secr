@@ -2,6 +2,7 @@
 ## package 'secr'
 ## MMDM.R
 ## last changed 2010 03 30
+## 2011-09-26 check individual detector type
 ############################################################################################
 
 MMDM <- function (capthist, min.recapt = 1, full = FALSE) {
@@ -22,7 +23,9 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE) {
                 max(dist(cbind(xy$x, xy$y)))
         }
         traps <- traps(capthist)
-        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require individual detector type for MMDM")
+        if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
             maxd <- unlist(lapply (lxy, MMDMxy))
             n <- unlist(lapply (lxy, nrow))

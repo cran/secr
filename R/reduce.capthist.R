@@ -35,7 +35,7 @@
     poly2point <- function (object, detector = 'count') {
         if (!detector(object) %in% c('polygon','polygonX'))
             stop ("requires 'polygon' input")
-        if (detector %in% c('polygon','polygonX','transect','transectX'))
+        if (detector %in% .localstuff$polydetectors)
             stop ("requires non-polygon, non-transect output")
         temp <- split(object, polyID(object))
         temp <- lapply(temp, function(df) apply(df,2,mean))
@@ -174,8 +174,6 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         if (!(outputdetector %in% .localstuff$validdetectors))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
-        if (inputdetector == 'unmarked')
-            stop ("'unmarked' not allowed as input to reduce.capthist")
         if ((inputdetector != 'signal') && (outputdetector == 'signal'))
                 stop ("cannot convert non-signal data to signal data")
         if ((!(inputdetector %in% polygons)) && (outputdetector %in% polygons))
@@ -227,7 +225,7 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         }
         df <- df[!is.na(df$newocc),]                   ## drop null obs
         df$newID <- factor(df$ID)                      ## assign newID
-        if (outputdetector %in% c('single','multi','polygonX','transectX')) {
+        if (outputdetector %in% .localstuff$exclusivedetectors) {
             ID.occ <- interaction(df$ID, df$newocc)
             dflist <- split(df, ID.occ)
             dflist <- lapply(dflist, collapse)
@@ -243,7 +241,7 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         validrows <- (1:nrow(object)) %in% df$ID
         alivesign <- df$alive*2 - 1
 
-        if (outputdetector %in% c('single', 'multi', 'polygonX', 'transectX')) {
+        if (outputdetector %in% .localstuff$exclusivedetectors) {
             tempnew <- matrix(0, nrow = sum(validrows), ncol = nnew)
             tempnew[cbind(df$newID, df$newocc)] <- df$trap * alivesign
         }
@@ -253,7 +251,7 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
             alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
             alivesign[is.na(alivesign)] <- TRUE
             alivesign <- alivesign * 2 - 1
-            if (! (outputdetector %in% c('count', 'polygon','transect'))
+            if (! (outputdetector %in% .localstuff$countdetectors)
                 && (length(tempnew)>0)) {
                 ## convert 'proximity' and 'signal' to binary
                 tempnew[tempnew>0] <- 1
@@ -306,33 +304,17 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         tempnew[is.na(tempnew)] <- 0
 
         ################################
-        ## output to unmarked
-        ## 2011-03-18
-        if (outputdetector == 'unmarked') {
-            counts <- apply(tempnew,2:3,sum, drop = F)
-            ## trap x occasion matrix
-            attr(tempnew, 'Tu') <- t(counts)
-            covariates(tempnew) <- NULL
-            tempnew1 <- array(dim = c(0, dim(tempnew)[2:3]))
-            mostattributes(tempnew1) <- attributes(tempnew)
-            dim (tempnew1) <- c(0, dim(tempnew)[2:3])
-            tempnew <- tempnew1
-        }
-
-        ################################
         ## dimnames
-        if (!(outputdetector == 'unmarked')) {
-            if (nrow(tempnew)>0) {
-                indices <- (1:length(validrows))[validrows]
-                rowname <- rownames(object)[indices]
-            }
-            else
-                rowname <- NULL
-            if (length(dim(tempnew)) == 3)
-                dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
-            else
-                dimnames(tempnew) <- list(rowname,1:nnew)
+        if (nrow(tempnew)>0) {
+            indices <- (1:length(validrows))[validrows]
+            rowname <- rownames(object)[indices]
         }
+        else
+            rowname <- NULL
+        if (length(dim(tempnew)) == 3)
+            dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
+        else
+            dimnames(tempnew) <- list(rowname,1:nnew)
 
         if (verify) verify(tempnew, report=1)
 

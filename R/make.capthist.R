@@ -102,7 +102,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
           }
         }
         else {
-          if (detector(traps) %in% c('polygon', 'transect','polygonX', 'transectX'))
+          if (detector(traps) %in% .localstuff$polydetectors)
               stop ("use fmt XY to input detections from polygons or transects")
           captTrap <- match(captures[,4], row.names(traps))
         }
@@ -128,7 +128,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
 
         dim3 <- detector(traps) %in% c('proximity', 'signal', 'count',
-            'polygon','transect','unmarked')
+            'polygon','transect','unmarked','presence')
         if (dim3) {
             w <- array (0, dim=c(nID, nocc, ndetector(traps)))
             ## 2011-03-19, 2011-03-27
@@ -245,7 +245,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
         if (nrow(wout) > 0) {
 
-            if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+            if (detector(traps) %in% .localstuff$polydetectors) {
                 ## 2011-01-21
                 xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
                 names(xy) <- c('x','y')

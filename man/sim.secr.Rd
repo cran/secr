@@ -1,5 +1,4 @@
 \name{sim.secr}
-\Rdversion{1.1}
 \alias{simulate.secr}
 \alias{sim.secr}
 \alias{simulate}
@@ -18,46 +17,30 @@ simulated data.
 
 \usage{
 
-\method{simulate}{secr}(object, nsim = 1, seed = NULL, chat = 1, ...)
+\method{simulate}{secr}(object, nsim = 1, seed = NULL, maxperpoly = 100,
+    chat = 1, ...)
 
 sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
-    deviance(x), df = df.residual(x)), seed = NULL, data = NULL,
-    tracelevel = 1, hessian = "none", start = object$fit$par)
+    deviance(x), df = df.residual(x)), seed = NULL, maxperpoly = 100,
+    data = NULL, tracelevel = 1, hessian = "none", start = object$fit$par)
 
 }
 
 \arguments{
-  \item{object}{
-an secr object
+  \item{object}{an secr object}
+  \item{nsim}{number of replicates}
+  \item{seed}{value for setting .Random.seed - either NULL or an integer}
+  \item{maxperpoly}{ integer maximum number of detections of an individual
+  in one polygon or transect on any occasion }
+  \item{chat}{real value for overdispersion parameter}
+  \item{extractfn}{function to extract output values from fitted model}
+  \item{data}{optional list of simulated data saved from previous call to \code{simulate.secr}}
+  \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
+  \item{hessian}{character or logical controlling the computation of the Hessian matrix}
+  \item{start}{vector of starting 'beta' values for \code{secr.fit}}
+  \item{...}{other arguments (not used)}
 }
-  \item{nsim}{
-number of replicates
-}
-  \item{seed}{
-value for setting .Random.seed - either NULL or an integer
-}
-  \item{chat}{
-real value for overdispersion parameter
-}
-  \item{extractfn}{
-function to extract output values from fitted model
-}
-  \item{data}{
-optional list of simulated data saved from previous call to \code{simulate.secr}
-}
-  \item{tracelevel}{
-integer for level of detail in reporting (0,1,2)
-}
-  \item{hessian}{
-character or logical controlling the computation of the Hessian matrix
-}
-  \item{start}{
-vector of starting 'beta' values for \code{secr.fit}
-}
-  \item{...}{
-other arguments (not used)
-}
-}
+
 \details{
 
 For each replicate, \code{simulate.secr} calls \code{\link{sim.popn}} to

@@ -8,8 +8,12 @@
 ## 2010 02 25 insertdim factor handling improved to retain ordering of levels
 ## 2010-10-09 allow detectfn 6,7
 ## 2010-12-02
+## 2011-01-04 param=1 GR parameterisation in secrloglik
 ## 2011-01-23 distancetotrap updated for polygons
 ## 2011-02-06 distancetotrap updated for polygonX
+## 2011-03-19 shift logmultinom to secrloglik to allow depends on session detector
+## 2011-09-26 new detector type checks
+## 2011-09-26 experimental presence detector
 ###############################################################################
 
 ###############################################################################
@@ -53,7 +57,7 @@ distancetotrap <- function (X, traps) {
     ## with x coord in col 1 and y coor in col 2
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
-    if (detector(traps) %in% c('polygon', 'transect', 'polygonX', 'transectX')) {
+    if (detector(traps) %in% .localstuff$polydetectors) {
         ## approximate only
         traps <- split(traps, polyID(traps))
         trpi <- function (i, n=100) {
@@ -464,7 +468,9 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
     link$D    <- NULL ## detection parameters only
     detectionparameters <- names(link)
     fixed.dp <- fixed[names(fixed) %in% detectionparameters]
-    if (length(fixed.dp)>0) link[[names(fixed.dp)]] <- NULL
+    if (length(fixed.dp)>0)
+        for (a in names(fixed.dp))     ## bug fixed by adding this line 2011-09-28
+            link[[a]] <- NULL
     if (length(link) != nrealpar)
         stop ("number of links does not match design matrices")
 
@@ -529,9 +535,6 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     design0 = NULL, capthist, mask, detectfn = 0, CL = T, groups = NULL,
     details, logmult, dig = 3, betaw = 10)
 
-## 2011-01-04 param=1 GR parameterisation
-## 2011-03-19 shift logmultinom to here to allow depends on session detector
-
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
 
 # Transformed parameter values (density, g0, sigma, z etc.) are passed in the vector 'beta'
@@ -564,8 +567,6 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
     #--------------------------------------------------------------------
     # Detection parameters
-    if (!detectfn %in% c(0:3,5:11))
-        stop ("'detectfn' can only take values in c(0:3,5:11)")
     realparval  <- makerealparameters (design, beta, parindx, link, fixed)
     realparval0 <- makerealparameters (design0, beta, parindx, link, fixed)
 
@@ -672,10 +673,20 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         Dtemp <- ifelse (D.modelled, D[1,1,sessnum], NA)
         Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
         Xrealparval0 <- scaled.detection (realparval0, details$scalesigma, details$scaleg0, Dtemp)
+
+        #-----------------------------------------
+        # check valid parameter values
         if (!all(is.finite(Xrealparval))) {
             cat ('beta vector :', beta, '\n')
-            stop ("extreme 'beta' in 'secr.loglikfn' ",
-                  "(try smaller stepmax in nlm Newton-Raphson?)")
+            warning ("extreme 'beta' in 'secr.loglikfn' ",
+                "(try smaller stepmax in nlm Newton-Raphson?)")
+            return (1e10)
+        }
+        if (!all(is.finite(density))) {
+            cat ('densities :', head(density), '\n')
+            warning ("bad densities in 'secr.loglikfn' ",
+                "(try different optimisation method, link, or model?")
+            return (1e10)
         }
 
         #------------------------------------------
@@ -712,8 +723,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         ## For conditional likelihood, supply a value for each
         ##  animal, not just groups
 
-        K <- ifelse (detector(session.traps) %in% c('polygon', 'transect','polygonX', 'transectX'),
-            length(k)-1, k)
+        K <- ifelse (detector(session.traps) %in% .localstuff$polydetectors, length(k)-1, k)
         if (CL) tempPIA0 <- design0$PIA[sessg,1:nc,1:s,1:K, ]
         else tempPIA0 <- design0$PIA[sessg,1:ngrp,1:s,1:K, ]     ## drop=FALSE unnecessary?
         if (is.numeric(details$distribution)) {
@@ -725,24 +735,95 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         else
             distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
 
+        #-------------------------------------------
+        # experimental 'unmarked' detector type
+        #-------------------------------------------
         if (dettype == 10) {
-            temp <- .C('secrloglikUM', PACKAGE = 'secr',
-            as.integer(attr(session.capthist,'Tu')),
-            as.integer(s),
-            as.integer(k),
-            as.integer(m),
-            as.double(trps),
-            as.double(session.mask),
-            as.double(density),                            # density at each mask point x ngrp cols
-            as.double(Xrealparval),
-            as.integer(nrow(Xrealparval)),                 # number of rows in lookup table
-            as.integer(design$PIA[sessg,1,1:s,1:K,]),      # index of 1,S,K,mix to Xrealparval
-            as.double(cell),                               # mask cell area
-            as.integer(detectfn),
-            value=double(1),
-            resultcode=integer(1))
-
+            ## does not allow within-session models
+            index <- ifelse(nrow(Xrealparval)==1, 1, sessnum)
+            g0 <- Xrealparval[index,1]
+            sigma <- Xrealparval[index,2]
+            z <- ifelse (detectfn %in% c(1,3,5,6,7,8), Xrealparval[index,3], 1)
+            temp <- .C('unmarkedloglik', PACKAGE = 'secr',
+                as.integer(session.capthist), ## n,s,k array
+                as.integer(nrow(session.capthist)),
+                as.integer(s),          ## number of sampling occasions
+                as.integer(K),          ## number of detectors
+                as.double(density[1]),  ## Parameter value
+                as.double(g0),          ## Parameter value
+                as.double(sigma),       ## Parameter value
+                as.double(z),           ## Parameter value
+                as.integer(detectfn),
+                as.integer(0),
+                value = double(1),
+                resultcode = integer(1)
+            )
         }
+        #-------------------------------------------
+        # experimental 'presence' detector type
+        #-------------------------------------------
+        else if (dettype == 11) {
+            ## details$presence sets type, which may be
+            ## simple            Royle-Nichols
+            ## integrated
+            ## pairwise (not this version)
+
+            if (is.null(details$presence))
+                details$presence <- 'integrated'
+            if (!(details$presence %in% c('simple', 'pairwise', 'integrated')))
+                stop("details$presence should be one of ",
+                     "'simple', 'pairwise', 'integrated'")
+
+            ## does not allow within-session models
+            index <- ifelse(nrow(Xrealparval)==1, 1, sessnum)
+            g0 <- Xrealparval[index,1]
+            sigma <- Xrealparval[index,2]
+            z <- ifelse (detectfn %in% c(1,3,5,6,7,8), Xrealparval[index,3], 1)
+
+            if (details$presence == 'pairwise') {
+                stop("'pairwise' temporarily blocked")
+                # pairwise likelihood allowing for overlap
+                # thanks to Martin Ridout
+                # require (occsim)
+                CH <- apply(session.capthist, 2:3, sum)>0   ## collapse individuals
+                yy <- apply(CH,2,sum)                       ## vector of number at each detector yk
+                param <- c(density[1], g0, sigma/100)
+                dx <- session.traps[,1]/100
+                dy <- session.traps[,2]/100
+                temp <- .C('loglik2', PACKAGE = 'occsim',
+                    as.double(param),  ## parameter vector
+                    as.integer(s),     ## number of sampling occasions
+                    as.double(dx),     ## x-coordinates of detectors
+                    as.double(dy),     ## y-coordinates of detectors
+                    as.integer(yy),    ## per detector frequencies (vector length k)
+                    as.integer(K),     ## number of detectors
+                    value = double(1)
+                )
+                temp$resultcode <- 0
+            }
+            else {
+                if ((.localstuff$iter < 1) & (details$presence == 'simple') &
+                    !(detectfn %in% c(1,4,7,8)))
+                    warning ("simple presence requires detectfn for which",
+                             " sigma = radius (1,4,7,8)", .call = FALSE)
+                temp <- .C('presenceloglik', PACKAGE = 'secr',
+                    as.integer(session.capthist), ## n,s,k array
+                    as.integer(nrow(session.capthist)),
+                    as.integer(s),          ## number of sampling occasions
+                    as.integer(K),          ## number of detectors
+                    as.double(density[1]),  ## Parameter value
+                    as.double(g0),          ## Parameter value
+                    as.double(sigma),       ## Parameter value
+                    as.double(z),           ## Parameter value
+                    as.integer(detectfn),
+                    as.integer(details$presence == 'integrated'),
+                    value = double(1),
+                    resultcode = integer(1))
+            }
+        }
+        #-------------------------------------------
+        # typical call (not 'presence' or 'unmarked'
+        #-------------------------------------------
         else {
             temp <- .C('secrloglik', PACKAGE = 'secr',
                 as.integer(CL),       # 0 = full, 1 = CL
@@ -791,13 +872,12 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 ##    loglik <- loglik + logmult   ## term calc before and saved as global variable
 ## replaced 2011-03-19 with...
 ## unclear whether this is correct wrt groups
-    if (logmult & !detector(session.traps) %in% c('polygon','polygonX',
-                   'transect','transectX','signal','cue','unmarked'))
+    if (logmult & detector(session.traps) %in% .localstuff$simpledetectors)
         loglik <- loglik + logmultinom(session.capthist,
                                        group.factor(session.capthist, groups))
 
+    .localstuff$iter <- .localstuff$iter + 1   ## moved outside loop 2011-09-28
     if (details$trace) {
-        .localstuff$iter <- .localstuff$iter + 1
 
         ## allow for fixed beta parameters 2009 10 19
         if (!is.null(details$fixedbeta))
@@ -817,6 +897,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 }
 ############################################################################################
 
+## NOT WORKING FOR A LONG TIME
 MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 = NULL,
                            capthist, mask, detectfn = 0, CL = F, groups = NULL,
                            details, logmult, dig = 3, betaw = 10)
