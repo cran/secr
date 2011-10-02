@@ -7,6 +7,8 @@
 ## 2010 10 09 annular normal and cumulative lognormal detection functions
 ## 2011 03 19 allow zero detections
 ## 2011 03 27 multiple sessions
+## 2011 09 09 p.available; session numbers
+## 2011 09 30 presence, unmarked treated as special case of proximity
 ###############################################################################
 
 expand <- function (x, n, q = 0, default = 1) {
@@ -29,8 +31,10 @@ sim.capthist <- function (
     noccasions = 5,
     nsessions = 1,
     binomN = NULL,
+    p.available = 1,
     renumber = TRUE,
-    seed = NULL
+    seed = NULL,
+    maxperpoly = 100
     )
 
 #
@@ -70,13 +74,50 @@ sim.capthist <- function (
         output <- vector(R, mode='list')
         nocc <- numeric(R)
         nocc[] <- noccasions
+        if (!inherits(popn,'popn')) # generate if not provided
+        {
+            popn <- replacedefaults(list(D = 5, buffer = 100,
+                Ndist = 'poisson'), popn)
+            popn <- sim.popn (popn$D, core=traps, buffer=popn$buffer,
+                covariates=NULL, Ndist = popn$Ndist)
+        }
+        if (poplist) {
+            if (any(p.available) != 1)
+                warning ("incomplete availability not implemented ",
+                         "for population lists")
+        }
+        else {
+            if (!(length(p.available) %in% 1:2))
+                stop ("p.available must be vector of 1 or 2 probabilities")
+            availability <- 'random'
+            if (length(p.available) == 1)
+                ## random temporary emigration
+                available <- runif(nrow(popn)) < p.available
+            else {
+                ## Markovian temporary emigration
+                availability <- 'Markov'
+                equilibrium.p <- (p.available[2] / (1-p.available[1]+p.available[2]))
+                available <- runif(nrow(popn)) < equilibrium.p
+            }
+
+        }
         for (t in 1:R) {
             if (poplist)
                 temppop <- popn[[t]]
-            else
-                temppop <- popn
-            output[[t]] <- sim.capthist(traps, temppop, detectfn,
-                    detectpar, nocc[t], 1, binomN, renumber, seed)
+            else {
+                temppop <- subset(popn, available)
+                ## update availability in preparation for next session
+                if (availability == 'random') {
+                    available <- runif(nrow(popn)) < p.available
+                }
+                else {
+                    p.vect <- ifelse(available, p.available[1], p.available[2])
+                    available <- runif(nrow(popn)) < p.vect
+                }
+            }
+            output[[t]] <- sim.capthist(traps, temppop, detectfn, detectpar,
+                nocc[t], 1, binomN, 1, renumber, seed, maxperpoly)
+            session( output[[t]] ) <- t   ## added 2011-09-09
 
         }
         class(output) <- c('list','capthist')
@@ -320,9 +361,10 @@ sim.capthist <- function (
         }
 
         else
-        if (detector(traps) %in% c('proximity', 'count')) {
+        ## includes presence 2011-09-26
+        if (detector(traps) %in% c('proximity', 'count', 'presence','unmarked')) {
             binomN <- switch(detector(traps), proximity=1,
-                             count=detectpar$binomN)
+                             count=detectpar$binomN, presence=1, unmarked = 1)
             temp <- .C("trappingcount", PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
@@ -443,16 +485,17 @@ sim.capthist <- function (
                 as.integer(detectfn),
                 as.double(truncate^2),
                 as.integer(detectpar$binomN),
+                as.integer(maxperpoly),
                 n = integer(1),
                 caught = integer(N),
-                ## safety margin 200 detections per animal per poly per occasion
-                detectedXY = double (N*noccasions*nk*200),
+                detectedXY = double (N*noccasions*nk*maxperpoly*2),
                 value = integer(N*noccasions*nk),
                 resultcode = integer(1)
             )
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)
-                    stop (">200 detections per animal per polygon per occasion")
+                    stop ("more than ", maxperpoly, "  detections per animal",
+                          " per polygon per occasion")
                 else
                     stop ("call to ",simfunctionname, " failed")
             }
@@ -496,7 +539,9 @@ sim.capthist <- function (
         ##   else rownames(w) <- (1:N)[as.logical(temp$caught)]
         ## 2011-04-02 BUG FIX
         else {
-            rown <- (1:N)[temp$caught>0]
+#            rown <- (1:N)[temp$caught>0]
+# test 2011-09-11
+rown <- rownames(popn)[temp$caught > 0]
             caught <- temp$caught[temp$caught>0]
             rownames(w) <- rown[order(caught)]
         }

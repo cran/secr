@@ -21,7 +21,8 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 
     if (!is(object, 'capthist'))
         stop ("requires a 'capthist' object")
-    det <- detector(traps(object))
+    ## following assignment unused 2011-09-26
+    ##    det <- detector(traps(object))
 
     objectname <- deparse(substitute(object), control=NULL)
     if (filestem=='') {
@@ -103,6 +104,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     defaultdots <- list(sep = '', comment.char = '#')
     if (filetype(captfile)=='.csv') defaultdots$sep <- ','
     dots <- replacedefaults (defaultdots, list(...))
+
     capt <- do.call ('read.table', c(list(file = captfile, as.is = TRUE,
         colClasses = colcl), dots) )
 
@@ -123,6 +125,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     readtraps <- function (x)
         do.call ('read.traps', c(list(file = x), detector = detector,
                                  list(covnames = trapcovnames), dots) )
+
     trps <- sapply(trapfile, readtraps, simplify = FALSE)
 
     if (length(trps)==1) trps <- trps[[1]]

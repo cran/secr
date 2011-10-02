@@ -14,7 +14,9 @@ of a 2-D population using an array of detectors.
 \usage{
 sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = 'poisson'), detectfn = 0, detectpar = list(),
-    noccasions = 5, nsessions = 1, binomN = NULL, renumber = TRUE, seed = NULL)
+    noccasions = 5, nsessions = 1, binomN = NULL,
+    p.available = 1, renumber = TRUE, seed = NULL,
+    maxperpoly = 100)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
     nonID = TRUE)
 
@@ -30,10 +32,13 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   \item{noccasions}{ number of occasions to simulate }
   \item{nsessions}{ number of sessions to simulate }
   \item{binomN}{ integer code for distribution of counts (see Details) }
+  \item{p.available}{ vector of one or two probabilities (see Details) }
   \item{renumber}{ logical for whether output rows should labeled sequentially (TRUE) or
  retain the numbering of the population from which they were drawn (FALSE) }
   \item{seed}{an object specifying if and how the random number
   generator should be initialized (`seeded') }
+  \item{maxperpoly}{ integer maximum number of detections of an individual
+  in one polygon or transect on any occasion }
   \item{\dots}{ arguments to pass to \code{sim.capthist} }
   \item{q}{ number of marking occasions }
   \item{pID}{ probability of individual identification for marked animals }
@@ -72,6 +77,16 @@ detections of an individual at a particular `count' detector or polygon
 on a particular occasion. A Poisson distribution is indicated by
 \code{binomN = 0}; see \code{\link{secr.fit}} for more. The distribution
 is always Bernoulli (binary) for `proximity' and `signal' detectors.
+
+\code{p.available} specifies temporary non-availability for detection in
+multi-session simulations. If a single probability is specified then
+temporary non-availability is random (independent from session to
+session). If two probabilities are given then non-availability is
+Markovian (dependent on previous state) and the two values are for
+animals available and not available at the preceding session. In the
+Markovian case, availability in the first session is assigned at random
+according to the equilibrium probability p2 / (1 - p1 + p2). Incomplete
+availability is not implemented for sampling lists of populations.
 
 \code{detectpar} may include a component `truncate' for the distance
 beyond which detection probability is set to zero. By default this value
@@ -151,6 +166,9 @@ detection functions are provided for de novo simulation, but are not
 available when fitting models with in \code{secr.fit} or simulating from
 a fitted model with \code{sim.secr}.
 
+\code{maxperpoly} limits the size of the array allocated for
+detections in C code; an error results if the is number is exceeded.
+
 }
 
 \seealso{
@@ -175,6 +193,16 @@ summary(sim.capthist (temptrap, detectpar =
 grid4 <- make.grid(nx = 2, ny = 2)
 temp <- sim.capthist (grid4, popn = list(D = 1), nsessions = 20)
 summary(temp, terse = TRUE)
+
+## unmarked or presence types
+grid <- make.grid(nx = 10, ny = 10, detector = 'unmarked')
+CH <- sim.capthist (grid, noccasions = 5)
+CH
+## 'presence' and 'unmarked' data are stored as 'count' data
+## behaviour is controlled by detector type, e.g.
+detector(traps(CH)) <- 'presence'
+CH
+
 
 }
 \keyword{ datagen }

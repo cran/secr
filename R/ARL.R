@@ -1,7 +1,8 @@
 ###############################################################################
 ## package 'secr'
 ## ARL.R
-## last changed 2010 03 30
+## last changed 2010 03 30;
+## 2011 09 26 detector type check
 ## polygonX, transectX, transect
 ###############################################################################
 
@@ -22,9 +23,11 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE) {
         MMDMxy <- function (xy) {
             max(dist(cbind(xy$x, xy$y)))
         }
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require individual detector type for ARL")
         traps <- traps(capthist)
         prox  <- length(dim(capthist)) > 2
-        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+        if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
             maxd <- unlist(lapply (lxy, MMDMxy))
             n <- unlist(lapply (lxy, nrow))

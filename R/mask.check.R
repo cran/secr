@@ -121,9 +121,15 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             newcall <- replace(newcall, 'capthist', list(quote(cpts)))
             if (is.null(realpar)) {
                 predicted <- predict(object)
+
                 if (MS) {
-                    sessnum <- (1:length(predicted))[grepl(session,
-                        names(predicted))]
+## 2011-06-28
+##                    sessnum <- (1:length(predicted))[grepl(session,
+##                        names(predicted))]
+
+## allow for multiple rows; select first
+                    sessnum <- (1:length(predicted))[grepl(paste('session =',
+                        session), names(predicted))][1]
                     predicted <- predicted[[sessnum]]   ## unreliable?
                 }
                 realpar <- predicted[,'estimate']
@@ -184,6 +190,9 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             newcall$link <- defaultlink
             if (is.null(realpar))
                 stop ("'LLonly' requires either 'realpar' or fitted model")
+
+## what if have betas from fitted model?
+
             startbeta <- Xtransform(unlist(realpar), defaultlink,
                 names(realpar))
             newcall <- replace(newcall, 'start', list(start=startbeta))

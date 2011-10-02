@@ -261,7 +261,7 @@ base.plot()
 plot(popn2, add = TRUE, col = 'blue')
 mtext(side=3, line=0.5, 'Population', cex=0.8, col='black')
 base.plot()
-cluster.plot (capt2a, add = TRUE,title = 'Extensive survey')
+plot (capt2a, add = TRUE,title = 'Extensive survey')
 base.plot()
 plot(capt2, add = TRUE, title = 'Intensive survey')
 

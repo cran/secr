@@ -112,32 +112,10 @@ Bulletin} \bold{33}, 731--738.
 
 \examples{
 
-\dontrun{
-
-## code used to construct dataset
-setwd('d:\\density secr 2.1\\package data\\possum')
-possumCH <- read.capthist('foxton.txt', 'foxtraps.txt', detector = 'single')
-## drop within-day duplicates of tag 5861 in traps 11,12, to conform DENSITY
-possumCH['5861',] <- c(134, 133, 134, 133, 135)
-trps <- traps(possumCH)
-covariates(traps(possumCH)) <- data.frame(grid =
-    factor(substring(rownames(trps),1,2)))
-possumarea <- read.table ('possumarea.txt', header = TRUE)
-possummask <- make.mask(trps, buffer = 300, type='pdot', pdotmin =
-    0.001, detectpar = list(g0=0.2, sigma=60), spacing = 10, poly =
-    possumarea)
-possum.model.1 <- secr.fit(possumCH, mask = possummask, trace=F)
-possum.model.1b <- secr.fit(possumCH, mask = possummask, model =
-    list(g0~b), trace=F)
-save(possumCH, possummask, possumarea, possum.model.1, possum.model.1b,
-    file='d:\\density secr 2.0\\secr\\data\\possum.RData')
-}
-
 plot(possummask)
 plot(possumCH, tracks = TRUE, add = TRUE)
 plot(traps(possumCH), add = TRUE)
 lines(possumarea)
-
 summary(possumCH)
 
 ## compare & average pre-fitted models

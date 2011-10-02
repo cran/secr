@@ -1,3 +1,85 @@
+Changes in version 2.2.0 (2011-10-01)
+
+New features or changed behaviour of old functions
+
+    o   rbind.capthist() has new logical argument 'verify', and along
+    with MS.capthist(), has been considerably revised with assistance
+    from Mike Meredith. Its behaviour has changed with respect to
+    pooling of covariates, coordinates (xy) and signal strength.
+
+    o   experimental 'presence' detector type (undocumented)
+
+    o   secr.fit() allows more than one parameter to be fixed
+
+    o   sim.capthist() has new argument 'p.available' for incomplete
+    availability (random or Markovian between sessions) (applies only
+    to multi-session sampling of a single population)
+
+    o   levels of polyID and transectID factors retain order of input
+    dataframe in make.poly() and make.transect()
+
+    o   sim.capthist() for transects now handles uniform detection
+    function (detectfn = 4) separately (without integration, which is
+    faster)
+
+    o   simulate.secr(), sim.secr() and sim.capthist() have new argument
+    'maxperpoly' for the user to control memory allocation when
+    sampling areas and transects
+
+    o   the lognormal confidence interval for realised N returned by
+    region.N() is by default now based only on unobserved fraction of
+    population, so the lower limit cannot be less than n (the number
+    observed). The original behaviour may be restored by setting the
+    new argument 'nlowerbound'.
+
+    o   expected.n() default for bycluster argument changed to FALSE,
+    and other minor changes to match help page
+
+    o   a subset method has been provided for popn objects
+
+    o   verify.capthist() checks that rownames are not duplicated
+
+    o   bad parameter values* (detection parameters or density) during
+    likelihood maximisation trigger warnings but should not abort
+    estimation. *These can result from the nlm optimiser 'trying'
+    invalid parts of the parameter space, and can safely be ignored if
+    the convergence code of the ultimate fit is zero.
+
+Other
+
+    o   'unmarked' is no longer an extraction function because unmarked
+    data are now stored in a 3-D array, like proximity detection
+    histories
+
+    o   the external C code has been substantially re-arranged
+
+Bugs fixed
+
+    o   transectlength() and searcharea unreliable when multiple
+    transects or polygons, and did not handle multiple sessions (now
+    return a list in this case)
+
+    o   make.mask() trivial bug checking class of polygon
+
+    o   expected.n() bycluster failed with multisession capthist
+
+    o   sim.capthist() multiple sessions not assigned distinct names
+
+    o   rbind.capthist() and MS.capthist() failed with some inputs
+    (concatenating single and multiple sessions, pooling single and
+    multiple sessions)
+
+    o   region.N() failed for some multi-session inputs
+
+    o   plot.popn() with 'circles' option gave error when no animals in
+    population; now plots a blank map
+
+
+Known bugs
+
+    o   confint.secr (profile likelihood intervals) not working for
+    multi-session inputs, and maybe other complex models
+
 Changes in version 2.1.0 (2011-06-17)
 
 New functions

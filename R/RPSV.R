@@ -1,9 +1,8 @@
 ############################################################################################
 ## package 'secr'
 ## RPSV.R
-## last changed 2010 03 30 streamlined
 ## 2011 02 06 polygonX, transectX
-
+## 2011 09 26 detector type check
 ############################################################################################
 
 RPSV <- function (capthist)
@@ -26,7 +25,9 @@ RPSV <- function (capthist)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
         traps <- traps(capthist)
-        if (detector(traps) %in% c('polygon','transect','polygonX','transectX')) {
+        if (!(detector(traps) %in% .localstuff$individualdetectors))
+            stop ("require individual detector type for RPSV")
+        if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split ( xy(capthist), animalID(capthist))
             temp <- lapply (lxy, RPSVxy)
         }

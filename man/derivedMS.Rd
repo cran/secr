@@ -159,13 +159,14 @@ These quantities are related to CVn and CVa as follows:
 ## by maximizing the conditional likelihood 
 derived (secrdemo.CL)
 
+\dontrun{
 ## what happens when sampling variance is conditional on mask N?
 derived(secrdemo.CL, distribution = 'binomial')
-
 ## fitted g0, sigma
 esa(secrdemo.CL)
 ## force different g0, sigma
 esa(secrdemo.CL, real = c(0.2, 25))
+}
 
 }
 

@@ -9,11 +9,20 @@
 .localstuff$validdetectors <- c('single','multi','proximity','count',
                                 'polygonX', 'transectX',
                                 'signal', 'polygon', 'transect', 'times',
-                                'cue', 'unmarked')
+                                'cue', 'unmarked','presence')
+.localstuff$simpledetectors <- c('single','multi','proximity','count')
+.localstuff$individualdetectors <- c('single','multi','proximity','count',
+                                'polygonX', 'transectX',
+                                'signal', 'polygon', 'transect', 'times',
+                                'cue')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
-                                'signal','cue', 'unmarked')
+                                'signal','cue', 'unmarked','presence')
 .localstuff$polydetectors <- c('polygon','transect','polygonX','transectX')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
+## 'signal' is not a count detector 2011-02-01
+.localstuff$countdetectors <- c('count','polygon','transect','unmarked')
+.localstuff$detectors3D <- c('proximity','count','signal','polygon','transect',
+                             'times','cue','unmarked','presence')
 .localstuff$iter <- 0
 .localstuff$detectionfunctions <-
         c('halfnormal',
@@ -29,8 +38,6 @@
       'signal strength',
       'signal strength spherical')
 
-## 'signal' is not a count detector 2011-02-01
-.localstuff$countdetectors <- c('count','polygon','transect','unmarked')
 
 detectionfunctionname <- function (fn) {
     .localstuff$detectionfunctions[fn+1]
@@ -94,6 +101,7 @@ detectorcode <- function (object, MLonly = TRUE) {
         times = 8,
         cue = 9,
         unmarked = 10,
+        presence = 11,
         -2)
     if (MLonly) {
         detcode <- ifelse (detcode==-1, 0, detcode)
@@ -214,18 +222,21 @@ get.nmix <- function (model) {
     nmix
 }
 
-add.cl <- function (df, alpha, loginterval) {
+add.cl <- function (df, alpha, loginterval, lowerbound = 0) {
 
 ## add lognormal or standard Wald intervals to dataframe with columns
 ## 'estimate' and 'SE.estimate'
-
+## lowerbound added 2011-07-15
     z <- abs(qnorm(1-alpha/2))
     if (loginterval) {
-        df$lcl <- df$estimate / exp(z * sqrt(log(1 + (df$SE.estimate / df$estimate)^2)))
-        df$ucl <- df$estimate * exp(z * sqrt(log(1 + (df$SE.estimate / df$estimate)^2)))
+        delta <- df$estimate - lowerbound
+        df$lcl <- delta / exp(z * sqrt(log(1 + (df$SE.estimate /
+                        delta)^2))) + lowerbound
+        df$ucl <- delta * exp(z * sqrt(log(1 + (df$SE.estimate /
+                        delta)^2))) + lowerbound
     }
     else {
-        df$lcl <- pmax(0, df$estimate - z * df$SE.estimate)
+        df$lcl <- pmax(lowerbound, df$estimate - z * df$SE.estimate)
         df$ucl <- df$estimate + z * df$SE.estimate
     }
     df

@@ -22,7 +22,7 @@ NULL, ...)
 
 \details{
 
-Reads a text file in which the first column is a character string
+Reads a text file in which the first column is a character string (see Note)
 identifying a detector and the next two columns are its x- and
 y-coordinates, separated by white space. The coordinates optionally may
 be followed by a string of codes `0' or `1' indicating whether the
@@ -77,6 +77,13 @@ by spatially explicit capture-recapture: likelihood-based methods. In:
 D. L. Thomson, E. G. Cooch and M. J. Conroy (eds) \emph{Modeling
 Demographic Processes in Marked Populations}. Springer, New York. Pp.
 255--269.
+
+}
+
+\note{
+
+  Detector names, which become row names in the traps object, should not
+  contain underscores.
 
 }
 

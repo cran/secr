@@ -2,7 +2,8 @@
 ## package 'secr'
 ## regionN.R
 ## population size in an arbitrary region
-## last changed 2011-05-11
+## 2011-08-18 (fixed expected.n)
+## 2011-09-26 fixed multi-session bug in region.N
 ############################################################################################
 
 predictD <- function (object, region, session) {
@@ -23,14 +24,19 @@ predictD <- function (object, region, session) {
              group.levels(object$capthist,object$groups),
              session(object$capthist), sessioncov = object$sessioncov)
         ## select a single session
-        if ("session" %in% names(newdata))
-            newdata <- subset(newdata, subset = newdata$session == session)
-        if ("Session" %in% names(newdata))
-            newdata <- subset(newdata, subset = newdata$Session ==
-               as.numeric(factor(session, levels =  session(object$capthist)))-1)
+        if ("session" %in% names(newdata)) {
+# following does not work 2011-09-26
+#            newdata <- subset(newdata, subset = (newdata$session == session))
+            newdata <- newdata[newdata$session == session,]
+        }
+        if ("Session" %in% names(newdata)) {
+#            newdata <- subset(newdata, subset = newdata$Session ==
+#               as.numeric(factor(session, levels =  session(object$capthist)))-1)
+            newdata <- newdata[newdata$Session ==
+               (as.numeric(factor(session, levels =  session(object$capthist)))-1),]
+        }
         class(newdata) <- c('mask', 'data.frame')
         attr (newdata, 'area') <- attr(region, 'area')
-
         indx <- object$parindx$D
         beta <- object$fit$par[indx]
         if (object$model$D == ~1) {
@@ -53,7 +59,7 @@ predictD <- function (object, region, session) {
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE) {
+    keep.region = FALSE, nlowerbound = TRUE) {
 
     ## Notes
     ## se.N = FALSE returns scalar N
@@ -126,7 +132,6 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             mask <- object$mask[[session]]
         else
             mask <- object$mask
-
         ########################################################
         ## if necessary, convert vector region to raster
         if (!inherits(region, 'mask')) {
@@ -148,6 +153,11 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 check.poly = FALSE)
         }
         #######################################################
+
+        ## inserted to fix bug
+        ## 2011-09-26
+        if (ms(region))
+            region <- region[[session]]
 
         ## region now inherits from mask, so has area attribute
         cellarea <- attr(region, 'area')
@@ -197,28 +207,38 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 seN <- (dNdphi %*% beta.vcv %*% dNdphi)^0.5
             }
         }
-        #######################################################
+
+        #######################################################################
         ## realised N
-        notdetected <- sumDpdot (object, sessnum, region, D,
-            cellarea, constant = FALSE, oneminus = TRUE)[1]
-        dNdbeta <- gradient (object$fit$par, betaRN, object =
-            object, region = region)
-        RN <- n + notdetected
-        pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta
-        seRN <- (notdetected + pdotvar)^0.5
-        En <- sumDpdot (object, sessnum, mask, D, attr(mask,'area'),
-             constant = FALSE, oneminus = FALSE)[1]
-        #######################################################
-
-
-
-        #######################################################
+        ## only makes sense for individual detectors (not unmarked or presence)
+        ## amended 2011-09-26
+        if (ms(object))
+            det <- detector(traps(object$capthist)[[session]])
+        else
+            det <- detector(traps(object$capthist))
+        if (det %in% .localstuff$individualdetectors) {
+            notdetected <- sumDpdot (object, sessnum, region, D,
+                cellarea, constant = FALSE, oneminus = TRUE)[1]
+            dNdbeta <- gradient (object$fit$par, betaRN, object =
+                object, region = region)
+            RN <- n + notdetected
+            pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta
+            seRN <- (notdetected + pdotvar)^0.5
+            En <- sumDpdot (object, sessnum, mask, D, attr(mask,'area'),
+                 constant = FALSE, oneminus = FALSE)[1]
+        }
+        else { RN <- NA; seRN <- NA; En <- NA }
+        #######################################################################
 
         temp <- data.frame(
             row.names = c('E.N','R.N'),
             estimate = c(N,RN),
             SE.estimate = c(seN,seRN))
-        temp <- add.cl (temp, alpha, loginterval)
+        ## lower bound added 2011-07-15
+        if (nlowerbound)
+            temp <- add.cl (temp, alpha, loginterval, c(0, n))
+        else
+            temp <- add.cl (temp, alpha, loginterval, c(0, 0))
         temp$n <- rep(n, nrow(temp))
         temp$E.n <- rep(round(En,2), nrow(temp))
         if (keep.region)
@@ -257,6 +277,9 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
     beta <- object$fit$par
 
     traps   <- attr(capthists, 'traps')  ## need session-specific traps
+    ## 2011-09-26 check added
+    if (!(detector(traps) %in% .localstuff$individualdetectors))
+        stop ("require individual detector type for sumDpdot")
     dettype <- detectorcode(traps)
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
@@ -377,7 +400,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
 ############################################################################################
 
 
-expected.n <- function (object, session = NULL, group = NULL, bycluster = TRUE,
+expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                         splitmask = FALSE) {
 
     ## Note
@@ -463,10 +486,13 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = TRUE,
             D <- rep(D, nrow(mask))
 
         #################################################################
-        if (bycluster & !is.null(attr(trps, 'cluster'))) {
+        if (bycluster) {
             centres <- cluster.centres(trps)
             nclust <- nrow(centres)
             out <- numeric (nclust)
+            if (is.null(attr(trps, 'cluster'))) {
+                clusterID(trps) <- 1:nclust
+            }
             if (splitmask) {
                 cluster <- nearesttrap (mask, centres)
                 mask <- split (mask, cluster)
@@ -479,8 +505,16 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = TRUE,
                         constant = FALSE, oneminus = FALSE)[1]
                 }
                 else {
-                    traps(object$capthist) <- subset(trps, subset =
-                        as.numeric(clusterID(trps)) == i)
+## replaced 2011-08-18
+##                    traps(object$capthist) <- subset(trps, subset =
+##                        as.numeric(clusterID(trps)) == i)
+
+                    temptrap <- subset(trps, subset = as.numeric(clusterID(trps)) == i)
+                    if (ms(object))
+                        traps(object$capthist[[sessnum]]) <- temptrap
+                    else
+                        traps(object$capthist) <- temptrap
+
                     out[i] <- sumDpdot(object = object, sessnum = sessnum,
                         mask=mask, D = D, cellarea = cellarea,
                         constant = FALSE, oneminus = FALSE)[1]

@@ -1,7 +1,7 @@
 ###############################################################################
 ## package 'secr'
 ## writeGPS.R
-## last changed 2011-04-24
+## last changed 2011-08-16 (full argument names)
 ## Write detector locations to GPS format
 ##
 ###############################################################################
@@ -28,7 +28,7 @@ writeGPS <- function (xy, o = "garmin", F = "usb:", proj = '+proj=nzmg')  {
     tempf <- tempfile('waypts')
     old <- options(digits=12)  ## ensure plenty of digits
     write.table(latlon, quote = FALSE, file = tempf,
-        col = FALSE, row = FALSE, sep = ',')
+        col.names = FALSE, row.names = FALSE, sep = ',')
 
     ## adapted from maptools `readGPS'
     GB <- Sys.which("gpsbabel")

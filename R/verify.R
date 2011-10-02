@@ -358,6 +358,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         xyinpolyOK <- TRUE
         xyontransectOK <- TRUE
         IDOK <- TRUE
+        rownamesOK <- TRUE
 
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
@@ -377,7 +378,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         ## 3
         if (length(object)==0) {
-            detectionsOK <- unmarked
+            detectionsOK <- unmarked   ## and presence? 2011-10-01
         }
         else  {
 
@@ -515,10 +516,13 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             xyontransectOK <- all(ontransect)
         }
 
+        ## 15
+        rownamesOK <- !any(duplicated(rownames(object)))
+
         errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,
             deadOK, singleOK, binaryOK, countOK, cutvalOK, signalOK,
             detectornumberOK, covariatesOK, usageoccasionsOK, usageOK,
-            xyOK, xyinpolyOK, xyontransectOK, IDOK))
+            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK))
 
         if (report > 0) {
             if (errors) {
@@ -617,6 +621,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
                 if (!IDOK) {
                     cat ("Polygon detector mismatch between ID attribute and counts\n")
+                }
+                if (!rownamesOK) {
+                    cat ("Duplicated row names (animal ID)\n")
                 }
             }
 

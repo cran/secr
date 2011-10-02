@@ -149,6 +149,14 @@ plot(make.circle(n = 20, spacing = 30), lab = TRUE, offset = 9)
 summary(make.circle(n = 20, spacing = 30))
 
 
+## jitter locations randomly within grid square
+## and plot over 'mask'
+temptrap <- make.grid(nx = 7, ny = 7, spacing = 30)
+tempmask <- make.mask(temptrap, buffer = 15, nx = 7, ny = 7)
+temptrap[,] <- temptrap[,] + 30 * (runif(7*7*2) - 0.5)
+plot(tempmask, dots = FALSE)
+plot(temptrap, add = TRUE)
+
 }
 
 \keyword{ datagen }

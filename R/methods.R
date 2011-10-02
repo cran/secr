@@ -33,6 +33,12 @@
 ##            for counts of unidentified animals at points
 ## 2011-06-07 rbind.capthist allows for xy, signal
 ## 2011-06-17 moved insidepoly to utility.R
+## 2011-06-23 polygon and transect names retain ordering of input dataframe
+##            in make.poly and make.transect
+## 2011-06-24 fixed transectlength, searcharea
+## 2011-07-08 adjust 'class' to 'inherits' in make.mask
+## 2011-08-18 check for null rownames in animalID
+## 2011-09-11 subset.popn commissioned
 ###############################################################################
 
 # Following code may be used at some stage during debugging,
@@ -261,24 +267,6 @@ alongtransect <- function (object, tol = 0.01) {
     }
 }
 
-unmarked <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-
-    if (ms(object)) {
-        lapply(object, unmarked)
-    }
-    else {
-        if (detector(traps(object)) %in%
-            c('unmarked')) {
-            attr(object, 'Tu')
-        }
-        else
-            NULL
-    }
-}
-
-
 clusterID <- function (object) {
     if (ms(object)) {
         lapply(object, clusterID)
@@ -409,7 +397,7 @@ animalID <- function (object, names = TRUE) {
            ## ''
            character(0)  ## 2011-04-08
         else {
-            if (names)
+            if (names & !is.null(row.names(object)))  ## 2011-08-18 null check
                 values <- row.names(object)
             else
                 values <- 1:nrow(object)
@@ -450,12 +438,15 @@ searcharea <- function (object)    {
 ## searchcell, or spacex.spacey, or spacing^2, or 1
 ## requires traps object
     if (ms(object)) {
-        searcharea (object[[1]])
+        ## 2011-06-24
+        lapply(object, searcharea)
     }
     else {
         if (detector(object) %in% c('polygon','polygonX')) {
             ## assume poly closed
-            sapply(split(object, levels(polyID(object))), polyarea)
+            ## 2011-06-24
+##            sapply(split(object, levels(polyID(object))), polyarea)
+              sapply(split(object, polyID(object)), polyarea)
         }
         else {
             sc <- attr(object,'searchcell')
@@ -476,17 +467,19 @@ searcharea <- function (object)    {
 transectlength <- function (object)    {
 ## requires traps object
     if (ms(object)) {
-        transectlength (object[[1]])
+        ## 2011-06-24
+        lapply(object, transectlength)
     }
     else {
         if (detector(object) %in% c('transect','transectX')) {
-            ## assume poly closed
             calclength <- function (xy) {
                 nr <- nrow(xy)    ## number of vertices
                 segments <- (xy$x[-nr] - xy$x[-1])^2 + (xy$y[-nr] - xy$y[-1])^2
                 sum (segments^0.5)
             }
-            sapply(split(object, levels(polyID(object))), calclength)
+# 2011-06-24
+#            sapply(split(object, levels(polyID(object))), calclength)
+             sapply(split(object, polyID(object)), calclength)
         }
         else NA
     }
@@ -613,7 +606,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
             value <- as.data.frame(value)
             nrequired <- nrow(object)
             if (inherits(object, 'traps'))
-                if (detector(object) %in% c('polygon','polygonX','transect','transectX'))
+                if (detector(object) %in% .localstuff$polydetectors)
                     nrequired <- length(levels(polyID(object)))
             if (nrow(value) != nrequired)
                 stop ("length of covariate does not match")
@@ -657,8 +650,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     if (!is.null(value)) {
         if (nrow(value) != sum(abs(object)))
             stop ("requires one location per detection")
-        if (!(detector(traps(object)) %in% c('polygon','transect',
-                                             'polygonX','transectX')) |
+        if (!(detector(traps(object)) %in% .localstuff$polydetectors) |
                 !(inherits(object,'capthist')))
             stop ("requires 'capthist' object with ",
                   "'polygon' or 'transect' detector")
@@ -704,18 +696,6 @@ flip.default <- function (object, lr=F, tb=F, ...) {
         value <- NULL
 
     structure (object, clustertrap = value)
-}
-
-'unmarked<-' <- function (object, value) {
-    if (ms(object))
-        stop ("requires single-session 'capthist' object")
-    if (nrow(value) != nrow(traps(object)))
-        stop ("requires count for each detector")
-    if (ncol(value) != ncol(object))
-        stop ("requires count for each occasion")
-    if (!(detector(traps(object)) %in% c('unmarked')))
-        stop ("requires 'capthist' object with 'unmarked' detector")
-    structure (object, Tu = value)
 }
 
 'signal<-' <- function (object, value) {
@@ -907,7 +887,9 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
         detector(grid)  <- 'polygonX'
     else
         detector(grid)  <- 'polygon'
-    polyID(grid) <- factor(rep(polyn, nrg))
+    ## 2011-06-23
+    ## polyID(grid) <- factor(rep(polyn, nrg))
+    polyID(grid) <- factor(rep(polyn, nrg), levels = polyn)
     if (verify) verify(grid)
     grid
 }
@@ -934,13 +916,15 @@ make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,
         detector(grid)  <- 'transectX'
     else
         detector(grid)  <- 'transect'
-    polyID(grid) <- factor(rep(transectn, nrg))
+    ## 2011-06-23
+    ## polyID(grid) <- factor(rep(transectn, nrg))
+    polyID(grid) <- factor(rep(transectn, nrg), levels = transectn)
     grid
 }
 ###############################################################################
 
 make.circle <- function (n = 20, radius = 100, spacing = NULL,
-    detector='multi', originxy=c(0,0), IDclockwise = T)
+    detector = 'multi', originxy=c(0,0), IDclockwise = T)
 {
     if (!( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
@@ -1113,7 +1097,7 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
     else {
         ## 2011-03-29
         if (is.null(subset)) {
-            if (detector(x) %in% c('polygon', 'polygonX','transect','transectX'))
+            if (detector(x) %in% .localstuff$polydetectors)
                 subset <- 1:length(levels(polyID(x)))
             else
                 subset <- 1:nrow(x)
@@ -1170,7 +1154,7 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', ...) {
       sp <- levels(polyID(x))
   }
 
-  if (detector(x) %in% c('polygon','polygonX','transect','transectX')) {
+  if (detector(x) %in% .localstuff$polydetectors) {
       if (length(f) > length(levels(polyID(x))))
           warning ("split factor does not match traps object")
   }
@@ -1178,7 +1162,7 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', ...) {
   options(warn=0)
   out <- list()
   for (i in levels(f)) {
-      if (detector(x) %in% c('polygon','polygonX','transect','transectX')) {
+      if (detector(x) %in% .localstuff$polydetectors) {
           temp <- subset (x, subset = (sp == i), ...)
       }
       else
@@ -1218,13 +1202,15 @@ rbind.traps <- function (..., renumber = TRUE) {
     ## 2010 07 05
     tempdet <- lapply(allargs, detector)
     if (length(unique(sapply(tempdet, detector))) >1 )
-        stop ("cannot combine detector types - change with reduce()")
+        ## stop ("cannot combine detector types - change with reduce()")
+        ## 2011-09-26
+        warning ("combining detector types - maybe change first with reduce()?")
     detector(temp) <- tempdet[[1]]
 
     ## 2011-02-07
     ## code for originating traps object
     ## uses 'polyID = transectID' behaviour of polyID()
-    if (detector(allargs[[1]]) %in% c('polygon','transect','polygonX','transectX')) {
+    if (detector(allargs[[1]]) %in% .localstuff$polydetectors) {
         oldtrapsID <- rep(1:length(allargs), sapply(allargs, nrow))
         newpolyID <- unlist(lapply(allargs, function(x) as.character(polyID(x))))
         newpolyID <- factor(paste (oldtrapsID,newpolyID, sep='.'))
@@ -1276,7 +1262,7 @@ rbind.traps <- function (..., renumber = TRUE) {
 
  #   if (length(unique(unlist(tn))) != length(unlist(tn))) {  # renumber
         if (renumber) {
-            if (detector(temp) %in% c('polygon','polygonX','transect','transectX')) {
+            if (detector(temp) %in% .localstuff$polydetectors) {
                 if (!is.null(polyID(temp)))  ## polyID also stores transectID
                     polyID(temp) <- factor(as.numeric(polyID(temp)))
                 temp <- renamepolyrows(temp)    ## see read.traps
@@ -1396,7 +1382,7 @@ plot.traps <- function(x,
 ##                }
             }
             par(txtpar)
-            if (label && !(detector(x) %in% c('polygon','transect','polygonX','transectX')))
+            if (label && !(detector(x) %in% .localstuff$polydetectors))
                 text (x$x+offset[1], x$y+offsety, rownames(x))
             par(initialpar)   # restore
         }
@@ -1415,7 +1401,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
             stop ("not a valid 'traps' object")
         nd <- nrow(object)
         np <- NA
-        if (detector(object) %in% c('polygon', 'transect','polygonX', 'transectX')) {
+        if (detector(object) %in% .localstuff$polydetectors) {
             spacing <- NA
         }
         else {
@@ -1440,7 +1426,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
         np = ndetector(object)
         spacex <- NA
         spacey <- NA
-## unblock these 2010-12-17
+        ## unblock these 2010-12-17
         sumusage <- NULL
         sumcovar <- NULL
         xrange <- range(object$x)
@@ -1537,7 +1523,7 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
                 eqscplot (x$x, x$y, xlab='', ylab='', type='n', axes = FALSE,
                           ...)
         }
-        if (is.null(circles))
+        if (is.null(circles) | (nrow(x) == 0))    ## second condition 2011-09-14
             points (x$x, x$y, ...)
         else {
             if (length(circles) == 1)
@@ -1608,20 +1594,34 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, renumber = FALSE, ..
 ## x - popn object
 ## subset - vector (character, logical or integer) to subscript rows (dim(1)) of x
 ## sessions - vector (integer or logical) to subscript sessions
-
-## 2010 06 14 - not yet for MS popn  !!!!!!!!
 {
-    if (is.null(subset)) subset <- 1:nrow(x)
-    pop <- x[subset,]
-    if (renumber) rownames(pop) <- 1 : nrow(pop)
-    class(pop) <- c('popn', 'data.frame')
-    attr(pop, 'Ndist') <- 'user'
-    attr(pop, 'model2D') <- attr(x, 'model2D')
-    attr(pop, 'boundingbox') <- attr(x, 'boundingbox')
-    if (!is.null(covariates(x))) {
-        covariates(pop) <- covariates(x)[subset,,drop=FALSE]
+    if (ms(x)) {
+        if (!is.null(sessions))
+            x <- x[sessions]
+        out <- vector('list')
+        for (i in 1:length(x)) {
+            if (is.list(subset))
+                sset <- subset[[i]]
+            else
+                sset <- subset
+            out[[i]] <- subset(x[[i]], subset[[i]], NULL, renumber, ...)
+        }
+        class(out) <- c('list','popn')
+        out
     }
-    pop
+    else {
+        if (is.null(subset)) subset <- 1:nrow(x)
+        pop <- x[subset,]
+        if (renumber) rownames(pop) <- 1 : nrow(pop)
+        class(pop) <- c('popn', 'data.frame')
+        attr(pop, 'Ndist') <- NULL     ## no longer known
+        attr(pop, 'model2D') <- NULL   ## no longer known
+        attr(pop, 'boundingbox') <- attr(x, 'boundingbox')
+        if (!is.null(covariates(x))) {
+            covariates(pop) <- covariates(x)[subset,,drop=FALSE]
+        }
+        pop
+    }
 }
 
 ###############################################################################
@@ -1746,7 +1746,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
             }
             else
                 warning ("no detections on occasion(s) ",
-                    paste((1:nocc)[apply(abs(temp),2,sum) ==0]), "\n")
+                    paste((1:nocc)[apply(abs(temp),2,sum) ==0], sep=','), "\n")
             nocc <- dim(temp)[2]  # refresh
         }
 
@@ -1795,159 +1795,11 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
     }
 
 }
+
 ###############################################################################
-
-flatten <- function(x) {
-## 7/6/2010
-## x is expected to be a list whose components are non-list and list objects
-## create a new list from a concatenation of the non-list objects and the first-order
-## components of the lists
-    if (!is.list(x))
-        stop ("can only flatten a list")
-    unlist(lapply(x,
-                  function(y) if (is.list(y)) y else list(y)),
-           recursive=F)
-}
-
-MS.capthist <- function (...) {
-    # make a list of capthist objects, one for each session
-    # modified 7/6/2010 for more general input:
-    #    multiple single-session objects (as in old version)
-    #    list of single-session objects
-    #    combination of existing MS objects
-    #    combination of existing MS objects and single-session objects?
-    # modeified 2/7/2010 so always named
-
-    dots <- match.call(expand.dots = FALSE)$...
-    MS <- flatten(list(...))
-    if (is.null(names(MS))) names(MS) <- 1:length(MS)
-    class(MS) <- c('list', 'capthist')
-    if (any(duplicated(names(MS))))
-        stop ("session names must be unique")
-    if (any(names(MS)==''))
-        stop ("sessions must be named")
-    for (i in 1:length(MS))
-        session(MS[[i]]) <- names(MS)[i]  ## force conformity
-    MS
-}
-###############################################################################
-
-rbind.capthist <- function (..., renumber = TRUE, pool = NULL)
-## NOT S3 method (for now) because then naming lost...
-## ... argument may be :
-
-{
-    dots <- match.call(expand.dots = FALSE)$...
-    allargs <- list(...)
-    names(allargs) <- lapply(dots, as.character)
-    if (length(dots)==1) object <- allargs[[1]]
-    else object <- allargs
-
-    ## Case 1
-    ## several lists or a combination of list & elementary capthist objects
-    ## concatenate lists, including elementary objects (ignore 'pool')
-
-    if ((length(dots)>1) & any(sapply(allargs, is.list))) {
-        if (!is.null(pool))
-            warning ("'pool' argument will be ignored")
-        temp <- c(...)
-        class (temp) <- c('list', 'capthist')
-        return(temp)
-    }
-
-    ## Case 2
-    ## a single MS capthist (i.e. a list)
-    ## rbind components as identified in 'pool'
-    ## recursive call for each component of 'pool'
-
-    if((length(dots)==1) & (is.list(object)) & !is.null(pool)) {
-        if (!is.list(pool)) {
-            pool <- list(combined=1:length(object))
-            warning ("list not specified, pooling all components")
-        }
-        else if (any (sapply(unlist(pool),
-                             function(x) length(object[[x]])==0)))
-                ## prempted by 'subscript out of bounds'
-                stop ("invalid pooling indices")
-
-        temp <- lapply (pool, function (x) {
-            temphist <- object[x]
-            class(temphist) <- c('list', 'capthist')
-            rbind.capthist(temphist, pool=NULL) })
-
-        if (length(temp)==1) {
-            temp <- temp[[1]]
-            class(temp) <- 'capthist'
-        }
-        else class (temp) <- c('list', 'capthist')
-        names(temp) <- session(temp)
-
-        return(temp)
-    }
-    else {
-
-    ## Case 3
-    ## 1 to several several elementary capthist objects
-    ## conventional rbind, given compatible traps, covariates, noccasions
-    ## optional renumbering
-
-        check <- function (x) {
-          if (!is(x,'capthist'))
-              stop ("all arguments must be 'capthist' objects")
-          if (is.null(covariates(x)) != is.null(covariates(object[[1]]) ))
-              stop ("covariates must be provided for all or none")
-          if (any(dim(x)[-1] != dim(object[[1]])[-1]))
-                  stop ("varying numbers of occasions and/or traps")
-        }
-
-        if (length(dots)==1)
-## possible bug here 2011-03-28 :
-## why is this executed conditional on length(dots)==1
-        sapply (object, check)
-        temp <- abind(..., along=1)
-        class(temp) <- c('capthist')
-        traps(temp) <- traps(object[[1]])
-
-        ## covariates
-        tempcov <- covariates(object[[1]])
-        if (!is.null(tempcov)) {
-           for (i in 2:length(object))
-               tempcov <- rbind(tempcov, covariates(object[[i]]))
-        }
-        covariates(temp) <- tempcov
-
-        ## added 2011-06-07
-
-        ## polygon or transect coordinates
-        tempxy <- xy(object[[1]])
-        if (!is.null(tempxy)) {
-            for (i in 2:length(object))
-                tempxy <- rbind(tempxy, xy(object[[i]]))
-            xy(temp) <- tempxy
-        }
-
-        ## signal strength
-        tempsignal <- signal(object[[1]])
-        if (!is.null(tempsignal)) {
-            for (i in 2:length(object))
-                tempsignal <- c(tempsignal, signal(object[[i]]))
-            cutvals <- sapply(object, function(x) attr(x,'cutval'))
-            signal(temp) <- tempsignal
-            attr(temp, 'cutval') <- max(cutvals)
-        }
-
-        ## or a shorter more descriptive title?
-        session (temp) <- paste(names(object), collapse='+')
-
-        if (renumber) {
-            ID <- unlist(sapply(object, rownames))
-            source <- rep(names(object), sapply(object, nrow))
-            rownames(temp) <- paste(source, ID, sep='.') ## assign new rownames?
-        }
-
-        temp
-    }
-}
+##
+## MS.capthist and rbind.capthist removed to rbind.capthist.R 13/9/2011
+##
 ###############################################################################
 
 sort.capthist <- function (x, decreasing = FALSE, by = '', byrowname = TRUE, ...) {
@@ -2018,7 +1870,16 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
     else { # strip attributes, but why bother?
         cat('Session = ', session(x), '\n')
         if (detector(traps(x)) == 'unmarked') {
-            attr(x,'Tu')  ## as is - no change
+            temp <- apply(x>0, 2:3, sum)
+            colnames(temp) <- rownames(traps(x))
+            print.default(temp, ...)
+            invisible (temp)
+        }
+        else
+        if (detector(traps(x)) == 'presence') {
+            temp <- apply(apply(x>0, 2:3, sum) > 0,2,any)*1.0
+            print.default(temp, ...)
+            invisible (temp)
         }
         else
         if (condense & (detector(traps(x)) %in% c('proximity', 'count', 'cue','signal'))) {
@@ -2036,7 +1897,7 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
                 temp <- temp[order(lab, temp$Trap ), ]
             }
             rownames(temp) <- 1:nrow(temp)
-            print(temp)
+            print(temp, ...)
             invisible (temp)
         }
         else {
@@ -2146,7 +2007,8 @@ plot.capthist <- function(x, rad = 5,
         }
         labcapt <- function (n) {
             if ( detectr %in% c('proximity', 'count', 'polygonX',
-                'transectX', 'cue', 'signal', 'polygon', 'transect') ) {
+                'transectX', 'cue', 'signal', 'polygon', 'transect',
+                'unmarked', 'presence') ) {
                 warning ("labels not implemented for this detector type")
             }
             else {
@@ -2237,14 +2099,14 @@ plot.capthist <- function(x, rad = 5,
             }
             if ((nocc == 1) & ! (detectr=='signal')) rad <- 0
 
-            if ( detectr %in% c('proximity', 'count','cue') )
+            if ( detectr %in% c('proximity', 'count', 'cue', 'unmarked', 'presence') )
             {
                 w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
                 w <- aperm(w, c(2,3,1))
                 apply( w, 1, plotprox )
             }
             else
-            if ( detectr %in% c('polygon','transect','polygonX','transectX') ) {
+            if ( detectr %in% .localstuff$polydetectors ) {
                 ## occasions not distinguished
                 lxy <- split (xy(x), animalID(x, names=FALSE))
                 lapply (lxy,plotpolygoncapt)
@@ -2253,7 +2115,8 @@ plot.capthist <- function(x, rad = 5,
             if ( detectr == 'signal' )
             {
                 .localstuff$i <- 0
-                temp <- data.frame(ID=animalID(x), occ=occasion(x), trap=trap(x), signal=signal(x))
+                temp <- data.frame(ID = animalID(x), occ = occasion(x),
+                                   trap=trap(x), signal = signal(x))
                 lsignal <- split(temp, animalID(x, names = FALSE))
                 lapply(lsignal, plotsignal, minsignal = min(temp$signal),
                     maxsignal = max(temp$signal), n=nanimal)
@@ -2263,7 +2126,7 @@ plot.capthist <- function(x, rad = 5,
             }
 
             if (lab1cap) {
-                if ( detectr %in% c('polygon','transect','polygonX','transectX') ) {
+                if ( detectr %in% .localstuff$polydetectors ) {
                     lxy <- split (xy(x), animalID(x, names = FALSE))
                     sapply(1:nanimal, labhead, df=lxy)
                 }
@@ -2426,7 +2289,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                 if (detector %in% c('proximity','signal','cue'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)>0))
                 ## abs (x) added following 2 statements 2011-02-09
-                if (detector %in% c('count', 'polygon','transect'))
+                if (detector %in% c('count', 'polygon','transect','unmarked','presence'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)))
                 tempt <- apply(object[,,,drop=F],c(2,3), function(x) sum(abs(x))>0)
                 counts [7,] <- apply(tempt,1,sum)
@@ -2466,24 +2329,20 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                                    'detectors visited','detectors used'), 1:nocc)
         counts$Total <- apply(counts, 1, sum)
         counts$Total[4] <- counts[4, nocc]
+        PSV <-  NULL
+        dbar <- NULL
         if (is.null(traps)) {
             trapsum <- NULL
             signalsummary <- NULL
-            PSV <- NULL
-            dbar <- NULL
         }
         else {
 
-            if (-diff(counts$Total[1:2]) > 1)
-                PSV <- RPSV(object)
-            else
-                PSV <- NULL
-
-            if (length(dim(object)) == 2)
-                dbar <- dbar(object)
-            else
-                dbar <- NULL
-
+            if (detector(traps) %in% .localstuff$individualdetectors) {
+                if (-diff(counts$Total[1:2]) > 1)
+                    PSV <- RPSV(object)
+                if (length(dim(object)) == 2)
+                    dbar <- dbar(object)
+            }
             trapsum <- summary(traps)
             if (detector == 'signal')
                 signalsummary <- summary(signal(object))
@@ -2499,7 +2358,6 @@ summary.capthist <- function(object, terse = FALSE, ...) {
             cutval = cutval,        # signal only
             signalsummary = signalsummary
         )
-
         class(temp) <- 'summary.capthist'
         temp
     }
@@ -2572,7 +2430,9 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'tra
         buff <- c(-buffer,+buffer)
 
         if (!is.null(poly)) {
-            SPDF <- class(poly) == "SpatialPolygonsDataFrame"
+##            SPDF <- class(poly) == "SpatialPolygonsDataFrame"
+## 2011-07-08
+            SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
             if (SPDF) {
                 if (!require(sp))
                     stop ("package 'sp' required for poly in make.mask")
@@ -2816,8 +2676,9 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, ...)
 }
 ###############################################################################
 
-plot.mask <- function(x, border=20, add=F, covariate=NULL,
-                     axes=F, dots=T, col='grey', breaks = 12, ppoly=T, polycol='red', ...)
+plot.mask <- function(x, border = 20, add =FALSE, covariate=NULL,
+      axes = FALSE, dots = TRUE, col='grey', breaks = 12, ppoly = TRUE,
+      polycol='red', ...)
 {
     if (ms(x)) {
         lapply (x, plot.mask)

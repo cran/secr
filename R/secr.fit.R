@@ -63,8 +63,12 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
     }
 
-    else
-        detectfn <- valid.detectfn(detectfn)
+    else {
+        if (detector(traps(capthist)) == 'presence')
+            detectfn <- valid.detectfn(detectfn, 0:8)
+        else
+            detectfn <- valid.detectfn(detectfn)
+    }
 
     #################################################
     ## Use input 'details' to override various defaults
@@ -143,7 +147,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (usebuffer) {
         if (is.null(buffer)) {
             buffer <- 100
-            warning ("using default buffer width 100 m")
+            if (!(detector(traps(capthist))=='presence'))
+                warning ("using default buffer width 100 m")
         }
         if (MS) mask <- lapply (traps(capthist), make.mask, buffer = buffer)
         else    mask <- make.mask(traps(capthist), buffer = buffer)
@@ -336,18 +341,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         ## use 'mapbeta' from score.test.R
         start <- mapbeta(start$parindx, parindx, coef(start)$beta, NULL)
     }
-
-## shifted to secrloglik 2011-03-19
-##    ############################
-##    # log multinomial constant #
-##    ############################
-##
-##    if (detector(traps(capthist)) %in% c('polygon','polygonX',
-##                   'transect','transectX','signal','cue','unmarked'))
-##        savedlogmultinomial <- 0
-##    else
-##        savedlogmultinomial <- logmultinom(capthist,
-##            group.factor(capthist, groups))
 
     #############################
     # Single evaluation option
@@ -616,20 +609,19 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             memo ('Computing Hessian with fdHess in nlme', details$trace)
             loglikfn <- function (beta) {
                -secr.loglikfn(
-                            beta     = beta,
+                            beta       = beta,
+                            parindx    = parindx,
                             link       = link,
                             fixed      = fixed,
-                            parindx    = parindx,
-                            capthist   = capthist,
-                            mask       = mask,
-                            CL         = CL,
-                            detectfn   = detectfn,
                             designD    = D.designmatrix,
                             design     = design,
                             design0    = design0,
+                            capthist   = capthist,
+                            mask       = mask,
+                            detectfn   = detectfn,
+                            CL         = CL,
                             groups     = groups,
                             details    = details,
-##                     logmult    = savedlogmultinomial
                             logmult    = TRUE,     ## add if possible
                             betaw      = betaw,    ## for trace format
                      )
@@ -645,7 +637,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                          "variance-covariance matrix")
                 covar <- matrix(nrow = NP, ncol = NP)
             }
-            if (any(diag(covar)<0)) {
+            else if (any(diag(covar)<0)) {
                 if (method == "BFGS")
                     suffix <- ""
                 else
@@ -700,11 +692,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     attr (temp, 'class') <- 'secr'
 
-    ## check introduced 2010-12-01
+    ## check introduced 2010-12-01 & adjusted 2011-09-28
     ## bias.D not for polygon & transect detectors
     if (verify & usebuffer & (this.fit$value < 1e9) &
         (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
-        (detector(traps(capthist)) != 'cue') ) {
+        !(detector(traps(capthist)) %in% c('cue','unmarked','presence'))) {
         if (MS) {
             nsess <- length(capthist)
             bias <- numeric(nsess)

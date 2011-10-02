@@ -8,9 +8,10 @@
 ## 2010 03 10 debugged simsecr in secr.c
 ## 2010 03 10 debugged dummyCH
 ## 2010 06 30 memory allocation error in sim.detect
+## 2011-09-26 detector checks use .localstuff
 ############################################################################################
 
-simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
+simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1, ...)
 ## if CL, condition on n? what about distribution of covariates over n?
 ## locate according to IHP with lambda(X) controlled by f(X|covar), assuming homog Poisson
 ## i.e. use f(X|covar)/max(f(X|covar)) to reject until meet quota n?
@@ -87,7 +88,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
             }
             sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
         }
-        sesscapt[[i]] <- sim.detect(object, object$fit$par, sesspopn)
+        sesscapt[[i]] <- sim.detect(object, object$fit$par, sesspopn, maxperpoly)
 
         ## experimental
         if (chat>1)
@@ -101,7 +102,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, chat = 1, ...)
 
 sim.secr <- function (object, nsim = 1,
     extractfn = function(x) c(deviance=deviance(x), df=df.residual(x)),
-    seed = NULL, data = NULL, tracelevel = 1, hessian = 'none',
+    seed = NULL, maxperpoly = 100, data = NULL, tracelevel = 1, hessian = 'none',
     start = object$fit$par)  {
 
 ## parametric bootstrap simulations based on a fitted secr object
@@ -135,7 +136,7 @@ sim.secr <- function (object, nsim = 1,
 
     if (is.null(data)) {
         memo ('sim.secr simulating detections...', tracelevel>0)
-        data <- simulate(object, nsim = nsim, seed = seed)
+        data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly)
     }
     else {
         if (any(class(data) != c('list','secrdata')))
@@ -186,12 +187,9 @@ print.secrlist <- function(x,...) {
 }
 ############################################################################################
 
-sim.detect <- function (object, beta, popnlist, renumber = TRUE)
+sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRUE)
 ## popnlist is always a list of popn objects
 {
-
-#    stop('sim.detect not yet working in version 1.4.1, sorry')
-
     Markov <- 'B' %in% object$vars
     dummycapthist<- function (capthist, pop, fillvalue=1) {
         if (inherits(capthist, 'list')) {
@@ -260,7 +258,7 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
         }
         else binomN <- 0   # not used, just place holder
 
-        if (dettype %in% c(3,4,6,7)) {
+        if (detector(session.traps) %in% .localstuff$polydetectors) {
             k <- c(table(polyID(session.traps)),0)
             K <- length(k)-1
         }
@@ -296,14 +294,15 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
 ## 2010-06-30 following call tries to allocate too much memory
 ## 2010-12-02 fixed by reducing safety margin for detectedXY, signal
 ##            from 100 to 10
-
-        if (dettype %in% c(0,3,4))
-            # exclusive detectors
+        if (detector(session.traps) %in% .localstuff$exclusivedetectors) {
             maxdet <- NR * s
-        else
+        }
+        else {
             # safety margin : average 10 detections per animal per detector per occasion
-            maxdet <- NR * s * K * 10
-
+            ## 2011-09-26 make this user argument
+            ## maxdet <- NR * s * K * 10
+            maxdet <- NR * s * K * maxperpoly
+        }
         temp <- .C('simsecr', PACKAGE = 'secr',
             as.integer(dettype),
             as.double(Xrealparval0),
@@ -323,6 +322,7 @@ sim.detect <- function (object, beta, popnlist, renumber = TRUE)
             as.integer(binomN),                # used only for count detector checked 2010-12-01
             as.double(object$details$cutval),  # detection threshold on transformed scale
             as.integer(object$detectfn),
+            as.integer(maxperpoly),
             n = integer(1),
             caught = integer(NR),
             detectedXY = double (maxdet*2),

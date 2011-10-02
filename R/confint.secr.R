@@ -3,6 +3,8 @@
 ## confint.secr.R
 ## last changed 2009 06 11, 2009 07 16 2009 10 20
 ## 2011 01 31
+## 2011 09 28 field argument added to call to secr.lpredictor
+## 2011 09 28 optimizer changed to optim from nlm
 ## could be sped up by adopting Venzon & Moolgavkar algorithm
 ## e.g. in Bhat package
 ###############################################################################
@@ -26,7 +28,10 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
 
         predicted <- function (beta) {
             temp <- secr.lpredictor (newdata = newdata, model = object$model[[parm]],
-                indx = object$parindx[[parm]], beta = beta)[1,'estimate']
+#                indx = object$parindx[[parm]], beta = beta)[1,'estimate']
+# 2011-09-28
+                indx = object$parindx[[parm]], beta = beta, field = parm)[1,'estimate']
+
             untransform(temp, object$link[[parm]])
         }
         #######################
@@ -37,16 +42,16 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                 ## return quantity to be maximized
                 templl <- secr.loglikfn (
                     beta       = beta2,
+                    parindx    = object$parindx,
                     link       = object$link,
                     fixed      = object$fixed,
-                    parindx    = object$parindx,
-                    capthist   = object$capthist,
-                    mask       = object$mask,
-                    CL         = object$CL,
-                    detectfn   = object$detectfn,
                     designD    = D.designmatrix,
                     design     = object$design,
                     design0    = object$design0,
+                    capthist   = object$capthist,
+                    mask       = object$mask,
+                    detectfn   = object$detectfn,
+                    CL         = object$CL,
                     groups     = object$groups,
                     details    = details,
                     logmult    = logmult,
@@ -55,20 +60,25 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             }
 
             ## maximize for fixed gamma (equivalent to fixed 'parm')
-            lagrange.fit <- nlm (p = object$fit$par, f = lagrange, gamma = gamma, hessian = FALSE)
-            .localstuff$beta <- lagrange.fit$estimate
+# experimentally switch optimizer 2011-09-28
+#            lagrange.fit <- nlm (p = object$fit$par, f = lagrange, gamma = gamma, hessian = FALSE)
+#            .localstuff$beta <- lagrange.fit$estimate
+            lagrange.fit <- optim (par = object$fit$par, fn = lagrange, gamma = gamma,
+                                   hessian = FALSE)
+            .localstuff$beta <- lagrange.fit$par
             lp <- - secr.loglikfn (
-                beta       = lagrange.fit$estimate,
+#                beta       = lagrange.fit$estimate,
+                beta       = .localstuff$beta,
+                parindx    = object$parindx,
                 link       = object$link,
                 fixed      = object$fixed,
-                parindx    = object$parindx,
-                capthist   = object$capthist,
-                mask       = object$mask,
-                CL         = object$CL,
-                detectfn   = object$detectfn,
                 designD    = D.designmatrix,
                 design     = object$design,
                 design0    = object$design0,
+                capthist   = object$capthist,
+                mask       = object$mask,
+                detectfn   = object$detectfn,
+                CL         = object$CL,
                 groups     = object$groups,
                 details    = details,
                 logmult    = logmult,
@@ -227,7 +237,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             if (is.null(newdata))
                 newdata <- secr.make.newdata (object)[1,, drop = FALSE]  ## default base levels
             if (detector(traps(object$capthist)) %in% c('polygon','polygonX',
-                   'transect','transectX','signal','cue'))
+                   'transect','transectX','signal','cue','unmarked','presence'))
                 logmult <- 0
             else
                 logmult <- logmultinom(object$capthist, group.factor(object$capthist,
@@ -253,7 +263,6 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             stop ("invalid beta parameter number")
     }
     #---------------------------------------------------------------------------------------
-
     targetLL <- - object$fit$value -  qchisq(level,1)/2   # -1.92 for 95% interval
     details <- replace (object$details, 'hessian', FALSE)  ## no need for vcov matrix
     details$trace <- tracelevel > 1

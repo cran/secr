@@ -16,7 +16,7 @@ Note). }
 
 region.N (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE)
+    keep.region = FALSE, nlowerbound = TRUE)
 
 }
 
@@ -43,6 +43,9 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   \item{loginterval}{ logical for whether to base interval on log(N)}
 
   \item{keep.region}{ logical for whether to save the raster region}
+
+  \item{nlowerbound}{ logical for whether to use n as lower bound when
+  computing log interval for realised N}
 
 }
 \details{
@@ -152,6 +155,9 @@ data. \emph{Biometrics} \bold{66}, 310--318.
 \examples{
 
 region.N(secrdemo.0)
+
+\dontrun{
+## a couple more routine examples
 region.N(secrdemo.CL)
 region.N(ovenbird.model.D)
 
@@ -161,6 +167,7 @@ temp <- region.N(possum.model.1, possumarea, spacing = 40,
     keep.region = TRUE)
 temp
 plot (attr(temp, 'region'))
+}
 
 }
 

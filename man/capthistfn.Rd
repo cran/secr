@@ -5,10 +5,8 @@
 \alias{alive}
 \alias{xy}
 \alias{alongtransect}
-\alias{unmarked}
 \alias{signal}
 \alias{xy<-}
-\alias{unmarked<-}
 \alias{signal<-}
 %% \alias{times}
 %% \alias{times<-}
@@ -30,8 +28,6 @@ xy(object)
 xy(object) <- value
 signal(object)
 signal(object) <- value
-unmarked(object)
-unmarked(object) <- value
 %% times(object)
 %% times(object) <- value
 
@@ -63,8 +59,6 @@ detections and in their order. \code{xy<-} expects a dataframe of x and y
 coordinates for points of detection within a 'polygon' or 'transect'
 detector.
 
-\code{unmarked} extracts or replaces the counts of unmarked animals that
-are saved as attribute `Tu' of \code{object}.
 }
 
 \value{
@@ -75,10 +69,6 @@ For \code{alive} a vector of logical values, one per detection.
 For \code{occasion}, a vector of numeric values, one per detection.
 
 For \code{xy}, a dataframe with one row per detection and columns 'x' and 'y'.
-
-For \code{unmarked}, a matrix with one row per detector and one column
-for each occasion. The number of occasions should match the number of
-columns in \code{object} (noting that \code{object} has no rows).
 
 %%For \code{signal} and \code{times}, a numeric vector with one element per detection.
 For \code{signal}, a numeric vector with one element per detection.
