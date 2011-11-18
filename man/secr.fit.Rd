@@ -19,7 +19,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     mask = NULL, buffer = NULL, CL = FALSE, detectfn = NULL,
     binomN = NULL, start = NULL, link = list(), fixed = list(),
     timecov = NULL, sessioncov = NULL, groups = NULL,
-    dframe = NULL, details = list(), method = 'Newton-Raphson',
+    dframe = NULL, details = list(), method = "Newton-Raphson",
     verify = TRUE, trace = NULL, ...)
 }
 
@@ -34,7 +34,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \link{detectfn}}
   \item{binomN}{ integer code for distribution of counts (see Details) }
   \item{start}{ vector of initial values for beta parameters, or \code{secr} object from which they may be derived }
-  \item{link}{ list with optional components `D', `g0', `sigma' and `z', each a character string in \{`log', `logit', `identity', `sin'\} for the link function of the relevant real parameter }
+  \item{link}{ list with optional components `D', `g0', `sigma' and `z', each a character string in \{"log", "logit", "identity", "sin"\} for the link function of the relevant real parameter }
   \item{fixed}{ list with optional components corresponding to each `real' parameter (e.g., `D', `g0', `sigma'), the scalar value to which parameter is to be fixed }
   \item{model}{ list with optional components `D', `g0', `sigma' and `z', each symbolically defining a linear predictor for the relevant real parameter using \code{formula} notation }
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
@@ -51,11 +51,11 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
 \details{
 
 \code{secr.fit} fits a SECR model by maximizing the likelihood. The
-likelihood depends on the detector type (`multi', `proximity', `count',
-`polygon' etc.) of the \code{traps} attribute of \code{capthist}
+likelihood depends on the detector type ("multi", "proximity", "count",
+"polygon" etc.) of the \code{traps} attribute of \code{capthist}
 (Borchers and Efford 2008, Efford, Borchers and Byrom 2009, Efford,
 Dawson and Borchers 2009, Efford 2011). The `multi' form of the
-likelihood is also used, with a warning, when detector type = `single'
+likelihood is also used, with a warning, when detector type = "single"
 (see Efford et al. 2009 for justification). The default \code{model} is
 null (constant density and detection probability). The set of variables
 available for use in linear predictors includes some that are
@@ -69,8 +69,8 @@ of integration (see \link{mask}).
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
 \code{sessioncov} and \code{groups} are used only when needed for terms
-in one of the model specifications. Default \code{link} is \code{list(D='log',
-g0='logit', sigma='log')}.
+in one of the model specifications. Default \code{link} is \code{list(D="log",
+g0="logit", sigma="log")}.
 
 If \code{start} is missing then \code{\link{autoini}} is used for D, g0
 and sigma, and other beta parameters are set initially to arbitrary
@@ -101,14 +101,14 @@ supplied. \code{binomN} should be an integer unless negative.
 
 \code{details$distribution} specifies the distribution of the number of
 individuals detected; this may be conditional on the number in the
-masked area (`binomial') or unconditional (`poisson').
+masked area ("binomial") or unconditional ("poisson").
 \code{distribution} affects the sampling variance of the estimated
-density. The default is `poisson'. See also Note.
+density. The default is "poisson". See also Note.
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.
-Options are `none' (no variances), `auto' (the default) or `fdhess' (use
-the function fdHess in \pkg{nlme}).  If `auto' then the Hessian from the
+Options are "none" (no variances), "auto" (the default) or "fdhess" (use
+the function fdHess in \pkg{nlme}).  If "auto" then the Hessian from the
 optimisation function is used.
 
 \code{details$LLonly} = TRUE causes the function to returns a single
@@ -131,15 +131,11 @@ the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) to be
 used for multi-catch detectors (default 0 for Borchers and Efford). This
 parameterisation does not allow detector covariates.
 
-If \code{method = 'Newton-Raphson'} then \code{\link[stats]{nlm}} is
+If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood (minimize the negative log
 likelihood); otherwise \code{\link[stats]{optim}} is used with the
-chosen method (`BFGS', `Nelder-Mead', etc.).  If maximization fails a
-warning is given appropriate to the method.  A feature of \code{nlm} is
-that it takes a large step early on in the maximization that may cause
-floating point underflow or overflow in one or more real parameters.
-This can be controlled by passing the `stepmax' argument of \code{nlm}
-in the \dots argument of \code{secr.fit} (see first example).
+chosen method ("BFGS", "Nelder-Mead", etc.).  If maximization fails a
+warning is given appropriate to the method.
 
 If \code{verify} = TRUE then \code{\link{verify}} is called to check
 capthist and mask; analysis is aborted if "errors" are found. Some
@@ -150,8 +146,11 @@ some sessions of a multi-session study of a sparse population); use
 }
 
 \value{
-The function \code{secr.fit} returns an object of class secr.  This has components
+The function \code{secr.fit} returns an object of class secr.  This has
+components
+
   \item{call }{function call (as character string prior to secr 1.5) }
+
   \item{capthist }{saved input}
   \item{mask }{saved input}
   \item{detectfn }{saved input}
@@ -159,29 +158,45 @@ The function \code{secr.fit} returns an object of class secr.  This has componen
   \item{timecov }{saved input}
   \item{sessioncov }{saved input}
   \item{groups }{saved input}
-  \item{dframe }{saved input}  
+  \item{dframe }{saved input}
+  
   \item{design }{reduced design matrices, parameter table and parameter
-    index array for actual animals (see \code{\link{secr.design.MS}})}  
+    index array for actual animals (see \code{\link{secr.design.MS}})}
+  
   \item{design0 }{reduced design matrices, parameter table and parameter
     index array for `naive' animal (see \code{\link{secr.design.MS}})}
+
   \item{start }{vector of starting values for beta parameters} 
+
   \item{link }{list with one component for each real parameter
   (typically `D', `g0', `sigma'),giving the name of the link function
   used for each real parameter.}
-  \item{fixed }{saved input}  
+
+\item{fixed }{saved input}  
+
   \item{parindx }{list with one component for each real parameter giving
     the indices of the `beta' parameters associated with each real
     parameter}  
+
   \item{model }{saved input}
+
   \item{details }{saved input}
+
   \item{vars }{vector of unique variable names in \code{model} }
+
   \item{betanames }{names of beta parameters}
+
   \item{realnames }{names of fitted (real) parameters }
-  \item{fit }{list describing the fit (output from \code{nlm} or \code{optim}) }
+
+  \item{fit }{list describing the fit (output from \code{nlm} or
+  \code{optim}) }
+
   \item{beta.vcv }{variance-covariance matrix of beta parameters }  
-  \item{D }{ if CL = FALSE, array of predicted densities of each group at
-    each mask point in each session, dim(D) = c(nrow(mask), ngroups,
-    nsessions), otherwise NULL }  
+
+  \item{N }{ if CL = FALSE, array of predicted number in each group at
+    in each session, summed across mask, dim(N) = c(ngroups, nsessions),
+    otherwise NULL }
+
   \item{version }{secr version number }
   \item{starttime }{character string of date and time at start of fit }
   \item{proctime }{processor time for model fit, in seconds }
@@ -228,8 +243,8 @@ are provided. \code{derived} is used to compute the derived parameters
 maximizing the conditional likelihood (CL = TRUE).
 
 The component `distribution' of argument `details' may also take a
-    numeric value larger than nrow(capthist), rather than 'binomial' or
-    'poisson'. The likelihood then treats n as a binomial draw from a
+    numeric value larger than nrow(capthist), rather than "binomial" or
+    "poisson". The likelihood then treats n as a binomial draw from a
     superpopulation of this size, with consequences for the variance of
     density estimates. This can help to reconcile MLE with Bayesian
     estimates using data augmentation.
@@ -239,30 +254,44 @@ and recording of the completion time in `fitted' was discontinued.
 
 A warning is generated when `buffer' appears to be too small (predicted
     RB(D-hat) > 0.01). The prediction uses \code{\link{bias.D}}. No
-    check is performed when `mask' is specified, when `verify' = FALSE,
-    or when the detector type is `polygon', `transect', `polygonX' or
-    `transectX'.
+    check is performed when `mask' is specified, when \code{verify = FALSE},
+    or when the detector type is "polygon", "transect", "polygonX" or
+    "transectX".
 
  The Newton-Raphson algorithm is fast, but it sometimes fails to compute
 the information matrix correctly, causing some or all standard errors to
-be set to `NA'. This usually indicates a major problem in fitting the
+be set to NA. This usually indicates a major problem in fitting the
 model, and parameter estimates should not be trusted. The alternative
-\code{method = 'BFGS'} often works better in these cases, or use
-\code{details = list(hessian = 'fdhess')}.
+\code{method = "BFGS"} often works better in these cases, or use
+\code{details = list(hessian = "fdhess")}.
+
+The component D in output was replaced with N from version 2.3. Use
+\code{\link{region.N}} to obtain SE or confidence intervals for N-hat,
+or to infer N for a different region.
 
 }
 
 \seealso{
-\code{\link{capthist}}, \code{\link{mask}}, \link{detection functions},
-\code{\link{print.secr}}, \code{\link{vcov.secr}}, \code{\link{AIC.secr}},
-\code{\link{derived}}, \code{\link{predict.secr}}, \code{\link{verify}}
+
+  \link{detection functions},
+  \code{\link{AIC.secr}},
+  \code{\link{capthist}},
+  \code{\link{derived}},
+  \code{\link{mask}},
+  \code{\link{predict.secr}},
+  \code{\link{print.secr}},
+  \code{\link{region.N}},
+  \code{\link{troubleshooting}}
+  \code{\link{vcov.secr}},
+  \code{\link{verify}},
+
 }
 
 \examples{
 
-## construct test data (array of 48 'multi-catch' traps)
+## construct test data (array of 48 `multi-catch' traps)
 
-detectors <- make.grid (nx = 6, ny = 8, detector = 'multi')
+detectors <- make.grid (nx = 6, ny = 8, detector = "multi")
 detections <- sim.capthist (detectors, popn = list(D = 10,
     buffer = 100), detectpar = list(g0 = 0.2, sigma = 25))
 

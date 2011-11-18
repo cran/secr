@@ -32,24 +32,17 @@
 ## 2011-03-18 unmarked detector
 ##            for counts of unidentified animals at points
 ## 2011-06-07 rbind.capthist allows for xy, signal
-## 2011-06-17 moved insidepoly to utility.R
+## 2011-06-17 moved insidepoly to utility.R (renamed to pointsInPolygon 2011-10-21)
 ## 2011-06-23 polygon and transect names retain ordering of input dataframe
 ##            in make.poly and make.transect
 ## 2011-06-24 fixed transectlength, searcharea
 ## 2011-07-08 adjust 'class' to 'inherits' in make.mask
 ## 2011-08-18 check for null rownames in animalID
 ## 2011-09-11 subset.popn commissioned
-###############################################################################
-
-# Following code may be used at some stage during debugging,
-# not for production version
-# source ('d:\\density secr 1.6\\secr\\R\\utility.R')
-# source ('d:\\density secr 1.5\\secr\\R\\functions.R')
-
-###############################################################################
-## some functions moved to utility.R 2011-02-07
-###############################################################################
-## secr.fit() moved to secr.fit.R 2011-02
+## 2011-10-10 make.mask moved to make.mask.R
+## 2011-10-10 make.grid, make.poly etc. moved to make.grid.R
+## 2011-10-20 predict.secr modified for user-supplied D function
+## 2011-10-20 subset.popn gets poly argument
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -444,9 +437,7 @@ searcharea <- function (object)    {
     else {
         if (detector(object) %in% c('polygon','polygonX')) {
             ## assume poly closed
-            ## 2011-06-24
-##            sapply(split(object, levels(polyID(object))), polyarea)
-              sapply(split(object, polyID(object)), polyarea)
+            sapply(split(object, polyID(object)), polyarea)
         }
         else {
             sc <- attr(object,'searchcell')
@@ -477,9 +468,7 @@ transectlength <- function (object)    {
                 segments <- (xy$x[-nr] - xy$x[-1])^2 + (xy$y[-nr] - xy$y[-1])^2
                 sum (segments^0.5)
             }
-# 2011-06-24
-#            sapply(split(object, levels(polyID(object))), calclength)
-             sapply(split(object, polyID(object)), calclength)
+            sapply(split(object, polyID(object)), calclength)
         }
         else NA
     }
@@ -759,201 +748,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 ## detector may be 'single', 'multi', 'proximity' etc.
 ######################################
 
-make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detector='multi',
-    originxy=c(0,0), hollow=F, ID='alphay')
-
-{
-    if (!( detector %in% .localstuff$validdetectors ))
-        stop ("invalid detector type")
-    if (!is.null(spacing)) {
-        spacex <- spacing
-        spacey <- spacing
-    }
-    ## 2011-04-01
-    if ((nx<3) | (ny<3))
-        hollow <- FALSE
-
-    grid <- expand.grid (x=(0:(nx-1))*spacex + originxy[1], y=(0:(ny-1))*spacey + originxy[2])
-
-    allowedID <- c('numx','numy', 'numxb', 'numyb', 'alphax','alphay', 'xy')
-    if (! ID %in% allowedID)
-        stop ("ID should be one of ",
-            paste(sapply(allowedID, dQuote),collapse=','))
-
-    if (ID %in% c('alphax','alphay')) {
-        n <- max(nx,ny)/25 + 1
-        ll <- sapply(1:n, function(x) apply(matrix(rep(LETTERS,rep(x,26)), nrow = x), 2,
-            paste, collapse=''))
-    }
-
-    if (ID == 'numy') temp <- 1:nrow(grid)
-    if (ID == 'numx') temp <- t(matrix(1:nrow(grid), ncol = nx))
-
-    if (ID == 'numyb') {
-        temp <- matrix(1:(nx*ny), ncol = ny)
-        for (i in seq(2,ny,2)) temp[,i] <- rev(temp[,i])
-    }
-
-    if (ID == 'numxb') {  ## YES
-        temp <- t(matrix(1:(nx*ny), ncol = nx))
-        for (i in seq(2,nx,2)) temp[i,] <- rev(temp[i,])
-    }
-
-    if (ID == 'alphax') {
-        colA <- ll[1:nx]
-        rowA <- 1:ny
-        row.names(grid) <- apply(expand.grid(colA,rowA), 1, paste, sep='', collapse='')
-    }
-    if (ID == 'alphay') {
-        colA <- 1:nx
-        rowA <- ll[1:ny]
-        row.names(grid) <- apply(expand.grid(colA, rowA), 1,
-            function(x) paste(rev(x), sep='', collapse=''))
-    }
-
-    ## added 2010 03 24
-    if (ID == 'xy') {
-        leadingzero <- function (x) formatC(x, width=max(nchar(x)), flag="0")
-        colA <- leadingzero(1:nx)
-        rowA <- leadingzero(1:ny)
-        row.names(grid) <- apply(expand.grid(colA, rowA), 1,
-            function(x) paste(x, sep='', collapse=''))
-    }
-
-    if (hollow) {
-        grid <- grid[grid$x==originxy[1] |
-                             grid$x==(originxy[1] + spacex*(nx-1)) |
-                             grid$y==originxy[2] |
-                             grid$y==(originxy[2] + spacey*(ny-1)),]
-
-        ## number clockwise from bottom left
-        grid <- grid[order(grid$x, grid$y),]
-        temp <- c(1:ny,
-            t(matrix(c(
-                rev ((2*ny+nx-1):(2*ny+2*nx-4)),
-                (ny+1):(ny+nx-2)
-              ), ncol = 2)),
-            rev((ny+nx-1):(2*ny+nx-2)))
-    }
-
-    if (hollow | (ID %in% c('numx','numy','numxb','numyb'))) {
-        row.names(grid) <- temp
-        grid <- grid[order(temp),]
-    }
-
-    attr(grid, 'detector')    <- detector
-    attr(grid, 'class')       <- c('traps', 'data.frame')
-    attr(grid, 'spacex')      <- spacex
-    attr(grid, 'spacey')      <- spacey
-    attr(grid, 'spacing')     <- spacing(grid)  ## reset if NULL
-    attr(grid, 'searchcell')  <- spacex * spacey / 10000
-    attr(grid, 'usage')       <- NULL
-    attr(grid, 'cluster')     <- NULL
-    attr(grid, 'clustertrap') <- NULL
-    attr(grid, 'covariates')  <- NULL
-
-    grid
-}
-###############################################################################
-
-make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
-                       exclusive = FALSE, verify = TRUE)
-# polygon detectors
-{
-    makepart <- function (vert) {
-        vert <- data.frame(vert)
-        if ((ncol(vert)==2) && !all(c('x','y') %in% names(vert)))
-            names(vert) <- c('x','y')
-        if (any(tail(vert,1) != vert[1,]))   ## close polygon
-            vert <- rbind(vert, vert[1,])
-        vert
-    }
-
-    ## defer implementation of sp objects for defining polygons
-    ##    SPDF <- inherits(polylist, "SpatialPolygonsDataFrame")
-    ##    if (SPDF ) {
-    ##        require(sp)
-    ##        ...
-    ##    }
-
-    if (is.null(polylist)) polylist <- list(data.frame(x=x,y=y))
-    if (is.null(names(polylist))) names(polylist) <- 1:length(polylist)
-    grid <- lapply (polylist, makepart)
-    polyn <- names(polylist)
-    nrg <- unlist(sapply(grid, nrow))
-    grid <- data.frame(abind(grid,along=1), row.names=NULL)
-    class(grid)     <- c('traps', 'data.frame')
-    if (exclusive)
-        detector(grid)  <- 'polygonX'
-    else
-        detector(grid)  <- 'polygon'
-    ## 2011-06-23
-    ## polyID(grid) <- factor(rep(polyn, nrg))
-    polyID(grid) <- factor(rep(polyn, nrg), levels = polyn)
-    if (verify) verify(grid)
-    grid
-}
-###############################################################################
-
-make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
-                           exclusive = FALSE)
-# transect detectors
-{
-    makepart <- function (vert) {
-        vert <- data.frame(vert)
-        if ((ncol(vert)==2) && !all(c('x','y') %in% names(vert)))
-            names(vert) <- c('x','y')
-        vert
-    }
-    if (is.null(transectlist)) transectlist <- list(data.frame(x=x,y=y))
-    if (is.null(names(transectlist))) names(transectlist) <- 1:length(transectlist)
-    grid <- lapply (transectlist, makepart)
-    transectn <- names(transectlist)
-    nrg <- unlist(sapply(grid, nrow))
-    grid <- data.frame(abind(grid,along=1), row.names=NULL)
-    class(grid)     <- c('traps', 'data.frame')
-    if (exclusive)
-        detector(grid)  <- 'transectX'
-    else
-        detector(grid)  <- 'transect'
-    ## 2011-06-23
-    ## polyID(grid) <- factor(rep(transectn, nrg))
-    polyID(grid) <- factor(rep(transectn, nrg), levels = transectn)
-    grid
-}
-###############################################################################
-
-make.circle <- function (n = 20, radius = 100, spacing = NULL,
-    detector = 'multi', originxy=c(0,0), IDclockwise = T)
-{
-    if (!( detector %in% .localstuff$validdetectors ))
-        stop ("invalid detector type")
-    if (is.null(radius) & is.null(spacing))
-        stop ("specify 'radius' or 'spacing'")
-    theta <- seq (0, 2 * pi * (n-1)/n, 2 * pi / n)
-    if (!is.null(spacing)) radius <- spacing / 2 / sin(pi / n)  ## override
-    if (is.null(spacing)) spacing <- radius * sin(pi / n) * 2
-
-    object <- data.frame (x = radius * cos(theta) + originxy[1],
-                          y = radius * sin(theta) + originxy[2])
-
-    if (IDclockwise) sequence  <- c(1, n:2)
-    else sequence <- 1:n
-    row.names(object) <- sequence
-
-    object <- object[order(sequence),]
-    attr(object, 'detector')    <- detector
-    attr(object, 'class')       <- c('traps', 'data.frame')
-    attr(object, 'spacex')      <- spacing
-    attr(object, 'spacey')      <- spacing
-    attr(object, 'spacing')     <- spacing
-    attr(object, 'usage')       <- NULL
-    attr(object, 'cluster')     <- NULL
-    attr(object, 'clustertrap') <- NULL
-    attr(object, 'covariates')  <- NULL
-    object
-}
-###############################################################################
+## 2011-10-10 make.grid, makepoly etc. moved to make.grid.R
 
 rotate.traps <- function (object, degrees, centrexy=NULL, ...)
 {
@@ -1372,14 +1167,13 @@ plot.traps <- function(x,
                 }
             }
             else {
-                    points (x$x, x$y)
-                    if (markused) {
-                        points (x$x[used], x$y[used], pch = 1, cex = 0.8)
-                    }
-                    if (markvarying & any(varying)) {
-                        points (x$x[varying], x$y[varying], pch = 16, cex = 0.8)
-                    }
-##                }
+                points (x$x, x$y)
+                if (markused) {
+                    points (x$x[used], x$y[used], pch = 1, cex = 0.8)
+                }
+                if (markvarying & any(varying)) {
+                    points (x$x[varying], x$y[varying], pch = 16, cex = 0.8)
+                }
             }
             par(txtpar)
             if (label && !(detector(x) %in% .localstuff$polydetectors))
@@ -1531,7 +1325,12 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
             symbols (x$x, x$y, circles = circles, inches = FALSE,
                 add = TRUE, ...)
         }
-        if (frame) polygon (vertices)
+        if (frame) {
+            if (!is.null(attr(x,'polygon')))
+                polygon (attr(x,'polygon'))
+            else
+                polygon (vertices)
+        }
     }
 }
 
@@ -1590,7 +1389,8 @@ rbind.popn <- function (..., renumber = TRUE) {
 }
 ###############################################################################
 
-subset.popn <- function (x, subset = NULL, sessions = NULL, renumber = FALSE, ...)
+subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
+    poly.habitat = TRUE, keep.poly = TRUE, renumber = FALSE, ...)
 ## x - popn object
 ## subset - vector (character, logical or integer) to subscript rows (dim(1)) of x
 ## sessions - vector (integer or logical) to subscript sessions
@@ -1610,13 +1410,35 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, renumber = FALSE, ..
         out
     }
     else {
-        if (is.null(subset)) subset <- 1:nrow(x)
+        #-------------------------
+        # default subset is all
+        if (is.null(subset))
+            subset <- 1:nrow(x)
+        #-------------------------
+        # restrict to a polygon
+        # added 2011-10-20
+
+        if (!is.null(poly)) {
+            OK <- pointsInPolygon(x, poly)
+            if (!poly.habitat)
+                OK <- !OK
+            subset <- subset[OK]
+        }
+        #-------------------------
+        # apply subsetting
         pop <- x[subset,]
-        if (renumber) rownames(pop) <- 1 : nrow(pop)
+        #-------------------------
+        if (renumber)
+            rownames(pop) <- 1 : nrow(pop)
+
         class(pop) <- c('popn', 'data.frame')
         attr(pop, 'Ndist') <- NULL     ## no longer known
         attr(pop, 'model2D') <- NULL   ## no longer known
         attr(pop, 'boundingbox') <- attr(x, 'boundingbox')
+        if (!is.null(poly) & keep.poly) {
+            attr(pop, 'polygon') <- poly
+            attr(pop, 'poly.habitat') <- poly.habitat
+        }
         if (!is.null(covariates(x))) {
             covariates(pop) <- covariates(x)[subset,,drop=FALSE]
         }
@@ -1626,13 +1448,15 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, renumber = FALSE, ..
 
 ###############################################################################
 subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, sessions=NULL,
-    cutval=NULL, dropnull=TRUE, dropunused = TRUE, renumber=FALSE, ...)
+    cutval=NULL, dropnullCH=TRUE, dropnullocc=FALSE, dropunused = TRUE, renumber=FALSE, ...)
 {
+
+## modified 2011-11-14
 
 ## x - capthist object (array with 2 or 3 dimensions)
 ## subset - vector (character, logical or integer) to subscript rows (dim(1)) of x
 ## occasions - vector (integer or logical) to subscript occasions
-## traps - vector (integer or logical) to subscript rows of traps object
+## traps - vector (character, integer or logical) to subscript rows of traps object
 ## sessions - vector (integer or logical) to subscript sessions
 
     if (ms(x)) {
@@ -1643,7 +1467,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
             traps = traps,
             sessions = sessions,   ## inserted 2009 10 01
             cutval = cutval,
-            dropnull = dropnull,
+            dropnullCH = dropnullCH,
+            dropnullocc = dropnullocc,
             dropunused = dropunused,
             renumber = renumber, ...)
         class(temp) <- c('list', 'capthist')
@@ -1654,25 +1479,36 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         detector <- detector(traps(x))
         dim3 <- length(dim(x)) == 3
         nk <- ndetector (traps(x))
+        if (is.logical(subset) & (length(subset) != nrow(x)))
+            stop ("if 'subset' is logical its length must match number of animals")
+        if (is.logical(occasions) & (length(occasions) != ncol(x)))
+            stop ("if 'occasions' is logical its length must match number of occasions")
+        if (is.logical(traps) & (length(traps) != nk))
+            stop ("if 'traps' is logical its length must match number of detectors")
         if (is.null(occasions)) occasions <- 1:ncol(x)
         if (is.null(traps))  traps <- 1:nk
         if (is.null(subset)) subset <- 1:nrow(x)
         if (is.null(cutval)) cutval <- attr(x, 'cutval')
+
+        ## coerce subset, traps, occasions to logical
         if (is.character(subset))
             subset <- dimnames(x)[[1]] %in% subset
         else
             if (!is.logical(subset))
                 subset <- (1:nrow(x)) %in% subset
+        if (is.character(traps))
+            traps <- rownames(traps(x)) %in% traps
+        else
+            if (!is.logical(traps))
+                traps <- (1:nk) %in% traps
         if (!is.logical(occasions))
             occasions <- (1:ncol(x)) %in% occasions
+
         ## condition missing values
         x[is.na(x)] <- 0
 
         #################################
-        ## allow for incomplete usage
-
-#### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
-
+        ## optionally drop traps never used on the specified occasions
         if (dropunused && !is.null(usage(traps(x)))) {
             used <- apply(usage(traps(x))[,occasions, drop=F],1,sum) > 0
             traps <- traps & used
@@ -1680,7 +1516,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
 
         #################################
         ## prepare to drop null histories
-        if (dropnull) {
+        if (dropnullCH) {
             if (detector %in% c('proximity', 'count', 'polygon', 'transect')) {
                 nonnull <- apply(abs(x[,occasions, traps, drop=F]),1,sum) > 0
             }
@@ -1709,24 +1545,14 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
             signal(x) <- signal(x)[signal(x)>cutval]
         }
 
-        ################################################
-        # 2011-03-29
-        # reassign trap numbers to allow for dropunused
-        if (!dim3) {
-            oldtrapnum <- 1:length(traps)
-            newtrapnum <- match(oldtrapnum, oldtrapnum[traps])
-            trapsites <- as.numeric(abs(x))
-            x[x!=0] <- as.numeric(sign(x[x!=0])) * newtrapnum[trapsites]
-        }
-
         #################################
         ## perform main subset operation
         if (dim3)
             temp <- x[subset, occasions, traps, drop=F]
         else {
             temp <- x[subset, occasions, drop=F]
-            ## now a bug - 2011-03-29
-            ## temp[!(temp %in% (1:nk)[traps])] <- 0  ## drop references to unused traps
+            ## drop rejected trap sites; 'abs' added 2011-11-14
+            temp[!(abs(temp) %in% (1:nk)[traps])] <- 0
         }
 
         nrow <- nrow(temp)
@@ -1736,17 +1562,18 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         ## drop null occasions
         OK2 <- rep(T,nocc)
         if (nrow(temp)>0)
+
         if ((!(detector %in% c('cue','signal'))) && any( apply(abs(temp),2,sum) ==0)) {
-            if (dropnull) {
+            if (dropnullocc) {
                 OK2 <- apply(abs(temp),2,sum) > 0
                 if (dim3)
-                    temp <- temp[,OK2,,drop=F]
+                    temp <- temp[,OK2,, drop = FALSE]
                 else
-                    temp <- temp[,OK2,drop=F]
+                    temp <- temp[,OK2, drop = FALSE]
             }
             else
                 warning ("no detections on occasion(s) ",
-                    paste((1:nocc)[apply(abs(temp),2,sum) ==0], sep=','), "\n")
+                    paste((1:nocc)[apply(abs(temp),2,sum) ==0], collapse=', '), "\n")
             nocc <- dim(temp)[2]  # refresh
         }
 
@@ -1757,9 +1584,9 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
         # traps(temp) <- subset.traps (traps(x), traps)
         traps(temp) <- subset (traps(x), traps)
 
-        covariates(temp) <- covariates(x)[subset,,drop=F]
+        covariates(temp) <- covariates(x)[subset,,drop = FALSE]
         usage(traps(temp)) <- usage(traps(x))[traps, occasions,
-                                drop=F][,OK2,drop=F]  ## drop null occasions
+            drop = FALSE][,OK2, drop = FALSE]  ## drop null occasions
         session(temp) <- session(x)
 
         ## subset signal of signal capthist
@@ -1775,13 +1602,21 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL, session
                              occ=occasion(x),
                              ID=animalID(x,names = F),
                              x=xy(x)[,1], y=xy(x)[,2])
-            df <- df[df$trap %in% traps,,drop=F]
-            ## subset and occasions are logical vectors 2011-01-21
-            df <- df[occasions[df$occ],,drop=F]
-            df <- df[subset[df$ID],,drop=F]
-            df <- df[order(df$trap, df$occ, df$ID),,
-                             drop=FALSE]
+            ## subset, traps and occasions are logical vectors 2011-01-21, 2011-11-14
+            OK <- occasions[df$occ] & subset[df$ID] & traps[df$trap]
+            df <- df[OK,, drop = FALSE]
+            df <- df[order(df$trap, df$occ, df$ID),, drop=FALSE]
             attr(temp, 'detectedXY') <- df[,c('x','y')]
+        }
+
+        ################################################
+        # 2011-03-29, 2011-11-14
+        # reassign trap numbers to allow for dropunused
+        if (!dim3) {
+            oldtrapnum <- 1:nk
+            newtrapnum <- match(oldtrapnum, oldtrapnum[traps])
+            trapsites <- as.numeric(abs(temp))
+            temp[temp!=0] <- as.numeric(sign(temp[temp!=0])) * newtrapnum[trapsites]
         }
 
         ## renumber if desired
@@ -2404,147 +2239,6 @@ print.summary.capthist <- function (x, ...) {
 ## defines a habitat mask
 ###############################
 
-## moved insidepoly to utility.R 2011-06-17
-make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, type = 'traprect',
-    poly = NULL, keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, ...)
-{
-
-    if (ms(traps)) {         ## a list of traps objects
-        if (inherits(poly, 'list') & (!is.data.frame(poly)))
-            stop ("lists of polygons not implemented in 'make.mask'")
-        temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx,
-            type = type, poly = poly, pdotmin = pdotmin, ...)
-        class (temp) <- c('list', 'mask')
-        temp
-      }
-    else {
-
-        allowedType <- c('traprect','trapbuffer','polygon', 'pdot', 'clusterrect', 'clusterbuffer')
-        if (! (type %in% allowedType))
-            stop ("mask type must be one of ",
-                  paste(sapply(allowedType, dQuote), collapse=","))
-        dots <- match.call(expand.dots = FALSE)$...
-        if ((length(dots)==0) & (type == 'pdot'))
-            warning ("no detection parameters supplied; using defaults")
-
-        buff <- c(-buffer,+buffer)
-
-        if (!is.null(poly)) {
-##            SPDF <- class(poly) == "SpatialPolygonsDataFrame"
-## 2011-07-08
-            SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
-            if (SPDF) {
-                if (!require(sp))
-                    stop ("package 'sp' required for poly in make.mask")
-            }
-            else {
-                poly <- matrix(unlist(poly), ncol = 2)
-                poly <- rbind (poly, poly[1,])  # force closure of poly
-            }
-        }
-
-        if (type=='polygon') {
-            if (is.null(poly))
-                stop ("mask polygon must be supplied")
-            if (check.poly & any (!insidepoly(traps, poly)))
-                warning ("some traps are outside mask polygon")
-            if (SPDF) {
-                xl <- poly@bbox[1,]
-                yl <- poly@bbox[2,]
-            }
-            else {
-                xl <- range(poly[,1])
-                yl <- range(poly[,2])
-            }
-        }
-        else {
-            xl <- range(traps$x) + buff
-            yl <- range(traps$y) + buff
-        }
-
-        if (is.null(spacing)) spacing <- diff(xl) / nx
-
-        if (type %in% c('clusterrect', 'clusterbuffer')) {
-            ID <- clusterID(traps)
-            meanx <- unique(tapply(traps$x, ID, mean))
-            meany <- unique(tapply(traps$y, ID, mean))
-            cluster <- subset(traps, subset = clusterID(traps)==1) ## extract a single cluster
-            ## assume identical wx, wy are half-width and half-height of a box
-            ## including the cluster and the rectangular buffer
-            wx <- diff(range(cluster$x)) / 2 + buffer
-            wy <- diff(range(cluster$y)) / 2 + buffer
-            wx <- round(wx/spacing) * spacing   ## to make symmetrical
-            wy <- round(wy/spacing) * spacing   ## to make symmetrical
-            dx <- seq(-wx,wx,spacing)
-            dy <- seq(-wy,wy,spacing)
-            x <- as.numeric(outer(FUN='+', dx, meanx))
-            y <- as.numeric(outer(FUN='+', dy, meany))
-        }
-        else {
-            x <- seq(xl[1] + spacing/2, xl[2], spacing)
-            y <- seq(yl[1] + spacing/2, yl[2], spacing)
-
-        }
-
-        mask   <- expand.grid (x=x, y=y)
-        attr(mask,'out.attrs') <- NULL   ## added 2009 07 03
-
-        if (type=='trapbuffer') {
-            ## appropriate convex buffer 2011-01-22
-            ## (this re-use of nx may not be appropriate)
-            if (detector(traps) %in% c('polygon','polygonX')) {
-               temp <- buffer.contour(traps, buffer = buffer, nx = nx,
-                                      convex = T, plt = F)
-               OK <- array(dim=c(length(x), length(y), length(temp)))
-               for (i in 1:length(temp))
-                  OK[,,i] <- insidepoly(mask, temp[[i]][,c('x','y')])
-               OK <- apply(OK, 1:2, any)
-               mask <- mask[OK,,drop=F]
-           }
-            else
-                mask <- mask[distancetotrap(mask, traps) <= buffer,]
-        }
-
-        if (type=='clusterbuffer') {
-            mask <- mask[distancetotrap(mask, traps) <= buffer,]
-        }
-
-        if (type=='pdot') {
-            OK <- pdot(mask, traps = traps, ...) > pdotmin
-            edge <- function (a,b) any (abs(a-b) < (spacing))
-            mask <- mask[OK,]
-            attr(mask,'pdotmin') <- pdotmin   # save nominal threshold
-            if (edge(mask[,1],xl[1]) |
-                edge(mask[,1],xl[2]) |
-                edge(mask[,2],yl[1]) |
-                edge(mask[,2],yl[2]))
-            warning ("'pdot' mask may have been truncated; ",
-                     "possibly increase buffer")
-        }
-
-        if (!is.null(poly)) {
-            mask <- mask[insidepoly(mask, poly),]
-            xl <- range(mask$x)
-            yl <- range(mask$y)
-            if (keep.poly)
-                attr(mask,'polygon') <- poly   # save
-        }
-
-        # get mean and SD of numeric columns
-        statfn <- function(x) if (is.numeric(x)) c(mean(x), sqrt(var(x))) else c(NA,NA)
-
-        attr(mask,'type')        <- type
-        attr(mask,'meanSD')      <- as.data.frame (apply(mask, 2, statfn))
-        attr(mask,'area')        <- spacing^2 * 0.0001
-        attr(mask,'spacing')     <- spacing
-        attr(mask,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
-        class(mask)  <- c('mask', 'data.frame')
-
-        mask
-    }
-}
-###############################################################################
-
 subset.mask <- function (x, subset, ...) {
 
     if (ms(x))
@@ -2552,17 +2246,18 @@ subset.mask <- function (x, subset, ...) {
 
     # subset may be numeric index or logical
     temp <- x[subset,,drop=F]
-
-    statfn <- function(x) if (is.numeric(x)) c(mean(x), sqrt(var(x))) else c(NA,NA)
+    spacing <- attr(x,'spacing')
     attr(temp,'type')        <- 'subset'
-    attr(temp,'meanSD')      <- as.data.frame (apply(temp, 2, statfn))
+    attr(temp,'meanSD')      <- getMeanSD(temp)
     attr(temp,'area')        <- attr(x,'area')
-    attr(temp,'spacing')     <- attr(x,'spacing')
+    attr(temp,'spacing')     <- spacing
     if (!is.null(covariates(x))) covariates(temp) <- covariates(x)[subset,,drop=F]
-    xl <- range(temp[,1])
-    yl <- range(temp[,2])
+    xl <- range(temp$x) + spacing/2 * c(-1,1)
+    yl <- range(temp$y) + spacing/2 * c(-1,1)
     attr(temp,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
-    class(temp) <- c('mask','data.frame')
+    if (!is.null(attr(temp,'OK')))
+        attr(temp,'OK') <- attr(temp,'OK')[subset]
+    class(temp) <- c('mask', 'data.frame')
     temp
 }
 ############################################################################################
@@ -2601,13 +2296,8 @@ rbind.mask <- function (...) {
         }
     }
 
-    statfn <- function(x) {
-        if (is.numeric(x)) c(mean(x), sqrt(var(x)))
-        else c(NA,NA)
-    }
     attr(temp,'type')        <- 'rbind'
-    attr(temp,'meanSD')      <- as.data.frame (apply(temp, 2, statfn))
-
+    attr(temp,'meanSD')      <- getMeanSD(temp)
     attr(temp,'area')        <- area
     attr(temp,'spacing')     <- spacing
     xl <- range(temp$x) + spacing/2 * c(-1,1)
@@ -2621,33 +2311,51 @@ rbind.mask <- function (...) {
 }
 ############################################################################################
 
-read.mask <- function (file = NULL, data = NULL, spacing = NULL, ...)
-    ## data argument added 2011-05-11
-## SS for 'state-space' from SPACECAP 2010-04-11
+
+read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL, ...)
+## 2010-04-11 SS for 'state-space' from SPACECAP
+## 2011-05-11 data argument added
+## 2011-11-01 re-modelled to add covariates
 {
-    if (!is.null(data)) {
-        ## assume a dataframe of two columns
-        if ((dim(data)[2] != 2) | (length(dim(data))!=2))
-            stop ("require 2-column dataframe or matrix ",
-                  "for 'data' input to read.mask")
-        mask <- data
-    }
-    else {
-        if (is.null(file))
-            stop("require one of 'file' or 'data'")
+    if (is.null(data) & !is.null(file)) {
         fl <- nchar(file)
         SS <- tolower(substring(file,fl-3,fl)) == '.csv'
         if (SS) {
-            mask <- read.csv (file)
-            if ('HABITAT' %in% names(mask))
-                mask <- mask[mask$HABITAT == 1,]
+            data <- read.csv (file)
+            if ('HABITAT' %in% names(data))
+                data <- data[data$HABITAT == 1,]
         }
         else
-            mask <- read.table (file, ...)
+            data <- read.table (file, ...)
     }
-    if (!('x' %in% names(mask)) | !('y' %in% names(mask)))
-      names(mask)[1:2] <- c('x','y')  # assume coords in first two columns
-    mask <- mask[,c('x','y')]
+    else if (is.null(data))
+       stop("require one of 'file' or 'data'")
+    if (length(dim(data))!=2)
+        stop ("require dataframe or matrix for 'data' input to read.mask")
+
+    coln <- colnames(data)
+    ixy <- match(c('x','y'), coln)
+    if (any(is.na(ixy))) ixy <- 1:2
+    mask <- as.data.frame(data[,ixy])
+    names(mask) <- c('x', 'y')
+    if (any(!apply(mask, 2, is.numeric)))
+        stop ("non-numeric x or y coordinates")
+    if (any(is.na(mask)))
+        stop ("missing value(s) in x or y coordinates")
+
+    class(mask) <- c('mask', 'data.frame')
+
+    ## add covariates
+    if (ncol(data) > 2) {
+        df <- as.data.frame(data[,-ixy, drop = FALSE])
+        if (!is.null(columns)) {
+            if (!all(columns %in% names(mask)))
+                stop ("columns missing from input")
+            df <- df[,columns, drop=FALSE]
+        }
+        if (ncol(df)>0)
+            covariates(mask) <- df
+    }
 
     if (is.null(spacing))
     {
@@ -2661,27 +2369,22 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, ...)
     xl <- range(mask$x) + spacing/2 * c(-1,1)
     yl <- range(mask$y) + spacing/2 * c(-1,1)
 
-    # get mean and SD of numeric columns
-    statfn <- function(x) if (is.numeric(x)) c(mean(x), sqrt(var(x))) else c(NA,NA)
-
     attr(mask,'type')    <- 'user'
-    attr(mask,'meanSD')  <- as.data.frame (apply(mask, 2, statfn))
+    attr(mask,'meanSD')  <- getMeanSD(mask)
     attr(mask,'area')    <- area
     attr(mask,'spacing') <- spacing
     attr(mask,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
     attr(mask,'polygon') <- NULL
-    class(mask) <- c('mask', 'data.frame')
-
     mask
 }
 ###############################################################################
 
-plot.mask <- function(x, border = 20, add =FALSE, covariate=NULL,
-      axes = FALSE, dots = TRUE, col='grey', breaks = 12, ppoly = TRUE,
-      polycol='red', ...)
+plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
+      axes = FALSE, dots = TRUE, col='grey', breaks = 12, meshcol = NA,
+      ppoly = TRUE, polycol='red', ...)
 {
     if (ms(x)) {
-        lapply (x, plot.mask)
+        lapply (x, plot.mask, ...)
     }
     else {
 
@@ -2694,6 +2397,19 @@ plot.mask <- function(x, border = 20, add =FALSE, covariate=NULL,
             axes=axes, type='n', ...)
         }
 
+        if (!is.null(attr(x,'polygon')) & ppoly) {
+            poly <- attr(x,'polygon')
+            if (class(poly) == "SpatialPolygonsDataFrame") {
+                if (!require(sp))
+                    stop ("package 'sp' required to plot polygon in plot.mask")
+# plot(poly, col = polycol, add = TRUE)
+# poor control of colours
+                plot(poly, add = TRUE)
+            }
+            else
+                polygon (poly, col = polycol, density = 0)
+        }
+
         if (is.null(covariate))
             covfactor <- factor(1)
         else {
@@ -2702,9 +2418,9 @@ plot.mask <- function(x, border = 20, add =FALSE, covariate=NULL,
             else
                 covfactor <- cut ( covariates(x)[,covariate], breaks = breaks)
         }
-        ncol <- length(levels(covfactor))
-        if (length(col) < ncol)
-            col <- heat.colors(ncol)   # default set
+        ncolour <- length(levels(covfactor))
+        if (length(col) < ncolour)
+            col <- heat.colors(ncolour)   # default set
         cols <- col[as.numeric(covfactor)]
 
         if (dots) {
@@ -2715,23 +2431,14 @@ plot.mask <- function(x, border = 20, add =FALSE, covariate=NULL,
             dx <- c(-0.5, -0.5, +0.5, +0.5) * pixelsize
             dy <- c(-0.5, +0.5, +0.5, -0.5) * pixelsize
             plotpixel <- function (xy) {
-            polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1)
+                polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1, border = meshcol)
             }
             apply(cbind(x,as.numeric(covfactor)),1,plotpixel)
         }
 
-        if (!is.null(attr(x,'polygon')) & ppoly) {
-            poly <- attr(x,'polygon')
-            if (class(poly) == "SpatialPolygonsDataFrame") {
-                if (!require(sp))
-                    stop ("package 'sp' required to plot polygon in plot.mask")
-                plot(poly, add = TRUE)
-            }
-            else
-                polygon (poly, col = polycol, density = 0)
-        }
+        if (!is.null(covariate))
+            invisible(levels(covfactor))
     }
-
 }
 ###############################################################################
 
@@ -2803,7 +2510,7 @@ print.summary.mask <- function (x, ...) {
 
 ############################################################################################
 
-trim.secr <- function (object, drop = c('mask','design','design0','D'), keep = NULL) {
+trim.secr <- function (object, drop = c('mask','design','design0'), keep = NULL) {
     trim.default(object, drop = drop, keep = keep)
 }
 ############################################################################################
@@ -2838,9 +2545,25 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
         models$cuerate <- ~1
     }
 
-    getfield <- function (x) secr.lpredictor (newdata = newdata, model = models[[x]],
-        indx = parindices[[x]], beta = beta, field = x, beta.vcv = beta.vcv)
-    predict <- sapply (object$realnames, getfield, simplify=FALSE)
+    getfield <- function (x) {
+        if ((x == 'D') & userD(object)) {
+            ## user-supplied density function
+            ## return only intercept
+            lpred <- matrix(ncol = 2, nrow = nrow(newdata),
+               dimnames=list(NULL,c('estimate','se')))
+            D0 <- parindices[[x]][1]
+            lpred[,1] <- beta[D0]
+            lpred[,2] <- beta.vcv[D0,D0]^0.5
+            return(lpred)
+        }
+        else {
+            secr.lpredictor (newdata = newdata, model = models[[x]],
+                indx = parindices[[x]], beta = beta, field = x,
+                beta.vcv = beta.vcv)
+        }
+    }
+
+    predict <- sapply (object$realnames, getfield, simplify = FALSE)
 
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     if (se.fit)  out <- list(nrow(newdata))
@@ -3001,7 +2724,11 @@ detectpar <- function(object, ...) {
 }
 ############################################################################################
 
-model.string <- function (model) {
+model.string <- function (model, userDfn) {
+    if (!is.null(userDfn)) {
+        if (!is.null(model$D))
+            model$D <- paste('~userD', userDfn('name'), sep='.')
+    }
     temp <- paste (names(model), as.character(model), collapse=' ', sep='')
     temp
 }
@@ -3040,15 +2767,6 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
 
     if (ms(x$capthist)) {
         print (summary(x$capthist, terse = TRUE))
-## replaced with above line 2011-03-27
-##        n     <- sapply(x$capthist, nrow)        # number caught
-##        nocc  <- sapply(x$capthist, ncol)        # number occasions
-##        ncapt <- sapply(x$capthist, function (xx) sum(abs(xx)>0))
-##        ndet  <- sapply(traps(x$capthist), ndetector) # number traps
-##        temp  <- as.data.frame(rbind(nocc, ncapt, n, ndet))
-##        names(temp) <- names(x$capthist)
-##        rownames(temp) <- c('Occasions','Detections','Animals','Detectors')
-##        print(temp)
         q <- sapply(x$capthist, function(y) attr(y,'q'))
         det <- detector(traps(x$capthist)[[1]])
     }
@@ -3104,7 +2822,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
         2*(x$fit$value + Npar) + 2 * Npar * (Npar+1) / (n - Npar - 1),
         NA)
     cat ('\n')
-    cat ('Model           : ', model.string(x$model), '\n')
+    cat ('Model           : ', model.string(x$model, x$details$userDfn), '\n')
     if (detector(traps(x$capthist))=='multi') {
         if (x$details$param == 1)
             cat ('Gardner, Royle & Wegan parameterisation for multi-catch traps','\n')
@@ -3198,7 +2916,7 @@ oneline.secr <- function (secr) {
         NA)
 
     c (
-       model  = model.string(secr$model),
+       model  = model.string(secr$model, secr$details$userDfn),
        detectfn = detectionfunctionname(secr$detectfn),
        npar   = Npar,
        logLik = -secr$fit$value,

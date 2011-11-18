@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## deviance.R
-## last changed 2009 09 04
+## last changed 2009 09 04; 2011-11-10 N replaces D
 ############################################################################################
 
 deviance.secr <- function (object, ...) {
@@ -29,10 +29,14 @@ deviance.secr <- function (object, ...) {
     grps <- group.factor(object$capthist, object$groups)
 
     if (!object$CL & (object$details$distribution=='binomial')) {
-        if(is.null(object$D))
-            stop ("component 'D' not found - is fitted model ",
-                  "from an old version of 'secr'?")
-        N <- t(apply(object$D, 2:3, sum, drop = FALSE))
+        ## replace D with N 2011-11-10
+        N <- object$N
+        if(is.null(N)) {
+            if (is.null(object$D))
+                stop ("neither of components 'D','N' found - is fitted model ",
+                  "from a very old version of 'secr'?")
+            N <- t(apply(object$D, 2:3, sum, drop = FALSE))
+        }
     }
 
     if (inherits (object$capthist, 'list')) {

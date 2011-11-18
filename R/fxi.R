@@ -105,9 +105,26 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     #------------------------------------------
     # allow for scaling of detection parameters
 
-    D.modelled <- FALSE   ## uniform
-    Dtemp <- ifelse (D.modelled, object$D[1,1,sessnum], NA)
+#    D.modelled <- FALSE   ## uniform
+#    Dtemp <- ifelse (D.modelled, object$D[1,1,sessnum], NA)
+#    Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
+
+    if (details$scalesigma) {
+        warning ("fxi untested with scalesigma")
+        if (ms(object))
+            cellarea <- sapply(object$mask, attr, "area")[sessnum]
+        else
+            cellarea <- attr(object$mask, "area")
+        ## assume uniform density across X...
+        groupnum <- group.factor(object$capthist, object$groups)[[sessnum]][i]
+        if (as.numeric(substring(secrdemo.0$version,1,3)) < 2.25)
+            stop("please fit model with version 2.3.0 or later")
+        Dtemp <- ifelse (D.modelled, object$N[1,groupnum,sessnum]*cellarea, NA)
+    }
+    else
+        Dtemp <- NA
     Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
+
 
     if (!all(is.finite(Xrealparval))) {
         cat ('beta vector :', beta, '\n')

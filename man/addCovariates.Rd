@@ -1,0 +1,88 @@
+\name{addCovariates}
+\alias{addCovariates}
+
+\title{
+  Add Covariates to Mask or Traps
+}
+
+\description{
+Tools to construct spatial covariates for existing mask or traps objects
+from a spatial data source. Possible sources include GIS data such as
+ESRI polygon shapefiles input using \pkg{maptools}.
+}
+
+\usage{
+addCovariates(object, spatialdata, columns = NULL)
+}
+
+\arguments{
+  \item{object}{mask or traps object}
+  \item{spatialdata}{spatial data source (see Details)}
+  \item{columns}{character vector naming columns to include (all by default)}
+}
+
+\details{
+
+  The goal is to obtain the value(s) of one or more spatial covariates
+  for each point (i.e. row) in \code{object}. The procedure depends on
+  the data source \code{spatialdata}, which may be either a spatial
+  coverage (raster or polygon) or an object with covariate values at
+  points (another mask or traps object). In the first case, an
+  overlay operation is performed to find the pixel or
+  polygon matching each point. In the second case, a search is conducted
+  for the closest point in \code{spatialdata}.
+
+  If \code{spatialdata} is a character value then it is interpreted as
+  the name of a polygon shape file (excluding `.shp').
+
+  If \code{spatialdata} is a SpatialPolygonsDataFrame or a
+  SpatialGridDataFrame then it will be used in an overlay operation as
+  described. 
+
+  If \code{spatialdata} is a \code{mask} or \code{traps} object then it
+  is searched for the closest point to each point in \code{object}, and
+  covariates are drawn from the corresponding rows in
+  \code{covariates(spatialdata)}.
+  
+}
+
+\value{
+
+  An object of the same class as \code{object} with new or augmented
+  \code{covariates} attribute. Column names and types are derived from the input.
+
+}
+
+\seealso{
+
+  \code{\link{make.mask}}, \code{\link{read.mask}}, \code{\link{read.traps}}
+
+}
+
+\section{Warning}{
+
+  Use of a SpatialGridDataFrame for \code{spatialdata} is untested.
+  
+}
+
+\note{
+
+  The package \pkg{maptools} is needed to read a shapefile, and the
+  package \pkg{sp} is needed for spatial overlay.
+
+}
+
+\examples{
+
+## In the Lake Station skink study (see ?skink), habitat covariates were
+## measured only at trap sites. Here we extrapolate to a mask, taking
+## values for each mask point from the nearest trap.
+
+LSmask <- make.mask(LStraps, buffer = 30, type = "trapbuffer")
+tempmask <- addCovariates(LSmask, LStraps)
+## show first few lines
+head(covariates(tempmask))
+
+}
+
+\keyword{ manip }

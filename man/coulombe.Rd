@@ -61,19 +61,14 @@ the mornings only. We include several secr models fitted to the
 including individual heterogeneity in both g0 and sigma has the lowest
 AIC.
 
-Some components of the fitted secr models have been removed with
-\code{\link{trim}} to save space.
-
 \tabular{ll}{
   Object \tab Description \cr
   housemouse \tab capthist object \cr
   housemouse.0 \tab fitted secr model -- null \cr
   housemouse.ampm \tab fitted secr model -- g0 differs morning vs afternoon \cr
-  housemouse.ampmh2h2 \tab fitted secr model -- as above, finite
-  mixture g0, sigma \cr
+  housemouse.ampmh2h2 \tab fitted secr model -- as above, finite mixture g0, sigma \cr
   morning.0 \tab fitted secr model -- morning data only, null \cr
-  morning.0h2 \tab fitted secr model -- mornings, null g0,
-  finite mixture sigma \cr
+  morning.0h2 \tab fitted secr model -- mornings, null g0, finite mixture sigma \cr
   morning.b \tab  fitted secr model -- mornings, trap response g0 \cr
   morning.h2 \tab  fitted secr model -- mornings, finite mixture g0 \cr         
   morning.h2h2 \tab  fitted secr model -- mornings, finite mixture g0, sigma \cr
@@ -98,8 +93,8 @@ Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
 
 \examples{
 
-plot(housemouse, title = paste('Coulombe (1965), Mus musculus,',
-    'California salt marsh'), border = 5, rad = 0.5,
+plot(housemouse, title = paste("Coulombe (1965), Mus musculus,",
+    "California salt marsh"), border = 5, rad = 0.5,
     gridlines = FALSE)
 
 morning <- subset(housemouse, occ = c(1,3,5,7,9))

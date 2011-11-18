@@ -6,14 +6,14 @@ vers <- paste("R package version", desc$Version)
 url <- "http://CRAN.R-project.org/package=secr"
 
 citEntry(entry="Manual",
-    title = "secr: Spatially Explicit Capture-Recapture Models",
+    title = "secr: Spatially explicit capture-recapture models",
     author = personList(as.person("Murray Efford")),
     year = year,
     note = vers,
     url = url,
     textVersion =
         paste("Efford, M. G. (", year,
-        "). secr: Spatially Explicit Capture-Recapture Models. ",
+        "). secr: Spatially explicit capture-recapture models. ",
         vers, ". ", url, 
         sep = "")
 )

@@ -78,7 +78,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
 Coordinates of the plotted contours are returned as a list with one
 component per polygon. The list is returned invisibly if plt = TRUE.
 
-An additional component 'mode' reports the x-y coordinates of the
+An additional component `mode' reports the x-y coordinates of the
 highest point of each pdf (see Details).
 
 \code{fxi.secr} --
@@ -87,7 +87,7 @@ Vector of probability densities
 
 \code{fxi.mode} --
 
-List with components 'x' and 'y'
+List with components `x' and `y'
 
 }
 \references{

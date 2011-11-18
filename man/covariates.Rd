@@ -30,7 +30,7 @@ covariates(object) <- value
 \examples{
 temptrap <- make.grid(nx = 6, ny = 8)
 covariates (temptrap) <- data.frame(halfnhalf = 
-    factor(rep(c('left','right'),c(24,24))) )
+    factor(rep(c("left","right"),c(24,24))) )
 summary(covariates(temptrap))
 }
 

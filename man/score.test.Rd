@@ -88,6 +88,10 @@ Catchpole, E. A. and Morgan, B. J. T. (1996) Model selection of ring-recovery mo
 
 Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model selection in small samples. \emph{Biometrika} \bold{76}, 297--307.
 
+McCrea, R. S. and Morgan, B. J. T. (2011) Multistate mark-recapture
+  model selection using score tests. \emph{Biometrics} \bold{67},
+  234--241.
+  
 Morgan, B. J. T., Palmer, K. J. and Ridout, M. S. (2007) Negative score test statistic. \emph{American statistician} \bold{61}, 285--288.
 }
 

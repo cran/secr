@@ -30,8 +30,8 @@ N animals      \tab number of distinct animals detected \cr
 N captures     \tab number of detections \cr
 N occasions    \tab number of sampling occasions \cr
 N detectors    \tab number of detectors \cr
-Detector type  \tab 'single', 'multi', 'proximity' etc. \cr
-Model          \tab model formula for each 'real' parameter \cr
+Detector type  \tab `single', `multi', `proximity' etc. \cr
+Model          \tab model formula for each `real' parameter \cr
 Fixed          \tab fixed real parameters \cr
 Detection fn   \tab detection function type (halfnormal or hazard-rate) \cr
 N parameters   \tab number of parameters estimated  \cr

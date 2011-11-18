@@ -13,7 +13,7 @@
 \usage{
 make.grid(nx = 6, ny = 6, spacex = 20, spacey = 20, spacing = NULL,
     detector = "multi", originxy = c(0,0), hollow = F,
-    ID = 'alphay')
+    ID = "alphay")
 
 make.circle (n = 20, radius = 100, spacing = NULL, 
     detector = "multi", originxy = c(0,0), IDclockwise = T)
@@ -29,10 +29,10 @@ make.transect (transectlist = NULL, x = c(-50,-50,50,50),
 \arguments{
   \item{nx}{ number of columns of detectors }
   \item{ny}{ number of rows of detectors }
-  \item{spacex}{ distance between detectors in 'x' direction (nominally in metres)}
-  \item{spacey}{ distance between detectors in 'y' direction (nominally in metres)}
+  \item{spacex}{ distance between detectors in `x' direction (nominally in metres)}
+  \item{spacey}{ distance between detectors in `y' direction (nominally in metres)}
   \item{spacing}{ distance between detectors (x and y directions)}
-  \item{detector}{ character value for detector type - 'single', 'multi' etc. }
+  \item{detector}{ character value for detector type - "single", "multi" etc. }
   \item{originxy}{ vector origin for x-y coordinates }
   \item{hollow}{ logical for hollow grid }
   \item{ID}{ character string to control row names }
@@ -58,22 +58,22 @@ specified it replaces both \code{spacex} and \code{spacey}. The
 bottom-left (southwest) corner is at \code{originxy}. For a hollow grid,
 only detectors on the perimeter are retained. By default, identifiers
 are constructed from a letter code for grid rows and an integer value
-for grid columns ('A1', 'A2',...). 'Hollow' grids are always numbered
+for grid columns ("A1", "A2",...). `Hollow' grids are always numbered
 clockwise in sequence from the bottom-left corner. Other values of
 \code{ID} have the following effects:
 
   \tabular{ll}{
-     ID \tab Effect \cr
-     numx \tab column-dominant numeric sequence \cr
-     numy \tab row-dominant numeric sequence \cr
-     numxb \tab column-dominant boustrophedonical numeric sequence (try it!) \cr
-     numyb \tab row-dominant boustrophedonical numeric sequence \cr
-     alphax \tab column-dominant alphanumeric \cr
-     alphay \tab row-dominant alphanumeric \cr
-     xy \tab combine column (x) and row(y) numbers \cr     
+     ID \tab  Effect \cr
+     numx \tab  column-dominant numeric sequence \cr
+     numy \tab  row-dominant numeric sequence \cr
+     numxb \tab  column-dominant boustrophedonical numeric sequence (try it!) \cr
+     numyb \tab  row-dominant boustrophedonical numeric sequence \cr
+     alphax \tab  column-dominant alphanumeric \cr
+     alphay \tab  row-dominant alphanumeric \cr
+     xy \tab  combine column (x) and row(y) numbers \cr     
   }
 
-  'xy' adds leading zeros as needed to give a string of constant length with
+  `xy' adds leading zeros as needed to give a string of constant length with
   no blanks.
   
 \code{make.circle} generates coordinates for n traps in a circle centred
@@ -88,7 +88,7 @@ separately (\code{\link{make.tri}},  \code{\link{clip.hex}}).
 
 Polygon vertices may be specified with \code{x} and \code{y} in the case
 of a single polygon, or as \code{polylist} for one or more polygons. Each
-component of \code{polylist} is a dataframe with columns 'x' and 'y'.
+component of \code{polylist} is a dataframe with columns `x' and `y'.
 \code{polylist} takes precedence. \code{make.poly} automatically closes
 the polygon by repeating the first vertex if the first and last vertices
 differ.
@@ -101,7 +101,7 @@ that they are not closed.
 \value{
 
 An object of class \code{traps} comprising a data frame of x- and
-y-coordinates, the detector type ('single', 'multi', or 'proximity' etc.),
+y-coordinates, the detector type ("single", "multi", or "proximity" etc.),
 and possibly other attributes.
 
 }
@@ -134,8 +134,8 @@ plot(demo.traps)
 
 ## compare numbering schemes
 par (mfrow = c(2,4), mar = c(1,1,1,1), xpd = TRUE)
-for (id in c('numx', 'numy', 'alphax', 'alphay', 'numxb', 
-    'numyb'))
+for (id in c("numx", "numy", "alphax", "alphay", "numxb", 
+    "numyb"))
 {
     temptrap <- make.grid(nx = 7, ny = 5, ID = id)
     plot (temptrap, border = 10, lab = TRUE, offset = 7, 
@@ -150,7 +150,7 @@ summary(make.circle(n = 20, spacing = 30))
 
 
 ## jitter locations randomly within grid square
-## and plot over 'mask'
+## and plot over `mask'
 temptrap <- make.grid(nx = 7, ny = 7, spacing = 30)
 tempmask <- make.mask(temptrap, buffer = 15, nx = 7, ny = 7)
 temptrap[,] <- temptrap[,] + 30 * (runif(7*7*2) - 0.5)

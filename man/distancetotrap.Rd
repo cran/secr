@@ -20,7 +20,7 @@ nearesttrap(X, traps)
 
 \arguments{
   \item{X}{ coordinates }
-  \item{traps}{ traps object }
+  \item{traps}{ traps object or 2-column matrix of coordinates }
 }
 \details{
 
@@ -39,10 +39,17 @@ on a habitat mask.
 
 \seealso{ \code{\link{make.mask}} }
 
+\note{
+
+  It is no longer (from version 2.3.0) necessary for `traps' to be a
+  traps object.
+
+}
+
 \examples{
   ## restrict a habitat mask to points within 70 m of traps  
   ## this is nearly equivalent to using make.mask with the 
-  ## 'trapbuffer' option
+  ## `trapbuffer' option
   temptrap <- make.grid()
   tempmask <- make.mask(temptrap)
   d <- distancetotrap(tempmask, temptrap)

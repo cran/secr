@@ -10,7 +10,7 @@ Mask Buffer Width
 
 Determines a suitable buffer width for an integration \link{mask}. The
 `buffer' in question defines a concave polygon around a detector array
-constructed using \code{make.mask} with \code{type = 'trapbuffer'}.  The
+constructed using \code{make.mask} with \code{type = "trapbuffer"}.  The
 method relies on an approximation to the bias of maximum likelihood
 density estimates (Efford and Marques unpubl).
 
@@ -112,22 +112,29 @@ user.
 
 The potential components of \code{control} are --
 
-\tabular{ll}{
-  \tab \cr
-  \code{method = 1 } \tab code for method of modelling \eqn{p.(X)} as a
-  function of buffer (\eqn{q(r)}) \cr
-  \code{bfactor = 20 } \tab \eqn{q(r)} vs \eqn{p.(X)} calibration mask buffer width in multiples of
-  trap spacing \cr
-  \code{masksample = 1000 } \tab maximum number of points sampled from
-  calibration mask \cr
-  \code{spline.df = 10 } \tab effective degrees of freedom for
-  \code{smooth.spline} \cr
-  \code{use.gpclib = FALSE } \tab logical to use \pkg{gpclib} if installed  \cr
-  \code{ntheta = 60 } \tab integer value for smoothness of contours
-  (straight-line approximation \cr
-  \tab to arc lengths)\cr
-  \code{ninterp = 5 } \tab number of points to interpolate between trapspacing/2 and \cr
-  \tab trapspacing/2 ^0.5 on the contour-length vs buffer curve \cr
+\describe{
+  \item{\code{method = 1 }}{ code for method of modelling \emph{p.(X)} as a
+    function of buffer (\emph{q(r)})}
+  
+  \item{\code{bfactor = 20 }}{ \emph{q(r)} vs \emph{p.(X)} calibration
+    mask buffer width in multiples of trap spacing }
+
+  \item{\code{masksample = 1000 }}{ maximum number of points sampled from
+    calibration mask }
+  
+  \item{\code{spline.df = 10 } }{ effective degrees of freedom for
+    \code{smooth.spline} }
+  
+  \item{\code{use.gpclib = FALSE }}{ logical to use \pkg{gpclib} if
+    installed }
+  
+  \item{\code{ntheta = 60 } }{ integer value for smoothness of contours
+    (straight-line approximation to arc lengths)}
+  
+  \item{\code{ninterp = 5 } }{ number of points to interpolate between
+  trapspacing/2 and trapspacing/2 ^0.5 on the contour-length vs buffer
+  curve }
+
 }
 
 }
@@ -140,13 +147,13 @@ The potential components of \code{control} are --
 
 temptraps <- make.grid()
 detpar <-  list(g0 = 0.2, sigma = 25)
-suggest.buffer(temptraps, 'halfnormal', detpar, 5)
+suggest.buffer(temptraps, "halfnormal", detpar, 5)
 
-RB <- bias.D(50:150, temptraps, 'halfnormal', detpar, 5)
+RB <- bias.D(50:150, temptraps, "halfnormal", detpar, 5)
 plot(RB)
 
 detpar <-  list(g0 = 0.2, sigma = 25, z=5)
-RB <- bias.D(50:150, temptraps, 'hazard rate', detpar, 5)
+RB <- bias.D(50:150, temptraps, "hazard rate", detpar, 5)
 lines(RB)
 
 ## compare to esa plot
@@ -159,4 +166,5 @@ esa.plot (temptraps, max.buffer = 150, spacing = 4, detectfn = 0,
 suggest.buffer(ovenCH)
 suggest.buffer(ovenbird.model.1)
 }
-\keyword{ model }
+
+\keyword{ models }

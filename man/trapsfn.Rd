@@ -10,7 +10,7 @@
 \title{ Detector Attributes }
 
 \description{
-  Extract or replace attributes of an object of class 'traps'.
+  Extract or replace attributes of an object of class `traps'.
 }
 
 \usage{
@@ -29,7 +29,7 @@ transectlength(object)
 
 \details{
 
-The `polyID' and `transectID' functions assign and extract the attribute of a 'traps'
+The `polyID' and `transectID' functions assign and extract the attribute of a `traps'
 object that relates vertices (rows) to particular polygons or transects. The
 replacement value should be a factor of length equal to nrow(object).
 
@@ -54,12 +54,12 @@ lengths of the component transects in metres. This value is read-only.
 \examples{
 
 ## default is a single polygon
-temp <- make.grid(detector = 'polygon', hollow = TRUE)
+temp <- make.grid(detector = "polygon", hollow = TRUE)
 polyID(temp)
 plot(temp)
 
 ## split in two
-temp <- make.grid(detector = 'polygon', hollow = TRUE)
+temp <- make.grid(detector = "polygon", hollow = TRUE)
 polyID(temp) <- factor(rep(c(1,2),rep(10,2)))
 plot(temp)
  

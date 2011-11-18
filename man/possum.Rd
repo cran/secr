@@ -4,10 +4,13 @@
 \alias{possum}
 \alias{possumCH}
 \alias{possumarea}
-\alias{possumregion}
+\alias{possumremovalarea}
 \alias{possummask}
-\alias{possum.model.1}
-\alias{possum.model.1b}
+\alias{possum.model.0}
+\alias{possum.model.b}
+\alias{possum.model.h2}
+\alias{possum.model.Dh2}
+\alias{possum.model.Dsh2}
 
 \title{ Brushtail Possum Trapping Dataset }
 
@@ -28,12 +31,12 @@ where they occasionally exceed densities of 15 / ha, possums live
 wherever there are palatable food plants and shelter.
 
 Efford et al. (2005) reported a live-trapping study of possums in
-\emph{Pinus radiata} plantation on coastal sand dunes.  The 294-ha site
+\emph{Pinus radiata} plantation on coastal sand dunes.  The 300-ha site
 at Waitarere in the North Island of New Zealand was a peninsula, bounded
 on one side by the sea and on two other sides by the Manawatu river. 
 Cage traps were set in groups of 36 at 20-m spacing around the perimeter
-of five squares, each 180 m on a side.  The squares ('hollow grids') were
-centred at random points within the 294-ha area.  Animals were tagged and
+of five squares, each 180 m on a side.  The squares (`hollow grids') were
+centred at random points within the 300-ha area.  Animals were tagged and
 released daily for 5 days in April 2002.  Subsequently, leg-hold trapping
 was conducted on a trapping web centred on each square (data not
 reported here), and strenuous efforts were made to remove all possums by
@@ -48,37 +51,34 @@ on one day, having entered a second trap after being released; one
 record in each pair was selected arbitrarily and discarded.
 
 The data are provided as a single-session \code{capthist} object
-'possumCH'.  'possummask' is a matching mask object - see Examples.  Two
-fitted models ('possum.model.1' & 'possum.model.1b') are provided for
-illustration.
+`possumCH'.  `possummask' is a matching mask object - see Examples.
+Several fitted models are provided for illustration.
 
-From secr 1.5 a dataframe \code{possumarea} is included to indicate the
-boundary of potential habitat, and this is used to clip
-\code{possummask}. \code{possumarea} comprises a single polygon
+The dataframe \code{possumarea} contains boundary coordinates of a
+habitat polygon that is used to clip \code{possummask} at the shore
+(from secr 1.5). \code{possumarea} comprises a single polygon
 representing the extent of terrestrial vegetation to the west, north and
 east, and an arbitrary straight southern boundary. The boundary is also
 included as a shapefile and as a text file (`possumarea.shp' etc. and
 `possumarea.txt' in the package `extdata' folder). See Examples in
 \code{\link{make.mask}}.
 
-% From secr 2.1 a further dataframe \code{possumregion} is included that
-% equates to the nominal removal study area (Efford et al. 2005 Fig. 1).
-
-Clipping of the mask, introduced in secr 1.5, slightly changes the
-fitted models (and hence the density estimates).
+The dataframe \code{possumremovalarea} contains boundary coordinates of
+another polygon, the nominal removal area of Efford et al. (2005 Fig. 1)
+(from secr 2.3).
 
 \tabular{ll}{
   Object \tab Description \cr
   possumCH \tab capthist object \cr
   possummask \tab mask object \cr
   possumarea \tab habitat perimeter \cr
-%  possumregion \tab nominal boundary of removal region \cr
-  possum.model.1 \tab fitted secr model -- null \cr
-  possum.model.1b \tab fitted secr model -- trap response g0 \cr
+  possumremovalarea \tab nominal boundary of removal region \cr
+  possum.model.0 \tab fitted secr model -- null \cr
+  possum.model.b \tab fitted secr model -- trap response g0 \cr
+  possum.model.h2 \tab fitted secr model -- heterogeneity g0, sigma\cr
+  possum.model.Dh2 \tab fitted secr model -- quadratic surface \cr
+  possum.model.Dsh2 \tab fitted secr model -- distance to shore \cr
 }
-
-Some components of the fitted secr models have been removed with
-\code{\link{trim}} to save space.
 
 }
 
@@ -119,8 +119,8 @@ lines(possumarea)
 summary(possumCH)
 
 ## compare & average pre-fitted models
-AIC(possum.model.1, possum.model.1b)
-model.average(possum.model.1, possum.model.1b)
+AIC(possum.model.0, possum.model.b, possum.model.h2)
+model.average(possum.model.0, possum.model.b, possum.model.h2)
 
 }
 

@@ -14,7 +14,7 @@
     icolours = NULL, randcol = FALSE, 
     lab1cap = FALSE, laboffset = 4, ncap = FALSE, 
     splitocc = NULL, col2 = "green",
-    type = 'petal',
+    type = "petal",
     cappar = list(cex = 1.3, pch = 16, col = "blue"), 
     trkpar = list(col = "blue", lwd = 1), 
     labpar = list(cex = 0.7, col = "black"), ...)
@@ -37,7 +37,7 @@
   \item{ncap}{ logical to display the number of detections per trap per occasion }
   \item{splitocc}{ optional occasion from which second colour is to be used  }
   \item{col2}{ second colour (used with \code{splitocc}) }
-  \item{type}{ character string ('petal', 'n.per.detector' or 'n.per.cluster') }
+  \item{type}{ character string ("petal", "n.per.detector" or "n.per.cluster") }
   \item{cappar}{ list of named graphical parameters for detections (passed to \code{par}) }
   \item{trkpar}{ list of named graphical parameters for tracks (passed to \code{par}) }
   \item{labpar}{ list of named graphical parameters for labels (passed to \code{par}) }
@@ -48,7 +48,7 @@
 
 By default, a `petal' plot is generated in the style of Density (Efford 2007)
 using \code{eqscplot} from the MASS library. If \code{type =
-'n.per.detector'} or \code{type = 'n.per.cluster'} the result is a
+"n.per.detector"} or \code{type = "n.per.cluster"} the result is a
 colour-coded plot of the number of individuals at each unit, pooled over
 occasions.
 
@@ -77,8 +77,8 @@ individuals then colours will be re-used.
 
 \value{
   
-  For \code{type = 'petal'}, the number of detections in \code{x}.
-  For \code{type = 'n.per.detector'} or \code{type = 'n.per.cluster'}, a
+  For \code{type = "petal"}, the number of detections in \code{x}.
+  For \code{type = "n.per.detector"} or \code{type = "n.per.cluster"}, a
   dataframe with data for a legend (see Examples).
 
 }
@@ -108,21 +108,29 @@ plot(tempcapt, border = 10, rad = 3, tracks = TRUE,
 testregion <- data.frame(x = c(0,2000,2000,0),
     y = c(0,0,2000,2000))
 popn <- sim.popn (D = 10, core = testregion, buffer = 0,
-    model2D = 'hills', details = list(hills = c(-2,3)))
+    model2D = "hills", details = list(hills = c(-2,3)))
 t1 <- make.grid(nx = 1, ny = 1)
 t1.100 <- make.systematic (cluster = t1, spacing = 100,
     region = testregion)
 capt <- sim.capthist(t1.100, popn = popn, noccasions = 1)
 
 ## now plot captures ...
-temp <- plot(capt, title = 'Individuals per cluster',
-    type = 'n.per.cluster', hidetr = FALSE, gridl = FALSE,
-    cappar = list(cex = 1.5))
+temp <- plot(capt, title = "Individuals per cluster",
+    type = "n.per.cluster", hidetraps = FALSE,
+    gridlines = FALSE, cappar = list(cex = 1.5))
 
 \dontrun{
 ## add legend; click on map to place top left corner
 legend (locator(1), pch = 21, pt.bg = temp$colour,
-    pt.cex = 1.3, legend = temp$legend, cex = 0.6)
+    pt.cex = 1.3, legend = temp$legend, cex = 0.8)
+}
+
+\dontrun{
+## try varying individual colours - requires RColorBrewer
+require(RColorBrewer)
+plot(infraCH[[2]], icolours = brewer.pal(12, 'Set3'), tracks = T,
+    bg = 'black', cappar = list(cex = 2), border = 10, rad = 2,
+    gridlines=F)
 }
 
 }

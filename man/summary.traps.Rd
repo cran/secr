@@ -23,7 +23,7 @@
 
 \value{
 An object of class \code{summary.traps}, a list with elements
-  \item{detector }{\code{\link{detector}} type (`single', `multi', `proximity' etc.)}
+  \item{detector }{\code{\link{detector}} type ("single", "multi", "proximity" etc.)}
   \item{ndetector }{number of detectors}
   \item{xrange }{range of x coordinates }
   \item{yrange }{range of y coordinates }

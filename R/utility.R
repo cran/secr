@@ -275,11 +275,11 @@ spatialscale <- function (object, detectfn, session = '') {
 
 ###############################################################################
 
-insidepoly <- function (xy, poly) {
+pointsInPolygon <- function (xy, poly) {
     xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
     if (inherits(poly, "SpatialPolygonsDataFrame")) {
         if (!require (sp))
-            stop ("package 'sp' required for insidepoly()")
+            stop ("package 'sp' required for pointsInPolygon()")
         xy <- SpatialPoints(xy)
         OK <- overlay (xy, poly)
         !is.na(OK)
@@ -299,5 +299,27 @@ insidepoly <- function (xy, poly) {
         np <- nrow(poly)
         apply(xy, 1, checkone)
     }
+}
+###############################################################################
+## logical for whether object specifies userDfn
+
+userD <- function (object) {
+    if (!inherits(object, 'secr'))
+        stop ("requires secr fitted model")
+    !is.null(object$details$userDfn)
+}
+
+###############################################################################
+
+## mean and SD if x numeric
+## was statfn 2011-11-08
+getMeanSD <- function(xy) {
+    MeanSD <- function (x) {
+        if (is.numeric(x))
+            c(mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
+        else
+            c(NA,NA)
+    }
+    as.data.frame (apply(xy, 2, MeanSD))
 }
 ###############################################################################

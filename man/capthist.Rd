@@ -13,10 +13,10 @@ detector (trap) locations, individual covariates and other data needed
 for a spatially explicit capture-recapture analysis with
 \code{secr.fit}. 
 
-For 'single' and 'multi' detectors, \code{capthist} is a matrix with one
+For `single' and `multi' detectors, \code{capthist} is a matrix with one
 row per animal and one column per occasion (i.e. dim(capthist) = c(nc,
 noccasions)); each element is either zero (no detection) or a detector
-number. For other detectors ('proximity', 'count', 'signal' etc.),
+number. For other detectors (`proximity', `count', `signal' etc.),
 \code{capthist} is an array of values and dim(capthist) = c(nc,
 noccasions, ntraps); values maybe binary (\{--1, 0, 1\}) or integer
 depending on the detector type.
@@ -28,9 +28,9 @@ Ancillary data are retained as attributes of a \code{capthist} object as follows
 \item{traps}{ -- object of class \code{traps} (required)}
 \item{session}{ -- session identifier (required)}
 \item{covariates}{ -- dataframe of individual covariates (optional)}
-\item{cutval}{ -- threshold of signal strength for detection ('signal' only)}
-\item{signal}{ -- signal strength values, one per detection ('signal' only)}
-\item{detectedXY}{ -- dataframe of coordinates for location within polygon ('polygon' only)}
+\item{cutval}{ -- threshold of signal strength for detection (`signal' only)}
+\item{signal}{ -- signal strength values, one per detection (`signal' only)}
+\item{detectedXY}{ -- dataframe of coordinates for location within polygon (`polygon' only)}
 }
 
 The parts of a capthist object can be assembled with the function

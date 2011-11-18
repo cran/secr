@@ -15,7 +15,7 @@
 naivesigma <- function (obsRPSV,trps,mask,detectfn,z) {
     naiveRPSVcall <- function (sigma)
     {
-        temp <- .C ("naiveRPSV",  PACKAGE = 'secr',
+        temp <- .C ("naiveRPSV", PACKAGE = 'secr',
           as.double (sigma),               # Parameter : detection scale
           as.double (z),                   # Parameter : detection shape (fixed)
           as.integer(k),
@@ -150,15 +150,15 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
         s        <- ncol(capthist)    # number of occasions
         k        <- nrow(trps)
         # optionally thin mask
-        if (thin>0 & thin < 1)
-            mask <- mask[runif(length(mask$x)) < thin,]
+        if ((nrow(mask)>100) & (thin>0) & (thin < 1))
+            mask <- mask[runif(nrow(mask)) < thin,]
         else
             thin <- 1.0
-        m        <- length(mask$x)    # number of points in mask
+        m        <- nrow(mask)                   # number of points in mask
         if (length(dim(capthist))>2)
-            cpa     <- sum(abs(capthist))/n      ## captures per animal
+            cpa     <- sum(abs(capthist))/n      # captures per animal
         else
-            cpa     <- sum(abs(capthist)>0)/n    ## captures per animal
+            cpa     <- sum(abs(capthist)>0)/n    # captures per animal
 
         obsRPSV <- RPSV(capthist)
 

@@ -40,18 +40,14 @@ an individual to be detected at multiple detectors on one occasion
 pre-fitted models are included: \code{stoat.model.HN},
 \code{stoat.model.HZ}, and \code{stoat.model.EX} (with halfnormal,
 hazard-rate and negative exponential detection functions,
-respectively). Some components of the fitted secr models have been
-removed with \code{\link{trim}} to save space.
+respectively).
 
 \tabular{ll}{
   Object \tab Description \cr
   stoatCH \tab capthist object \cr
-  stoat.model.EX \tab fitted secr model -- null, exponential detection
-  function \cr
-  stoat.model.HN \tab fitted secr model -- null, halfnormal detection
-  function \cr
-  stoat.model.HZ \tab fitted secr model -- null, hazard-rate detection
-  function \cr
+  stoat.model.EX \tab fitted secr model -- null, exponential detection function \cr
+  stoat.model.HN \tab fitted secr model -- null, halfnormal detection function \cr
+  stoat.model.HZ \tab fitted secr model -- null, hazard-rate detection function \cr
 }
 
 }
@@ -92,9 +88,15 @@ Ecology} \bold{34}, 356--359. Available on-line at
   about +42.336. The previous analysis also used a coarser habitat mask
   than the default in \pkg{secr} (32 x 32 rather than 64 x 64) and this
   slightly alters the log-likelihood and \eqn{\Delta}{delta}AIC
-  values. Fitting the hazard-rate detection function previously required
-  the shape parameter z (or b) to be fixed, but the model can be fitted
-  in \pkg{secr} without fixing z.
+  values.
+
+  Fitting the hazard-rate detection function previously required the
+  shape parameter z (or b) to be fixed, but the model can be fitted in
+  \pkg{secr} without fixing z. However, the hazard rate function can
+  cause problems owing to its long tail, and it is not recommended. The
+  check on the buffer width, usually applied automatically on completion of
+  secr.fit, causes an error and must be suppressed with verify = FALSE
+  (see Examples).
 
   Gleeson et al. (2010) address the question of whether there is enough
   variability at the sampled microsatellite loci to distinguish
@@ -108,12 +110,13 @@ summary(stoatCH)
 
 \dontrun{
 stoat.model.HN <- secr.fit(stoatCH, buffer = 1000, detectfn = 0)
-stoat.model.HZ <- secr.fit(stoatCH, buffer = 1000, detectfn = 1)
+stoat.model.HZ <- secr.fit(stoatCH, buffer = 1000, detectfn = 1,
+    verify = FALSE)
 stoat.model.EX <- secr.fit(stoatCH, buffer = 1000, detectfn = 2)
-confint(stoat.model.HN, 'D')
+confint(stoat.model.HN, "D")
 ## Profile likelihood interval(s)...
 ##         lcl        ucl
-## D 0.01381419 0.04563511
+## D 0.01275125 0.04055662
 }
 
 ## plot fitted detection functions
@@ -125,9 +128,9 @@ plot(stoat.model.HZ, xval = xv, limits = FALSE, lty = 3, add = TRUE)
 
 ## review density estimates
 collate(stoat.model.HZ, stoat.model.HN, stoat.model.EX,
-    realnames='D', perm=c(2,3,4,1))
-model.average(stoat.model.HZ, stoat.model.HN, stoat.model.EX,
-    realnames='D')
+    realnames = "D", perm = c(2,3,4,1))
+model.average(stoat.model.HN, stoat.model.EX,
+    realnames = "D")
 
 }
 \keyword{datasets}

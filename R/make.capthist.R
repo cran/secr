@@ -35,7 +35,6 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
     else
         sessionlevels <- sort(sessionlevels)
     session <- factor(session, levels=sessionlevels)
-
     MS <- bysession & ( length(sessionlevels) > 1)
     if (MS) {  # recursive call of make.capthist
         capturelist <- split (captures, session)

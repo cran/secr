@@ -1,5 +1,6 @@
 \name{region.N}
 \alias{region.N}
+\alias{population size}
 
 \title{Population Size}
 
@@ -16,7 +17,7 @@ Note). }
 
 region.N (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE, nlowerbound = TRUE)
+    keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson')
 
 }
 
@@ -45,7 +46,10 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   \item{keep.region}{ logical for whether to save the raster region}
 
   \item{nlowerbound}{ logical for whether to use n as lower bound when
-  computing log interval for realised N}
+    computing log interval for realised N}
+
+  \item{RN.method}{ character string for method used to calculate
+  sampling variance of realised N (RN). `Poisson' or `MSPE'.}
 
 }
 \details{
@@ -72,6 +76,12 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   shapefile to a SpatialPolygonsDataFrame. 
   
   Group-specific N has yet to be implemented.
+
+  Population size is adjusted automatically for the number of clusters
+  in `mashed' models (see \code{\link{mash}}). However, the population
+  size reported is that associated with a single cluster unless
+  \code{regionmask} is specified.
+
 }
 
 \value{
@@ -81,12 +91,11 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   below.
   
 \tabular{ll}{
-estimate    \tab \eqn{\hat{N}}{N-hat} (expected or realised, depending on row)\cr
-SE.estimate \tab standard error of \eqn{\hat{N}}{N-hat} \cr
+estimate    \tab estimate of N (expected or realised, depending on row)\cr
+SE.estimate \tab standard error of estimated N \cr
 lcl         \tab lower 100(1--alpha)\% confidence limit \cr
 ucl         \tab upper 100(1--alpha)\% confidence limit \cr
 n           \tab total number of individuals detected \cr
-E.n         \tab expected number of individuals detected from region \cr
 }
 
 For multiple sessions, the value is a list with one component per
@@ -103,20 +112,22 @@ saved as the attribute `region' (see Examples).
   similar, or identical, but realised \eqn{N} usually has lower
   estimated variance, especially if the \eqn{n} detected animals
   comprise a large fraction.
-
-  Realised \eqn{N} is estimated as \eqn{R(N) = n + \int_B (1 -
+ 
+  Realised \eqn{N} is given by \eqn{R(N) = n + \int_B (1 -
   p.(X))D(X) dX}{R(N) = n + integral_over_B (1 - p.(X))D(X) dX} (the
   second term represents undetected animals). The sampling variance of
   \eqn{R(N)}, technically a mean square prediction error (Johnson et al.
   2010), is approximated by summing the expected Poisson variance of the
   true number of undetected animals and a delta-method estimate of its
   sampling variance, obtained as for \eqn{E(N)}.
-  
-  The expected number of individuals detected from region \eqn{B} is
-\eqn{E(n) = \int_B p.(X)D(X) dX}{E(n) = integral_over_B p.(X)D(X)
-dX}. \eqn{E(n) < n} is a sign that the region did not contain all
-detected animals, and that other results are unreliable.
 
+  By default, a shortcut is used to compute realised \eqn{N} and its
+  sampling variance. With this option (RN.method = `Poisson') the
+  previously estimated \eqn{E(N)} is used as an estimate of realised
+  \eqn{N}, and the sampling variance is the sampling variance of
+  \eqn{E(N)} minus the estimate of \eqn{E(N)} (representing Poisson
+  process variance).
+  
   Johnson et al. (2010) use the notation \eqn{\mu(B)} for expected
   \eqn{N} and \eqn{N(B)} for realised \eqn{N} in region \eqn{B}.
 
@@ -128,10 +139,6 @@ detected animals, and that other results are unreliable.
   same as that of \eqn{N(B)}, assuming that \eqn{B} is the full extent
   of the original mask.
 
-  The coding of region.N is somewhat complicated and we may yet
-  discover scenarios not allowed for in this version (2.1.0). Please
-  treat it as provisional and report any problems.
-
 }
   
 \references{
@@ -139,6 +146,9 @@ detected animals, and that other results are unreliable.
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
+
+Efford, M. G. (submitted) Estimating population size by spatially
+explicit capture--recapture.
 
 Johnson, D. S., Laake, J. L. and Ver Hoef, J. M. (2010) A model-based
 approach for making ecological inference from distance sampling
@@ -148,7 +158,8 @@ data. \emph{Biometrics} \bold{66}, 310--318.
 
 \seealso{
   
-  \code{\link{secr.fit}}, \code{\link{derived}}, \code{\link{make.mask}}
+  \code{\link{secr.fit}}, \code{\link{derived}}, \code{\link{make.mask}},
+  \code{\link{expected.n}}, \code{\link{closedN}}
   
 }
 
@@ -163,12 +174,13 @@ region.N(ovenbird.model.D)
 
 ## region defined as vector polygon
 ## retain and plot region mask
-temp <- region.N(possum.model.1, possumarea, spacing = 40,
+temp <- region.N(possum.model.0, possumarea, spacing = 40,
     keep.region = TRUE)
 temp
-plot (attr(temp, 'region'))
+plot (attr(temp, "region"), type = 'l')
 }
 
 }
 
-\keyword{ model }
+\keyword{ models }
+%E.n         \tab expected number of individuals detected from region \cr

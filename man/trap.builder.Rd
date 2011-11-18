@@ -18,7 +18,7 @@ across space, possibly at a probability sample of points.
 \usage{
 
 trap.builder (n = 10, cluster, region = NULL, frame =
-    NULL, method = 'SRS', edgemethod = 'clip', samplefactor = 2,
+    NULL, method = "SRS", edgemethod = "clip", samplefactor = 2,
     ranks = NULL, rotation = NULL, detector, plt = FALSE,
     add = FALSE) 
 
@@ -71,18 +71,18 @@ cluster.centres (object)
   \code{region} may be a two-column matrix or dataframe of x-y coordinates
   for the boundary, or a SpatialPolygonsDataFrame object from \pkg{sp}.
   
-  \code{method} may be `SRS', `GRTS', `all' or `rank'. `SRS' takes a simple
+  \code{method} may be "SRS", "GRTS", "all" or "rank". "SRS" takes a simple
   random sample (without replacement in the case of a finite sampling
-  frame). `GRTS' takes a spatially representative sample using the
+  frame). "GRTS" takes a spatially representative sample using the
   `generalized random tessellation stratified' (GRTS) method of Stevens
-  and Olsen (2004). `all' replicates \code{cluster} across all points in
-  the finite sampling frame. `rank' selects \code{n} sites from
+  and Olsen (2004). "all" replicates \code{cluster} across all points in
+  the finite sampling frame. "rank" selects \code{n} sites from
   \code{frame} on the basis of their ranking on the vector `ranks',
   which should have length equal to the number of rows in
   \code{frame}; ties are resolved by drawing a site at random.
   
-  \code{edgemethod} may be `clip' (reject individual detectors),
-  `allowoverlap' (no action) or `allinside' (reject whole cluster if any
+  \code{edgemethod} may be "clip" (reject individual detectors),
+  "allowoverlap" (no action) or "allinside" (reject whole cluster if any
   component is outside \code{region}). Sufficient additional samples
   (\code{(samplefactor--1) * n}) must be drawn to allow for replacement
   of any rejected clusters; otherwise, an error is reported (`not enough
@@ -112,13 +112,10 @@ cluster.centres (object)
 
 \value{
 
-  \code{trap.builder} produces an object of class `traps'. A covariate
-  `cluster' retains the sequence number of the cluster from which a
-  location is derived. A covariate `trapnum' retains the within-cluster
-  sequence number of the detector.
+  \code{trap.builder} produces an object of class `traps'.
 
-  \code{method = 'GRTS'} causes messages to be displayed regarding the
-    stratum (always `None'), and the initial, current and final number
+  \code{method = "GRTS"} causes messages to be displayed regarding the
+    stratum (always "None"), and the initial, current and final number
     of levels from the GRTS algorithm.
 
   \code{plt = TRUE} causes a plot to be displayed, including the polygon
@@ -127,7 +124,7 @@ cluster.centres (object)
   \code{mash} produces a capthist object with the same number of rows as
   the input but different detector numbering and `traps'. An attribute
   `n.mash' is a vector of the numbers recorded at each cluster; its
-  length is the number of clusters. An attribute `centres' is a a
+  length is the number of clusters. An attribute `centres' is a
   dataframe containing the x-y coordinates of the cluster centres. The
   \code{predict} method for secr objects and the function \code{derived}
   both recognise and adjust for mashing.
@@ -152,27 +149,32 @@ cluster.centres (object)
   The function \code{\link{make.systematic}} should be used to generate
   systematic random layouts.
 
+  The sequence number of the cluster to which each detector belongs, and
+  its within-cluster sequence number, may be retrieved with the
+  functions \code{\link{clusterID}} and \code{\link{clustertrap}}.
+
 }
 
 \seealso{
 \code{\link{make.grid}}, \code{\link{traps}},
 \code{\link{make.systematic}},
-\code{\link{clusterID}}
+\code{\link{clusterID}},
+\code{\link{clustertrap}}
 }
 
 \examples{
 
 ## solitary detectors placed randomly within a rectangle
-tempgrid <- trap.builder (n = 10, method = 'SRS',
+tempgrid <- trap.builder (n = 10, method = "SRS",
     region = cbind(x = c(0,1000,1000,0),
     y = c(0,0,1000,1000)), plt = TRUE)
 
 ## GRTS sample of mini-grids within a rectangle
-## edgemethod = 'allinside' avoids truncation at edge
+## edgemethod = "allinside" avoids truncation at edge
 minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
-    detector = 'proximity')
+    detector = "proximity")
 tempgrid <- trap.builder (n = 20, cluster = minigrid,
-    method = 'GRTS', edgemethod = 'allinside', region =
+    method = "GRTS", edgemethod = "allinside", region =
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
     plt = TRUE)
 
@@ -181,34 +183,41 @@ tempgrid <- trap.builder (n = 20, cluster = minigrid,
 origins <- expand.grid(x = seq(0, 900, 100),
     y = seq(0, 1100, 100))
 XY <- origins + runif(10 * 12 * 2) * 100
-temp <- trap.builder (frame = XY, method = 'all',
-    detector = 'multi')
+temp <- trap.builder (frame = XY, method = "all",
+    detector = "multi")
 ## same as temp <- read.traps(data = XY)
 plot(temp, border = 0)  ## default grid is 100 m
 
-## regular lattice of mini-arrays
-tempgrid <- trap.builder (cluster = minigrid , method =
-    'all', frame = expand.grid(x = seq(1000, 5000, 2000),
-    y = seq(1000, 5000, 2000)), plt = TRUE)
 
 ## simulate some data
-tempcapt <- sim.capthist(tempgrid, popn = list(D=10))
+## regular lattice of mini-arrays
+minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
+    detector = "proximity")
+tempgrid <- trap.builder (cluster = minigrid , method =
+    "all", frame = expand.grid(x = seq(1000, 5000, 2000),
+    y = seq(1000, 5000, 2000)), plt = TRUE)
+tempcapt <- sim.capthist(tempgrid, popn = list(D = 10))
 cluster.counts(tempcapt)
 cluster.centres(tempgrid)
 
-## 'mash' the CH
+## "mash" the CH
 summary(mash(tempcapt))
 
 ## compare timings (estimates are near identical)
 \dontrun{
-tempmask1 <- make.mask(tempgrid, type = 'clusterrect',
+tempmask1 <- make.mask(tempgrid, type = "clusterrect",
     buffer = 200, spacing = 10)
-secr.fit(tempcapt, mask = tempmask1)         ## 241.52 s
+fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 680 s
 
 tempmask2 <- make.mask(minigrid, spacing = 10)
-secr.fit(mash(tempcapt), mask = tempmask2)   ## 2.85 s
+fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 6.2 s
 ## density estimate is adjusted automatically
 ## for the number of mashed clusters (9)
+
+predict(fit1)
+predict(fit2)
+fit1$proctime
+fit2$proctime
 }
 
 ## two-phase design: preliminary sample across region,
@@ -220,10 +229,10 @@ t4 <- make.grid(nx = 4, ny = 4, spacing = 50)
 singletraps <- make.systematic (n = c(8,10), cluster = t1,
     region = arena)
 CH <- sim.capthist(singletraps, popn = list(D = 2))
-plot(CH, type='n.per.cluster', title='Number per cluster')
+plot(CH, type = "n.per.cluster", title = "Number per cluster")
 temp <- trap.builder(10, frame = traps(CH), cluster = t4,
-    ranks = cluster.counts(CH), method = 'rank',
-    edgemethod = 'allowoverlap', plt = TRUE, add = TRUE)
+    ranks = cluster.counts(CH), method = "rank",
+    edgemethod = "allowoverlap", plt = TRUE, add = TRUE)
 }
 
 }

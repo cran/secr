@@ -10,10 +10,10 @@
 
 \usage{
 
-write.captures(object, file = '', deblank = TRUE, header = TRUE,
-    append = FALSE, sess = '1', ndec = 2, covariates = FALSE,  ...)
+write.captures(object, file = "", deblank = TRUE, header = TRUE,
+    append = FALSE, sess = "1", ndec = 2, covariates = FALSE,  ...)
 
-write.traps(object, file = '', deblank = TRUE,  header = TRUE,
+write.traps(object, file = "", deblank = TRUE,  header = TRUE,
     ndec = 2, covariates = FALSE, ...)
 
 }

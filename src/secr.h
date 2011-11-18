@@ -41,12 +41,13 @@ typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, 
 */
 
 typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
-    double[], int, double[], int, int, int, int, int, int, gfnptr, double[], double[],
-    double[], double);
+   double[], int, double[], double[], int[], int, int, int, int, int, int, gfnptr, double[],
+   double[], double[], double);
 /*
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
-     double gk[], int binomN, double detspec[], int cc, int nc, int kk, int ss,
-     int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], double minp);
+     double gk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
+     int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[], 
+     double traps[], double mask[], double minp);
 */
 
 typedef double (*fnptr)(double[], double);
@@ -496,6 +497,7 @@ void presenceloglik (
     int    *nc,          /* number of rows in w */
     int    *ss,          /* number of occasions */
     int    *kk,          /* number of detectors */
+    double *traps,       /* x,y locations of traps (first x, then y) */
     double *D,           /* Parameter value - density */
     double *g0,          /* Parameter value - p */
     double *sigma,       /* Parameter value - radius */

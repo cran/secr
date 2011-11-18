@@ -1,12 +1,13 @@
 \name{closedN}
 \alias{closedN}
+
 \title{
 Closed population estimates
 }
 \description{
 
   Estimate N, the size of a closed population, by several conventional
-  non-spatial capture--recapture methods.
+  non-spatial capture--recapture methods. 
 
 }
 
@@ -92,6 +93,15 @@ closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07,
   
   Chao's estimators have been subject to various improvements not
   included here; please see Chao and Shen (2010) for details.
+
+}
+
+\section{Warning}{
+  
+  If your data are from spatial sampling (e.g. grid trapping) it is
+  recommended that you do \emph{not} use these methods to estimate
+  population size (see Efford submitted). Instead, fit a spatial model
+  and estimate population size with \code{\link{region.N}}.
   
 }
 
@@ -110,6 +120,9 @@ Estimation). Program and User's Guide available online at \url{http://chao.stat.
 Dorazio, R. M. and Royle, J. A. (2003) Mixture models for estimating the
 size of a closed population when capture rates vary among
 individuals. \emph{Biometrics} \bold{59}, 351--364.
+
+Efford, M. G. (submitted) Estimating population size by spatially
+explicit capture--recapture.
 
 Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model
 selection in small samples. \emph{Biometrika} \bold{76}, 297--307.
@@ -133,7 +146,11 @@ Collins, Colorado, USA.
 }
 
 \seealso{
-  \code{\link{capthist}}, \code{\link{closure.test}}
+  
+  \code{\link{capthist}},
+  \code{\link{closure.test}},
+  \code{\link{region.N}}
+
 }
 
 \examples{

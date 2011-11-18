@@ -106,7 +106,7 @@ than groups are allowed only when the model is fitted by maximizing the
 conditional likelihood). The type of the predictor is inferred from the
 data frame in which it first occurs. Thus if the model included the
 formula `g0 ~ wetness', and `wetness' was a column in the data frame of
-time covariates (timecov), then 'wetness' would be interpreted as a time
+time covariates (timecov), then `wetness' would be interpreted as a time
 covariate, and a column of the same name in covariates(traps) would be
 ignored. In this case, renaming the column in timecov would expose the
 traps covariate, and `wetness' would be interpreted as an attribute of
@@ -134,7 +134,7 @@ list(g0 = ~1, sigma = ~1)
 list(g0 = ~b, sigma = ~b)
 
 ## group-specific parameters; additive time effect on g0
-## groups are defined via the 'groups' argument of secr.fit
+## groups are defined via the '`groups' argument of secr.fit
 list(g0 = ~ g + t, sigma = ~ g)
 
 ## g0 depends on trap-specific covariate
@@ -152,13 +152,20 @@ trap response.
 
 \references{
 
-Cooch, E. and White, G. (eds) (2008) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{http://www.phidot.org}.
+Cooch, E. and White, G. (eds) (2008) \emph{Program MARK: A Gentle
+Introduction.} 6th edition. Available online at
+\url{http://www.phidot.org}.
 
-Hayes, R. J. and Buckland, S. T. (1983) Radial-distance models for the line-transect method. \emph{Biometrics} \bold{39}, 29--42.
+Hayes, R. J. and Buckland, S. T. (1983) Radial-distance models for the
+line-transect method. \emph{Biometrics} \bold{39}, 29--42.
 
-Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{Biometrika} \bold{76}, 133--140.
+Huggins, R. M. (1989) On the statistical analysis of capture
+experiments. \emph{Biometrika} \bold{76}, 133--140.
 
-Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling survival and testing biological hypotheses using marked animals: a unified approach with case studies. \emph{Ecological Monographs} \bold{62}, 67--118.
+Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992)
+Modeling survival and testing biological hypotheses using marked
+animals: a unified approach with case studies. \emph{Ecological
+Monographs} \bold{62}, 67--118.
 
 }
 
@@ -166,3 +173,23 @@ Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992) Modeling su
 
 \keyword{ models }
 
+% if{html}{
+% \tabular{llll}{
+% Variable \tab Description \tab Data source \tab Dim \cr
+% t        \tab time factor (one level for each occasion) \tab automatic \tab S \cr
+% T        \tab time trend (integer covariate 0:(S-1)) \tab automatic \tab S \cr
+% tcov     \tab default time covariate \tab timecov[,1] \tab S \cr
+% kcov     \tab default trap covariate \tab covariates (traps)[,1] \tab K \cr
+% b        \tab learned response \tab \code{capthist} \tab n.S \cr
+% B        \tab transient (Markovian) response \tab \code{capthist} \tab n.S \cr
+% g        \tab group \tab see below \tab n \cr
+% h2       \tab 2-class mixture \tab -- \tab 2 \cr
+% h3       \tab 3-class mixture \tab -- \tab 2 \cr
+% session  \tab session factor (one level for each session) \tab automatic \tab R \cr
+% Session  \tab session number 0:(R-1) \tab automatic \tab R \cr
+% [user]   \tab individual covariate \tab covariates (capthist) \tab n \cr
+% [user]   \tab session covariate \tab sessioncov \tab R \cr
+% [user]   \tab time covariate \tab timecov \tab S \cr
+% [user]   \tab detector covariate \tab covariates (traps) \tab K \cr
+% }
+% }

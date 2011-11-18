@@ -1,5 +1,4 @@
 \name{deviance}
-\Rdversion{1.1}
 \alias{deviance}
 \alias{df.residual}
 \alias{deviance.secr}
@@ -13,8 +12,8 @@ Deviance of fitted secr model and residual degrees of freedom
 
 Compute the deviance or residual degrees of freedom of a fitted secr
 model, treating multiple sessions and groups as independent. The
-likelihood of the saturated model depends on whether the 'conditional'
-or 'full' form was used, and on the distribution chosen for the number
+likelihood of the saturated model depends on whether the `conditional'
+or `full' form was used, and on the distribution chosen for the number
 of individuals observed (Poisson or binomial).
 
 }

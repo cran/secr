@@ -8,7 +8,8 @@
 ## 2010 03 10 debugged simsecr in secr.c
 ## 2010 03 10 debugged dummyCH
 ## 2010 06 30 memory allocation error in sim.detect
-## 2011-09-26 detector checks use .localstuff
+## 2011 09 26 detector checks use .localstuff
+## 2011 11 08 uses getDensityArray and predictDsurface
 ############################################################################################
 
 simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1, ...)
@@ -21,25 +22,25 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 {
 
 ##  check input
+
     if (!inherits(object,'secr'))
         stop ("requires 'secr' object")
     if (object$CL)
         stop ("not implemented for conditional likelihood")
     if (!all(sapply(object$fixed, is.null)))
         stop ("not implemented for fixed parameters")
-    if (is.null(object$D))
-        stop ("old 'secr' object does not have 'D' component")
+
+   Darray <- getDensityArray (predictDsurface(object))
 
 ## setup
-    # dim(object$D)[1] is number of mask points
-    ngrp <- dim(object$D)[2]
-    nsession <- dim(object$D)[3]
+
+    ngrp <- dim(Darray)[2]
+    nsession <- dim(Darray)[3]
     if (!is.null(object$groups)) {
         ## individual covariates for foundation of g
         di <- disinteraction (object$capthist, object$groups)
     }
-    ## we will grow this list - inefficient for very large nsim
-    sesscapt <- list()
+    sesscapt <- vector('list', nsim)
 
     ##################
     ## set random seed
@@ -65,11 +66,11 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
             popn <- list()
             for (g in 1:ngrp) {
                 if (object$model$D == ~1) {
-                    density <- object$D[1,g,sessnum]   ## homogeneous
+                    density <- Darray[1,g,sessnum]   ## homogeneous
                     mod2D <- 'poisson'
                 }
                 else {
-                    density <- object$D[,g,sessnum]    ## inhomogeneous
+                    density <- Darray[,g,sessnum]    ## inhomogeneous
                     mod2D <- 'IHP'
                 }
                 if (chat > 1)
@@ -220,13 +221,17 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
 
     ## design matrices etc.
     dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 0)
-    design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov, object$groups, object$dframe)
-    realparval0 <- makerealparameters (design0, beta, object$parindx, object$link, object$fixed)  # naive
+    design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
+        object$groups, object$dframe)
+    realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
+        object$fixed)  # naive
 
     if ('b' %in% object$vars) {
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
-        design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov, object$groups, object$dframe)
-        realparval1 <- makerealparameters (design1, beta, object$parindx, object$link, object$fixed)  # caught before
+        design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
+            object$groups, object$dframe)
+        realparval1 <- makerealparameters (design1, beta, object$parindx, object$link,
+            object$fixed)  # caught before
     }
     else {   ## faster
         design1 <- design0
@@ -278,6 +283,8 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
         sigmaindex <- 2
         g0index <- 1
         if (object$details$scalesigma) {   ## assuming previous check that scalesigma OK...
+            stop ("scaling of sigma by density not implemented for simulation")
+            ## 2011-11-11 where does D come from?
             Xrealparval1[,sigmaindex] <- Xrealparval1[,sigmaindex] / D[1,1,sessnum]^0.5
             Xrealparval0[,sigmaindex] <- Xrealparval0[,sigmaindex] / D[1,1,sessnum]^0.5
         }

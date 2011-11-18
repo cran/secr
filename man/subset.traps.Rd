@@ -9,7 +9,7 @@
 }
 \usage{
 \method{subset}{traps}(x, subset = NULL, occasions = NULL, \dots)
-\method{split}{traps}(x, f, drop = FALSE, prefix = 'S', \dots)
+\method{split}{traps}(x, f, drop = FALSE, prefix = "S", \dots)
 }
 
 \arguments{
@@ -33,7 +33,7 @@ have the same length as \code{levels(polyID(x))} or
 
 \code{split} generates a list in which each component is a
 \code{traps} object. Each component corresponds to a level of
-\code{f}.  The argument 'x' of \code{split} cannot be a list.
+\code{f}.  The argument `x' of \code{split} cannot be a list.
 
 }
 \value{

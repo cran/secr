@@ -7,6 +7,7 @@
 ## 2010-06-14  added Ndist = 'specified', using D to carry N
 ## 2011-03-27  conditional attachment of rownames (correct bug when N = 0)
 ## 2011-04-06  coastal beta option
+## 2011-10-20  poly argument
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -25,10 +26,26 @@ toroidal.wrap <- function (pop) {
     pop
 }
 
+tile <- function (popn, method = "reflect") {
+    bbox <- attr(popn, 'boundingbox')
+    if (method== "reflect") {
+        p2 <- rbind.popn(popn, flip(popn,lr=min(bbox$x)), flip(popn,lr=max(bbox$x)))
+        rbind.popn(p2, flip(p2,tb=min(bbox$y)), flip(p2,tb=max(bbox$y)))
+    }
+    else if (method == "copy") {
+        ht <- max(bbox$y) - min(bbox$y)
+        wd <- max(bbox$x) - min(bbox$x)
+        p2 <- rbind.popn(popn, shift(popn,c(-wd,0)), shift(popn, c(wd,0)))
+        rbind.popn(p2, shift(p2,c(0,-ht)), shift(p2, c(0,ht)))
+    }
+    else
+        stop ("unrecognised method")
+}
+
 sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
-    buffertype = 'rect', covariates = list(sex=c(M=0.5,F=0.5)),
-    number.from = 1, Ndist = 'poisson', nsession = 1, details = NULL,
-    seed = NULL)
+    buffertype = 'rect', poly = NULL, covariates = list(sex =
+    c(M = 0.5,F = 0.5)), number.from = 1, Ndist = 'poisson',
+    nsession = 1, details = NULL, seed = NULL, ...)
 {
     if (nsession > 1) {
         discrete <- function(x) {
@@ -37,7 +54,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
         }
         session.popn <- function (s) {
             ## independent population
-            sim.popn (D, core, buffer, model2D, buffertype,
+            sim.popn (D, core, buffer, model2D, buffertype, poly,
                 covariates, number.from, Ndist, nsession = 1, details, seed)
         }
         turnover <- function (oldpopn) {
@@ -75,9 +92,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 ## cf Schwarz & Arnason betas
             if (nrecruit>0) {
                 recruits <- sim.popn(D = nrecruit, core = core, buffer = buffer,
-                    model2D = model2D, buffertype = buffertype, covariates =
-                    covariates, number.from = newstart, Ndist = 'specified',
-                    nsession = 1, details = details)  ## danger: resets random seed
+                    model2D = model2D, buffertype = buffertype, poly = poly,
+                    covariates = covariates, number.from = newstart,
+                    Ndist = 'specified', nsession = 1, details = details)
+                ## danger: resets random seed
                 newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
             }
             attr(newpopn, 'losses') <- nrow(oldpopn)-nsurv
@@ -222,8 +240,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
             else stop ("unrecognised 2-D distribution")
         }
         names(animals) <- c('x','y')
-        if (nrow(animals) > 0)   ## condition added 2011-03-27
-            row.names (animals) <- number.from : (nrow(animals)+number.from-1)
         attr(animals,'covariates') <- NULL
         if (!is.null(covariates)) {
             tempcov <- list()
@@ -236,11 +252,22 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
             }
             attr(animals,'covariates') <- as.data.frame(tempcov)
         }
+        if (nrow(animals) > 0)   ## condition added 2011-03-27
+            row.names (animals) <- number.from : (nrow(animals)+number.from-1)
+        class(animals) <- c('popn', 'data.frame')
+        #-------------------------
+        # restrict to a polygon
+        # added 2011-10-20
+
+        if (!is.null(poly)) {
+            animals <- subset(animals, poly = poly, ...)
+        }
+        #-------------------------
+
         attr(animals, 'seed') <- RNGstate   ## save random seed
         attr(animals, 'Ndist') <- Ndist
         attr(animals, 'model2D') <- model2D
         attr(animals, 'boundingbox') <- expand.grid (x=xl,y=yl)[c(1,3,4,2),]
-        class(animals) <- c('popn', 'data.frame')
         animals
     }
 }

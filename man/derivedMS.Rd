@@ -17,7 +17,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
 
 \arguments{
   \item{object}{ \code{secr} object output from \code{secr.fit}, or an
-  object of class \code{c('list','secrlist')} }
+  object of class \code{c("list","secrlist")} }
   \item{sessnum}{ index of session in object$capthist for which output required }
   \item{groups}{ vector of covariate names to define group(s) (see Details) }
   \item{alpha}{ alpha level for confidence intervals }
@@ -40,10 +40,10 @@ The derived estimate of density is a Horvitz-Thompson-like estimate:
 
 A non-null value of the argument \code{distribution} overrides the value
 in \code{object$details}. The sampling variance of \eqn{\hat{D}}{D-hat}
-from \code{secr.fit} by default is spatially unconditional (\code{distribution}
-= `Poisson'). For sampling variance conditional on the population of the
+from \code{secr.fit} by default is spatially unconditional
+(\code{distribution = "Poisson"}). For sampling variance conditional on the population of the
 habitat mask (and therefore dependent on the mask area), specify
-\code{distribution} = `binomial'. The equation for the conditional
+\code{distribution = "binomial"}. The equation for the conditional
 variance includes a factor \eqn{(1 - a/A)} that disappears in the
 unconditional (Poisson) variance (Borchers and Efford 2007). Thus the
 conditional variance is always less than the unconditional variance. The
@@ -112,8 +112,6 @@ ucl         \tab upper 100(1--alpha)\% confidence limit \cr
 CVn         \tab relative SE of number observed (Poisson or binomial assumption) \cr
 CVa         \tab relative SE of effective sampling area \cr
 CVD         \tab relative SE of density estimate \cr
-%varcomp1    \tab variance due to variation in \eqn{n} (Huggins' \eqn{s^2}) \cr
-%varcomp2    \tab variance due to uncertainty in estimates of detection parameters \cr
 }
 
 For a multi-session or multi-group analysis the value is a list
@@ -145,11 +143,9 @@ parameters).
 
 These quantities are related to CVn and CVa as follows:
 
-\eqn{\mbox{CVn} = \sqrt{ \mbox{varcomp1} } / \hat{D} }{ CVn =
-  sqrt(varcomp1) / D-hat}
+\eqn{\mbox{CVn} = \sqrt{ \mbox{varcomp1} } / \hat{D} }{ CVn = sqrt(varcomp1) / D-hat}
 
-\eqn{\mbox{CVa} = \sqrt{ \mbox{varcomp2} } / \hat{D} }{ CVa =
-  sqrt(varcomp2) / D-hat}
+\eqn{\mbox{CVa} = \sqrt{ \mbox{varcomp2} } / \hat{D} }{ CVa = sqrt(varcomp2) / D-hat}
 
 
 }
@@ -161,7 +157,7 @@ derived (secrdemo.CL)
 
 \dontrun{
 ## what happens when sampling variance is conditional on mask N?
-derived(secrdemo.CL, distribution = 'binomial')
+derived(secrdemo.CL, distribution = "binomial")
 ## fitted g0, sigma
 esa(secrdemo.CL)
 ## force different g0, sigma
@@ -172,3 +168,5 @@ esa(secrdemo.CL, real = c(0.2, 25))
 
 \keyword{ models }
 
+%varcomp1    \tab variance due to variation in \eqn{n} (Huggins' \eqn{s^2}) \cr
+%varcomp2    \tab variance due to uncertainty in estimates of detection parameters \cr

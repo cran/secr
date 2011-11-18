@@ -7,49 +7,62 @@
 \title{Spatially Explicit Capture--Recapture Models }
 
 \description{
-  Functions to estimate the density of a spatially distributed animal
-population sampled with an array of passive detectors, such as traps, or
-by searching polygons or transects. }
+
+  Functions to estimate the density and size of a spatially
+  distributed animal population sampled with an array of passive
+  detectors, such as traps, or by searching polygons or transects.
+
+}
 
 \details{
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.2.0\cr
-Date: \tab 2011-09-28\cr
+Version: \tab 2.3.0\cr
+Date: \tab 2011-11-18\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
-Data comprise the locations of detectors (traps, searched areas, etc.)
-in an object of class `traps', and the detection histories of
-individually marked animals. Individual histories are stored in an
-object of class `capthist' that includes the relevant `traps'
-object. Models for population density (animals per hectare) and
-detection are defined using symbolic formula notation. Density models
+Spatially explicit capture--recapture is a set of methods for studying
+marked animals distributed in space. Data comprise the locations of
+detectors (traps, searched areas, etc. described in an object of class
+`traps'), and the detection histories of individually marked
+animals. Individual histories are stored in an object of class
+`capthist' that includes the relevant `traps' object.
+
+Models for population density (animals per hectare) and detection are
+defined in \pkg{secr} using symbolic formula notation. Density models
 may include spatial or temporal trend. Possible predictors for detection
 probability include both pre-defined variables (t, b, etc.)
 corresponding to `time', `behaviour' and other effects), and
 user-defined covariates of several kinds. Habitat is distinguished from
 nonhabitat with an object of class `mask'.
 
-Models are fitted by maximizing either the full likelihood or the
-likelihood conditional on the number of individuals observed
+Models are fitted in \pkg{secr} by maximizing either the full likelihood
+or the likelihood conditional on the number of individuals observed
 (\eqn{n}). Conditional likelihood models are limited to homogeneous
 Poisson density, but allow continuous individual covariates for
 detection. Fitting (function \code{\link{secr.fit}}) creates an object
 of class \code{secr}. Generic methods (plot, print, summary, etc.) are
 provided for each object class.
 
-A link at the bottom of this and every help page takes you to the
+A link at the bottom of each help page takes you to the
 help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
   \url{../doc/secr-overview.pdf} \tab general introduction \cr
   \url{../doc/secr-datainput.pdf} \tab data formats and input functions \cr
+  \url{../doc/secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
+  \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
   \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
   \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
-  \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
 }
+The help pages are also available as \url{../doc/secr-manual.pdf}.
+
+The datasets \link{possum}, \link{skink}, \link{ovenbird},
+\link{housemouse}, \link{deermouse}, \link{ovensong},
+\link{hornedlizard} and \link{stoatDNA} include examples of fitted
+models.
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see
@@ -66,7 +79,7 @@ documentation or new features consistent with the overall design.
 
 \section{Acknowledgements}{
 
-David Borchers made these methods possible with his work on the
+David Borchers made many of these methods possible with his work on the
 likelihood, and I'm grateful for his continuing advice. Jeff Laake
 provided encouragement and reviewed an early version. Ray Brownrigg got
 my Windows code running under Unix. Deanna Dawson edited some of the
@@ -120,12 +133,12 @@ for analysing capture-recapture data from passive detector arrays.
 
 ## generate some data & plot
 detectors  <- make.grid (nx = 10, ny = 10, spacing = 20,
-    detector = 'multi')
+    detector = "multi")
 plot(detectors, label = TRUE, border = 0, gridspace = 20)
 detections <- sim.capthist (detectors, noccasions = 5,
     popn = list(D = 5, buffer = 100),
     detectpar = list(g0 = 0.2, sigma = 25))
-session(detections) <- 'Simulated data'
+session(detections) <- "Simulated data"
 plot(detections, border = 20, tracks = TRUE, varycol = TRUE)
 
 ## generate habitat mask

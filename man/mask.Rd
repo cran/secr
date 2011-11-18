@@ -21,7 +21,7 @@ as a list of points. Each point is notionally associated with a cell
 be evaluated by summing over grid cells. Fourthly, the x-y coordinates
 of the mask and any habitat covariates may be used to build spatial
 models of density. For example, a continuous or categorical habitat
-covariate 'cover' measured at each point on the mask might be used in a
+covariate `cover' measured at each point on the mask might be used in a
 formula for density such as D \eqn{\sim}{~}cover.
 
 In relation to the first purpose, the definition of `negligible' is
@@ -38,20 +38,19 @@ number of rows equals the number of points.
 
 Possible mask attributes
 \tabular{ll}{
-  Attribute \tab Description \cr
-  type \tab `traprect', `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer' (see make.mask) or `user' \cr
+Attribute \tab Description \cr
+type \tab `traprect', `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer' (see make.mask) or `user' \cr
 polygon \tab vertices of polygon defining habitat boundary, for type = `polygon' \cr
-pdotmin \tab threshold of \eqn{p.(\mathbf{X})}{p.(X)} for type = `pdot' \cr
+pdotmin \tab threshold of p.(X) for type = `pdot' \cr
 covariates \tab dataframe of site-specific covariates \cr
 meanSD \tab data frame with centroid (mean and SD) of x and y coordinates \cr
 area \tab area (ha) of the grid cell associated with each point \cr
 spacing \tab nominal spacing (metres) between adjacent points \cr
-boundingbox \tab data frame of 4 rows, the vertices of the bounding
-box of all grid cells in the mask \cr
+boundingbox \tab data frame of 4 rows, the vertices of the bounding box of all grid cells in the mask \cr
 }
 
 Attributes other than \code{covariates} are generated automatically by
-\code{make.mask}. Type 'user' refers to masks input from a text file
+\code{make.mask}. Type `user' refers to masks input from a text file
 with \code{read.mask}.
 
 }

@@ -5,6 +5,7 @@
 ## 2011 01 31
 ## 2011 09 28 field argument added to call to secr.lpredictor
 ## 2011 09 28 optimizer changed to optim from nlm
+## 2011 10 21 not for user-defined density
 ## could be sped up by adopting Venzon & Moolgavkar algorithm
 ## e.g. in Bhat package
 ###############################################################################
@@ -212,10 +213,14 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
     # end of profileInterval
     #---------------------------------------------------------------------------------------
 
+
     memo ('Profile likelihood interval(s)...', tracelevel > 0)
 
     if (!inherits(object, 'secr'))
         stop ("requires 'secr' object")
+    if (userD(object))
+        stop ("not implemented for user-defined density function")
+
     np <- length(object$betanames)  ## number of beta parameters
 
     ## case 1 - real parameter not 1:1 beta so require lagrange
@@ -250,9 +255,10 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                 attr(D.designmatrix, 'dimD') <- NA
             }
             else {
-                grps  <- group.levels(object$capthist, object$groups)
-                temp <- D.designdata( object$mask, object$model$D, grps,
-                    session(object$capthist), object$sessioncov)
+                sessionlevels <- session(object$capthist)
+                grouplevels  <- group.levels(object$capthist, object$groups)
+                temp <- D.designdata( object$mask, object$model$D, grouplevels,
+                    sessionlevels, object$sessioncov)
                 D.designmatrix <- model.matrix(object$model$D, temp)
                 attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
             }

@@ -88,7 +88,7 @@ write.DA(capthist, buffer, nzeros = 200, units = 1)
   
   For \code{write.DA}, a list with the components
 
-\tabular{ll}{
+\tabular{lll}{
 Xl \tab left edge of state space \cr
 Xu \tab right edge of state space \cr
 Yl \tab bottom edge of state space \cr
@@ -98,17 +98,19 @@ nind \tab number of animals observed \cr
 nzeros \tab number of added all-zero detection histories \cr
 T \tab number of sampling occasions \cr
 Y \tab binary matrix of detection histories (dim = c(nind+nzeros, T)) \cr
-U1 \tab matrix of x-coordinates, dimensioned as Y; `NA' where not
-detected \cr
-U2 \tab matrix of y-coordinates, dimensioned as Y; `NA' where not
-detected \cr
+U1 \tab matrix of x-coordinates, dimensioned as Y \cr
+U2 \tab matrix of y-coordinates, dimensioned as Y \cr
 }
+
+U1 and U2 are `NA' where animal was not detected.
+
 }
 
 \references{
 
 Marques, T. A., Thomas, L. and Royle, J. A. (2011) A hierarchical model
-for spatial capture--recapture data: Comment. \emph{Ecology} In press.
+for spatial capture--recapture data: Comment. \emph{Ecology} \bold{92},
+526--528.
 
 Royle, J. A. and Young, K. V. (2008) A hierarchical model for spatial
 capture--recapture data. \emph{Ecology} \bold{89}, 2281--2289.
@@ -130,12 +132,12 @@ write.DA (hornedlizardCH, buffer = 100, units = 100)
 ## for the limits of the plot itself, so buffer = 0.
 ## Input is in hundreds of metres.
 ## First, obtain the list lzdata
-olddir <- setwd (system.file('extdata', package='secr'))
-source ('lizarddata.R')
+olddir <- setwd (system.file("extdata", package="secr"))
+source ("lizarddata.R")
 str(lzdata)
 ## Now convert to capthist
-tempcapt <- read.DA(lzdata, Y = 'H', xcoord = 'X',
-    ycoord = 'Y', buffer = 0, units = 100)
+tempcapt <- read.DA(lzdata, Y = "H", xcoord = "X",
+    ycoord = "Y", buffer = 0, units = 100)
 summary(tempcapt)
 setwd(olddir)
 

@@ -2,6 +2,8 @@
 ## package 'secr'
 ## secr.fit.R
 ## moved from methods.R 2011-01-30
+## 2011-10-20 generalized designD
+## 2011-10-20 renamed 'grps' 'grouplevels'
 ################################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -192,8 +194,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                 temptraps <- centre(traps(capthist[[i]]), offsetxy[[i]])
                 traps(capthist[[i]]) <- temptraps
                 mask[[i]] <- centre(mask[[i]], offsetxy[[i]])
-                attr(mask[[i]], 'meanSD')[1,1:2] <- attr(mask[[i]], 'meanSD')[1,1:2] - offsetxy[[i]]
-                attr(mask[[i]], 'boundingbox') <- centre(attr(mask[[i]], 'boundingbox'), offsetxy[[i]])
+                attr(mask[[i]], 'meanSD')[1,1:2] <- attr(mask[[i]], 'meanSD')[1,1:2] -
+                    offsetxy[[i]]
+                attr(mask[[i]], 'boundingbox') <- centre(attr(mask[[i]], 'boundingbox'),
+                    offsetxy[[i]])
             }
         }
         else {
@@ -233,8 +237,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         warning ("groups not valid with CL; groups ignored")
     }
 
-    ## if (CL & ('g' %in% unlist(sapply(model, all.vars))))
-    ##    stop ('g not a valid effect when CL=TRUE')
     if (CL && var.in.model('g', model))
         stop ("'g' is not a valid effect when 'CL = TRUE'")
 
@@ -310,16 +312,31 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ###############################
     D.modelled <- !CL & is.null(fixed$D)
     if (!D.modelled) {
-       D.designmatrix <- matrix(nrow = 0, ncol = 0)
-       grps <- NULL
-       attr(D.designmatrix, 'dimD') <- NA
+       designD <- matrix(nrow = 0, ncol = 0)
+       grouplevels <- 1    ## was NULL
+       attr(designD, 'dimD') <- NA
+       nDensityParameters <- integer(0)
     }
     else {
-        memo ('Preparing density design matrix', details$trace)
-        grps  <- group.levels(capthist,groups)
-        temp <- D.designdata( mask, model$D, grps, sessionlevels, sessioncov)
-        D.designmatrix <- model.matrix(model$D, temp)
-        attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
+        grouplevels  <- group.levels(capthist,groups)
+        if (!is.null(details$userDfn)) {
+            ## may provide a function used by getD in functions.R
+            ## userDfn(mask, beta[parindx$D], ngrp, nsession)
+            designD <- details$userDfn
+            if (!is.function(designD))
+                stop ("details$userDfn should be a function")
+            ## this form of call returns only coefficient names
+            Dnames <- designD('parameters', mask)
+        }
+        else {
+            memo ('Preparing density design matrix', details$trace)
+            temp <- D.designdata( mask, model$D, grouplevels, sessionlevels, sessioncov)
+            D.designmatrix <- model.matrix(model$D, temp)
+            attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
+            Dnames <- colnames(D.designmatrix)
+            designD <- D.designmatrix
+        }
+        nDensityParameters <- length(Dnames)
     }
 
     #############################
@@ -327,7 +344,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     #############################
 
     np <- sapply(design$designMatrices, ncol)
-    if (D.modelled) np <-  c(D = ncol(D.designmatrix), np)
+    np <- c(D = nDensityParameters, np)
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
     names(parindx) <- names(np)
@@ -356,7 +373,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        parindx    = parindx,
                        link       = link,
                        fixed      = fixed,
-                       designD    = D.designmatrix,
+                       designD    = designD,
                        design     = design,
                        design0    = design0,
                        capthist   = capthist,
@@ -365,7 +382,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        CL         = CL,
                        groups     = groups,
                        details    = details,
-##                     logmult    = savedlogmultinomial
                        logmult    = TRUE,     ## add if possible
                        )
 
@@ -486,7 +502,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     betanames <- unlist(sapply(design$designMatrices, colnames))
     names(betanames) <- NULL
     realnames <- names(model)
-    if (D.modelled) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
+    if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
     betanames <- sub('..(Intercept))','',betanames)
     ## allow for fixed beta parameters 2009 10 19
     if (!is.null(details$fixedbeta))
@@ -529,11 +545,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     memo('Maximizing likelihood...', details$trace)
     if (details$trace) cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
 
-    ## mark - resight option
-    if (is.null(q))
-        loglikefn <- secr.loglikfn
-    else
-        loglikefn <- MRsecr.loglikfn
+    loglikefn <- secr.loglikfn
+    if (!is.null(q))
+        stop ("mark-resight option not operative")
+        ## loglikefn <- MRsecr.loglikfn
 
     if (tolower(method) %in% c('newton-raphson', 'nr')) {
         args <- list (p         = start,
@@ -545,12 +560,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         mask       = mask,
                         CL         = CL,
                         detectfn   = detectfn,
-                        designD    = D.designmatrix,
+                        designD    = designD,
                         design     = design,
                         design0    = design0,
                         groups     = groups,
                         details    = details,
-##                     logmult    = savedlogmultinomial
                         logmult    = TRUE,     ## add if possible
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
@@ -573,12 +587,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         mask       = mask,
                         CL         = CL,
                         detectfn   = detectfn,
-                        designD    = D.designmatrix,
+                        designD    = designD,
                         design     = design,
                         design0    = design0,
                         groups     = groups,
                         details    = details,
-##                     logmult    = savedlogmultinomial
                         logmult    = TRUE,     ## add if possible
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
@@ -593,7 +606,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     this.fit$method <- method         ## remember what method we used...
     covar <- NULL
-    D <- NULL
+    N <- NULL
     if (this.fit$value > 1e9) {     ## failed
         this.fit$beta[] <- NA
     }
@@ -613,7 +626,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                             parindx    = parindx,
                             link       = link,
                             fixed      = fixed,
-                            designD    = D.designmatrix,
+                            designD    = designD,
                             design     = design,
                             design0    = design0,
                             capthist   = capthist,
@@ -650,11 +663,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
         ## predicted D across mask
         if (!CL) {
-            D <- getD (D.designmatrix, this.fit$par, mask, parindx, link, fixed, MS,
-                       length(grps), length(sessionlevels))
-            dimnames (D) <- list(1:nrow(D), grps, sessionlevels)
+            D <- getD (designD, this.fit$par, mask, parindx, link, fixed,
+                       grouplevels, sessionlevels)
+            N <- t(apply(D, 2:3, sum, drop = FALSE))
+            cellarea <- if (ms(mask)) sapply(mask, attr, 'area')
+                        else cellarea <- attr(mask,'area')
+            N <- sweep(N, FUN = '*', MARGIN = 1, STATS = cellarea)
         }
-
     }
 
     desc <- packageDescription("secr")  ## for version number
@@ -684,7 +699,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
                   fit = this.fit,
                   beta.vcv = covar,
-                  D = D,                   ## added 2009 09 04
+#                 D = D,                   ## dropped 2011-11-10
+                  N = N,                   ## added 2011-11-10
                   version = desc$Version,  ## added 2009 09 21
                   starttime = starttime,   ## added 2009 09 21
                   proctime = (proc.time() - ptm)[1]

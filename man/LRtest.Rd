@@ -19,7 +19,7 @@ LR.test(secr1, secr2)
 }
 
 \value{
-  Object of class 'htest', a list with components
+  Object of class `htest', a list with components
   \item{statistic }{value the test statistic }
   \item{parameter }{degrees of freedom of the approximate chi-squared distribution of the test statistic }
   \item{p.value }{probability of test statistic assuming chi-square distribution}

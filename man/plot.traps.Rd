@@ -46,7 +46,7 @@ None
 
 \examples{
  temptrap <- make.grid()
- plot (temptrap, detpar = list(pch = 16, col = 'blue'), 
+ plot (temptrap, detpar = list(pch = 16, col = "blue"), 
     label = TRUE, offset = 7)
 }
 

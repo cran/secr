@@ -58,7 +58,7 @@ B.3. This ensures that each animal has a unique ID. If \code{renumber =
 FALSE}, the animal IDs will not change.
 
   Other attributes (xy, signal) are handled appropriately. If the signal
-    threshold (attribute 'cutval') differs among sessions, the maximum is
+    threshold (attribute `cutval') differs among sessions, the maximum is
     used and detections of lower signal strength are discarded.
     
 The use of \code{rbind.capthist} to concatenate sessions is now deprecated: 
@@ -89,8 +89,8 @@ groups of sessions defined by the `pool' argument. Covariate columns that appear
 ## extend a multi-session object
 ## we fake the 2010 data by copying from 2005
 ## note how we name the appended session
-fakeCH <- ovenCH[['2005']]
-MS.capthist(ovenCH, '2010' = fakeCH)
+fakeCH <- ovenCH[["2005"]]
+MS.capthist(ovenCH, "2010" = fakeCH)
 
 ## simulate sessions for 2-part mixture
 temptrap <- make.grid(nx = 8, ny = 8)
@@ -111,8 +111,8 @@ summary(temp4)
 RPSV(temp4)
 
 ## compare mixture to sum of components
-## note 'detectors visited' is not additive for 'multi' detector
-## nor is 'detectors used'
+## note `detectors visited' is not additive for 'multi' detector
+## nor is `detectors used'
 (summary(temp1)$counts +  summary(temp2)$counts) -
     summary(temp4)$counts
 
@@ -123,12 +123,12 @@ tempfit3 <- secr.fit(temp3, CL = T, buffer = 150, model = list
 predict(tempfit3)
 
 ## if we can tell which animals had large ranges...
-covariates(temp4) <- data.frame(range.size = rep(c('large',
-    'small'), c(nrow(temp1), nrow(temp2))))
+covariates(temp4) <- data.frame(range.size = rep(c("large",
+    "small"), c(nrow(temp1), nrow(temp2))))
 tempfit4 <- secr.fit(temp4, CL = T, buffer = 150, model = list
     (g0 ~ range.size, sigma ~ range.size), trace = FALSE)
-predict(tempfit4, newdata = data.frame(range.size = c('large',
-    'small')))
+predict(tempfit4, newdata = data.frame(range.size = c("large",
+    "small")))
 }
 
 }

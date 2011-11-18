@@ -8,7 +8,8 @@
 }
 
 \usage{
-\method{subset}{popn}(x, subset = NULL, sessions = NULL, renumber = FALSE, \dots)
+\method{subset}{popn}(x, subset = NULL, sessions = NULL, poly = NULL,
+    poly.habitat = TRUE, keep.poly = TRUE, renumber = FALSE, \dots)
 }
 
 \arguments{
@@ -16,6 +17,11 @@
   \item{subset}{ vector to subscript the rows of \code{x} }
   \item{sessions}{ vector to subscript sessions if \code{x} is a multi-session
     population }
+  \item{poly}{ bounding polygon (see Details)}
+  \item{poly.habitat}{ logical for whether poly represents habitat or
+  its inverse (non-habitat)}
+  \item{keep.poly}{ logical; if TRUE any bounding polygon is saved as the
+  attribute `polygon' }
   \item{renumber}{ logical for whether to renumber rows in output }
   \item{\dots}{ arguments passed to other functions }
 }
@@ -36,6 +42,12 @@ each new session.
 An object of class \code{popn} with only the requested subset of rows.
 Subsetting is applied to the \code{covariates} attribute if this is
 present. Attributes `Ndist' and `model2D' are set to NULL.
+
+If \code{poly} is specified, points outside \code{poly} are
+dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
+of two columns interpreted as x and y coordinates, or \item a
+SpatialPolygonsDataFrame object as defined in the package `sp', possibly
+from reading a shapefile with readShapePoly() from package `maptools'.}
 
 }
 

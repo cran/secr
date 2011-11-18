@@ -78,8 +78,8 @@ sim.capthist <- function (
         {
             popn <- replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
-            popn <- sim.popn (popn$D, core=traps, buffer=popn$buffer,
-                covariates=NULL, Ndist = popn$Ndist)
+            popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
+                covariates = NULL, Ndist = popn$Ndist)
         }
         if (poplist) {
             if (any(p.available) != 1)
@@ -257,8 +257,8 @@ sim.capthist <- function (
         {
             popn <- replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
-            popn <- sim.popn (popn$D, core=traps, buffer=popn$buffer,
-                covariates=NULL, Ndist = popn$Ndist)
+            popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
+                covariates = NULL, Ndist = popn$Ndist)
         }
 
         ################################
@@ -575,8 +575,8 @@ sim.resight <- function (traps, ..., q = 1, pID = 1, unmarked = TRUE,
     ## sighting only unmarked animals
     marked <- apply(capthist[,1:q,,drop = FALSE], 1, sum) > 0
     ## always get warning about no detections on first occasion
-    suppressWarnings(R <- subset(capthist, subset=!marked, dropnull=F))
-    tempM <- subset(capthist, subset=marked, dropnull=F)
+    suppressWarnings(R <- subset(capthist, subset=!marked, dropnullocc=F))
+    tempM <- subset(capthist, subset=marked, dropnullocc=F)
     nM <- nrow(tempM)
     ID <- abind(tempM[,1:q, , drop=F],
         array(runif(nrow(tempM)*(S-q)*K) < pID, dim=c(nM,S-q,K)), along=2)

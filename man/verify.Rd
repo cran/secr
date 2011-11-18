@@ -1,5 +1,4 @@
 \name{verify}
-\Rdversion{1.1}
 \alias{verify}
 \alias{verify.default}
 \alias{verify.traps}

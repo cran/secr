@@ -16,15 +16,15 @@ from capture--recapture data:
 pooled over individuals (e.g. Efford 2004). \code{moves} returns the
 raw distances.
 
-\code{RPSV} (for 'Root Pooled Spatial Variance') is a measure of the 2-D
+\code{RPSV} (for `Root Pooled Spatial Variance') is a measure of the 2-D
 dispersion of the locations at which individual animals are detected,
 pooled over individuals.
 
-\code{MMDM} (for 'Mean Maximum Distance Moved') is the average maximum
+\code{MMDM} (for `Mean Maximum Distance Moved') is the average maximum
 distance between detections of each individual i.e. the observed range
 length averaged over individuals (Otis et al. 1978).
 
-\code{ARL} or 'Asymptotic Range Length') is obtained by fitting an
+\code{ARL} or `Asymptotic Range Length') is obtained by fitting an
 exponential curve to the scatter of observed individual range length vs
 the number of detections of each individual (Jett and Nichols 1987: 889).
 
@@ -105,12 +105,12 @@ Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
 
 All measures are affected by the arrangement of detectors. \code{dbar}
 is also affected quite strongly by serial correlation in the sampled
-locations. Using \code{dbar} with 'proximity' detectors raises a problem
+locations. Using \code{dbar} with `proximity' detectors raises a problem
 of interpretation, as the original sequence of multiple detections
 within an occasion is unknown. RPSV is a value analogous to the standard
 deviation of locations about the home range centre.
 
-The value returned by \code{dbar} for 'proximity' or 'count' detectors
+The value returned by \code{dbar} for `proximity' or `count' detectors
 is of little use because multiple detections of an individual within an
 occasion are in arbitrary order.
 
@@ -118,8 +118,8 @@ Inclusion of these measures in the \pkg{secr} package does not mean they are
 recommended for general use! It is usually better to use a spatial
 parameter from a fitted model (e.g., \eqn{\sigma}{sigma} of the
 half-normal detection function). Even then, be careful that
-\eqn{\sigma}{sigma} is not 'contaminated' with behavioural effects (e.g.
-attraction of animal to detector) or 'detection at a distance'.
+\eqn{\sigma}{sigma} is not `contaminated' with behavioural effects (e.g.
+attraction of animal to detector) or `detection at a distance'.
 
 }
 

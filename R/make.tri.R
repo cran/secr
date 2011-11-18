@@ -89,7 +89,7 @@ clip.hex <- function (traps, side = 20, centre = c(50, 60*cos(pi/6)),
     fuzz = 1e-3, ID = 'num', ...) {
     hex <- hexagon(side+fuzz, centre)
     hex <- matrix(unlist(hex), ncol = 2)
-    OK <- insidepoly(traps, hex)
+    OK <- pointsInPolygon(traps, hex)
     temp <- subset(traps, OK, ...)
     if (!is.null(ID)) {
         if (!(ID %in% c('num', 'alpha')))

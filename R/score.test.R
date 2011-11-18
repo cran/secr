@@ -28,14 +28,14 @@ prepare <- function (secr, newmodel) {
 
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    grps  <- group.levels(capthist, groups)
+    grouplevels  <- group.levels(capthist, groups)
 
     design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, dframe)
-    design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, dframe, naive=T, bygroup=!CL)
-
+    design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, dframe,
+                               naive=T, bygroup=!CL)
     if (CL) D.designmatrix <- NULL
     else {
-        temp <- D.designdata ( mask, newmodel$D, grps, sessionlevels, sessioncov)
+        temp <- D.designdata ( mask, newmodel$D, grouplevels, sessionlevels, sessioncov)
         D.designmatrix <- model.matrix(newmodel$D, temp)
         attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
     }
@@ -237,8 +237,8 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE) {
         np  <- c(np0, np1)
         parameter <- c(df = np1-np0)
 
-        H0    <- model.string(secr$model)
-        H1    <- model.string(model)
+        H0    <- model.string(secr$model, secr$details$userDfn)
+        H1    <- model.string(model, secr$details$userDfn)
         call0 <-  paste('[', format(secr$call), ']', sep = '')
         AIC   <- c(0, -statistic + 2 * parameter)
         AICc  <- ifelse ((n-np-1)>0,

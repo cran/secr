@@ -1,5 +1,6 @@
 \name{sim.popn}
 \alias{sim.popn}
+\alias{tile}
 
 \title{ Simulate 2-D Population }
 
@@ -9,10 +10,13 @@ Simulate a Poisson process representing the locations of individual animals.
 
 \usage{
 
-sim.popn (D, core, buffer = 100, model2D = 'poisson',
-    buffertype = 'rect', covariates = list(sex = c(M=0.5, F=0.5)),
-    number.from = 1, Ndist = 'poisson', nsession = 1, details =
-    NULL, seed = NULL)
+sim.popn (D, core, buffer = 100, model2D = "poisson",
+    buffertype = "rect", poly = NULL, covariates =
+    list(sex = c(M = 0.5, F = 0.5)), number.from = 1,
+    Ndist = "poisson", nsession = 1, details = NULL,
+    seed = NULL, ...)
+
+tile(popn, method = "reflect")
 
 }
 
@@ -20,20 +24,26 @@ sim.popn (D, core, buffer = 100, model2D = 'poisson',
   \item{D}{ density animals / hectare (10 000 m\^2) }
   \item{core}{ data frame of points defining the core area }
   \item{buffer}{ buffer radius about core area }
-  \item{model2D}{ character string for 2-D distribution (`poisson',
-  `cluster', `IHP', `coastal') }
+  \item{model2D}{ character string for 2-D distribution ("poisson",
+  "cluster", "IHP", "coastal") }
   \item{buffertype}{ character string for buffer type }
+  \item{poly}{ bounding polygon (see Details)}
   \item{covariates}{ list of named covariates }
   \item{number.from}{ integer ID for animal }
   \item{Ndist}{ character string for distribution of number of individuals }
   \item{nsession}{ number of sessions to simulate }
   \item{details}{ optional list with additional parameters }
-  \item{seed}{ value for setting .Random.seed - either NULL or an integer}
+  \item{seed}{ value for setting .Random.seed - either NULL or an
+    integer}
+  \item{...}{ arguments passed to subset if poly is not NULL}
+
+  \item{popn}{ popn object }
+  \item{method}{ character string "reflect" or "copy"}
 }
 \details{
 
 \code{core} must contain columns `x' and `y'; a \code{traps} object is
-suitable. For \code{buffertype = 'rect'}, animals are simulated in the
+suitable. For \code{buffertype = "rect"}, animals are simulated in the
 rectangular area obtained by extending the bounding box of \code{core}
 by \code{buffer} metres to top and bottom, left and right. This box has
 area \eqn{A}.
@@ -46,31 +56,40 @@ mechanism is provided for generating continuous covariates, but these
 may be added later (see Examples).
 
 Ndist may be `poisson' or `fixed'. The number of individuals \eqn{N} has
-expected value \eqn{DA}. If \eqn{DA} is non-integer then Ndist = 'fixed'
+expected value \eqn{DA}. If \eqn{DA} is non-integer then Ndist = "fixed"
 results in \eqn{N \in \{ \mathrm{trunc}(DA), \mathrm{trunc}(DA)+1 \} }{N
 in \{ trunc(DA), trunc(DA)+1 \} }, with probabilities set to yield
 \eqn{DA} individuals on average.
 
-If \code{model2D = 'cluster'} then the simulated population approximates a Neyman-Scott
+If \code{model2D = "cluster"} then the simulated population approximates a Neyman-Scott
 clustered Poisson distribution. Ancillary parameters are passed as
 components of \code{details}: details$mu is the fixed number of
 individuals per cluster and details$hsigma is the spatial scale
 (\eqn{\sigma}{sigma}) of a 2-D kernel for location within each cluster.
 The algorithm is
 \enumerate{
-\item Determine the number of clusters (parents) as a random Poisson variate
+
+  \item Determine the number of clusters (parents) as a random Poisson variate
 with \eqn{\lambda = DA/\mu}{ lambda = DA/mu }
+
 \item Locate each parent by drawing uniform random x- and y-coordinates
+
 \item Generate mu offspring for each parent and locate them by adding random
- normal error to each parent coordinate
-\item Apply toroidal wrapping to ensure all offspring locations are inside the buffered area
+normal error to each parent coordinate
+
+\item Apply toroidal wrapping to ensure all offspring locations are
+inside the buffered area
+
+Function \code{tile} replicates a popn pattern by either reflecting or
+copying and translating it to fill a 3 x 3 grid.
+
 }
 
 Toroidal wrapping is a compromise. The result is more faithful to the
 Neyman-Scott distribution if the buffer is large enough that only a
 small proportion of the points are wrapped.
 
-If \code{model2D = 'IHP'} then an inhomogeneous Poisson distribution is
+If \code{model2D = "IHP"} then an inhomogeneous Poisson distribution is
 simulated.  \code{core} should be a habitat \link{mask} and \code{D}
 should be a vector of length equal to the number of cells (rows) in
 \code{core}. The number of individuals in each cell is
@@ -79,7 +98,7 @@ Poisson-distributed with mean \eqn{DA} where \eqn{A} is the cell area
 ignored, as the extent of the population is governed entirely by
 the mask in \code{core}.
 
-If \code{model2D = 'coastal'} then a form of inhomogeneous Poisson
+If \code{model2D = "coastal"} then a form of inhomogeneous Poisson
 distribution is simulated in which the x- and y-coordinates are drawn from
 independent Beta distributions. Default parameters generate the
 `coastal' distribution used by Fewster and Buckland (2004) for
@@ -89,9 +108,9 @@ of the rectangle). The four Beta parameters may be supplied in the
 vector component Beta of the `details' list (see Examples). The Beta
 parameters (1,1) give a uniform distribution. Coordinates are scaled to
 fit the limits of a sampled rectangle, so this method assumes buffertype
-= `rect'.
+= "rect".
 
-If \code{model2D = 'hills'} then a form of inhomogeneous Poisson
+If \code{model2D = "hills"} then a form of inhomogeneous Poisson
 distribution is simulated in which intensity is a sine curve in the x-
 and y- directions (density varies symmetrically between 0 and 2 x D
 along each axis). The number of hills in each direction (default 1) is
@@ -104,6 +123,16 @@ hill shifted half a unit to the top right; coordinates are wrapped, so
 the effect is to split the hill into the four corners). Negative
 displacements are replaced by runif(1). Density is zero at the edge when
 the displacement vector is (0,0) and rows are not offset.
+
+If \code{poly} is specified, points outside \code{poly} are
+dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
+of two columns interpreted as x and y coordinates, or \item a
+SpatialPolygonsDataFrame object as defined in the package `sp', possibly
+from reading a shapefile with readShapePoly() from package `maptools'.}
+
+The \code{\link{subset}} method is called internally when \code{poly} is used;
+the \dots argument may be used to pass values for \code{keep.poly} and
+\code{poly.habitat}.
 
 The random number seed is managed as in \code{simulate.lm}.
 
@@ -139,9 +168,9 @@ stored in the `seed' attribute.
 temppop <- sim.popn (D = 10, expand.grid(x = c(0,100), y =
     c(0,100)), buffer = 50)
 
-## plot, distinguishing 'M' and 'F'
+## plot, distinguishing "M" and "F"
 plot(temppop, pch = 1, cex= 1.5,
-    col = c('green','red')[covariates(temppop)$sex])
+    col = c("green","red")[covariates(temppop)$sex])
 
 ## add a continuous covariate
 ## assumes covariates(temppop) is non-null
@@ -153,30 +182,58 @@ oldpar <- par(xpd = TRUE, mfrow=c(2,3))
 for (h in c(5,15))
 for (m in c(1,4,16)) {
     temppop <- sim.popn (D = 10, expand.grid(x = c(0,100),
-        y = c(0,100)), model2D = 'cluster', buffer = 100,
+        y = c(0,100)), model2D = "cluster", buffer = 100,
         details = list(mu = m, hsigma = h))
     plot(temppop)
-    text (50,230,paste(' mu =',m, 'hsigma =',h))
+    text (50,230,paste(" mu =",m, "hsigma =",h))
 }
 par(oldpar)
 
 ## Inhomogeneous Poisson distribution
 xy <- secrdemo.0$mask$x + secrdemo.0$mask$y - 900
 tempD <- xy^2 / 1000
-plot(sim.popn(tempD, secrdemo.0$mask, model2D = 'IHP'))
+plot(sim.popn(tempD, secrdemo.0$mask, model2D = "IHP"))
 
 ## Coastal distribution in 1000-m square, homogeneous in
 ## x-direction
 arena <- data.frame(x = c(0, 1000, 1000, 0),
     y = c(0, 0, 1000, 1000))
 plot(sim.popn(D = 5, core = arena, buffer = 0, model2D =
-    'coastal', details = list(Beta = c(1, 1, 5, 1))))
+    "coastal", details = list(Beta = c(1, 1, 5, 1))))
 
 ## Hills
-plot(sim.popn(D = 100, core = arena, model2D = 'hills',
+plot(sim.popn(D = 100, core = arena, model2D = "hills",
     buffer = 0, details = list(hills = c(-2,3,0,0))), 
     cex = 0.4)
 
+## tile demonstration
+pop <- sim.popn(D = 100, core = make.grid(), model2D = "coastal")
+par(mfrow = c(1,2), mar = c(2,2,2,2))
+plot(tile(pop, "copy"))
+polygon(cbind(-100,200,200,-100), c(-100,-100,200,200),
+    col = "red", density = 0)
+title("copy")
+plot(tile(pop, "reflect"))
+polygon(cbind(-100,200,200,-100), c(-100,-100,200,200),
+    col = "red", density = 0)
+title("reflect")
+
+
+\dontrun{
+## simulate from inhomogeneous fitted density model
+regionmask <- make.mask(traps(possumCH), type = 'polygon',
+    spacing = 20, poly = possumremovalarea)
+dsurf <- predictDsurface(possum.model.Dh2, regionmask)
+possD <- covariates(dsurf)$D.0
+posspop <- sim.popn(D = possD, core = dsurf, model = "IHP")
+plot(regionmask, dots = FALSE, ppoly = FALSE)
+plot(posspop, add = TRUE, frame = FALSE)
+plot(traps(possumCH), add = TRUE)
 }
+
+}
+
+
+
 \keyword{ datagen }
 

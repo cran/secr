@@ -61,7 +61,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   Because \code{esa.plot} uses the criterion `distance to nearest
   detector', \code{max.mask} should be constructed to include all
   habitable cells within the desired maximum buffer and no others. This
-  is achieved with \code{type = 'trapbuffer'} in \code{make.mask}. It is
+  is achieved with \code{type = "trapbuffer"} in \code{make.mask}. It is
   a good idea to set the \code{spacing} argument of \code{make.mask}
   rather than relying on the default based on \code{nx}. Spacing may be
   small (e.g. sigma/10) and the buffer of \code{max.mask} may be quite
@@ -115,10 +115,10 @@ esa.plot(secrdemo.0)
 
 ## from scratch
 trps <- make.grid()
-msk <- make.mask(trps, buffer = 200, spacing = 5, type = 'trapbuffer')
+msk <- make.mask(trps, buffer = 200, spacing = 5, type = "trapbuffer")
 detectpar <- list(g0 = 0.2, sigma = 25)
-esa.plot(trps,,, msk, 0, detectpar, nocc = 10, col = 'blue')
-esa.plot(trps,,, msk, 0, detectpar, nocc = 5, col = 'green',
+esa.plot(trps,,, msk, 0, detectpar, nocc = 10, col = "blue")
+esa.plot(trps,,, msk, 0, detectpar, nocc = 5, col = "green",
     add = TRUE)
 
 esa.plot(trps,,, msk, 0, detectpar, nocc = 5, thin = 0.002, plt = FALSE)

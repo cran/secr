@@ -13,7 +13,7 @@ of a 2-D population using an array of detectors.
 
 \usage{
 sim.capthist(traps, popn = list(D = 5, buffer = 100,
-    Ndist = 'poisson'), detectfn = 0, detectpar = list(),
+    Ndist = "poisson"), detectfn = 0, detectpar = list(),
     noccasions = 5, nsessions = 1, binomN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
     maxperpoly = 100)
@@ -100,7 +100,7 @@ The random number seed is managed as in \code{\link[stats]{simulate}}.
 
 \code{sim.resight} generates mark-resight data for `q' marking occasions
 followed by `noccasions -- q' sighting occasions. \code{sim.capthist} is
-first called with the arguments 'traps' and \dots. The detector type
+first called with the arguments `traps' and \dots. The detector type
 must be `proximity'. The `usage' attribute of \code{traps} is ignored at
 present, so the same detectors are operated on all occasions.  Any
 detection-parameter vector of length 2 in \dots is interpreted as
@@ -155,7 +155,7 @@ except for effects of distance and possibly time (using vector-valued
 detection parameters from 1.2.10). You can, however, use
 \code{\link{rbind.capthist}} to combine detections of population
 subclasses (e.g. males and females) simulated with different parameter
-values. This is not valid for detector type `single' because it fails to
+values. This is not valid for detector type "single" because it fails to
 allow for competition for traps between subclasses. Future versions may
 allow more complex models.
 
@@ -178,14 +178,14 @@ detections in C code; an error results if the is number is exceeded.
 
 \examples{
 ## simple example
-## detector = 'multi' (default)
+## detector = "multi" (default)
 temptrap <- make.grid(nx = 6, ny = 6, spacing = 20)
 sim.capthist (temptrap, detectpar = list(g0 = 0.2, sigma = 20))
 
-## with detector = 'proximity, there may be more than one
+## with detector = "proximity", there may be more than one
 ## detection per individual per occasion
 temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector =
-    'proximity')
+    "proximity")
 summary(sim.capthist (temptrap, detectpar =
     list(g0 = 0.2, sigma = 20)))
 
@@ -195,12 +195,12 @@ temp <- sim.capthist (grid4, popn = list(D = 1), nsessions = 20)
 summary(temp, terse = TRUE)
 
 ## unmarked or presence types
-grid <- make.grid(nx = 10, ny = 10, detector = 'unmarked')
+grid <- make.grid(nx = 10, ny = 10, detector = "unmarked")
 CH <- sim.capthist (grid, noccasions = 5)
 CH
-## 'presence' and 'unmarked' data are stored as 'count' data
+## "presence" and "unmarked" data are stored as "count" data
 ## behaviour is controlled by detector type, e.g.
-detector(traps(CH)) <- 'presence'
+detector(traps(CH)) <- "presence"
 CH
 
 

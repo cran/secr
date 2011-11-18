@@ -5,13 +5,13 @@
 \title{ Model averaging for SECR Models }
 
 \description{
-AICc-weighted average of estimated 'real' or 'beta' parameters from multiple fitted secr models.
+AICc-weighted average of estimated `real' or `beta' parameters from multiple fitted secr models.
 }
 
 \usage{
 
 model.average(..., realnames = NULL, betanames = NULL, newdata = NULL, 
-    alpha = 0.05, dmax = 10, covar = FALSE, average = 'link')
+    alpha = 0.05, dmax = 10, covar = FALSE, average = "link")
 
 collate (..., realnames = NULL, betanames = NULL, newdata = NULL, 
     scaled = FALSE, alpha = 0.05, perm = 1:4, fields = 1:4)
@@ -49,8 +49,8 @@ w_k * theta-hat_k)} where the subscript \eqn{k} refers to a specific
 model and the \eqn{w_k} are AIC weights with small sample adjustment
 (see \code{\link{AIC.secr}} for details). Averaging of real parameters
 may be done on the link scale before back-transformation
-(\code{average='link'}) or after back-transformation
-(\code{average='real'}). 
+(\code{average="link"}) or after back-transformation
+(\code{average="real"}). 
 
 Models for which dAICc > \code{dmax} are given a weight of zero and
 effectively are excluded from averaging.
@@ -66,7 +66,7 @@ from fitting each model \eqn{k}. This follows Burnham and Anderson
 
 \code{collate} extracts parameter estimates from a set of fitted secr
 model objects. \code{fields} may be used to select a subset of summary
-fields ('estimate','SE.estimate','lcl','ucl') by name or number. 
+fields ("estimate","SE.estimate","lcl","ucl") by name or number. 
 
 The argument \code{scaled} applies only to the detection parameters g0
 and sigma, and only to models fitted with \code{scalesigma} or
@@ -89,7 +89,7 @@ variance-covariance matrices.
 For \code{collate}, a 4-dimensional array of model-specific parameter
 estimates. By default, the dimensions correspond respectively to rows in
 \code{newdata} (usually sessions), models, statistic fields (estimate, SE.estimate, lcl,
-ucl), and parameters ('D', 'g0' etc.). For particular comparisons it often helps
+ucl), and parameters ("D", "g0" etc.). For particular comparisons it often helps
 to reorder the dimensions with the \code{perm} argument.
 
 }
@@ -117,7 +117,7 @@ understanding AIC and BIC in model selection. \emph{Sociological Methods
 ## secrdemo.b has a learned trap response
 
 model.average(secrdemo.0, secrdemo.b)
-model.average(secrdemo.0, secrdemo.b, betanames = c('D','g0','sigma'))
+model.average(secrdemo.0, secrdemo.b, betanames = c("D","g0","sigma"))
 
 ## In this case we find the difference was actually trivial...
 ## (subscripting of output is equivalent to setting fields = 1)

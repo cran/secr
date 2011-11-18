@@ -27,7 +27,7 @@ secr.make.newdata <- function (object) {
         ## if list, then require predictors to appear in all sessions
         ## uses pad1 and insertdim from functions.R
         ## NOT to be used to add group variables
-        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- stdfn(vals)
+        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- scale(vals)
 
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
         else {
@@ -41,7 +41,8 @@ secr.make.newdata <- function (object) {
                 else found <- vars[all(varincov)]
 
                 for (variable in found) {
-                    vals <- unlist(lapply(cov, function(x) rep(x[1,variable],   ## use first occurrence!
+                    ## use first occurrence!
+                    vals <- unlist(lapply(cov, function(x) rep(x[1,variable],
                         dims[dimcov])))
                     newdata[,variable] <<- insertdim (vals, dimcov, dims)
                 }
@@ -66,13 +67,13 @@ secr.make.newdata <- function (object) {
         }
     }
     nocc <- max(n.occasion (capthist))
-    grps <- group.levels(capthist, groups)
-    ngrp <- max(1, length(grps))
+    grouplevels <- group.levels(capthist, groups)
+    ngrp <- max(1, length(grouplevels))
     sessions <- session(capthist)
     R <- length(sessions)
     dims <- c(R, ngrp, nmix)
-    basevars <- list(session=sessions)
-    if (ngrp>1) basevars$g <- factor(grps)
+    basevars <- list(session = sessions)
+    if (ngrp>1) basevars$g <- factor(grouplevels)
     if (nmix==2) basevars$h2 <- factor(1:2)
     if (nmix==3) basevars$h3 <- factor(1:3)
     newdata <- expand.grid(basevars)
@@ -98,102 +99,19 @@ secr.make.newdata <- function (object) {
     }
 
     ## all autovars should now have been dealt with
-    vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session','t','T','b','B','tcov','kcov','h2','h3')]
+    vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session',
+        't','T','b','B','tcov','kcov','h2','h3')]
 
     findvars.MS (sessioncov, vars, 1, TRUE)
     findvars.MS (timecov, vars, 1, FALSE)
     findvars.MS (covariates(traps(capthist)), vars, 1, FALSE)
+    ## added 2011-11-14
+    findvars.MS (covariates(mask), vars, 1, FALSE)
 
     ## default all remaining vars to numeric zero
     for (v in vars) newdata[,v] <- rep(0,nr)
 
     newdata
 }
-############################################################################################
-
-#  secr.make.newdata.D <- function (object) {
-#  ##UNFINISHED
-#      findvars.MS <- function (cov, vars, dimcov, use.all) {
-#          ## function to add covariates to a design data frame 'dframe'
-#          ## cov may be a dataframe or list of dataframes, one per session (R > 1),
-#          ## if list, then require predictors to appear in all sessions
-#          ## uses pad1 and insertdim from functions.R
-#          ## NOT to be used to add group variables
-#          ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- stdfn(vals)
-#
-#          if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
-#          else {
-#              found <- ''
-#              if (!is.data.frame(cov)) {   ## therefore assume is a list
-#                  if (!is.list(cov) | (R==1)) stop ('irregular covariates - check multisession structure')
-#                  covnames <- lapply(cov, names)
-#                  varincov <- sapply(covnames, function(nam) vars %in% nam)
-#                  if (length(vars)>1) found <- vars[apply(varincov,1,all)]
-#                  else found <- vars[all(varincov)]
-#
-#                  for (variable in found) {
-#                      vals <- unlist(lapply(cov, function(x) rep(x[1,variable],   ## use first occurrence!
-#                          dims[dimcov])))
-#                      newdata[,variable] <<- insertdim (vals, dimcov, dims)
-#                  }
-#              }
-#              else
-#              {
-#                  found <- names(cov) %in% vars
-#                  if (is.data.frame(cov) & any(found)) {
-#                      found <- names(cov)[found]
-#                      values <- as.data.frame(cov[,found])
-#                      names(values) <- found
-#                      if (length(values)>0) {
-#                          for (variable in found) {
-#                              if (use.all) vals <- values[,variable]
-#                              else  vals <- values[1,variable]
-#                              newdata[,variable] <<- insertdim (vals, dimcov, dims)
-#                          }
-#                      }
-#                  }
-#              }
-#              vars <<- vars[!(vars %in% found)]
-#          }
-#      }
-#
-#      capthist <- object$capthist
-#      mask <- object$mask
-#
-#
-#      vars <- object$vars
-#
-#      sessions <- session(capthist)
-#      sessioncov <- object$sessioncov
-#      basevars <- list(session = sessions)
-#
-#      groups <- object$groups
-#      grps <- group.levels(capthist, groups)
-#      ngrp <- max(1, length(grps))
-#
-#      if (ngrp>1)
-#          basevars$g <- factor(grps)
-#      newdata <- expand.grid(basevars)
-#
-#      nr <- nrow(newdata)  ## one row for each session and group
-#      for (v in vars) {
-#          if (v=='x') newdata$x <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-#          if (v=='y') newdata$y <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'y']
-#          if (v=='x2') newdata$x2 <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-#          if (v=='y2') newdata$y2 <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'y']
-#          if (v=='xy') newdata$xy <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-#          if (v=='Session') newdata$Session <- as.numeric( factor(newdata$session,
-#              levels = session(capthist) ) ) - 1    # based on sequence in capthist
-#      }
-#
-#      ## all autovars should now have been dealt with
-#      vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session')]
-#      findvars.MS (sessioncov, vars, 1, TRUE)
-#
-#      ## default all remaining vars to numeric zero
-#      for (v in vars) newdata[,v] <- rep(0,nr)
-#
-#      newdata
-#  }
 ############################################################################################
 

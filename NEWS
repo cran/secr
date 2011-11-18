@@ -1,3 +1,109 @@
+Changes in version 2.3.0 (2011-11-18)
+
+New features or changed behaviour of old functions
+
+    o   predictDsurface() predicts height of fitted density surface
+    across a mask
+
+    o   `Dsurface' new S3 class with methods head, tail, plot, print and
+    summary
+
+    o   head() and tail() new methods for mask, traps and capthist objects
+
+    o   spotHeight() new function for interrogating the density or
+    other covariates of a plotted Dsurface or mask
+
+    o   secr.fit() fits multi-session spatial trend models using mask
+    covariates
+
+    o   distancetotrap() no longer requires second argument to have
+    'detector' attribute (i.e. may be matrix of coordinates other than
+    a 'traps' object)
+
+    o   region.N() argument RN.method = 'poisson' uses faster variance
+    computation, and parts of the function have been re-coded; E(n) is
+    no longer computed by region.N - see expected.n() instead.
+
+    o   region.N() population size is now adjusted automatically for the
+    number of clusters in `mashed' models; it relates to a single
+    cluster unless 'regionmask' is specified
+
+    o   make.mask() has new logical argument 'poly.habitat' to determine
+    whether polygons represent habitat or non-habitat, allowing
+    exclusion of designated areas.
+
+    o   read.mask() now saves covariates from the input file or
+    dataframe, and has new argument 'columns' to select the columns to
+    save.
+
+    o   plot.mask() acquires argument 'meshcol' for colour of pixel
+    borders when dots = FALSE (replaces manipulation of par()$fg)
+
+    o   rectangularMask() new function expands an irregular mask to fill
+    its bounding box (useful for plotting covariate contours; used
+    internally by plot.Dsurface)
+
+    o   sim.popn() and subset.popn() acquire 'poly' argument to
+    constrain points to a lie within or outside polygon(s); may be
+    matrix of coordinates or SpatialPolygonsDataFrame object from
+    package sp. The subset.popn() method also acquires arguments
+    'poly.habitat' and 'keep.poly'.
+
+    o   pointsInPolygon() new function (previously internal as
+    'insidepoly'). Polygon may be matrix of x-y coordinates or
+    SpatialPolygonsDataFrame object from package 'sp'.
+
+    o   secr.fit() allows the user to specify a spatial model for
+    density (i.e. the intensity surface of an inhomogeneous Poisson
+    distribution) via an external R function instead of the usual
+    linear model. The function is passed as component 'userDfn' in the
+    'details' argument of secr.fit(). See vignette
+    `secr-densitysurfaces.pdf'.
+
+    o   an secr object created by secr.fit() no longer includes D, the
+    predicted density at each mask point. Instead it has a component N
+    for the summed density of each group and session. deviance.secr()
+    has been changed to use this for the N of binomial models. D no
+    longer in default drop vector of trim().
+
+    o   secr.make.newdata() now uses values from covariates(mask) to
+    construct default newdata for predict.secr (previously set to
+    zero, which could cause an error with factor covariates)
+
+    o   tile() replicates popn object on 3 x 3 grid
+
+    o   addCovariates() new function to add spatial covariates to a mask
+    or traps object from an ESRI shapefile or other spatial data
+    source
+
+    o   subset.capthist() argument 'dropnull' replaced with separate
+    arguments 'dropnullCH' and dropnullocc'; 'traps' argument may be
+    character vector; other recoding for greater clarity and reliability
+
+
+Bugs fixed
+
+    o   region.N() sometimes computed SE even when se.N = FALSE
+
+    o   subset.mask() output bounding box was too small by spacing/2
+
+    o   model.average() did not work with covar = TRUE
+
+    o   secr.fit() models with detector-level covariates of detection
+    parameters were not fitted. Fix required substantial re-write of C
+    code for log likelihood.
+
+Other
+
+    o   the mask and fitted models packaged with possum data have
+    changed
+
+    o   new vignette 'secr-densitysurfaces.pdf' describes fitting,
+    evaluation and plotting of density surfaces, including the use of
+    user-defined model functions.
+
+    o   many small changes to documentation
+
 Changes in version 2.2.0 (2011-10-01)
 
 New features or changed behaviour of old functions

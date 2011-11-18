@@ -37,7 +37,7 @@ sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
   \item{data}{optional list of simulated data saved from previous call to \code{simulate.secr}}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
   \item{hessian}{character or logical controlling the computation of the Hessian matrix}
-  \item{start}{vector of starting 'beta' values for \code{secr.fit}}
+  \item{start}{vector of starting `beta' values for \code{secr.fit}}
   \item{...}{other arguments (not used)}
 }
 
@@ -58,7 +58,7 @@ The random number seed is managed as in \code{simulate.lm}.
 \code{simulate.secr} does not yet work with models fitted using
 conditional likelihood (\code{object$CL = TRUE}).  Detector type is
 determined by \code{detector(traps(object$capthist))}, which should be one of
-`single', `multi', `proximity', `areasearch' or `count'.
+"single", "multi", "proximity", "areasearch" or "count".
 
 \code{sim.secr} is a wrapper function. If \code{data = NULL} (the
 default) then it calls \code{simulate.secr} to generate \code{nsim} new datasets. If
@@ -83,11 +83,11 @@ evaluation to be reported.
 
 \code{hessian} controls computation of the Hessian matrix from which
 variances and covariances are obtained. \code{hessian} replaces the
-value in \code{object\$details}.  Options are `none' (no variances),
-`auto' (the default) or `fdhess' (see \code{\link{secr.fit}}). It is OK
-(and faster) to use \code{hessian='none'} unless \code{extractfn} needs
+value in \code{object\$details}.  Options are "none" (no variances),
+"auto" (the default) or "fdhess" (see \code{\link{secr.fit}}). It is OK
+(and faster) to use \code{hessian="none"} unless \code{extractfn} needs
 variances or covariances. Logical TRUE and FALSE are interpreted by
-\code{secr.fit} as `auto' and `none'.
+\code{secr.fit} as "auto" and "none".
 
 \code{sim.capthist} is a more direct way to simulate data from a null
 model (i.e. one with constant parameters for density and detection).
@@ -95,17 +95,17 @@ model (i.e. one with constant parameters for density and detection).
 }
 \value{
 
-For \code{simulate.secr}, a list of data sets ('capthist' objects). This
-list has class \code{c('list','secrdata')}; the initial state of the random
+For \code{simulate.secr}, a list of data sets (`capthist' objects). This
+list has class \code{c("list","secrdata")}; the initial state of the random
 number generator (roughly, the value of .Random.seed) is stored as the
-attribute 'seed'.
+attribute `seed'.
 
 The value from \code{sim.secr} depends on \code{extractfn}: if that
 returns a numeric vector of length \code{n.extract} then the value is a
 matrix with \code{dim = c(nsim, n.extract)} (i.e., the matrix has one
 row per replicate and one column for each extracted value). Otherwise,
 the value returned by \code{sim.secr} is a list with one component per
-replicate (strictly, an object of class = \code{c('list','secrlist')}). Each
+replicate (strictly, an object of class = \code{c("list","secrlist")}). Each
 simulated fit may be retrieved \emph{in toto} by specifying
 \code{extractfn = identity}, or slimmed down by specifying
 \code{extractfn = NULL} or \code{extractfn = trim}, which are
@@ -151,8 +151,8 @@ quantile(devs, probs=c(0.95))
 rank(devs)[1] / length(devs)
 
 ## to assess bias and CI coverage
-extrfn <- function (object) unlist(predict(object)['D',-1])
-sims <- sim.secr(secrdemo.0, nsim = 50, hessian = 'auto',
+extrfn <- function (object) unlist(predict(object)["D",-1])
+sims <- sim.secr(secrdemo.0, nsim = 50, hessian = "auto",
     extractfn = extrfn)
 sims
 
@@ -162,5 +162,6 @@ quantile(sims[,1], c(0.025, 0.975))
 }
 
 }
+\keyword{ datagen }
 \keyword{ models }
 
