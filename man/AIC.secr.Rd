@@ -21,7 +21,7 @@ Information Criterion) are preferred.
 
 \arguments{
   \item{object}{ \code{secr} object output from the function
-      \code{\link{secr.fit}}, or a list of such objects with class c('list','secrlist') }
+      \code{\link{secr.fit}}, or a list of such objects with class c("list","secrlist") }
   \item{\dots}{ other \code{secr} objects }
   \item{sort}{ logical for whether rows should be sorted by ascending AICc }
   \item{k}{ numeric, the penalty per parameter to be used; always k = 2 in this method}
@@ -39,7 +39,7 @@ AIC with small sample adjustment is given by
 \frac{2K(K+1)}{n-K-1} }{AICc = -2log(L(theta-hat)) + 2K +
 2K(K+1)/(n-K-1)}
 
-where \eqn{K} is the number of 'beta' parameters estimated. The sample size
+where \eqn{K} is the number of "beta" parameters estimated. The sample size
 \eqn{n} is the number of individuals observed at least once (i.e. the
 number of rows in \code{capthist}).
 

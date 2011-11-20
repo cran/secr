@@ -12,11 +12,11 @@
 
 \usage{
 
-make.tri (nx = 10, ny = 12, spacing = 20, detector = 'multi',
+make.tri (nx = 10, ny = 12, spacing = 20, detector = "multi",
     originxy = c(0,0))
 
 clip.hex (traps, side = 20, centre = c(50, 60*cos(pi/6)),
-    fuzz = 1e-3, ID = 'num', ...)
+    fuzz = 1e-3, ID = "num", ...)
 
 }
 
@@ -24,7 +24,7 @@ clip.hex (traps, side = 20, centre = c(50, 60*cos(pi/6)),
   \item{nx}{ number of columns of detectors }
   \item{ny}{ number of rows of detectors }
   \item{spacing}{ distance between detectors (x and y directions)}
-  \item{detector}{ character value for detector type - 'single', 'multi' etc. }
+  \item{detector}{ character value for detector type - "single", "multi" etc. }
   \item{originxy}{ vector origin for x-y coordinates }
 
   \item{traps}{ traps object }
@@ -56,7 +56,7 @@ those within a bounding hexagon. Detectors are re-labelled according to
      ID \tab Effect \cr
      NULL \tab no change \cr
      num \tab numeric sequence \cr
-     alpha \tab letter for 'shell'; number within shell \cr
+     alpha \tab letter for`shell'; number within shell \cr
   }
 
 }
@@ -64,7 +64,7 @@ those within a bounding hexagon. Detectors are re-labelled according to
 \value{
 
 An object of class \code{traps} comprising a data frame of x- and
-y-coordinates, the detector type ('single', 'multi', or 'proximity' etc.),
+y-coordinates, the detector type ("single", "multi", or "proximity" etc.),
 and possibly other attributes.
 
 }
@@ -81,7 +81,7 @@ and possibly other attributes.
 tri.grid <- make.tri(spacing = 10)
 plot(tri.grid, border = 5)
 
-hex <- clip.hex(tri.grid, side = 30, ID = 'alpha')
+hex <- clip.hex(tri.grid, side = 30, ID = "alpha")
 plot (hex, add = TRUE, detpar = list(pch = 16, cex = 1.4),
     lab = TRUE, offset = 2.5 )
 

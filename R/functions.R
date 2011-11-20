@@ -16,48 +16,15 @@
 ## 2011-09-26 experimental presence detector
 ###############################################################################
 
-###############################################################################
-
-## distancetotrap <- function (X, traps) {
-##     ## X should be 2-column dataframe, mask, matrix or similar
-##     ## with x coord in col 1 and y coor in col 2
-##     X <- matrix(unlist(X), ncol = 2)
-##     disttotrap <- function (xy) {
-##         temp <- .C("nearest",  PACKAGE = 'secr',
-##         as.double(xy),
-##         as.integer(nrow(traps)),
-##         as.double(unlist(traps)),
-##         index = integer(1),
-##         distance = double(1)
-##         )
-##         temp$distance
-##     }
-##     apply(X, 1, disttotrap)
-## }
-##
-## nearesttrap <- function (X, traps) {
-##     ## X should be 2-column dataframe, mask, matrix or similar
-##     ## with x coord in col 1 and y coor in col 2
-##     X <- matrix(unlist(X), ncol = 2)
-##     nearest <- function (xy) {
-##         temp <- .C("nearest",  PACKAGE = 'secr',
-##         as.double(xy),
-##         as.integer(nrow(traps)),
-##         as.double(unlist(traps)),
-##         index = integer(1),
-##         distance = double(1)
-##         )
-##         temp$index
-##     }
-##     apply(X, 1, nearest)
-## }
-
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
-    if (detector(traps) %in% .localstuff$polydetectors) {
+    ## 2011-10-14
+    detecttype <- detector(traps)
+    detecttype <- ifelse (is.null(detecttype), "", detecttype)
+    if (detecttype %in% .localstuff$polydetectors) {
         ## approximate only
         traps <- split(traps, polyID(traps))
         trpi <- function (i, n=100) {
@@ -85,8 +52,8 @@ distancetotrap <- function (X, traps) {
         index = integer(nxy),
         distance = double(nxy)
     )
-    if (detector(traps) %in% c('polygon', 'polygonX')) {
-        inside <- lapply(traps, insidepoly, xy=X)
+    if (detecttype %in% c('polygon', 'polygonX')) {
+        inside <- lapply(traps, pointsInPolygon, xy=X)
         inside <- do.call(rbind, inside)
         temp$distance [apply(inside,2,any)] <- 0
     }
@@ -95,7 +62,7 @@ distancetotrap <- function (X, traps) {
 
 nearesttrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coor in col 2
+    ## with x coord in col 1 and y coord in col 2
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
     temp <- .C("nearest",  PACKAGE = 'secr',
@@ -129,6 +96,16 @@ untransform <- function (beta, link) {
           odds = invodds(beta),
           sin = invsine(beta))
 }
+
+se.untransform <- function (beta, sebeta, link) {
+  switch (link,
+          identity = sebeta,
+          log = exp(beta) * sqrt(exp(sebeta^2)-1),
+          neglog = exp(beta) * sqrt(exp(sebeta^2)-1),
+          logit = invlogit(beta) * (1-invlogit(beta)) * sebeta,
+          sin = NA)         ####!!!!
+}
+
 
 mlogit.untransform <- function (beta, mix) {
     nmix <- max(mix)    ## assume zero-based
@@ -362,9 +339,12 @@ group.factor <- function (capthist, groups, sep='.')
 {
     if (inherits(capthist, 'list')) {
         temp <- lapply(capthist, group.factor, groups)  ## recursive call
-        lev <- group.levels(capthist, groups)
-        if (length(lev)<2) temp
-        else lapply (temp, factor, levels=lev)  # list; force shared factor levels on each component
+        grouplevels <- group.levels(capthist, groups)
+        if (length(grouplevels)<2)
+            temp
+        else
+            # list; force shared factor levels on each component
+            lapply (temp, factor, levels=grouplevels)
     }
     else {
         if (is.null(groups) | (length(groups)==0) )
@@ -381,11 +361,11 @@ group.factor <- function (capthist, groups, sep='.')
 
 disinteraction <- function (capthist, groups, sep='.') {
     ngv <- length(groups)
-    f <- group.levels(capthist, groups, sep=sep)
+    grouplevels <- group.levels(capthist, groups, sep=sep)
     if (ngv>1)
-        temp <- matrix(unlist(strsplit(as.character(f), sep, fixed=TRUE)),
+        temp <- matrix(unlist(strsplit(as.character(grouplevels), sep, fixed=TRUE)),
                        byrow = T, ncol = ngv)
-    else temp <- f
+    else temp <- grouplevels
     temp <- data.frame(temp)
     names(temp) <- groups
     temp
@@ -509,22 +489,26 @@ scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
 }
 ###############################################################################
 
-getD <- function (designD, beta, mask, parindx, link, fixed, MS, ngrp,
-    nsession) {
-    dimD <- attr(designD,'dimD')
+getD <- function (designD, beta, mask, parindx, link, fixed,
+                  grouplevels, sessionlevels) {
+    if (ms(mask))
+        nmask <- max(sapply(mask, nrow))
+    else
+        nmask <- nrow(mask)
+    ngroup <- length(grouplevels)
+    nsession <- length(sessionlevels)
+    D <- array(dim = c(nmask, ngroup, nsession))
+    dimnames(D) <- list(1:nrow(D), grouplevels, sessionlevels)
     if (!is.null(fixed$D)) {
-        if (MS) nmask <- max(sapply(mask, nrow))
-        else nmask <- nrow(mask)
-        dimD <- c(nmask, ngrp, nsession)
-        D <- rep(fixed$D, prod(dimD))
-        D <- array(D, dim=dimD )
+        D[,,] <- fixed$D
     }
     else {
         if (is.function(designD))
-            D <- designD(mask, beta[parindx$D], )
-        else
-            D <- designD %*% beta[parindx$D]   # linear predictor
-        D <- array(untransform (D, link$D), dim = dimD )
+            D[,,] <- designD(beta[parindx$D], mask, ngroup, nsession)
+        else {
+            D[,,] <- designD %*% beta[parindx$D]   # linear predictor
+            D[,,] <- untransform (D, link$D)
+        }
         D[D<0] <- 0                            # silently truncate at zero
     }
     D
@@ -532,8 +516,8 @@ getD <- function (designD, beta, mask, parindx, link, fixed, MS, ngrp,
 ###############################################################################
 
 secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
-    design0 = NULL, capthist, mask, detectfn = 0, CL = T, groups = NULL,
-    details, logmult, dig = 3, betaw = 10)
+    design0, capthist, mask, detectfn, CL, groups, details, logmult,
+    dig = 3, betaw = 10)
 
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
 
@@ -541,12 +525,10 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 # 'detectfn' is integer code for detection function
 #    0 = halfnormal, 1 = hazard, 2 = exponential etc.
 # 'CL' is logical for conditional (CL=T) vs full (CL=F) likelihood
-#
 # details$trace=T sends a one-line report to the screen
 
 {
-    MS <- ms(capthist)    ## updated 2011-01-07
-    if (MS)
+    if (ms(capthist))
         sessionlevels <- session(capthist)
     else
         sessionlevels <- 1
@@ -555,7 +537,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     #--------------------------------------------------------------------
     # Groups
     grp  <- group.factor (capthist, groups)
-    ngrp <- max(1,length(group.levels(capthist, groups)))
+    ngroup <- max(1,length(group.levels(capthist, groups)))
 
     #--------------------------------------------------------------------
     # Fixed beta
@@ -580,10 +562,10 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     D.modelled <- !CL & is.null(fixed$D)
 
     if (!CL) {
-         D <- getD (designD, beta, mask, parindx, link, fixed, MS,
-                    ngrp, nsession)
+        D <- getD (designD, beta, mask, parindx, link, fixed,
+                    levels(grp[[1]]), sessionlevels)
         if (sum(D) <= 0)
-            stop ("invalid density")
+            warning ("invalid density <= 0")
     }
     #--------------------------------------------------------------------
 
@@ -595,7 +577,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     for (sessnum in 1:nsession) {
 
         ## in multi-session case must get session-specific data from lists
-        if (MS) {
+        if (ms(capthist)) {
             session.capthist <- capthist[[sessnum]]
             session.traps    <- traps(capthist)[[sessnum]]
             session.mask     <- mask[[sessnum]]
@@ -690,42 +672,13 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         }
 
         #------------------------------------------
-        ##################################
-        # debugging
-        # cat('dettype = ', dettype, '\n')
-        # print(Xrealparval)
-        # print(summary(session.capthist))
-        # cat('Dim\n')
-        # cat ('nc = ', nc, '\n')
-        # cat ('k = ', k, '\n')
-        # cat ('m = ', m, '\n')
-        # cat ('s = ', s, '\n')
-        # cat ('ngrp = ', ngrp, '\n')
-        # cat ('session.grp = ', session.grp, '\n')
-        # cat('Mask\n')
-        # print(summary(session.mask))
-        # PIA = parameter index array
-        # cat ('design$PIA','\n')
-        # print(table(design$PIA[sessg,1:nc,1:s,1:k]))
-        # cat ('design0$PIA','\n')
-        # print(design0$PIA)
-        # print(table(design0$PIA[sessg,max(1,ngrp),1:s,1:k]))
-        # cat ('sessD = ', sessD, '\n')
-        # cat ('table(D[1:m,,sessD])\n')
-        # print (table(D[1:m,,sessD]))
-        # cat ('sessg = ', sessg, '\n')
-        # cat ('cell  = ', cell, '\n')
-        # cat ('cuerate  = ', cuerate, '\n')
-        # cat ('CL = ', CL, '\n')
-        # cat ('density ', density, '\n')
-        # stop('Debug stop')
-        ##################################
-        ## For conditional likelihood, supply a value for each
-        ##  animal, not just groups
+        # For conditional likelihood, supply a value for each
+        #  animal, not just groups
 
         K <- ifelse (detector(session.traps) %in% .localstuff$polydetectors, length(k)-1, k)
         if (CL) tempPIA0 <- design0$PIA[sessg,1:nc,1:s,1:K, ]
-        else tempPIA0 <- design0$PIA[sessg,1:ngrp,1:s,1:K, ]     ## drop=FALSE unnecessary?
+        else tempPIA0 <- design0$PIA[sessg,1:ngroup,1:s,1:K, ]     ## drop=FALSE unnecessary?
+
         if (is.numeric(details$distribution)) {
             if (details$distribution < nc)
                 stop ("superpopulation (details$distribution) ",
@@ -764,9 +717,9 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         #-------------------------------------------
         else if (dettype == 11) {
             ## details$presence sets type, which may be
-            ## simple            Royle-Nichols
+            ## simple      (Royle-Nichols)
             ## integrated
-            ## pairwise (not this version)
+            ## pairwise
 
             if (is.null(details$presence))
                 details$presence <- 'integrated'
@@ -779,48 +732,29 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             g0 <- Xrealparval[index,1]
             sigma <- Xrealparval[index,2]
             z <- ifelse (detectfn %in% c(1,3,5,6,7,8), Xrealparval[index,3], 1)
+            if ((.localstuff$iter < 1) & (details$presence %in% c('simple','pairwise')) &
+                !(detectfn %in% c(1,4,7,8)))
+                warning ("simple presence requires detectfn for which",
+                    " sigma = radius (1,4,7,8)", .call = FALSE)
+            type <- switch (details$presence, simple = 0, integrated = 1, pairwise = 2, 3)
 
-            if (details$presence == 'pairwise') {
-                stop("'pairwise' temporarily blocked")
-                # pairwise likelihood allowing for overlap
-                # thanks to Martin Ridout
-                # require (occsim)
-                CH <- apply(session.capthist, 2:3, sum)>0   ## collapse individuals
-                yy <- apply(CH,2,sum)                       ## vector of number at each detector yk
-                param <- c(density[1], g0, sigma/100)
-                dx <- session.traps[,1]/100
-                dy <- session.traps[,2]/100
-                temp <- .C('loglik2', PACKAGE = 'occsim',
-                    as.double(param),  ## parameter vector
-                    as.integer(s),     ## number of sampling occasions
-                    as.double(dx),     ## x-coordinates of detectors
-                    as.double(dy),     ## y-coordinates of detectors
-                    as.integer(yy),    ## per detector frequencies (vector length k)
-                    as.integer(K),     ## number of detectors
-                    value = double(1)
-                )
-                temp$resultcode <- 0
-            }
-            else {
-                if ((.localstuff$iter < 1) & (details$presence == 'simple') &
-                    !(detectfn %in% c(1,4,7,8)))
-                    warning ("simple presence requires detectfn for which",
-                             " sigma = radius (1,4,7,8)", .call = FALSE)
-                temp <- .C('presenceloglik', PACKAGE = 'secr',
-                    as.integer(session.capthist), ## n,s,k array
-                    as.integer(nrow(session.capthist)),
-                    as.integer(s),          ## number of sampling occasions
-                    as.integer(K),          ## number of detectors
-                    as.double(density[1]),  ## Parameter value
-                    as.double(g0),          ## Parameter value
-                    as.double(sigma),       ## Parameter value
-                    as.double(z),           ## Parameter value
-                    as.integer(detectfn),
-                    as.integer(details$presence == 'integrated'),
-                    value = double(1),
-                    resultcode = integer(1))
-            }
+            temp <- .C('presenceloglik', PACKAGE = 'secr',
+                as.integer(session.capthist), ## n,s,k array
+                as.integer(nrow(session.capthist)),
+                as.integer(s),          ## number of sampling occasions
+                as.integer(K),          ## number of detectors
+                as.double(trps),        ## detector locations
+                as.double(density[1]),  ## Parameter value
+                as.double(g0),          ## Parameter value
+                as.double(sigma),       ## Parameter value
+                as.double(z),           ## Parameter value
+                as.integer(detectfn),
+                as.integer(type),
+                value = double(1),
+                resultcode = integer(1)
+            )
         }
+
         #-------------------------------------------
         # typical call (not 'presence' or 'unmarked'
         #-------------------------------------------
@@ -836,19 +770,20 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 as.integer(session.grp),
                 as.integer(nc),
                 as.integer(s),
-                as.integer(k), # may be zero-terminated vector for parts of polygon or transect detector
+                as.integer(k), # may be zero-terminated vector for parts of polygon
+                               # or transect detector
                 as.integer(m),
-                as.integer(ngrp),
+                as.integer(ngroup),
                 as.integer(details$nmix),
                 as.double(trps),
                 as.double(session.mask),
-                as.double(density),                            # density at each mask point x ngrp cols
+                as.double(density),                            # density at each mask point x ngroup cols
                 as.double(Xrealparval),
                 as.double(Xrealparval0),
                 as.integer(nrow(Xrealparval)),                 # number of rows in lookup table
                 as.integer(nrow(Xrealparval0)),                # ditto, naive
                 as.integer(design$PIA[sessg,1:nc,1:s,1:K,]),   # index of nc,S,K,mix to rows in Xrealparval
-                as.integer(tempPIA0),                      # index of ngrp,S,K,mix to rows in Xrealparval0
+                as.integer(tempPIA0),                      # index of ngroup,S,K,mix to rows in Xrealparval0
                 as.double(cell),                               # mask cell area
                 as.double(cuerate),                            # miscellaneous parameter
                 as.integer(detectfn),
@@ -868,10 +803,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
     ####################################################
 
-##    if (!(dettype==9))
-##    loglik <- loglik + logmult   ## term calc before and saved as global variable
-## replaced 2011-03-19 with...
-## unclear whether this is correct wrt groups
+    ## unclear whether this is correct wrt groups
     if (logmult & detector(session.traps) %in% .localstuff$simpledetectors)
         loglik <- loglik + logmultinom(session.capthist,
                                        group.factor(session.capthist, groups))
@@ -896,230 +828,6 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
 }
 ############################################################################################
-
-## NOT WORKING FOR A LONG TIME
-MRsecr.loglikfn <- function (beta, parindx, link, fixed, designD, design, design0 = NULL,
-                           capthist, mask, detectfn = 0, CL = F, groups = NULL,
-                           details, logmult, dig = 3, betaw = 10)
-
-# Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
-# Mark-resight version
-
-# Transformed parameter values (density, g0, sigma, z etc.) are passed in the vector 'beta'
-# 'detectfn' is integer code for detection function 0 = halfnormal, 1 = hazard, 2 = exponential
-#
-# trace=T sends a one-line report to the screen
-
-{
-
-    MS <- inherits(capthist,'list')
-    if (MS) sessionlevels <- session(capthist)
-    else sessionlevels <- 1
-    nsession <- length(sessionlevels)
-
-    if (!detectfn %in% c(0:3,5,6,7,8))
-        stop ("'detectfn' can only take values ",
-              "0 (halfnormal), ",
-              "1 (hazard-rate), ",
-              "2 (exponential), ",
-              "3 (compound halfnormal, ",
-              "5 (w-exponential), ",
-              "6 (annular normal), ",
-              "7 (cumulative lognormal), ",
-              "8 (cumulative gamma) for now")
-
-    #--------------------------------------------------------------------
-    # Groups
-    grp  <- group.factor (capthist, groups)
-
-    ngrp <- max(1,length(group.levels(capthist, groups)))
-    #--------------------------------------------------------------------
-    # Detection parameters
-
-    realparval  <- makerealparameters (design, beta, parindx, link, fixed)
-    realparval0 <- makerealparameters (design0, beta, parindx, link, fixed)  # naive
-
-    ## place holders for now 2009 09 27, 2009 10 25
-    binomN <- 0
-
-    #--------------------------------------------------------------------
-    # Density
-
-    D.modelled <- is.null(fixed$D)
-    D <- getD (designD, beta, mask, parindx, link, fixed, MS, ngrp, nsession)
-    if (sum(D)<=0)
-        stop ("invalid density")
-
-    #--------------------------------------------------------------------
-
-    loglik <- 0
-
-    ####################################################
-    ## start loop over sessions
-
-    for (sessnum in 1:nsession) {
-
-        ## in multi-session case must get session-specific data from lists
-        if (MS) {
-            session.capthist <- capthist[[sessnum]]
-            session.traps    <- traps(capthist)[[sessnum]]
-            session.mask     <- mask[[sessnum]]
-            session.grp      <- grp[[sessnum]]
-        }
-        else {
-            session.capthist <- capthist
-            session.traps    <- traps(capthist)
-            session.mask     <- mask
-            session.grp      <- grp
-        }
-
-        nc   <- nrow(session.capthist)
-        s    <- ncol(session.capthist)
-        m    <- nrow(session.mask)
-        q    <- attr(session.capthist, 'q')
-        if (is.null(q)) q <- 1
-        cell <- attr(session.mask,'area')
-        session.mask <- as.matrix(session.mask[,1:2])
-## OUT-DATED
-        session.detector <- detector(session.traps)
-        if (session.detector %in% c('multi', 'single')) dettype <- 0
-        else if (session.detector == 'proximity') dettype <- 1
-        else if (session.detector == 'signal') dettype <- 2
-        else if (session.detector == 'count') dettype <- 3
-        else if (session.detector == 'areasearch') dettype <- 4
-        else stop ("unrecognised detector type")
-
-        k     <- nrow(session.traps)
-        trps  <- unlist(session.traps, use.names=F)
-
-        ###############################################################################
-        ## Specific to mark-resight
-
-        session.Tu  <- attr(session.capthist, 'Tu')[,-(1:q), drop=FALSE]
-        if (is.null(session.Tu))
-            session.Tu <- -1  ## marked nonID not recorded
-        session.Tm  <- attr(session.capthist, 'Tm')[,-(1:q), drop=FALSE]
-        if (is.null(session.Tm)) {
-            session.Tm <- -1  ## marked nonID not recorded
-            pID <- 1          ## for the main likelihood component
-        }
-        else pID <- realparval[1,'pID']  ## assumed constant for now
-
-
-        ###############################################################################
-
-        #--------------------------------
-        density <- D[1:m,,min(dim(D)[3],sessnum)]
-        sessg <- min (sessnum, design$R)
-
-        #------------------------------------------
-        # allow for scaling of detection parameters
-
-        Xrealparval  <- realparval
-        Xrealparval0 <- realparval0
-        sigmaindex <- 2
-        g0index <- 1
-        if (details$scalesigma) {   ## assuming previous check that scalesigma OK...
-            Xrealparval[,sigmaindex]  <- Xrealparval[,sigmaindex] / D[1,1,sessnum]^0.5
-            Xrealparval0[,sigmaindex] <- Xrealparval0[,sigmaindex] / D[1,1,sessnum]^0.5
-        }
-        if (details$scaleg0)    {   ## assuming previous check that scaleg0 OK...
-            Xrealparval[,g0index]  <- Xrealparval[,g0index] / Xrealparval[,sigmaindex]^2
-            Xrealparval0[,g0index] <- Xrealparval0[,g0index] / Xrealparval0[,sigmaindex]^2
-        }
-        #------------------------------------------
-
-        ##################################
-        # debugging
-        # cat('dettype = ', dettype, '\n')
-        # print(realparval)
-        # print(summary(session.capthist))
-        # cat('Dim\n')
-        # cat ('nc = ', nc, '\n')
-        # cat ('k = ', k, '\n')
-        # cat ('m = ', m, '\n')
-        # cat ('s = ', s, '\n')
-        # cat ('q = ', q, '\n')
-        # cat ('ngrp = ', ngrp, '\n')
-        # cat ('session.grp = ', session.grp, '\n')
-        # cat('Mask\n')
-        # print(summary(session.mask))
-        ## PIA = parameter index array
-        # cat ('design$PIA','\n')
-        # print(table(design$PIA[sessg,1:nc,1:s,1:k]))
-        ## cat ('design0$PIA','\n')
-        ## print(design0$PIA)
-        # print(table(design0$PIA[sessg,max(1,ngrp),1:s,1:k]))
-        # cat ('sessD = ', sessD, '\n')
-        # cat ('table(D[1:m,,sessD])\n')
-        # print (table(D[1:m,,sessD]))
-        # cat ('sessg = ', sessg, '\n')
-        # cat ('cell  = ', cell, '\n')
-        # cat ('density ', density, '\n')
-        # stop('Debug stop')
-        ##################################
-
-        ## For conditional likelihood, supply a value for each
-        ##  animal, not just groups
-        tempPIA0 <- design0$PIA[sessg,1:ngrp,1:s,1:k]
-
-        ## 2009 08 21
-        distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
-        temp <- .C('MRsecrloglik', ## PACKAGE = 'secr',
-            as.integer(dettype),  # 0 = multicatch, 1 = proximity, 2 = signal, 3 = count etc.
-            as.integer(distrib),  # Poisson = 0 vs binomial = 1 (distribution of n)
-            as.integer(session.capthist),
-            as.integer(session.Tu),
-            as.integer(session.Tm),
-            as.integer(session.grp),
-            as.integer(nc),
-            as.integer(s),
-            as.integer(q),
-            as.integer(k),
-            as.integer(m),
-            as.integer(ngrp),
-            as.double(trps),
-            as.double(session.mask),
-            as.double(density),                                   # density at each mask point x ngrp cols
-            as.double(Xrealparval),
-            as.double(Xrealparval0),
-            as.integer(nrow(Xrealparval)),                        # number of rows in lookup table
-            as.integer(nrow(Xrealparval0)),                       # ditto, naive
-            as.integer(design$PIA[sessg,1:nc,1:s,1:k]),           # index of nc,S,K to rows in Xrealparval
-            as.integer(tempPIA0),                                 # index of ngrp,S,K to rows in Xrealparval0
-            as.double(pID),                                       # AVOID CHANGING C CODE FOR NOW 2009 10 07
-            as.double(cell),
-            as.integer(detectfn),
-            as.integer(binomN),
-            as.double(details$minprob),
-            value=double(1),
-            resultcode=integer(1))
-
-        if (temp$resultcode != 0)
-            stop ("error in external function 'secrloglik'")
-
-        loglik <- loglik + temp$value
-    }
-    ## end loop over sessions
-    ####################################################
-
-    loglik <- loglik + logmult   ## term calc before and saved as global variable
-
-    if (details$trace) {
-        .localstuff$iter <- .localstuff$iter + 1
-        cat(format(.localstuff$iter, width=4),
-            formatC(round(loglik,dig), format='f', digits=dig, width=10),
-            formatC(beta, format='f', digits=dig+1, width=betaw),
-        '\n')
-        flush.console()
-    }
-
-   if (is.finite(loglik)) -loglik   # return the negative loglikelihood
-   else 1e10
-
-}
-############################################################################################
-
 
 make.lookup <- function (tempmat) {
 

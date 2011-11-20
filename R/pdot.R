@@ -254,7 +254,7 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
     binomN <- getbinomN (binomN, detector(traps))
     z <- pdot(tempmask, traps, detectfn, detectpar, noccasions, binomN)
     if (!is.null(poly)) {
-        OK <- insidepoly(tempmask, poly)
+        OK <- pointsInPolygon(tempmask, poly)
         z[!OK] <- 0
     }
     if (plt) {
@@ -302,7 +302,7 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
         ylevels <- unique(tempmask$y)
         z <- distancetotrap(tempmask, traps)
         if (!is.null(poly)) {
-            OK <- insidepoly(tempmask, poly)
+            OK <- pointsInPolygon(tempmask, poly)
             z[!OK] <- 1e20
         }
         if (plt) {

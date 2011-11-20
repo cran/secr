@@ -78,12 +78,17 @@ information from K. V. Young (pers. comm.).
 
 \references{
 
+Efford, M. G. (2011) Estimation of population density by spatially
+explicit capture--recapture analysis of data from area
+searches. \emph{Ecology} In press.
+
 Grant, T. J. and Doherty, P. F. (2007) Monitoring of the flat-tailed
 horned lizard with methods incorporating detection
 probability. \emph{Journal of Wildlife Management} \bold{71}, 1050--1056
 
 Marques, T. A., Thomas, L. and Royle, J. A. (2011) A hierarchical model
-for spatial capture--recapture data: Comment. \emph{Ecology} In press.
+for spatial capture--recapture data: Comment. \emph{Ecology} \bold{92},
+526--528.
 
 Royle, J. A. and Young, K. V. (2008) A hierarchical model for spatial
 capture--recapture data. \emph{Ecology} \bold{89}, 2281--2289.
@@ -98,7 +103,7 @@ capture--recapture data. \emph{Ecology} \bold{89}, 2281--2289.
 
 plot(hornedlizardCH, tracks = TRUE, varycol = FALSE,
     lab1 = TRUE, laboff = 6, border = 10, title =
-    'Flat-tailed Horned Lizards (Royle & Young 2008)')
+    "Flat-tailed Horned Lizards (Royle & Young 2008)")
 
 table(table(animalID(hornedlizardCH)))
 traps(hornedlizardCH)
@@ -111,12 +116,12 @@ head(xy(hornedlizardCH))
 ## caught
 FTHL.fit <- secr.fit(hornedlizardCH)
 FTHLbn.fit <- secr.fit(hornedlizardCH, details =
-    list(distribution = 'binomial'))
-collate(FTHL.fit, FTHLbn.fit)[,,,'D']
+    list(distribution = "binomial"))
+collate(FTHL.fit, FTHLbn.fit)[,,,"D"]
 
 ## Collapse occasions (does not run faster)
 hornedlizardCH.14 <- reduce(hornedlizardCH, columns =
-    list(1:14), outputdetector = 'polygon')
+    list(1:14), outputdetector = "polygon")
 FTHL14.fit <- secr.fit(hornedlizardCH.14, binomN = 14)
 }
 

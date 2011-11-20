@@ -13,33 +13,15 @@ ellipse.secr(object, par = c("g0", "sigma"), alpha = 0.05,
 }
 
 \arguments{
-  \item{object}{
-\code{secr} object output from \code{secr.fit}
-}
-  \item{par}{
-character vector of length two, the names of two 'beta' parameters
-}
-  \item{alpha}{
-alpha level for confidence intervals 
-}
-  \item{npts}{
-number of points on perimeter of ellipse
-}
-  \item{plot}{
-logical for whether ellipse should be plotted
-}
-  \item{linkscale}{
-logical; if FALSE then coordinates will be backtransformed from the link scale
-}
-  \item{add}{
-logical to add ellipse to an existing plot 
-}
-  \item{col}{
-vector of one or more plotting colours
-}
-  \item{\dots}{
-arguments to pass to plot functions
-}
+  \item{object}{\code{secr} object output from \code{secr.fit}}
+  \item{par}{character vector of length two, the names of two `beta' parameters}
+  \item{alpha}{alpha level for confidence intervals }
+  \item{npts}{number of points on perimeter of ellipse}
+  \item{plot}{logical for whether ellipse should be plotted}
+  \item{linkscale}{logical; if FALSE then coordinates will be backtransformed from the link scale}
+  \item{add}{logical to add ellipse to an existing plot }
+  \item{col}{vector of one or more plotting colours}
+  \item{\dots}{arguments to pass to plot functions}
 }
 \details{
 A confidence ellipse is calculated from the asymptotic variance-covariance matrix of the beta parameters (coefficients), and optionally plotted.

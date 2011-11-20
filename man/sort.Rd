@@ -9,7 +9,7 @@ Rows are sorted by fields in covariates or by a provided sort key of
 length equal to the number of rows.
 }
 \usage{
-\method{sort}{capthist}(x, decreasing = FALSE, by = '',
+\method{sort}{capthist}(x, decreasing = FALSE, by = "",
     byrowname = TRUE,...)
 }
 
@@ -39,9 +39,9 @@ the defaultsis to sort by rowname.
 \code{\link{capthist}}
 }
 \examples{
-sort(ovenCH, by='Sex')
-covariates(ovenCH)[['2005']]
-covariates(sort(ovenCH, by='Sex'))[['2005']]
+sort(ovenCH, by = "Sex")
+covariates(ovenCH)[["2005"]]
+covariates(sort(ovenCH, by = "Sex"))[["2005"]]
 
 }
 \keyword{ manip }

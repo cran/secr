@@ -44,7 +44,7 @@ mindistfromedge <- function (mask, traps, maxr=1e5, ntheta = 60, tol=0.0001) {
         temp <- temp[c(hull,hull[1]), ]
     }
     fn <- function (x) {
-        all(insidepoly (inflate(trapshull, x), maskhull))
+        all(pointsInPolygon (inflate(trapshull, x), maskhull))
     }
     maskhull <- inflate(maskhull, attr(mask,'spacing')/2)
     out <- bisect (fn,0,maxr,tol)

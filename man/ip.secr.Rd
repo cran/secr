@@ -1,5 +1,4 @@
 \name{ip.secr}
-\Rdversion{1.1}
 \alias{ip.secr}
 \alias{pfn}
 
@@ -19,7 +18,7 @@ are covariates).
 
 \usage{
 
-ip.secr (capthist, predictorfn = pfn, predictortype = 'null',
+ip.secr (capthist, predictorfn = pfn, predictortype = "null",
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
     centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
     var.nsim = 1000, maxbox = 5, ...)
@@ -41,44 +40,44 @@ pfn(capthist, N.estimator)
   \item{max.nsim}{ maximum number of simulations per point }
   \item{CVmax}{ tolerance for precision of points in predictor space }
   \item{var.nsim}{ number of additional simulations to estimate variance-covariance matrix }
-  \item{maxbox}{ maximum number of attempts to 'frame' solution }
+  \item{maxbox}{ maximum number of attempts to `frame' solution }
   \item{\dots}{ further arguments passed to sim.popn }
   \item{N.estimator}{ character value indicating population estimator to use }
 }
 
 \details{
 
-'Inverse prediction' uses methods from multivariate calibration (Brown
+`Inverse prediction' uses methods from multivariate calibration (Brown
 1982). The goal is to estimate population density (D) and the parameters
-of a detection function (usually g0 and sigma) by 'matching' statistics
+of a detection function (usually g0 and sigma) by `matching' statistics
 from \code{predictorfn(capthist)} (the target vector) and statistics
 from simulations of a 2-D population using the postulated detection
 model. Statistics (see Note) are defined by the predictor function,
 which should return a vector equal in length to the number of parameters
 (np = 3). Simulations of the 2-D population use \code{\link{sim.popn}}.
 The simulated population is sampled with \code{\link{sim.capthist}}
-according to the detector type (e.g., 'single' or 'multi') and detector
+according to the detector type (e.g., `single' or `multi') and detector
 layout specified in traps(capthist).
 
 \dots may be used to control aspects of the simulation by passing named
 arguments (other than D) to \code{sim.popn}. The most important arguments of
-\code{sim.popn} to keep an eye on are 'buffer' and 'Ndist'. 'buffer'
+\code{sim.popn} to keep an eye on are `buffer' and `Ndist'. `buffer'
 defines the region over which animals are simulated (unless \code{mask}
 is specified) - the region should be large enough to encompass all
-animals that might be caught. 'Ndist' controls the number of individuals
-simulated within the buffered or masked area. The default is 'poisson'.
-Use 'Ndist = fixed' to fix the number in the buffered or masked area
+animals that might be caught. `Ndist' controls the number of individuals
+simulated within the buffered or masked area. The default is `poisson'.
+Use `Ndist = fixed' to fix the number in the buffered or masked area
 \eqn{A} at \eqn{N = DA}. This conditioning reduces the estimated
 standard error of \eqn{\hat{D}}{D-hat}, but conditioning is not always
 justified - seek advice from a statistician if you are unsure.
 
 The simulated 2-D distribution of animals is Poisson by default. There
-is no 'even' option as in Density.
+is no `even' option as in Density.
 
 Simulations are conducted on a factorial experimental design in
-parameter space - i.e. at the vertices of a cuboid 'box' centred on the
+parameter space - i.e. at the vertices of a cuboid `box' centred on the
 working values of the parameters, plus an optional number of centre
-points. The size of the 'box' is specified as a fraction of the working
+points. The size of the `box' is specified as a fraction of the working
 values, so for example the limits on the density axis are D*(1--boxsize)
 and D*(1+boxsize) where D* is the working value of D. For g0, this
 computation uses the odds transformation (g0/(1--g0)). \code{boxsize}
@@ -91,7 +90,7 @@ error divided by the central value is less than CVmax for all
 parameters. An error occurs if max.nsim is exceeded.
 
 Once a model with sufficient precision has been obtained, a new working
-vector of parameter estimates is 'predicted' by inverting the linear
+vector of parameter estimates is `predicted' by inverting the linear
 model and applying it to the target vector. A working vector
 is accepted as the final estimate when it lies within the box; this
 reduces the bias from using a linear approximation to extrapolate a
@@ -109,7 +108,7 @@ Efford et al. (2005) for an application.
 The value of \code{predictortype} is passed as the second argument of
 the chosen \code{predictorfn}. By default this is \code{pfn}, for which
 the second argument (\code{N.estimator}) is a character value from
-c('n', 'null','zippin','jackknife'), corresponding respectively to the
+c("n", "null","zippin","jackknife"), corresponding respectively to the
 number of individuals caught (Mt+1), and \eqn{\hat{N}}{N-hat} from
 models M0, Mh and Mb of Otis et al. (1978).
 
@@ -124,7 +123,7 @@ per hectare (10 000 \eqn{\mbox{m}^2}{m^2}).
 \value{
 For \code{ip.secr}, a list comprising
   \item{call}{ the function call }
-  \item{IP}{ dataframe with estimated density \eqn{\mbox{ha}^{-1}}{ha^--1}, g0 and sigma (m) }
+  \item{IP}{ dataframe with estimated density \eqn{\mbox{ha}^{-1}}{/ha}, g0 and sigma (m) }
   \item{vcov}{ variance-covariance matrix of estimates }
   \item{ip.nsim}{ total number of simulations }
   \item{variance.bootstrap}{ dataframe summarising simulations for variance estimation }
@@ -221,7 +220,7 @@ ip.secr (captdata)
 ## coarse initial fit, no variance step
 ip1 <- ip.secr (captdata, boxsize = 0.2, CVmax=0.01, var=0)
 ## refined fit
-ip2 <- ip.secr (captdata, start = ip1$IP[,'estimate'],
+ip2 <- ip.secr (captdata, start = ip1$IP[,"estimate"],
     boxsize = 0.1, CVmax=0.002, var=1000)
 ip2
 

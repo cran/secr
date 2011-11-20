@@ -249,8 +249,6 @@ Mhbeta.est <- function (fi, maxN = 1e7) {
     start <- log(c(10, 1/tt, 0.2 * 1/tt * (1 - 1/tt) ))
     fit <- nlm (p = start, f = loglik, hessian = TRUE)
     nhat <- exp(fit$estimate[1]) + Mt1
-    alpha <- exp(fit$estimate[2])
-    beta  <- exp(fit$estimate[3])
 
     if (!is.null(fit$hessian)) {
         covar <- try(solve(fit$hessian))

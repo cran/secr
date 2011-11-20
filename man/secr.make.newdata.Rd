@@ -1,5 +1,4 @@
 \name{secr.make.newdata}
-\Rdversion{1.1}
 \alias{secr.make.newdata}
 
 \title{
@@ -24,7 +23,7 @@ secr.make.newdata(object)
 \details{
 
 \code{secr.make.newdata} is used by \code{predict} in lieu of
-user-specified 'newdata'. There is seldom any need to call
+user-specified `newdata'. There is seldom any need to call
 \code{secr.make.newdata} directly.
 
 }

@@ -10,8 +10,8 @@ A mask object is a set of points with optional attributes.
 
 \usage{
 make.mask(traps, buffer = 100, spacing = NULL, nx = 64, 
-    type = "traprect", poly = NULL, keep.poly = TRUE,
-    check.poly = TRUE, pdotmin = 0.001, ...)
+    type = "traprect", poly = NULL, poly.habitat = TRUE,
+    keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, ...)
 }
 
 \arguments{
@@ -22,12 +22,14 @@ make.mask(traps, buffer = 100, spacing = NULL, nx = 64,
   \item{type}{ character string for method to use (`traprect',
   `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer') }
   \item{poly}{ bounding polygon to which mask should be clipped (see Details) }
+  \item{poly.habitat}{ logical for whether poly represents habitat or
+  its inverse (non-habitat)}
   \item{keep.poly}{ logical; if TRUE any bounding polygon is saved as the
   attribute `polygon' }
   \item{check.poly}{ logical; if TRUE a warning is given for traps that
   lie outside a bounding polygon }
-  \item{pdotmin}{ minimum detection probability for inclusion in mask when type = 'pdot' (optional) }
-  \item{...}{ additional arguments passed to \code{pdot} when \code{type} = `pdot' }
+  \item{pdotmin}{ minimum detection probability for inclusion in mask when \code{type = "pdot"} (optional) }
+  \item{...}{ additional arguments passed to \code{pdot} when \code{type = "pdot"} }
 }
 
 \details{
@@ -73,12 +75,16 @@ range of the x coordinates (including any buffer) by \code{nx}.
 }
 
 \value{
-an object of class \code{mask}
-}
+  
+    An object of class \code{mask}.  When \code{keep.poly = TRUE},
+    \code{poly} and \code{poly.habitat} are saved as attributes of the
+    mask.
+
+  }
 
 \note{
 
-A warning is displayed if type = 'pdot' and the buffer is too small to
+A warning is displayed if \code{type = "pdot"} and the buffer is too small to
 include all points with \eqn{p.} > pdotmin.
 
 A habitat mask is needed to fit an SECR model and for some related
@@ -105,15 +111,15 @@ plot(tempmask)
 summary (tempmask)
 
 ## make irregular detector array by subsampling 
-## form mask by 'trapbuffer' method
+## form mask by `trapbuffer' method
 temptrap <- subset (temptrap, sample(nrow(temptrap), size = 30))
-tempmask <- make.mask (temptrap, spacing = 5, type = 'trapbuffer')
+tempmask <- make.mask (temptrap, spacing = 5, type = "trapbuffer")
 plot (tempmask)
 plot (temptrap, add = TRUE)
 
-## form mask by 'pdot' method
+## form mask by "pdot" method
 temptrap <- make.grid(nx = 6, ny = 6)
-tempmask <- make.mask (temptrap, buffer = 150, type = 'pdot', 
+tempmask <- make.mask (temptrap, buffer = 150, type = "pdot", 
     pdotmin = 0.0001, detectpar = list(g0 = 0.1, sigma = 30),
     noccasions = 4)
 plot (tempmask)
@@ -121,26 +127,32 @@ plot (temptrap, add = TRUE)
 
 ## Using an ESRI polygon shapefile for clipping (shapefile
 ## polygons may include multiple islands and holes).
-## Requires the 'maptools' package of Nicholas J. Lewin-Koh, Roger
-## Bivand, and others; 'maptools' uses the 'sp' package of spatial
+## Requires the `maptools' package of Nicholas J. Lewin-Koh, Roger
+## Bivand, and others; `maptools' uses the `sp' package of spatial
 ## classes by Ed Pebesma and Roger Bivand.
 
 \dontrun{
 require(maptools)
 setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly('possumarea')  ## possumarea.shp etc.
+possumarea <- readShapePoly("possumarea")  ## possumarea.shp etc.
 possummask2 <- make.mask(traps(possumCH), spacing = 20,
-    buffer = 250, type = 'trapbuffer', poly = possumarea)
+    buffer = 250, type = "trapbuffer", poly = possumarea)
 oldpar <- par(mar = c(1,6,6,6), xpd = TRUE)
 plot (possummask2, ppoly = TRUE)
 plot(traps(possumCH), add = T)
 par(oldpar)
+
+## if the polygon delineates non-habitat ...
+seaPossumMask <- make.mask(traps(possumCH), buffer = 1000, 
+    type = "traprect", poly = possumarea, poly.habitat = FALSE)
+plot(seaPossumMask)
+plot(traps(possumCH), add = T)
 }
 
 %% ## OR, as this is a simple polygon, just...
 %% possumarea <- possumarea@polygons[[1]]@Polygons[[1]]@coords
 %% possummask2 <- make.mask(traps(possumCH), spacing = 20, poly = possumarea,
-%%     buffer = 250, type = 'trapbuffer')
+%%     buffer = 250, type = "trapbuffer")
 
 }
 

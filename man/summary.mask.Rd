@@ -24,9 +24,9 @@ The bounding box is the smallest rectangular area with edges parallel to the x- 
 
 \value{
 
-  Object of class 'summary.mask', a list with components
-  \item{detector }{character string for detector type ('single','multi','proximity')}
-  \item{type }{mask type ('traprect', 'trapbuffer', 'pdot', 'polygon', 'user', 'subset')}
+  Object of class `summary.mask', a list with components
+  \item{detector }{character string for detector type ("single","multi","proximity")}
+  \item{type }{mask type ("traprect", "trapbuffer", "pdot", "polygon", "user", "subset")}
   \item{nmaskpoints }{number of points in mask}
   \item{xrange }{range of x coordinates}
   \item{yrange }{range of y coordinates}

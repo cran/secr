@@ -60,8 +60,8 @@ variation in density (note Warning).
   clusters are not specified.
 
   Detectors are assumed to be independent (as with detector types
-  'proximity', 'count' etc.). The computed E(n) does not apply when
-  there is competition among detectors, e.g., when detector = 'multi'.
+  `proximity', `count' etc.). The computed E(n) does not apply when
+  there is competition among detectors, e.g., when detector = `multi'.
   
 The prediction of density at present considers only the base level of
 density covariates, such as cell-specific habitat variables.
@@ -86,8 +86,8 @@ expected.n(ovenbird.model.D)
 
 \dontrun{
 mini <- make.grid(nx = 3, ny = 3, spacing = 50, detector =
-    'proximity')
-tempgrids <- trap.builder (cluster = mini , method = 'all',
+    "proximity")
+tempgrids <- trap.builder (cluster = mini , method = "all",
     frame = expand.grid(x = seq(1000, 9000, 2000),
     y = seq(1000, 9000, 2000)), plt = TRUE)
 capt <- sim.capthist(tempgrids, popn = list(D = 2))
@@ -107,4 +107,4 @@ sum((y - En)^2 / En) / sum(y/En)
 
 }
 
-\keyword{ model }
+\keyword{ models }

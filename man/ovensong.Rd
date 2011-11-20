@@ -42,18 +42,18 @@ obscured by insect noise so an alternative 1000-Hz range was measured
 and the values were adjusted by regression.
 
 The data are provided as a single-session, single-occasion
-\code{capthist} object \code{signalCH}. The 'signal' attribute contains
+\code{capthist} object \code{signalCH}. The `signal' attribute contains
 the power measurement in decibels for each detected sound on each
 channel where the power threshold is exceeded. As the threshold signal
 (attribute \code{cutval} = 35) is less than any signal value in this
 dataset, all detection histories are complete (1,1,1,1) across
 microphones. For analysis Dawson and Efford applied a higher threshold
-that treated weaker signals as 'not detected' (see Examples).
+that treated weaker signals as `not detected' (see Examples).
 
-The row names of \code{signalCH} (e.g. '3755AX') are formed from a
+The row names of \code{signalCH} (e.g. "3755AX") are formed from a
 4-digit number indicating the sampling location (one of 75 points on a
 50-m grid) and a letter A--D to distinguish individual ovenbirds within
-a 5-minute recording; 'X' indicates power values adjusted by regression.
+a 5-minute recording; `X' indicates power values adjusted by regression.
 
 The default model for sound attenuation is a log-linear decline with
 distance from the source (linear decline on dB scale). Including a
@@ -64,11 +64,7 @@ inclined to settle on a local maximum; in the example below we use a set
 of starting values that have been found by trial and error to yield the
 global maximum.
 
-Two fitted models are included (see Examples for details). Some
-components of the fitted secr models have been removed with
-\code{\link{trim}} to save space.
-
-
+Two fitted models are included (see Examples for details).
 
 \tabular{ll}{
   Object \tab Description \cr
@@ -128,14 +124,14 @@ ovensong.model.2 <- secr.fit( signalCH.525, mask = omask,
 AIC(ovensong.model.1, ovensong.model.2)
 
 ## density estimates, dividing by 75 to allow for replication
-collate(ovensong.model.1, ovensong.model.2)[1,,,'D']/75
+collate(ovensong.model.1, ovensong.model.2)[1,,,"D"]/75
 
 ## plot attenuation curves cf Dawson & Efford (2009) Fig 5
-pars1 <- predict(ovensong.model.1)[c('beta0', 'beta1'), 'estimate']
-pars2 <- predict(ovensong.model.2)[c('beta0', 'beta1'), 'estimate']
+pars1 <- predict(ovensong.model.1)[c("beta0", "beta1"), "estimate"]
+pars2 <- predict(ovensong.model.2)[c("beta0", "beta1"), "estimate"]
 attenuationplot(pars1, xval=0:150, spherical = TRUE, ylim = c(40,110))
 attenuationplot(pars2, xval=0:150, spherical = FALSE, add = TRUE, 
-    col = 'red')
+    col = "red")
 ## spherical spreading only
 pars1[2] <- 0  
 attenuationplot(pars1, xval=0:150, spherical = TRUE, add = TRUE, lty=2)

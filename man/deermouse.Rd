@@ -81,9 +81,6 @@ et al. (1978) draw attention to the tendency of \emph{Peromyscus} to become
 `trap happy', and we observe that models with a behavioural response
 (ESG.b, WSG.b) have the lowest AIC among those fitted here.
 
-Some components of the fitted secr models have been removed with
-\code{\link{trim}} to save space.
-
 \tabular{ll}{
   Object \tab Description \cr
  deermouse.ESG \tab capthist object, East Stuart Gulch \cr
@@ -130,9 +127,9 @@ Stanley, T. R. and Richards, J. D. (2005) A program for testing
 \examples{
 
 par(mfrow = c(1,2), mar = c(1,1,4,1))
-plot(deermouse.ESG, title = 'Peromyscus data from East Stuart Gulch',
+plot(deermouse.ESG, title = "Peromyscus data from East Stuart Gulch",
     border = 10, gridlines = FALSE, tracks = TRUE)
-plot(deermouse.WSG, title = 'Peromyscus data from Wet Swizer Gulch',
+plot(deermouse.WSG, title = "Peromyscus data from Wet Swizer Gulch",
     border = 10, gridlines = FALSE, tracks = TRUE)
 
 closure.test(deermouse.ESG, SB = TRUE)

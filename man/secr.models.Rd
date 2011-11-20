@@ -19,7 +19,7 @@ parameters i.e. (0, +Inf).
 
 Submodels for spatially explicit capture--recapture in \pkg{secr} are
 defined symbolically using the \R formula notation. A separate linear
-predictor is used for each core parameter. Core parameters are 'real'
+predictor is used for each core parameter. Core parameters are `real'
 parameters in the terminology of MARK, and \pkg{secr} uses that term to
 reduce confusion. Four real parameters are commonly modelled in
 \pkg{secr}: D (density), g0, sigma and z. Only the last three real
@@ -37,12 +37,12 @@ Each real parameter has a linear predictor of the form
 y = X * beta,
 
 where y is vector of parameter values on the link scale, X is a design
-matrix of predictor values, beta is a vector of coefficients, and '*'
+matrix of predictor values, beta is a vector of coefficients, and `*'
 stands for matrix multiplication. The elements of beta are estimated
-when we fit the model; in MARK these are called 'beta parameters' to
-distinguish them from the 'real' parameter values in y. X has one column
+when we fit the model; in MARK these are called `beta parameters' to
+distinguish them from the `real' parameter values in y. X has one column
 for each element of beta. To repeat: there is an X and a beta for each
-real parameter; elsewhere in the documentation we use 'beta' to refer to
+real parameter; elsewhere in the documentation we use `beta' to refer to
 the vector got by concatenating \emph{all} the parameter-specific beta's. We now
 describe design matrices in more detail.
 
@@ -52,7 +52,7 @@ hazard-rate). These are treated as higher-level choices.]
 
 \bold{Design matrices}
 
-The design matrix contains a column of '1's (for the constant or
+The design matrix contains a column of `1's (for the constant or
 intercept term) and additional columns as needed to describe the effects
 in the submodel. Depending on the model, these may be continuous
 predictors (e.g. air temperature to predict occasion-to-occasion
@@ -62,7 +62,7 @@ before occasion s, 0 otherwise), or coded factor levels.
 Within \code{secr.fit}, a design matrix is constructed automatically
 from the input data (\code{capthist}) and the model formula (e.g.
 \code{model$g0}) in a 2-stage process. First, a data frame is built
-containing 'design data' with one column for each variable in the
+containing `design data' with one column for each variable in the
 formula. Second, the R function \code{model.matrix()} is used to
 construct the design matrix. This process is hidden from the user. The
 design matrix will have at least one more column than the design data,
@@ -83,7 +83,10 @@ separately here \code{\link{secr detection models}} and here
 
 \references{ 
 
-Laake, J. and Rexstad E. (2008) Appendix C. RMark - an alternative approach to building linear models in MARK. In: Cooch, E. and White, G. (eds) \emph{Program MARK: A Gentle Introduction.} 6th edition. Available online at \url{http://www.phidot.org}.
+Laake, J. and Rexstad E. (2008) Appendix C. RMark - an alternative
+approach to building linear models in MARK. In: Cooch, E. and White,
+G. (eds) \emph{Program MARK: A Gentle Introduction.} 6th
+edition. Available online at \url{http://www.phidot.org}.
 
 }
 

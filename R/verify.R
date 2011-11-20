@@ -19,7 +19,7 @@ overlapcells <- function (xy) {
     vertexinside <- function (a,b) {
         OK <- FALSE
         for (k in 1:4) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -27,7 +27,7 @@ overlapcells <- function (xy) {
                 as.double (b),
                 result = integer(1))
             if (any(as.logical(temp$result))) OK <- TRUE
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -71,7 +71,7 @@ overlappoly <- function (xy, polyID) {
         a <- as.matrix(a)
         b <- as.matrix(b)
         for (k in 1:n.a) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (n.b-1),
@@ -81,7 +81,7 @@ overlappoly <- function (xy, polyID) {
             if (any(as.logical(temp$result))) OK <- TRUE
         }
         for (k in 1:n.b) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (n.a-1),
@@ -131,7 +131,7 @@ xyinpoly <- function (xy, trps) {
         ## is point i inside poly k?
         polyxy <- as.matrix(lxy[[k]])
         nr <- nrow(polyxy)
-        temp <- .C('inside',  PACKAGE = 'secr',
+        temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
             as.double (xy[i,]),
             as.integer (0),
             as.integer (nr-1),
@@ -155,7 +155,7 @@ xyontransect <- function (xy, trps, tol=0.01) {
         ## is point i on transect k?
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
-        temp <- .C('ontransect',  PACKAGE = 'secr',
+        temp <- .C('ontransect',  DUP = FALSE, PACKAGE = 'secr',
             as.double (xy[i,]),
             as.integer (0),
             as.integer (nr-1),

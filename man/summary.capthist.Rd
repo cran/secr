@@ -13,7 +13,7 @@
 
 \method{print}{summary.capthist}(x, ...)
 
-counts(CHlist, counts = 'M(t+1)')
+counts(CHlist, counts = "M(t+1)")
 
 }
 
@@ -34,7 +34,7 @@ counts(CHlist, counts = 'M(t+1)')
 From \code{summary.capthist}, an object of class
 \code{summary.capthist}, a list with at least these components
 
-  \item{detector }{\code{\link{detector}} type (`single', `multi', `proximity' etc.)}
+  \item{detector }{\code{\link{detector}} type ("single", "multi", "proximity" etc.)}
   \item{ndetector }{number of detectors }
   \item{xrange }{range of x coordinates of detectors }
   \item{yrange }{range of y coordinates of detectors }
@@ -56,7 +56,7 @@ These counts are reported by \code{summary.capthist}
   f \tab number of individuals detected exactly f times \cr
   M(t+1) \tab cumulative number of individuals detected \cr
   losses \tab number of individuals reported as not released on each occasion \cr
-  detections \tab number of detections, including within-occasion 'recaptures' \cr
+  detections \tab number of detections, including within-occasion `recaptures' \cr
   traps visited \tab number of detectors at which at least one detection was recorded \cr
   traps set \tab number of detectors, excluding any `not set' in \code{usage} attribute of \code{traps} attribute \cr
 }
@@ -72,7 +72,7 @@ with one component for each type of count.
 \examples{
 temptrap <- make.grid(nx = 5, ny = 3)
 summary(sim.capthist(temptrap))
-summary(sim.capthist(temptrap))$counts['n',]
+summary(sim.capthist(temptrap))$counts["n",]
 }
 
 \keyword{ models }

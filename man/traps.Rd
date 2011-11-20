@@ -30,7 +30,7 @@ replaces the \code{traps} attribute of a \code{capthist} object.
 An object of class \code{traps} holds detector (trap) locations as a
 data frame of x-y coordinates. Trap identifiers are used as row names.
 The required attribute `detector' records the type of detector
-(`single', `multi' or `proximity' etc.; see \code{\link{detector}} for
+("single", "multi" or "proximity" etc.; see \code{\link{detector}} for
 more).
 
 Other possible attributes of a \code{traps} object are average
@@ -84,13 +84,13 @@ summary (demotraps)
 plot (demotraps, border = 50, label = TRUE, offset = 8, 
     gridlines=FALSE)  
 
-## generate an arbitrary covariate 'randcov'
+## generate an arbitrary covariate `randcov'
 covariates (demotraps) <- data.frame(randcov = rnorm(48))
 
 ## overplot detectors that have high covariate values
 temptr <- subset(demotraps, covariates(demotraps)$randcov > 0.5)
 plot (temptr, add = TRUE, 
-    detpar = list (pch = 16, col = 'green', cex = 2))  
+    detpar = list (pch = 16, col = "green", cex = 2))  
 }
 
 \keyword{ classes }

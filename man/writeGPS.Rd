@@ -29,11 +29,11 @@ writeGPS(xy, o = "garmin", F = "usb:", proj = "+proj=nzmg")
   
 This function is derived in part from \code{readGPS} in \pkg{maptools}.
 
-For users of Garmin GPS units, useful values of \code{o} are `garmin'
-for direct upload via USB or serial ports, and `gdb' for a file in
+For users of Garmin GPS units, useful values of \code{o} are "garmin"
+for direct upload via USB or serial ports, and "gdb" for a file in
 Mapsource database format.
 
-\code{F} may be `usb:' or `com4:' etc. for upload via USB or serial
+\code{F} may be "usb:" or "com4:" etc. for upload via USB or serial
 ports, or the name of a file to create.
 
 The \code{proj} argument may be complex. For further information see the
@@ -66,8 +66,8 @@ No value is returned. The effect is to upload waypoints to an attached
 \url{http://www.gpsbabel.org/}. Remember to add it to the Path. On
 Windows this means following something like Settings > Control panel >
 System > Advanced settings > Environment variables > (select Path) Edit
-and adding `;C:/Program Files (x86)/gpsbabel' to the end (without the
-quotes). Or `;C:/Program Files/gpsbabel' on 32-bit systems.
+and adding ";C:/Program Files (x86)/gpsbabel" to the end (without the
+quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
   
 }
 
@@ -80,7 +80,7 @@ quotes). Or `;C:/Program Files/gpsbabel' on 32-bit systems.
 \dontrun{
 require(maptools)
 setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly('possumarea')  
+possumarea <- readShapePoly("possumarea")  
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)
 
@@ -91,10 +91,10 @@ writeGPS(possumgrid, proj = "+proj=nzmg")
 writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
     proj = "+proj=nzmg")
 
-## If 'region' had been specified in another projection
+## If `region' had been specified in another projection
 ## we would need to specify this as in Proj.4. Here is
 ## an example for New Zealand Transverse Mercator with
-## datum NZGD2000.
+## datum NZGD2000 (EPSG:2193)
 
 NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
     "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
@@ -113,6 +113,6 @@ writeGPS(MarylandUTMgrid, proj =
 
 }
 
-\keyword{ manip }
+\keyword{ IO }
 
 

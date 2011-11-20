@@ -3,6 +3,7 @@
 ## model.average.R
 ## Last changed 2010 02 17 fixed use of newdata (previously ignored)
 ## 2010 03 09 fixed sort order of collate with sessioncov
+## 2011-11-05 covar = TRUE bugfix
 ############################################################################################
 
 model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
@@ -101,7 +102,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
         wtd <- sweep(ests, MARGIN = 3, STATS = AICwt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
-        vcvs <- lapply (object, function(x) { vcov(x)[parnames, parnames] })  ## fails if no dimnames on x$beta.vcv
+        ## fails if no dimnames on x$beta.vcv:
+        vcvs <- lapply (object, function(x) { vcov(x)[parnames, parnames] })
         vcv1 <- array(unlist(vcvs), dim=c(np, np, nsecr))  ## between beta parameters
         vcv <- sweep (vcv1, MARGIN = 3, STATS = AICwt, FUN = '*')
         vcv <- apply(vcv, 1:2, sum)
@@ -118,7 +120,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         predicted <- lapply (object, getLP)
         ests <- lapply (predicted, function(x) lapply(x[parnames], function(y) y[, 'estimate'] ))
         if (average == 'real') {
-            ests <- lapply (ests, function (x) Xuntransform(unlist(x), varnames=rep(parnames, rep(nr, np)), linkfn=links))
+            ests <- lapply (ests, function (x) Xuntransform(unlist(x),
+                varnames=rep(parnames, rep(nr, np)), linkfn=links))
             vcvs <- lapply (object, vcov, realnames = parnames, newdata=newdata)
         }
         else {
@@ -189,10 +192,13 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
     else if (np==1) output <- output[,,1]
 
     if (covar) {
-        dimnames(vcv) <- list (rownames, rownames, parnames)
-        list (ma = output, linkvcv = vcv)
+        ## 2011-11-05 bug fix
+        # dimnames(vcv) <- list (rownames, rownames, parnames)
+        # list (ma = output, linkvcv = vcv)
+        dimnames(vcv) <- list (parnames, parnames)
+        output <- list (ma = output, linkvcv = vcv)
     }
-    else output
+    return(output)
 }
 ############################################################################################
 

@@ -4,7 +4,8 @@
 \title{ Initial Parameter Values for SECR }
 
 \description{
-  Find plausible initial parameter values for \code{\link{secr.fit}}.  A simplified model is fitted by a fast ad hoc method.
+  Find plausible initial parameter values for \code{\link{secr.fit}}.  A
+  simple SECR model is fitted by a fast ad hoc method.
 }
 
 \usage{
@@ -41,14 +42,16 @@ by Efford et al. (2004). In outline, the algorithm is
 \item Compute D = \eqn{n}/esa(g0, sigma), where \eqn{n} is the number of individuals detected
 }
 
-Here 'find' means solve numerically for zero difference between the observed and predicted values, using \code{\link{uniroot}}.
+Here `find' means solve numerically for zero difference between the observed and predicted values, using \code{\link{uniroot}}.
 
 If \code{RPSV} cannot be computed the algorithm tries to use observed
 mean recapture distance \eqn{\bar{d}}{d-bar}. Computation of
 \eqn{\bar{d}}{d-bar} fails if there no recaptures, and all returned
 values are NA.
 
-A proportion 1--\code{thin} of the points in the mask may be discarded at random to speed execution.
+If the mask has more than 100 points then a proportion 1--\code{thin} of
+points are discarded at random to speed execution.
+
 }
 
 \value{
@@ -66,12 +69,6 @@ Efford, M. G., Dawson, D. K. and Robbins C. S. (2004) DENSITY: software for anal
 Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
-
-}
-
-\note{
-
-\code{autoini} may in future include an option to use \code{\link{RPSV}} instead of \code{\link{dbar}}.
 
 }
 

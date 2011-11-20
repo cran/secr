@@ -5,7 +5,7 @@
 
 \description{
 
-Compute profile likelihood confidence intervals for 'beta' or 'real' parameters of a
+Compute profile likelihood confidence intervals for `beta' or `real' parameters of a
 spatially explicit capture-recapture model,
 
 }
@@ -30,7 +30,7 @@ tracelevel = 1, tol = 0.0001, bounds = NULL, ...)
 \details{
 
 If \code{parm} is numeric its elements are interpreted as the indices of
-'beta' parameters; character values are interpreted as 'real'
+`beta' parameters; character values are interpreted as `real'
 parameters. Different methods are used for beta parameters and real
 parameters. Limits for the \eqn{j}-th beta parameter are found by a
 numerical search for the value satisfying \eqn{-2(l_j(\beta_j) - l) =
@@ -91,8 +91,8 @@ the package \pkg{Bhat} for another \R implementation.
 
 \examples{
 \dontrun{
-## Limits for the constant real parameter 'D'
-confint(secrdemo.0, 'D')   
+## Limits for the constant real parameter "D"
+confint(secrdemo.0, "D")   
 }
 
 }

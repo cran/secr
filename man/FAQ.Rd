@@ -1,29 +1,22 @@
 \name{FAQ}
 \alias{FAQ}
-\alias{secr FAQ}
 
 \title{ Frequently Asked Questions, And Others }
 
 \description{
-A place for hints and miscellaneous advice.
+  
+  A place for hints and miscellaneous advice. 
+  
 }
 
-\section{How do I install secr?}{
+\section{How do I install and start secr?}{
 
-Follow the usual procedure for installing binaries from CRAN, or ...
-  
-Under Windows, install the package binary from the
-Rgui. Save the file secr_2.1.x.zip to a local folder (`x' is the release
-number) and use the menu option "Packages | Install packages(s) from
-local zip files...".
+Follow the usual procedure for installing from CRAN archive (see menu
+item Packages | Install package(s)... in Windows). You also need to get
+the package \pkg{abind} from CRAN.
 
-For other systems you may need to install the source package
-secr_2.1.x.tar.gz.
-
-Whatever your system, you also need to get the package \pkg{abind} (use
-Packages | Install package(s)... in Windows to download from
-CRAN). Other required packages (\pkg{MASS}, \pkg{nlme}, \pkg{stats})
-should be available as part of your \R installation.
+Other required packages (\pkg{MASS}, \pkg{nlme}, \pkg{stats}) should be
+available as part of your \R installation.
 
 Like other contributed packages, \bold{secr} needs to be loaded before
 each use e.g.,\code{library(secr)}.
@@ -39,37 +32,37 @@ There are three general ways of displaying documentation from within \R.
 Firstly, you can bring up help pages for particular functions from the
 command prompt.  For example:
 
-\code{? secr.fit}
+\code{?secr}
+or
+\code{?secr.fit}
 
 Secondly, help.search() lets you ask for a list of the help pages on a
 vague topic (or just use ?? at the prompt).  For example:
 
-\code{?? 'linear models'}
+\code{?? "linear models"}
 
-Thirdly, you can display various documents:
+Thirdly, you can display various \pkg{secr} documents listed in
+\code{\link{secr-package}}.
 
-\code{RShowDoc ('secr-manual', package='secr')}
-
-\code{RShowDoc ('secr-overview', package='secr')}
-
-See below for more \R tips.
+There is a support forum at \url{http://www.phidot.org/forum} under
+`DENSITY|secr'. Please read the FAQ there before posting. See below for
+more \R tips. Some specific problems with \code{secr.fit} are covered in
+\link{troubleshooting}.
 
 }
 
 \section{ How should I report a problem? }{
 
 If you get really stuck or find something you think is a bug then please
-report the problem. There is a support forum at
-\url{http://www.phidot.org/forum} under `DENSITY|secr'. Please read the FAQ
-there before posting.
+report the problem.
 
 You may be asked to send an actual dataset - ideally, the simplest one
 that exhibits the problem. The correct address for this is
 \email{density.software@otago.ac.nz}. Use \code{\link{save}} to wrap
 several \R objects together in one .RData file, e.g.,
-\code{save('captdata', 'secrdemo.0', 'secrdemo.b', file =
-'mydata.RData')}. Also, paste into the text of your message the output
-from \code{packageDescription("secr")}.
+\code{save("captdata", "secrdemo.0", "secrdemo.b", file =
+"mydata.RData")}. Also, paste into the text of your message the output
+from \code{packageDescription( "secr" )}.
 
 }
 
@@ -85,11 +78,9 @@ to a file and read it into \pkg{secr}, or vice versa.
 
 Extreme data, especially rare long-distance movements, may be handled
 differently by the two programs. The `minprob' component of the
-`details' argument of \code{secr.fit} sets a threshold of probability
-for capture histories (smaller values are all set to minprob), whereas
-Density has no explicit limit. In the current version the default
-minprob has been reduced from 1e-20 to 1e-50. If you find a discrepancy
-with Density it may be worth lowering minprob even further.
+`details' argument of \code{secr.fit} sets a lower threshold of
+probability for capture histories (smaller values are all set to
+minprob), whereas Density has no explicit limit.
 
 }
 
@@ -154,7 +145,7 @@ curious, you can reveal the lot with `attributes'.  For example, with
 the demonstration capture history data `captdata':
 
 
-\code{traps(captdata)       ## extraction method for 'traps'}
+\code{traps(captdata)       ## extraction method for `traps'}
 
 \code{attributes(captdata)  ## all attributes}
 

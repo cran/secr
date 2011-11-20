@@ -19,14 +19,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 ##
 ## uses pad1 to pad session-specific covar to constant length with first value,
 ## defined in 'functions.R'
-
     findvars.MS <- function (cov, vars, dimcov) {
         ## function to add covariates to a design data frame 'dframe'
         ## cov may be a dataframe or list of dataframes, one per session (R > 1),
         ## if list, then require predictors to appear in all sessions
         ## uses pad1 and insertdim from functions.R
         ## NOT to be used to add group variables
-        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- stdfn(vals)
+        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- scale(vals)
 
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
         else {
@@ -90,8 +89,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     trapcov <- covariates(trps)                # session-specific trap covariates
     if (('g' %in% vars) & is.null(groups))
         stop ("requires valid 'groups' covariate")
-    grps    <- group.levels(capthist,groups)
-    ngrp    <- max(1,length(grps))
+    grouplevels  <- group.levels(capthist,groups)
+    ngrp    <- max(1,length(grouplevels))
 
     ## 'session-specific' list if MS
     MS   <- inherits(capthist, 'list') # logical for multi-session
@@ -140,6 +139,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     autovars <- c('session','Session','g','t','T','b','B','kcov','tcov', 'sighting', 'h2', 'h3')
 ##    autovars <- c('session','Session','g','t','T','b','B','bk','Bk',
 ##                  'kcov','tcov', 'sighting', 'h2', 'h3')
+
     if (is.null(dframe)) dframe <- data.frame(dummy=rep(1, R*n*S*K*nmix))
 
 ## BUG FIXED 2009 12 22
@@ -170,7 +170,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         # add g factor
 
         if (bygroup)
-            gvar <- factor(grps)
+            gvar <- factor(grouplevels)
         else {
             gvar <- group.factor(capthist, groups)          # list if MS
             if (MS) gvar <- lapply(gvar, pad1, n)           # constant length

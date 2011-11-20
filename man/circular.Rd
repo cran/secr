@@ -71,7 +71,7 @@ commonly used for GPS accuracy with the default probability level set to
 0.5 (i.e. half of locations are further than CEP from the true
 location). A circular bivariate normal distriubution is commonly assumed
 for the circular error probable; this is equivalent to setting
-\code{detectfn = 'halfnormal'}.
+\code{detectfn = "halfnormal"}.
 
 Closed-form expressions are used for the normal and uniform cases; in
 the bivariate normal case, the relationship is \eqn{r =
@@ -99,15 +99,15 @@ circular.r (detectfn = 1, detectpar = list(sigma = 1, z = 4))
 circular.r (detectfn = 2)
 
 plot(seq(0, 5, 0.01), circular.p(r = seq(0, 5, 0.01)),
-    type = 'l', xlab = 'Radius (multiples of sigma)', ylab = 'Probability')
+    type = "l", xlab = "Radius (multiples of sigma)", ylab = "Probability")
 lines(seq(0, 5, 0.01), circular.p(r = seq(0, 5, 0.01), detectfn = 2),
-    type = 'l', col = 'red')
+    type = "l", col = "red")
 lines(seq(0, 5, 0.01), circular.p(r = seq(0, 5, 0.01), detectfn = 1,
-    detectpar = list(sigma = 1,z = 4)), type='l', col='blue')
+    detectpar = list(sigma = 1,z = 4)), type = "l", col = "blue")
 abline (h = 0.95, lty = 2)
 
-legend (2.8, 0.3, legend=c('halfnormal','hazard-rate, z = 4', 'exponential'),
-col=c('black','blue','red'), lty=rep(1,3))
+legend (2.8, 0.3, legend = c("halfnormal","hazard-rate, z = 4", "exponential"),
+    col = c("black","blue","red"), lty = rep(1,3))
 
 ## in this example, a more interesting comparison would use
 ## sigma = 0.58 for the exponential curve.

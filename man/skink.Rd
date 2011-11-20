@@ -67,14 +67,22 @@ higher canopy that often included \emph{Coriaria arborea}. Site
 variables are listed with definitions in the attribute
 \code{habitat.variables} of \code{LStraps} (see Examples).
 
-
+\if{html}{
+  \tabular{ll}{
+  Object \tab Description \cr
+  infraCH \tab multi-session capthist object O. infrapunctatum \cr
+  lineoCH \tab multi-session capthist object O. lineoocellatum \cr
+  LStraps \tab traps object -- Lake Station grids \cr
+}
+}
+\if{latex}{
 \tabular{ll}{
   Object \tab Description \cr
   infraCH \tab multi-session capthist object \emph{O. infrapunctatum} \cr
   lineoCH \tab multi-session capthist object \emph{O. lineoocellatum} \cr
   LStraps \tab traps object -- Lake Station grids \cr
 }
-
+}
 
 }
 
@@ -117,23 +125,23 @@ summary(LStraps)
 
 ## LStraps has several site covariates; terse descriptions are in
 ##  an extra attribute that may be displayed thus
-attr(LStraps, 'habitat.variables')
+attr(LStraps, "habitat.variables")
 
 ## For density modelling we need covariate values at each point in the
 ## habitat mask. This requires both on-grid interpolation and
 ## extrapolation beyond the grids. One (crude) possibility is to
 ## extrapolate a mask covariate from a covariate of the nearest trap:
 
-LSmask <- make.mask(LStraps, buffer = 30, type = 'trapbuffer')
+LSmask <- make.mask(LStraps, buffer = 30, type = "trapbuffer")
 temp <- nearesttrap(LSmask, LStraps)
 habclass <- covariates(LStraps)$class[temp]
 habclass <- factor (habclass, levels = c(1,2))
 covariates(LSmask) <- data.frame(habclass)
 
 ## plot mask with colour-coded covariate
-oldpar <- par(fg='white')  ## white pixel borders
-plot (LSmask, covariate = 'habclass', dots = FALSE, axes = FALSE,
-    col = c('yellow','green'), border = 0)
+oldpar <- par(fg="white")  ## white pixel borders
+plot (LSmask, covariate = "habclass", dots = FALSE, axes = FALSE,
+    col = c("yellow","green"), border = 0)
 plot(LStraps, add = TRUE, detpar = list(pch = 16))
 par(oldpar)
 }

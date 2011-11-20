@@ -1,5 +1,4 @@
 \name{trim}
-\Rdversion{1.1}
 \alias{trim}
 \alias{trim.default}
 \alias{trim.secr}
@@ -17,7 +16,7 @@ Drop unwanted components from a \code{list} object, usually to save space.
 \usage{
 
 \method{trim}{default}(object, drop, keep)
-\method{trim}{secr}(object, drop = c('mask', 'design', 'design0', 'D'), 
+\method{trim}{secr}(object, drop = c("mask", "design", "design0"), 
     keep = NULL)
 
 }

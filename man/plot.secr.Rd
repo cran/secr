@@ -58,7 +58,7 @@ attenuationplot (pars, add = FALSE, spherical = TRUE,
 each session and group. Otherwise, \code{predict.secr} is used to form
 estimates and plot a curve for each row in \code{newdata}.
 
-If axis labels are not provided they default to 'Distance (m)' and 'Detection probability' or 'Detection lambda'.
+If axis labels are not provided they default to `Distance (m)' and `Detection probability' or `Detection lambda'.
 
 \code{detectfnplot} is an alternative in which the user nominates the
 type of function and provides parameter values. \code{pars} maybe a list
@@ -67,8 +67,8 @@ with \code{unlist}. Parameter values must be in the expected order
 (e.g. g0, sigma, z). If \code{pars} is a matrix then a separate
 curve is plotted with the parameter values in each row.
 
-For \code{detectfnplot} the signal threshold parameters 'cutval' and
-'spherical' should be provided in \code{details} (see examples).
+For \code{detectfnplot} the signal threshold parameters `cutval' and
+`spherical' should be provided in \code{details} (see examples).
 
 Approximate confidence limits for g(r) are calculated using a numerical
 first-order delta-method approximation to the standard error at each
@@ -96,7 +96,7 @@ row).
 plot (secrdemo.b, xval = 0:100, ylim = c(0, 0.4))
 ## Add recapture probability
 plot (secrdemo.b, newdata = data.frame(b = 1), add = TRUE,
-    col='red')
+    col = "red")
 
 ## signal strength detection: 70dB at source, attenuation
 ## 0.3dB/m, sdS 5dB; detection threshold 40 dB.
@@ -105,13 +105,13 @@ detectfnplot (detectfn = 10, c(70, -0.3, 5), details =
 
 ## add a function with louder source and spherical spreading...
 detectfnplot (detectfn = 11, c(110, -0.3, 5), details =
-    list(cutval = 40), add = TRUE, col = 'red')
+    list(cutval = 40), add = TRUE, col = "red")
 
-## matching sound attenuation curves; 'spherical-only' dashed line
+## matching sound attenuation curves; `spherical-only' dashed line
 attenuationplot (c(70, -0.3), spherical = FALSE, ylim=c(-10,110))
 attenuationplot (c(110, 0), spherical = TRUE, add=TRUE, lty=2)
 attenuationplot (c(110, -0.3), spherical = TRUE, add = TRUE,
-    col = 'red')
+    col = "red")
 
 }
 

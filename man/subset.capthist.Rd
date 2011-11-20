@@ -9,9 +9,9 @@
 }
 \usage{
 \method{subset}{capthist}(x, subset = NULL, occasions = NULL, traps = NULL,
-    sessions = NULL, cutval = NULL, dropnull = TRUE, dropunused =
-    TRUE, renumber = FALSE, ...)
-\method{split}{capthist}(x, f, drop = FALSE, prefix = 'S', ...)
+    sessions = NULL, cutval = NULL, dropnullCH = TRUE, dropnullocc = FALSE,
+    dropunused = TRUE, renumber = FALSE, ...)
+\method{split}{capthist}(x, f, drop = FALSE, prefix = "S", ...)
 }
 \arguments{
   \item{x}{ object of class \code{capthist} }
@@ -20,8 +20,9 @@
   \item{traps}{ vector of subscripts to select detectors (traps) }
   \item{sessions}{ vector of subscripts to select sessions }
   \item{cutval}{ new threshold for signal strength }
-  \item{dropnull}{ logical for whether null (all-zero) capture histories
-  and occasions with no detections should be dropped }
+  \item{dropnullCH}{ logical for whether null (all-zero) capture histories
+  should be dropped }
+  \item{dropnullocc}{ logical for whether occasions with no detections should be dropped }
   \item{dropunused}{ logical for whether never-used detectors should be dropped }
   \item{renumber}{ logical for whether row.names should be replaced with sequence number in new \code{capthist} }
   \item{f}{ factor or object that may be coerced to a factor }
@@ -31,15 +32,15 @@
 }
 \details{
 
-Subscript vectors may be either logical (length equal to the relevant
-dimension of \code{x}) or integer-valued. Subsetting is applied to
-attributes (e.g. \code{covariates}, \code{traps}) as appropriate. The
-default action is to include all rows, columns and traps if the relevant
-argument is omitted. 
+Subscript vectors may be either logical- (length equal to the relevant
+dimension of \code{x}), character- or integer-valued. Subsetting is
+applied to attributes (e.g. \code{covariates}, \code{traps}) as
+appropriate. The default action is to include all animals, occasions,
+and detectors if the relevant argument is omitted.
 
 When \code{traps} is provided, detections at other detectors are set to
 zero, as if the detector had not been used, and the corresponding rows
-are removed from \code{traps}. If the detector type is 'proximity' then
+are removed from \code{traps}. If the detector type is `proximity' then
 selecting traps also reduces the third dimension of the capthist array. 
 
 \code{split} generates a list in which each component is a
@@ -66,19 +67,19 @@ selected.
 tempcapt <- sim.capthist (make.grid(nx=6, ny=6), nocc=6)
 summary(subset(tempcapt, occ=c(1,3,5)))
 
-## Consider 'proximity' detections at a random subset of detectors
-## This would not make sense for 'multi' detectors, as the 
+## Consider `proximity' detections at a random subset of detectors
+## This would not make sense for `multi' detectors, as the 
 ## excluded detectors influence detection probabilities in 
 ## sim.capthist.
 
 tempcapt2 <- sim.capthist (make.grid(nx = 6, ny = 6, 
-    detector = 'proximity'), nocc = 6)
+    detector = "proximity"), nocc = 6)
 tempcapt3 <- subset(tempcapt2, traps = sample(1:36, 18, 
     replace=FALSE))
 summary(tempcapt3)
 plot(tempcapt3)
 
-split (tempcapt2, f = sample (c('A','B'), nrow(tempcapt2), 
+split (tempcapt2, f = sample (c("A","B"), nrow(tempcapt2), 
     replace = TRUE))
 
 }

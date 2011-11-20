@@ -4,17 +4,15 @@
 \alias{trap}
 \alias{alive}
 \alias{xy}
-\alias{alongtransect}
 \alias{signal}
+\alias{alongtransect}
 \alias{xy<-}
 \alias{signal<-}
-%% \alias{times}
-%% \alias{times<-}
 
 \title{ Dissect Spatial Capture History Object }
 
 \description{
-  Extract parts of an object of class 'capthist'.
+  Extract parts of an object of class `capthist'.
 }
 
 \usage{
@@ -28,14 +26,11 @@ xy(object)
 xy(object) <- value
 signal(object)
 signal(object) <- value
-%% times(object)
-%% times(object) <- value
-
 }
 
 \arguments{
 
-  \item{object}{ a 'capthist' object }
+  \item{object}{ a `capthist' object }
   \item{names}{ if FALSE the values returned are numeric indices rather
     than names }
   \item{tol}{ tolerance for snapping to transect line (m) }
@@ -49,14 +44,14 @@ animal was not detected. Detections are ordered by occasion, animalID
 and trap.
 
 \code{trap} returns polygon or transect numbers if \code{traps(object)}
-has detector type 'polygon' or 'transect'.
+has detector type `polygon' or `transect'.
 
 \code{alongtransect} returns the distance of each detection from the
 start of the transect with which it is associated.
 
 Replacement values must precisely match \code{object} in number of
 detections and in their order. \code{xy<-} expects a dataframe of x and y
-coordinates for points of detection within a 'polygon' or 'transect'
+coordinates for points of detection within a `polygon' or `transect'
 detector.
 
 }
@@ -68,7 +63,7 @@ For \code{alive} a vector of logical values, one per detection.
 
 For \code{occasion}, a vector of numeric values, one per detection.
 
-For \code{xy}, a dataframe with one row per detection and columns 'x' and 'y'.
+For \code{xy}, a dataframe with one row per detection and columns `x' and `y'.
 
 %%For \code{signal} and \code{times}, a numeric vector with one element per detection.
 For \code{signal}, a numeric vector with one element per detection.
@@ -82,11 +77,13 @@ component per session.
 
 \examples{
 
-## 'captdata' is a demonstration dataset
+## `captdata' is a demonstration dataset
 animalID(captdata)
 
-temp <- sim.capthist(popn=list(D=1), make.grid(detector='count'))
-cbind(ID=as.numeric(animalID(temp)), occ=occasion(temp), trap=trap(temp))
+temp <- sim.capthist(popn = list(D = 1), make.grid(detector
+    = "count"))
+cbind(ID = as.numeric(animalID(temp)), occ = occasion(temp),
+    trap = trap(temp))
 
 }
 

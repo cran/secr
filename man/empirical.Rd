@@ -23,20 +23,20 @@ Empirical Variance of H-T Density Estimate
 
 \usage{
 
-derived.nj ( nj, esa, se.esa,  method = 'SRS', xy = NULL,
+derived.nj ( nj, esa, se.esa,  method = "SRS", xy = NULL,
     alpha = 0.05, loginterval = TRUE ) 
 
-derived.mash ( object, sessnum = NULL,  method = 'SRS',
+derived.mash ( object, sessnum = NULL,  method = "SRS",
     alpha = 0.05, loginterval = TRUE)
 
-derived.cluster ( object, sessnum = NULL,  method = 'SRS',
+derived.cluster ( object, sessnum = NULL,  method = "SRS",
     alpha = 0.05, loginterval = TRUE)
 
-derived.session ( object,  method = 'SRS', xy = NULL,
+derived.session ( object,  method = "SRS", xy = NULL,
     alpha = 0.05, loginterval = TRUE )
 
 derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
-    mask = NULL, noccasions = NULL,  method = 'SRS', xy = NULL,
+    mask = NULL, noccasions = NULL,  method = "SRS", xy = NULL,
     alpha = 0.05, loginterval = TRUE)
 
 }
@@ -48,7 +48,7 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   \item{se.esa}{ estimated standard error of effective sampling
     area (\eqn{\widehat{SE}(\hat{a})}{SE-hat(a-hat)})}
   \item{method}{ character string `SRS' or `local' }
-  \item{xy}{ dataframe of x- and y- coordinates (\code{method = 'local'} only)}
+  \item{xy}{ dataframe of x- and y- coordinates (\code{method = "local"} only)}
   \item{alpha}{ alpha level for confidence intervals }
   \item{loginterval}{ logical for whether to base interval on log(N)}
   \item{sessnum}{ index of session in object$capthist for which output required }
@@ -94,10 +94,10 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   multiple sessions; each session is interpreted as a replicate sample.
 
   Spatial variance may be calculated assuming simple random sampling
-  (\code{method = 'SRS'}) or using the neighbourhood variance estimator
+  (\code{method = "SRS"}) or using the neighbourhood variance estimator
   recommended by Stevens and Olsen (2003) for generalized random
   tessellation stratified (GRTS) samples and implemented in package
-  \pkg{spsurvey} (\code{method = 'local'}). For
+  \pkg{spsurvey} (\code{method = "local"}). For
   `local' variance estimates, the centre of each replicate must be
   provided in \code{xy}, except where centres may be inferred from the
   data.
@@ -177,7 +177,7 @@ where \eqn{\widehat{\mbox{var}}(n) = \frac{J}{J-1}
 ## The `ovensong' data are pooled from 75 replicate positions of a
 ## 4-microphone array. The array positions are coded as the first 4
 ## digits of each sound identifier. The sound data are initially in the
-## object 'signalCH'. We first impose a 52.5 dB signal threshold as in
+## object `signalCH'. We first impose a 52.5 dB signal threshold as in
 ## Dawson & Efford (2009, J. Appl. Ecol. 46:1201--1209). The vector nj
 ## includes 33 positions at which no ovenbird was heard. The first and
 ## second columns of `temp' hold the estimated effective sampling area
@@ -187,7 +187,7 @@ signalCH.525 <- subset(signalCH, cutval = 52.5)
 nonzero.counts <- table(substring(rownames(signalCH.525),1,4))
 nj <- c(nonzero.counts, rep(0, 75 - length(nonzero.counts)))
 temp <- derived(ovensong.model.1, se.esa = TRUE)
-derived.nj(nj, temp['esa',1:2])
+derived.nj(nj, temp["esa",1:2])
 
 ## The result is very close to that reported by Dawson & Efford
 ## from a 2-D Poisson model fitted by maximizing the full likelihood.
@@ -212,7 +212,7 @@ fit1 <- secr.fit(mash(capt1), CL = TRUE)
 
 ## Visualize sampling
 tempmask <- make.mask(t4.16, spacing = 10, type =
-    'clusterbuffer')
+    "clusterbuffer")
 plot(tempmask)
 plot(t4.16, add = TRUE)
 plot(capt1, add = TRUE)
@@ -229,7 +229,7 @@ derived.mash(fit1)
 ## larger (and more credible) SE from derived.mash().
 
 popn2 <- sim.popn (D = 5, core = testregion, buffer = 0,
-    model2D = 'hills', details = list(hills = c(-2,3)))
+    model2D = "hills", details = list(hills = c(-2,3)))
 capt2 <- sim.capthist(t4.16, popn = popn2)
 fit2 <- secr.fit(mash(capt2), CL = TRUE)
 derived(fit2)
@@ -246,24 +246,24 @@ t1.100 <- make.systematic (cluster = t1, spacing = 100,
     region = testregion)
 capt2a <- sim.capthist(t1.100, popn = popn2, noccasions = 1)
 ## one way to get number of animals per point
-nj <- attr(mash(capt2a), 'n.mash')
+nj <- attr(mash(capt2a), "n.mash")
 derived.external (fit2, nj = nj, cluster = t1, buffer = 100,
     noccasions = 1)
 
 ## Review plots
 base.plot <- function() {
-    eqscplot( testregion, axes = FALSE, xlab = '',
-        ylab = '', type = 'n')
+    eqscplot( testregion, axes = FALSE, xlab = "",
+        ylab = "", type = "n")
     polygon(testregion)
 }
-par(mfrow = c(1,3), xpd = T, xaxs = 'i', yaxs = 'i')
+par(mfrow = c(1,3), xpd = T, xaxs = "i", yaxs = "i")
 base.plot()
-plot(popn2, add = TRUE, col = 'blue')
-mtext(side=3, line=0.5, 'Population', cex=0.8, col='black')
+plot(popn2, add = TRUE, col = "blue")
+mtext(side=3, line=0.5, "Population", cex=0.8, col="black")
 base.plot()
-plot (capt2a, add = TRUE,title = 'Extensive survey')
+plot (capt2a, add = TRUE,title = "Extensive survey")
 base.plot()
-plot(capt2, add = TRUE, title = 'Intensive survey')
+plot(capt2, add = TRUE, title = "Intensive survey")
 
 }
 

@@ -13,9 +13,10 @@
 
 \description{
 
-  Demonstration data from program Density are provided both as
-  raw dataframes (\code{trapXY}, \code{captXY}) and as a combined
-  \code{capthist} object (\code{captdata}) ready for input to \code{secr.fit}.
+  Demonstration data from program Density are provided as text
+  files in the `extdata' folder, as raw dataframes (\code{trapXY},
+  \code{captXY}), and as a combined \code{capthist} object
+  (\code{captdata}) ready for input to \code{secr.fit}.
 
   The fitted models are objects of class \code{secr} formed by 
 
@@ -73,20 +74,32 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \examples{
 
-## construct a traps object from raw trap data
-## this dataset uses fmt = 'XY' (x-y coordinates included in
-## both trap and capture files), but fmt = 'trapID' (capture file
-## uses trap identifier) is simpler
+\dontrun{
 
-temptrap <- read.traps(data = trapXY, detector = 'single')
-plot(temptrap)
+## navigate to folder with raw data files
+olddir <- setwd (system.file("extdata", package="secr"))
 
-## construct a capthist object
-captdata <- make.capthist(captXY, temptrap, fmt='XY')
-plot(captdata, tracks = TRUE)
+## construct capthist object from raw data
+captdata  <- read.capthist ('capt.txt', 'trap.txt', fmt = 'XY')
+
+## generate demonstration fits
+secrdemo.0 <- secr.fit (captdata)
+secrdemo.CL <- secr.fit (captdata, CL = TRUE)
+secrdemo.b <- secr.fit (captdata, model = list(g0 = ~b))
+
+## restore previous setting
+setwd(olddir)
+}
 
 ## display the null model fit, using the print method for secr
 secrdemo.0
+
+## compare fit of models
+AIC(secrdemo.0, secrdemo.b)
+
+## display estimates for the two models (single session)
+collate(secrdemo.0, secrdemo.b)[1,,,]
+
 }
 
 \keyword{datasets}

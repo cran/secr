@@ -16,7 +16,6 @@
 
 Data from a multi-year mist-netting study of ovenbirds (\emph{Seiurus
 aurocapilla}) at a site in Maryland, USA.
-
 }
 
 \usage{data(ovenbird)}
@@ -47,28 +46,27 @@ caught during the main session in each of the five years 2005--2009.  One
 ovenbird was killed by a predator in the net in 2009, as indicated by a
 negative net number in the dataset.  Sex was determined in the hand from
 the presence of a brood patch (females) or cloacal protuberance (males).
- Birds are listed by their band number (4-digit prefix, '.', and 5-digit
+ Birds are listed by their band number (4-digit prefix, `.', and 5-digit
 number).  Recaptures within a day are not included in this dataset, so
-each bird occurs at most once per day and the detector type is 'multi'
-rather than 'proximity'.  Although several individuals were captured in
+each bird occurs at most once per day and the detector type is `multi'
+rather than `proximity'.  Although several individuals were captured in
 more than one year, no use is made of this information in the analyses
 presently offered in \pkg{secr}.
 
 
 The data are provided as a multi-session \code{capthist} object
-'ovenCH'.  Sex is coded as a categorical individual covariate ('M'
-or 'F').
+`ovenCH'.  Sex is coded as a categorical individual covariate ("M"
+or "F").
 
 An analysis of the data for males in the first four years showed that
 they tended to avoid nets after their first capture within a season
-(Dawson & Efford in press).  While the species was present consistently,
+(Dawson & Efford 2009).  While the species was present consistently,
 the number of detections in any one year was too small to give reliable
 estimates of density; pooling of detection parameters across years
 helped to improve precision.
 
 Included with the data are a mask and four models fitted as in
-Examples. Some components of the fitted secr models have been removed
-with \code{\link{trim}} to save space.
+Examples.
 
 \tabular{ll}{
   Object \tab Description \cr
@@ -121,13 +119,13 @@ wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31}
 \dontrun{
 
 ## commands used to create ovenCH from the input files
-## 'netsites0509.txt' and 'ovencapt.txt'
+## "netsites0509.txt" and "ovencapt.txt"
 ## for information only - these files not distributed
-netsites0509 <- read.traps(file = 'netsites0509.txt',
-    skip = 1, detector = 'multi')
-temp <- read.table('ovencapt.txt', colClasses=c('character',
-    'character', 'numeric', 'numeric', 'character'))
-ovenCH <- make.capthist(temp, netsites0509, covnames=c('Sex','Age'))
+netsites0509 <- read.traps(file = "netsites0509.txt",
+    skip = 1, detector = "multi")
+temp <- read.table("ovencapt.txt", colClasses=c("character",
+    "character", "numeric", "numeric", "character"))
+ovenCH <- make.capthist(temp, netsites0509, covnames=c("Sex","Age"))
 
 }
 
@@ -135,12 +133,12 @@ oldpar <- par(mfrow = c(1,5), mar = c(1,1,4,1))
 plot(ovenCH, tracks = TRUE, varycol = TRUE)
 par(oldpar)
 
-counts(ovenCH, 'n')
+counts(ovenCH, "n")
 
 \dontrun{
 
 ## array constant over years, so build mask only once
-ovenmask <- make.mask(traps(ovenCH)[['2005']], type='pdot', buffer=400,
+ovenmask <- make.mask(traps(ovenCH)[["2005"]], type="pdot", buffer=400,
     spacing=15, detectpar=list(g0=0.03, sigma=90), nocc=10)
 
 ## fit constant-density model
@@ -168,12 +166,14 @@ ovenbird.model.h2
 AIC (ovenbird.model.1, ovenbird.model.1b, ovenbird.model.1T,
     ovenbird.model.h2)
 model.average (ovenbird.model.1,ovenbird.model.1b, ovenbird.model.1T,
-    ovenbird.model.h2, realnames='D')
+    ovenbird.model.h2, realnames = "D")
 
 ## select one year to plot
-plot(ovenbird.model.1b, newdata = data.frame(session = '2005',
+plot(ovenbird.model.1b, newdata = data.frame(session = "2005",
     b = 0))
 
 }
 
 \keyword{datasets}
+
+%\figure{ovenbird.jpg}{options: width=1.5in}

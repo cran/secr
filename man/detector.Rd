@@ -7,9 +7,9 @@
 \alias{transectX}
 \alias{single}
 \alias{multi}
-%\alias{signal}
 \alias{proximity}
 \alias{count}
+% \alias{signal}
 
 \title{ Detector Type }
 
@@ -53,8 +53,7 @@ detector type is used for acoustic data as described in
 \references{
 
 Efford, M. G. (2011) Estimation of population density by spatially
-explicit capture--recapture with area or transect searches. Unpublished
-manuscript.
+explicit capture--recapture with area searches. \emph{Ecology} in press.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009a) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:
@@ -71,7 +70,7 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 \examples{
 ## Default detector type is 'multi'
 temptrap <- make.grid(nx = 6, ny = 8)
-detector(temptrap) <- 'proximity'
+detector(temptrap) <- "proximity"
 summary(temptrap)
 }
 

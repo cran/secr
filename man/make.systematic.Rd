@@ -88,7 +88,7 @@ temp <- make.systematic(c(6, 6), mini, region, plt = TRUE,
 \dontrun{
 require(maptools)
 setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly('possumarea')  
+possumarea <- readShapePoly("possumarea")  
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)
 
@@ -96,15 +96,15 @@ possumgrid <- make.systematic(spacing = 100, region =
 possumgrid2 <- make.systematic(spacing = 300,
     cluster = make.grid(nx = 2, ny = 2, spacing = 100),
     region = possumarea, plt = TRUE, edgemethod =
-    'allinside')
+    "allinside")
 ## label clusters
 text(cluster.centres(possumgrid2), levels(clusterID
     (possumgrid2)), cex=0.7)
 
 ## If you have GPSBabel installed and on the Path
 ## then coordinates can be projected and uploaded
-## to a GPS with 'writeGPS', which also requires the
-## package 'proj4'. Defaults are for a Garmin GPS
+## to a GPS with `writeGPS', which also requires the
+## package `proj4'. Defaults are for a Garmin GPS
 ## connected by USB.
 
 writeGPS(possumgrid, proj = "+proj=nzmg")

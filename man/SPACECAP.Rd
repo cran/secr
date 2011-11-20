@@ -55,7 +55,7 @@ read.SPACECAP(AC, TD, detector = "proximity", session = "1")
 }
 \details{
   If successful, \code{write.SPACECAP} creates three output files with names
-  ending in `AC.csv',`TD.csv' and 'SS.csv'. These are respectively
+  ending in `AC.csv',`TD.csv' and `SS.csv'. These are respectively
   the `Animal Capture', `Trap Deployment' and `State-Space' files
   required by \pkg{SPACECAP}.
 }
@@ -87,15 +87,18 @@ Wildlife Studies, Bangalure, India.
 \dontrun{
 
 ## coerce data to proximity detector type for export
-demo <- reduce(captdata, output = 'proximity') 
-write.SPACECAP (demo, filestem = 'demo')
+demo <- reduce(captdata, output = "proximity") 
+write.SPACECAP (demo, filestem = "demo")
 
 ## now read back the data just exported...
-temp <- read.SPACECAP ('demoAC.csv', 'demoTD.csv')
-temp <- reduce(temp, output = 'single')
+temp <- read.SPACECAP ("demoAC.csv", "demoTD.csv")
+temp <- reduce(temp, output = "single")
 summary (temp)
 summary (captdata)
+
 ## should match exactly
+identical(summary(temp), summary(captdata))
+
 }
 }
 

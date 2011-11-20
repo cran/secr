@@ -31,8 +31,8 @@ An object of class \code{popn} with number of rows equal to the sum of the rows 
 trapobj <- make.grid()
 p1 <- sim.popn(D = 3, core = trapobj)
 p2 <- sim.popn(D = 2, core = trapobj)
-covariates(p1) <- data.frame(size = rep('small', nrow(p1)))
-covariates(p2) <- data.frame(size = rep('large', nrow(p2)))
+covariates(p1) <- data.frame(size = rep("small", nrow(p1)))
+covariates(p2) <- data.frame(size = rep("large", nrow(p2)))
 pop <- rbind.popn(p1,p2)
 
 }

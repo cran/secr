@@ -91,13 +91,13 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \examples{
 ## Replace file name with a valid local name and remove '#' 
-# read.traps ('c:\\\\myfolder\\\\mytraps.txt', detector='proximity')
-## 'mytraps.txt' should have lines like this 
+# read.traps ("c:\\\\myfolder\\\\mytraps.txt", detector="proximity")
+## \mytraps.txt' should have lines like this 
 # 1     365     365
 # 2     365     395
 # 3     365     425
 # etc.
 
 }
-\keyword{ manip }
+\keyword{ IO }
 

@@ -177,28 +177,28 @@ mask.check (stoat.model.HN)
 ## fit new models for each combination of buffer & spacing,
 ## and save fitted models to a file
 mask.check (stoat.model.HN, buffers = 1500, spacings =
-    c(40,60,80), LLonly = FALSE, file = 'test', CL = TRUE)
+    c(40,60,80), LLonly = FALSE, file = "test", CL = TRUE)
 
 ## look in more detail at the preceding fits
-## restores objects 'mask.check.output' and 'mask.check.fit'
-load('test.RData')  
+## restores objects `mask.check.output' and `mask.check.fit'
+load("test.RData")  
 lapply(mask.check.fit, predict)
 lapply(mask.check.fit, derived)
 
 ## multi-session data
-mask.check(ovenbird.model.1, session = c('2005','2009'))
+mask.check(ovenbird.model.1, session = c("2005","2009"))
 
 ## clipping mask
 olddir <- setwd(system.file("extdata", package = "secr"))
-possumarea <- read.table('possumarea.txt', header = TRUE)
+possumarea <- read.table("possumarea.txt", header = TRUE)
 setwd(olddir)
 data (possum)
-mask.check (possum.model.1, spacings = c(20, 30), buffers =
+mask.check (possum.model.0, spacings = c(20, 30), buffers =
     c(200, 300), poly = possumarea, LLonly = FALSE,
-    file = 'temp', CL = TRUE)
+    file = "temp", CL = TRUE)
 
 ## review fitted models
-load ('temp.RData')
+load ("temp.RData")
 oldpar <- par(mfrow = c(2,2), mar = c(1,4,4,4), xpd = FALSE)
 for (i in 1:4) {
     plot(traps(mask.check.fit[[i]]$capthist), border = 300,

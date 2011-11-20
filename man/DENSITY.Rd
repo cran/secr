@@ -19,7 +19,7 @@ functions \code{read.traps} and \code{make.capthist}.
 
 read.capthist(captfile, trapfile, detector = "multi", fmt = "trapID",
     noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-    cutval = NULL, verify = TRUE, noncapt = 'NONE', ...)
+    cutval = NULL, verify = TRUE, noncapt = "NONE", ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
      sess = "1", ndec = 2, covariates = FALSE, ...)
@@ -60,12 +60,12 @@ write.capthist(object, filestem = deparse(substitute(object)),
 \code{captfile} should record one detection on each line. A detection
 comprises a session identifier, animal identifier, occasion number (1,
 2,...,\emph{S} where \emph{S} is the number of occasions), and a
-detector identifier (\code{fmt = 'trapID'}) or X- and Y-coordinates
-(\code{fmt = 'XY'}). Each line of \code{trapfile} has a detector
+detector identifier (\code{fmt = "trapID"}) or X- and Y-coordinates
+(\code{fmt = "XY"}). Each line of \code{trapfile} has a detector
 identifier and its X- and Y-coordinates. In either file type the
 identifiers (labels) may be numeric or alphanumeric values. Values
 should be separated by blanks or tabs unless (i) the file name ends in
-`.csv' or (ii) \code{sep = ','} is passed in \dots, in which case commas
+`.csv' or (ii) \code{sep = ","} is passed in \dots, in which case commas
 are assumed. Blank lines and any text after `#' are ignored. For further
 details see \url{../doc/secr-datainput.pdf}, \code{\link{make.capthist}}
 and `Data formats' in the help for DENSITY.
@@ -117,7 +117,7 @@ and detector covariates.
   17 characters with blanks and commas removed.
 
   To export data in comma-delimited (`.csv') format, pass \code{sep =
-  ','} in \dots. The resulting files have extension `.csv' rather than
+  ","} in \dots. The resulting files have extension `.csv' rather than
   `.txt' and may be opened with spreadsheet software.
 
 }
@@ -142,10 +142,10 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 
   The \dots argument is useful for some special cases. For example, if
   your input uses `;' instead of `#' for comments (`;' is also valid in
-  DENSITY) then set \code{comment.char = ';'} in \code{read.capthist}.
+  DENSITY) then set \code{comment.char = ";"} in \code{read.capthist}.
 
   In a similar fashion, write comma- or tab-separated values by
-  setting \code{sep = ','} or \code{sep = '\\t'} respectively.
+  setting \code{sep = ","} or \code{sep = "\\t"} respectively.
 
   The arguments of \code{count.fields} are a subset of those of
   \code{read.table} so \dots is limited to any of \{sep, quote,
@@ -166,6 +166,9 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 \examples{
 
 ## export ovenbird capture histories
+## the files 'ovenCHcapt.txt' and 'ovenCHtrap.txt' are
+## placed in the current folder (check with dir())
+
 write.capthist(ovenCH)
 
 }

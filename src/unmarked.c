@@ -2,6 +2,7 @@
 
 /* unmarked and presence likelihoods */
 /* 2011-10-01 */
+/* 2011-10-10 pairwise added */
 
 /* temporary unmarked likelihood */
 /* only constant model *cc == 1 */
@@ -54,7 +55,7 @@ void unmarkedloglik (
     for (k = 0; k < *kk; k++) {
         for (s = 0; s < *ss; s++) {
             lambda = *D * integral / 10000;
-            *value += dpois(nsk[k * *ss + s], lambda, 1);
+            *value += dpois(nsk[k * *ss + s], lambda, 1); /* log scale */
         }
     }
     *resultcode = 0;   /* successful termination unmarkedloglik */
@@ -112,34 +113,90 @@ double gintegral2 (int fn, int sj, double par[]) {
     return (result * 2 * M_PI);
 }
 
+/*=======================================================*/
+double onepairprb2 (double mua, double mub, double muc,
+    double p, int s, int y1, int y2) {
+/*=======================================================*/
+
+    /* Calculate probabilities for individual detectors */
+    /* Based on Martin Ridout's R code */
+
+    double prob = 0;
+    int cmax = 0;
+    int c;
+    int i;
+    double terma, termb;
+    double cona, conb;
+    double powa, powb;
+    double *cprb;
+
+    /* cap cmax to protect against excessive memory demand with rare very large muc */
+    cmax = qpois(0.9999, muc, 1, 0);
+    if (cmax>1e3)
+        cmax = 1e3;
+    if (cmax<=0)
+        cmax = 0;
+    /* Rprintf("cmax %12d  muc %15.8f \n", cmax, muc);  */
+    cprb = (double *) R_alloc(cmax+1, sizeof (double));
+    for (c=0; c<=cmax; c++)
+        cprb[c] = dpois(c, muc, 0);
+
+    for (c=0; c<=cmax; c++) {
+        terma = 0;
+        for (i=0; i<=y1; i++) {
+            cona = choose(y1, i) * pow(-1,y1-i) *
+                exp(-mua*(1-pow(1-p,s-i)));
+            powa = pow(1-p, s-i);
+            terma += cona * pow(powa,c);
+        }
+        termb = 0;
+        for (i=0; i<=y2; i++) {
+            conb = choose(y2, i) * pow(-1,y2-i) *
+                exp(-mub*(1-pow(1-p,s-i)));
+            powb = pow(1-p, s-i);
+            termb += conb * pow(powb,c);
+        }
+        prob += cprb[c] * terma * termb;
+    }
+    return(choose(s,y1) *  choose(s,y2) * prob);
+}
+/*==============================================================================*/
+
 void presenceloglik (
     int    *w,           /* capture histories (1:nc, 1:ss, 1:kk) */
     int    *nc,          /* number of rows in w */
     int    *ss,          /* number of occasions */
     int    *kk,          /* number of detectors */
+    double *traps,       /* x,y locations of traps (first x, then y) */
     double *D,           /* Parameter value - density */
     double *g0,          /* Parameter value - p */
     double *sigma,       /* Parameter value - radius */
     double *z,           /* Parameter value - shape (hazard rate, cumulative gamma etc) */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential etc.*/
-    int    *type,        /* code 0 = simple, 1 = integrated */
+    int    *type,        /* code 0 = simple, 1 = integrated, 2 = pairwise */
     double *value,       /* return value */
     int    *resultcode   /* 0 if OK */
 )
 
 {
-    int    k,j,n,s;
+    int    i,j,k,n,s;
     int    *y;           /* vector of detector-specific counts, length *kk 0 <= yk <= ss) */
+    double d;
     double tempsum;
     double lambda;
+    double overlap;
+    double sig2;
     double par[3];
     double mu;
     double integral;
-
+    double mua, mub, muc;
+ 
     /*===============================================================*/
 
 
+    /*-------------------------------*/
     /* summarise input w as y vector */
+    /*-------------------------------*/
     y = (int *) R_alloc(*kk, sizeof(int));
     for (k = 0; k < *kk; k++) {
         y[k] = 0;
@@ -152,14 +209,21 @@ void presenceloglik (
 	}
     }
 
-    *resultcode = 1;  /* generic failure code */
+    /*--------------------------*/
+    /* set generic failure code */
+    /*--------------------------*/
+    *resultcode = 1;
     *value = 0;
 
     /* long version for now - could easily use frequencies,
        but might later want site-specific and time-specific  */
 
-
     if (*type == 0) {
+
+        /*----------------------------------*/
+        /* Independent points, fixed radius */
+        /*----------------------------------*/
+
         lambda = *D * M_PI * *sigma * *sigma / 10000;
         for (k=0; k < *kk; k++) {
             tempsum = 0;
@@ -170,7 +234,12 @@ void presenceloglik (
             *value += log(tempsum * choose(*ss, y[k]));
         }
     }
-    else {
+    else if (*type == 1) {
+
+        /*------------------------------------------------------*/
+        /* Independent points, integrated detection probability */
+        /*------------------------------------------------------*/
+
         par[0] = *g0;
         par[1] = *sigma;
         par[2] = *z;
@@ -184,6 +253,46 @@ void presenceloglik (
             *value += log(tempsum * choose(*ss, y[k]));
         }
     }
+    else if (*type == 2) {
+
+        /*----------------------------------*/
+        /* Pairwise, fixed radius           */
+        /*----------------------------------*/
+
+        for (i = 0; i < (*kk - 1); i++) {
+            for (j = i+1; j < *kk; j++) {
+
+                /*------------------------------------*/
+                /* Distance between detectors i and j */
+                /*------------------------------------*/
+
+                d = sqrt( (traps[i] - traps[j]) * (traps[i] - traps[j]) +
+                   (traps[i + *kk] - traps[j + *kk]) * (traps[i + *kk] - traps[j + *kk]) );
+
+                /*--------------------------*/
+                /* Parameters muA, muB, muC */
+                /*--------------------------*/
+	        overlap = 0;
+                sig2 = *sigma * *sigma;    
+                if (d < (2 * *sigma))
+                    overlap = 2 * sig2 * acos(d/(2* *sigma)) - d/2 * sqrt(4 * sig2 - d*d);
+                mua = (M_PI * sig2 - overlap) * *D / 10000;
+                mub = (M_PI * sig2 - overlap) * *D / 10000;
+                muc = overlap * *D /10000;
+
+                /*-----------------------------*/
+                /* Contribution from this pair */
+                /*-----------------------------*/
+
+                *value += log(onepairprb2(mua, mub, muc, *g0, *ss, y[i], y[j]));
+            }
+            R_CheckUserInterrupt();
+        }
+    }
+    else
+        error ("unrecognised type");
+
     *resultcode = 0;
 }
+/*==============================================================================*/
 
