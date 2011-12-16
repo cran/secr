@@ -481,6 +481,99 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
 }
 /*===============================================================*/
 
+void getphi (double phi[], int jj, double turnval[], int PIAturn[], 
+	     double intervals[], int s1[], int n, int x, int nc) {
+    int j;
+    phi[0] = 1;  /* forward from primary session j-1 */
+    for (j = 1; j < jj; j++) {
+	/* jj-1 because one fewer intervals than primary sessions */ 
+	phi[j] = turnval[PIAturn[i3(n, j-1, x, nc, jj-1 )]-1]; 
+	/* adjust for interval duration */ 
+	phi[j] = exp(log(phi[j]) * intervals[s1[j]-1]);  
+    }
+}
+/*===============================================================*/
+
+/*------------------------------------------------------*/
+/* pndot for death-only turnover model                  */
+/* jj primary sessions                                  */
+/* s1,s2 are arrays defining a subset of occasions for  */
+/*   each primary session                               */
+/* return probability animal n detected at least once   */
+/*------------------------------------------------------*/
+double pndotturn (int m, int n, int s1[], int s2[], int x, int ncol, 
+    int PIA0[], double gk0[], int ss, int kk, int cc0, int nmix,
+    double gsb0val[], int param, int jj, int PIAturn[], double turnval[], 
+    double intervals[])
+{
+    double *phi = NULL;
+    double *p = NULL;
+    double pdt;
+    double pj;
+    int i,j;
+    phi = (double *) R_alloc (jj, sizeof(double));
+    p = (double *) R_alloc (jj, sizeof(double));
+    getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, ncol);
+    for (j = 0; j < jj; j++)  {
+        p[j] = pndot (m, n, s1[j]+1, s2[j]+1, x, ncol, PIA0, gk0,
+		      ss, kk, cc0, nmix, gsb0val, param); }
+    /* prob(detected) summed over first detn occasions */
+    pdt = 0; 
+    for (j = 0; j<jj; j++) {
+        pj = p[j];
+        for(i=0; i<j; i++) 
+            pj *= (1-p[i]) * phi[i+1]; 
+        pdt += pj;
+    }
+    return(pdt);
+    /*------------------------------------------*/
+}
+
+#ifdef UNDEF
+
+double prwturn(int m, int n, int g, int jj, int CHj[], double phi[], int s1[], int s2[], 
+	       int x, int w[], double xy[], double signal[], int PIA[], double gk[],
+	       int binomN, double detspec[], double h[], int hindex[], int cc, 
+	       int nc, int gg, int nk, int ss, int mm, int nmix, gfn, double gsbval[], 
+	       double traps[], double mask[], double minprob) {
+
+/* trial open-population (death only) model */
+    double tempp = 1;
+    int lastj = -1;
+    int i,j;
+    for (j = 0; j < jj; j++) {
+	if (CHj[*nc * j + n]) {  
+	    /* survived */
+	    for (i = lastj; i < j; i++)
+		tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
+	    /* not detected in interim */
+	    for (i = lastj + 1; i < j; i++) {
+		pj = pndot (m, g, s1[i]+1, s2[i]+1, x, gg, PIA0, gk0,
+			    *ss, nk, *cc0, *nmix, gsb0val, *param);
+		tempp *= 1-pj;  
+	    }
+	    /* finally detected */
+	    pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
+			gk, binomN, detspec, h, hindex, cc, nc, nk, 
+			ss, mm, nmix, gfn, gsbval, traps, mask, minprob);
+	    tempp *= pj; 
+	    lastj = j;
+	}
+    }
+    
+    /* last seen at lastj */
+    chij = 1;
+    for (j = jj-2; j >= lastj; j--) {
+	/* pj = prob detection at next session */
+	pj = pndot (m, g, s1[j+1]+1, s2[j+1]+1, x, *gg, PIA0, gk0, *ss, nk,
+		    *cc0, *nmix, gsb0val, *param);
+	chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
+    }
+    tempp *= chij;  
+    return(tempp);
+}
+#endif
+
 void integralprw1 (
     int    *detect,    /* detector 0 multi, 1 proximity etc. */
     int    *param,     /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
@@ -667,7 +760,7 @@ double prwimulti
     double htemp;
     double pks;
     double result = 1.0;
-
+    int debug = 0;
     for (s=s1-1; s<s2; s++)
     {
         htemp = h[i3(x,m,hindex[s*nc + n],nmix, mm)];
@@ -679,13 +772,18 @@ double prwimulti
             gi = i3(c, k-1, m, cc, kk);
             pks = -log (1 - gk[gi]);
             pks *= (1-expmin(-htemp)) / htemp;
+	    if((m==1311) && debug)
+	    Rprintf("n %5d  k %5d  c %5d, gi %5d, pks %12.8f \n", n, k, c, gi, pks); 
         }
         else  {
             pks = expmin(-htemp);      /* Not captured */
+	    if((m==1311) && debug)
+    	Rprintf("n %5d  pks %12.8f \n", n, pks); 
         }
-        result *= pks;
+         result *= pks;
         if (dead) break;
     }
+    if((m==1311) && debug) Rprintf("\n"); 
     return (result);
 }
 /*=============================================================*/
@@ -741,8 +839,9 @@ double prwimultiGR
 
 double prwicount
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int PIA[],
-     double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk, int ss,
-    int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
+     double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk,
+     int ss, int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], 
+     double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -779,8 +878,10 @@ double prwicount
 
 double prwisignal
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int PIA[],
-    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk, int ss,
-    int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
+    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk,
+    int ss, int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[],
+    double minp)
+
 /*
     Probability of capture history n (0 <= n < nc)
     given that animal's range centre is at m
@@ -840,8 +941,9 @@ double prwisignal
 
 double prwitimes
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int PIA[],
-    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk, int ss,
-    int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[], double minp)
+    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk,
+    int ss, int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[],
+    double minp)
 /*
     Probability of capture history n (0 <= n < nc)
     given that animal's range centre is at m
@@ -870,7 +972,7 @@ double prwitimes
             wxi = i4(n,s,k,x,nc,ss,kk);
             wi = i3(n,s,k,nc,ss);
             c = PIA[wxi] - 1;
-            if (c >= 0) {                                       /* skip if this trap not set */
+            if (c >= 0) {                       /* skip if this trap not set */
                 count = abs(w[wi]);
                 gi = i3(c,k,m,cc,kk);
                 lambda = gk[gi];
@@ -1360,6 +1462,78 @@ double hazard (double pp) {
 }
 /*=============================================================*/
 
+void countsessions(int *jj, int J[], int ss, double intervals[]) {
+    int s;
+
+    /* index of primary session corresp secondary session s */
+    J[0] = 0;
+    for (s = 1; s < ss; s++) {
+        if (intervals[s-1] > 1e-10)  {
+            J[s] = J[s-1] + 1;
+        }
+        else {
+            J[s] = J[s-1];
+        }
+    }
+    /* number of primary sessions */
+    *jj = J[ss-1] + 1;
+}
+/*=============================================================*/
+
+void setupturnover(int jj, int J[], int CHj[], int s1[], int s2[], 
+		   double intervals[], int detect,
+                   int w[], int nc, int ss, int nk) {
+
+    int n;
+    int s;
+    int k;
+
+	/* indices of start and finish of each primary session */
+	s1[0] = 0;   
+	s2[0] = 0;
+	for (s = 1; s < ss; s++) {
+	    if (J[s] != J[s-1])  {
+		s1[J[s]] = s;
+		s2[J[s]] = s;
+	    }
+	    else {
+		s2[J[s]] = s;
+	    }
+	}
+
+	/* construct simplified capture histories */
+        for (n = 0; n < nc; n++) {
+            for (s = 0; s < ss; s++) {
+                if (detect < 1) { 
+                    if (abs(w[nc * s + n])>0)
+                        CHj[nc * J[s] + n] = 1;
+                }
+                else {
+                    for (k = 0; k < nk; k++) {
+                        if (abs(w[i3(n, s, k, nc, ss)])>0) {
+                            CHj[nc * J[s] + n] = 1;
+                            break;
+			}
+		    }
+		}
+            }
+	} 
+
+#ifdef UNDEF  
+        /* debug code */
+        for (n = 0; n < nc; n++) {
+            Rprintf(" n %4d  CHj ",n);
+            for (j = 0; j < *jj; j++) 
+		Rprintf("%4d", CHj[nc * j + n]);
+            Rprintf("\n");
+	}       
+        for (j = 0; j < *jj; j++) 
+            Rprintf("s1 %4d s2 %4d\n", s1[j], s2[j]);
+	error("OK");
+#endif 
+
+}
+
 void secrloglik (
     int    *like,        /* likelihood 0 full, 1 conditional */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
@@ -1380,10 +1554,14 @@ void secrloglik (
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
+    double *turnval,     /* Parameter values - turnover */
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
+    int    *ccturn,      /* number of turnover combinations */
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
     int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
+    int    *PIAturn,     /* lookup which turnover parameter combination to use n, J, mix */
+    double *intervals,   /* vector of *ss-1 between-occasion intervals */
     double *area,        /* area associated with each mask point (ha) */
     double *cuerate,     /* miscellaneous parameters */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
@@ -1418,9 +1596,9 @@ void secrloglik (
 
     /* numbers of individuals and detectors */
     int    nc1;
-    int    nn;
     int    cumk[1001];   /* where this max from? */
     int    nk = 0;
+    /* int    nn; */
 
     /* number of 'g' (detection) parameters */
     int    gpar = 2;    
@@ -1444,6 +1622,8 @@ void secrloglik (
     int    *hindex = NULL;     
     double *h = NULL;          
     int    next = 0;
+    int    hi;
+    int    fullns = 0;
     int    c0 = 0;
 
     /* CL only */
@@ -1454,10 +1634,23 @@ void secrloglik (
     int    cumng = 0;   /* used for 'nested' */
     double dp;          /* Poisson density (cuerate) */
 
+    /* turnover 2011-11-30 */
+    int    j = 0;
+    int    jj = 1;
+    int    *J = NULL;
+    int    *CHj = NULL;
+    int    *s1 = NULL;
+    int    *s2 = NULL;
+    double *phi = NULL;
+    double *p = NULL;
+    double pj = 1;
+    int    lastj = -1;
+    double chij = 1;
+    double pdt = 0;
+
     /*-------------------------------------------------------*/
 
     /* MAINLINE */
-
 
 /* WAS    #include "Isecrloglik.def" */
 /**********************************************************************/
@@ -1492,11 +1685,14 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         nc1 = 1;
     else
         nc1 = *nc;
-    /* for some purposes replaces individuals with groups     */
+
+    /* for some purposes replaces individuals with groups     
+    2011-11-21 redundant ?
     if (*like != 1) 
         nn = *gg;
     else
         nn = nc1;
+    */
     /*---------------------------------------------------------*/
 
 
@@ -1536,6 +1732,27 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         nk = *kk;
     /*---------------------------------------------------------*/
 
+    /* turnover */
+    /* 2011-11-30 */
+    /* count primary sessions jj */
+    /* if more than one primary session ...                    */
+    /*   find start and finish of each primary session         */
+    /*   compute capture histories by primary session CHj      */
+    /*   allocate memory for phi, p                            */
+
+    J = (int *) R_alloc (*ss, sizeof(int));
+    countsessions(&jj, J, *ss, intervals);
+    if (jj > 1) {
+	/* arrays for primary sessions */
+	s1 = (int *) R_alloc (jj, sizeof(int));
+	s2 = (int *) R_alloc (jj, sizeof(int));
+	phi = (double *) R_alloc (jj, sizeof(double));
+	p = (double *) R_alloc (jj, sizeof(double));
+        CHj = (int *) S_alloc (*nc * jj, sizeof(int));
+        setupturnover(jj, J, CHj, s1, s2, intervals, *detect,
+		      w, *nc, *ss, nk);
+    }
+
     /*---------------------------------------------------------*/
     /* dynamically allocate memory                             */
     /* use R_alloc for robust exit on interrupt                */
@@ -1561,7 +1778,8 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     if (switch1 && ((*detect==0) || (*detect==3) || (*detect==4))) {
         hc0 = (int *) R_alloc (*cc, sizeof(int));
         hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
-        h = (double *) S_alloc (*cc * *mm * *nmix, sizeof(double));
+	/*        h = (double *) S_alloc (*cc * *mm * *nmix, sizeof(double)); */
+	h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
     }
     /*---------------------------------------------------------*/
 
@@ -1784,6 +2002,8 @@ switch1 = 0  Don't bother with code used only to normalize pdf
 
     /* total hazard for animal n on occasion s wrt mask point m */
     /* construct index 'hindex' to values in 'h'                */
+    /* 'bk' model results in within-trap variation dependent on */
+    /* n.s, so h must be recalc each time                       */
     /* c0 -- index of parameters for trap 0, mixture 0          */
     /* hc0[c0] -- maps c0 to sequential index 'next'            */
     /* next -- new index of parameters for each n,s             */
@@ -1793,32 +2013,63 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     /* individual-specific for conditional likelihood           */
 
     if (switch1 &&((*detect == 0) || (*detect == 3) || (*detect == 4))) {
+
+        /* recognise when not fully specified by n.s, c  */
+        /* this arises when model = bk, Bk               */
+        fullns = 0;
+        for (n=0; n < nc1; n++) {
+            for (s=0; s < *ss; s++) {
+		for (k=1; k<nk; k++) {
+                   if (PIA[i4(n,s,k,0, nc1, *ss, nk)] != PIA[i4(n,s,0,0, nc1, *ss, nk)]) {
+                       fullns = 1;
+		       break;
+		   }               
+                } 
+                if (fullns == 1) break;
+            }
+            if (fullns == 1) break;
+        }
+
         for (i=0; i<*cc; i++) hc0[i] = -1;
         next = 0;        
         for (n=0; n < nc1; n++) {
-            if (*like != 1) 
-                g = grp[n]-1;
-            else
-                g = n;
             for (s=0; s < *ss; s++) {
-               c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;
-               if (hc0[c0] < 0) {
-                    hc0[c0] = next;
-                    next ++;
+                hi = s*nc1 + n;
+                /* Case 1. within-trap variation */
+		if (fullns) {
                     for (m=0; m< *mm; m++) { 
                         for (x = 0; x < *nmix; x++) {
                             for (k=0; k < nk; k++) {
                                c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
                                if (c >= 0) {
                                    gi = i3(c,k,m,*cc,nk);
-                                   h[i3(x,m,hc0[c0],*nmix, *mm)] += hazard(gk[gi]);
+                                   h[i3(x,m,hi,*nmix, *mm)] += hazard(gk[gi]);
 			       }
                             }
                         }
-;
                     }
-		}    
-                hindex[s*nc1 + n] = hc0[c0];         
+                    hindex[hi] = hi;   
+		}
+                /* Case 2. no within-trap variation */
+                else {
+                   c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;                    
+                   if (hc0[c0] < 0) {
+                        hc0[c0] = next;
+                        next ++;
+                        for (m=0; m< *mm; m++) { 
+                            for (x = 0; x < *nmix; x++) {
+                                for (k=0; k < nk; k++) {
+                                    c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
+                                    if (c >= 0) {
+                                        gi = i3(c,k,m,*cc,nk);
+                                        h[i3(x,m, hc0[c0],*nmix, *mm)] += hazard(gk[gi]);
+    			            }
+                                }
+                            }
+                        }
+    		    }
+                    hindex[hi] = hc0[c0];
+		}
             }
         }
     }
@@ -1878,8 +2129,7 @@ eval:    /* skip to here from within include block if no captures */
                 }
             }
         }
-
-        if (indiv == 0) {
+	if (indiv == 0) {
             /* all individuals the same */
             /* save time by doing this once, rather than inside n loop */
             for (x=0; x<*nmix; x++) {
@@ -1891,13 +2141,19 @@ eval:    /* skip to here from within include block if no captures */
                         asum[x] += pndotgrp (pd, *cuerate, 0.0001);
                     }
                     else {
-                        asum[x] += pndot (m, 0, 1, *ss, x, *nc, PIA0, gk0, *ss, nk,
-                            *cc0, *nmix, gsb0val, *param);
+			if (jj == 1) {
+			    asum[x] += pndot (m, 0, 1, *ss, x, *nc, PIA0, gk0, *ss, nk,
+					      *cc0, *nmix, gsb0val, *param);
+			}
+			else {
+			    asum[x] += pndotturn (m, 0, s1, s2, x, *nc, PIA0, gk0,
+						  *ss, nk, *cc0, *nmix, gsb0val, *param,
+						  jj, PIAturn, turnval, intervals);
+			}
                     }
                 }
             }
         }
-
         /* else asum calculated for each individual in loop below */
         *value = 0;
 
@@ -1912,8 +2168,8 @@ eval:    /* skip to here from within include block if no captures */
                     for (i = 0; i<ng[g]; i++) {
                         n = cumng + i;
                         tempg *= prwfn (m, n, 1, *ss, 0, w, xy, signal, PIA, gk,
-					*binomN, detspec, h, hindex, *cc, *nc, nk, *ss, *mm, 1, gfn,
-                            gsbval, traps, mask, *minprob);
+					*binomN, detspec, h, hindex, *cc, *nc, nk, 
+					*ss, *mm, 1, gfn, gsbval, traps, mask, *minprob);
                     }
                     tempsum += tempg;
                 }
@@ -1941,16 +2197,61 @@ eval:    /* skip to here from within include block if no captures */
                 a[n] = 0;
                 tempsum = 0;
                 for (x=0; x<*nmix; x++) {
+
                     temp = 0;
                     if (indiv > 0)
                         asum[x] = 0;
                     for (m=0; m<*mm; m++) {
-                        if (indiv > 0)
-                            asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0, *ss, nk, *cc0,
-                                *nmix, gsb0val, *param);
-                        temp += prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
-                            detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn, gsbval, 
-                            traps, mask, *minprob);
+			if (jj == 1) {
+			    if (indiv > 0)
+				asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0,
+						  *ss, nk, *cc0, *nmix, gsb0val, *param);
+			    temp += prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+					   detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+					   gfn, gsbval, traps, mask, *minprob);
+			}
+			else {
+                            /* provisional death-only model */
+			    if (indiv > 0)
+				asum[x] += pndotturn (m, n, s1, s2, x, *nc, PIA0, gk0,
+						      *ss, nk, *cc0, *nmix, gsb0val, *param,
+						      jj, PIAturn, turnval, intervals);
+				asum[x] += 0.0001;
+			    getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, *nc);
+			    tempp = 1;
+			    lastj = -1;
+			    for (j = 0; j < jj; j++) {
+				if (CHj[*nc * j + n]) {  
+				    /* survived */
+				    for (i = lastj; i < j; i++)
+					tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
+				    /* not detected in interim */
+				    for (i = lastj + 1; i < j; i++) {
+					pj = pndot (m, n, s1[i]+1, s2[i]+1, x, *nc, PIA0, gk0,
+						    *ss, nk, *cc0, *nmix, gsb0val, *param);
+					tempp *= 1-pj;  
+				    }
+				    /* finally detected */
+				    pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
+						gk, *binomN, detspec, h, hindex, *cc, *nc, nk, 
+						*ss, *mm, *nmix, gfn, gsbval, traps, mask, 
+						*minprob);
+				    tempp *= pj; 
+				    lastj = j;
+				}
+			    }
+
+			    /* last seen at lastj */
+			    chij = 1;
+			    for (j = jj-2; j >= lastj; j--) {
+				/* pj = prob detection at next session */
+				pj = pndot (m, n, s1[j+1]+1, s2[j+1]+1, x, *nc, PIA0, gk0, *ss, nk,
+					    *cc0, *nmix, gsb0val, *param);
+				chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
+			    }
+			    tempp *= chij;  
+			    temp += tempp;
+			}
                     }
                     a[n] += pmix[*nmix * n + x] * asum[x];
                     tempsum += pmix[*nmix * n + x] * temp;
@@ -1978,9 +2279,21 @@ eval:    /* skip to here from within include block if no captures */
             sumDp[g] = 0;
             for (m=0; m<*mm; m++)  {
                 sumD[g] += Dmask[*mm * g + m];
-                for (x=0; x<*nmix; x++)
-                    sumDp[g] += pmix[*nmix * g + x] * pndot (m, g, 1, *ss, x, *gg, PIA0, gk0,
-			 *ss, nk, *cc0, *nmix, gsb0val, *param) * Dmask[*mm * g + m];
+                for (x=0; x<*nmix; x++) {
+                    if (jj == 1) {
+                        /* closed population */
+                        pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0,
+    		           *ss, nk, *cc0, *nmix, gsb0val, *param);
+		    }
+		    else {
+                        /* open population */
+                        /* OOPS - need n for naive animal in group g... fudge */
+			pdt = pndotturn (m, 0, s1, s2, x, *gg, PIA0, gk0,
+			    *ss, nk, *cc0, *nmix, gsb0val, *param,
+			    jj, PIAturn, turnval, intervals);
+		    }
+                    sumDp[g] += pdt * pmix[*nmix * g + x] * Dmask[*mm * g + m];
+                }
             }
         }
 
@@ -1992,9 +2305,46 @@ eval:    /* skip to here from within include block if no captures */
             temp = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
-                    tempp = pmix[*nmix * g + x] * prwfn (m, n, 1, *ss, x, w, xy, signal, PIA,
-                        gk, *binomN, detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn,
-                        gsbval, traps, mask, *minprob) * Dmask[*mm * g + m];
+                    if (jj == 1) {
+                        pj = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+				    detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
+				    gfn, gsbval, traps, mask, *minprob);
+			tempp = pj * pmix[*nmix * g + x] * Dmask[*mm * g + m];
+		    }
+                    else {
+			getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, *nc);
+			tempp = 1;
+			lastj = -1;
+			for (j = 0; j < jj; j++) {
+			    if (CHj[*nc * j + n]) {  
+				/* survived */
+				for (i = lastj; i < j; i++)
+				    tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
+				/* not detected in interim */
+				for (i = lastj + 1; i < j; i++) {
+				    pj = pndot (m, g, s1[i]+1, s2[i]+1, x, *gg, PIA0, gk0,
+						*ss, nk, *cc0, *nmix, gsb0val, *param);
+				    tempp *= 1-pj;  
+				}
+				/* finally detected */
+				pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
+					    gk, *binomN, detspec, h, hindex, *cc, *nc, nk, 
+					    *ss, *mm, *nmix, gfn, gsbval, traps, mask, *minprob);
+				tempp *= pj; 
+				lastj = j;
+			    }
+			}
+			/* last seen at lastj */
+			chij = 1;
+			for (j = jj-2; j >= lastj; j--) {
+			    /* pj = prob detection at next session */
+			    pj = pndot (m, g, s1[j+1]+1, s2[j+1]+1, x, *gg, PIA0, gk0, *ss, nk,
+					*cc0, *nmix, gsb0val, *param);
+			    chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
+			}
+			tempp *= chij * pmix[*nmix * g + x] * Dmask[*mm * g + m];  
+		    }
+
                     /* Simply aborting at this point does not work 2011-01-30 */
 		    /* so following condition is not used */
                     if (tempp < 0) {
@@ -2323,7 +2673,7 @@ void pwuniform (
     int nk = 0;
     int nd = 0;
     int nc1 = 0;
-    int nn;
+    /* int nn; */
     int gpar = 2;    /* number of 'g' (detection) parameters */
 
     int nested = 0;  /* 0 = not nested, 1 = nested (CL only) */
@@ -2331,6 +2681,8 @@ void pwuniform (
     double tempg;
 
     int    next = 0;
+    int    hi;
+    int    fullns = 0;
     int    c0 = 0;
     double p;
 
@@ -2383,11 +2735,15 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         nc1 = 1;
     else
         nc1 = *nc;
-    /* for some purposes replaces individuals with groups     */
+
+    /* for some purposes replaces individuals with groups     
+    2011-11-21 redundant ?
     if (*like != 1) 
         nn = *gg;
     else
         nn = nc1;
+    */
+
     /*---------------------------------------------------------*/
 
 
@@ -2452,7 +2808,8 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     if (switch1 && ((*detect==0) || (*detect==3) || (*detect==4))) {
         hc0 = (int *) R_alloc (*cc, sizeof(int));
         hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
-        h = (double *) S_alloc (*cc * *mm * *nmix, sizeof(double));
+	/* h = (double *) S_alloc (*cc * *mm * *nmix, sizeof(double)); */
+	h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
     }
     /*---------------------------------------------------------*/
 
@@ -2684,32 +3041,63 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     /* individual-specific for conditional likelihood           */
 
     if (switch1 &&((*detect == 0) || (*detect == 3) || (*detect == 4))) {
+
+        /* recognise when not fully specified by n.s, c  */
+        /* this arises when model = bk, Bk               */
+        fullns = 0;
+        for (n=0; n < nc1; n++) {
+            for (s=0; s < *ss; s++) {
+		for (k=1; k<nk; k++) {
+                   if (PIA[i4(n,s,k,0, nc1, *ss, nk)] != PIA[i4(n,s,0,0, nc1, *ss, nk)]) {
+                       fullns = 1;
+		       break;
+		   }               
+                } 
+                if (fullns == 1) break;
+            }
+            if (fullns == 1) break;
+        }
+
         for (i=0; i<*cc; i++) hc0[i] = -1;
         next = 0;        
         for (n=0; n < nc1; n++) {
-            if (*like != 1) 
-                g = grp[n]-1;
-            else
-                g = n;
             for (s=0; s < *ss; s++) {
-               c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;
-               if (hc0[c0] < 0) {
-                    hc0[c0] = next;
-                    next ++;
+                hi = s*nc1 + n;
+                /* Case 1. within-trap variation */
+		if (fullns) {
                     for (m=0; m< *mm; m++) { 
                         for (x = 0; x < *nmix; x++) {
                             for (k=0; k < nk; k++) {
                                c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
                                if (c >= 0) {
                                    gi = i3(c,k,m,*cc,nk);
-                                   h[i3(x,m,hc0[c0],*nmix, *mm)] += hazard(gk[gi]);
+                                   h[i3(x,m,hi,*nmix, *mm)] += hazard(gk[gi]);
 			       }
                             }
                         }
-;
                     }
-		}    
-                hindex[s*nc1 + n] = hc0[c0];         
+                    hindex[hi] = hi;   
+		}
+                /* Case 2. no within-trap variation */
+                else {
+                   c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;                    
+                   if (hc0[c0] < 0) {
+                        hc0[c0] = next;
+                        next ++;
+                        for (m=0; m< *mm; m++) { 
+                            for (x = 0; x < *nmix; x++) {
+                                for (k=0; k < nk; k++) {
+                                    c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
+                                    if (c >= 0) {
+                                        gi = i3(c,k,m,*cc,nk);
+                                        h[i3(x,m, hc0[c0],*nmix, *mm)] += hazard(gk[gi]);
+    			            }
+                                }
+                            }
+                        }
+    		    }
+                    hindex[hi] = hc0[c0];
+		}
             }
         }
     }

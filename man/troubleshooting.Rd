@@ -25,11 +25,12 @@ you.
     \item Try another maximization method (\code{method =
   'Nelder-Mead'} is more robust than the default). A message may suggest
   using \code{method = 'BFGS'}, but this is not so often useful as
-  originally thought.
+  originally thought. The same maximum likelihood should be found
+  regardless of method, so AIC values are comparable across methods.
   
   \item Repeat the maximization with different starting values. You can use
 \code{secr.fit(..., start = last.model)} where \code{last.model} is a
-previously fitted secr object)
+previously fitted secr object.
 
 \item Try a finer mask (e.g., vary argument \code{nx} in
 \code{\link{make.mask}}). Check that the extent of the mask matches your
@@ -78,7 +79,8 @@ See also the section `Potential problems' in
   When fitting a model with \code{verify = TRUE} you see the log
   likelihood converge (assuming \code{trace = TRUE}), but
   \code{secr.fit} crashes without returning, perhaps with an obscure
-  message referring to \code{nls}. This is most likely due to numerical
+  message referring to \code{nls}, or \code{"Error in integrate... : the
+  integral is probably divergent"}. This is most likely due to numerical
   problems in the optional bias check with \code{\link{bias.D}}. Simply
   set \code{verify = FALSE} and repeat.
   

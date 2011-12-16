@@ -9,6 +9,7 @@
 ## 2011 02 04 extended for transect data
 ## 2011 02 06 polygonX, transectX
 ## 2011 09 26 detector type check
+## 2011 12 20 try() to make more robust
 
 ############################################################################################
 
@@ -29,11 +30,17 @@ dbar <- function (capthist) {
         }
         if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
-            mean(unlist(lapply (lxy, dbarxy)), na.rm=T)
+            d <- try(lapply(lxy,dbarxy), silent = TRUE)
+            if (inherits(d, 'try-error'))
+                d <- NA
+            mean(unlist(d), na.rm=T)
         }
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
-            mean(unlist(lapply(w,dbarx)), na.rm=T)
+            d <- try(unlist(lapply(w,dbarx)), silent = TRUE)
+            if (inherits(d, 'try-error'))
+                d <- NA
+            mean(d, na.rm=T)
         }
     }
 }

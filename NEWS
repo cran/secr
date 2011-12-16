@@ -1,3 +1,37 @@
+Changes in version 2.3.1 (2011-12-20)
+
+New features or changed behaviour of old functions
+
+    o   secr.fit() new behavioural response models bk, Bk, k, K (e.g. g0
+    ~ bk for trap-specific learned response); sim.secr() modified for
+    these models
+
+    o   join() new function for making single-session capthist from
+    multiple inputs, joining them 'side by side' (number of new
+    occasions = sum of old); unjoin() reverses this.
+
+    o   RMarkInput() new function to create object for input to RMark
+
+    o   reduce.capthist() argument 'by' may take the character value
+    "all" indicating that all columns (occasions) should be collapsed
+    to one.
+
+    o   secr.fit() "backdoor" entry of predictors via the 'dframe'
+    argument is now enabled (not for groups)
+
+    o   ip.secr() new argument 'maxtries' for greater stability with
+    sparse datasets, and related changes, but see Warning on ip.secr
+    help page.
+
+Bugs fixed
+
+    o   secr.fit() failed when detector usage was specified for some
+    sessions, but not all, and possibly with other multi-session data
+
+Other
+    o   C code tweaked to avoid warnings
+
+
 Changes in version 2.3.0 (2011-11-18)
 
 New features or changed behaviour of old functions
@@ -94,7 +128,6 @@ Bugs fixed
     code for log likelihood.
 
 Other
-
     o   the mask and fitted models packaged with possum data have
     changed
 

@@ -156,7 +156,8 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         return(temp)
     }
     else {
-
+        if (tolower(by) == 'all')
+            by <- ncol(object)
         polygons <- c('polygon','polygonX')
         transects <- c('transect','transectX')
         inputdetector <- detector(traps(object))
@@ -239,9 +240,9 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         }
         df$newID <- factor(df$ID)                     ## re-assign newID
         validrows <- (1:nrow(object)) %in% df$ID
-        alivesign <- df$alive*2 - 1
 
         if (outputdetector %in% .localstuff$exclusivedetectors) {
+            alivesign <- df$alive*2 - 1
             tempnew <- matrix(0, nrow = sum(validrows), ncol = nnew)
             tempnew[cbind(df$newID, df$newocc)] <- df$trap * alivesign
         }
@@ -290,8 +291,8 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
 
         ################################
         ## usage
-
-        dimnames(tempnew)[[1]] <- 1:nrow(tempnew)    ## temporary, for animalID in subset
+        if (nrow(tempnew) > 0)
+            dimnames(tempnew)[[1]] <- 1:nrow(tempnew)  ## temporary, for animalID in subset
         if (!is.null(usage(traps(tempnew)))) {
             usagematrix <- unlist(sapply (columns, fnused, max))
             usagematrix <- matrix(usagematrix, nrow = nrow(traps(tempnew)))
@@ -305,7 +306,7 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
 
         ################################
         ## dimnames
-        if (nrow(tempnew)>0) {
+        if (nrow(tempnew) > 0) {
             indices <- (1:length(validrows))[validrows]
             rowname <- rownames(object)[indices]
         }

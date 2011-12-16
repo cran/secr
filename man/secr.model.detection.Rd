@@ -71,6 +71,10 @@ tcov     \tab default time covariate \tab timecov[,1] \tab \eqn{S} \cr
 kcov     \tab default trap covariate \tab covariates (traps)[,1] \tab \eqn{K} \cr
 b        \tab learned response \tab \code{capthist} \tab \eqn{n.S} \cr
 B        \tab transient (Markovian) response \tab \code{capthist} \tab \eqn{n.S} \cr
+bk       \tab animal x site learned response \tab \code{capthist} \tab \eqn{n.S.K} \cr
+Bk       \tab animal x site transient response \tab \code{capthist} \tab \eqn{n.S.K} \cr
+k        \tab site learned response \tab \code{capthist} \tab \eqn{S.K} \cr
+K        \tab site transient response \tab \code{capthist} \tab \eqn{S.K} \cr
 g        \tab group \tab see below \tab \eqn{n} \cr
 h2       \tab 2-class mixture \tab -- \tab 2 \cr
 h3       \tab 3-class mixture \tab -- \tab 2 \cr
@@ -88,6 +92,10 @@ FALSE up to and including the time of first capture and TRUE afterwards.
 An alternative is a response that depends only on detection at the last
 opportunity (`B').
 
+The site-specific learned and transient responses `bk' and `Bk' imply
+that an individual becomes trap happy or trap shy in relation to a
+particular detector, as in the wolverine example of Royle et al. (2011).
+
 Groups (`g') are defined by the interaction of the \code{capthist}
 categorical (factor) individual covariates identified in \code{secr.fit}
 argument `groups'. Groups are redundant with conditional likelihood
@@ -95,8 +103,9 @@ because individual covariates of whatever sort (continuous or
 categorical) may be included freely in the model.
 
 Individual heterogeneity (`h' in the notation of Otis et al. 1978) may
-modelled by treating any detection parameter as a 2-part or 3-part finite mixture e.g. g0 \eqn{\sim{~}}{~}
-  h2. See \url{../doc/secr-finitemixtures.pdf}.
+modelled by treating any detection parameter as a 2-part or 3-part
+finite mixture e.g. g0 \eqn{\sim{~}}{~} h2. See
+\url{../doc/secr-finitemixtures.pdf}.
 
 Any other variable name appearing in a formula is assumed to refer to a
 user-defined predictor. These will be interpreted by searching for name
@@ -113,9 +122,9 @@ traps covariate, and `wetness' would be interpreted as an attribute of
 detectors, rather than sample intervals. This is a good reason to give
 covariates distinctive names!
 
-The design matrix for detection parameters may also
-be provided manually in the argument \code{dframe}. This feature is
-untested.
+The design matrix for detection parameters may also be provided manually
+in the argument \code{dframe}. This feature requires some care and is
+better avoided.
 
 The submodels for `g0', `sigma' and `z' are named components of the
 \code{model} argument of \code{secr.fit}. They are expressed in \R
@@ -162,10 +171,15 @@ line-transect method. \emph{Biometrics} \bold{39}, 29--42.
 Huggins, R. M. (1989) On the statistical analysis of capture
 experiments. \emph{Biometrika} \bold{76}, 133--140.
 
-Lebreton, J.-D., Burnham, K. P., Clobert, J., Anderson, D. R. (1992)
+Lebreton, J.-D., Burnham, K. P., Clobert, J. and Anderson, D. R. (1992)
 Modeling survival and testing biological hypotheses using marked
 animals: a unified approach with case studies. \emph{Ecological
 Monographs} \bold{62}, 67--118.
+
+Royle, J. A., Magoun, A. J., Gardner, B., Valkenburg, P. and Lowell,
+R. E. (2011) Density estimation in a wolverine population using spatial
+capture--reecapture models. \emph{Journal of Wildlife Management}
+\bold{75}, 604--611.
 
 }
 

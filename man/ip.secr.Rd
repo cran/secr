@@ -21,7 +21,7 @@ are covariates).
 ip.secr (capthist, predictorfn = pfn, predictortype = "null",
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
     centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
-    var.nsim = 1000, maxbox = 5, ...)
+    var.nsim = 1000, maxbox = 5, maxtries = 2, ...)
 
 pfn(capthist, N.estimator)
 
@@ -41,6 +41,7 @@ pfn(capthist, N.estimator)
   \item{CVmax}{ tolerance for precision of points in predictor space }
   \item{var.nsim}{ number of additional simulations to estimate variance-covariance matrix }
   \item{maxbox}{ maximum number of attempts to `frame' solution }
+  \item{maxtries}{ maximum number of attempts at each simulation }
   \item{\dots}{ further arguments passed to sim.popn }
   \item{N.estimator}{ character value indicating population estimator to use }
 }
@@ -161,6 +162,14 @@ Statistical inference from capture data on closed animal populations.
 \emph{Wildlife Monographs} \bold{62}.
 
 }
+
+\section{Warning}{ Simulation becomes unreliable with very sparse
+  populations, or sparse sampling, because some simulated datasets will
+  have no recaptures or even no captures. Adjustments were made in secr
+  2.3.1 to make the function more stable in these conditions (e.g.,
+  allowing a failed simulation to be repeated, by setting the `maxtries'
+  argument > 1), but results probably should not be relied upon when
+  there are warning messages regarding failed simulations. }
 
 \note{
 

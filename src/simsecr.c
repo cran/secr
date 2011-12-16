@@ -7,12 +7,13 @@
 /*==============================================================================*/
 
 void getpar (int i, int s, int k, int xi, int N, int ss, int nk, int cc0, int cc1, 
-             int fn, int caughtbefore, int gsb0[], double gsb0val[], int gsb1[], 
+             int fn, int bswitch, int gsb0[], double gsb0val[], int gsb1[], 
              double gsb1val[], double *g0, double *sigma, double *z) {
+    /* bswitch determines whether to use naive (0) or caught before (1) */
     int wxi;
     int c;
     wxi = i4(i,s,k,xi,N,ss,nk);
-    if (caughtbefore == 0) {
+    if (bswitch == 0) {
         c = gsb0[wxi]-1;
         *g0 = gsb0val[c];
         *sigma = gsb0val[cc0 + c];
@@ -50,14 +51,32 @@ int rdiscrete (int n, double pmix[])
 }
 /*==============================================================================*/
 
+int bswitch (int btype, int N, int i, int k, int caughtbefore[])
+{
+    if (btype == 0)
+        return(0);
+    else if (btype == 1) 
+        return(caughtbefore[i]);
+    else if (btype == 2) 
+        return(caughtbefore[k * (N-1) + i]);
+    else if (btype == 3) 
+        return(caughtbefore[k]);
+    else 
+        error("unrecognised btype in simsecr");
+    return(0);
+}
+/*==============================================================================*/
+
 void simsecr (
     int    *detect,     /* detector 0 multi, 1 proximity, 2 single, 3 count, 4 area ??? */
     double *gsb0val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     double *gsb1val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before] */
     int    *cc0,        /* number of g0/sigma/b combinations for naive animals */
     int    *cc1,        /* number of g0/sigma/b combinations for caught before */
-    int    *gsb0,       /* lookup which g0/sigma/b combination to use for given g, S, K [naive animal] */
-    int    *gsb1,       /* lookup which g0/sigma/b combination to use for given n, S, K [caught before] */
+    int    *gsb0,       /* lookup which g0/sigma/b combination to use for given g, S, K
+                           [naive animal] */
+    int    *gsb1,       /* lookup which g0/sigma/b combination to use for given n, S, K 
+                           [caught before] */
     int    *N,          /* number of animals */
     int    *ss,         /* number of occasions */
     int    *kk,         /* number of traps */
@@ -65,7 +84,16 @@ void simsecr (
     double *animals,    /* x,y points of animal range centres (first x, then y) */
     double *traps,      /* x,y locations of traps (first x, then y) */
     int    *used,       /* ss x kk array of 0/1 codes for usage */
-    int    *Markov,     /* code 0 if behavioural response is learned, 1 if Markov */
+    int    *btype,      /* code for behavioural response 
+                           0 none
+                           1 individual
+                           2 individual, trap-specific
+                           3 trap-specific
+                        */
+    int    *Markov,     /* learned vs transient behavioural response 
+                           0 learned
+                           1 Markov 
+                        */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
     double *cut,        /* detection threshold on transformed scale */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 = uniform */
@@ -82,6 +110,7 @@ void simsecr (
     double d2val;
     double p;
     int    i,j,k,l,s;
+    int    ik;
     int    nc = 0;
     int    nk = 0;             /* number of detectors (polygons or transects when *detect==6,7) */
     int    count = 0;
@@ -170,7 +199,7 @@ void simsecr (
 
     gotcha = &g;
     *resultcode = 1;
-    caughtbefore = (int *) R_alloc(*N, sizeof(int));
+    caughtbefore = (int *) R_alloc(*N * *kk, sizeof(int));
     x = (int *) R_alloc(*N, sizeof(int));
     for (i=0; i<*N; i++) x[i] = 0;
     pmix = (double *) R_alloc(*nmix, sizeof(double));
@@ -190,13 +219,16 @@ void simsecr (
         cump = (double *) R_alloc(*kk+1, sizeof(double));
         cump[0] = 0;
     }
+
     if (*detect == 5) {                                    /* signal only */
         maxdet = *N * *ss * *kk;
         if (!((*fn == 10) || (*fn == 11)))
             error ("simsecr not implemented for this combination of detector & detectfn");
 
     }
-    if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) { /* polygon or transect */
+
+    if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        /* polygon or transect */
         cumk[0] = 0;
         for (i=0; i<maxnpoly; i++) {                       /* maxnpoly much larger than npoly */
             if (kk[i]<=0) break;
@@ -210,6 +242,7 @@ void simsecr (
             maxdet = *N * *ss;
     }
     else nk = *kk;
+
     if ((*detect == 4) || (*detect == 7)) {                            /* transect only */
         line = (struct rpoint *) R_alloc(sumk, sizeof(struct rpoint));
         cumd = (double *) R_alloc(sumk, sizeof(double));
@@ -253,25 +286,15 @@ void simsecr (
         }
     }
 
-    for (i=0; i<*N; i++) {
-        caught[i] = 0;
-    }
+    /* zero caught status */
+    for (i=0; i<*N; i++) 
+        caught[i] = 0;    
+    for (i=0; i<*N; i++) 
+        for (k=0; k < nk; k++)
+            caughtbefore[k * (*N-1) + i] = 0;
 
     /* MAIN LOOP */
     for (s=0; s<*ss; s++) {
-
-        /* --------------------------------------------- */
-        /* universal update of 'previous-capture' status */
-        for (i=0; i<*N; i++) {
-            if ((s>0) && *Markov) {
-                caughtbefore[i] = 0;
-                for (k=0;k<nk;k++)
-                    if (value[i3(s-1, k, i, *ss, nk)])
-                        caughtbefore[i] = caught[i];
-            }
-            else
-                caughtbefore[i] = caught[i];
-        }
 
         /* ------------------ */
         /* single-catch traps */
@@ -287,10 +310,10 @@ void simsecr (
             /* make tran */
             for (i=0; i<*N; i++) {  /* animals */
                 for (k=0; k<nk; k++) { /* traps */
-                    if (used[s * nk + k]) {
+                    if (used[s * nk + k]) {                        
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+			    bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                         d2val = d2(i,k, animals, traps, *N, nk);
                         p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);   /* effectively infinite w2 */
                         event_time = randomtime(p);
@@ -348,8 +371,8 @@ void simsecr (
                 hsum[i] = 0;
                 for (k=0; k<nk; k++) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+			    bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                     d2val = d2(i,k, animals, traps, *N, nk);
                     p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
                     p = p * used[s * nk + k];           /* zero if not used */
@@ -384,8 +407,8 @@ void simsecr (
                 for (k=0; k<nk; k++) {
                     if (used[s * nk + k]) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+			    bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                         d2val = d2(i,k, animals, traps, *N, nk);
                         p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
 
@@ -431,9 +454,9 @@ void simsecr (
 
             for (i=0; i<*N; i++) {
                 /* this implementation assumes NO VARIATION AMONG DETECTORS */
-                        getpar (i, s, 0, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+                getpar (i, s, 0, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
+		    bswitch (*btype, *N, i, 0, caughtbefore), 
+                    gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                 maybecaught = Random() < g0;
 
                 if (w > (10 * sigma)) 
@@ -487,8 +510,8 @@ void simsecr (
                 for (k=0; k<nk; k++) {            
                     if (used[s * nk + k]) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+                            bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
 	                par[0] = g0;
                         par[1] = sigma;
                         par[2] = z;
@@ -504,8 +527,8 @@ void simsecr (
                 for (k=0; k<nk; k++) {                        /* each transect */
                     if (used[s * nk + k]) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+   			    bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
 	                par[0] = g0;
                         par[1] = sigma;
                         par[2] = z;
@@ -576,8 +599,8 @@ void simsecr (
                 /* this implementation assumes NO VARIATION AMONG DETECTORS */
 
                 getpar (i, s, 0, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                     caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                     &g0, &sigma, &z);
+		    bswitch (*btype, *N, i, 0, caughtbefore), 
+                    gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                 count = rcount(*binomN, g0);
                 w = 10 * sigma;
                 par[0] = 1;
@@ -625,8 +648,8 @@ void simsecr (
                 for (k=0; k<nk; k++) {                        /* each transect */
                     if (used[s * nk + k]) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            caughtbefore[i], gsb0, gsb0val, gsb1, gsb1val, 
-                            &g0, &sigma, &z);
+ 			    bswitch (*btype, *N, i, k, caughtbefore), 
+                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
 	                par[0] = g0;
                         par[1] = sigma;
                         par[2] = z;
@@ -723,6 +746,39 @@ void simsecr (
                 }
             }
         }
+
+	if ((*btype > 0) && (s < (*ss-1))) {
+            /* update record of 'previous-capture' status */
+            if (*btype == 1) {
+                for (i=0; i<*N; i++) {
+                    if (*Markov) 
+                        caughtbefore[i] = 0;
+                    for (k=0; k<nk; k++)
+                        caughtbefore[i] = imax2 (value[i3(s, k, i, *ss, nk)], caughtbefore[i]);
+                }
+            }
+            else if (*btype == 2) {
+                for (i=0; i<*N; i++) {
+                    for (k=0; k<nk; k++) {
+                        ik = k * (*N-1) + i;
+                        if (*Markov) 
+                            caughtbefore[ik] = value[i3(s, k, i, *ss, nk)];
+                        else 
+                            caughtbefore[ik] = imax2 (value[i3(s, k, i, *ss, nk)], 
+			        caughtbefore[ik]);
+		    }
+		}
+            }
+	    else {
+                for (k=0;k<nk;k++) {
+                    if (*Markov) 
+                        caughtbefore[k] = 0;
+                    for (i=0; i<*N; i++) 
+                        caughtbefore[k] = imax2 (value[i3(s, k, i, *ss, nk)], caughtbefore[k]);
+                }
+	    }
+	}
+
     }   /* loop over s */
 
     if ((*detect==3) || (*detect==4) || (*detect==5) || (*detect==6) || (*detect==7)) {
