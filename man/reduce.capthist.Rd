@@ -63,6 +63,10 @@ formed from occasions 1:5, 6:10, and 11:15. A warning is given when the
 number of old occasions is not a multiple of \code{by} as then the final
 new occasion will comprise fewer old occasions.
 
+A special use of the \code{by} argument is to combine all occasions into
+one for each session in a multi-session dataset. This is done by setting
+\code{by = "all"}.
+
 }
 
 \value{
@@ -85,6 +89,9 @@ summary (pooled.tempcapt)
 pooled.tempcapt2 <- reduce(tempcapt, by = 2)
 summary (pooled.tempcapt2)
 
+## collapse multi-session dataset to single-session 'open population'
+onesess <- join(reduce(ovenCH, by = "all"))
+summary(onesess)
 }
 
 \keyword{ manip }

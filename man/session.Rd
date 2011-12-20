@@ -64,7 +64,9 @@ features.
 
 \references{ 
 
-Pollock, K. H. (1982) A capture-recapture design robust to unequal probability of capture. \emph{Journal of Wildlife Management} \bold{46}, 752--757. 
+Pollock, K. H. (1982) A capture-recapture design robust to unequal
+probability of capture. \emph{Journal of Wildlife Management} \bold{46},
+752--757.
 
 }
 

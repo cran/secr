@@ -7,6 +7,7 @@
 ## 2010 06 17 'Session'
 ## 2010 06 21 'x2', 'y2', 'xy'
 ## 2010 08 28 fix bug with T
+## 2011 11 28 user dframe factors now covered
 ## Create (neutral) design data suitable for 'predict'
 ############################################################################################
 
@@ -90,8 +91,12 @@ secr.make.newdata <- function (object) {
         if (v=='T') newdata$T <- rep(0, nr)   ## 2010 08 28
         if (v=='b') newdata$b <- rep(factor(0, levels=c(0,1)),nr)    # naive
         if (v=='B') newdata$B <- rep(factor(0, levels=c(0,1)),nr)    # naive
-#        if (v=='bk') newdata$bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
-#        if (v=='Bk') newdata$Bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
+        if (v=='bk') newdata$bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
+        if (v=='Bk') newdata$Bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
+        if (v=='k') newdata$k <- rep(factor(0, levels=c(0,1)),nr)    # naive
+        if (v=='K') newdata$K <- rep(factor(0, levels=c(0,1)),nr)    # naive
+        if (v=='bkc') newdata$bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
+        if (v=='Bkc') newdata$Bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
         if (v=='tcov') newdata$tcov <- rep(0,nr)        # ideally use mean or standardize?
         if (v=='kcov') newdata$kcov <- rep(0,nr)        # ditto
         if (v=='Session') newdata$Session <- as.numeric( factor(newdata$session,
@@ -100,13 +105,21 @@ secr.make.newdata <- function (object) {
 
     ## all autovars should now have been dealt with
     vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session',
-        't','T','b','B','tcov','kcov','h2','h3')]
+        't','T','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')]
 
     findvars.MS (sessioncov, vars, 1, TRUE)
     findvars.MS (timecov, vars, 1, FALSE)
     findvars.MS (covariates(traps(capthist)), vars, 1, FALSE)
     ## added 2011-11-14
     findvars.MS (covariates(mask), vars, 1, FALSE)
+
+    ## 2011-11-28
+    if (!is.null(object$dframe)) {
+        dframevars <- names(object$dframe)
+        for (v in dframevars)
+            newdata[,v] <- rep(object$dframe[1,v], nr)
+        vars <- vars[!vars %in% dframevars]
+    }
 
     ## default all remaining vars to numeric zero
     for (v in vars) newdata[,v] <- rep(0,nr)

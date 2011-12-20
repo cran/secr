@@ -101,7 +101,7 @@ void secrloglik (
     int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
     int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
     double *xy,          /* xy coordinates of polygon records */
-    double *signal,      /* signal strength vector */
+    double *signal,      /* signal strength vector, or times */
     int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
     int    *nc,          /* number of capture histories */
     int    *ss,          /* number of occasions */
@@ -114,10 +114,14 @@ void secrloglik (
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
+    double *turnval,     /* Parameter values - turnover */
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-    int    *gsb,         /* lookup which g0/sigma/b combination to use for given n, S, K */
-    int    *gsb0,        /* lookup which g0/sigma/b to use for given g, S, K [naive animal] */
+    int    *ccturn,      /* number of turnover combinations */
+    int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+    int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
+    int    *PIAturn,     /* lookup which turnover parameter combination to use n, J, mix */
+    double *intervals,   /* vector of *ss-1 between-occasion intervals */
     double *area,        /* area associated with each mask point (ha) */
     double *cuerate,     /* miscellaneous parameters */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
@@ -125,9 +129,9 @@ void secrloglik (
     double *cut,         /* transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *a,           /* a(theta) */
-    double *value,       /* return value integral of pr(w0) */
+    double *value,       /* return value integral */
     int    *resultcode   /* 0 if OK */
-);
+    );
 /*---------------------------------------------------------------------*/
 
 void MRsecrloglik (
@@ -267,6 +271,7 @@ void simsecr (
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
     int    *used,       /* ss x kk array of 0/1 codes for used */
+    int    *btype,      /* code for behavioural response 0 none 1 b 2 bk 3 k */
     int    *Markov,     /* code 0 if behavioural response is learned, 1 if Markov */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
     double *cut,        /* detection threshold on transformed scale */

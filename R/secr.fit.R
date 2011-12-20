@@ -4,6 +4,7 @@
 ## moved from methods.R 2011-01-30
 ## 2011-10-20 generalized designD
 ## 2011-10-20 renamed 'grps' 'grouplevels'
+## 2011-12-16 streamlined preparation of models
 ################################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -215,41 +216,70 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
     defaultmodel <- list(D=~1, g0=~1, sigma=~1, z=~1, w=~1, pID=~1,
-        beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
+        beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1, phi=~1)
     model <- replace (defaultmodel, names(model), model)
-    if (!(detectfn %in% c(1,3,7,8))) model$z <- NULL
-    if (!(detectfn %in% c(5,6))) model$w <- NULL
-    if (!(detectfn %in% c(9))) { model$b0 <- NULL; model$b1 <- NULL }
-    if (!(detectfn %in% c(10,11))) { model$beta0 <- NULL; model$beta1 <- NULL; model$sdS <- NULL }
-    if (!(detectfn %in% 0:8)) { model$g0 <- NULL; model$sigma <- NULL }
-    if (is.null(q) | !nonID)
-        model$pID <- NULL    ## no use for this parameter
-    else
+
+#    if (!(detectfn %in% c(1,3,7,8))) model$z <- NULL
+#    if (!(detectfn %in% c(5,6))) model$w <- NULL
+#    if (!(detectfn %in% c(9))) { model$b0 <- NULL; model$b1 <- NULL }
+#    if (!(detectfn %in% c(10,11))) { model$beta0 <- NULL; model$beta1 <- NULL; model$sdS <- NULL }
+#    if (!(detectfn %in% 0:8)) { model$g0 <- NULL; model$sigma <- NULL }
+#    if (is.null(details$intervals)) { model$phi <- NULL }
+#    if (is.null(q) | !nonID)
+#        model$pID <- NULL    ## no use for this parameter
+#    else
+#        if (model$pID != ~1)
+#            stop ("'pID' must be constant in this implementation")
+#     if (CL) model$D <- NULL
+
+    pnames <- switch (detectfn+1,
+        c('g0','sigma'),           # 0 halfnormal
+        c('g0','sigma','z'),       # 1 hazard rate
+        c('g0','sigma'),           # 2 exponential
+        c('g0','sigma','z'),       # 3
+        c('g0','sigma'),           # 4
+        c('g0','sigma','w'),       # 5
+        c('g0','sigma','w'),       # 6
+        c('g0','sigma','z'),       # 7
+        c('g0','sigma','z'),       # 8
+        c('b0','b1'),              # 9
+        c('beta0','beta1','sdS'),  # 10
+        c('beta0','beta1','sdS'))  # 11
+
+    if (!CL) pnames <- c('D', pnames)
+    if (!is.null(details$intervals)) pnames <- c(pnames, 'phi')
+    if (!is.null(q) & nonID) {
+	pnames <- c(pnames, 'pID')
         if (model$pID != ~1)
             stop ("'pID' must be constant in this implementation")
+    }
+    pnames <- pnames[!(pnames %in% names(fixed))]  ## drop fixed real parameters
+    model[!(names(model) %in% pnames)] <- NULL     ## select real parameters
+    vars <-  unlist(lapply(model, all.vars))
+
+    ############################################
+    # Finite mixtures - 2009 12 10, 2011 12 16
+    ############################################
+    nmix <- get.nmix(model)
+    if ((nmix>1) & (nmix<4)) {
+        model$pmix <- as.formula(paste('~h', nmix, sep=''))
+        if (!all(all.vars(model$pmix) %in% c('session','g','h2','h3')))
+            stop ("formula for pmix may include only 'session', 'g' or '1'")
+        pnames <- c(pnames, 'pmix')
+    }
+    details$nmix <- nmix
 
     #################################################
-    ## CUSTOMIZE FOR OTHER STYLES OF MODEL - TO DO
-    if (CL) model$D <- NULL
+    ## Specialisations
 
     if (CL & !(is.null(groups) | (detector(traps(capthist))=='cue'))) {
         groups <- NULL
         warning ("groups not valid with CL; groups ignored")
     }
-
     if (CL && var.in.model('g', model))
         stop ("'g' is not a valid effect when 'CL = TRUE'")
-
-    ## Drop any fixed real parameters from model
-    model[names(fixed)] <- NULL
-
-    if ((length(model) == 0) & !is.null(fixed)) {
-        ## all fixed; assume want only LL
-        stop ("all parameters fixed")
-    }
-
-    vars <-  unlist(lapply(model, all.vars))
-
+    if ((length(model) == 0) & !is.null(fixed))
+        stop ("all parameters fixed")     ## assume want only LL
     if (details$scalesigma) {
         if (CL)
             stop ("cannot use 'scalesigma' with 'CL'")
@@ -261,41 +291,31 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (!is.null(groups))
             stop ("cannot use 'scalesigma' with groups")
     }
-
     if (details$scaleg0) {
         if (!is.null(groups))
             stop ('Cannot use scaleg0 with groups')
     }
 
-    ########################################
-    # Finite mixtures - tentative 2009 12 10
-    ########################################
-    details$nmix <- get.nmix(model)
-    if ((details$nmix == 2) && is.null (model$pmix))
-        model$pmix <- ~h2
-    if ((details$nmix == 3) && is.null (model$pmix))
-        model$pmix <- ~h3
-    if (details$nmix == 3)
-        warning ("implementation of 3-part finite mixtures is not reliable")
-    if (!all(all.vars(model$pmix) %in% c('session','g','h2','h3')))
-        stop ("formula for pmix may include only 'session', 'g' or '1'")
     #################################
     # Link functions (model-specific)
     #################################
     defaultlink <- list(D='log', g0='logit', sigma='log', z='log', w='log', pID='logit',
         beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit',
-        cuerate='log')
+        cuerate='log', phi = 'logit')
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
+    link[!(names(link) %in% pnames)] <- NULL
+
+#    if (CL) link$D <- NULL
+#    if (!(detectfn %in% c(1,3,7,8))) link$z <- NULL
+#    if (!(detectfn %in% c(5,6))) link$w <- NULL
+#    if (!(detectfn %in% c(9))) { link$b0 <- NULL; link$b1 <- NULL }
+#    if (!(detectfn %in% c(10,11))) { link$beta0 <- NULL; link$beta1 <- NULL; link$sdS <- NULL }
+#    if (!(detectfn %in% 0:8)) { link$g0 <- NULL; link$sigma <- NULL }
+#    if (is.null(q) | !nonID) link$pID <- NULL
+#    if (details$nmix==1) link$pmix <- NULL
+
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
-    if (CL) link$D <- NULL
-    if (!(detectfn %in% c(1,3,7,8))) link$z <- NULL
-    if (!(detectfn %in% c(5,6))) link$w <- NULL
-    if (!(detectfn %in% c(9))) { link$b0 <- NULL; link$b1 <- NULL }
-    if (!(detectfn %in% c(10,11))) { link$beta0 <- NULL; link$beta1 <- NULL; link$sdS <- NULL }
-    if (!(detectfn %in% 0:8)) { link$g0 <- NULL; link$sigma <- NULL }
-    if (is.null(q) | !nonID) link$pID <- NULL
-    if (details$nmix==1) link$pmix <- NULL
     if (!(detector(traps(capthist))=='cue')) link$cuerate <- NULL
 
     ##############################################
@@ -306,6 +326,19 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     design <- secr.design.MS (capthist, model, timecov, sessioncov, groups, dframe)
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, dframe,
         naive = T, bygroup = !CL)
+
+    ##############################################
+    # Prepare turnover design matrices and lookup
+    # experimental addition 2011-11-30
+    ##############################################
+
+    if (!is.null(details$intervals)) {
+        memo ('Preparing turnover design matrices', details$trace)
+        intervalcov <- NULL
+        nTurnoverParameters <- integer(0)
+    }
+    designphi <- phi.designdata (capthist, model, intervalcov, sessioncov,
+        groups, dframe, intervals = details$intervals)
 
     ###############################
     # Prepare density design matrix
@@ -345,6 +378,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     np <- sapply(design$designMatrices, ncol)
     np <- c(D = nDensityParameters, np)
+    if (!is.null(details$intervals))
+        np <- c(np,  sapply(designphi$designMatrices, ncol))
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
     names(parindx) <- names(np)
@@ -376,6 +411,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        designD    = designD,
                        design     = design,
                        design0    = design0,
+                       designphi  = designphi,
                        capthist   = capthist,
                        mask       = mask,
                        detectfn   = detectfn,
@@ -441,7 +477,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             sdS   = 2,
             b0    = 2,        ## changed from 15 2010-11-01
             b1    = -0.1,
-            pmix  = 0.25
+            pmix  = 0.25,
+            phi   = 0.7
         )
         if (detectfn %in% c(6)) {
             default$w <- default$sigma
@@ -503,39 +540,21 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     names(betanames) <- NULL
     realnames <- names(model)
     if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    if (!is.null(details$intervals))   ## allow turnover 2011-11-30
+        betanames <- c(betanames, unlist(sapply(designphi$designMatrices, colnames)))
     betanames <- sub('..(Intercept))','',betanames)
     ## allow for fixed beta parameters 2009 10 19
     if (!is.null(details$fixedbeta))
         betanames <- betanames[is.na(details$fixedbeta)]
 
-
     #################################
     # Variable names (model-specific)
     #################################
-
-    ## additional name substitutions 2010 02 14 not fully tested
-    if (details$scaleg0)     {
-##        betanames <- sub('g0','g0*', betanames)
-##        realnames <- sub('g0','g0*', realnames)
-##        names(model) <- sub('g0','g0*', names(model))
-##        names(link) <- sub('g0','g0*', names(link))
-##        names(parindx) <- sub('g0','g0*', names(parindx))
-    }
-    if (details$scalesigma)  {
-##        betanames <- sub('sigma','sigma*', betanames)
-##        realnames <- sub('sigma','sigma*', realnames)
-##        names(model) <- sub('sigma','sigma*', names(model))
-##        names(link) <- sub('sigma','sigma*', names(link))
-##        names(design) <- sub('sigma','sigma*', names(design))
-##        names(design0) <- sub('sigma','sigma*', names(design0))
-##        names(parindx) <- sub('sigma','sigma*', names(parindx))
-    }
 
     if (detector(traps(capthist))=='cue') {
         betanames <- c(betanames, 'cuerate')
         realnames <- c(realnames, 'cuerate')
     }
-
     betaw <- max(max(nchar(betanames)),8)   # for 'trace' formatting
 
     #####################
@@ -563,6 +582,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         designD    = designD,
                         design     = design,
                         design0    = design0,
+                        designphi  = designphi,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
@@ -590,6 +610,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         designD    = designD,
                         design     = design,
                         design0    = design0,
+                        designphi  = designphi,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
@@ -629,6 +650,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                             designD    = designD,
                             design     = design,
                             design0    = design0,
+                            designphi  = designphi,
                             capthist   = capthist,
                             mask       = mask,
                             detectfn   = detectfn,
@@ -685,6 +707,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                   dframe = dframe,
                   design = design,      ## added 2009 09 05
                   design0 = design0,    ## added 2009 06 25
+                  designphi = designphi, ## added 2011 11 30
 
                   start = start,        ## added 2009 09 09
                   link = link,

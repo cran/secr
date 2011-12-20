@@ -5,9 +5,11 @@
 ## 2009 10 08 sighting
 ## 2009 12 10 mixtures
 ## 2009 12 13 mixtures pmix ~ h2
+## 2011 11 24 re-enable bk, Bk models
+## 2011 11 27 add k, K, bkc, Bkc, bkn, bn models
 
 ################################################################################
-## source ('d:\\density secr 1.5\\secr\\R\\secr.design.MS.R')
+## source ('d:\\density secr 2.3\\secr\\R\\secr.design.MS.R')
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
@@ -69,20 +71,21 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # bygroup = T results in one row per group instead of one row per individual
     # This setting is used for 'naive' table
     # groups is a vector of factor names whose intersection defines group
-    # groups only defined for CL = T
+    # groups only defined for CL = FALSE  [corrected 2011-11-27]
     # use of 'g' requires valid groups definition
     # grouping variables are also added individually to dframe
 
     models$D <- NULL                          # drop density model
+    models$phi <- NULL                        # drop phi model 2011-11-30
     npar     <- length(models)                # real parameters
     parnames <- names(models)                 # typically c('g0', 'sigma', 'z')
     vars     <- unique (unlist(sapply (models, all.vars)))
     vars     <- vars[!(vars %in% groups)]     # groups treated separately
     nmix     <- get.nmix(models)
 
-##    if (sum(c('b','B','bk','Bk') %in% vars) > 1)
-    if (sum(c('b','B') %in% vars) > 1)
+    if (sum(c('b','bn','B','bk','bkn','Bk','bkc','Bkc', 'k', 'K') %in% vars) > 1)
     stop ("model should not use more than one type of behavioural response")
+
     trps    <- traps(capthist)                 # session-specific trap array
     used    <- usage(trps)                     # session-specific usage
     zcov    <- covariates(capthist)            # session-specific individual covariates
@@ -117,8 +120,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## cover unmarked case
     if (n == 0) n <- 1
 
-    ## timecov may be a vector or a dataframe or a list of vectors or a list of data frames
-    ## conform to either dataframe or list of dataframes (1 per session)
+    #--------------------------------------------------------------------------
+    # timecov may be a vector or a dataframe or a list of vectors or a list of data frames
+    # conform to either dataframe or list of dataframes (1 per session)
     if (!is.data.frame(timecov)) {
         if (is.list(timecov)) {
             if (length(timecov) != R)
@@ -128,6 +132,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         else timecov <- as.data.frame(timecov)
     }
 
+    #--------------------------------------------------------------------------
+    # session covariates
     if (!is.null(sessioncov)) {
         sessioncov <- as.data.frame(sessioncov)
         if (nrow(sessioncov) != R)
@@ -135,17 +141,45 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                  "number of sessions")
     }
 
+    #--------------------------------------------------------------------------
     dims <- c(R,n,S,K,nmix)  # 'virtual' dimensions
-    autovars <- c('session','Session','g','t','T','b','B','kcov','tcov', 'sighting', 'h2', 'h3')
-##    autovars <- c('session','Session','g','t','T','b','B','bk','Bk',
-##                  'kcov','tcov', 'sighting', 'h2', 'h3')
+    dframenrow <- prod(dims)      # number of rows
+    autovars <- c('session','Session','g','t','T',
+                  'b','bn','B','bk','bkn','Bk', 'k', 'K', 'bkc', 'Bkc',
+                  'kcov','tcov', 'sighting', 'h2', 'h3')
+    #--------------------------------------------------------------------------
+    # user-specified dframe
+    # 2011-11-27
+    if (is.null(dframe)) {
+        dframe <- data.frame(dummy=rep(1, dframenrow))
+        dframevars <- ""
+    }
+    else {
+        ## special treatment for design0:
+        ## dframe must be thinned by rejecting rows for repeats from each group
+        tempn <- n
+        if (bygroup) {
+            OK <- rep(FALSE, nrow(dframe) )
+            tempn <- length(OK)/(R*S*K*nmix)
+            dim(OK) <- c(R,tempn,S,K,nmix)
+            if (is.null(groups)) {
+                firstofgroup <- 1   ## no groups
+                OK[,firstofgroup,,,] <- TRUE
+                dframe <- dframe[OK,,drop=FALSE]
+            }
+            else
+                stop ("dframe specification does not work with grouping at present, sorry")
+        }
+        if (nrow(dframe) !=  dframenrow )
+            stop ("dframe should have ", R*tempn*S*K*nmix, " rows ( R*n*S*K*nmix )")
+        dframevars <- names(dframe)
+    }
+    #--------------------------------------------------------------------------
 
-    if (is.null(dframe)) dframe <- data.frame(dummy=rep(1, R*n*S*K*nmix))
-
-## BUG FIXED 2009 12 22
-## Default action of following was to sort levels
-## but these are allowed to be in arbitrary order
-##    dframe$session <- factor( insertdim (sessionlevels, 1, dims))
+    ## BUG FIXED 2009 12 22
+    ## Default action of following was to sort levels
+    ## but these are allowed to be in arbitrary order
+    ##    dframe$session <- factor( insertdim (sessionlevels, 1, dims))
 
     dframe$session <- factor( insertdim (sessionlevels, 1, dims), levels = sessionlevels)
     dframe$Session <- insertdim (0:(R-1), 1, dims)
@@ -196,6 +230,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             grouplist <- lapply(groups, MSlevels)
             grouping <- expand.grid(grouplist) ## one column per group
             names(grouping) <- groups
+## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
             for (i in groups) insertdim(grouping[,i], c(2,1), dims)  ## all sessions the same
         }
         else {
@@ -205,49 +240,69 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     grouping <- unlist(lapply(grouping, pad1, n))
                 }
                 else grouping <- zcov[,i]
+## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
                 insertdim(grouping, c(2,1), dims)
             }
         }
     }
     #--------------------------------------------------------------------------
 
-    ## general for behavioural response fields
+    ## behavioural response fields
 
-    ## assume sessions same type
+    ## assume sessions are same type
     #  prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
     ## 2011-09-26
     prox <- detector(trps)[[1]] %in% .localstuff$detectors3D
     makeb <- function (caphist) {      ## global response
         if (prox) {
-           temp0 <- apply(caphist, 1:2, sum)
+           temp0 <- apply(abs(caphist), 1:2, sum)
            t(apply(temp0, 1, prevcapt))
         }
         else t(apply(abs(caphist),1, prevcapt))
     }
+    makek <- function (caphist) {      ## global response
+        if (!prox) {
+            caphist <- reduce(caphist, output = 'proximity',
+                dropunused = FALSE, verify = FALSE)
+        }
+        temp <- apply(abs(caphist), c(2,3), sum)
+        apply(temp, 2, prevcapt)
+    }
+    makebk <- function (caphist) {     ## trap-specific response
+        if (!prox) {
+            caphist <- reduce(caphist, output = 'proximity',
+                dropunused = FALSE, verify = FALSE)
+        }
+        temp <- apply(abs(caphist), c(1,3), prevcapt)
+        aperm(temp, c(2,1,3))
+    }
+    makebkc <- function (caphist) {     ## trap-specific multi-level response
+        if (!prox) {
+            caphist <- reduce(caphist, output = 'proximity',
+                dropunused = FALSE, verify = FALSE)
+        }
+        ## same animal
+        caphist[,,] <- abs(caphist)
+        b1 <- apply(caphist, c(1,3), prevcapt)
+        b1 <- aperm(b1, c(2,1,3))
 
-##    makebk <- function (caphist) {     ## trap-specific response
-##        if (prox) {
-##            temp <- apply(caphist, c(1,3), prevcapt)
-##        }
-##        else {
-##            temp0 <- array (dim=c(n,S,K))
-##            temp0[,,] <- 0
-##            indices <- cbind(
-##                as.numeric(row(caphist)),
-##                as.numeric(col(caphist)),
-##                as.numeric(abs(caphist)))
-##            temp0[indices] <- 1
-##            temp <- apply(temp0, c(1,3), prevcapt)
-##        }
-##        aperm(temp, c(2,1,3))
-##    }
+        ## other animal
+        b2 <- array(dim = dim(caphist))
+        for (i in 1:nrow(caphist)) {
+            temp <- apply(caphist[-i,,], 2:3, sum)
+            b2[i,,] <- apply(temp, 2, prevcapt)
+        }
+        ## output array dim (n,S,K)
+        ## 1 none, 2 this animal, 3 other animal, 4 both
+        b1 + 2 * b2 + 1
+    }
 
     #--------------------------------------------------------------------------
 
     if ('b' %in% vars) {
-        if (naive) dframe$b <- rep(0, R*n*S*K)
+        if (naive) dframe$b <- rep(FALSE, dframenrow)
         else {
-            prevcapt <- function(x) c(F, cumsum(x[-S])>0)
+            prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
             if (MS) {
                 temp <- lapply(capthist, makeb)
                 temp <- lapply(temp, padarray, c(n,S))
@@ -260,10 +315,26 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     #------------------------------------------------
 
-    if ('B' %in% vars) {
-        if (naive) dframe$B <- rep(0, R*n*S*K)
+    if ('bn' %in% vars) {
+        if (naive) dframe$bn <- rep(0, dframenrow)
         else {
-            prevcapt <- function(x) c(F, x[-S]>0)
+            prevcapt <- function(x) c(0, cumsum(x[-S]))
+            if (MS) {
+                temp <- lapply(capthist, makeb)
+                temp <- lapply(temp, padarray, c(n,S))
+                temp <- unlist(temp)
+            }
+            else temp <- makeb(capthist)  # one session
+            dframe$bn <- insertdim (as.vector(temp), c(2,3,1), dims)
+        }
+    }
+
+    #------------------------------------------------
+
+    if ('B' %in% vars) {
+        if (naive) dframe$B <- rep(FALSE, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, x[-S]>0)
             if (MS) {
                 temp <- lapply(capthist, makeb)
                 temp <- lapply(temp, padarray, c(n,S))
@@ -275,32 +346,110 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     #------------------------------------------------
 
-##    if ('bk' %in% vars) {
-##        if (naive) dframe$bk <- rep(0, R*n*S*K)
-##        else {
-##            prevcapt <- function(x) c(F, cumsum(x[-S])>0)
-##            if (MS) {
-##                temp <- lapply(capthist, makebk)
-##                temp <- lapply(temp, padarray, c(n,S,K))
-##            }
-##            else temp <- makebk(capthist)  # one session
-##            dframe$bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
-##        }
-##    }
+    if ('bk' %in% vars) {
+        if (naive) dframe$bk <- rep(FALSE, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
+            if (MS) {
+                temp <- lapply(capthist, makebk)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebk(capthist)  # one session
+            dframe$bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
+        }
+    }
 
     #------------------------------------------------
-##    if ('Bk' %in% vars) {
-##        if (naive) dframe$Bk <- rep(0, R*n*S*K)
-##        else {
-##            prevcapt <- function(x) c(F, x[-S]>0)
-##            if (MS) {
-##                temp <- lapply(capthist, makebk)
-##                temp <- lapply(temp, padarray, c(n,S,K))
-##            }
-##            else temp <- makebk(capthist)  # one session
-##            dframe$Bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
-##       }
-##    }
+    if ('bkn' %in% vars) {
+        if (naive) dframe$bkn <- rep(0, dframenrow)
+        else {
+            prevcapt <- function(x) c(0, cumsum(x[-S]))
+            if (MS) {
+                temp <- lapply(capthist, makebk)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebk(capthist)  # one session
+            dframe$bkn <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
+        }
+    }
+
+    #------------------------------------------------
+    if ('Bk' %in% vars) {
+        if (naive) dframe$Bk <- rep(FALSE, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, x[-S]>0)
+            if (MS) {
+                temp <- lapply(capthist, makebk)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebk(capthist)  # one session
+            dframe$Bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
+       }
+    }
+    #--------------------------------------------------------------------------
+
+    if ('bkc' %in% vars) {
+        if (naive)
+            dframe$bkc <- rep(1, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
+            if (MS) {
+                temp <- lapply(capthist, makebkc)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebkc(capthist)  # one session
+            temp <- unlist(temp)
+            dframe$bkc <- insertdim(temp, c(2,3,4,1), dims)
+        }
+        dframe$bkc <- factor(dframe$bkc)
+        levels(dframe$bkc) <- c('None','Self','Other','Both')
+    }
+
+    #------------------------------------------------
+    if ('Bkc' %in% vars) {
+        if (naive)
+            dframe$Bkc <- rep(1, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, x[-S]>0)
+            if (MS) {
+                temp <- lapply(capthist, makebkc)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebkc(capthist)  # one session
+            temp <- unlist(temp)
+            dframe$Bkc <- insertdim(temp, c(2,3,4,1), dims)
+        }
+        dframe$Bkc <- factor(dframe$Bkc)
+        levels(dframe$Bkc) <- c('None','Self','Other','Both')
+    }
+    #--------------------------------------------------------------------------
+
+    if ('k' %in% vars) {
+        if (naive) dframe$k <- rep(FALSE, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
+            if (MS) {
+                temp <- lapply(capthist, makek)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makek(capthist)  # one session
+            dframe$k <- insertdim(as.vector(unlist(temp)), c(3,4,1), dims)
+       }
+    }
+    #--------------------------------------------------------------------------
+
+    if ('K' %in% vars) {
+        if (naive) dframe$K <- rep(FALSE, dframenrow)
+        else {
+            prevcapt <- function(x) c(FALSE, x[-S]>0)
+            if (MS) {
+                temp <- lapply(capthist, makek)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makek(capthist)  # one session
+            dframe$K <- insertdim(as.vector(unlist(temp)), c(3,4,1), dims)
+       }
+    }
     #--------------------------------------------------------------------------
 
     if ('tcov' %in% vars) {
@@ -345,7 +494,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     #--------------------------------------------------------------------------
     ## all autovars should have now been dealt with
-    vars <- vars[!vars %in% autovars]
+    vars <- vars[!(vars %in% c(autovars, dframevars))]
 
     #--------------------------------------------------------------------------
     # add zcov, sessioncov, trapcov, timecov
@@ -355,8 +504,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                  "data is not fully tested")
 
     if (!bygroup) findvars.MS (zcov, vars, 2)   ## CL only
-    ## possible alternative for consideration 2009 09 25
-    ## findvars.MS (zcov, vars, 2)
 
     findvars.MS (sessioncov, vars, 1)
     findvars.MS (timecov, vars, 3)      ## session-specific list
@@ -375,13 +522,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         stop ("covariate(s) ", paste(vars,collapse=","), " not found")
     }
 
-    #------------------------------------------------
-    # DOES NOT YET STANDARDIZE COVARIATES (cf Dmat)
+    #------------------------------------------
+    # DOES NOT STANDARDIZE COVARIATES (cf Dmat)
 
     make.designmatrix <- function (formula, prefix, ...) {
      # combine formula and dframe to generate design matrix
         if (is.null(formula)) {
-            list (model = NULL, index = rep(1,R*n*S*K*nmix))
+            list (model = NULL, index = rep(1,dframenrow))
         }
         else {
             tempmat <- model.matrix(formula, dframe, ...)
@@ -426,7 +573,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #       index to row of designMatrix for each real parameter
     #--------------------------------------------------------------------
 
-    PIA <- array(indices2$index, dim=c(R,n,S,K,nmix))
+    PIA <- array(indices2$index, dim = dims)
 
     parameterTable <- indices2$lookup
 
@@ -439,9 +586,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     # 'used' is list if MS
 
-## OOPS - TOO TIRED TO THINK THROUGH THE IMPLEMENTATION OF USE WITH MIXTURES
-## UNSURE FROM HERE 2009 12 10
-
     if ((!is.null(used)) & (length(used)>0)) {
         allused <- unlist(used)
         if (!is.null(allused))
@@ -450,10 +594,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                 PIA[1, , , ,] <- PIA[1, , , ,] * rep(rep(t(used),rep(n,S*K)),nmix)
             }
             else for (r in 1:R) {
-                use <- array (0, dim=c(S,K))
-                temp <- t(used[[r]])  # dim (S',K')
-                use[1:nrow(temp), 1:ncol(temp)] <- temp  # padding
-                PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
+                ## 2011-11-28 - fix bug Deb Wilson 25/11/2011
+                if (!is.null(used[[r]])) {
+                    use <- array (0, dim=c(S,K))
+                    temp <- t(used[[r]])  # dim (S',K')
+                    use[1:nrow(temp), 1:ncol(temp)] <- temp  # padding
+                    PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
+                }
             }
         }
     }

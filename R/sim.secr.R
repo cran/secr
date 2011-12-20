@@ -10,6 +10,7 @@
 ## 2010 06 30 memory allocation error in sim.detect
 ## 2011 09 26 detector checks use .localstuff
 ## 2011 11 08 uses getDensityArray and predictDsurface
+## 2011 11 28 new behavioural resposne models
 ############################################################################################
 
 simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1, ...)
@@ -22,6 +23,9 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 {
 
 ##  check input
+
+    if (any(c("bn", "bkn", "bkc", "Bkc") %in% tolower(object$vars)))
+        stop ("simulate works only with binary behavioural responses")
 
     if (!inherits(object,'secr'))
         stop ("requires 'secr' object")
@@ -191,7 +195,8 @@ print.secrlist <- function(x,...) {
 sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRUE)
 ## popnlist is always a list of popn objects
 {
-    Markov <- 'B' %in% object$vars
+
+    ## we use fake CH to extract parameter value dependent on prev capt
     dummycapthist<- function (capthist, pop, fillvalue=1) {
         if (inherits(capthist, 'list')) {
             output <- list()
@@ -206,6 +211,12 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             newdim <- dim(capthist)
             newdim[1] <- nrow(pop[[1]])
             output <- array(fillvalue, dim = newdim)
+            ## CAPTURE ON LAST OCCASION
+            ## trick to keep array valid without misleading
+            if (length(newdim)==2)
+                output[,newdim[2]] <- 1
+            else
+                output[,,newdim[3]] <- 1
             class(output) <- 'capthist'
             traps(output) <- traps(capthist)
             session(output) <- session(capthist)
@@ -213,6 +224,15 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             output
         }
     }
+
+    ## process behavioural responses
+    Markov <- any(c('B','Bk','K') %in% object$vars)
+    btype <- which (c("b", "bk", "k") %in% tolower(object$vars))
+    if (length(btype) > 1)
+        stop ("all behavioural responses must be of same type in sim.detect")
+    if (length(btype) == 0)
+        btype <- 0
+
     ## setup
     MS <- inherits(object$capthist,'list')
     N <- sapply(popnlist, nrow)
@@ -226,7 +246,8 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
     realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
         object$fixed)  # naive
 
-    if ('b' %in% object$vars) {
+    ## allow for behavioural response
+    if (btype > 0) {
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
             object$groups, object$dframe)
@@ -298,9 +319,6 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
         if (is.null(used)) used <- rep(1,s*K)
         NR <- N[sessnum]
 
-## 2010-06-30 following call tries to allocate too much memory
-## 2010-12-02 fixed by reducing safety margin for detectedXY, signal
-##            from 100 to 10
         if (detector(session.traps) %in% .localstuff$exclusivedetectors) {
             maxdet <- NR * s
         }
@@ -325,6 +343,7 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             as.double(session.animals),
             as.double(trps),
             as.integer(used),
+            as.integer(btype),
             as.integer(Markov),
             as.integer(binomN),                # used only for count detector checked 2010-12-01
             as.double(object$details$cutval),  # detection threshold on transformed scale

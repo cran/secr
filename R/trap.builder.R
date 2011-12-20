@@ -90,7 +90,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     if (is.null(frame)) {
         if (is.null(region)) {
-            stop ("specify at least one of region or frame")
+            stop ("specify at least one of 'region' or 'frame'")
         }
         SPDF <- inherits(region, 'SpatialPolygonsDataFrame')
         if (!SPDF) {

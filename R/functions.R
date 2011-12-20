@@ -465,6 +465,7 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
     ##  temp2[ , names(fixed.dp)] <- t(sapply(fixed.dp, rep, nrw))    ## fixed
     temp2[ , names(fixed.dp)] <- sapply(fixed.dp, rep, nrw)    ## fixed
     as.matrix(temp2)
+
 }
 ############################################################################################
 
@@ -516,7 +517,7 @@ getD <- function (designD, beta, mask, parindx, link, fixed,
 ###############################################################################
 
 secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
-    design0, capthist, mask, detectfn, CL, groups, details, logmult,
+    design0, designphi, capthist, mask, detectfn, CL, groups, details, logmult,
     dig = 3, betaw = 10)
 
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
@@ -528,6 +529,9 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 # details$trace=T sends a one-line report to the screen
 
 {
+    minprob <- details$minprob
+    if (is.null(minprob)) minprob <- 1e-50
+
     if (ms(capthist))
         sessionlevels <- session(capthist)
     else
@@ -549,13 +553,24 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
     #--------------------------------------------------------------------
     # Detection parameters
-    realparval  <- makerealparameters (design, beta, parindx, link, fixed)
-    realparval0 <- makerealparameters (design0, beta, parindx, link, fixed)
-
+    detparindx <- parindx[!(names(parindx) %in% c('D','phi'))]
+    detlink <- link[!(names(link) %in% c('D','phi'))]
+    realparval  <- makerealparameters (design, beta, detparindx, detlink, fixed)
+    realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixed)
     #--------------------------------------------------------------------
 
-    minprob <- details$minprob
-    if (is.null(minprob)) minprob <- 1e-50
+    #--------------------------------------------------------------------
+    # Turnover parameters
+    if (is.null(details$intervals)) {
+        turnparval <- matrix(0, nrow=0, ncol=0)
+    }
+    else {
+        turnparindx <- parindx[names(parindx) %in% c('phi')]
+        turnlink <- link[names(link) %in% c('phi')]
+        turnparval  <- makerealparameters (designphi, beta, turnparindx, turnlink, fixed)
+    }
+    #--------------------------------------------------------------------
+
 
     #--------------------------------------------------------------------
     # Density
@@ -583,17 +598,31 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             session.mask     <- mask[[sessnum]]
             session.grp      <- grp[[sessnum]]
             session.xy <- 0
+            session.intervals <- details$intervals[[sessnum]]
         }
         else {
             session.capthist <- capthist
             session.traps    <- traps(capthist)
             session.mask     <- mask
             session.grp      <- grp
+            session.intervals <- details$intervals
         }
 
         nc   <- nrow(session.capthist)
         s    <- ncol(session.capthist)
         m    <- nrow(session.mask)
+        sessg <- min (sessnum, design$R)
+        if (is.null(session.intervals)) {
+            J <- 1
+            session.intervals <- rep(0,s-1)
+            designphiPIA <- 0
+        }
+        else {
+            gaps <- session.intervals[session.intervals>0]
+            J <- length(gaps)
+            designphiPIA <- designphi$PIA[sessg,1:nc,1:J,]
+        }
+
         cell <- attr(session.mask,'area')
         session.mask <- as.matrix(session.mask[,1:2])
 
@@ -646,8 +675,6 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             density <- 0
         else
             density <- D[1:m,,min(dim(D)[3],sessnum)]
-
-        sessg <- min (sessnum, design$R)
 
         #------------------------------------------
         # allow for scaling of detection parameters
@@ -754,11 +781,11 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 resultcode = integer(1)
             )
         }
-
         #-------------------------------------------
         # typical call (not 'presence' or 'unmarked'
         #-------------------------------------------
         else {
+
             temp <- .C('secrloglik', PACKAGE = 'secr',
                 as.integer(CL),       # 0 = full, 1 = CL
                 as.integer(dettype),  # 0 = multicatch, 1 = proximity, etc
@@ -780,10 +807,14 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 as.double(density),                            # density at each mask point x ngroup cols
                 as.double(Xrealparval),
                 as.double(Xrealparval0),
+                as.double(turnparval),
                 as.integer(nrow(Xrealparval)),                 # number of rows in lookup table
                 as.integer(nrow(Xrealparval0)),                # ditto, naive
+                as.integer(nrow(turnparval)),                  # ditto, turnover
                 as.integer(design$PIA[sessg,1:nc,1:s,1:K,]),   # index of nc,S,K,mix to rows in Xrealparval
-                as.integer(tempPIA0),                      # index of ngroup,S,K,mix to rows in Xrealparval0
+                as.integer(tempPIA0),                          # index of ngroup,S,K,mix to rows in Xrealparval0
+                as.integer(designphiPIA),                      # index of rows in turnparval
+                as.double(session.intervals),                  # number of intervals == ss-1
                 as.double(cell),                               # mask cell area
                 as.double(cuerate),                            # miscellaneous parameter
                 as.integer(detectfn),

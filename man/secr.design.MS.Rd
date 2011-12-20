@@ -38,10 +38,21 @@ detector.
 
 }
 \value{
-  A list with the components 
-  \item{designMatrices}{ list of reduced design matrices, one for each real detection parameter }
-  \item{parameterTable}{ index to row of the reduced design matrix for each real detection parameter; dim(parameterTable) = c(uniquepar, np), where uniquepar is the number of unique combinations of paramater values (uniquepar < \eqn{RnSK}) and np is the number of parameters in the detection model. }
-  \item{PIA}{ Parameter Index Array - index to row of parameterTable for a given session, animal, occasion and detector; dim(PIA) = c(R,n,S,K) }
+  
+  A list with the components
+  
+  \item{designMatrices}{ list of reduced design matrices, one for each
+    real detection parameter }
+  
+  \item{parameterTable}{ index to row of the reduced design matrix for
+  each real detection parameter; dim(parameterTable) = c(uniquepar, np),
+  where uniquepar is the number of unique combinations of paramater
+  values (uniquepar < \eqn{RnSK}) and np is the number of parameters in
+  the detection model. }
+
+  \item{PIA}{ Parameter Index Array - index to row of parameterTable for
+    a given session, animal, occasion and detector; dim(PIA) = c(R,n,S,K) }
+  
 }
 
 \examples{

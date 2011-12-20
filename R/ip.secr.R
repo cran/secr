@@ -4,12 +4,13 @@
 ## last changed 2009 09 12, 2009 09 14
 ## 2010 07 01 alpha detection function
 ## 2011 06 15 tidy up
+## 2011 12 20 maxtries argument
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3,
     min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
-    maxbox = 5, ...) {
+    maxbox = 5, maxtries = 2, ...) {
 
     ## ... passed to sim.popn e.g. buffer = 100, Ndist = 'fixed'
     ## boxsize may be vector of length np
@@ -46,13 +47,33 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         detectpar <- as.list(parval[-1])
         names(detectpar) <- pnames[-1]
         detectpar[['g0']] <- invodds(detectpar[['g0']])
-        if (is.null(mask))
-            popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
-        else
-            popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
-        simcapthist <- sim.capthist(traps, popn, detectfn, detectpar,
-            noccasions)
-        predictorfn (simcapthist, predictortype)
+        attempts <- 0
+        repeat {
+            if (is.null(mask))
+                popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
+            else
+                popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
+            simcapthist <- sim.capthist(traps, popn, detectfn, detectpar,
+                                        noccasions)
+            if (nrow(simcapthist)==0)
+                warning ("ip.secr: no captures in simulation", call. = FALSE)
+            else
+                if ((sum(abs(simcapthist)>0) - nrow(simcapthist)) < 1)
+                warning ("ip.secr: no re-captures in simulation", call. = FALSE)
+            predicted <- try (predictorfn (simcapthist, predictortype), silent = TRUE)
+            if (inherits(predicted, 'try-error'))
+                predicted <- NA
+            attempts <- attempts+1
+            if ((attempts >= maxtries) |
+                (!any(is.na(predicted)) & all(is.finite(predicted))))
+                break
+        }
+        if (attempts >= maxtries)
+            stop ("ip.secr: no successful simulation after ", maxtries,
+                  " attempts", call. = FALSE)
+        if (attempts > 1)
+            warning ("ip.secr: simulation repeated", call. = FALSE)
+        predicted
     }
 
     ## to test if current solution is within box

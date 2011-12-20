@@ -215,10 +215,10 @@ get.nmix <- function (model) {
         if (any(var.in.model('h3', model)))
             stop ("do not combine h2 and h3")
     }
-    if (any(var.in.model('h3', model)))
+    if (any(var.in.model('h3', model))) {
         nmix <- 3
-##    if ((nmix == 3))
-##        stop ('3-part mixtures not yet implemented')
+        warning ("implementation of 3-part mixtures is not reliable")
+    }
     nmix
 }
 
