@@ -328,6 +328,13 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             ## maxdet <- NR * s * K * 10
             maxdet <- NR * s * K * maxperpoly
         }
+        miscparm <- object$details$cutval
+        miscparm <- ifelse (is.null(miscparm), 0, miscparm)
+        if ((object$detectfn==12) || (object$detectfn==13)) {
+            ## muN, sdN
+            miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
+        }
+
         temp <- .C('simsecr', PACKAGE = 'secr',
             as.integer(dettype),
             as.double(Xrealparval0),
@@ -346,13 +353,13 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             as.integer(btype),
             as.integer(Markov),
             as.integer(binomN),                # used only for count detector checked 2010-12-01
-            as.double(object$details$cutval),  # detection threshold on transformed scale
+            as.double(miscparm),
             as.integer(object$detectfn),
             as.integer(maxperpoly),
             n = integer(1),
             caught = integer(NR),
             detectedXY = double (maxdet*2),
-            signal = double (maxdet),
+            signal = double (maxdet*2),
             value = integer(NR*s*K),
             resultcode = integer(1)
         )
@@ -383,11 +390,13 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
         }
         if ((dettype %in% c(5)) && (temp$n>0)) {
             nd <- sum(abs(w))
-            attr(w, 'signal') <- temp$signal[1:nd]
+            signal(w) <- temp$signal[1:nd]
+            if ((object$detectfn==12) || (object$detectfn==13))
+                noise(w) <- temp$signal[(nd+1):(2*nd)]
             attr(w, 'cutval') <- object$details$cutval
         }
         else {
-            attr(w, 'signal') <- NULL
+            attr(w, 'signalframe') <- NULL
             attr(w, 'cutval') <- NULL
         }
         if ((dettype %in% c(3,4,6,7)) && (temp$n>0)) {

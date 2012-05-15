@@ -49,7 +49,7 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
     computing log interval for realised N}
 
   \item{RN.method}{ character string for method used to calculate
-  sampling variance of realised N (RN). `Poisson' or `MSPE'.}
+  realised N (RN) and its sampling variance. `poisson' or `MSPE'.}
 
 }
 \details{
@@ -73,7 +73,11 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   may be a SpatialPolygonsDataFrame object (see package \pkg{sp}), and a
   raster mask will be constructed on the fly using the specified
   spacing. See \code{\link{make.mask}} for an example importing a
-  shapefile to a SpatialPolygonsDataFrame. 
+  shapefile to a SpatialPolygonsDataFrame.
+
+  Note: The option of specifying a polygon rather than a mask for
+  \code{region} does not work if the density model in \code{object} uses
+  spatial covariates: these must be passed in a mask.
   
   Group-specific N has yet to be implemented.
 
@@ -111,22 +115,29 @@ saved as the attribute `region' (see Examples).
   The estimates of expected and realised \eqn{N} are generally very
   similar, or identical, but realised \eqn{N} usually has lower
   estimated variance, especially if the \eqn{n} detected animals
-  comprise a large fraction.
+  comprise a large fraction. 
  
-  Realised \eqn{N} is given by \eqn{R(N) = n + \int_B (1 -
-  p.(X))D(X) dX}{R(N) = n + integral_over_B (1 - p.(X))D(X) dX} (the
-  second term represents undetected animals). The sampling variance of
+  Realised \eqn{N} is given by \eqn{R(N) = n + \int_B (1 - p.(X))D(X)
+  dX}{R(N) = n + integral_over_B (1 - p.(X))D(X) dX} (the second term
+  represents undetected animals). This definition strictly holds only
+  when region B is at least as large as the region of integration used
+  to fit the model; only with this condition can we be sure all \eqn{n}
+  detected animals have centres within B. The sampling variance of
   \eqn{R(N)}, technically a mean square prediction error (Johnson et al.
   2010), is approximated by summing the expected Poisson variance of the
   true number of undetected animals and a delta-method estimate of its
   sampling variance, obtained as for \eqn{E(N)}.
 
-  By default, a shortcut is used to compute realised \eqn{N} and its
-  sampling variance. With this option (RN.method = `Poisson') the
-  previously estimated \eqn{E(N)} is used as an estimate of realised
-  \eqn{N}, and the sampling variance is the sampling variance of
-  \eqn{E(N)} minus the estimate of \eqn{E(N)} (representing Poisson
-  process variance).
+  By default, a shortcut is used to compute the sampling variance of
+  realised \eqn{N}. With this option (RN.method = `poisson') the
+  sampling variance is the sampling variance of \eqn{E(N)} minus the
+  estimate of \eqn{E(N)} (representing Poisson process variance). This
+  has been found to give reliable confidence intervals in simulations
+  (Efford and Fewster 2012).
+
+  If RN.method is neither `MSPE' nor `poisson' (ignoring case) then
+  the estimate of expected \eqn{N} is also used for realised \eqn{N},
+  and the `poisson' shortcut variance is used.
   
   Johnson et al. (2010) use the notation \eqn{\mu(B)} for expected
   \eqn{N} and \eqn{N(B)} for realised \eqn{N} in region \eqn{B}.
@@ -147,8 +158,8 @@ Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
-Efford, M. G. (submitted) Estimating population size by spatially
-explicit capture--recapture.
+Efford, M. G. and Fewster, R. M. (2012) Estimating population size by spatially
+explicit capture--recapture. Oikos (In review)
 
 Johnson, D. S., Laake, J. L. and Ver Hoef, J. M. (2010) A model-based
 approach for making ecological inference from distance sampling

@@ -97,7 +97,9 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     if (!is.null(file)) {
         if (ncol(temp)>2) {
             if (ncol(temp)>3)
-                temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse='')
+# 2012-01-21
+#               temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse='')
+                temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse=' ')
             else
                 temp2 <- temp[,3]
             splitfield <- matrix(unlist(strsplit(as.character(temp2),'/')),
@@ -137,7 +139,6 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 else {
                     rownam <- rownames(traps)
                 }
-
                 tempcon <- textConnection(splitfield[,2, drop = FALSE])
                 covariates(traps) <- data.frame(read.table(tempcon))
                 rownames(covariates(traps)) <- rownam

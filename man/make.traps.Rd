@@ -138,14 +138,14 @@ for (id in c("numx", "numy", "alphax", "alphay", "numxb",
     "numyb"))
 {
     temptrap <- make.grid(nx = 7, ny = 5, ID = id)
-    plot (temptrap, border = 10, lab = TRUE, offset = 7, 
+    plot (temptrap, border = 10, label = TRUE, offset = 7, 
         gridl = FALSE)
 }
 
 temptrap <- make.grid(nx = 7, ny = 5, hollow = TRUE)
-plot (temptrap, border = 10, lab = TRUE, gridl = FALSE)
+plot (temptrap, border = 10, label = TRUE, gridl = FALSE)
 
-plot(make.circle(n = 20, spacing = 30), lab = TRUE, offset = 9)
+plot(make.circle(n = 20, spacing = 30), label = TRUE, offset = 9)
 summary(make.circle(n = 20, spacing = 30))
 
 

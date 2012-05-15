@@ -151,11 +151,12 @@ These quantities are related to CVn and CVa as follows:
 }
 
 \examples{
+
+\dontrun{
 ## extract derived parameters from a model fitted previously
 ## by maximizing the conditional likelihood 
 derived (secrdemo.CL)
 
-\dontrun{
 ## what happens when sampling variance is conditional on mask N?
 derived(secrdemo.CL, distribution = "binomial")
 ## fitted g0, sigma

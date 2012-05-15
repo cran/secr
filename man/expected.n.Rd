@@ -81,10 +81,12 @@ one per cluster. For multi-session data, a list of such vectors.
 \examples{
 
 expected.n(secrdemo.0)
+
+\dontrun{
 expected.n(secrdemo.0, bycluster = TRUE)
 expected.n(ovenbird.model.D)
 
-\dontrun{
+## Clustered design
 mini <- make.grid(nx = 3, ny = 3, spacing = 50, detector =
     "proximity")
 tempgrids <- trap.builder (cluster = mini , method = "all",

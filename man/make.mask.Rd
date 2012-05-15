@@ -9,7 +9,7 @@ A mask object is a set of points with optional attributes.
 }
 
 \usage{
-make.mask(traps, buffer = 100, spacing = NULL, nx = 64, 
+make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64, 
     type = "traprect", poly = NULL, poly.habitat = TRUE,
     keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, ...)
 }
@@ -19,8 +19,9 @@ make.mask(traps, buffer = 100, spacing = NULL, nx = 64,
   \item{buffer}{ width of buffer in metres }
   \item{spacing}{ spacing between grid points (metres) }
   \item{nx}{ number of grid points in `x' direction }
+  \item{ny}{ number of grid points in `y' direction (type = `rectangular') }
   \item{type}{ character string for method to use (`traprect',
-  `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer') }
+  `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer', `rectangular') }
   \item{poly}{ bounding polygon to which mask should be clipped (see Details) }
   \item{poly.habitat}{ logical for whether poly represents habitat or
   its inverse (non-habitat)}
@@ -56,6 +57,9 @@ centred on `clusters' of detectors generated with
 \code{\link{make.systematic}}). The `clusterbuffer' method resembles
 `trapbuffer', but is usually faster when traps are arranged in clusters
 because it starts with a `clusterrect' mask.
+
+The `rectangular' method constructs a simple rectangular mask with the
+given nx, ny and spacing. 
 
 If \code{poly} is specified, points outside \code{poly} are dropped. The
 `polygon' method places points on a rectangular grid clipped to the
@@ -147,6 +151,8 @@ seaPossumMask <- make.mask(traps(possumCH), buffer = 1000,
     type = "traprect", poly = possumarea, poly.habitat = FALSE)
 plot(seaPossumMask)
 plot(traps(possumCH), add = T)
+## this mask is not useful!
+
 }
 
 %% ## OR, as this is a simple polygon, just...

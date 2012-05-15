@@ -3,26 +3,25 @@
 #
 ## define a local environment (in namespace?) for temporary variables e.g. iter
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
+## 2012-04-13 pointsInPolygon extended to allow mask 'polygon'
 ###############################################################################
 
 .localstuff <- new.env()
 .localstuff$validdetectors <- c('single','multi','proximity','count',
-                                'polygonX', 'transectX',
-                                'signal', 'polygon', 'transect', 'times',
+    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
                                 'cue', 'unmarked','presence')
 .localstuff$simpledetectors <- c('single','multi','proximity','count')
 .localstuff$individualdetectors <- c('single','multi','proximity','count',
-                                'polygonX', 'transectX',
-                                'signal', 'polygon', 'transect', 'times',
-                                'cue')
+    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
+                                     'cue')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
-                                'signal','cue', 'unmarked','presence')
+    'signal', 'signalnoise', 'cue', 'unmarked','presence')
 .localstuff$polydetectors <- c('polygon','transect','polygonX','transectX')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
 ## 'signal' is not a count detector 2011-02-01
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked')
-.localstuff$detectors3D <- c('proximity','count','signal','polygon','transect',
-                             'times','cue','unmarked','presence')
+.localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
+                             'transect','times','cue','unmarked','presence')
 .localstuff$iter <- 0
 .localstuff$detectionfunctions <-
         c('halfnormal',
@@ -36,8 +35,9 @@
       'cumulative gamma',
       'binary signal strength',
       'signal strength',
-      'signal strength spherical')
-
+      'signal strength spherical',
+      'signal-noise',
+      'signal-noise spherical')
 
 detectionfunctionname <- function (fn) {
     .localstuff$detectionfunctions[fn+1]
@@ -61,13 +61,15 @@ parnames <- function (detectfn) {
         c('g0','sigma','z'),
         c('b0','b1'),
         c('beta0','beta1', 'sdS'),    ## include cutval?
-        c('beta0','beta1', 'sdS'),     ## include cutval?
-        ,,,,,,,,
+        c('beta0','beta1', 'sdS'),    ## include cutval?
+        c('beta0','beta1', 'sdS','muN','sdN'),
+        c('beta0','beta1', 'sdS','muN','sdN'),
+        ,,,,,,
         c('g0','sigma')    ## 20
     )
 }
 
-valid.detectfn <- function (detectfn, valid = c(0:3,5:11)) {
+valid.detectfn <- function (detectfn, valid = c(0:3,5:13)) {
     if (is.null(detectfn))
         stop ("requires 'detectfn'")
     if (is.character(detectfn))
@@ -102,6 +104,7 @@ detectorcode <- function (object, MLonly = TRUE) {
         cue = 9,
         unmarked = 10,
         presence = 11,
+        signalnoise = 12,
         -2)
     if (MLonly) {
         detcode <- ifelse (detcode==-1, 0, detcode)
@@ -275,7 +278,7 @@ spatialscale <- function (object, detectfn, session = '') {
 
 ###############################################################################
 
-pointsInPolygon <- function (xy, poly) {
+pointsInPolygon <- function (xy, poly, logical = TRUE) {
     xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
     if (inherits(poly, "SpatialPolygonsDataFrame")) {
         if (!require (sp))
@@ -283,6 +286,27 @@ pointsInPolygon <- function (xy, poly) {
         xy <- SpatialPoints(xy)
         OK <- overlay (xy, poly)
         !is.na(OK)
+    }
+    else if (inherits(poly, 'mask')) {   2012-04-13
+        if (ms(poly))
+            stop ("multi-session masks not supported")
+        sp <- spacing(poly)
+        minx <- min(poly$x)
+        miny <- min(poly$y)
+        mask <- sweep(poly, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
+        mask <- round(mask/sp) + 1
+        xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
+        xy <- round(xy/sp) + 1
+        xy[xy<0] <- NA
+        xy[,1][xy[,1]>max(mask$x)] <- NA
+        xy[,2][xy[,2]>max(mask$y)] <- NA
+        maskmatrix <- matrix(0, ncol = max(mask$y), nrow = max(mask$x))
+        maskmatrix[as.matrix(mask)] <- 1:nrow(mask)
+        inside <- maskmatrix[as.matrix(xy)]
+        inside[is.na(inside)] <- 0
+        if (logical)
+            inside <- inside > 0
+        inside
     }
     else {
         checkone <- function (xy1) {

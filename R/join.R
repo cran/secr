@@ -15,8 +15,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         newID <- animalID(CH)
         occ <- occasion(CH)
         newocc <- occ + previous
-        trap <- trap(CH)
-        newtrap <- trap
+        newtrap <- trap(CH)
         df <- data.frame(newID = newID, newocc = newocc, newtrap = newtrap,
                          alive = alive(CH), sess = rep(sess, length(occ)),
                          stringsAsFactors = FALSE)
@@ -44,7 +43,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     }
     df <- do.call(rbind, df)
     n <- length(unique(df$newID))
-
     condition.usage <- function (trp, i, nocc) {
         us <- matrix(0, nrow=nrow(trp), ncol=sum(nocc))
         s1 <- c(1, cumsum(nocc)+1)[i]
@@ -89,7 +87,8 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         tempnew[cbind(df$newID, df$newocc)] <- as.numeric(df$newtrap) * alivesign
     }
     else {
-        df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
+## FUDGE 2011-12-23 - not for publication
+        df$newtrap <- factor(df$newtrap, levels=1:nrow(newtraps)) #rownames(newtraps))
         tempnew <- table(df$newID, df$newocc, df$newtrap)
         alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
         alivesign[is.na(alivesign)] <- TRUE
@@ -176,3 +175,30 @@ unjoin <- function (object, interval, ...) {
     return(newobj)
 }
 
+unRMarkInput <- function(df) {
+    if (!is.data.frame(df))
+        stop("requires dataframe input")
+    if (!all(c('ch','freq') %in% names(df)))
+        stop ("ch and freq are required fields")
+    nocc <- nchar(df$ch)
+    if (length(unique(nocc))>1)
+        stop ("ch must be a constant-length string of 0s and 1s")
+    nocc <- nocc[1]
+    freq <- df$freq
+    alive <- sign(freq)
+    freq <- abs(freq)
+    freq <- rep(1:nrow(df), freq)
+    alive <- alive[freq]
+    ch <- df$ch[freq]
+    CH <- matrix(as.numeric(unlist(sapply(ch, strsplit, ''))), byrow = TRUE, ncol = nocc)
+    class(CH) <- 'capthist'
+    # allow deads
+    last <- function(x) which.max(cumsum(x))
+    CH[cbind(1:nrow(CH), apply(CH,1,last))] <- alive
+    # transfer covariates if present
+    if (ncol(df)>2) {
+        cov <- df[,-match(c('ch','freq'),names(df)), drop = FALSE]
+        covariates(CH) <- cov[freq,]
+    }
+    CH
+}

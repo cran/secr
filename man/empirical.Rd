@@ -24,7 +24,7 @@ Empirical Variance of H-T Density Estimate
 \usage{
 
 derived.nj ( nj, esa, se.esa,  method = "SRS", xy = NULL,
-    alpha = 0.05, loginterval = TRUE ) 
+    alpha = 0.05, loginterval = TRUE, area = NULL ) 
 
 derived.mash ( object, sessnum = NULL,  method = "SRS",
     alpha = 0.05, loginterval = TRUE)
@@ -51,6 +51,7 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   \item{xy}{ dataframe of x- and y- coordinates (\code{method = "local"} only)}
   \item{alpha}{ alpha level for confidence intervals }
   \item{loginterval}{ logical for whether to base interval on log(N)}
+  \item{area}{ area of region for method = "binomial" (hectares) }
   \item{sessnum}{ index of session in object$capthist for which output required }
   \item{cluster}{ `traps' object for a single cluster}
   \item{buffer}{ width of buffer in metres (ignored if \code{mask}
@@ -61,6 +62,18 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
 }
 
 \details{
+
+  \code{derived.nj} accepts a vector of counts (\code{nj}), along with
+  \eqn{\hat{a}}{a-hat} and \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}.  The
+  argument \code{esa} may include both \eqn{\hat{a}}{a-hat} and
+  \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}) - any form will do if it can
+  be coerced to a vector of length 2. In the special case that \code{nj}
+  is of length 1, or \code{method} takes the values `poisson' or
+  `binomial', the variance is computed using a theoretical variance
+  rather than an empirical estimate. The value of \code{method}
+  corresponds to `distribution' in \code{\link{derived}}, and defaults to
+  `poisson'. For \code{method = 'binomial'} you must specify \code{area}
+  (see Examples).
 
   \code{derived.cluster} accepts a model fitted to data from clustered
   detectors; each \link{cluster} is interpreted as a replicate
@@ -73,12 +86,6 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   cluster is a replicate sample: the function uses the vector of cluster
   frequencies (\eqn{n_j}) stored as an attribute of the mashed
   \code{capthist} by \code{mash}.
-
-  \code{derived.nj} accepts a vector of counts (\code{nj}), along with
-  \eqn{\hat{a}}{a-hat} and \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}.  The
-  argument \code{esa} may include both \eqn{\hat{a}}{a-hat} and
-  \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}) - any form will do if it can
-  be coerced to a vector of length 2.
 
   \code{derived.external} combines detection parameter estimates from a
   fitted model with a vector of frequencies \code{nj} from replicate
@@ -192,6 +199,11 @@ derived.nj(nj, temp["esa",1:2])
 ## The result is very close to that reported by Dawson & Efford
 ## from a 2-D Poisson model fitted by maximizing the full likelihood.
 
+## If nj vector has length 1, a theoretical variance is used...
+msk <- ovensong.model.1$mask
+A <- nrow(msk) * attr(msk, 'area')
+derived.nj (sum(nj), temp["esa",1:2], method = 'poisson')
+derived.nj (sum(nj), temp["esa",1:2], method = 'binomial', area = A)
 
 \dontrun{
 

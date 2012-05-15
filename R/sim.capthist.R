@@ -1,4 +1,4 @@
-###############################################################################
+##############################################################################
 ## package 'secr'
 ## sim.capthist.R
 ## simulate capture histories
@@ -178,9 +178,16 @@ sim.capthist <- function (
         if (is.character(detectfn))
             detectfn <- detectionfunctionnumber(detectfn)
         if (detector(traps) %in% c('cue','signal')) {
-            if (detectfn != 10)
+            if (!(detectfn %in% c(10,11))) {
                 warning ("forcing detection function = 10 for signal detectors")
-            detectfn <- 10
+                detectfn <- 10
+            }
+        }
+        else if (detector(traps) %in% c('signalnoise')) {
+            if (!(detectfn %in% c(12,13))) {
+                warning ("forcing detection function = 12 for signalnoise detectors")
+                detectfn <- 12
+            }
         }
 
         ## Detection function parameters
@@ -196,6 +203,8 @@ sim.capthist <- function (
         ##    9  binary signal strength (b0 = (beta0-c)/sdS, b1 = beta1/sdS)
         ##   10  signal strength (signal detectors only)
         ##   11  signal strength with spherical spreading (signal detectors only)
+        ##   12  signal-noise (signalnoise detectors only)
+        ##   13  signal-noise with spherical spreading (signalnoise detectors only)
 
         ## extended for uniform (detectfn=4) 2010-06-13
         if (detectfn %in% c(0:4))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
@@ -206,12 +215,14 @@ sim.capthist <- function (
             tx = 'identity')
         if (detectfn %in% c(10,11))  defaults <- list(beta0 = 90, beta1=-0.2,
             sdS = 2, cutval = 60, sdM = 0, tx = 'identity')
+        if (detectfn %in% c(12,13))  defaults <- list(beta0 = 90, beta1=-0.2,
+            sdS = 2, cutval = 10, muN = 40, sdN = 2, sdM = 0, tx = 'identity')
         else defaults <- c(defaults, list(truncate = 1e+10))
 
         ## changed 2011-01-28
         defaults$binomN <- 0
         if (detector(traps) == 'proximity') defaults$binomN <- 1
-        if (detector(traps) == 'signal') defaults$binomN <- 1
+        if (detector(traps) %in% c('signal','signalnoise')) defaults$binomN <- 1
         if (detector(traps) == 'cue') defaults$cuerate <- 3
         if (!is.null(binomN)) detectpar$binomN <- binomN
         detectpar <- replacedefaults(defaults, detectpar)
@@ -230,16 +241,19 @@ sim.capthist <- function (
         }
 
         # Acoustic detection function parameters
-        if (detectfn %in% c(10,11)) {
+        if (detectfn %in% c(10,11,12,13)) {
             tx <- detectpar$tx
             cutval <- detectpar$cutval
             sdM <- detectpar$sdM
             beta0 <- expand(detectpar$beta0, noccasions)
             beta1 <- expand(detectpar$beta1, noccasions)
             sdS   <- expand(detectpar$sdS, noccasions)
+            muN   <- expand(detectpar$muN, noccasions)
+            sdN   <- expand(detectpar$sdN, noccasions)
             validatepar(beta0, c(-Inf,Inf))
             validatepar(beta1, c(-Inf,Inf))
             validatepar(sdS, c(0,Inf))
+            validatepar(sdN, c(0,Inf))
         }
         else if (detectfn %in% c(9)) {
             g0 <- expand(detectpar$b0, noccasions)
@@ -394,7 +408,7 @@ sim.capthist <- function (
         }
         else
 
-        if (detector(traps) %in% c('signal','cue')) {
+        if (detector(traps) %in% c('cue','signal','signalnoise')) {
             if (detectpar$binomN != 1)
                 stop ("binomN != 1 not yet implemented for signal detectors")
             temp <- .C("trappingsignal", PACKAGE = 'secr',
@@ -402,6 +416,8 @@ sim.capthist <- function (
                 as.double(beta1),
                 as.double(sdS),
                 as.double(cutval),
+                as.double(muN),       # used only if signalnoise detector type
+                as.double(sdN),       # used only if signalnoise detector type
                 as.double(sdM),
                 as.integer(noccasions),
                 as.integer(k),
@@ -413,20 +429,18 @@ sim.capthist <- function (
                 n = integer(1),
                 caught = integer(N),
                 signal = double(N*noccasions*k),
-                value = integer(N*noccasions*k),
-                resultcode = integer(1)
+                noise = double(N*noccasions*k),
+                value = integer(N*noccasions*k),    # detected/not detected
+                resultcode = integer(1)             # 0,1,2
             )
             if (temp$resultcode != 0)
-                stop ("call to 'trappingsignal' failed")
+                stop ("call to 'trappingsignal' failed with resultcode ", temp$resultcode)
             w <- array(dim=c(noccasions, k, temp$n), dimnames =
                  list(1:noccasions,NULL,NULL))
             if (temp$n>0)  {
                 w[,,] <- temp$value[1:(temp$n * noccasions * k)]
             }
             w <- aperm(w, c(3,1,2))
-            if (temp$n>0)  {
-                attr(w, 'signal') <- temp$signal[1:sum(w)]
-            }
         }
         else
         if (detector(traps) == 'times') {
@@ -535,13 +549,17 @@ sim.capthist <- function (
         attr(w, 'detectpar') <- detectpar
         session(w)           <- '1'           ## dummy session values for now
 
+        if (detector(traps) %in% c('cue','signal','signalnoise')) {
+            if (temp$n>0)  {
+                signal(w) <- temp$signal[1:sum(w)]
+                if (detector(traps) %in% c('signalnoise'))
+                    noise(w) <- temp$noise[1:sum(w)]
+            }
+        }
+
         if (renumber && (temp$n>0)) rownames(w) <- 1:temp$n
-        ##   else rownames(w) <- (1:N)[as.logical(temp$caught)]
-        ## 2011-04-02 BUG FIX
         else {
-#            rown <- (1:N)[temp$caught>0]
-# test 2011-09-11
-rown <- rownames(popn)[temp$caught > 0]
+            rown <- rownames(popn)[temp$caught > 0]
             caught <- temp$caught[temp$caught>0]
             rownames(w) <- rown[order(caught)]
         }

@@ -5,9 +5,11 @@
 ## 2011-08-18 (fixed expected.n)
 ## 2011-09-26 fixed multi-session bug in region.N
 ## 2011-10-19 adjustments for speed, observe se.N
-## 2011-10-19 slowness is due to call of integralprw1 in sumDpdot
+## 2011-10-19 slowness is due to call of integralprw1 in sumDpdot, esp in betaRN
 ## 2011-10-20 minor editing
 ## 2011-10-21 predictD moved to Dsurface.R
+## 2012-04-18 bug fixed: nlowerbound and RN.method ignored when nsess>1
+## 2012-05-13 added explicit 'poisson' option in region.N for computation of RN
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -69,7 +71,8 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             out[[sess]] <- region.N (object, region = tempregion,
                 spacing = spacing, session = sess, group = group,
                 se.N = se.N, alpha = alpha, loginterval = loginterval,
-                keep.region = keep.region)
+                keep.region = keep.region, nlowerbound = nlowerbound,
+                RN.method = RN.method)
         }
         out
     }
@@ -183,8 +186,6 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                     cellarea, constant = FALSE, oneminus = TRUE)[1]
                 RN <- n + notdetected
                 ## evaluate gradient of RN wrt betas at MLE
-##                dNdbeta <- gradient (object$fit$par, betaRN, object =
-##                    object, region = region)
                 require (nlme)
                 dNdbeta <- fdHess (object$fit$par, betaRN, object = object,
                     region = regionmask)$gradient
@@ -192,7 +193,13 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta
                 seRN <- (notdetected + pdotvar)^0.5
             }
-            ## RN.method = 'poisson'
+            else if (RN.method == 'poisson') {
+                notdetected <- sumDpdot (object, sessnum, regionmask, D,
+                    cellarea, constant = FALSE, oneminus = TRUE)[1]
+                RN <- n + notdetected
+                seRN <- (seEN^2 - EN)^0.5
+            }
+            ## RN.method = 'EN'
             else {
                 RN <- EN
                 seRN <- (seEN^2 - EN)^0.5
@@ -212,6 +219,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             estimate = c(EN,RN),
             SE.estimate = c(seEN,seRN))
         ## lower bound added 2011-07-15
+        ## vector (0,n) means apply to R.N not E.N
         if (nlowerbound)
             temp <- add.cl (temp, alpha, loginterval, c(0, n))
         else
@@ -327,7 +335,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
         param <- object$details$param
         if (is.null(param))
             param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
-        gamma <- 1  ## DUMMY
+        miscparm <- object$details$cutval
 
         ## add density as third column of mask
         if (!(length(D) %in% c(1,nrow(mask))))
@@ -355,10 +363,9 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             as.integer(PIA),                # index of nc*,S,K to rows in realparval0
             as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
             as.double(cellarea),
-            as.double(gamma),
+            as.double(miscparm),
             as.integer(object$detectfn),
             as.integer(object$details$binomN),
-            as.double(object$details$cutval),
             as.integer(useD),
             a=double(n),
             resultcode=integer(1)

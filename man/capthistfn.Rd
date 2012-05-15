@@ -5,9 +5,11 @@
 \alias{alive}
 \alias{xy}
 \alias{signal}
+\alias{noise}
 \alias{alongtransect}
 \alias{xy<-}
 \alias{signal<-}
+\alias{noise<-}
 
 \title{ Dissect Spatial Capture History Object }
 
@@ -26,6 +28,8 @@ xy(object)
 xy(object) <- value
 signal(object)
 signal(object) <- value
+noise(object)
+noise(object) <- value
 }
 
 \arguments{
@@ -65,8 +69,7 @@ For \code{occasion}, a vector of numeric values, one per detection.
 
 For \code{xy}, a dataframe with one row per detection and columns `x' and `y'.
 
-%%For \code{signal} and \code{times}, a numeric vector with one element per detection.
-For \code{signal}, a numeric vector with one element per detection.
+For \code{signal} and \code{noise}, a numeric vector with one element per detection.
 
 If \code{object} has multiple sessions, the result is a list with one
 component per session.

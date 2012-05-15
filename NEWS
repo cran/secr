@@ -1,3 +1,94 @@
+Changes in version 2.3.2 (2012-05-15)
+
+New features or changed behaviour of old functions
+
+    o   new function randomHabitat() generates random binary landscape
+    that may be used with sim.popn()
+
+    o   secr.fit() 'biasLimit' argument sets threshold of bias for
+    buffer-width check, or turns off bias checking (biasLimit = NA)
+
+    o   mash() now works with signal detectors
+
+    o   secr.design.MS() trial with 3-D usage
+
+    o   read.traps() now accepts multiple covariate fields after '/'
+
+    o   plot.traps() new argument `labelclusters' to label points at
+    level of cluster rather separate traps
+
+    o   detector covariates may vary within a session. This uses a new
+    traps attribute 'timevaryingcov', and entails changes to
+    secr.design.MS()
+
+    o   subset.capthist() new argument 'droplowsignals' to apply a
+    new signal threshold at the level of whole sounds rather than specific
+    microphones, and verify() check relaxed to allow such data
+
+    o   new detector type 'signalnoise' for paired measurements of
+    signals and background noise (not fully documented)
+
+    o   capthist objects whose detector is of type 'signalnoise' include
+    a 'noise' attribute with extraction and replacement methods like
+    'signal'. make.capthist() has been adapted to accept noise
+    measurements in the field after signal (i.e. 6 or 7) and to accept
+    further signal covariates in other columns (not fully documented)
+
+    o   derived.nj() gives model-based variance estimates when nj is
+    scalar (length 1); new argument 'area' for binomial-n variance
+    calculation
+
+    o   sim.popn() argument 'D' may now specify a covariate in the
+    'core' mask, or a constant, to use for cell-specific density with
+    model2D = 'IHP'
+
+    o   make.mask() acquires new argument 'ny' used only with new type
+    'rectangular'
+
+    o   pointsInPolygon() accepts mask as polygon input, and acquires
+    new argument 'logical'
+
+    o   print.capthist() adjusted to allow NULL detector
+    (i.e. nonspatial data)
+
+    o   unRMarkInput() converts RMark dataframe to single-session
+    capthist object.
+
+Bugs fixed
+
+    o   plot.capthist() 'ncap' argument did not work with some detectors
+
+    o   make.capthist() scrambled the order of ancillary data (signal
+    strength, x-y coordinates) when input not sorted by animalID; this
+    may have prevented the fitting of models for signal-strength or
+    polygon detectors (also affects read.capthist(), read.DA(),
+    read.SPACECAP() and mash() as these call make.capthist()).
+
+    o   subset.capthist() lost mash-related attributes of the input
+    (n.mash, centres)
+
+    o   secr.fit() failed with fixed real parameters in version 2.3.1
+
+    o   make.mask() 'boundingbox' attribute sometimes out by spacing/2
+
+    o   region.N() 'nlowerbound' and 'RN.method' argements ignored when nsess>1
+
+    o   autoini() could fail when all detections at site of first capture
+
+    o   predict.secr failed with multi-session user-supplied 'newdata' not
+    containing 'session' (still required for mashed data)
+
+Known bugs
+
+    o   secr.fit() with signal detector: it is not effective to vary
+    cutval only via the 'details' argument - use subset.capthist on the
+    input data
+
+Other
+
+    o the 'possum' dataset was found to include animals that had been
+    re-tagged after previously losing a tag (see ?possum). 
+
 Changes in version 2.3.1 (2011-12-20)
 
 New features or changed behaviour of old functions

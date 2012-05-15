@@ -10,6 +10,7 @@
 ## 2010 08 28 traps renamed to trps
 ## 2010 11 01 naivesigma shifted outside autoini
 ## 2011 01 24 minor editing
+## 2012 04 19 added bad data check in naivesigma
 ############################################################################################
 
 naivesigma <- function (obsRPSV,trps,mask,detectfn,z) {
@@ -34,8 +35,11 @@ naivesigma <- function (obsRPSV,trps,mask,detectfn,z) {
         mask <- make.mask(trps, buffer = 10 * obsRPSV, nx=32)
     k <- nrow(trps)
     m <- nrow(mask)
-    temp <- try(uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
-        tol=0.001)$root)
+    if (obsRPSV <= 0)   ## added 2012-04-19
+        temp <- NA
+    else
+        temp <- try(uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
+                             tol=0.001)$root)
     ifelse (inherits(temp,'try-error'), NA, temp)
 }
 
@@ -99,6 +103,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
       gs0 <- rep(1,2*s*k)
       area <- attr(mask,'area')  # area of single mask cell
       param <- 0    ## default Borchers & Efford parameterisation
+      miscparm <- 1  ## dummy value
       temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
           as.integer(dettype),
           as.integer(param),
@@ -114,10 +119,9 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
           as.integer(gs0), # index of nc+1,S,K to rows in g0sigma0
           as.integer(1),
           as.double(area),
-          as.double(1),      # gamma (dummy)
+          as.double(miscparm),
           as.integer(detectfn),
           as.integer(0),     # binomN
-          as.double(0),      # cut
           as.integer(0),     # useD
           a=double(nc),
           resultcode=integer(1))
@@ -142,6 +146,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2)
 
     trps    <- traps(capthist)
     dettype <- detectorcode(trps)
+
     if (!(dettype %in% c(-1:5,8)))
         list(D=NA, g0=NA, sigma=NA)
     else {

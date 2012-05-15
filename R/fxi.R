@@ -79,7 +79,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
             identity = session.signal
         )
         if (object$detectfn == 11)
-            stop ("fxi.secr does not work with spherical spreading in 2.0")
+            stop ("fxi.secr does not work with spherical spreading at present")
     }
     else
         session.signal <- 0
@@ -135,10 +135,10 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     indices <- object$design$PIA[sessg,1:nc,1:s,1:K,]
 
     if (detector(session.traps)=='cue') {
-        cuerate <- exp(coef(object)['cuerate','beta'])
+        miscparm <- exp(coef(object)['cuerate','beta'])
     }
     else {
-        cuerate <- 1
+        miscparm <- details$cutval
     }
 
 # print(i)
@@ -191,11 +191,10 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         as.integer(nrow(Xrealparval)), # number of rows in lookup table
         as.integer(indices),           # index of nc,S,K,mix to rows in Xrealparval
         as.double(cell),
-        as.double(cuerate),
+        as.double(miscparm),
         as.integer(normal),
         as.integer(object$detectfn),
         as.integer(details$binomN),
-        as.double(details$cutval),
         as.double(details$minprob),
         value=double(nrow(X)),
         resultcode=integer(1))

@@ -127,7 +127,7 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
         if(is.null(max.mask)) {
             if (is.null(spacing))
                  spacing <- spacing(object)/3
-            max.mask <- make.mask (object, max.buffer, spacing,,  'trapbuffer', poly)
+            max.mask <- make.mask (object, max.buffer, spacing,,, 'trapbuffer', poly)
         }
         detectfn <- valid.detectfn(detectfn)
         binomN <- getbinomN (binomN, detector(object))   ## must now be traps object

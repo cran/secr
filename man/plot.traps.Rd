@@ -11,7 +11,7 @@
 \method{plot}{traps}(x, border = 100, label = FALSE, offset = c(6,6), add = FALSE,
   hidetr = FALSE, detpar = list(), txtpar = list(), bg = "white",
   gridlines = TRUE, gridspace = 100, gridcol = "grey", 
-  markused = FALSE, markvarying = FALSE, ...)
+  markused = FALSE, markvarying = FALSE, labelclusters = FALSE, ...)
 }
 
 \arguments{
@@ -30,19 +30,32 @@
   \item{markused}{ logical to distinguish detectors used on at least one
   occasion}
   \item{markvarying}{ logical to distinguish detectors whose usage varies among occasions }
+  \item{labelclusters}{ logical to label clusters}
   \item{\dots}{ arguments to pass to \code{eqscplot} }
 }
 \details{
-\code{offset} may also be a scalar value for equal displacement on the x and y axes. The \code{hidetr} option is most likely to be used when plot.traps is called by plot.capthist. See \code{\link{par}} and \code{\link{colours}} for more information on setting graphical parameters. The initial values of graphical parameters are restored on exit.
+  
+\code{offset} may also be a scalar value for equal displacement on the x
+and y axes. The \code{hidetr} option is most likely to be used when
+plot.traps is called by plot.capthist. See \code{\link{par}} and
+\code{\link{colours}} for more information on setting graphical
+parameters. The initial values of graphical parameters are restored on
+exit.
 
-Axes are not labeled. Use \code{\link{axis}} and \code{\link{mtext}} if necessary.
+Axes are not labeled. Use \code{\link{axis}} and \code{\link{mtext}} if
+necessary.
+
+\code{labelclusters} requires \code{x} to have attributes `clusterID' and
+`clustertrap'.
+
 }
 
 \value{
 None
 }
 
-\seealso{ \code{\link{plot}}, \code{\link{traps}} }
+\seealso{ \code{\link{plot}}, \code{\link{traps}},
+  \code{\link{clusterID}}  }
 
 \examples{
  temptrap <- make.grid()

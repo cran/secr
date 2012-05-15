@@ -129,7 +129,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         param <- object$details$param
         if (is.null(param))
             param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
-        gamma <- 1  ## DUMMY
+        miscparm <- object$details$cutval
         useD <- FALSE
         temp <- .C("integralprw1", PACKAGE = 'secr',
             as.integer(dettype),
@@ -146,10 +146,9 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             as.integer(PIA),                # index of nc*,S,K to rows in realparval0
             as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
             as.double(cell),
-            as.double(gamma),
+            as.double(miscparm),
             as.integer(object$detectfn),
             as.integer(object$details$binomN),
-            as.double(object$details$cutval),
             as.integer(useD),
             a=double(n),
             resultcode=integer(1)

@@ -125,7 +125,7 @@ netsites0509 <- read.traps(file = "netsites0509.txt",
     skip = 1, detector = "multi")
 temp <- read.table("ovencapt.txt", colClasses=c("character",
     "character", "numeric", "numeric", "character"))
-ovenCH <- make.capthist(temp, netsites0509, covnames=c("Sex","Age"))
+ovenCH <- make.capthist(temp, netsites0509, covnames=c("Sex"))
 
 }
 

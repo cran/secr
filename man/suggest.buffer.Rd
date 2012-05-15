@@ -145,6 +145,7 @@ The potential components of \code{control} are --
 
 \examples{
 
+\dontrun{
 temptraps <- make.grid()
 detpar <-  list(g0 = 0.2, sigma = 25)
 suggest.buffer(temptraps, "halfnormal", detpar, 5)
@@ -157,7 +158,6 @@ RB <- bias.D(50:150, temptraps, "hazard rate", detpar, 5)
 lines(RB)
 
 ## compare to esa plot
-\dontrun{
 esa.plot (temptraps, max.buffer = 150, spacing = 4, detectfn = 0,
   detectpar = detpar, noccasions = 5, as.density = F)
 }

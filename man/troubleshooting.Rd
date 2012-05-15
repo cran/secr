@@ -40,7 +40,9 @@ data.
 are of wildly different magnitude. This may happen when using
 covariates: ensure beta coefficients are similar (within a factor of
 5--10 seems adequate, but this is not based on hard evidence) by scaling
-any covariates you provide.
+any covariates you provide. This can be achieved by setting the
+\code{typsize} argument of \code{nlm} or the \code{parscale}
+control argument of \code{optim}.
 
 \item Examine the model. Boundary values (e.g., g0 near 1.0) may give
 problems. In the case of more complicated models you may gain insight by

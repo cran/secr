@@ -46,7 +46,8 @@ This yielded a density estimate of 2.26 possums / ha.
 Traps could catch at most one animal per day.  The live-trapped animals
 comprised 46 adult females, 33 adult males, 10 immature females and 11
 immature males; sex and/or age were not recorded for 4 individuals (M.
-Coleman unpubl. data).  One female possum was twice captured at two sites
+Coleman unpubl. data). These counts do not sum to the number of capture
+histories - see Note.  One female possum was twice captured at two sites
 on one day, having entered a second trap after being released; one
 record in each pair was selected arbitrarily and discarded.
 
@@ -88,6 +89,22 @@ Landcare Research, New Zealand.
 
 }
 
+\note{
+
+  A significant problem with the data used by Efford et al. (2005) was
+noticed recently. Five capture histories in possumCH are for animals
+that had lost a previous tag. A further three histories may also have
+been animals that were tagged previously or mis-recorded. Analyses that
+treat each previously tagged animal as a new individual are in error
+(this includes the published analyses, the pre-fitted models described
+here, and those in the vignette secr-densitysurfaces.pdf). All eight
+questionable histories are now indicated in possumCH with the logical
+covariate `prev.tagged'.
+
+Methods have not yet been developed to adjust for tag loss in SECR
+models. 
+}
+  
 \references{
 
 Borchers, D.L. and Efford, M.G. (2008) Spatially explicit maximum
@@ -121,6 +138,16 @@ summary(possumCH)
 ## compare & average pre-fitted models
 AIC(possum.model.0, possum.model.b, possum.model.h2)
 model.average(possum.model.0, possum.model.b, possum.model.h2)
+
+\dontrun{
+## Roughly estimate tag-loss error by dropping dubious histories
+## i.e. restrict to "not previously tagged"
+NPT <- !covariates(possumCH)$prev.tagged
+possum.model.0.NPT <- secr.fit(subset(possumCH,NPT), mask =
+    possummask, trace=F)
+predict(possum.model.0)[1,2]/ predict(possum.model.0.NPT)[1,2]
+## ...about 9\%
+}
 
 }
 

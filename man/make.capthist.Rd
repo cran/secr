@@ -10,7 +10,7 @@
 \usage{
 make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE,
-    cutval = NULL, tol = 0.01, noncapt = "NONE")
+    cutval = NULL, tol = 0.01, noncapt = "NONE", signalcovariates)
 }
 
 \arguments{
@@ -24,6 +24,8 @@ make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
   \item{cutval}{ numeric, threshold of signal strength for `signal' detector type }
   \item{tol}{ numeric, tolerance in metres when assigning coordinates for `transect' detector type }
   \item{noncapt}{ character value; animal ID used for `no captures' }
+  \item{signalcovariates}{character vector of field names from
+    `captures'}
 }
 
 \details{
@@ -93,6 +95,10 @@ is determined from the input, as is \code{noccasions} if it is not specified.
 attributes of \code{capthist}.
 
 Deaths during the experiment are represented as negative values in \code{capthist}.
+
+For `signal' and `signalnoise' detectors, the columns of \code{captures}
+identified in \code{signalcovariates} are saved along with signal
+strength measurements in the attribute `signalframe'.
 
 If the input has data from multiple sessions then the output is an
 object of class c("list","capthist") comprising a list of single-session

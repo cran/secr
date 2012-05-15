@@ -5,13 +5,16 @@
 ## 2011-10-20 generalized designD
 ## 2011-10-20 renamed 'grps' 'grouplevels'
 ## 2011-12-16 streamlined preparation of models
+## 2012-01-22 purged phi/turnover
+## 2012-01-31 experimental addition of parameter cut
+## 2012-04-06 'fixed' bug fixed (see functions.r)
 ################################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     buffer = NULL, CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL,
     link = list(), fixed = list(), timecov = NULL, sessioncov = NULL,
     groups = NULL, dframe = NULL, details = list(), method = 'Newton-Raphson',
-    verify = TRUE, trace = NULL, ...)
+    verify = TRUE, biasLimit = 0.01, trace = NULL, ...)
 
 {
 # Fit spatially explicit capture recapture model
@@ -61,6 +64,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             detectfn <- 10
             warning ("detectfn not specified; using signal strength (10)")
         }
+        else if (detector(traps(capthist)) %in% c('signalnoise')) {
+            detectfn <- 12
+            warning ("detectfn not specified; using signal-noise (12)")
+        }
         else {
             detectfn <- 0
         }
@@ -93,7 +100,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (detector(traps(capthist)) != 'multi') details$param <- 0
 
     ## 2011-02-06 to be quite clear -
-    if (detector(traps(capthist)) %in% c(.localstuff$exclusivedetectors, 'proximity','signal'))
+    if (detector(traps(capthist)) %in% c(.localstuff$exclusivedetectors,
+                                         'proximity','signal','signalnoise'))
         details$binomN <- 1;
 
 
@@ -216,22 +224,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
     defaultmodel <- list(D=~1, g0=~1, sigma=~1, z=~1, w=~1, pID=~1,
-        beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1, phi=~1)
+        beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
     model <- replace (defaultmodel, names(model), model)
 
-#    if (!(detectfn %in% c(1,3,7,8))) model$z <- NULL
-#    if (!(detectfn %in% c(5,6))) model$w <- NULL
-#    if (!(detectfn %in% c(9))) { model$b0 <- NULL; model$b1 <- NULL }
-#    if (!(detectfn %in% c(10,11))) { model$beta0 <- NULL; model$beta1 <- NULL; model$sdS <- NULL }
-#    if (!(detectfn %in% 0:8)) { model$g0 <- NULL; model$sigma <- NULL }
-#    if (is.null(details$intervals)) { model$phi <- NULL }
-#    if (is.null(q) | !nonID)
-#        model$pID <- NULL    ## no use for this parameter
-#    else
-#        if (model$pID != ~1)
-#            stop ("'pID' must be constant in this implementation")
-#     if (CL) model$D <- NULL
-
+    ## modelled parameters
     pnames <- switch (detectfn+1,
         c('g0','sigma'),           # 0 halfnormal
         c('g0','sigma','z'),       # 1 hazard rate
@@ -244,16 +240,18 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         c('g0','sigma','z'),       # 8
         c('b0','b1'),              # 9
         c('beta0','beta1','sdS'),  # 10
-        c('beta0','beta1','sdS'))  # 11
+        c('beta0','beta1','sdS'),  # 11
+        c('beta0','beta1','sdS'),  # 12
+        c('beta0','beta1','sdS'))  # 13
 
     if (!CL) pnames <- c('D', pnames)
-    if (!is.null(details$intervals)) pnames <- c(pnames, 'phi')
     if (!is.null(q) & nonID) {
 	pnames <- c(pnames, 'pID')
         if (model$pID != ~1)
             stop ("'pID' must be constant in this implementation")
     }
-    pnames <- pnames[!(pnames %in% names(fixed))]  ## drop fixed real parameters
+    fnames <- names(fixed)
+    pnames <- pnames[!(pnames %in% fnames)]        ## drop fixed real parameters
     model[!(names(model) %in% pnames)] <- NULL     ## select real parameters
     vars <-  unlist(lapply(model, all.vars))
 
@@ -301,19 +299,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     #################################
     defaultlink <- list(D='log', g0='logit', sigma='log', z='log', w='log', pID='logit',
         beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit',
-        cuerate='log', phi = 'logit')
+        cuerate='log', cut='identity')
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
-    link[!(names(link) %in% pnames)] <- NULL
 
-#    if (CL) link$D <- NULL
-#    if (!(detectfn %in% c(1,3,7,8))) link$z <- NULL
-#    if (!(detectfn %in% c(5,6))) link$w <- NULL
-#    if (!(detectfn %in% c(9))) { link$b0 <- NULL; link$b1 <- NULL }
-#    if (!(detectfn %in% c(10,11))) { link$beta0 <- NULL; link$beta1 <- NULL; link$sdS <- NULL }
-#    if (!(detectfn %in% 0:8)) { link$g0 <- NULL; link$sigma <- NULL }
-#    if (is.null(q) | !nonID) link$pID <- NULL
-#    if (details$nmix==1) link$pmix <- NULL
+# 2012-04-06    link[!(names(link) %in% pnames)] <- NULL
+# 2012-04-06    replace with
+    link[!(names(link) %in% c(fnames,pnames))] <- NULL
 
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
     if (!(detector(traps(capthist))=='cue')) link$cuerate <- NULL
@@ -326,19 +318,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     design <- secr.design.MS (capthist, model, timecov, sessioncov, groups, dframe)
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, dframe,
         naive = T, bygroup = !CL)
-
-    ##############################################
-    # Prepare turnover design matrices and lookup
-    # experimental addition 2011-11-30
-    ##############################################
-
-    if (!is.null(details$intervals)) {
-        memo ('Preparing turnover design matrices', details$trace)
-        intervalcov <- NULL
-        nTurnoverParameters <- integer(0)
-    }
-    designphi <- phi.designdata (capthist, model, intervalcov, sessioncov,
-        groups, dframe, intervals = details$intervals)
 
     ###############################
     # Prepare density design matrix
@@ -378,8 +357,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     np <- sapply(design$designMatrices, ncol)
     np <- c(D = nDensityParameters, np)
-    if (!is.null(details$intervals))
-        np <- c(np,  sapply(designphi$designMatrices, ncol))
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
     names(parindx) <- names(np)
@@ -411,7 +388,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        designD    = designD,
                        design     = design,
                        design0    = design0,
-                       designphi  = designphi,
                        capthist   = capthist,
                        mask       = mask,
                        detectfn   = detectfn,
@@ -429,17 +405,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ###############################
     ## 'start' is vector of beta values (i.e. transformed)
 
-    if (!is.null(start)) {
-        if (detector(traps(capthist))=='cue')
-            stopifnot (length(start) == (NP+1))
-        else
-            stopifnot (length(start) == NP)
-    }
-    else {
-
+    if (is.null(start)) {
         start3 <- list(D=NA, g0=NA, sigma=NA)
 
-          if (!(detectfn %in% c(9,10,11)) && !anypoly && !anytrans) {  ## not for signal attenuation
+          if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) { ## not for signal attenuation
             memo('Finding initial parameter values...', details$trace)
             ## autoini uses default buffer dbar * 4
             if (MS)
@@ -477,8 +446,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             sdS   = 2,
             b0    = 2,        ## changed from 15 2010-11-01
             b1    = -0.1,
-            pmix  = 0.25,
-            phi   = 0.7
+            pmix  = 0.25
         )
         if (detectfn %in% c(6)) {
             default$w <- default$sigma
@@ -515,12 +483,22 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (detector(traps(capthist))=='cue')
             start <- c(start, log(3))    ## cuerate
         ## could be nrow(capthist)/length(levels(covariates(capthist)$animal
+        if (detectfn %in% c(12,13))
+            start <- c(start, 46,3)    ## muN, sdN
 
         # D/ngrp when figure out where to calculate this
 
         ## if (!(is.null(q) | !nonID) & is.null(fixed$pID))
         ##     start[parindx$pID[1]] <- getdefault('pID')
     }
+    ## ad hoc fix for experimental parameters
+    nmiscparm <- 0
+    if (detector(traps(capthist)) %in% c('cue'))
+        nmiscparm <- 1
+    if (detector(traps(capthist)) %in% c('signalnoise'))
+        nmiscparm <- 2
+    NP <- NP + nmiscparm
+    stopifnot (length(start) == NP)
 
     ##########################
     # Fixed beta parameters
@@ -532,6 +510,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (sum(is.na(fb))==0)
             stop ("cannot fix all beta parameters")
         start <- start[is.na(fb)]  ## drop unwanted betas; remember later to adjust parameter count
+        NP <- length(start)
     }
     ##########################
     # Variable names (general)
@@ -540,12 +519,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     names(betanames) <- NULL
     realnames <- names(model)
     if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
-    if (!is.null(details$intervals))   ## allow turnover 2011-11-30
-        betanames <- c(betanames, unlist(sapply(designphi$designMatrices, colnames)))
     betanames <- sub('..(Intercept))','',betanames)
-    ## allow for fixed beta parameters 2009 10 19
-    if (!is.null(details$fixedbeta))
-        betanames <- betanames[is.na(details$fixedbeta)]
 
     #################################
     # Variable names (model-specific)
@@ -555,6 +529,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         betanames <- c(betanames, 'cuerate')
         realnames <- c(realnames, 'cuerate')
     }
+    if (detectfn %in% c(12,13)) {
+        betanames <- c(betanames, 'muN', 'sdN')
+        realnames <- c(realnames, 'muN', 'sdN')
+    }
+
+    ## allow for fixed beta parameters
+    if (!is.null(details$fixedbeta))
+        betanames <- betanames[is.na(details$fixedbeta)]
+
     betaw <- max(max(nchar(betanames)),8)   # for 'trace' formatting
 
     #####################
@@ -582,7 +565,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         designD    = designD,
                         design     = design,
                         design0    = design0,
-                        designphi  = designphi,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
@@ -610,7 +592,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         designD    = designD,
                         design     = design,
                         design0    = design0,
-                        designphi  = designphi,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
@@ -650,7 +631,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                             designD    = designD,
                             design     = design,
                             design0    = design0,
-                            designphi  = designphi,
                             capthist   = capthist,
                             mask       = mask,
                             detectfn   = detectfn,
@@ -678,7 +658,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                 else
                     suffix <- " - try method = 'BFGS'"
                 warning ("variance calculation failed ", suffix)
-                covar <- matrix(nrow = NP, ncol = NP)
+                ## covar <- matrix(nrow = NP, ncol = NP)
             }
             dimnames(covar) <- list(betanames, betanames)
         }
@@ -707,8 +687,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                   dframe = dframe,
                   design = design,      ## added 2009 09 05
                   design0 = design0,    ## added 2009 06 25
-                  designphi = designphi, ## added 2011 11 30
-
                   start = start,        ## added 2009 09 09
                   link = link,
                   fixed = fixed,
@@ -733,27 +711,37 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     ## check introduced 2010-12-01 & adjusted 2011-09-28
     ## bias.D not for polygon & transect detectors
-    if (verify & usebuffer & (this.fit$value < 1e9) &
+    ## adjust for user-spec biasLimit 2012-01-10
+    validbiasLimit <- !is.null(biasLimit)
+    validbiasLimit <- validbiasLimit & is.finite(biasLimit)
+    validbiasLimit <- validbiasLimit & (biasLimit>0)
+    if (usebuffer & (this.fit$value < 1e9) &
         (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
-        !(detector(traps(capthist)) %in% c('cue','unmarked','presence'))) {
+        !(detector(traps(capthist)) %in% c('cue','unmarked','presence')) &
+        validbiasLimit) {
         if (MS) {
             nsess <- length(capthist)
             bias <- numeric(nsess)
             for (i in 1:nsess) {
-                bias[i] <- bias.D(buffer, traps(capthist)[[i]], detectfn = temp$detectfn,
-                    detectpar = detectpar(temp)[[i]], noccasions = ncol(capthist[[i]]))$RB.D
+                biastemp <- try(bias.D(buffer, traps(capthist)[[i]], detectfn = temp$detectfn,
+                    detectpar = detectpar(temp)[[i]], noccasions = ncol(capthist[[i]])))
+                if (inherits(biastemp, 'try-error'))
+                   warning('could not perform bias check')
+                else
+                    bias[i] <- biastemp$RB.D
             }
-            if (any(bias > 0.01))
-                warning ("predicted relative bias exceeds 0.01 with ",
-                         " buffer = ", buffer)
         }
         else {
-            bias <- bias.D(buffer, traps(capthist), detectfn=temp$detectfn,
-                detectpar = detectpar(temp), noccasions = ncol(capthist))$RB.D
-            if (bias > 0.01)
-                warning ("predicted relative bias exceeds 0.01 with ",
-                         "buffer = ", buffer)
+            bias <- try(bias.D(buffer, traps(capthist), detectfn=temp$detectfn,
+                detectpar = detectpar(temp), noccasions = ncol(capthist)))
+            if (inherits(bias, 'try-error'))
+                warning('could not perform bias check')
+            else
+                bias <- bias$RB.D
         }
+        if (any(bias > biasLimit))
+            warning ("predicted relative bias exceeds ", biasLimit, " with ",
+                     "buffer = ", buffer)
     }
 
     memo(paste('Completed in ', round(temp$proctime,2), ' seconds at ',

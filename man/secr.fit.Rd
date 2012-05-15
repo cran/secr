@@ -20,7 +20,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     binomN = NULL, start = NULL, link = list(), fixed = list(),
     timecov = NULL, sessioncov = NULL, groups = NULL,
     dframe = NULL, details = list(), method = "Newton-Raphson",
-    verify = TRUE, trace = NULL, ...)
+    verify = TRUE, biasLimit = 0.01, trace = NULL, ...)
 }
 
 \arguments{
@@ -44,6 +44,8 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{details}{ list of additional settings, mostly model-specific (see Details) }
   \item{method}{ character string giving method for maximizing log likelihood }
   \item{verify}{ logical, if TRUE the input data are checked with \code{\link{verify}} }
+  \item{biasLimit}{ numeric threshold for predicted relative bias due to
+  buffer being too small }
   \item{trace}{ logical, if TRUE then output each evaluation of the likelihood, and other messages}
   \item{\dots}{ other arguments passed to the maximization function }
 }
@@ -142,6 +144,15 @@ capthist and mask; analysis is aborted if "errors" are found. Some
 conditions that trigger an "error" are benign (e.g., no detections in
 some sessions of a multi-session study of a sparse population); use
 \code{verify = FALSE} to avoid the check. See also Note.
+
+If \code{buffer} is used rather than \code{mask}, and \code{biasLimit}
+    is valid, then the estimated density is checked for bias due to the
+    choice of buffer. A warning is generated when \code{buffer} appears
+    to be too small (predicted RB(D-hat) > \code{biasLimit}, default 1\%
+    relative bias). The prediction uses \code{\link{bias.D}}. No check
+    is performed when \code{mask} is specified, when \code{biasLimit} is 0,
+    negative or NA, or when the detector type is "polygon", "transect",
+    "polygonX" or "transectX".
 
 }
 
@@ -252,12 +263,6 @@ The component `distribution' of argument `details' may also take a
 Components `version' and `starttime' were introduced in version 1.2.7,
 and recording of the completion time in `fitted' was discontinued.
 
-A warning is generated when `buffer' appears to be too small (predicted
-    RB(D-hat) > 0.01). The prediction uses \code{\link{bias.D}}. No
-    check is performed when `mask' is specified, when \code{verify = FALSE},
-    or when the detector type is "polygon", "transect", "polygonX" or
-    "transectX".
-
  The Newton-Raphson algorithm is fast, but it sometimes fails to compute
 the information matrix correctly, causing some or all standard errors to
 be set to NA. This usually indicates a major problem in fitting the
@@ -268,6 +273,10 @@ model, and parameter estimates should not be trusted. The alternative
 The component D in output was replaced with N from version 2.3. Use
 \code{\link{region.N}} to obtain SE or confidence intervals for N-hat,
 or to infer N for a different region.
+
+Prior to version 2.3.2 the buffer bias check could be switched off by
+setting \code{verify = FALSE}. This is now done by setting
+\code{biasLimit = 0}.
 
 }
 
@@ -296,10 +305,10 @@ detections <- sim.capthist (detectors, popn = list(D = 10,
     buffer = 100), detectpar = list(g0 = 0.2, sigma = 25))
 
 ## fit & print null (constant parameter) model
-## stepmax is passed to nlm (not usually needed)
-
-secr0 <- secr.fit (detections, stepmax = 50)
+secr0 <- secr.fit (detections)
 secr0   ## uses print method for secr
+
+\dontrun{
 
 ## compare fit of null model with learned-response model for g0
 
@@ -311,7 +320,7 @@ AIC (secr0, secrb)
 ##                  model   detectfn npar    logLik     AIC    AICc dAICc  AICwt
 ## secr0 D~1 g0~1 sigma~1 halfnormal    3 -347.1210 700.242 700.928 0.000 0.7733
 ## secrb D~1 g0~b sigma~1 halfnormal    4 -347.1026 702.205 703.382 2.454 0.2267
-
+}
 }
 
 \keyword{ models }

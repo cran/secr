@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.3.1\cr
-Date: \tab 2011-12-16\cr
+Version: \tab 2.3.2\cr
+Date: \tab 2012-05-15\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -100,7 +100,8 @@ Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
 
 Efford, M. G. (2011) Estimation of population density by spatially
-explicit capture--recapture with area searches. \emph{Ecology} in press.
+explicit capture--recapture with area searches. \emph{Ecology}
+\bold{92}, 2202--2207.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

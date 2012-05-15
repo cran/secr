@@ -1,18 +1,20 @@
 \name{RMarkInput}
 \alias{RMarkInput}
+\alias{unRMarkInput}
 
 \title{ Convert Data to RMark Input Format }
 
 \description{
   
-A single-session capthist object is formed into a dataframe that may be
-passed directly to RMark.
+A single-session capthist object is formed by RMarkInput into a dataframe that may be
+passed directly to RMark. 
 
 }
 
 \usage{
 
 RMarkInput(object, grouped = TRUE)
+unRMarkInput(df)
 
 }
 
@@ -22,6 +24,8 @@ RMarkInput(object, grouped = TRUE)
 
   \item{grouped}{logical for whether to replace each group of identical
     capture histories with a single line}
+
+  \item{df}{dataframe with fields `ch' and `freq' }
   
 }
 \details{
@@ -32,6 +36,8 @@ RMarkInput(object, grouped = TRUE)
 }
 
 \value{
+
+  For RMarkInput --
   
   Dataframe with fields ch and freq. `ch' is a character string of 0's
   and 1's. If \code{grouped = FALSE} the rownames are retained and the
@@ -41,6 +47,11 @@ RMarkInput(object, grouped = TRUE)
   The attribute `interval' is copied from `object', if present;
   otherwise it is set to a vector of zeros (indicating a
   closed-population sample).
+
+  For unRMarkInput --
+
+  A single-session capthist object with no traps attribute and hence no
+  detector type (i.e. non-spatial capture histories). Covariates are copied.
 
 }
 
@@ -64,8 +75,10 @@ G. (eds) Program MARK: A Gentle Introduction. 6th edition. Available at
 ovenRD <- RMarkInput (join(ovenCH))
 ovenRD
 
+unRMarkInput(ovenRD)
+
 \dontrun{
-## fit robust-design model in RMark
+## fit robust-design model in RMark (MARK must be  installed)
 library(RMark)
 ovenRD.data <- process.data(ovenRD, model = 'Robust',
     time.interval = attr(ovenRD, 'interval'))

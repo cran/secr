@@ -2,24 +2,28 @@
 ## package 'secr'
 ## make.mask.R
 ## 2011 10 10 transferred from methods.R
+## 2012 04 10 fixed bug in ymax of bounding box
+## 2012 04 11 added 'rectangular' mask type
 ###############################################################################
 
-make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64,
+make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     type = 'traprect', poly = NULL, poly.habitat = TRUE, keep.poly = TRUE,
     check.poly = TRUE, pdotmin = 0.001, ...)
 {
 
+    if (missing(traps)) traps <- NULL
     if (ms(traps)) {         ## a list of traps objects
         if (inherits(poly, 'list') & (!is.data.frame(poly)))
             stop ("lists of polygons not implemented in 'make.mask'")
-        temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx,
+        temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx, ny = ny,
             type = type, poly = poly, poly.habitat = poly.habitat, pdotmin = pdotmin, ...)
         class (temp) <- c('list', 'mask')
         temp
       }
     else {
 
-        allowedType <- c('traprect','trapbuffer','polygon', 'pdot', 'clusterrect', 'clusterbuffer')
+        allowedType <- c('traprect','trapbuffer','polygon', 'pdot', 'clusterrect',
+                         'clusterbuffer', 'rectangular')
         if (! (type %in% allowedType))
             stop ("mask type must be one of ",
                   paste(sapply(allowedType, dQuote), collapse=","))
@@ -41,7 +45,15 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64,
             }
         }
 
-        if (type=='polygon') {
+        if (is.null(traps))
+            type <- 'rectangular'
+        if (type == 'rectangular') {
+            if (is.null(spacing))
+                stop ("require spacing for rectangular mask")
+            xl <- c(0, spacing * nx)
+            yl <- c(0, spacing * ny)
+        }
+        else if (type=='polygon') {
             if (is.null(poly))
                 stop ("mask polygon must be supplied")
             if (!poly.habitat)
@@ -131,13 +143,15 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64,
                 if (check.poly & any (pointsInPolygon(traps, poly)))
                     warning ("some traps are inside non-habitat polygon")
             }
-            xl <- range(mask$x)
-            yl <- range(mask$y)
             if (keep.poly) {
                 attr(mask, 'polygon') <- poly   # save
                 attr(mask, 'poly.habitat') <- poly.habitat   # save
             }
         }
+
+        ## 2012 04 10 revised limits for bounding box
+        xl <- range(mask$x) + spacing/2 * c(-1,1)
+        yl <- range(mask$y) + spacing/2 * c(-1,1)
 
         attr(mask,'type')        <- type
         attr(mask,'meanSD')      <- getMeanSD (mask)

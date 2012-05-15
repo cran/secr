@@ -83,7 +83,7 @@ plot(tri.grid, border = 5)
 
 hex <- clip.hex(tri.grid, side = 30, ID = "alpha")
 plot (hex, add = TRUE, detpar = list(pch = 16, cex = 1.4),
-    lab = TRUE, offset = 2.5 )
+    label = TRUE, offset = 2.5 )
 
 }
 

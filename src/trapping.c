@@ -32,6 +32,7 @@ void trappingcount (
     int    i,j,k,l,s;
     int    nc;
     int    count;
+    double miscparm[3];
 
     *resultcode = 1;
     nc = 0;
@@ -43,7 +44,7 @@ void trappingcount (
             for (k=0; k<*kk; k++) {
                 if (used[s * *kk + k]) {                        /* 2009 11 09 */
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
+                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
                     if (theta>0) {
                         count = rcount (*binomN, theta);
                         if (count>0)
@@ -732,7 +733,9 @@ void trappingsignal (
     double *beta0,     /* Parameter : intercept */
     double *beta1,     /* Parameter : slope */
     double *sdS,       /* Parameter : error sd */
-    double *cut,       /* detection threshold on transformed scale */
+    double *cut,       /* detection threshold on transformed scale, etc. */
+    double *muN,       /* noise mean */
+    double *sdN,       /* noise sd */
     double *sdM,       /* movement between occasions */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
@@ -744,6 +747,7 @@ void trappingsignal (
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     double *signal,    /* signal strength, one per detection */
+    double *noise,     /* noise, one per detection, if signalnoise */
     int    *value,     /* return value matrix of trap locations n x s */
     int    *resultcode
 )
@@ -751,12 +755,15 @@ void trappingsignal (
 /* returned signal strength (*fn==10) is on transformed scale */
 /* limited to Bernoulli count model binomN = 1 */
 {
-    double mu, signalvalue;
+    double muS;
+    double signalvalue;
+    double noisevalue;
     int    i,j,k,l,s;
     int    nc = 0;
     int    nd = 0;
     int    maxdet;
     double *worksignal;
+    double *worknoise;
     int    *sortorder;
     double *sortkey;
     double animalss [*N*2];
@@ -766,9 +773,9 @@ void trappingsignal (
 
     maxdet = *N * *ss * *kk;
     worksignal = (double*) R_alloc(maxdet, sizeof(double));
+    worknoise = (double*) R_alloc(maxdet, sizeof(double));
     sortorder = (int*) R_alloc(maxdet, sizeof(int));
     sortkey = (double*) R_alloc(maxdet, sizeof(double));
-
     for (i=0; i<*N; i++) {
         animalss[i] = animals[i];
         animalss[*N+i] = animals[*N+i];
@@ -785,28 +792,51 @@ void trappingsignal (
             }
             for (k=0; k<*kk; k++) {
                 if (used[s * *kk + k]) {
-                    if (*fn == 10)
-                        mu  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk);
+                    if ((*fn == 10) || (*fn == 12))
+                        muS  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk, 0);
                     else
-                        mu  = mufnsph (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk);
-                    signalvalue = norm_rand() * sdS[s] + mu;
-                    if (signalvalue > *cut) {
-                        if (caught[i]==0) {              /* first capture of this animal */
-                            nc++;
-                            caught[i] = nc;
-                            for (j=0; j<*ss; j++)
-                                for (l=0; l<*kk; l++)
-                                    value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                        }
-                        nd++;
-                        if (nd >= maxdet) {
-                            *resultcode = 2;
-                            return;  /* error */
-                        }
-                        value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
-                        worksignal[nd-1] = signalvalue;
-                        sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
-                    }
+                        muS  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk, 1);
+                    signalvalue = norm_rand() * sdS[s] + muS;
+                    if ((*fn == 12) || (*fn == 13)) {
+			noisevalue = norm_rand() * sdN[s] + muN[s];
+			if ((signalvalue-noisevalue) > *cut) {
+			    if (caught[i]==0) {              /* first capture of this animal */
+				nc++;
+				caught[i] = nc;
+				for (j=0; j<*ss; j++)
+				    for (l=0; l<*kk; l++)
+					value[*ss * ((nc-1) * *kk + l) + j] = 0;
+			    }
+			    nd++;
+			    if (nd > maxdet) {
+				*resultcode = 2;
+				return;  /* error */
+			    }
+			    value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
+			    worksignal[nd-1] = signalvalue;
+			    worknoise[nd-1] = noisevalue;
+			    sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
+			}
+		    }
+		    else {
+			if (signalvalue > *cut) {
+			    if (caught[i]==0) {              /* first capture of this animal */
+				nc++;
+				caught[i] = nc;
+				for (j=0; j<*ss; j++)
+				    for (l=0; l<*kk; l++)
+					value[*ss * ((nc-1) * *kk + l) + j] = 0;
+			    }
+			    nd++;
+			    if (nd > maxdet) {
+				*resultcode = 2;
+				return;  /* error */
+			    }
+			    value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
+			    worksignal[nd-1] = signalvalue;
+			    sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
+			}
+		    }
                 }
             }
         }
@@ -816,6 +846,10 @@ void trappingsignal (
     if (nd>0) rsort_with_index (sortkey, sortorder, nd);
     for (i=0; i<nd; i++)
         signal[i]   = worksignal[sortorder[i]];
+    if ((*fn == 12) || (*fn == 13)) {
+	for (i=0; i<nd; i++)
+	    noise[i]   = worknoise[sortorder[i]];
+    }
     *n = nc;
     *resultcode = 0;
     PutRNGstate();
@@ -850,6 +884,7 @@ void trappingtimes (
     double *work;
     int    *sortorder;
     double *sortkey;
+    double miscparm[3];
 
     *resultcode = 1;
     GetRNGstate();
@@ -864,7 +899,7 @@ void trappingtimes (
                 if (used[s * *kk + k]) {
                     timevalue = 0;
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
+                    lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
                     if (lambda>0) {
                         while (timevalue < 1) {
                             timevalue += rexp(1/lambda);
@@ -929,6 +964,7 @@ void trappingmulti (
     int    nc;
     double d2val;
     double p;
+    double miscparm[3];
 
     *resultcode = 1;
     cump[0] = 0;
@@ -943,7 +979,7 @@ void trappingmulti (
             for (k=0; k<*kk; k++)
             {
                 d2val = d2(i,k, animals, traps, *N, *kk);
-                p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
+                p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
                 p = p * used[s * *kk + k];           /* zero if not used 2009 11 09 */
                 h[k * *N + i] = -log(1 - p);
                 hsum[i] += h[k * *N + i];
@@ -1011,6 +1047,7 @@ void trappingsingle (
     int nextcombo;
     int finished;
     int OK;
+    double miscparm[3];
 
     /* MAIN LINE */
     *resultcode = 1;
@@ -1031,7 +1068,7 @@ void trappingsingle (
         for (k=0; k<*kk; k++)  /* traps */
         if (used[s * *kk + k]) {
             d2val = d2(i,k, animals, traps, *N, *kk);
-            p = pfn(*fn, d2val, g0[s], sigma[s], z[s], 0, *w2);
+            p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
             event_time = randomtime(p);
             if (event_time <= 1) {
                 tran[tr_an_indx].time   = event_time;

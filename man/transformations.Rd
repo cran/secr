@@ -114,8 +114,8 @@ arrows (temp[,1], temp[,2], temp2[,1], temp2[,2], length = 0.1)
 oldpar <- par(mfrow=c(1,2), xpd = TRUE)
 traps1 <- make.grid(nx = 8, ny = 6, ID = "numxb")
 traps2 <- flip (traps1, lr = TRUE)
-plot(traps1, border = 5, lab = TRUE, offset = 7, gridl = FALSE)
-plot(traps2, border = 5, lab = TRUE, offset = 7, gridl = FALSE)
+plot(traps1, border = 5, label = TRUE, offset = 7, gridl = FALSE)
+plot(traps2, border = 5, label = TRUE, offset = 7, gridl = FALSE)
 par(oldpar)
 
 ## rotate.traps
@@ -127,7 +127,7 @@ plot(nested, gridlines = FALSE)
 hollow1 <- make.grid(nx = 8, ny = 8, hollow = TRUE)
 hollow2 <- shift(make.grid(nx = 6, ny = 6, hollow = TRUE), c(20, 20))
 nested <- rbind (hollow1, hollow2)
-plot(nested, gridlines = FALSE, lab = TRUE)
+plot(nested, gridlines = FALSE, label = TRUE)
 
 }
 

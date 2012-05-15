@@ -58,8 +58,10 @@ Burnham, K. P. and Anderson, D. R. (2002) \emph{Model selection and multimodel i
 
 ## load & print previously fitted null (constant parameter) model
 print(secrdemo.0)
-print(secrdemo.CL, deriv = TRUE)
 
+\dontrun{
+print(secrdemo.CL, deriv = TRUE)
+}
 }
 
 \keyword{ print }
