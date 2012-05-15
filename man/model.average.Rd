@@ -109,6 +109,9 @@ understanding AIC and BIC in model selection. \emph{Sociological Methods
 
 }
 
+\section{Warning}{\code{model.average} may conflict with a method of the
+same name in \pkg{RMark}}
+
 \seealso{ \code{\link{AIC.secr}}, \code{\link{secr.fit}}}
 
 \examples{

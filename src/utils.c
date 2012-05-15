@@ -156,45 +156,28 @@ double mufn (
     double A1[],
     double A2[],
     int A1rows,
-    int A2rows)
+    int A2rows,
+    int spherical)
 /*
    Return predicted signal strength at m for source at point k,
    given strength at source of b0 dB and attenuation of b1 dB/m.
-   Spherical spreading is NOT included
+   Spherical spreading is included if spherical > 0
    Coordinates of points are in A1 and A2 which have respectively
    A1rows and A2rows
 */
 {
     double d2val;
     d2val = d2(k,m, A1, A2, A1rows, A2rows);
-    return (b0 + b1 * sqrt(d2val));
-}
-/*==============================================================================*/
-
-double mufnsph (
-    int k,
-    int m,
-    double b0,
-    double b1,
-    double A1[],
-    double A2[],
-    int A1rows,
-    int A2rows)
-/*
-   Return predicted signal strength at m for source at point k,
-   given strength at source of b0 dB and attenuation of b1 dB/m.
-   Spherical spreading is included
-   Coordinates of points are in A1 and A2 which have respectively
-   A1rows and A2rows
-*/
-{
-    double d2val;
-    d2val = d2(k,m, A1, A2, A1rows, A2rows);
-     if (d2val>1) {
-        return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
+    if (spherical <= 0)
+	return (b0 + b1 * sqrt(d2val));
+    else {
+	if (d2val>1) {
+	    return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
+	}
+	else
+	    return (b0);
     }
-    else
-        return (b0);
+
 }
 /*==============================================================================*/
 

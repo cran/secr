@@ -2,10 +2,11 @@
 ## package 'secr'
 ## empirical.R
 ## design-based variance of derived density
-## last changed 2011 05 10 - derived.systematic quarantined in 'under development' folder
+## 2011 05 10 - derived.systematic quarantined in 'under development' folder
+## 2012 03 17 - derived.nj extended to single n
 ############################################################################################
 
-## source ('d:\\density secr 2.1\\secr\\r\\empirical.R')
+## source ('d:\\density secr 2.3\\secr\\r\\empirical.R')
 
 ############################################################################
 
@@ -23,7 +24,7 @@ localvar <- function (z, xy) {
 }
 
 derived.nj <- function ( nj, esa, se.esa, method = 'SRS', xy = NULL,
-    alpha = 0.05, loginterval = TRUE ) {
+    alpha = 0.05, loginterval = TRUE, area = NULL ) {
 
     esa <- unlist(esa)
     if (length(esa) == 2) {
@@ -33,11 +34,27 @@ derived.nj <- function ( nj, esa, se.esa, method = 'SRS', xy = NULL,
     n <- sum (nj)                          ## total animals
     J <- length(nj)                        ## number of replicates
 
+    ## 2012-03-17
+    if (J == 1) {
+        method <- tolower(method)
+        if (!(method %in% c('poisson','binomial'))) {
+            method <- 'poisson'
+            warning ("nj is of length 1; n variance component defaults to Poisson")
+        }
+        if (method == 'binomial') {
+            if (is.null(area))
+                stop ("must specify 'area' for binomial variance")
+            N <- area * n / esa
+        }
+    }
+
     if ((method=='local') & is.null(xy))
         stop ("'local' method requires x and y coordinates")
     varn <- switch (method,
         local = localvar (nj, xy),         ## from total.est in spsurvey
         SRS = sum ((nj - n/J)^2) * J / (J-1),
+        poisson = n,                                      ## 2012-03-17
+        binomial = N * (esa / area * (1 - esa / area)),   ## 2012-03-17
         NA
     )
     D <- n / esa / J                       ## average density

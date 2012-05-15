@@ -80,7 +80,7 @@ information from K. V. Young (pers. comm.).
 
 Efford, M. G. (2011) Estimation of population density by spatially
 explicit capture--recapture analysis of data from area
-searches. \emph{Ecology} In press.
+searches. \emph{Ecology} \bold{92}, 2202--2207.
 
 Grant, T. J. and Doherty, P. F. (2007) Monitoring of the flat-tailed
 horned lizard with methods incorporating detection

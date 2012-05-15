@@ -34,10 +34,10 @@ struct rpoint {
 /* function pointers */
 /*-------------------*/
 
-typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, int, double);
+typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, int, double[]);
 /*
     (int k, int m, int c, int double gsbval[], int cc, double traps[],
-     double mask[], int kk, int mm, double cut);
+     double mask[], int kk, int mm, double miscparm []);
 */
 
 typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
@@ -84,10 +84,10 @@ void integralprw1 (
     int    *gsb0,      /* lookup which g0/sigma/b to use for given n, S, K [naive animal] */
     int    *ncol,      /* number of columns in gsb0; added 2009 06 25 */
     double *area,      /* area associated with each mask point (ha) */
-    double *cuerate,   /* miscellaneous parameters */
+    double *miscparm,  /* miscellaneous parameters */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, etc. */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
-    double *cut,       /* transformed signal strength threshold for detection */
+/*    double *cut,     transformed signal strength threshold for detection */
     int    *useD,      /* logical : does third column of mask contain D weight? 2011-05-05 */
     double *a,         /* return value integral of pr(w0) */
     int    *resultcode /* 0 for successful completion */
@@ -114,19 +114,15 @@ void secrloglik (
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    double *turnval,     /* Parameter values - turnover */
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-    int    *ccturn,      /* number of turnover combinations */
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
     int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
-    int    *PIAturn,     /* lookup which turnover parameter combination to use n, J, mix */
-    double *intervals,   /* vector of *ss-1 between-occasion intervals */
     double *area,        /* area associated with each mask point (ha) */
-    double *cuerate,     /* miscellaneous parameters */
+    double *miscparm,    /* miscellaneous parameters */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-    double *cut,         /* transformed signal strength threshold for detection */
+/*    double *cut,       transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *a,           /* a(theta) */
     double *value,       /* return value integral */
@@ -242,11 +238,11 @@ void pwuniform (
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *gsb,         /* lookup which g0/sigma/b combination to use for given n, S, K */
     double *area,        /* area associated with each mask point (ha) */
-    double *cuerate,     /* miscellaneous parameter */
+    double *miscparm,    /* miscellaneous parameter */
     int    *normal,      /* code 0 don't normalise, 1 normalise */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-    double *cut,         /* transformed signal strength threshold for detection */
+/*    double *cut,       transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *value,       /* return values */
     int    *resultcode   /* 0 if OK */
@@ -274,7 +270,7 @@ void simsecr (
     int    *btype,      /* code for behavioural response 0 none 1 b 2 bk 3 k */
     int    *Markov,     /* code 0 if behavioural response is learned, 1 if Markov */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
-    double *cut,        /* detection threshold on transformed scale */
+    double *miscparm,   /* detection threshold on transformed scale, etc. */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 = uniform */
     int    *maxperpoly, /* */
     int    *n,          /* number of individuals caught */
@@ -383,7 +379,9 @@ void trappingsignal (
     double *beta0,     /* Parameter : intercept */
     double *beta1,     /* Parameter : slope */
     double *sdS,       /* Parameter : error sd */
-    double *cut,       /* detection threshold on transformed scale */
+    double *cut,       /* detection threshold on transformed scale, etc. */
+    double *muN,       /* noise mean */
+    double *sdN,       /* noise sd */
     double *sdM,       /* movement between occasions */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
@@ -395,6 +393,7 @@ void trappingsignal (
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     double *signal,    /* signal strength, one per detection */  
+    double *noise,     /* noise, one per detection, if signalnoise */  
     int    *value,     /* return value matrix of trap locations n x s */
     int    *resultcode
 );
@@ -538,43 +537,49 @@ double hsigsph (double param [], double r);
 
 double ghn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double ghnc 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double ghz 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double ghe 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double ghf 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gan 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gcln
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gcn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double grs
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gsigbin
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gsig
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
 double gsigsph
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut);
+    double mask[], int kk, int mm, double miscparm[]);
+double gsigSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double gsigsphSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
 
 double pfn (
     int fn,
@@ -582,7 +587,7 @@ double pfn (
     double g0,
     double sigma,
     double z,
-    double area,
+    double miscparm[],
     double w2);
 
 /*---------*/
@@ -624,18 +629,8 @@ double mufn (
     double A1[],
     double A2[],
     int A1rows,
-    int A2rows);
-/*---------------------------------------------------------------------*/
-
-double mufnsph (
-    int k,
-    int m,
-    double b0,
-    double b1,
-    double A1[],
-    double A2[],
-    int A1rows,
-    int A2rows);
+    int A2rows,
+    int spherical);
 /*---------------------------------------------------------------------*/
 
 void SegCircle (

@@ -10,7 +10,7 @@
 \usage{
 \method{subset}{capthist}(x, subset = NULL, occasions = NULL, traps = NULL,
     sessions = NULL, cutval = NULL, dropnullCH = TRUE, dropnullocc = FALSE,
-    dropunused = TRUE, renumber = FALSE, ...)
+    dropunused = TRUE, droplowsignals = TRUE, renumber = FALSE, ...)
 \method{split}{capthist}(x, f, drop = FALSE, prefix = "S", ...)
 }
 \arguments{
@@ -23,7 +23,10 @@
   \item{dropnullCH}{ logical for whether null (all-zero) capture histories
   should be dropped }
   \item{dropnullocc}{ logical for whether occasions with no detections should be dropped }
-  \item{dropunused}{ logical for whether never-used detectors should be dropped }
+  \item{dropunused}{ logical for whether never-used detectors should be
+    dropped }
+  \item{droplowsignals}{ logical for whether cutval should be applied at each
+  microphone rather than to sound as a whole } 
   \item{renumber}{ logical for whether row.names should be replaced with sequence number in new \code{capthist} }
   \item{f}{ factor or object that may be coerced to a factor }
   \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
@@ -49,6 +52,12 @@ selecting traps also reduces the third dimension of the capthist array.
 
 To combine (pool) occasions use \code{\link{reduce.capthist}}. There is
 no equivalent of \code{unlist} for lists of \code{capthist} objects.
+
+The effect of \code{droplowsignals = FALSE} is to retain below-threshold
+measurements of signal strength on all channels (microphones) as long as
+the signal is above \code{cutval} on at least one. In this case all
+retained sounds are treated as detected on all microphones. This fails
+when signals are already missing on some channels.
 
 }
 

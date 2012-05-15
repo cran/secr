@@ -1,5 +1,8 @@
 /*
     Simulate capture histories from fitted model
+
+    2012-02-13 Tentatively extended for 'signalnoise' detectors 
+
 */
 
 #include "secr.h"
@@ -95,7 +98,7 @@ void simsecr (
                            1 Markov 
                         */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
-    double *cut,        /* detection threshold on transformed scale */
+    double *miscparm,   /* detection threshold on transformed scale, etc. */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 = uniform */
     int    *maxperpoly, /*  */
     int    *n,          /* number of individuals caught */
@@ -125,6 +128,7 @@ void simsecr (
     double sigma = 0;
     double z = 0;
     double *work = NULL;
+    double *noise = NULL;   /* detectfn 12,13 only */
     int    *sortorder = NULL;
     double *sortkey = NULL;
 
@@ -190,9 +194,13 @@ void simsecr (
     /* 'signal-strength only' declarations */
     double beta0;
     double beta1;
+    double muS;
     double sdS;
-    double mu;
+    double muN = 0;
+    double sdN = 1;
     double signalvalue;
+    double noisevalue;
+    double cut;
 
     /*========================================================*/
     /* MAIN LINE */
@@ -265,6 +273,10 @@ void simsecr (
         sortorder = (int*) R_alloc(maxdet, sizeof(int));
         sortkey = (double*) R_alloc(maxdet, sizeof(double));
     }
+    if ((*fn==12) || (*fn==13)) {
+        noise = (double*) R_alloc(maxdet*2, sizeof(double));   /* twice size needed for signal */
+    }
+
     GetRNGstate();
 
     /* may be better to pass pmix */
@@ -315,7 +327,7 @@ void simsecr (
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                         d2val = d2(i,k, animals, traps, *N, nk);
-                        p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);   /* effectively infinite w2 */
+                        p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);   /* effectively infinite w2 */
                         event_time = randomtime(p);
                         if (event_time <= 1) {
                             tran[tr_an_indx].time   = event_time;
@@ -374,7 +386,7 @@ void simsecr (
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                     d2val = d2(i,k, animals, traps, *N, nk);
-                    p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
+                    p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
                     p = p * used[s * nk + k];           /* zero if not used */
                     h[k * *N + i] = -log(1 - p);
                     hsum[i] += h[k * *N + i];
@@ -410,7 +422,7 @@ void simsecr (
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                         d2val = d2(i,k, animals, traps, *N, nk);
-                        p = pfn(*fn, d2val, g0, sigma, z, 0, 1e20);
+                        p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
 
                         if (p < -0.1) { PutRNGstate(); return; }   /* error */
 
@@ -718,31 +730,55 @@ void simsecr (
         /* ------------------------ */
         /* signal strength detector */
         else if (*detect == 5) {
+	    cut = miscparm[0];
+	    if ((*fn == 12) || (*fn == 13)) {
+		muN = miscparm[1];
+		sdN = miscparm[2];
+	    }
             for (i=0; i<*N; i++) {
                 for (k=0; k<nk; k++) {
                     if (used[s * nk + k]) {
                         /* sounds not recaptured */
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            0, gsb0, gsb0val, gsb0, gsb0val, &beta0, &beta1, &sdS);
-                        if (*fn == 10)
-                            mu  = mufn (i, k, beta0, beta1, animals, traps, *N, nk);
+				0, gsb0, gsb0val, gsb0, gsb0val, &beta0, &beta1, &sdS);
+                        if ((*fn == 10) || (*fn == 12))
+			    muS  = mufn (i, k, beta0, beta1, animals, traps, *N, nk, 0);
                         else
-                            mu  = mufnsph (i, k, beta0, beta1, animals, traps, *N, nk);
-                        signalvalue = norm_rand() * sdS + mu;
-                        if (signalvalue > *cut) {
-                            if (caught[i]==0) {                /* first capture of this animal */
-                                nc++;
-                                caught[i] = nc;
-                                for (j=0; j<*ss; j++)
-                                  for (l=0; l<nk; l++)
-                                    value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                            }
-                            nd++;
-                            value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
-                            work[nd-1] = signalvalue;
-                            sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
-                        }
-                    }
+                            muS  = mufn (i, k, beta0, beta1, animals, traps, *N, nk, 1);
+			signalvalue = norm_rand() * sdS + muS;
+                        if ((*fn == 10) || (*fn == 11)) {
+			    if (signalvalue > cut) {
+				if (caught[i]==0) {        /* first capture of this animal */
+				    nc++;
+				    caught[i] = nc;
+				    for (j=0; j<*ss; j++)
+					for (l=0; l<nk; l++)
+					    value[*ss * ((nc-1) * *kk + l) + j] = 0;
+				}
+				nd++;
+				value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
+				work[nd-1] = signalvalue;
+				sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
+			    }
+			}
+			else {
+			    noisevalue = norm_rand() * sdN + muN;
+			    if ((signalvalue - noisevalue) > cut) {
+				if (caught[i]==0) {        /* first capture of this animal */
+				    nc++;
+				    caught[i] = nc;
+				    for (j=0; j<*ss; j++)
+					for (l=0; l<nk; l++)
+					    value[*ss * ((nc-1) * *kk + l) + j] = 0;
+				}
+				nd++;
+				value[*ss * ((caught[i]-1) * *kk + k) + s] = 1;
+				work[nd-1] = signalvalue;
+				noise[nd-1] = noisevalue;
+				sortkey[nd-1] = (double) (k * *N * *ss + s * *N + caught[i]);
+			    }
+			}
+		    }
                 }
             }
         }
@@ -784,8 +820,12 @@ void simsecr (
     if ((*detect==3) || (*detect==4) || (*detect==5) || (*detect==6) || (*detect==7)) {
         for (i=0; i<nd; i++) sortorder[i] = i;
         if (nd>0) rsort_with_index (sortkey, sortorder, nd);
-        if (*detect==5)
+        if (*detect==5) {
             for (i=0; i<nd; i++) signal[i] = work[sortorder[i]];
+	    if ((*fn == 12) || (*fn == 13)) {
+		for (i=0; i<nd; i++) signal[i+nd] = noise[sortorder[i]];
+	    }
+	}
         else {
             for (i=0; i<nd; i++) {
                 detectedXY[i]    = work[sortorder[i]*2];

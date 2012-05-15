@@ -78,6 +78,21 @@
         mu[r<1] <- beta0
         1 - pnorm (q=cutval, mean=mu, sd=sdS)
     }
+    SN <- function (r, pars, cutval) {
+        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
+        muN <- pars[4]; sdN <- pars[5]
+        muS <- beta0 + beta1 * r
+        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
+    }
+
+    SNS <- function (r, pars, cutval) {
+        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
+        muN <- pars[4]; sdN <- pars[5]
+        ## spherical so assume distance r measured from 1 m
+        muS <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
+        muS[r<1] <- beta0
+        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
+    }
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
     sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
@@ -113,7 +128,8 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
         else {
             pars <- predicted[parnames(x$detectfn),'estimate']
             pars[is.na(pars)] <- unlist(x$fixed)
-            dfn <- switch (x$detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
+            dfn <- switch (x$detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS,
+                           SSS, SN, SNS)
             if (sigmatick) {
               sigma <- pars[2]
               y <- dfn(sigma, pars, x$details$cutval)
@@ -218,7 +234,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard-rate z!
     temp <- predict (x, newdata)
     if (is.null(ylim)) {
-        if (x$detectfn %in% c(9,10,11)) {      ## included 9 2010-11-01
+        if (x$detectfn %in% c(9,10,11,12,13)) {      ## included 9 2010-11-01
             ylim <- c(0, 1)
         }
         else {
@@ -266,7 +282,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     gline <- function (pars) {
         ## here pars is a vector of parameter values
 
-        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS)
+        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS,SN,SNS)
         if (sigmatick) {
             sigma <- pars[2]
             y <- dfn(sigma, pars,details$cutval)
@@ -300,14 +316,14 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3)[detectfn+1]
+    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3,5,5)[detectfn+1]
 
     if (ncol(pars) != needp)
         stop ("require ", needp, " parameters for ",
              detectionfunctionname(detectfn), " detection function")
 
     if (is.null(ylim)) {
-        if (detectfn %in% c(10,11)) {
+        if (detectfn %in% c(10,11,12,13)) {
             ylim <- c(0, 1)
         }
         else {

@@ -163,7 +163,6 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         inputdetector <- detector(traps(object))
         ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
         nrw <- nrow(object)
-        cutval <- attr(object, 'cutval')
         if (is.null(columns)) {
 ##          columns <- as.list(1:ncol(object))
             columns <- split.by (1:ncol(object), by)
@@ -175,8 +174,10 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         if (!(outputdetector %in% .localstuff$validdetectors))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
-        if ((inputdetector != 'signal') && (outputdetector == 'signal'))
+        if ((!(inputdetector %in% c('signal','signalnoise'))) && (outputdetector == 'signal'))
                 stop ("cannot convert non-signal data to signal data")
+        if ((!(inputdetector %in% c('signalnoise'))) && (outputdetector == 'signalnoise'))
+                stop ("cannot convert non-signalnoise data to signalnoise data")
         if ((!(inputdetector %in% polygons)) && (outputdetector %in% polygons))
                 stop ("cannot convert non-polygon data to 'polygon' data")
         if ((!(inputdetector %in% transects)) && (outputdetector %in% transects))
@@ -201,19 +202,20 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         nnew <- length(columns)
 
         ################################
-
         df <- data.frame(
             trap = trap(object, names = F),
             occ = occasion(object),
             ID = animalID(object, names = F),
             alive = alive(object))
-
+        ################################
         if (outputdetector %in% c(polygons, transects)) {
             df$x <- xy(object)[,1]
             df$y <- xy(object)[,2]
         }
-        if (outputdetector %in% c('signal'))
-            df$signal <- signal(object)
+        ################################
+        if (!is.null(attr(object,'signalframe'))) {
+            df <- cbind(df, attr(object,'signalframe'))
+        }
         ################################
 
         validcols <- unlist(columns)
@@ -260,8 +262,12 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
             tempnew <- tempnew * alivesign
         }
 
+        ################################
+        ## general attributes
         class(tempnew) <- 'capthist'
         session(tempnew) <- session(object)
+        attr(tempnew, 'n.mash') <- attr(object, 'n.mash')
+        attr(tempnew, 'centres') <- attr(object, 'centres')
 
         ################################
         ## traps
@@ -284,11 +290,11 @@ reduce.capthist <- function (object, columns = NULL, outputdetector =
         detectorder <- order(df$trap, df$newocc,df$ID)  ## CHECK!
         if (outputdetector %in% c(polygons, transects))
             xy(tempnew) <- df[detectorder,c('x','y'),drop=FALSE]
-        if (outputdetector %in% c('signal')) {
-            signal(tempnew) <- df$signal[detectorder]
-            attr(tempnew, 'cutval') <- cutval
+        if (outputdetector %in% c('signal','signalnoise')) {
+            sigcolumns <- names(attr(object,'signalframe'))
+            attr(tempnew,'signalframe') <- df[detectorder, sigcolumns, drop=FALSE]
+            attr(tempnew, 'cutval') <- attr(object, 'cutval')
         }
-
         ################################
         ## usage
         if (nrow(tempnew) > 0)

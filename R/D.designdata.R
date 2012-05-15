@@ -181,7 +181,7 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
     #--------------------------------------------------------------------------
     ## unmatched variables in model?
     if (length(vars) > 0)
-        stop (paste(vars,collapse=','), "not found")
+        stop (paste(vars,collapse=','), " not found")
 
     #--------------------------------------------------------------------------
     ## report dimensions as an attribute

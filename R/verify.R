@@ -6,6 +6,7 @@
 ## 2010 05 02 removed erroneous ref to 'areabinary' detector
 ## 2011 02 15 validpoly
 ## 2011 03 19 adjustments to allow unmarked; need more complete check of unmarked
+## 2012 02 02 signal check applied at level of whole sound
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -336,7 +337,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         area <- FALSE
         binary <- detector(traps(object)) %in% c('proximity')
         single <- detector(traps(object)) %in% c('single')
-        signal <- detector(traps(object)) %in% c('signal')
+        signal <- detector(traps(object)) %in% c('signal','signalnoise')
         poly <- detector(traps(object)) %in% c('polygon', 'polygonX')
         transect <- detector(traps(object)) %in% c('transect', 'transectX')
         unmarked <- detector(traps(object)) %in% c('unmarked')
@@ -391,7 +392,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             if (signal) {
                 ## must have cutval; deads not allowed
                 if (length(attr(object,'cutval')) != 1) cutvalOK <- FALSE
-                else if (any(signal(object) < attr(object,'cutval'))) cutvalOK <- FALSE
+                else {
+                    maxbyanimal <- tapply(signal(object), animalID(object), max)
+                    maxbyanimal <- maxbyanimal[!is.na(maxbyanimal)]  ## because NA OK 2012-02-10
+                    if (any(maxbyanimal < attr(object,'cutval')))
+                        cutvalOK <- FALSE
+                }
                 if (length(signal(object)) != sum(abs(object)))
                     signalOK <- FALSE
             }

@@ -1,12 +1,15 @@
 ############################################################################################
 ## package 'secr'
 ## make.capthist.R
-## last changed 2010 05 02 (transferred from methods.R) 2010 05 03, 2010-11-21, 2011-01-21
+## 2010 05 02 (transferred from methods.R) 2010 05 03, 2010-11-21, 2011-01-21
+## 2012-02-08 signalnoise
+## 2012-02-09 revamped sorting
+## 2012-02-12 finished tidy up related to signalframe
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01,
-    noncapt = 'NONE')
+    noncapt = 'NONE', signalcovariates = NULL)
 
 # captures is a dataframe with the structure:
 # fmt = 'trapID'
@@ -15,6 +18,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 #   column 3	Occasion
 #   column 4	TrapID
 #   column 5    Signal   (optional)
+#   column 6    Noise    (optional)
 
 # fmt = 'XY'
 #   column 1	Session
@@ -23,6 +27,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 #   column 4	x
 #   column 5	y
 #   column 6    Signal    (optional)
+#   column 7    Noise     (optional)
 
 {
     session <- captures[,1]
@@ -101,10 +106,14 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
           }
         }
         else {
-          if (detector(traps) %in% .localstuff$polydetectors)
-              stop ("use fmt XY to input detections from polygons or transects")
-          captTrap <- match(captures[,4], row.names(traps))
+            if (detector(traps) %in% .localstuff$polydetectors)
+                stop ("use fmt XY to input detections from polygons or transects")
+            captTrap <- match(captures[,4], row.names(traps))
+            if (any(is.na(captTrap)))
+                stop ("failed to match some capture locations ",
+                      "to detector sites")
         }
+
 
         #  if (bysession & ( length(levels(session)) > 1)) {
         #    captures[,2] <- interaction(session, captures[,2], drop = TRUE)
@@ -115,18 +124,33 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
-        if (is.null(cutval) && detector(traps)  %in% c('cue','signal'))
+        if (is.null(cutval) && detector(traps)  %in% c('cue','signal','signalnoise'))
             stop ("missing 'cutval' (signal threshold) for signal data")
 
         wout <- NULL
         ID   <- NULL
 
         uniqueID <- unique(captures[,2])
+
+        ## optional row sort 2009 09 26, tweaked 2010 05 01
+        if (sortrows) {
+            if (suppressWarnings( all(!is.na(as.numeric(uniqueID)))))
+                rowOrder <- order(as.numeric(uniqueID))
+            else
+                rowOrder <- order (uniqueID)
+            uniqueID <- uniqueID[rowOrder]
+#                if (length(dim(wout))==3)
+#                    wout[,,] <- wout[rowOrder,,]
+#                else
+#                    wout[,] <- wout[rowOrder,]
+#                dimnames(wout)[[1]] <- dimnames(wout)[[1]][rowOrder]
+        }
+
         captID <- as.numeric(factor(captures[,2], levels=uniqueID))
         nID    <- length(uniqueID)
+        detectionOrder <- order(captTrap, abs(captures[,3]), captID)
 
-
-        dim3 <- detector(traps) %in% c('proximity', 'signal', 'count',
+        dim3 <- detector(traps) %in% c('proximity', 'signal', 'signalnoise', 'count',
             'polygon','transect','unmarked','presence')
         if (dim3) {
             w <- array (0, dim=c(nID, nocc, ndetector(traps)))
@@ -151,6 +175,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 w[deadindices] <- w[deadindices] * -1
                 #################################
             }
+
         }
         else {
             w     <- matrix(0, nrow = nID, ncol = nocc)
@@ -189,23 +214,11 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 stop ("missing values not allowed")
             }
 
-            ## optional row sort 2009 09 26, tweaked 2010 05 01
-            if (sortrows) {
-                if (suppressWarnings( all(!is.na(as.numeric(uniqueID)))))
-                    roworder <- order(as.numeric(uniqueID))
-                else
-                    roworder <- order (uniqueID)
-                if (length(dim(wout))==3)
-                    wout[,,] <- wout[roworder,,]
-                else
-                    wout[,] <- wout[roworder,]
-                dimnames(wout)[[1]] <- dimnames(wout)[[1]][roworder]
-            }
-
             ## code to input permanent individual covariates if these are present
             zi <- NULL
             startcol <- ifelse (fmt=='trapID', 5, 6)
             if (detector(traps) %in% c('signal')) startcol <- startcol+1
+            if (detector(traps) %in% c('signalnoise')) startcol <- startcol+1
             if (ncol(captures) >= startcol)
                 zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
             if (!is.null(zi)) {
@@ -231,7 +244,8 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                     names(temp) <- covnames
                 }
                 ## added 'FALSE' 2010 02 24 -
-                if (sortrows) temp <- temp[roworder,,drop = FALSE]
+## probably redundant given new use of uniqueID 2012-02-09
+##                if (sortrows) temp <- temp[rowOrder,,drop = FALSE]
                 attr(wout,'covariates') <- temp
             }
             else attr(wout,'covariates') <- data.frame()
@@ -246,22 +260,38 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
             if (detector(traps) %in% .localstuff$polydetectors) {
                 ## 2011-01-21
-                xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
+##                xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
+                xy <- captures[detectionOrder,4:5]
                 names(xy) <- c('x','y')
                 attr(wout,'detectedXY') <- xy
             }
-
-            if (detector(traps) == 'signal') {
+            if (detector(traps) %in% c('signal','signalnoise')) {
                 if (is.null(cutval))
                     stop ("missing value for signal threshold")
                 if (fmt=='XY')
                     signl <- captures[,6]
                 else
                     signl <- captures[,5]
-                signl[is.na(signl)] <- -Inf
-                signl <- signl[order(captTrap, abs(captures[,3]), captID)]
-                attr(wout, 'signal') <- signl
+                signl <- signl[detectionOrder]
+                signal(wout) <- signl
+                if (detector(traps) %in% 'signalnoise') {
+                    if (fmt=='XY')
+                        nois <- captures[,7]
+                    else
+                        nois <- captures[,6]
+                    nois <- nois[detectionOrder]
+                    noise(wout) <- nois
+                }
+                if (!is.null(signalcovariates)) {
+                    if (!all(signalcovariates %in% names(captures)))
+                        stop ("missing signal covariate(s)")
+
+                    attr(wout, 'signalframe') <- cbind(attr(wout, 'signalframe'),
+                                                       captures[,signalcovariates])
+                }
                 attr(wout, 'cutval')   <- cutval
+                ## dropunused = FALSE? 2012-01-11
+                ## apply cutval
                 wout <- subset(wout, cutval = cutval)
             }
         }

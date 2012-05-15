@@ -25,6 +25,10 @@
 /* 2011-09-30 re-write of pfn related to above*/
 /* 2011-11-15 parameter index array renamed 'gsb' to PIA' for clarity */
 /* 2011-11-15 substantial revision of exclusive detector code */
+/* 2012-01-22 removed turnover (phi) code Only in 2.3.1 */
+/* 2012-01-30 prwisignal modified to allow missing signal strengths (<=0) */
+/* 2012-01-31 cuerate replaced by miscparm, which may be a vector of parameters */
+/* 2012-02-01 also collaps mufn,mufnsph to one and simplified dnorm call */
 
 #include "secr.h"
 
@@ -381,17 +385,6 @@ double integral1D
                traps[k], traps[k+kk],
                mask[m], mask[m+mm],
 	       gsbval[cc + c]);
-/*
-	Rprintf("m %12d\n", m);
-	Rprintf("traps[k-1] %12.6f\n", traps[k-1]);
-	Rprintf("traps[k-1+kk] %12.6f\n", traps[k-1+kk]);
-	Rprintf("traps[k] %12.6f\n", traps[k]);
-	Rprintf("traps[k+kk] %12.6f\n", traps[k+kk]);
-	Rprintf("mask[m] %12.6f\n", mask[m]);
-	Rprintf("mask[m+mm] %12.6f\n", mask[m+mm]);
-	Rprintf("gsbval[cc + c] %12.6f\n", gsbval[cc + c]);
-	Rprintf("bx %12.6f\n", bx);
-*/
         }
         return (bx);
     }
@@ -481,99 +474,6 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
 }
 /*===============================================================*/
 
-void getphi (double phi[], int jj, double turnval[], int PIAturn[], 
-	     double intervals[], int s1[], int n, int x, int nc) {
-    int j;
-    phi[0] = 1;  /* forward from primary session j-1 */
-    for (j = 1; j < jj; j++) {
-	/* jj-1 because one fewer intervals than primary sessions */ 
-	phi[j] = turnval[PIAturn[i3(n, j-1, x, nc, jj-1 )]-1]; 
-	/* adjust for interval duration */ 
-	phi[j] = exp(log(phi[j]) * intervals[s1[j]-1]);  
-    }
-}
-/*===============================================================*/
-
-/*------------------------------------------------------*/
-/* pndot for death-only turnover model                  */
-/* jj primary sessions                                  */
-/* s1,s2 are arrays defining a subset of occasions for  */
-/*   each primary session                               */
-/* return probability animal n detected at least once   */
-/*------------------------------------------------------*/
-double pndotturn (int m, int n, int s1[], int s2[], int x, int ncol, 
-    int PIA0[], double gk0[], int ss, int kk, int cc0, int nmix,
-    double gsb0val[], int param, int jj, int PIAturn[], double turnval[], 
-    double intervals[])
-{
-    double *phi = NULL;
-    double *p = NULL;
-    double pdt;
-    double pj;
-    int i,j;
-    phi = (double *) R_alloc (jj, sizeof(double));
-    p = (double *) R_alloc (jj, sizeof(double));
-    getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, ncol);
-    for (j = 0; j < jj; j++)  {
-        p[j] = pndot (m, n, s1[j]+1, s2[j]+1, x, ncol, PIA0, gk0,
-		      ss, kk, cc0, nmix, gsb0val, param); }
-    /* prob(detected) summed over first detn occasions */
-    pdt = 0; 
-    for (j = 0; j<jj; j++) {
-        pj = p[j];
-        for(i=0; i<j; i++) 
-            pj *= (1-p[i]) * phi[i+1]; 
-        pdt += pj;
-    }
-    return(pdt);
-    /*------------------------------------------*/
-}
-
-#ifdef UNDEF
-
-double prwturn(int m, int n, int g, int jj, int CHj[], double phi[], int s1[], int s2[], 
-	       int x, int w[], double xy[], double signal[], int PIA[], double gk[],
-	       int binomN, double detspec[], double h[], int hindex[], int cc, 
-	       int nc, int gg, int nk, int ss, int mm, int nmix, gfn, double gsbval[], 
-	       double traps[], double mask[], double minprob) {
-
-/* trial open-population (death only) model */
-    double tempp = 1;
-    int lastj = -1;
-    int i,j;
-    for (j = 0; j < jj; j++) {
-	if (CHj[*nc * j + n]) {  
-	    /* survived */
-	    for (i = lastj; i < j; i++)
-		tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
-	    /* not detected in interim */
-	    for (i = lastj + 1; i < j; i++) {
-		pj = pndot (m, g, s1[i]+1, s2[i]+1, x, gg, PIA0, gk0,
-			    *ss, nk, *cc0, *nmix, gsb0val, *param);
-		tempp *= 1-pj;  
-	    }
-	    /* finally detected */
-	    pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
-			gk, binomN, detspec, h, hindex, cc, nc, nk, 
-			ss, mm, nmix, gfn, gsbval, traps, mask, minprob);
-	    tempp *= pj; 
-	    lastj = j;
-	}
-    }
-    
-    /* last seen at lastj */
-    chij = 1;
-    for (j = jj-2; j >= lastj; j--) {
-	/* pj = prob detection at next session */
-	pj = pndot (m, g, s1[j+1]+1, s2[j+1]+1, x, *gg, PIA0, gk0, *ss, nk,
-		    *cc0, *nmix, gsb0val, *param);
-	chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
-    }
-    tempp *= chij;  
-    return(tempp);
-}
-#endif
-
 void integralprw1 (
     int    *detect,    /* detector 0 multi, 1 proximity etc. */
     int    *param,     /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
@@ -590,7 +490,7 @@ void integralprw1 (
                           [naive animal] */
     int    *ncol,      /* number of columns in PIA0; added 2009 06 25 */
     double *area,      /* area associated with each mask point (ha) */
-    double *cuerate,   /* miscellaneous parameters */
+    double *miscparm,  /* miscellaneous parameters (cuerate etc) */
     int    *fn,        /* codes
                           0 = halfnormal,
                           1 = hazard rate,
@@ -599,7 +499,6 @@ void integralprw1 (
                           10 = signal strength,
                           11 = signal strength spher, */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
-    double *cut,       /* transformed signal strength threshold for detection */
     int    *useD,      /* logical : does third column of mask contain D weight? 2011-05-05 */
     double *a,         /* return value integral of pr(w0) */
     int    *resultcode /* 0 for successful completion */
@@ -653,7 +552,7 @@ void integralprw1 (
             for (k=0; k<*kk; k++) {
                 for (m=0; m<*mm; m++) {
                         gi = i3(c, k, m, *cc0, nk);
-                        gk0[gi] = gfn(k, m, c, gsb0val, *cc0, traps, mask, nk, *mm, *cut);
+                        gk0[gi] = gfn(k, m, c, gsb0val, *cc0, traps, mask, nk, *mm, miscparm);
                 }
             }
         }
@@ -662,7 +561,7 @@ void integralprw1 (
         for (c=0; c<*cc0; c++) {
             for (k=0; k<*kk; k++) {
                 for (m=0; m<*mm; m++) {
-                    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, nk, *mm, *cut);
+                    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, nk, *mm, miscparm);
                     gi = i3(c, k, m, *cc0, nk);
                     gk0[gi] = 1 - countp (0, *binomN, lambda);
                 }
@@ -777,13 +676,10 @@ double prwimulti
         }
         else  {
             pks = expmin(-htemp);      /* Not captured */
-	    if((m==1311) && debug)
-    	Rprintf("n %5d  pks %12.8f \n", n, pks); 
         }
          result *= pks;
         if (dead) break;
     }
-    if((m==1311) && debug) Rprintf("\n"); 
     return (result);
 }
 /*=============================================================*/
@@ -886,6 +782,8 @@ double prwisignal
     Probability of capture history n (0 <= n < nc)
     given that animal's range centre is at m
     SIGNAL STRENGTH DETECTOR
+    Modified 2012-01-30 to allow missing signal strengths
+    Does not need cut; simplified dnorm call 2012-02-01
 */
 
 {
@@ -894,14 +792,13 @@ double prwisignal
     int j;   /* index of detection */
     int c, wi, wxi, gi;
     double result = 1.0;
-    double mu, gam, sdS, y;
+    double mu, sdS;
     int start = 0;
     int count = 0;
-    double cut;
     int spherical;
+    double sig = 0;
 
-    cut = detspec[0];
-    spherical = round (detspec[1]);
+    spherical = round (detspec[3]);
     for (s=s1-1; s<s2; s++) {
         for (k=0; k<kk; k++) {
             wxi = i4(n, s, k, x, nc, ss, kk);
@@ -910,24 +807,249 @@ double prwisignal
                 wi = i3(n, s, k, nc, ss);
                 count = abs(w[wi]);                                 /* ignore 'deaths */
                 if (count==0) {
+                    /* not detected at this mic */
                     gi = i3(c,k,m,cc,kk);
                     result *= countp (0, binomN, gk[gi]);
                 }
                 else {
-                    start = round(detspec[wi+2]);
+                    /* detected at this mic */
+                    start = round(detspec[wi+4]);
                     for (j=0; j<count; j++) {
-                        if (spherical == 0) {
-                            mu = mufn (k, m, gsbval[c], gsbval[cc + c],
-                                traps, mask, kk, mm);
-                        }
-                        else {
-                            mu = mufnsph (k, m, gsbval[c], gsbval[cc + c],
-                                traps, mask, kk, mm);
-                        }
-                        sdS = gsbval[cc * 2 + c];
-                        gam = (cut - mu) / sdS;
-                        y   = signal[start+j] - cut + gam * sdS;
-                        result *= dnorm(y, 0, sdS, 0);                  /* signal strength */
+			sig = signal[start+j];
+			if (sig >= 0) {
+                            /* valid measurement of signal */
+			    mu = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical);
+			    sdS = gsbval[cc * 2 + c];
+			    result *= dnorm((sig - mu), 0, sdS, 0);
+			}
+			else  {
+                            /* signal value missing; detection only */
+			    gi = i3(c,k,m,cc,kk);
+			    result *= countp (1, binomN, gk[gi]);
+			}			   
+                    }
+                }
+                if (result < minp) {result = minp; break;}          /* truncate */
+            }
+        }
+        if (result <= minp) {result = minp; break;}                 /* truncate */
+    }
+    return (result);
+}
+/*=============================================================*/
+
+double prwisignalnoise
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int PIA[],
+    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk,
+    int ss, int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[],
+    double minp)
+
+/*
+    Probability of capture history n (0 <= n < nc)
+    given that animal's range centre is at m
+    SIGNAL + NOISE DETECTOR 2012-02-07
+
+detspec[0] nk
+detspec[1] nd
+detspec[2] miscparm[0]  cut
+detspec[3] miscparm[1]  muN
+detspec[4] miscparm[2]  sdN
+detspec[5] spherical
+detspec[6] start[0] (i=0, s=0, k=0)
+..
+detspec[6+nc*ss*nk-1] start[nc*ss*nk-1]
+
+start[w_isk] is index to signal for w_isk 
+start[w_isk] + nd is index to noise for w_isk 
+
+*/
+
+{
+    int s;   /* index of occasion  0 <= s < ss */
+    int k;   /* index of trap      0 <= k < kk */
+    int j;   /* index of detection */
+    int c, wi, wxi, gi;
+    double result = 1.0;
+    int start = 0;
+    int count = 0;
+    int spherical;
+    double sig = 0;
+    double nois = 0;
+    double muS;
+    double sdS;
+    double muN;
+    double sdN;
+    /* double cut; */
+    int nd;
+    /* double xi; */
+    double f = 1;
+
+    /* xi = 10 /  M_LN10; */
+    nd = round (detspec[1]);
+    spherical = round (detspec[5]);
+    /* cut = detspec[2]; */
+    muN = detspec[3];
+    sdN = detspec[4];
+    for (s=s1-1; s<s2; s++) {
+        for (k=0; k<kk; k++) {
+            wxi = i4(n, s, k, x, nc, ss, kk);
+            c = PIA[wxi] - 1;
+            if (c >= 0) {                                           /* skip if this trap not set */
+                wi = i3(n, s, k, nc, ss);
+                count = abs(w[wi]);                                 /* ignore 'deaths */
+                if (count==0) {
+                    /* not detected at this mic */
+                    gi = i3(c,k,m,cc,kk);
+                    result *= countp (0, binomN, gk[gi]);
+                }
+                else {
+                    /* detected at this mic */
+                    start = round(detspec[wi+6]);
+                    for (j=0; j<count; j++) {
+			sig = signal[start+j];
+			nois = signal[start+nd+j];
+
+			if (sig >= 0) {
+                            /* valid measurement of signal */
+			    muS = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical);
+                            /* acknowledge noise component of observed signal: SLOW
+                               muS = xi * log(pow(10, muS/10) + pow(10, muN/10));  */
+			    sdS = gsbval[cc * 2 + c];
+			    f =  dnorm(sig - nois, muS-muN, sqrt(sdS*sdS+sdN*sdN), 0) *
+				dnorm (nois, muN, sdN,0);   /* does not allow for effect of    */
+                                                            /* truncation on N distribution !! */
+ 			    result *= f; 
+			}
+			else  {
+                            /* signal value missing; detection only */
+			    gi = i3(c,k,m,cc,kk);
+			    result *= countp (1, binomN, gk[gi]);
+			}			   
+                    }
+                }
+                if (result < minp) {result = minp; break;}          /* truncate */
+            }
+        }
+        if (result <= minp) {result = minp; break;}                 /* truncate */
+    }
+    return (result);
+}
+/*=============================================================*/
+
+void fnst (double *x, int n, void *ex){
+    int i;
+    double * st;
+    st = (double*) ex;   /* [s, t] */
+    for(i=0; i<n; i++) 
+	x[i] = exp(st[0] * x[i] - x[i]*x[i]/2) * pow(pnorm(x[i],0,1,1,0), st[1]-1);
+}
+
+double d2lnorm (double x, double mu1, double s1, double mu2, double s2) {
+/* approximate density of sum of two lognormal random variables */
+/* Szyszkowiccz and Yanikomeroglu */
+    double s;
+    double m;
+    double t;
+    double y;
+    double Lambda = 0;
+    double ex[2];
+    double bound = 0;
+    int    inf = 2;
+    double epsabs = 0.0001;
+    double epsrel = 0.0001;
+    double abserr = 0;
+    int neval = 0;
+    int ier = 0;
+    int limit = 100;
+    int lenw = 400;
+    int last = 0;
+    int iwork[100];
+    double work[400];
+
+    s = fmax2(s1,s2);
+    t = s*s * (1/(s1*s1) + 1/(s2*s2));
+    if (s1 == s2) {
+        m = log(exp(mu1) + exp(mu2)) - log(2) - pnorm(s/sqrt(2),0,1,1,1);
+    }
+    else {
+        ex[0] = s;
+        ex[1] = t;
+        Rdqagi(fnst, ex, &bound, &inf, &epsabs, &epsrel, &Lambda, &abserr, &neval, &ier,
+          &limit, &lenw, &last, iwork, work);
+	m = log (exp(mu1 + s1*s1/2) + exp(mu2 + s2*s2/2)) - log(Lambda) - log(t) + log(M_2PI)/2;
+    }
+    y = (log(x) - m) / s;
+    return (t / (sqrt(M_2PI) * x * s) * exp( - y * y / 2 ) * pow( pnorm (y,0,1,0,0), t-1));
+}
+
+double prwisignal2
+    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int PIA[],
+    double gk[], int binomN, double detspec[], double h[], int hindex[], int cc, int nc, int kk,
+    int ss, int mm, int nmix, gfnptr gfn, double gsbval[], double traps[], double mask[],
+    double minp)
+
+/*
+    Probability of capture history n (0 <= n < nc)
+    given that animal's range centre is at m
+    SIGNAL STRENGTH DETECTOR
+    Modified 2012-01-30 to allow missing signal strengths
+    Does not need cut: simplified dnorm call 2012-02-01
+
+    Model sum of two lognormals
+*/
+
+{
+    int s;   /* index of occasion  0 <= s < ss */
+    int k;   /* index of trap      0 <= k < kk */
+    int j;   /* index of detection */
+    int c, wi, wxi, gi;
+    double result = 1.0;
+    double mu, sdS;
+    int start = 0;
+    int count = 0;
+    int spherical;
+    double sig = 0;
+    double xi;
+    double f = 1;
+
+    xi = 10 / log(10);
+
+    spherical = round (detspec[3]);
+    for (s=s1-1; s<s2; s++) {
+        for (k=0; k<kk; k++) {
+            wxi = i4(n, s, k, x, nc, ss, kk);
+            c = PIA[wxi] - 1;
+            if (c >= 0) {                                           /* skip if this trap not set */
+                wi = i3(n, s, k, nc, ss);
+                count = abs(w[wi]);                                 /* ignore 'deaths */
+                if (count==0) {
+                    /* not detected at this mic */
+                    gi = i3(c,k,m,cc,kk);
+                    result *= countp (0, binomN, gk[gi]);
+                }
+                else {
+                    /* detected at this mic */
+                    start = round(detspec[wi+4]);
+                    for (j=0; j<count; j++) {
+			sig = signal[start+j];
+			if (sig >= 0) {
+                            /* valid measurement of signal */
+			    mu = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical);
+			    sdS = gsbval[cc * 2 + c];
+                            /* fixed mu2, s2 : ovenbird noise */
+			    f = d2lnorm(sig/xi, mu/xi, sdS/xi, detspec[1]/xi, detspec[2]/xi);
+			    if (m == 2200)
+/*	    Rprintf("sig %12.6f mu %12.6f sdS %12.6f f %12.6f \n", sig,mu,sdS,f); */
+ 			    result *= f; 
+			}
+			else  {
+                            /* signal value missing; detection only */
+			    gi = i3(c,k,m,cc,kk);
+			    result *= countp (1, binomN, gk[gi]);
+			}			   
                     }
                 }
                 if (result < minp) {result = minp; break;}          /* truncate */
@@ -993,7 +1115,7 @@ double prwitimes
 */
                 result *= countp (0, binomN, lambda);
                 if (count>0) {
-                    start = round(detspec[wi]);
+                    start = round(detspec[wi]);  /* plus offset ? */
                     time0 = 0.0;
                     for (j=0; j<count; j++) {
                         y = signal[start+j]-time0;
@@ -1249,24 +1371,24 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *used, int *kk,
     double g0;
     double sigma;
     double z = 1;
-    double cutval = 0;
-
+    double cutval [1];
     int s;
     int sumused = 0;
+    cutval[0] = 0;
     for (k=0; k<*kk; k++) {
         for (s=0; s<*nocc; s++) {
             sumused += used[s * *kk + k];
         }
     }
 
-    if (*fn>11)
-        if (*fn != 20) error("require detectfn<12");
+    if (*fn>13)
+        if (*fn != 20) error("require detectfn<14");
     g0 = par[0];
     sigma = par[1];
     if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) || (*fn == 20)))
         z = par[2];
-    if ((*fn == 10) || (*fn == 11))
-        cutval = par[3];
+    if ((*fn == 10) || (*fn == 11) || (*fn == 12) || (*fn == 13))
+        cutval[0] = par[3];
 
     if (sumused < (*nocc * *kk)) {
         for (i=0; i<*nxy; i++) {
@@ -1480,60 +1602,6 @@ void countsessions(int *jj, int J[], int ss, double intervals[]) {
 }
 /*=============================================================*/
 
-void setupturnover(int jj, int J[], int CHj[], int s1[], int s2[], 
-		   double intervals[], int detect,
-                   int w[], int nc, int ss, int nk) {
-
-    int n;
-    int s;
-    int k;
-
-	/* indices of start and finish of each primary session */
-	s1[0] = 0;   
-	s2[0] = 0;
-	for (s = 1; s < ss; s++) {
-	    if (J[s] != J[s-1])  {
-		s1[J[s]] = s;
-		s2[J[s]] = s;
-	    }
-	    else {
-		s2[J[s]] = s;
-	    }
-	}
-
-	/* construct simplified capture histories */
-        for (n = 0; n < nc; n++) {
-            for (s = 0; s < ss; s++) {
-                if (detect < 1) { 
-                    if (abs(w[nc * s + n])>0)
-                        CHj[nc * J[s] + n] = 1;
-                }
-                else {
-                    for (k = 0; k < nk; k++) {
-                        if (abs(w[i3(n, s, k, nc, ss)])>0) {
-                            CHj[nc * J[s] + n] = 1;
-                            break;
-			}
-		    }
-		}
-            }
-	} 
-
-#ifdef UNDEF  
-        /* debug code */
-        for (n = 0; n < nc; n++) {
-            Rprintf(" n %4d  CHj ",n);
-            for (j = 0; j < *jj; j++) 
-		Rprintf("%4d", CHj[nc * j + n]);
-            Rprintf("\n");
-	}       
-        for (j = 0; j < *jj; j++) 
-            Rprintf("s1 %4d s2 %4d\n", s1[j], s2[j]);
-	error("OK");
-#endif 
-
-}
-
 void secrloglik (
     int    *like,        /* likelihood 0 full, 1 conditional */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
@@ -1554,24 +1622,39 @@ void secrloglik (
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    double *turnval,     /* Parameter values - turnover */
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-    int    *ccturn,      /* number of turnover combinations */
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
     int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
-    int    *PIAturn,     /* lookup which turnover parameter combination to use n, J, mix */
-    double *intervals,   /* vector of *ss-1 between-occasion intervals */
     double *area,        /* area associated with each mask point (ha) */
-    double *cuerate,     /* miscellaneous parameters */
+    double *miscparm,    /* miscellaneous parameters (cuerate, cutval etc.) */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-    double *cut,         /* transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *a,           /* a(theta) */
     double *value,       /* return value integral */
     int    *resultcode   /* 0 if OK */
 )
+
+/*
+  A note on ordering of input data arrays 2012-02-09
+
+  Using 'i' to subscript animals, 's' to subscript occasions, 'k' to subscript detectors..
+
+ 'w' is in isk order - dim(CH) = c(nc,ss,nk) or c(nc,ss) for 2-D exclusive detectors 
+
+ 'signal' is in linear ksi order and includes positive detections only, 1:nd 
+
+ For signal-noise detectors (*detect==12) the positions nd+1 : 2nd are noise measurements 
+
+ The integer array start (dim nc x ss x nk or nc x ss) holds the index for each isk to
+   the first corresponding detection in 'signal' 
+
+ It is possible in principle for there to be more than one detection per isk; these will
+   follow in sequence, hence the name 'start' 
+
+*/
+
 {
     /* controls on included code (vary in pwuniform) */
     int switch0 = 1;
@@ -1583,7 +1666,7 @@ void secrloglik (
     int    gi;
 
     /* miscellaneous */
-    double temp, tempg, tempsum, tempp, templog;
+    double temp, tempg, tempsum, tempp, templog, prwi;
 
     /* group arrays */
     int    *ng;       /* number per group */
@@ -1634,18 +1717,6 @@ void secrloglik (
     int    cumng = 0;   /* used for 'nested' */
     double dp;          /* Poisson density (cuerate) */
 
-    /* turnover 2011-11-30 */
-    int    j = 0;
-    int    jj = 1;
-    int    *J = NULL;
-    int    *CHj = NULL;
-    int    *s1 = NULL;
-    int    *s2 = NULL;
-    double *phi = NULL;
-    double *p = NULL;
-    double pj = 1;
-    int    lastj = -1;
-    double chij = 1;
     double pdt = 0;
 
     /*-------------------------------------------------------*/
@@ -1666,6 +1737,9 @@ code is executed when included in 'pwuniform':
 
 switch0 = 0  Don't bother with 'naive' detection (always in pwuniform)
 switch1 = 0  Don't bother with code used only to normalize pdf
+
+SHARING ABANDONED BECAUSE INCLUDE FILES CONFUSE CRAN...
+JUST DUPLICATE
 
 */
 
@@ -1716,8 +1790,6 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         ng[g]++;
     }
     /*---------------------------------------------------------*/
-
-    /*---------------------------------------------------------*/
     /* determine number of polygons if polygon detector */
     /* for polygon detectors, kk is vector ending in zero */
     if ((*detect==3) || (*detect==4) || (*detect==6) || (*detect==7)) {
@@ -1732,27 +1804,6 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         nk = *kk;
     /*---------------------------------------------------------*/
 
-    /* turnover */
-    /* 2011-11-30 */
-    /* count primary sessions jj */
-    /* if more than one primary session ...                    */
-    /*   find start and finish of each primary session         */
-    /*   compute capture histories by primary session CHj      */
-    /*   allocate memory for phi, p                            */
-
-    J = (int *) R_alloc (*ss, sizeof(int));
-    countsessions(&jj, J, *ss, intervals);
-    if (jj > 1) {
-	/* arrays for primary sessions */
-	s1 = (int *) R_alloc (jj, sizeof(int));
-	s2 = (int *) R_alloc (jj, sizeof(int));
-	phi = (double *) R_alloc (jj, sizeof(double));
-	p = (double *) R_alloc (jj, sizeof(double));
-        CHj = (int *) S_alloc (*nc * jj, sizeof(int));
-        setupturnover(jj, J, CHj, s1, s2, intervals, *detect,
-		      w, *nc, *ss, nk);
-    }
-
     /*---------------------------------------------------------*/
     /* dynamically allocate memory                             */
     /* use R_alloc for robust exit on interrupt                */
@@ -1762,7 +1813,9 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     if ((*detect==3) || (*detect==4))
         nval = 2 + *cc + nc1 * *ss;
     else if ((*detect==5) || (*detect==9))
-        nval = 2 + nc1 * *ss * nk;
+        nval = 4 + nc1 * *ss * nk;
+    else if (*detect==12)    /* signalnoise */
+        nval = 6 + nc1 * *ss * nk;
     else if ((*detect==6) || (*detect==7))
         nval = 2 + *cc + nc1 * *ss * nk;
     else if (*detect==8)
@@ -1800,7 +1853,7 @@ switch1 = 0  Don't bother with code used only to normalize pdf
             }
         }
     }
-    if ((*detect>=5) && (*detect<=9)) {
+    if (((*detect>=5) && (*detect<=9)) || (*detect==12)) {
         /* start[z] indexes the first row in xy (or element in signal)
            for each possible count z, where z is w-order (isk) */
         start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
@@ -1816,10 +1869,8 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     }
     /*---------------------------------------------------------*/
 
-    /*---------------------------------------------------------*/
     /* retrieve detection function  (getgfn in utils.c)        */
     gfn = getgfn(*fn);
-    /*---------------------------------------------------------*/
 
     /*---------------------------------------------------------*/
     /* mixture proportions                                     */
@@ -1859,13 +1910,14 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         7  transect detector
         8  times
         9  cue
+	12 signalnoise
     */
     /*---------------------------------------------------------*/
 
     /* all these detectors are Bernoulli, or similar           */
     /* so we override binomN                                   */
     if ((*detect==0) || (*detect==1) || (*detect==3) || 
-        (*detect==4) || (*detect==5)) {
+        (*detect==4) || (*detect==5) || (*detect==12)) {
         *binomN = 1;
     }
 
@@ -1877,30 +1929,31 @@ switch1 = 0  Don't bother with code used only to normalize pdf
                 for (c=0; c<*cc0; c++) {
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = gfn(k, m, c, gsb0val,
-                        *cc0, traps, mask, nk, *mm, *cut);
+                        *cc0, traps, mask, nk, *mm, miscparm);
                 }
                 for (c=0; c<*cc; c++) {
                     gi = i3(c,k,m,*cc,nk);
                     gk[gi] = gfn(k, m, c, gsbval,
-                        *cc, traps, mask, nk, *mm, *cut);
+                        *cc, traps, mask, nk, *mm, miscparm);
                 }
             }
         }
     }
-    else if ((*detect == 1) || (*detect == 2) || (*detect==5) || (*detect==8) || (*detect==9)) {
+    else if ((*detect == 1) || (*detect == 2) || (*detect==5) || (*detect==8)
+	     || (*detect==9) || (*detect==12)) {
         for (k=0; k<*kk; k++) {
             for (m=0; m<*mm; m++) {
                 if (switch0)
                 for (c=0; c<*cc0; c++) {
                     lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk,
-                        *mm, *cut);
+                        *mm, miscparm);
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = 1 - countp(0, *binomN, lambda);
                 }
                 for (c=0; c<*cc; c++) {
                     gi = i3(c,k,m,*cc,nk);
                     gk[gi] = gfn(k, m, c, gsbval, *cc,
-                        traps, mask, nk, *mm, *cut);
+                        traps, mask, nk, *mm, miscparm);
                 }
             }
         }
@@ -1984,14 +2037,17 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         prwfn = prwipolygonX;
     if (*detect == 4)
         prwfn = prwitransectX;
-    if ((*detect == 5) || (*detect==9))
-        prwfn = prwisignal;
+    if ((*detect == 5) || (*detect==9)) 
+	prwfn = prwisignal;
     if (*detect == 6)
         prwfn = prwipolygon;
     if (*detect == 7)
         prwfn = prwitransect;
     if (*detect == 8)
         prwfn = prwitimes;
+    if (*detect == 12) {
+	prwfn = prwisignalnoise;   /* experimental 2012-02-07 */
+    }
 
     /*=================================================================*/
     /* need nk, pmix and gk0 for pndot() in case there are no captures */
@@ -2081,10 +2137,20 @@ switch1 = 0  Don't bother with code used only to normalize pdf
             detspec[2+*cc+i] = (double) start[i];
     }
     else if ((*detect == 5) || (*detect==9)) {
-        detspec[0]= *cut;
-        detspec[1]= (*fn == 11);     /* spherical */
+        for (i=0; i<3; i++) detspec[i]= miscparm[i];
+        detspec[3]= ((*fn == 11) || (*fn == 13));     /* spherical */
         for (i=0; i< (*nc * *ss * nk); i++)
-            detspec[2+i] = (double) start[i];
+            detspec[4+i] = (double) start[i];
+    }
+    else if (*detect==12) {                           /* signal-noise */        
+        detspec[0] = (double) nk;
+        detspec[1] = (double) nd;                     /* number of detectors */
+	detspec[2]= miscparm[0];                      /* cut */
+	detspec[3]= miscparm[1];                      /* noise mean */
+	detspec[4]= miscparm[2];                      /* noise sd */
+        detspec[5]= ((*fn == 11) || (*fn == 13));     /* spherical */
+        for (i=0; i< (*nc * *ss * nk); i++)
+            detspec[6+i] = (double) start[i];
     }
     else if ((*detect == 6) || (*detect == 7)) {
         detspec[0] = (double) nk;
@@ -2138,18 +2204,11 @@ eval:    /* skip to here from within include block if no captures */
                     if (nested) {
                         pd = pndot (m, 0, 1, *ss, x, *nc, PIA0, gk0, *ss, nk,
                             *cc0, *nmix, gsb0val, *param);
-                        asum[x] += pndotgrp (pd, *cuerate, 0.0001);
+                        asum[x] += pndotgrp (pd, miscparm[0], 0.0001);
                     }
                     else {
-			if (jj == 1) {
 			    asum[x] += pndot (m, 0, 1, *ss, x, *nc, PIA0, gk0, *ss, nk,
 					      *cc0, *nmix, gsb0val, *param);
-			}
-			else {
-			    asum[x] += pndotturn (m, 0, s1, s2, x, *nc, PIA0, gk0,
-						  *ss, nk, *cc0, *nmix, gsb0val, *param,
-						  jj, PIAturn, turnval, intervals);
-			}
                     }
                 }
             }
@@ -2157,7 +2216,7 @@ eval:    /* skip to here from within include block if no captures */
         /* else asum calculated for each individual in loop below */
         *value = 0;
 
-        if (nested) {   /* 2011-01-11 */
+        if (nested) {   /* 2011-01-11 cuerate model - specialised */
 
             /* Loop over individuals... */
             for (g=0; g<*gg; g++) {
@@ -2167,25 +2226,22 @@ eval:    /* skip to here from within include block if no captures */
                     /* loop over cues for this individual */
                     for (i = 0; i<ng[g]; i++) {
                         n = cumng + i;
-                        tempg *= prwfn (m, n, 1, *ss, 0, w, xy, signal, PIA, gk,
+			prwi = prwfn (m, n, 1, *ss, 0, w, xy, signal, PIA, gk,
 					*binomN, detspec, h, hindex, *cc, *nc, nk, 
 					*ss, *mm, 1, gfn, gsbval, traps, mask, *minprob);
+			tempg *= prwi;
                     }
                     tempsum += tempg;
                 }
                 a[g] = asum[0];
-
-                dp = dpois(ng[g], *cuerate, 1);
+                dp = dpois(ng[g], miscparm[0], 1);
                 templog = log(tempsum) - log(a[g]) + dp;
-
                 a[g] = *area * a[g];
 
-                if (R_FINITE(templog))
-                    *value += templog;
-                else {
-                    *resultcode = 9;
-                    return;
-                }
+                if (!R_FINITE(templog)) *resultcode = 9;
+		if (*resultcode == 9) return;
+
+                *value += templog;
                 R_CheckUserInterrupt();
                 cumng += ng[g];
             }     /* end loop over groups (= individuals) */
@@ -2202,72 +2258,34 @@ eval:    /* skip to here from within include block if no captures */
                     if (indiv > 0)
                         asum[x] = 0;
                     for (m=0; m<*mm; m++) {
-			if (jj == 1) {
-			    if (indiv > 0)
-				asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0,
-						  *ss, nk, *cc0, *nmix, gsb0val, *param);
-			    temp += prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
-					   detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-					   gfn, gsbval, traps, mask, *minprob);
-			}
-			else {
-                            /* provisional death-only model */
-			    if (indiv > 0)
-				asum[x] += pndotturn (m, n, s1, s2, x, *nc, PIA0, gk0,
-						      *ss, nk, *cc0, *nmix, gsb0val, *param,
-						      jj, PIAturn, turnval, intervals);
-				asum[x] += 0.0001;
-			    getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, *nc);
-			    tempp = 1;
-			    lastj = -1;
-			    for (j = 0; j < jj; j++) {
-				if (CHj[*nc * j + n]) {  
-				    /* survived */
-				    for (i = lastj; i < j; i++)
-					tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
-				    /* not detected in interim */
-				    for (i = lastj + 1; i < j; i++) {
-					pj = pndot (m, n, s1[i]+1, s2[i]+1, x, *nc, PIA0, gk0,
-						    *ss, nk, *cc0, *nmix, gsb0val, *param);
-					tempp *= 1-pj;  
-				    }
-				    /* finally detected */
-				    pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
-						gk, *binomN, detspec, h, hindex, *cc, *nc, nk, 
-						*ss, *mm, *nmix, gfn, gsbval, traps, mask, 
-						*minprob);
-				    tempp *= pj; 
-				    lastj = j;
-				}
-			    }
-
-			    /* last seen at lastj */
-			    chij = 1;
-			    for (j = jj-2; j >= lastj; j--) {
-				/* pj = prob detection at next session */
-				pj = pndot (m, n, s1[j+1]+1, s2[j+1]+1, x, *nc, PIA0, gk0, *ss, nk,
-					    *cc0, *nmix, gsb0val, *param);
-				chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
-			    }
-			    tempp *= chij;  
-			    temp += tempp;
-			}
+			if (indiv > 0)
+			    asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0,
+					      *ss, nk, *cc0, *nmix, gsb0val, *param);
+			prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+				      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+				      gfn, gsbval, traps, mask, *minprob);
+			temp += prwi;
                     }
                     a[n] += pmix[*nmix * n + x] * asum[x];
                     tempsum += pmix[*nmix * n + x] * temp;
                 }    /* end of loop over mixtures */
 
+/*
+	Rprintf("n %14d \n", n);
+	Rprintf("prwi sum %14.8f \n", tempsum);
+	Rprintf("a[n] %14.8f \n", a[n]);
+*/
                 templog = log(tempsum/a[n]);
                 a[n] = *area * a[n];
 
-                if (R_FINITE(templog))
-                    *value += templog;
-                else {
-                    *resultcode = 9;
-                    return;
-                }
+                if (!R_FINITE(templog)) *resultcode = 9;
+		if (*resultcode == 9) return;
+		*value += templog;
                 R_CheckUserInterrupt();
             }        /* end of loop over individuals */
+/*
+	Rprintf("a %14.8f \n", a[0]);
+*/
         }
     }
     /*-------------------------------------------------------------------------------------------*/
@@ -2280,18 +2298,9 @@ eval:    /* skip to here from within include block if no captures */
             for (m=0; m<*mm; m++)  {
                 sumD[g] += Dmask[*mm * g + m];
                 for (x=0; x<*nmix; x++) {
-                    if (jj == 1) {
-                        /* closed population */
-                        pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0,
-    		           *ss, nk, *cc0, *nmix, gsb0val, *param);
-		    }
-		    else {
-                        /* open population */
-                        /* OOPS - need n for naive animal in group g... fudge */
-			pdt = pndotturn (m, 0, s1, s2, x, *gg, PIA0, gk0,
-			    *ss, nk, *cc0, *nmix, gsb0val, *param,
-			    jj, PIAturn, turnval, intervals);
-		    }
+		    /* closed population */
+		    pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0,
+				 *ss, nk, *cc0, *nmix, gsb0val, *param);
                     sumDp[g] += pdt * pmix[*nmix * g + x] * Dmask[*mm * g + m];
                 }
             }
@@ -2305,46 +2314,10 @@ eval:    /* skip to here from within include block if no captures */
             temp = 0;
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
-                    if (jj == 1) {
-                        pj = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
-				    detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
-				    gfn, gsbval, traps, mask, *minprob);
-			tempp = pj * pmix[*nmix * g + x] * Dmask[*mm * g + m];
-		    }
-                    else {
-			getphi (phi, jj, turnval, PIAturn, intervals, s1, n, x, *nc);
-			tempp = 1;
-			lastj = -1;
-			for (j = 0; j < jj; j++) {
-			    if (CHj[*nc * j + n]) {  
-				/* survived */
-				for (i = lastj; i < j; i++)
-				    tempp *= phi[i+1];   /* remember phi indexed -1..jj-2 */
-				/* not detected in interim */
-				for (i = lastj + 1; i < j; i++) {
-				    pj = pndot (m, g, s1[i]+1, s2[i]+1, x, *gg, PIA0, gk0,
-						*ss, nk, *cc0, *nmix, gsb0val, *param);
-				    tempp *= 1-pj;  
-				}
-				/* finally detected */
-				pj = prwfn (m, n, s1[j]+1, s2[j]+1, x, w, xy, signal, PIA,
-					    gk, *binomN, detspec, h, hindex, *cc, *nc, nk, 
-					    *ss, *mm, *nmix, gfn, gsbval, traps, mask, *minprob);
-				tempp *= pj; 
-				lastj = j;
-			    }
-			}
-			/* last seen at lastj */
-			chij = 1;
-			for (j = jj-2; j >= lastj; j--) {
-			    /* pj = prob detection at next session */
-			    pj = pndot (m, g, s1[j+1]+1, s2[j+1]+1, x, *gg, PIA0, gk0, *ss, nk,
-					*cc0, *nmix, gsb0val, *param);
-			    chij = 1 - phi[j+1] * (1 - (1-pj)*chij); 
-			}
-			tempp *= chij * pmix[*nmix * g + x] * Dmask[*mm * g + m];  
-		    }
-
+		    prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+				detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
+				gfn, gsbval, traps, mask, *minprob);
+		    tempp = prwi * pmix[*nmix * g + x] * Dmask[*mm * g + m];	    
                     /* Simply aborting at this point does not work 2011-01-30 */
 		    /* so following condition is not used */
                     if (tempp < 0) {
@@ -2356,15 +2329,12 @@ eval:    /* skip to here from within include block if no captures */
                 }
             }
             templog = log(temp);
-            if (R_FINITE(templog))
-                *value += templog;
-            else {
-                *resultcode = 9;
-                return;
-            }
+            if (!R_FINITE(templog)) *resultcode = 9;
+	    if (*resultcode == 9) return;
+            *value += templog;
+
             R_CheckUserInterrupt();
         }
-
         /* compute likelihood component due to n */
         for (g=0; g<*gg; g++) {
             *value -= ng[g] * log(sumDp[g]);
@@ -2466,6 +2436,7 @@ void naiveRPSV (
     double sumpk;
     double sump  = 0;
     double sumpRPSV = 0;
+    double miscparm [3];
 
     if (*fn > 8)
     error ("invalid detection function in naiveRPSV");
@@ -2479,7 +2450,7 @@ void naiveRPSV (
         sumpk  = 0;
         for (k=0; k< *kk; k++) {
             d2k = (traps[k] - x) * (traps[k] - x) + (traps[k + *kk]-y) * (traps[k + *kk]-y);
-	    pk = pfn(*fn, d2k, 1.0, *sigma, *z, 0, truncate2);
+	    pk = pfn(*fn, d2k, 1.0, *sigma, *z, miscparm, truncate2);
             sumd2k += pk * d2k;
             sumpk  += pk;
             pdot   *= (1 - pk);
@@ -2632,11 +2603,11 @@ void pwuniform (
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
 
     double *area,        /* area associated with each mask point (ha) */
-    double *cuerate,     /* miscellaneous parameters */
+    double *miscparm,    /* miscellaneous parameters (cuerate etc.) */
     int    *normal,      /* code 0 don't normalise, 1 normalise */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-    double *cut,         /* transformed signal strength threshold for detection */
+/*    double *cut,       transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *value,       /* return values */
     int    *resultcode   /* 0 if OK */
@@ -2650,6 +2621,7 @@ void pwuniform (
     double *pmix;
     double temp;
     double sumprwi = 1.0;
+    double prwi;
 
     double *gk;
     double *gkx;
@@ -2792,7 +2764,7 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     if ((*detect==3) || (*detect==4))
         nval = 2 + *cc + nc1 * *ss;
     else if ((*detect==5) || (*detect==9))
-        nval = 2 + nc1 * *ss * nk;
+        nval = 4 + nc1 * *ss * nk;
     else if ((*detect==6) || (*detect==7))
         nval = 2 + *cc + nc1 * *ss * nk;
     else if (*detect==8)
@@ -2847,7 +2819,7 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     /*---------------------------------------------------------*/
 
     /*---------------------------------------------------------*/
-    /* retrieve detection function  (getgfn in utils.c)        */
+    /* retrieve detection function  (getgfn in detectfn.c)        */
     gfn = getgfn(*fn);
     /*---------------------------------------------------------*/
 
@@ -2907,12 +2879,12 @@ switch1 = 0  Don't bother with code used only to normalize pdf
                 for (c=0; c<*cc0; c++) {
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = gfn(k, m, c, gsb0val,
-                        *cc0, traps, mask, nk, *mm, *cut);
+                        *cc0, traps, mask, nk, *mm, miscparm);
                 }
                 for (c=0; c<*cc; c++) {
                     gi = i3(c,k,m,*cc,nk);
                     gk[gi] = gfn(k, m, c, gsbval,
-                        *cc, traps, mask, nk, *mm, *cut);
+                        *cc, traps, mask, nk, *mm, miscparm);
                 }
             }
         }
@@ -2923,14 +2895,14 @@ switch1 = 0  Don't bother with code used only to normalize pdf
                 if (switch0)
                 for (c=0; c<*cc0; c++) {
                     lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk,
-                        *mm, *cut);
+                        *mm, miscparm);
                     gi = i3(c,k,m,*cc0,nk);
                     gk0[gi] = 1 - countp(0, *binomN, lambda);
                 }
                 for (c=0; c<*cc; c++) {
                     gi = i3(c,k,m,*cc,nk);
                     gk[gi] = gfn(k, m, c, gsbval, *cc,
-                        traps, mask, nk, *mm, *cut);
+                        traps, mask, nk, *mm, miscparm);
                 }
             }
         }
@@ -3022,6 +2994,9 @@ switch1 = 0  Don't bother with code used only to normalize pdf
         prwfn = prwitransect;
     if (*detect == 8)
         prwfn = prwitimes;
+    if (*detect == 12) {
+	prwfn = prwisignalnoise;   /* experimental 2012-02-07 */
+    }
 
     /*=================================================================*/
     /* need nk, pmix and gk0 for pndot() in case there are no captures */
@@ -3109,10 +3084,10 @@ switch1 = 0  Don't bother with code used only to normalize pdf
             detspec[2+*cc+i] = (double) start[i];
     }
     else if ((*detect == 5) || (*detect==9)) {
-        detspec[0]= *cut;
-        detspec[1]= (*fn == 11);     /* spherical */
+        for (i=0; i<3; i++) detspec[i]= miscparm[i];
+        detspec[3]= (*fn == 11);     /* spherical */
         for (i=0; i< (*nc * *ss * nk); i++)
-            detspec[2+i] = (double) start[i];
+            detspec[4+i] = (double) start[i];
     }
     else if ((*detect == 6) || (*detect == 7)) {
         detspec[0] = (double) nk;
@@ -3157,8 +3132,9 @@ eval:    /* skip to here from within include block if no captures */
         for (x=0; x<*nmix; x++) {
             temp = 0;
             for (m=0; m<*mm; m++) {
-                temp += prwfn (m, *which-1, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, detspec,
+		prwi = prwfn (m, *which-1, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, detspec,
                     h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn, gsbval, traps, mask, *minprob);
+		temp += prwi;
             }
             sumprwi += pmix[x] * temp;
         }    /* end of loop over mixtures */
@@ -3195,7 +3171,7 @@ eval:    /* skip to here from within include block if no captures */
                 for (c=0; c<*cc; c++) {
                     gi = i3(c,k,m,*cc,nk);
                     gkx[gi] = gfn(k, m, c, gsbval, *cc,
-                        traps, X, nk, *xx, *cut);
+                        traps, X, nk, *xx, miscparm);
                 }
             }
         }
@@ -3276,10 +3252,10 @@ eval:    /* skip to here from within include block if no captures */
             detspecx[2+*cc+i] = (double) start[i];
     }
     else if ((*detect == 5) || (*detect==9)) {
-        detspecx[0]= *cut;
-        detspecx[1]= (*fn == 11);     /* spherical */
+        for (i=0; i<3; i++) detspecx[i]= miscparm[i];
+        detspecx[3]= (*fn == 11) || (*fn == 12);     /* spherical */
         for (i=0; i< (*nc* *ss * nk); i++)
-            detspecx[2+i] = (double) start[i];
+            detspecx[4+i] = (double) start[i];
     }
     else if ((*detect == 6) || (*detect == 7)) {
         detspecx[0] = (double) nk;
@@ -3301,13 +3277,14 @@ eval:    /* skip to here from within include block if no captures */
     for (i=0; i< *xx; i++) {
         temp = 0;
         if (nested) {    /* no mixture */
-            tempg = dpois(ng[*which-1], *cuerate, 0);
+            tempg = dpois(ng[*which-1], miscparm[0], 0);
             /* loop over cues for this individual */
             for (j = 0; j<ng[*which-1]; j++) {
                 n = cumng[*which-1] + j;
-                tempg *= prwfn (i, n, 1, *ss, 0, w, xy, signal, PIA, gkx,
-		    *binomN, detspecx, hx, hindexx, *cc, *nc, nk, *ss, *xx, 1, gfn,
-                    gsbval, traps, X, *minprob);
+		prwi = prwfn (i, n, 1, *ss, 0, w, xy, signal, PIA, gkx,
+			      *binomN, detspecx, hx, hindexx, *cc, *nc, nk, *ss, *xx, 1, gfn,
+			      gsbval, traps, X, *minprob);
+		tempg *= prwi;
             }
             temp += tempg;
         }

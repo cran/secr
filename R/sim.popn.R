@@ -8,6 +8,8 @@
 ## 2011-03-27  conditional attachment of rownames (correct bug when N = 0)
 ## 2011-04-06  coastal beta option
 ## 2011-10-20  poly argument
+## 2012-04-10  IHP D may be covariate; more checks
+## 2012-04-10  MRC
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -75,8 +77,9 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
                 survive <- sort(survive)   ## numeric indices
             }
             newpopn <- subset.popn(oldpopn, subset=survive)
-            newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0, sd =
-                turnoverpar$sigma.m)
+            if (turnoverpar$sigma.m > 0)
+                newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
+                    sd = turnoverpar$sigma.m)
             if (turnoverpar$wrap)
                 newpopn <- toroidal.wrap(newpopn)
 
@@ -138,10 +141,23 @@ sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
         }
         ##########################
 
-        if (model2D == 'IHP') {
+        if (model2D %in% c('IHP')) {
             nr <- nrow(core)
             if (!inherits(core, 'mask'))
                 stop ("for model2D = IHP, 'core' should be a habitat mask")
+            if ((length(D) == 1) & (is.character(D)))
+                D <- covariates(core)[,D]
+            if ((length(D) == nr) & (is.numeric(D)))
+                D <- rep(D, nr)
+            if (any(is.na(D))) {
+                D[is.na(D)] <- 0
+                warning ("NA values of D set to zero")
+            }
+            if (any(D<0)) {
+                D <- pmax(0,D)
+                warning ("negative D set to zero")
+            }
+            ## end of addition 2012-04-10
             if (Ndist != 'poisson')
                 stop ("IHP not implemented for fixed or specified N")
             nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per mask cell

@@ -21,7 +21,8 @@ tile(popn, method = "reflect")
 }
 
 \arguments{
-  \item{D}{ density animals / hectare (10 000 m\^2) }
+  \item{D}{ density animals / hectare (10 000 m\^2) (see Details for
+  IHP case) }
   \item{core}{ data frame of points defining the core area }
   \item{buffer}{ buffer radius about core area }
   \item{model2D}{ character string for 2-D distribution ("poisson",
@@ -91,12 +92,13 @@ small proportion of the points are wrapped.
 
 If \code{model2D = "IHP"} then an inhomogeneous Poisson distribution is
 simulated.  \code{core} should be a habitat \link{mask} and \code{D}
-should be a vector of length equal to the number of cells (rows) in
-\code{core}. The number of individuals in each cell is
-Poisson-distributed with mean \eqn{DA} where \eqn{A} is the cell area
-(an attribute of the mask). \code{buffertype} and \code{buffer} are
-ignored, as the extent of the population is governed entirely by
-the mask in \code{core}.
+should be either a vector of length equal to the number of cells (rows)
+in \code{core} or the name of a covariate in \code{core} that contains
+cell-specific densities (animals / hectare), or a constant. The number
+of individuals in each cell is Poisson-distributed with mean \eqn{DA}
+where \eqn{A} is the cell area (an attribute of the
+mask). \code{buffertype} and \code{buffer} are ignored, as the extent of
+the population is governed entirely by the mask in \code{core}.
 
 If \code{model2D = "coastal"} then a form of inhomogeneous Poisson
 distribution is simulated in which the x- and y-coordinates are drawn from
@@ -161,7 +163,7 @@ stored in the `seed' attribute.
   (e.g. convex hull, concave) }
 
 \seealso{ \code{\link{popn}}, \code{\link{plot.popn}},
-  \code{\link[stats]{simulate}} }
+  \code{\link{randomHabitat}}, \code{\link[stats]{simulate}} }
 
 \examples{
 

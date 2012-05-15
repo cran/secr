@@ -8,7 +8,7 @@ least one of a set of polygons
 }
 
 \usage{
-pointsInPolygon(xy, poly)
+pointsInPolygon(xy, poly, logical = TRUE)
 }
 
 \arguments{
@@ -16,7 +16,11 @@ pointsInPolygon(xy, poly)
   \item{xy}{2-column matrix or dataframe of x-y coordinates for points to assess}
 
   \item{poly}{2-column matrix or dataframe containing perimeter points of polygon, or
-    a SpatialPolygonsDataFrame object from package \pkg{sp}}
+    a SpatialPolygonsDataFrame object from package \pkg{sp}, or a `mask'
+    object}
+
+  \item{logical}{logical to control the output when `poly' is a mask
+  (see Details)}
   
 }
 
@@ -26,6 +30,12 @@ pointsInPolygon(xy, poly)
 \code{overlay} is used from \pkg{sp}. This allows multiple polygons and
 polygons with holes.
 
+  If \code{poly} is an secr `mask' object then \code{xy} is discretized
+  and matched to the cells in \code{poly}. If \code{logical = FALSE}
+  then the returned value is a vector of integer indices to the row in
+  `poly' corresponding to each row of `xy'; otherwise the result is a
+  vector of logical values.
+  
 Otherwise, the algorithm is adapted from some code posted on the S-news list
 by Peter Perkins (23/7/1996). The polygon should be closed (last point
 same as first).
@@ -33,7 +43,7 @@ same as first).
 }
 
 \value{
-  Vector of logical values, one for each row in \code{xy}
+  Vector of logical or integer values, one for each row in \code{xy}
 }
 
 \seealso{

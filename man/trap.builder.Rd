@@ -22,7 +22,7 @@ trap.builder (n = 10, cluster, region = NULL, frame =
     ranks = NULL, rotation = NULL, detector, plt = FALSE,
     add = FALSE) 
 
-mash (object, origin = c(0,0), clustergroup = NULL)
+mash (object, origin = c(0,0), clustergroup = NULL, \dots)
 
 cluster.counts (object)
 
@@ -48,7 +48,8 @@ cluster.centres (object)
     object for \code{cluster.centres} }
   \item{origin}{ new coordinate origin for detector array }
   \item{clustergroup}{ list of vectors subscripting the clusters to be
-  mashed }
+    mashed }
+  \item{\dots}{other arguments passed by mash to make.capthist (e.g., sortrows)}
 }
 
 \details{

@@ -1,6 +1,7 @@
 /*
     Detection functions
     2011-09-30
+    2012-02-01 modified for single mufn
 */
 /*--------------------------------------------------------------------*/
 
@@ -17,6 +18,7 @@ fn 8  cumulative gamma
 fn 9  binary signal strength
 fn 10 signal strength
 fn 11 signal strength with spherical spreading
+fn 12 signal strength with spherical spreading; cut is estimated
 */
 
 /*
@@ -34,7 +36,7 @@ double pfn (
     double g0,
     double sigma,
     double z,
-    double cut,
+    double miscparm [],
     double w2)
 {
     double p = -1;
@@ -48,7 +50,7 @@ double pfn (
         tmp[0] = g0;
         tmp[1] = sigma;
         tmp[2] = z;
-        tmp[3] = cut;
+        tmp[3] = miscparm[0];
         p = hfn (tmp, sqrt(d2val));
     }
     return (p);
@@ -79,6 +81,8 @@ fnptr gethfn (int fn)
     else if (fn == 10)
         return(hsig);
     else if (fn == 11)
+        return(hsigsph);
+    else if (fn == 12)
         return(hsigsph);
     else (error("unknown or invalid detection function"));
     return(hn);
@@ -111,6 +115,10 @@ gfnptr getgfn (int fn)
         return(gsig);
     else if (fn == 11)
         return(gsigsph);
+    else if (fn == 12)
+        return(gsigSN);
+    else if (fn == 13)
+        return(gsigsphSN);
     else (error("unknown or invalid detection function"));
     return(ghn);
 }
@@ -207,7 +215,7 @@ double hsigsph (double param [], double r) {
 /* halfnormal */
 double ghn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     return (gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 /
         gsbval[cc + c] / gsbval[cc + c]));
@@ -217,7 +225,7 @@ double ghn
 /* compound halfnormal */
 double ghnc
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double temp;
     temp = exp(-d2(k, m, traps, mask, kk, mm) / 2 / gsbval[cc + c] / gsbval[cc + c]);
@@ -230,7 +238,7 @@ double ghnc
 /* hazard rate */
 double ghz
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     return (gsbval[c] * (1 - exp(-
         pow(sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c], - gsbval[cc * 2 + c]))));
@@ -240,7 +248,7 @@ double ghz
 /* exponential */
 double ghe
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     return (gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c]));
 }
@@ -249,7 +257,7 @@ double ghe
 /* 'flat-topped exponential' 2009 09 01 */
 double ghf
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, w, g0, sigma;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -264,7 +272,7 @@ double ghf
 /* annular halfnormal 2010-06-15 */
 double gan
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, w, g0, sigma;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -278,7 +286,7 @@ double gan
 /* cumulative lognormal 2010-10-10 */
 double gcln
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, g0, sigma, z, CV2, meanlog, sdlog;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -295,7 +303,7 @@ double gcln
 /* cumulative normal 2010-10-11 */
 double gcn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, g0, sigma, z;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -309,7 +317,7 @@ double gcn
 /* cumulative gamma 2010-10-13 */
 double gcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, g0, sigma, z;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -323,7 +331,7 @@ double gcg
 /* reverse sigmoid */
 double grs
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double d, g0, sigma, z, x;
     d = sqrt(d2(k,m,traps,mask,kk,mm));
@@ -338,7 +346,7 @@ double grs
 /* binary signal strength - (beta0-c)/sdS, beta1/sdS */
 double gsigbin
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut)
+    double mask[], int kk, int mm, double miscparm [])
 {
     double gam, b0, b1;
     b0 = gsbval[c];
@@ -351,11 +359,11 @@ double gsigbin
 /* signal strength - beta0, beta1, sdS */
 double gsig
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut) {
+    double mask[], int kk, int mm, double miscparm []) {
     double mu, gam, sdS;
-    mu = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm);
+    mu = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm, 0);
     sdS = gsbval[cc * 2 + c];
-    gam = (cut - mu) / sdS;
+    gam = (miscparm[0] - mu) / sdS;
     return (pnorm(gam,0,1,0,0));    /* upper */
 }
 /*--------------------------------------------------------------------*/
@@ -363,13 +371,41 @@ double gsig
 /* signal strength with spherical spreading - beta0, beta1, sdS */
 double gsigsph
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double cut) {
+    double mask[], int kk, int mm, double miscparm []) {
     double mu, gam, sdS;
-    mu = mufnsph (k, m, gsbval[c], gsbval[cc + c],
-         traps, mask, kk, mm);
+    mu = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm, 1);
     sdS = gsbval[cc * 2 + c];
-    gam = (cut - mu) / sdS;
+    gam = (miscparm[0] - mu) / sdS;
     return (pnorm(gam,0,1,0,0));    /* upper */
+}
+/*--------------------------------------------------------------------*/
+
+/* signal-noise without spherical spreading - beta0, beta1, sdS */
+double gsigSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm []) {
+    double cut, muS, sdS, muN, sdN;
+    muS = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm, 0);
+    sdS = gsbval[cc * 2 + c];
+    cut = miscparm[0];
+    muN = miscparm[1];
+    sdN = miscparm[2];
+    return (pnorm(cut, muS-muN, sqrt(sdS*sdS+sdN*sdN), 0, 0));    /* upper */
+}
+/*--------------------------------------------------------------------*/
+
+/* signal-noise with spherical spreading - beta0, beta1, sdS */
+/* interpret sdS as sqrt(var(S-N)) */
+double gsigsphSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm []) {
+    double cut, muS, sdS, muN, sdN;
+    muS = mufn (k, m, gsbval[c], gsbval[cc + c], traps, mask, kk, mm, 1);
+    sdS = gsbval[cc * 2 + c];
+    cut = miscparm[0];
+    muN = miscparm[1];    
+    sdN = miscparm[2];    
+    return (pnorm(cut, muS-muN, sqrt(sdS*sdS+sdN*sdN), 0, 0));    /* upper */
 }
 /*--------------------------------------------------------------------*/
 

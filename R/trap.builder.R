@@ -4,7 +4,9 @@
 ## repeat trap layout systematically, by GRTS, or at simple random centres
 ## across a region
 ## Also make.systematic, mash(), cluster.counts(), cluster.centres()
-## last changed 2011-08-16 (full argument names)
+## 2011-08-16 (full argument names)
+## 2012-01-11 (cutval and signal in mash(); mxy[1:2])
+## 2012-02-07 mash noise
 ###############################################################################
 
 ## spsurvey uses sp
@@ -322,7 +324,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
 
 ###############################################################################
 
-mash <- function(object, origin = c(0,0), clustergroup = NULL) {
+mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
 
 ## mash() recasts a capthist object in which the detectors belong to
 ## multiple clusters as a capthist with multiple detections at one cluster
@@ -383,8 +385,9 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL) {
         newtraps <- tmp[[1]]
         rownames(newtraps) <- 1:nrow(newtraps)
         mxy <- apply(newtraps, 2, min)
-        newtraps <- shift(newtraps, origin-mxy)
+        newtraps <- shift(newtraps, origin-mxy[1:2])
 
+        sigcov <- NULL
         if ( length(animalID(object)) == 0) {
             tempdf <- data.frame(
                 session = session(object),
@@ -394,12 +397,18 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL) {
         }
         else {
             tempdf <- data.frame(
-                Session = rep(session(object), length(animalID(object))),
+                session = rep(session(object), length(animalID(object))),
                 ID = animalID(object),
                 occ = occasion(object),
-                trap = trapnum[trap(object, names=FALSE)])
+                trap = trapnum[trap(object, names=FALSE)]
+            )
+            if (!is.null(attr(object, 'signalframe'))) {
+                tempdf <- cbind(tempdf, attr(object, 'signalframe'))
+                sigcov <- names(tempdf)[!(names(tempdf) %in% c('signal','noise'))]
+            }
         }
-        tempcapt <- make.capthist(tempdf, newtraps)
+        tempcapt <- make.capthist(tempdf, newtraps, cutval = attr(object, "cutval"),
+                                  signalcovariates = sigcov, ...)
         attr(tempcapt, 'n.mash') <- as.numeric(n.mash)
         attr(tempcapt, 'centres') <- centres
         tempcapt
