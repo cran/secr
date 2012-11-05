@@ -13,8 +13,8 @@ passed directly to RMark.
 
 \usage{
 
-RMarkInput(object, grouped = TRUE)
-unRMarkInput(df)
+RMarkInput(object, grouped = FALSE, covariates = TRUE)
+unRMarkInput(df, covariates = TRUE)
 
 }
 
@@ -25,13 +25,23 @@ unRMarkInput(df)
   \item{grouped}{logical for whether to replace each group of identical
     capture histories with a single line}
 
+  \item{covariates}{logical or character vector; see Details}
+  
   \item{df}{dataframe with fields `ch' and `freq' }
   
 }
 \details{
 
   To convert a multi-session object first collapse the sessions with
-\code{\link{join}}.
+  \code{\link{join}}.
+
+  If \code{covariates} is TRUE the all columns of individual covariates
+  in the input are appended as columns in the output. If
+  \code{covariates} is a character-valued vector then only the specified
+  covariates will be appended.
+
+  If both \code{grouped} and \code{covariates} are specified in
+  \code{RMarkInput}, \code{grouped} will be ignored, with a warning.
 
 }
 
@@ -44,6 +54,9 @@ unRMarkInput(df)
   value of `freq' is 1 or -1. Negative values of `freq' indicate
   removal.
 
+  The dataframe also includes individual covariates specified with
+  \code{covariates}.
+
   The attribute `interval' is copied from `object', if present;
   otherwise it is set to a vector of zeros (indicating a
   closed-population sample).
@@ -51,7 +64,8 @@ unRMarkInput(df)
   For unRMarkInput --
 
   A single-session capthist object with no traps attribute and hence no
-  detector type (i.e. non-spatial capture histories). Covariates are copied.
+  detector type (i.e. non-spatial capture histories). Covariates are
+  copied as requested.
 
 }
 
@@ -69,13 +83,26 @@ G. (eds) Program MARK: A Gentle Introduction. 6th edition. Available at
 
 }
 
+\note{
+
+  In versions before 2.4.0, a spurious occasion was added by
+  \code{RMarkInput} when grouped = FALSE. Thanks to Jeff Stetz for
+  spotting this.
+
+  The default value for \code{grouped} changed to FALSE in secr 2.4.0
+
+}
+
 \examples{
 
 ## ovenCH is a 5-year mist-netting dataset
 ovenRD <- RMarkInput (join(ovenCH))
-ovenRD
+head(ovenRD)
 
 unRMarkInput(ovenRD)
+
+RMarkInput(deermouse.ESG, grouped = TRUE)
+RMarkInput(deermouse.ESG, covariates = TRUE)
 
 \dontrun{
 ## fit robust-design model in RMark (MARK must be  installed)

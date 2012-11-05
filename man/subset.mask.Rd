@@ -39,6 +39,16 @@ Covariates are ignored by \code{rbind.mask}.
 
 }
 
+\section{Warning}{
+
+The spacing attribute is carried over from the input (it is not updated
+automatically). In the case of very sparse masks (i.e. those with
+isolated points) this may lead to an unexpected value for this
+attribute. (Automatic updating requires excessive computation time
+and/or memory for very large masks).
+  
+  }
+
 \seealso{ \code{\link{mask}} }
 
 \examples{

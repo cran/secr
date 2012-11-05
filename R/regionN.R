@@ -10,6 +10,9 @@
 ## 2011-10-21 predictD moved to Dsurface.R
 ## 2012-04-18 bug fixed: nlowerbound and RN.method ignored when nsess>1
 ## 2012-05-13 added explicit 'poisson' option in region.N for computation of RN
+
+## 2012-08-07 potentially extend to groups by looping over sessions _and_ groups
+
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,

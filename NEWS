@@ -1,3 +1,102 @@
+Changes in version 2.4.0 (2012-11-05)
+
+New features or changed behaviour of old functions
+
+    o   sim.secr(), mask.check(), ip.secr(), score.test(),
+    LLsurface.secr(), derived() and secr.fit() optionally use multiple
+    cores managed through the 'parallel' package. This may speed up
+    secr.fit() for multi-session datasets, but often slows it down.
+
+    o   proctime reported by secr.fit() and ip.secr() now defined as
+    the total elapsed time, to allow for parallel processing
+
+    o   new function signalmatrix() to extract signal data in sound x
+    microphone matrix format
+
+    o   new function signalframe() to extract signal attribute from a
+    capthist object
+
+    o   detector covariates may vary over time (see
+    ?timevaryingcov). summary.traps() has been modified to report
+    timevaryingcov.
+
+    o   experimental 'telemetry' detector type with associated functions
+    make.telemetry() and addTelemetry; also, sim.capthist() recognises
+    the 'telemetry' detector type
+
+    o   secr.fit() argument 'details' has logical component 'unmash',
+    used to scale density to number of mashed clusters in each session
+    (i.e. allow density to be modelled while cluster number varies
+    across sessions)
+
+    o   split method for capthist objects has new argument 'bytrap' for
+    splitting captures according to location, and adds leading zero
+    when forming session name from numeric f
+
+    o   split method for traps objects has new argument 'byoccasion' for
+    splitting trap locations by occasion, allowing for
+    session-specific 'usage'.
+
+    o   mash() drops attributes of 'traps'; names sessions for list
+    input; n.mash attribute retains cluster names
+
+    o   RMarkInput() and unRMarkInput have new argument 'covariates' for
+    individual covariates (all included by default), and the default
+    value of the 'grouped' argument is now FALSE
+
+    o   spacing() method for traps and mask objects gets new logical
+    argument 'recalculate' to force recalculation. This is now the
+    default after a subset, split or rbind operation on a traps object,
+    removing the potential for misleading.
+
+    o   subset.capthist() acquires new argument 'dropNAsignals' to
+    address inconsistency with signal strength data when some signals
+    have missing values; also new argument 'cutabssignal' for whether
+    to apply cutval to absolute signal strength or the difference
+    between signal and noise.
+
+    o   predict.secr() now drops unused columns of 'newdata' from names
+    of output components
+
+    o   plot.capthist() now issues warnings when track joins repeat
+    detections on one occasion in arbitrary sequence (proximity and
+    count data) or no detections in dataset
+
+    o   mask.check() enhanced labels on output
+
+    o   optional use of gpclib by suggest.buffer() has been suppressed
+
+
+Bugs fixed
+
+    o   fxi.contour() and fxi.secr() failed with normal = FALSE
+
+    o   join() dropped occasions with no detections
+
+    o   RMarkInput() added spurious occasion when grouped = FALSE
+    (thanks to Jeff Stetz for spotting this)
+
+    o   sim.capthist() misleading warning on p.available
+
+    o   make.grid() could fail if boustrophedonic numbering requested
+    with nx=1 or ny=1
+
+    o   secr.fit() with signal detector failed to find cutval in
+    multi-session capthist
+
+    o   secr.fit() k, K models did not work with multi-session data
+
+    o   secr.fit() individual covariate problems with multi-session data
+
+    o   derived() sometimes failed with varying number of traps per session
+
+    o   summary.capthist() with terse = TRUE failed to count detections
+    for count and polygon detectors (apparent when printing a fitted
+    secr object)
+
+    o   simulate.secr() could fail with multi-session model when mask
+    size varied between sessions
+
 Changes in version 2.3.2 (2012-05-15)
 
 New features or changed behaviour of old functions

@@ -17,350 +17,9 @@
 ## 2012-01-30 allow missing values in signal -- experimental
 ## 2012-02-07 add noise to signal if detector = signalnoise
 ## 2012-02-13 tweaked signalnoise
+## 2012-10-19,22 telemetry
 ###############################################################################
 
-distancetotrap <- function (X, traps) {
-    ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coor in col 2
-    X <- matrix(unlist(X), ncol = 2)
-    nxy <- nrow(X)
-    ## 2011-10-14
-    detecttype <- detector(traps)
-    detecttype <- ifelse (is.null(detecttype), "", detecttype)
-    if (detecttype %in% .localstuff$polydetectors) {
-        ## approximate only
-        traps <- split(traps, polyID(traps))
-        trpi <- function (i, n=100) {
-            intrp <- function (j) {
-                tmp <- data.frame(traps[[i]][j:(j+1),])
-                if (tmp$x[1] == tmp$x[2])
-                    data.frame(x=rep(tmp$x[1], n),
-                               y=seq(tmp$y[1], tmp$y[2], length=n))
-                else
-                    data.frame(approx(tmp, n=n))
-            }
-            tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)
-            do.call(rbind, tmp)
-        }
-        trps <- do.call(rbind, lapply(1:length(traps), trpi))
-        trps <- matrix(unlist(trps), ncol = 2)
-    }
-    else
-        trps <- traps
-    temp <- .C("nearest",  PACKAGE = 'secr',
-        as.integer(nxy),
-        as.double(X),
-        as.integer(nrow(trps)),
-        as.double(unlist(trps)),
-        index = integer(nxy),
-        distance = double(nxy)
-    )
-    if (detecttype %in% c('polygon', 'polygonX')) {
-        inside <- lapply(traps, pointsInPolygon, xy=X)
-        inside <- do.call(rbind, inside)
-        temp$distance [apply(inside,2,any)] <- 0
-    }
-    temp$distance
-}
-
-nearesttrap <- function (X, traps) {
-    ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coord in col 2
-    X <- matrix(unlist(X), ncol = 2)
-    nxy <- nrow(X)
-    temp <- .C("nearest",  PACKAGE = 'secr',
-        as.integer(nxy),
-        as.double(X),
-        as.integer(nrow(traps)),
-        as.double(unlist(traps)),
-        index = integer(nxy),
-        distance = double(nxy)
-    )
-    temp$index
-}
-
-transform <- function (x, link) {
-  switch (link,
-          identity = x,
-          log = log(x),
-          neglog = log(-x),
-          logit = logit(x),
-          odds = odds(x),
-          sin = sine(x)
-  )
-}
-
-untransform <- function (beta, link) {
-  switch (link,
-          identity = beta,
-          log = exp(beta),
-          neglog = -exp(beta),
-          logit = invlogit(beta),
-          odds = invodds(beta),
-          sin = invsine(beta))
-}
-
-se.untransform <- function (beta, sebeta, link) {
-  switch (link,
-          identity = sebeta,
-          log = exp(beta) * sqrt(exp(sebeta^2)-1),
-          neglog = exp(beta) * sqrt(exp(sebeta^2)-1),
-          logit = invlogit(beta) * (1-invlogit(beta)) * sebeta,
-          sin = NA)         ####!!!!
-}
-
-
-mlogit.untransform <- function (beta, mix) {
-    nmix <- max(mix)    ## assume zero-based
-    ##  b <- beta[match(2:nmix, mix)] -- 2010 02 26
-    b <- beta[2:nmix]    ## 2010 02 26
-    pmix <- numeric(nmix)
-    pmix[2:nmix] <- exp(b) / (1+sum(exp(b)))
-    pmix[1] <- 1 - sum(pmix[2:nmix])
-    pmix[mix]   ## same length as input
-}
-
-# vector version of transform()
-Xtransform <- function (real, linkfn, varnames) {
-  out <- real
-  for (i in 1:length(real)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = real[i],
-                  log = log(real[i]),
-                  neglog = log(-real[i]),
-                  logit = logit(real[i]),
-                  odds = odds(real[i]),
-                  sin = sine(real[i]))
-  }
-  out
-}
-se.Xtransform <- function (real, sereal, linkfn, varnames) {
-  out <- real
-  for (i in 1:length(real)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = sereal[i],
-                  log = log((sereal[i]/real[i])^2 + 1)^0.5,
-                  neglog = log((sereal[i]/-real[i])^2 + 1)^0.5,
-                  logit = sereal[i] / real[i] / (1 - real[i]),
-                  sin = NA)
-  }
-  out
-}
-
-# vector version of untransform()
-Xuntransform <- function (beta, linkfn, varnames) {
-  out <- beta
-  for (i in 1:length(beta)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = beta[i],
-                  log = exp(beta[i]),
-                  neglog = -exp(beta[i]),
-                  logit = invlogit(beta[i]),
-                  odds = invodds(beta[i]),
-                  sin = invsine(beta[i]))
-  }
-  out
-}
-
-se.Xuntransform <- function (beta, sebeta, linkfn, varnames)
-# Approximate translation of SE to untransformed scale
-# Delta method cf Lebreton et al 1992 p 77
-{
-  out <- beta
-  if (length(beta)!=length(sebeta))
-      stop ("'beta' and 'sebeta' do not match")
-  if (!all(varnames %in% names(linkfn)))
-      stop ("'linkfn' component missing for at least one real variable")
-  for (i in 1:length(beta)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = sebeta[i],
-                  log = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
-                  neglog = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
-                  logit = invlogit(beta[i]) * (1-invlogit(beta[i])) * sebeta[i],
-                  sin = NA)         ####!!!!
-  }
-  out
-}
-
-## End of miscellaneous functions
-############################################################################################
-
-CLdensity <- function (beta, object, individuals, sessnum)
-## object is a fitted secr object (CL=T)
-## individuals is vector indexing the subset of a to be used
-# Return the density for given g0, sigma, z in beta
-# Only 1 session
-{
-    sum(1 / esa (object, sessnum, beta)[individuals])
-}
-############################################################################################
-
-CLgradient <- function (object, individuals, sessnum, eps=0.001)
-## object is a fitted secr object (CL=T)
-## individuals is vector indexing the subset of a to be used
-{
-  beta <- object$fit$par
-  if (object$detectfn %in% c(0,2,9)) {    ## halfnormal, exponential and binary SS have just 2 parameters
-      est <- beta[1:2]
-      g   <- double(2)
-  } else {                       ## other detectfn have 3 parameters
-      est <- beta[1:3]
-      g   <- double(3)
-  }
-
-  est <- beta
-  g   <- beta
-
-  ## consider replacing this with packaged, optimized gradient function (nlme fnHess?)
-
-  for (i in 1:length(est))
-  {
-      temp     <- est[i]
-      if (temp != 0.0) delta <- eps * abs(temp)
-      else             delta <- eps
-      est[i]  <- temp - delta
-      fminus  <- CLdensity (est, object, individuals, sessnum)
-      est[i]  <- temp + delta
-      fplus   <- CLdensity (est, object, individuals, sessnum)
-      g[i]    <- (fplus - fminus) / (2.0 * delta)
-      est[i]  <- temp;
-  }
-  g
-}
-
-############################################################################################
-
-CLmeanesa <- function (beta, object, individuals, sessnum, noccasions = NULL)
-## object is a fitted secr object (CL=T)
-## individuals is vector indexing the subset of a to be used
-# Return the weighted mean esa for given g0, sigma, z in beta
-# Only 1 session
-{
-## mean (esa (object, sessnum, beta)[individuals])
-## modified 2010-11-30 after suggestion of DLB
-
-##  noccasions = NULL added 2011-04-04
-
-    a <- esa (object, sessnum, beta, noccasions=noccasions)[individuals]
-    length(a) / sum (1/a)
-}
-############################################################################################
-
-esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.001)
-##  noccasion = NULL added 2011-04-04
-{
-  beta <- object$fit$par
-  if (object$detectfn %in% c(0,2,9)) {    ## halfnormal, exponential and binary SS
-                                          ## have just 2 parameters
-      est <- beta[1:2]
-      g   <- double(2)
-  } else {                       ## other detectfn have 3 parameters
-      est <- beta[1:3]
-      g   <- double(3)
-  }
-
-  est <- beta
-  g   <- beta
-
-  ## consider replacing this with fdHess from package nlme
-
-  for (i in 1:length(est))
-  {
-      temp     <- est[i]
-      if (temp != 0.0) delta <- eps * abs(temp)
-      else             delta <- eps
-      est[i]  <- temp - delta
-      fminus  <- CLmeanesa (est, object, individuals, sessnum, noccasions)
-      est[i]  <- temp + delta
-      fplus   <- CLmeanesa (est, object, individuals, sessnum, noccasions)
-      g[i]    <- (fplus - fminus) / (2.0 * delta)
-      est[i]  <- temp;
-  }
-  g
-}
-############################################################################################
-
-gradient <- function (pars, fun, eps=0.001, ...)
-## quick & dirty 2009 09 14
-## used by plot.secr for delta method limits
-{
-  est <- pars
-  g   <- pars
-  for (i in 1:length(est))
-  {
-      temp     <- est[i]
-      if (temp != 0.0) delta <- eps * abs(temp)
-      else             delta <- eps
-      est[i]  <- temp - delta
-      fminus  <- fun (est, ...)
-      est[i]  <- temp + delta
-      fplus   <- fun (est, ...)
-      g[i]    <- (fplus - fminus) / (2.0 * delta)
-      est[i]  <- temp;
-  }
-  g
-}
-############################################################################################
-
-group.levels <- function (capthist, groups, sep='.') {
-    if (inherits(capthist, 'list')) {
-        temp <- lapply(capthist, group.levels, groups, sep)   ## sep added 2010 02 24
-        sort(unique(unlist(temp)))  ## vector of global levels
-    }
-    else {
-        if (is.null(groups)) 0
-        else {
-            temp <- as.data.frame(covariates(capthist)[,groups])
-            if (ncol(temp) != length(groups))
-                stop ("one or more grouping variables is missing ",
-                      "from covariates(capthist)")
-            sort(levels(interaction(temp, drop=T, sep=sep)))  # omit null combinations, sort as with default of factor levels
-        }
-    }
-}
-############################################################################################
-
-n.occasion <- function (capthist) {
-## return the number of sampling occasions for each session in capthist
-    if (inherits(capthist, 'list')) {
-        sapply(capthist, n.occasion)
-    }
-    else {
-        ncol(capthist)
-    }
-}
-
-############################################################################################
-
-group.factor <- function (capthist, groups, sep='.')
-## convert a set of grouping factors to a single factor (g)
-## levels common to all sessions
-{
-    if (inherits(capthist, 'list')) {
-        temp <- lapply(capthist, group.factor, groups)  ## recursive call
-        grouplevels <- group.levels(capthist, groups)
-        if (length(grouplevels)<2)
-            temp
-        else
-            # list; force shared factor levels on each component
-            lapply (temp, factor, levels=grouplevels)
-    }
-    else {
-        if (is.null(groups) | (length(groups)==0) )
-            return (factor(rep(1, nrow(capthist))))
-        temp <- as.data.frame(covariates(capthist)[,groups])
-        if (ncol(temp) != length(groups))
-            stop ("one or more grouping variables is missing from ",
-                  "covariates(capthist)")
-        temp <- interaction(temp, drop=T, sep=sep)  # omit null combinations
-        temp
-    }
-}
-############################################################################################
 
 disinteraction <- function (capthist, groups, sep='.') {
     ngv <- length(groups)
@@ -520,8 +179,8 @@ getD <- function (designD, beta, mask, parindx, link, fixed,
 ###############################################################################
 
 secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
-    design0, capthist, mask, detectfn, CL, groups, details, logmult,
-    dig = 3, betaw = 10)
+    design0, capthist, mask, detectfn, CL, groups, details, logmult, ncores,
+    clust, dig = 3, betaw = 10)
 
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
 
@@ -534,12 +193,15 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 {
     minprob <- details$minprob
     if (is.null(minprob)) minprob <- 1e-50
+    if (is.null(details$debug)) details$debug <- FALSE   ## 2012-10-28
 
     if (ms(capthist))
         sessionlevels <- session(capthist)
     else
         sessionlevels <- 1
     nsession <- length(sessionlevels)
+    if ((ncores>1) & missing(clust))
+        stop("not ready for multicore here")
 
     #--------------------------------------------------------------------
     # Groups
@@ -565,8 +227,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     #--------------------------------------------------------------------
     # Density
     D.modelled <- !CL & is.null(fixed$D)
-
-    if (!CL) {
+    if (!CL ) {
         D <- getD (designD, beta, mask, parindx, link, fixed,
                     levels(grp[[1]]), sessionlevels)
         if (sum(D) <= 0)
@@ -574,12 +235,9 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     }
     #--------------------------------------------------------------------
 
-    loglik <- 0
-
-    ####################################################
-    ## start loop over sessions
-
-    for (sessnum in 1:nsession) {
+   ###############################################################################################
+   ###############################################################################################
+   sessionLL <- function (sessnum) {
 
         ## in multi-session case must get session-specific data from lists
         if (ms(capthist)) {
@@ -587,7 +245,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             session.traps    <- traps(capthist)[[sessnum]]
             session.mask     <- mask[[sessnum]]
             session.grp      <- grp[[sessnum]]
-            session.xy <- 0
+            session.xy       <- 0
         }
         else {
             session.capthist <- capthist
@@ -603,7 +261,42 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         cell <- attr(session.mask,'area')
         session.mask <- as.matrix(session.mask[,1:2])
 
+        LL <- 0
+
+        #----------------------------------------
+        # 2012-10-20,21
+        # mingled proximity & telemetry
+        xylist <- attr(session.capthist,'xylist')
+        if (!is.null(xylist)) {
+            if (.localstuff$iter < 1) {
+                outside <- outsidemask (session.capthist, session.mask)
+                if (sum(outside)>0)
+                    warning (sum(outside), " centres lie outside mask and",
+                             " will be assigned to the nearest mask point")
+            }
+            telem <- row.names(session.capthist) %in% names(xylist)
+            T.session.capthist <- subset(session.capthist, telem)
+            session.capthist <- subset(session.capthist, !telem)
+            nc <- nrow(session.capthist)
+            ## prwi for 'known' centres
+            LL <- LL + telemloglik(T.session.capthist,
+                session.traps, session.mask, detectfn=detectfn, detectpar=realparval )
+
+            ## realparval is temporary; does not allow for non-constant model or scaling!
+
+            ## optional use of telemetry locations to inform sigma
+            if (details$telemetrysigma) {
+                index <- ifelse(nrow(realparval)==1, 1, sessnum)
+                sigma <- realparval[index,'sigma']
+                z <- ifelse (detectfn %in% c(1,3,5,6,7,8), realparval[index,'z'], 1)
+                LL <- LL + telemetryloglik (T.session.capthist, detectfn, sigma, z)$value
+            }
+        }
+
+        #----------------------------------------
+
         dettype <- detectorcode(session.traps)
+
         if (dettype %in% c(5,9,12)) {    # cue or signal strength
             session.signal <- signal(session.capthist)
             if (dettype==12)
@@ -615,7 +308,6 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             )
             ## 2012-01-30 code missing values as negative for C code
             session.signal[is.na(session.signal)] <- -1
-
         }
         else
             session.signal <- 0
@@ -631,8 +323,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             miscparm[] <- c(details$cutval, beta[max(unlist(parindx))+1:2])   ## fudge: last 2
         else if (detectfn %in% c(10,11))  ## Dawson&Efford 2009 models
             miscparm[] <- details$cutval
-
-        if (dettype %in% c(3,6)) {
+        if (dettype %in% c(3,6,13)) {    # polygonX, polygon, telemetry
             k <- table(polyID(session.traps))
             K <- length(k)
             k <- c(k,0)   ## zero terminate
@@ -651,9 +342,9 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             session.xy <- 0
         }
 
-        if (dettype == 8) {    # times -- phony use of 'signal'
-            session.signal <- times(session.capthist)
-        }
+#        if (dettype == 8) {    # times -- phony use of 'signal'
+#            session.signal <- times(session.capthist)
+#        }
 
         trps  <- unlist(session.traps, use.names=F)
 
@@ -661,8 +352,19 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         ## differentiate so density & g do not both need to use sessions
         if (CL)
             density <- 0
-        else
+        else {
             density <- D[1:m,,min(dim(D)[3],sessnum)]
+            ## optional scaling by session-specific number of clusters
+            ## 2012-07-24
+            unmash <- details$unmash
+            if (is.null(unmash))
+                unmash <- FALSE
+            if (unmash) {
+                nmash <- attr(session.capthist, 'n.mash')
+                if (!is.null(nmash))
+                    density <- density * length(nmash)
+            }
+        }
 
         #------------------------------------------
         # allow for scaling of detection parameters
@@ -702,6 +404,22 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         }
         else
             distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
+
+        #-------------------------------------------
+        # debug
+        #-------------------------------------------
+        if (details$debug) {
+           arglist <- list(CL=CL, dettype=dettype, param=details$param, distrib=distrib,
+                           capthist=session.capthist, xy=unlist(session.xy),
+                           signal=session.signal, grp=session.grp, nc=nc, s=s, k=k, m=m,
+                           ngroup=ngroup, nmix=details$nmix, trps=trps, mask=session.mask,
+                           density=density, Xrealparval=Xrealparval, Xrealparval0=Xrealparval0,
+                           nrowXrealparval=nrow(Xrealparval), nrowXrealparval0=nrow(Xrealparval0),
+                           PIA=design$PIA[sessg,1:nc,1:s,1:K,], tempPIA0=tempPIA0,
+                           cell=cell, miscparm=miscparm, detectfn=detectfn,
+                           binomN=details$binomN, minprob=minprob)
+           save(arglist, file= paste('arglist',sessnum,'.RData',sep=''))
+       }
 
         #-------------------------------------------
         # experimental 'unmarked' detector type
@@ -769,6 +487,17 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 resultcode = integer(1)
             )
         }
+        #-------------------------------------------
+        # experimental 'telemetry' detector type
+        #-------------------------------------------
+        else if (dettype == 13) {
+            ## xy locations of individuals
+            ## does not allow within-session models
+            index <- ifelse(nrow(Xrealparval)==1, 1, sessnum)
+            sigma <- Xrealparval[index,'sigma']
+            z <- ifelse (detectfn %in% c(1,3,5,6,7,8), Xrealparval[index,'z'], 1)
+            temp <- telemetryloglik (session.capthist, detectfn, sigma, z)
+        }
         #--------------------------------------------
         # typical call (not 'presence' or 'unmarked')
         #--------------------------------------------
@@ -807,17 +536,28 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 value=double(1),
                 resultcode=integer(1))
         }
-        if (temp$resultcode != 0)
-            loglik <- NA
-        else
-            loglik <- loglik + temp$value
-    } ## end loop over sessions
-    ####################################################
 
-    ## unclear whether this is correct wrt groups
-    if (logmult & detector(session.traps) %in% .localstuff$simpledetectors)
-        loglik <- loglik + logmultinom(session.capthist,
-                                       group.factor(session.capthist, groups))
+        LL <- ifelse (temp$resultcode == 0, LL + temp$value, NA)
+
+        ####################################################
+        ## unclear whether this is correct wrt groups
+        if (logmult & (detector(session.traps) %in% .localstuff$simpledetectors)) {
+            LL <- LL + logmultinom(session.capthist,
+                                           group.factor(session.capthist, groups))
+        }
+        LL
+
+    } ## end sessionLL
+   ###############################################################################################
+
+    if (ncores > 1) {
+        clusterExport(clust, c("realparval", "details", "grp", "beta",
+            "parindx", "minprob"), envir = environment())
+        loglik <- sum(parSapply(clust, 1:nsession, sessionLL))
+    }
+    else {
+        loglik <- sum(sapply (1:nsession, sessionLL))
+    }
 
     .localstuff$iter <- .localstuff$iter + 1   ## moved outside loop 2011-09-28
     if (details$trace) {

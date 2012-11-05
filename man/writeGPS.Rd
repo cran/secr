@@ -91,10 +91,10 @@ writeGPS(possumgrid, proj = "+proj=nzmg")
 writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
     proj = "+proj=nzmg")
 
-## If `region' had been specified in another projection
-## we would need to specify this as in Proj.4. Here is
-## an example for New Zealand Transverse Mercator with
-## datum NZGD2000 (EPSG:2193)
+## If `region' had been specified in another projection we
+## would need to specify this as in Proj.4. Here is a
+## hypothetical example for New Zealand Transverse Mercator
+## with datum NZGD2000 (EPSG:2193)
 
 NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
     "+x_0=1600000 +y_0=10000000 +ellps=GRS80",

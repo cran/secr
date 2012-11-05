@@ -1,22 +1,41 @@
 ############################################################################################
 ## package 'secr'
 ## split.capthist.R
-## last changed 2009 06 11 2009 07 10 2009 10 05
+## last changed 2009 06 11 2009 07 10 2009 10 05 2012 07 26 2012 09 04
 ############################################################################################
 
-split.capthist <- function (x, f, drop = FALSE, prefix='S', ...) {
+split.capthist <- function (x, f, drop = FALSE, prefix='S', bytrap = FALSE, ...) {
   if (!inherits(x, 'capthist'))
       stop ("argument to 'split.capthist' should have class 'capthist'")
   if (inherits(x, 'list'))
       stop ("split not suitable for multi-session 'capthist'")
   options(warn=-1)
-  f <- factor(f)
-  if (any(!is.na(as.numeric(levels(f))))) f <- factor(paste (prefix,f,sep=''))
+
+  f <- as.factor(f)  # retains unused levels
+  if (any(!is.na(as.numeric(levels(f))))) {
+      ## leadingzero added 2012-09-04
+   #   f <- factor(paste (prefix,leadingzero(f),sep=''))
+         levels(f) <- paste (prefix,leadingzero(levels(f)),sep='')
+  }
   options(warn=0)
-  f <- as.factor(f)
+
+  if (bytrap) {
+      if (length(f)!=nrow(traps(x)))
+          stop ("length of f should match number of traps")
+  }
+  else {
+      if (length(f)!=nrow(x))
+          stop ("length of f should match number of rows in capthist")
+  }
+
   out <- list()
   for (i in levels(f)) {
-    temp <- subset (x, subset = f == i, ...)
+    if (bytrap) {
+        temp <- subset (x, traps = f == i, ...)
+    }
+    else {
+        temp <- subset (x, subset = f == i, ...)
+    }
     session(temp) <- i
     if (!drop | (nrow(temp)>0))
       out[[i]] <- temp

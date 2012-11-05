@@ -34,7 +34,8 @@ Secondly, many more types of variation are possible. Any of the
 parameters of the detection function may vary with respect to individual
 (\eqn{i}), occasion (\eqn{s}) or detector (\eqn{k}). For example, there
 may be a covariate associated with trap location that influences
-detection probability.
+detection probability, and this effect may vary between occasions (see
+\code{\link{timevaryingcov}}.
 
 The full design matrix for each detection submodel has one row for each
 combination of \eqn{i}, \eqn{s} and \eqn{k} (animal, occasion and trap).

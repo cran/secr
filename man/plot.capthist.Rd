@@ -41,7 +41,7 @@
   \item{cappar}{ list of named graphical parameters for detections (passed to \code{par}) }
   \item{trkpar}{ list of named graphical parameters for tracks (passed to \code{par}) }
   \item{labpar}{ list of named graphical parameters for labels (passed to \code{par}) }
-  \item{\dots}{ arguments to be passed to \code{lines} if tracks are plotted }
+  \item{\dots}{ arguments to be passed to \code{plot.traps} }
 }
 
 \details{ 

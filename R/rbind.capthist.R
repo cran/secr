@@ -142,7 +142,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         sapply (object, check)
 
         ## form new object
-        temp <- abind(..., along=1)
+        temp <- abind(..., along = 1)
         class(temp) <- c('capthist')
         traps(temp) <- traps(object[[1]])
 
@@ -165,6 +165,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         ## signal
         tempsig <- lapply(object, signal)
         if (!any(sapply(tempsig, is.null))) {
+            stop("rbind.capthist not yet updated for signalframe structure")
             signal(temp) <- do.call(c, tempsig)
             cutvals <- sapply(object, function(x) attr(x,'cutval'))
             attr(temp, 'cutval') <- max(cutvals)

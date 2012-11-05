@@ -3,6 +3,7 @@
 ## mask.check.R
 ## Evaluate alternative mask buffer width and spacing
 ## 2010 10 15, 2010-10-17, 2010-10-18, 2010-10-20, 2010-10-31, 2011-06-17
+## 2012-11-02 ncores
 ###############################################################################
 
 bisect <- function(f, a, b, tol = 1e-6) {
@@ -53,7 +54,7 @@ mindistfromedge <- function (mask, traps, maxr=1e5, ntheta = 60, tol=0.0001) {
 
 mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
     LLonly = TRUE, realpar = NULL, session = 1, file = NULL, drop = '',
-    tracelevel = 0, ...) {
+    tracelevel = 0, ncores = 1, ...) {
 
     dots <- list(...)
     if (!is.null(file)) {
@@ -191,32 +192,24 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             if (is.null(realpar))
                 stop ("'LLonly' requires either 'realpar' or fitted model")
 
-## what if have betas from fitted model?
-
+            ## what if have betas from fitted model?
             startbeta <- Xtransform(unlist(realpar), defaultlink,
                 names(realpar))
             newcall <- replace(newcall, 'start', list(start=startbeta))
 
-## 2011-06-15
-## condition seems to cause problem
-##            if (refit) {
-                if (is.null(newcall$details)) {
-                    newcall$details <- list(LLonly = TRUE)
-                }
-                else
-                    newcall$details <- replace(newcall$details, 'LLonly', TRUE)
-##            }
-##            else {
-##                newcall$details <- replace(newcall$details, 'LLonly', TRUE)
-##            }
+            if (is.null(newcall$details)) {
+                newcall$details <- list(LLonly = TRUE)
+            }
+            else
+                newcall$details <- replace(newcall$details, 'LLonly', TRUE)
             mask.check.output <- array(dim=c(nbuffer, nspacing))
-            dimnames(mask.check.output) <- list(buffers, spacings)
+            dimnames(mask.check.output) <- list(buffer=buffers, spacing=spacings)
             cat('Computing log likelihoods... \n')
         }
         else {
             mask.check.output <- array(dim=c(nbuffer, 4, nspacing))
-            dimnames(mask.check.output) <- list(buffers,
-                c('esa','LL','D-hat','se(D-hat)'), spacings)
+            dimnames(mask.check.output) <- list(buffer=buffers,
+                c('esa','LL','D-hat','se(D-hat)'), spacing=spacings)
             if (!is.null(file)) {
                 mask.check.fit <- vector(mode = 'list')
                 class(mask.check.fit) <- c('list','secrlist')
@@ -229,53 +222,95 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 stop ("mask.check cannot handle models with session structure")
             }
 
-        flush.console()
-        for (j in 1:nspacing) {
-            spacing <- spacings[j]
-            for (i in 1:nbuffer) {
-                buffer <- buffers[i]
-                msk <- make.mask(trps, buffer, spacing, type = 'trapbuffer',
-                                 poly = poly)
-                ## quote passes name... avoids bulky call
+        if (ncores > 1) {
+            sfit <- function (ij) {
+                spacing <- ij[1]
+                buffer <- ij[2]
+                print(spacing)
+                msk <- make.mask(traps = trps, buffer = buffer, spacing = spacing,
+                                 type = 'trapbuffer', poly = poly)
                 newcall <- replace(newcall, 'mask', list(quote(msk)))
                 if (tracelevel<2) old <- options(warn=-1)
                 if (LLonly) {
-                    mask.check.output[i,j] <- do.call(secr.fit, newcall)
+                    do.call(secr.fit, newcall)
                 }
                 else {
                     newfit <- do.call(secr.fit, newcall)
                     if (newfit$CL) {
-                        temp <- as.matrix(derived(newfit))
-                        mask.check.output[i,1,j] <- temp[1,1]
-                        mask.check.output[i,2,j] <- -newfit$fit$minimum
-                        mask.check.output[i,3:4,j] <- temp[2,1:2]
+                        tempij <- as.matrix(derived(newfit))
+                        c(tempij[1,1], -newfit$fit$minimum, tempij[2,1:2])
                     }
                     else {
-                        mask.check.output[i,1,j] <- esa(newfit)[1]
-                        mask.check.output[i,2,j] <- -newfit$fit$minimum
-                        mask.check.output[i,3:4,j] <- unlist(predict(newfit)
-                            ['D', c('estimate','SE.estimate')])
-                    }
-                }
-                options(old)
-                if (tracelevel>0)
-                    cat('Completed buffer', buffers[i], 'spacing',
-                        spacings[j], date(), '\n')
-                flush.console()
-                if (!is.null(file)) {
-                    if (LLonly) {
-                        save (mask.check.output, file = file)
-                    }
-                    else {
-                        modelname <- paste('buffer', buffers[i], 'spacing',
-                            spacings[j], sep = '')
-                        newfit <- trim(newfit, drop)
-                        mask.check.fit[[modelname]] <- newfit
-                        save (mask.check.output, mask.check.fit, file = file)
+                        c(esa(newfit)[1], -newfit$fit$minimum,
+                          unlist(predict(newfit)['D', c('estimate','SE.estimate')]))
                     }
                 }
             }
+            ij.df <- expand.grid (i=spacings, j=buffers)
+            require(parallel)
+            clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
+            temp <- clusterEvalQ(clust, library(secr))
+            clusterExport(clust, c("newcall", "trps", "spacing", "poly",
+                                   "tracelevel", "LLonly"), environment())
+            output <- parRapply(clust, ij.df, sfit)
+            stopCluster(clust)
+
+            if (LLonly)
+                mask.check.output[] <- t(matrix(output, nrow=nspacing, ncol=nbuffer))
+            else
+                mask.check.output[] <- aperm(array(output, dim=c(4, nspacing, nbuffer)),c(3,1,2))
         }
+        else {
+            ## old code for ncores = 1
+            flush.console()
+            for (j in 1:nspacing) {
+                spacing <- spacings[j]
+                for (i in 1:nbuffer) {
+                    buffer <- buffers[i]
+                    msk <- make.mask(trps, buffer, spacing, type = 'trapbuffer',
+                                     poly = poly)
+                    ## quote passes name... avoids bulky call
+                    newcall <- replace(newcall, 'mask', list(quote(msk)))
+                    if (tracelevel<2) old <- options(warn=-1)
+                    if (LLonly) {
+                        mask.check.output[i,j] <- do.call(secr.fit, newcall)
+                    }
+                    else {
+                        newfit <- do.call(secr.fit, newcall)
+                        if (newfit$CL) {
+                            temp <- as.matrix(derived(newfit))
+                            mask.check.output[i,1,j] <- temp[1,1]
+                            mask.check.output[i,2,j] <- -newfit$fit$minimum
+                            mask.check.output[i,3:4,j] <- temp[2,1:2]
+                        }
+                        else {
+                            mask.check.output[i,1,j] <- esa(newfit)[1]
+                            mask.check.output[i,2,j] <- -newfit$fit$minimum
+                            mask.check.output[i,3:4,j] <- unlist(predict(newfit)
+                                                                 ['D', c('estimate','SE.estimate')])
+                        }
+                    }
+                    options(old)
+                if (tracelevel>0)
+                    cat('Completed buffer', buffers[i], 'spacing',
+                        spacings[j], date(), '\n')
+                    flush.console()
+                    if (!is.null(file)) {
+                        if (LLonly) {
+                            save (mask.check.output, file = file)
+                        }
+                        else {
+                            modelname <- paste('buffer', buffers[i], 'spacing',
+                                               spacings[j], sep = '')
+                            newfit <- trim(newfit, drop)
+                            mask.check.fit[[modelname]] <- newfit
+                            save (mask.check.output, mask.check.fit, file = file)
+                        }
+                    }
+                }
+            }
+        }  ## end of old code for ncores=1
+
         if (!LLonly)
         {
             if ((nbuffer == 1) & (nspacing>1)) ## drop first dim

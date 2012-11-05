@@ -1,4 +1,4 @@
-###############################################################################
+##############################################################################
 ## package 'secr'
 ## methods.R
 ## Methods for classes traps, capthist and mask
@@ -44,6 +44,13 @@
 ## 2011-10-20 predict.secr modified for user-supplied D function
 ## 2011-10-20 subset.popn gets poly argument
 ## 2012-05-14 predict.secr patch for missing 'session' in newdata (cf Deb's problem 7/2/12)
+## 2012-07-28 subset.capthist substantial revision for signals
+## 2012-08-07 spacing methods for traps, mask gets new argument 'recalculate'
+## 2012-08-07 spacing attribute updated after subset, split or rbind of traps
+## 2012-09-14 split.traps now in its own file
+## 2012-09-14 signalframe extract/replace function
+## 2012-10-24 predict.secr drops unused columns of newdata from names of output components
+## 2012-10-25 plot.capthist checks for zero captures and proximity tracks
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -57,6 +64,7 @@ detector   <- function (object, ...) UseMethod("detector")
 spacing    <- function (object, ...) UseMethod("spacing")
 session    <- function (object, ...) UseMethod("session")
 trim       <- function (object, drop, keep) UseMethod("trim")
+timevaryingcov <- function (object, ...) UseMethod("timevaryingcov")
 
 reduce     <- function (object, columns, ...) UseMethod("reduce")
 rotate     <- function (object, degrees, centrexy=NULL, ...) UseMethod("rotate")
@@ -97,6 +105,11 @@ covariates.default <- function (object, ...)  {
     else attr(object,'covariates')
 }
 
+timevaryingcov.default <- function (object, ...)  {
+    if (ms(object)) lapply(object, timevaryingcov.default, ...)
+    else attr(object,'timevaryingcov')
+}
+
 traps.default <- function (object, ...)       {
     if (ms(object)) {
         temp <- lapply(object, traps.default, ...)
@@ -127,9 +140,9 @@ spacing.default <- function (object, ...)    {
     }
 }
 
-spacing.traps <- function (object, ...)    {
+spacing.traps <- function (object, ..., recalculate = FALSE)    {
     if (ms(object)) {
-        sapply(object, spacing.traps, ...)
+        sapply(object, spacing.traps, ..., recalculate)
     }
     else {
         if (is.null(object)) {
@@ -137,7 +150,7 @@ spacing.traps <- function (object, ...)    {
         }
         else {
             temp <- attr(object,'spacing')
-            if (is.null(temp) & (nrow(object)>1)) {
+            if ((is.null(temp) | recalculate) & (nrow(object)>1)) {
                 spacing <- as.matrix(dist(object))
                 sp <- apply(spacing,1,function(x) min(x[x>0]))
                 mean(sp)
@@ -148,7 +161,7 @@ spacing.traps <- function (object, ...)    {
     }
 }
 
-spacing.mask <- function (object, ...)    {
+spacing.mask <- function (object, ..., recalculate = FALSE)    {
     if (ms(object)) {
         sapply(object, spacing.mask, ...)
     }
@@ -156,7 +169,7 @@ spacing.mask <- function (object, ...)    {
         if (is.null(object)) NULL
         else {
             temp <- attr(object,'spacing')
-            if (is.null(temp) & (nrow(object)>1) ) {
+            if ((is.null(temp) | recalculate)& (nrow(object)>1) ) {
                 spacing <- as.matrix(dist(object))
                 sp <- apply(spacing,1,function(x) min(x[x>0]))
                 mean(sp)
@@ -218,7 +231,7 @@ xy <- function (object) {
     }
     else {
         if (detector(traps(object)) %in%
-            c('polygonX', 'transectX', 'polygon','transect')) {
+            c('polygonX', 'transectX', 'polygon','transect','telemetry')) {
             attr(object, 'detectedXY')
         }
         else
@@ -305,6 +318,58 @@ signal <- function (object) {
     }
 }
 
+signalframe <- function (object) {
+    if (!inherits(object, 'capthist'))
+        stop ("requires 'capthist' object")
+
+    if (ms(object)) {
+        lapply(object, signalframe)
+    }
+    else {
+        if (detector(traps(object)) %in% c('cue','signal','signalnoise')) {
+            attr(object, 'signalframe')
+        }
+        else
+            NULL
+    }
+}
+
+signalmatrix <- function (object, noise = FALSE, recodezero = FALSE,
+    prefix = 'Ch', signalcovariates = NULL) {
+    if (ms(object)){
+        lapply(object, signalmatrix, noise = noise, recodezero = recodezero,
+               prefix=prefix, signalcovariates = signalcovariates)
+    }
+    else {
+        if (!detector(traps(object)) %in% .localstuff$detectors3D)
+            stop ("requires 3-D detector")
+
+        reordered<- function(x) {
+            x[order(trap(object), occasion(object), animalID(object))]
+        }
+        tmpsignal <- object
+        if (dim(tmpsignal)[2]>1)
+            warning("using only first occasion")
+        if (noise)
+            sound <- noise(object)
+        else
+            sound <- signal(object)
+        if (!is.null(sound))
+            tmpsignal[tmpsignal>0] <- reordered(sound)
+        if (recodezero)
+            tmpsignal[tmpsignal==0] <- NA
+        tmpsignal <- tmpsignal[,1,,drop=FALSE]
+        tmpsignal <- as.data.frame(tmpsignal)
+        names(tmpsignal) <- paste(prefix, rownames(traps(object)), sep='')
+        if (!is.null(signalcovariates)) {
+            sf <- signalframe(object)
+            firstID <- match(rownames(tmpsignal), sf$Selection)
+            tmpsignal[,signalcovariates] <- sf[firstID,signalcovariates]
+        }
+        tmpsignal
+    }
+}
+
 noise <- function (object) {
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
@@ -315,22 +380,6 @@ noise <- function (object) {
     else {
         if (detector(traps(object)) %in% c('signalnoise')) {
             attr(object, 'signalframe')$noise
-        }
-        else
-            NULL
-    }
-}
-
-times <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-
-    if (ms(object)) {
-        lapply(object, times)
-    }
-    else {
-        if (detector(traps(object)) %in% c('times')) {
-            attr(object, 'times')
         }
         else
             NULL
@@ -437,7 +486,7 @@ detectionindex <- function (object) {
            numeric(0)
         else {
             if (detector(traps(object)) %in% .localstuff$exclusivedetectors) {
-                stop("indices is not intended  for exclusive detectors")
+                stop("detectionindex is not intended  for exclusive detectors")
             }
             else {
                 x <- object
@@ -481,9 +530,9 @@ searcharea <- function (object)    {
         lapply(object, searcharea)
     }
     else {
-        if (detector(object) %in% c('polygon','polygonX')) {
+        if (detector(object) %in% c('polygon','polygonX','telemetry')) {
             ## assume poly closed
-            sapply(split(object, polyID(object)), polyarea)
+            sapply(split(object, levels(polyID(object))), polyarea)
         }
         else {
             sc <- attr(object,'searchcell')
@@ -650,6 +699,38 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     }
 }
 
+'timevaryingcov<-' <- function (object, value) {
+## 2012-10-31
+    if (is.null(value))
+        structure (object, timevaryingcov = NULL)
+    else {
+        if (ms(object)) {
+            temp <- object
+            if (!(is.list(value[[1]]) & (length(value) == length(object))))
+                value <- list(value)
+            for (i in 1:length(object))
+                timevaryingcov(temp[[i]]) <- value[[i]]
+            temp
+        }
+        else {
+            if (!inherits(object, 'traps'))
+                stop("timevaryingcov is for traps objects")
+            if (!is.list(value) | is.null(names(value)))
+                stop("value should be a list of one or more named vectors")
+            if (!is.null(usage(object))) {
+                OK <- sapply(value, function(x)
+                             (ncol(usage) == length(x)))
+                if (any(!OK))
+                    warning ("mismatch between number of occasions in usage and timevaryingcov")
+            }
+            if (is.character(value))
+                if (!all(value %in% names(covariates(object))))
+                    warning ("mismatch between character vector and covariate names")
+            structure (object, timevaryingcov = value)
+        }
+    }
+}
+
 'detector<-' <- function (object, value) {
     if (!(value %in% .localstuff$validdetectors))
         stop ("invalid detector type")
@@ -688,7 +769,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
         if (!(detector(traps(object)) %in% .localstuff$polydetectors) |
                 !(inherits(object,'capthist')))
             stop ("requires 'capthist' object with ",
-                  "'polygon' or 'transect' detector")
+                  "polygon-like detector")
         if (ms(object))
             stop ("requires single-session 'capthist' object")
     }
@@ -733,6 +814,20 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     structure (object, clustertrap = value)
 }
 
+'signalframe<-' <- function (object, value) {
+    value <- as.data.frame(value)
+    if (nrow(value) != sum(abs(object)))
+        stop ("requires one row per detection")
+    if (!('signal' %in% names(value)))
+        stop ("value does not contain column 'signal'")
+    if (!(detector(traps(object)) %in% c('signal','signalnoise')) |
+        !(inherits(object,'capthist')))
+        stop ("requires 'capthist' object with 'signal' or 'signalnoise' detector")
+    if (ms(object))
+        stop ("requires single-session 'capthist' object")
+    structure (object, signalframe = value)
+}
+
 'signal<-' <- function (object, value) {
     if (length(value) != sum(abs(object)))
         stop ("requires one signal per detection")
@@ -742,8 +837,9 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     if (ms(object))
         stop ("requires single-session 'capthist' object")
     sf <- attr(object, 'signalframe')
-    if (is.null(sf))
+    if (is.null(sf)) {
         sf <- data.frame(signal = value)
+    }
     else
         sf$signal <- value
     structure (object, signalframe = sf)
@@ -763,16 +859,6 @@ flip.default <- function (object, lr=F, tb=F, ...) {
     else
         sf$noise <- value
     structure (object, signalframe = sf)
-}
-
-'times<-' <- function (object, value) {
-    if (length(value) != sum(abs(object)))
-        stop ("require one time per detection")
-    if (!(detector(traps(object)) == 'times') | !(inherits(object,'capthist')))
-        stop ("requires 'capthist' object with 'times' detector")
-    if (ms(object))
-        stop ("requires single-session 'capthist' object")
-    structure (object, times = value)
 }
 
 'traps<-' <- function (object, value) {
@@ -842,7 +928,9 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
     if (!is.null(usage(object)))
         usage(traps2)         <- usage(object)
     if (!is.null(covariates(object)))
-        covariates(traps2)    <- covariates(object)
+        covariates(traps2) <- covariates(object)
+    if (!is.null(timevaryingcov(object)))
+        timevaryingcov(traps2) <- timevaryingcov(object)
     if (!is.null(polyID(object)))   ## includes transectID
         polyID(traps2)    <- polyID(object)
   }
@@ -968,7 +1056,7 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
         ## polygon & transect objects subset by whole polygons or transects
         ## 2011-01-24
         rowsubset <- subset  ## default
-        if (detector(x) %in% c('polygon', 'polygonX'))
+        if (detector(x) %in% c('polygon', 'polygonX', 'telemetry'))
             rowsubset <- as.character(polyID(x)) %in% levels(polyID(x))[subset]
         if (detector(x) %in% c('transect', 'transectX'))
             rowsubset <- as.character(transectID(x)) %in% levels(transectID(x))[subset]
@@ -982,7 +1070,7 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
         clustertrap(temp) <- factor(clustertrap(x)[rowsubset])
 
         ## restore polyiD, transectID, usage, covariates
-        if (detector(x) %in% c('polygon', 'polygonX'))
+        if (detector(x) %in% c('polygon', 'polygonX', 'telemetry'))
             polyID(temp) <- factor(polyID(x)[rowsubset])
         if (detector(x) %in% c('transect', 'transectX'))
             transectID(temp) <- factor(transectID(x)[rowsubset])
@@ -994,49 +1082,20 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
         }
         if (!is.null(covariates(x)))
             covariates(temp) <- covariates(x)[subset,,drop=F]
+
+        if (!is.null(timevaryingcov(x))) {
+            timevaryingcov(temp) <- lapply(timevaryingcov(x),
+                function(y) y[occasions,drop=FALSE])
+        }
+
+        ## 2012-08-07
+        if (detector(x) %in% .localstuff$pointdetectors) {
+            spacing(temp) <- spacing(temp, recalculate = TRUE)
+        }
+
         temp
     }
 }
-###############################################################################
-
-split.traps <- function (x, f, drop = FALSE, prefix='S', ...) {
-  if (!inherits(x, 'traps'))
-      stop ("argument to split.traps should have class 'traps'")
-  if (ms(x))
-      stop ("'split.traps' not suitable for multi-session traps")
-  options(warn=-1)
-  f <- factor(f)
-
-## changed 2011-04-13
-##  if (any(!is.na(as.numeric(levels(f))))) {
-  if (any(is.na(as.numeric(levels(f))))) {
-      f <- factor(paste (prefix,f,sep=''))
-      sp <- paste(prefix, levels(polyID(x)), sep='')
-  }
-  else {
-      sp <- levels(polyID(x))
-  }
-
-  if (detector(x) %in% .localstuff$polydetectors) {
-      if (length(f) > length(levels(polyID(x))))
-          warning ("split factor does not match traps object")
-  }
-
-  options(warn=0)
-  out <- list()
-  for (i in levels(f)) {
-      if (detector(x) %in% .localstuff$polydetectors) {
-          temp <- subset (x, subset = (sp == i), ...)
-      }
-      else
-          temp <- subset (x, subset = (f == i), ...)
-    if (!drop | (nrow(temp)>0))
-      out[[i]] <- temp
-  }
-  class (out) <- c('list', 'traps')
-  out
-}
-
 ###############################################################################
 
 rbind.traps <- function (..., renumber = TRUE) {
@@ -1044,21 +1103,26 @@ rbind.traps <- function (..., renumber = TRUE) {
 # what if multi-session?
     allargs <- list(...)
     check <- function (x) {
+        result <- FALSE
         if (!is(x,'traps'))
             stop ("all arguments must be 'traps' objects")
         if (is.null(covariates(x)) != is.null(covariates(allargs[[1]]) ))
             stop ("covariates must be provided for all or none")
+        if (is.null(timevaryingcov(x)) != is.null(timevaryingcov(allargs[[1]]) ))
+            result <- TRUE
         if (!is.null(usage(x)))
             if (ncol(usage(x)) != ncol(usage(allargs[[1]])))
                 stop ("'usage' is defined for varying number of occasions")
         if (detector(x) != detector(allargs[[1]]))
             warning ("detector types vary; using first")
-
+        result
     }
 
     if (length(allargs) <= 1)
         stop ("requires more than one traps object")
-    sapply (allargs, check)
+    tvc <- sapply (allargs, check)
+    if (any(tvc))
+        warning("time-varying covariates differ; using first")
     temp <- rbind.data.frame(...)
     class(temp) <- c('traps', 'data.frame')
 
@@ -1083,6 +1147,7 @@ rbind.traps <- function (..., renumber = TRUE) {
     ## covariates 2010 07 05, 2010-08-28
     tempcov <- lapply(allargs, covariates)
     covariates(temp) <- do.call(rbind, tempcov)
+    timevaryingcov(temp) <- timevaryingcov(allargs[[1]])
 
     ## clusters  2011-04-12
     tempclus <- lapply(allargs, clusterID)
@@ -1145,6 +1210,11 @@ rbind.traps <- function (..., renumber = TRUE) {
     if (!is.null(covariates(temp))) {
         if (nrow(covariates(temp))>0)
             row.names(covariates(temp)) <- row.names(temp)
+    }
+
+    ## 2012-08-07, 2012-08-24
+    if (detector(temp) %in% .localstuff$pointdetectors) {
+        spacing(temp) <- spacing(temp, recalculate = TRUE)
     }
 
     temp
@@ -1216,7 +1286,7 @@ plot.traps <- function(x,
         }
 
         if (hidetr==F) {
-            if (detector(x) %in% c('polygon','polygonX')) {
+            if (detector(x) %in% c('polygon','polygonX', 'telemetry')) {
                 templist <- split (x, levels(polyID(x)), prefix='')
                 lapply(templist, function (y)
                        polygon (y$x, y$y, col=detpar$col, density=0))
@@ -1275,7 +1345,9 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
             spacing <- NA
         }
         else {
-            spacing <- spacing(object)
+            spacing <- spacing(object, recalculate = getspacing)
+
+            # unclear why following is not for polydetectors?
             if (is.factor(covariates(object))) {
                 susage <- by(usage(object), covariates(object), function(y) apply(y,2,sum))
                 sumusage <- matrix(unlist(susage), byrow = T, nrow = length(susage))
@@ -1285,6 +1357,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
                  else sumusage <- NULL
             sumcovar <- NULL
                 tempcovar <- covariates(object)
+
             if (!is.null(tempcovar))
                 if ((nrow(tempcovar)>0) & (ncol(tempcovar)>0)) ## amended to check ncol 2009 09 18
                     sumcovar <- summary(tempcovar, ...)
@@ -1301,10 +1374,11 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
         sumcovar <- NULL
         xrange <- range(object$x)
         yrange <- range(object$y)
-        if (detector(object) %in% c('polygon', 'polygonX'))
+        if (detector(object) %in% c('polygon', 'polygonX', 'telemetry'))
             area <- searcharea(object)
         if (detector(object) %in% c('transect', 'transectX'))
             totallength <- transectlength(object)
+        tvc <- timevaryingcov(object)
 
         temp <- list (
           detector = detector(object),
@@ -1316,7 +1390,8 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
           area  = area,
           totallength = totallength,
           usage = sumusage,
-          covar = sumcovar
+          covar = sumcovar,
+          tvc = tvc
         )
 
         class(temp) <- 'summary.traps'
@@ -1332,7 +1407,7 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
     if (!terse)
     cat ('Object class     ', 'traps', '\n')
     cat ('Detector type    ', x$detector, '\n')
-    if (x$detector %in% c('polygon', 'polygonX')) {
+    if (x$detector %in% c('polygon', 'polygonX', 'telemetry')) {
         cat ('Number vertices  ', x$ndetector-x$npart, '\n')  ## assume each polygon closed
         cat ('Number polygons  ', x$npart, '\n')
         cat ('Total area       ', sum(x$area), 'ha \n')
@@ -1357,6 +1432,10 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
         if (!is.null(x$usage)) {
             cat ('Usage by occasion', '\n')
             print(x$usage, ...)
+        }
+        if (!is.null(x$tvc)) {
+            cat ('Time-varying covariate(s) name : columns', '\n')
+            for (i in 1:length(x$tvc)) cat(names(x$tvc)[[i]], ':', x$tvc[[i]], '\n')
         }
     }
 }
@@ -1525,7 +1604,8 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
 ###############################################################################
 subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
     sessions=NULL, cutval=NULL, dropnullCH=TRUE, dropnullocc=FALSE,
-    dropunused = TRUE, droplowsignals = TRUE, renumber=FALSE, ...)  {
+    dropunused = TRUE, droplowsignals = TRUE, dropNAsignals = FALSE,
+    cutabssignal = TRUE, renumber=FALSE, ...)  {
 
 ## modified 2011-11-14; 2012-02-11
 
@@ -1534,7 +1614,6 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
 ## occasions - vector (integer or logical) to subscript occasions
 ## traps - vector (character, integer or logical) to subscript rows of traps object
 ## sessions - vector (integer or logical) to subscript sessions
-
     if (ms(x)) {
         if (is.null(sessions)) sessions <- 1:length(x)
         temp <- lapply (x[sessions], subset,
@@ -1556,7 +1635,6 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         detector <- detector(traps(x))
         dim3 <- length(dim(x)) == 3
         nk <- ndetector (traps(x))
-        ## detectionindex is non-exported function 2012-02-11
         if (is.logical(subset) & (length(subset) != nrow(x)))
             stop ("if 'subset' is logical its length must match number of animals")
         if (is.logical(occasions) & (length(occasions) != ncol(x)))
@@ -1583,28 +1661,39 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             occasions <- (1:ncol(x)) %in% occasions
 
         #####################################
-        ## preliminaries for signal detectors
+        ## signaldf is used later...
         if (detector %in% c('cue','signal','signalnoise')) {
-            detectionindices <- detectionindex(x)
+            signaldf <- data.frame(trap = trap(x, names = F),
+                                   occ = occasion(x),
+                                   ID = animalID(x, names = F),
+                                   attr(x, 'signalframe'))
+        }
+
+        #####################################
+        ## apply signal threshold if relevant
+        if (detector %in% c('cue','signal','signalnoise')) {
             if (is.null(cutval)) cutval <- attr(x, 'cutval')
             if (cutval < attr(x, 'cutval'))
                 stop ("cannot decrease 'cutval'")
-            if (detector == 'signalnoise')
-                signalOK <- (signal(x)-noise(x)) >= cutval
-            else
-                signalOK <- signal(x) >= cutval
-
+            if (cutabssignal) {
+                signalOK <- (signal(x) >= cutval)
+            }
+            else {
+                if (is.null(noise(x)))
+                    stop("could not find noise for relative signal cut")
+                signalOK <- ((signal(x)-noise(x)) >= cutval)
+            }
+            signalOK <- ifelse(is.na(signalOK), !dropNAsignals, signalOK)
             newcount <- table(
-                factor(animalID(x,names=FALSE), levels=1:nrow(x))[signalOK],
-                factor(occasion(x))[signalOK],
-                factor(trap(x, names=FALSE), levels=1:nk)[signalOK])
+                factor(animalID(x, names = FALSE), levels = 1:nrow(x))[signalOK],
+                factor(occasion(x), levels = 1:ncol(x))[signalOK],
+                factor(trap(x, names = FALSE), levels = 1:nk)[signalOK])
             x[] <- newcount * sign(x)  ## retain deads, in principle
         }
 
         ###########################
         ## condition missing values
         x[is.na(x)] <- 0
-
         #################################
         ## optionally drop traps never used on the specified occasions
         if (dropunused && !is.null(usage(traps(x)))) {
@@ -1612,7 +1701,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             traps <- traps & used
         }
 
-        #############################
+        ##############################################
+        ## which cells are retained?
         ## for signalframe 2012-02-11
         if (dim3) {
             i <- x
@@ -1654,7 +1744,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ## drop null occasions
         OK2 <- rep(T,nocc)
         if (nrow(temp)>0)
-       if ((!(detector %in% c('cue','signal','signalnoise'))) &&
+        if ((!(detector %in% c('cue','signal','signalnoise'))) &&
             any( apply(abs(temp),2,sum) ==0)) {
             if (dropnullocc) {
                 OK2 <- apply(abs(temp),2,sum) > 0
@@ -1670,7 +1760,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
                     paste((1:nocc)[apply(abs(temp),2,sum) ==0], collapse=', '), "\n")
             nocc <- dim(temp)[2]  # refresh
         }
-        #################################
+        ###################################
         ## attributes
         class(temp) <- 'capthist'
         traps(temp) <- subset (traps(x), traps)
@@ -1682,7 +1772,16 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         attr(temp, 'centres') <- attr(x, 'centres')
 
         ###################################
+        ## 2012-10-20 for telemetry
+        xylist <- attr(x, 'xylist')
+        if (!is.null(xylist)) {
+            xylist <- xylist[names(xylist) %in% rownames(x)[subset]]
+            attr(temp, 'xylist') <- xylist
+        }
+
+        ###################################
         ## subset signal of signal capthist
+        ## revised 2012-07-28
         if (detector %in% c('cue','signal','signalnoise')) {
             if (!droplowsignals) {
                 if (any(x<=0))
@@ -1692,10 +1791,11 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             }
             # otherwise signalOK remains a logical vector with length equal
             # to the original number of detections
-            retained <- detectionindices %in% i
-            OK <- retained & signalOK
-            df <- attr(x, 'signalframe')  ## unchanged, so far
-            attr(temp, 'signalframe') <- df[OK,, drop=FALSE]
+            ## subset, traps and occasions are logical vectors 2011-01-21, 2011-11-14
+            OK <- occasions[signaldf$occ] & subset[signaldf$ID] & traps[signaldf$trap] & signalOK
+            signaldf <- signaldf[OK,, drop = FALSE]
+            signaldf <- signaldf[order(signaldf$trap, signaldf$occ, signaldf$ID),, drop = FALSE]
+            attr(temp, 'signalframe') <- signaldf[,-(1:3), drop = FALSE]
             attr(temp, 'cutval') <- cutval
         }
 
@@ -2036,6 +2136,12 @@ plot.capthist <- function(x, rad = 5,
 
         if (!add) plot(traps, hidetr=hidetraps, ...)
 
+        ## check added 2012-10-25
+        if (nrow(x) == 0) {
+            warning("no detections in capthist object")
+            type <- 'null'
+        }
+
         if (type == 'petal') {
             if (is.null(icolours)) icolours <- topo.colors((nanimal+1)*1.5)
             if (varycol) {
@@ -2051,6 +2157,10 @@ plot.capthist <- function(x, rad = 5,
             if ( detectr %in% c('proximity', 'count', 'cue', 'unmarked', 'presence') )
             {
                 w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
+                multiples <- any(apply(x,1:2, function(y) sum(abs(y)))>1)
+                if (multiples & tracks)
+                    warning("track for repeat detections on same occasion",
+                            " joins points in arbitrary sequence")
                 w <- aperm(w, c(2,3,1))
                 apply( w, 1, plotprox )
             }
@@ -2140,7 +2250,7 @@ plot.capthist <- function(x, rad = 5,
             )
         }
         else
-            stop ("type not recognised")
+            if (type != 'null') stop ("type not recognised")
 
 
         ####################################################
@@ -2194,7 +2304,12 @@ summary.capthist <- function(object, terse = FALSE, ...) {
         if (terse) {
             n     <- sapply(object, nrow)        # number caught
             nocc  <- sapply(object, ncol)        # number occasions
-            ncapt <- sapply(object, function (xx) sum(abs(xx)>0))
+            ncapt <- sapply(object, function (xx)
+                            if (detector(traps(xx)) %in% .localstuff$countdetectors)
+                            sum(abs(xx))
+                            else
+                            sum(abs(xx)>0)
+                            )
             ndet  <- sapply(traps(object), ndetector) # number traps
             temp  <- as.data.frame(rbind(nocc, ncapt, n, ndet))
             names(temp) <- names(object)
@@ -2238,7 +2353,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                 if (detector %in% c('proximity','signal','signalnoise','cue'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)>0))
                 ## abs (x) added following 2 statements 2011-02-09
-                if (detector %in% c('count', 'polygon','transect','unmarked','presence'))
+                if (detector %in% .localstuff$countdetectors) #c('count', 'polygon','transect','unmarked','presence'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)))
                 tempt <- apply(object[,,,drop=F],c(2,3), function(x) sum(abs(x))>0)
                 counts [7,] <- apply(tempt,1,sum)
@@ -2301,15 +2416,28 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                                       diffSN = summary(signal(object)-noise(object)))
         }
 
+        zeros <- sum(apply(abs(object),1,sum)==0)
+        xyl <- attr(object,'xylist')
+        if (is.null(xyl))
+            telemsummary <- NULL
+        else {
+            ntelem <- sapply(xyl, nrow)
+            nteldet <- sum(apply(abs(object)>0,1,any) [row.names(object) %in% names(xyl)])
+            telemsummary <- c(n=length(xyl), ndet=nteldet, min=min(ntelem),
+                              max=max(ntelem), mean=mean(ntelem), sd = sd(ntelem))
+        }
+
         temp <- list (
             detector = detector,
             ndetector = nd,
             trapsum = trapsum,
             counts = counts,
+            zeros = zeros,
             dbar = dbar,
             RPSV = PSV,
             cutval = cutval,        # signal, signalnoise only
-            signalsummary = signalsummary
+            signalsummary = signalsummary,
+            telemsummary = telemsummary
         )
         class(temp) <- 'summary.capthist'
         temp
@@ -2345,9 +2473,16 @@ print.summary.capthist <- function (x, ...) {
     cat ('Counts by occasion \n')
     print(x$counts, ...)
     cat ('\n')
+    if (x$zeros>0)
+        cat (x$zeros, 'empty histories\n')
     if (x$detector %in% c('signal', 'signalnoise')) {
         cat ('Signal threshold ', x$cutval, '\n')
         print (x$signalsummary)
+    }
+    if (!is.null(x$telemsummary)) {
+        cat (x$telemsummary[1], "telemetered animals,", x$telemsummary[2], "detected\n")
+        cat (paste(x$telemsummary[3:4], collapse="-"), "locations per animal, mean = ",
+             paste(round(x$telemsummary[5:6],2), collapse=", sd = "), "\n")
     }
 }
 ############################################################################################
@@ -2643,8 +2778,18 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     }
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
 
+    ## 2012-07-24
+    unmash <- object$details$unmash
+    if (object$CL | is.null(unmash)) unmash <- FALSE
+
     parindices <- object$parindx
     models <- object$model
+
+    ## drop unused columns 2012-10-24
+    vars <- unlist(lapply(models, all.vars))                       ## 2012-10-24
+    usedvars <- c('session', 'group', vars)                        ## 2012-10-24
+    newdata <- newdata[,names(newdata) %in% usedvars, drop=FALSE]  ## 2012-10-24
+
     if ('cuerate' %in% object$realnames) {
         parindices$cuerate <- max(unlist(parindices)) + 1
         models$cuerate <- ~1
@@ -2742,6 +2887,8 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
             n.mash <- attr (object$capthist, 'n.mash')
             n.clust <- length(n.mash)
         }
+        if (unmash)
+            n.clust <- 1
 
         #####################
         ## 2010 02 14 rescale
@@ -2771,6 +2918,25 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
                 if (!is.null(n.mash)) {
                     temp['D', -1] <- temp['D', -1] / n.clust
                 }
+            }
+
+            # drop non-estimated rows
+            if (ms(object)) {
+                if ('session' %in% names(newdata))
+                    sess <- newdata[new, 'session']
+                else
+                    sess <- 1
+                det <- detector(traps(object$capthist)[[sess]])
+            }
+            else
+                det <- detector(traps(object$capthist))
+
+            ## purge irrelevant real parameters
+            if (det == 'telemetry') {
+                    rnum <- match(c('D','g0'), row.names(temp))
+                    rnum <- rnum[!is.na(rnum)]
+                    if (length(rnum)>0)
+                        temp <- temp[-rnum,]
             }
 
             if (nrow(newdata)==1) out <- temp
@@ -2852,20 +3018,6 @@ detectpar <- function(object, ...) {
     }
     else
         extractpar(temppred)
-}
-############################################################################################
-
-model.string <- function (model, userDfn) {
-    if (!is.null(userDfn)) {
-        if (!is.null(model$D))
-            model$D <- paste('~userD', userDfn('name'), sep='.')
-    }
-    temp <- paste (names(model), as.character(model), collapse=' ', sep='')
-    temp
-}
-fixed.string <- function (fixed) {
-    if (is.null(fixed) | length(fixed)==0) 'none'
-    else paste (names(fixed), as.character(fixed), collapse=', ', sep=' = ')
 }
 ############################################################################################
 

@@ -2,6 +2,7 @@
 ## package 'secr'
 ## Dsurface.R
 ## 2011-10-21, modified through 2011-11-10
+## 2012-10-25 bug fixed in getDensityArray with multi-session mask
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
@@ -39,7 +40,11 @@ predictD <- function (object, regionmask, group, session,
         n.mash <- attr (object$capthist, 'n.mash')
         n.clust <- length(n.mash)
     }
-    if (is.null(n.mash))
+    ## 2012-07-24 allow for unmash model fit
+    unmash <- object$details$unmash
+    if (is.null(unmash))
+        unmash <- FALSE
+    if (is.null(n.mash) | unmash)
         n.clust <- 1
 
     ## no density model (conditional likelihood fit)
@@ -369,10 +374,16 @@ getDensityArray <- function (x, paddedlength = NULL) {
         covnames <- names(covariates(x))
         OK <- substring(covnames,1,2) == 'D.'
         covnames <- covnames[OK]
-        densities <- covariates(x)[,covnames]
-        if (!is.null(paddedlength))
-            densities <- c(densities, rep(NA, paddedlength-length(densities)))
-        array(densities, dim=c(nrow(x), length(covnames), 1))
+        densities <- covariates(x)[,covnames, drop = FALSE]
+        nDcol <- ncol(densities)
+        if (is.null(paddedlength))
+            paddedlength <- nrow(x)
+        dmat <- array(dim=c(paddedlength,nDcol))
+        dmat[1:nrow(x),] <- unlist(densities)
+#        if (!is.null(paddedlength))
+#            densities <- c(densities, rep(NA, paddedlength-length(densities)))
+#        array(densities, dim=c(nrow(x), length(covnames), 1))
+        array(dmat, dim=c(dim(dmat), 1))
     }
 }
 

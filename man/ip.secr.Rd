@@ -21,7 +21,7 @@ are covariates).
 ip.secr (capthist, predictorfn = pfn, predictortype = "null",
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
     centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
-    var.nsim = 1000, maxbox = 5, maxtries = 2, ...)
+    var.nsim = 1000, maxbox = 5, maxtries = 2, ncores = 1, ...)
 
 pfn(capthist, N.estimator)
 
@@ -42,6 +42,7 @@ pfn(capthist, N.estimator)
   \item{var.nsim}{ number of additional simulations to estimate variance-covariance matrix }
   \item{maxbox}{ maximum number of attempts to `frame' solution }
   \item{maxtries}{ maximum number of attempts at each simulation }
+  \item{ncores}{integer number of cores available for parallel processing}  
   \item{\dots}{ further arguments passed to sim.popn }
   \item{N.estimator}{ character value indicating population estimator to use }
 }
@@ -118,6 +119,9 @@ with \code{\link{autoini}}.
 
 Linear measurements are assumed to be in metres and density in animals
 per hectare (10 000 \eqn{\mbox{m}^2}{m^2}).
+
+If \code{ncores > 1} the \pkg{parallel} package is used to create
+processes on multiple cores (see \link{Parallel} for more).
 
 }
 

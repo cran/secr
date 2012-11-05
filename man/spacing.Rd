@@ -1,5 +1,7 @@
 \name{spacing}
 \alias{spacing}
+\alias{spacing.traps}
+\alias{spacing.mask}
 \alias{spacing<-}
 
 \title{ Detector or Mask Spacing }
@@ -11,12 +13,17 @@
 \usage{
 spacing(object, \dots)
 spacing(object) <- value
+
+\method{spacing}{traps}(object, ..., recalculate = FALSE)
+\method{spacing}{mask}(object, ..., recalculate = FALSE)
+
 }
 
 \arguments{
   \item{object}{ object with `spacing' attribute e.g. \code{traps} }
   \item{value}{ numeric value for spacing }
   \item{\dots}{ other arguments (not used) }
+  \item{recalculate}{logical; if TRUE compute average spacing afresh}
 }
 
 \details{

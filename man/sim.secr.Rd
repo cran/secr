@@ -22,7 +22,8 @@ simulated data.
 
 sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
     deviance(x), df = df.residual(x)), seed = NULL, maxperpoly = 100,
-    data = NULL, tracelevel = 1, hessian = "none", start = object$fit$par)
+    data = NULL, tracelevel = 1, hessian = "none", start =
+    object$fit$par, ncores = 1)
 
 }
 
@@ -38,6 +39,7 @@ sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
   \item{hessian}{character or logical controlling the computation of the Hessian matrix}
   \item{start}{vector of starting `beta' values for \code{secr.fit}}
+  \item{ncores}{integer number of cores available for parallel processing}
   \item{...}{other arguments (not used)}
 }
 
@@ -89,8 +91,15 @@ value in \code{object\$details}.  Options are "none" (no variances),
 variances or covariances. Logical TRUE and FALSE are interpreted by
 \code{secr.fit} as "auto" and "none".
 
+If \code{ncores > 1} the \pkg{parallel} package is used to create
+processes on multiple cores (see \link{Parallel} for more) and progress
+messages are suppressed. New datasets are generated in the master
+process, so there is no need to manage the random number streams
+in the worker processes. 
+
 \code{sim.capthist} is a more direct way to simulate data from a null
-model (i.e. one with constant parameters for density and detection).
+model (i.e. one with constant parameters for density and detection), or
+from a time-varying model.
 
 }
 \value{

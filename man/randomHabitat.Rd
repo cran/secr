@@ -90,7 +90,8 @@ with a modified random clusters method. \emph{Landscape Ecology},
 
   Single-linkage clustering and adjacency operations use functions
   `clump' and `adjacency' of the package \pkg{raster}; `clump' also
-  requires package \pkg{igraph}. Optional plotting
+  requires package \pkg{igraph0} (\pkg{raster} still uses this
+  decrecated version). Optional plotting
   of intermediate stages (\code{plt = TRUE}) uses the plot method for
   rasterLayers in \pkg{raster}.
 

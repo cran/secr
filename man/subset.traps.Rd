@@ -9,7 +9,7 @@
 }
 \usage{
 \method{subset}{traps}(x, subset = NULL, occasions = NULL, \dots)
-\method{split}{traps}(x, f, drop = FALSE, prefix = "S", \dots)
+\method{split}{traps}(x, f, drop = FALSE, prefix = "S", byoccasion = FALSE, \dots)
 }
 
 \arguments{
@@ -19,7 +19,9 @@
   \item{\dots}{ arguments passed to other functions }
   \item{f}{ factor or object that may be coerced to a factor }
   \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
-  \item{prefix}{ a character prefix to be used for component names when values of f are numeric }
+  \item{prefix}{ a character prefix to be used for component names when
+    values of f are numeric }
+  \item{byoccasion}{logical ; if TRUE then f is used to split occasions}
 }
 \details{
 
@@ -31,9 +33,10 @@ the level of whole polygons or transects. \code{subset} should therefore
 have the same length as \code{levels(polyID(x))} or
 \code{levels(transectID(x))}.
 
-\code{split} generates a list in which each component is a
-\code{traps} object. Each component corresponds to a level of
-\code{f}.  The argument `x' of \code{split} cannot be a list.
+\code{split} generates a list in which each component is a \code{traps}
+object. Each component corresponds to a level of \code{f}.  The argument
+\code{x} of \code{split} cannot be a list (i.e. \code{x} must be a
+single-session traps object). 
 
 }
 \value{
@@ -41,6 +44,11 @@ have the same length as \code{levels(polyID(x))} or
 An object of class \code{traps} with only the requested subset of rows.
 Subsetting is applied to \code{usage} and \code{covariates} attributes
 if these are present.
+
+Splitting with \code{byoccasion = TRUE} produces a list of traps
+objects, each with usage codes for a subset of occasions. Traps not used
+on any occasion within a session are automatically dropped from that
+session.
 
 }
 

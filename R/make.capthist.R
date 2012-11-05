@@ -5,6 +5,7 @@
 ## 2012-02-08 signalnoise
 ## 2012-02-09 revamped sorting
 ## 2012-02-12 finished tidy up related to signalframe
+## 2012-10-19 telemetry detector type
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
@@ -78,11 +79,10 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
         if (fmt!='trapID') {
           if (ncol(captures)<5)
               stop ("too few columns in capture matrix")
-
-          if (detector(traps) %in% c('polygon','polygonX')) {
+          if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
               captTrap <- xyinpoly(captures[,4:5], traps)
               if (any(captTrap==0)) {
-                  captures <- captures[captTrap>0,]  ## first! 20110-11-17
+                  captures <- captures[captTrap>0,]  ## first! 2010-11-17
                   captTrap <- captTrap[captTrap>0]
                   warning ("detections with coordinates outside ",
                            "polygon(s) were dropped")
@@ -150,8 +150,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
         nID    <- length(uniqueID)
         detectionOrder <- order(captTrap, abs(captures[,3]), captID)
 
-        dim3 <- detector(traps) %in% c('proximity', 'signal', 'signalnoise', 'count',
-            'polygon','transect','unmarked','presence')
+        dim3 <- detector(traps) %in% .localstuff$detectors3D
         if (dim3) {
             w <- array (0, dim=c(nID, nocc, ndetector(traps)))
             ## 2011-03-19, 2011-03-27
@@ -287,10 +286,13 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                         stop ("missing signal covariate(s)")
 
                     attr(wout, 'signalframe') <- cbind(attr(wout, 'signalframe'),
-                                                       captures[,signalcovariates])
+# captures[,signalcovariates])
+# need to maintain order 2012-09-15
+                        captures[detectionOrder,signalcovariates])
                 }
                 attr(wout, 'cutval')   <- cutval
                 ## dropunused = FALSE? 2012-01-11
+
                 ## apply cutval
                 wout <- subset(wout, cutval = cutval)
             }
