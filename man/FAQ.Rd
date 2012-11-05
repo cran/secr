@@ -44,6 +44,10 @@ vague topic (or just use ?? at the prompt).  For example:
 Thirdly, you can display various \pkg{secr} documents listed in
 \code{\link{secr-package}}.
 
+Tip: to search all secr help pages open the pdf version of the manual in
+Acrobat Reader (\url{../doc/secr-manual.pdf}; see also ?secr) and use
+<ctrl> F.
+
 There is a support forum at \url{http://www.phidot.org/forum} under
 `DENSITY|secr'. Please read the FAQ there before posting. See below for
 more \R tips. Some specific problems with \code{secr.fit} are covered in
@@ -118,6 +122,28 @@ the likelihood surface for the more complex model, but this is much
 faster than maximizing the likelihood.
 
 }
+
+\section{ Does secr use multiple cores?}{
+  
+  Some computations can be run in parallel on multiple processors (most
+  desktops these days have multiple cores), but capability is
+  limited. Check the 'ncores' argument of
+  sim.secr() and secr.fit() and ?ncores. The speed gain is significant
+  for parametric bootstrap computations in sim.secr. Parallelisation is
+  also allowed for the session likelihood components of a multi-session
+  model in secr.fit(), but gains there seem to be small or negative.
+  
+}
+
+\section{ Can a model use detector-level covariates that vary over
+  time?}{
+
+  Yes. See ?timevaryingcov. This is an obvious way to control for
+  varying effort that cannot be described by the `usage' atribute
+  (which allows only used vs. not used). A tip: covariate models fit
+  more quickly when the covariate takes only a few different values.
+  
+  }
 
 \section{Things You Might Need To Know About \R}{
 

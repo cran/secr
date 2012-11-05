@@ -7,7 +7,7 @@
   Compute score tests comparing a fitted model and a more general alternative model.
 }
 \usage{
-score.test(secr, ..., betaindex = NULL, trace = FALSE)
+score.test(secr, ..., betaindex = NULL, trace = FALSE, ncores = 1)
 
 score.table(object, ..., sort = TRUE, dmax = 10)
 
@@ -16,7 +16,9 @@ score.table(object, ..., sort = TRUE, dmax = 10)
 \arguments{
   \item{secr}{ fitted secr model }
   \item{...}{ one or more alternative models OR a fitted secr model }
-  \item{trace}{ logical. If TRUE then output one-line summary at each evaluation of the likelihood }
+  \item{trace}{ logical. If TRUE then output one-line summary at each
+    evaluation of the likelihood }
+  \item{ncores}{integer number of cores available for parallel processing} 
   \item{betaindex}{ vector of indices mapping fitted values to parameters in the alternative model }
 
   \item{object}{ score.test object or list of such objects }
@@ -42,7 +44,7 @@ sometimes requires user intervention via the \code{betaindex} argument.
 For example \code{betaindex} = c(1,2,4) is the correct mapping when
 comparing the null model (D\eqn{\sim{~}}{~}1, g0\eqn{\sim{~}}{~}1,
 sigma\eqn{\sim{~}}{~}1) to one with a behavioural effect on g0
-((D\eqn{\sim{~}}{~}1, g0\eqn{\sim{~}}{~}b, sigma\eqn{\sim{~}}{~}1).
+(D\eqn{\sim{~}}{~}1, g0\eqn{\sim{~}}{~}b, sigma\eqn{\sim{~}}{~}1).
 
 \code{score.table} summarises one or more score tests in the form of a
 model comparison table. The \dots argument here allows the inclusion of
@@ -50,6 +52,9 @@ additional score test objects (note the meaning differs from
 \code{score.test}). Approximate AICc values are used to compute relative
 AIC model weights for all models within dmax AICc units of the best
 model.
+
+Multiple cores provide some speed improvment in \code{score.test} when
+comparing more than two models.
 
 }
 \value{

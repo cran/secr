@@ -8,6 +8,7 @@
 ## 2011 11 24 re-enable bk, Bk models
 ## 2011 11 27 add k, K, bkc, Bkc, bkn, bn models
 ## 2012 01 20 preliminary work on time-varying trap covariates
+## 2012 09 10 k, K models did not work with multi-session data
 
 ################################################################################
 ## source ('d:\\density secr 2.3\\secr\\R\\secr.design.MS.R')
@@ -42,8 +43,11 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                 else found <- vars[all(varincov)]
 
                 for (variable in found) {
+                    ## vals <- unlist(lapply(cov, function(x) pad1(x[,variable],
+                    ##     dims[dimcov])))
+                    ## pad only on first dimension 2012-09-21
                     vals <- unlist(lapply(cov, function(x) pad1(x[,variable],
-                        dims[dimcov])))
+                        dims[dimcov[1]])))
                     if (any(is.na(vals)))
                         stop ("covariate missing values not allowed")
 
@@ -118,7 +122,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # groups only defined for CL = FALSE  [corrected 2011-11-27]
     # use of 'g' requires valid groups definition
     # grouping variables are also added individually to dframe
-
     models$D <- NULL                          # drop density model
     models$phi <- NULL                        # drop phi model 2011-11-30
     npar     <- length(models)                # real parameters
@@ -187,8 +190,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------------
-    dims <- c(R,n,S,K,nmix)  # 'virtual' dimensions
-    dframenrow <- prod(dims)      # number of rows
+    dims <- c(R,n,S,K,nmix)    # 'virtual' dimensions
+    dframenrow <- prod(dims)   # number of rows
     autovars <- c('session','Session','g','t','T',
                   'b','bn','B','bk','bkn','Bk', 'k', 'K', 'bkc', 'Bkc',
                   'kcov','tcov', 'sighting', 'h2', 'h3')
@@ -305,15 +308,15 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         }
         else t(apply(abs(caphist),1, prevcapt))
     }
-    makek <- function (caphist) {      ## global response
+    makek <- function (caphist) {      ## trap responds to capture of any animal
         if (!prox) {
             caphist <- reduce(caphist, output = 'proximity',
                 dropunused = FALSE, verify = FALSE)
         }
-        temp <- apply(abs(caphist), c(2,3), sum)
+        temp <- apply(abs(caphist), c(2,3), sum) # occasion x trap
         apply(temp, 2, prevcapt)
     }
-    makebk <- function (caphist) {     ## trap-specific response
+    makebk <- function (caphist) {     ## individual trap-specific response
         if (!prox) {
             caphist <- reduce(caphist, output = 'proximity',
                 dropunused = FALSE, verify = FALSE)
@@ -475,7 +478,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
             if (MS) {
                 temp <- lapply(capthist, makek)
-                temp <- lapply(temp, padarray, c(n,S,K))
+                # temp <- lapply(temp, padarray, c(n,S,K))
+                # bug fixed 2012-09-10
+                temp <- lapply(temp, padarray, c(S,K))
             }
             else temp <- makek(capthist)  # one session
             dframe$k <- insertdim(as.vector(unlist(temp)), c(3,4,1), dims)
@@ -489,7 +494,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             prevcapt <- function(x) c(FALSE, x[-S]>0)
             if (MS) {
                 temp <- lapply(capthist, makek)
-                temp <- lapply(temp, padarray, c(n,S,K))
+                # temp <- lapply(temp, padarray, c(n,S,K))
+                # bug fixed 2012-09-10
+                temp <- lapply(temp, padarray, c(S,K))
             }
             else temp <- makek(capthist)  # one session
             dframe$K <- insertdim(as.vector(unlist(temp)), c(3,4,1), dims)
@@ -548,7 +555,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         warning ("implementation of user covariates with multi-session ",
                  "data is not fully tested")
 
-    if (!bygroup) findvars.MS (zcov, vars, 2)   ## CL only
+    ##  if (!bygroup) findvars.MS (zcov, vars, 2)   ## CL only
+    ## by session 2012-09-21
+    if (!bygroup) findvars.MS (zcov, vars, c(2,1))   ## CL only
 
     findvars.MS (sessioncov, vars, 1)
     findvars.MS (timecov, vars, 3)      ## session-specific list
@@ -556,10 +565,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     #--------------------------------------------------------------------------
     # 2012-01-20 time-varying trap covariates
+    # modified 2012-10-31
+
     if (MS)
-        tvc <- lapply(trps, attr, 'timevaryingcov')
+        tvc <- timevaryingcov(trps)
     else
-        tvc <- list(attr(trps, 'timevaryingcov'))
+        tvc <- list(timevaryingcov(trps))
 
     if (!is.null(tvc) & (length(vars)>0)) {
         findvars.traptime (tvc, vars)
@@ -673,7 +684,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------
-
     list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R)
 }
 ############################################################################################

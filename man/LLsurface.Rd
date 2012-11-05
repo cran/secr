@@ -11,37 +11,20 @@ likelihood surface.
 \usage{
 LLsurface.secr(object, betapar = c("g0", "sigma"), xval = NULL,
     yval = NULL, centre = NULL, realscale = TRUE, plot = TRUE,
-    plotfitted = TRUE, ...)
+    plotfitted = TRUE, ncores = 1, ...)
 }
 \arguments{
-  \item{object}{
-\code{secr} object output from \code{secr.fit}
-}
-  \item{betapar}{
-character vector giving the names of two beta parameters
-}
-  \item{xval}{
-vector of numeric values for x-dimension of grid
-}
-  \item{yval}{
-vector of numeric values for y-dimension of grid
-}
-\item{centre}{
-  vector of central values for all beta parameters
-}
-\item{realscale}{
-logical. If TRUE input and output of x and y is on the
-untransformed (inverse-link) scale.
-}
-  \item{plot}{
-logical. If TRUE a contour plot is produced
-}
-  \item{plotfitted}{
-logical. If TRUE the MLE from \code{object} is shown on the plot (+)
-}
-  \item{\dots}{
-other arguments passed to \code{\link{contour}}
-}
+  \item{object}{\code{secr} object output from \code{secr.fit}}
+  \item{betapar}{character vector giving the names of two beta parameters}
+  \item{xval}{vector of numeric values for x-dimension of grid}
+  \item{yval}{vector of numeric values for y-dimension of grid}
+  \item{centre}{  vector of central values for all beta parameters}
+  \item{realscale}{logical. If TRUE input and output of x and y is on
+        the untransformed (inverse-link) scale.}
+  \item{plot}{logical. If TRUE a contour plot is produced}
+  \item{plotfitted}{logical. If TRUE the MLE from \code{object} is shown on the plot (+)}
+  \item{ncores}{integer number of cores available for parallel processing}
+  \item{\dots}{other arguments passed to \code{\link{contour}}}
 }
 
 \details{
@@ -58,10 +41,13 @@ otherwise).
 Contour plots may be customized by passing graphical parameters through
 the \dots argument.
 
+If \code{ncores > 1} the \pkg{parallel} package is used to create
+processes on multiple cores (see \link{Parallel} for more).
+
 }
 
 \value{
-Invisibly returns a matrix with the log likelihood evaluated at each
+Invisibly returns a matrix of the log likelihood evaluated at each
 grid point
 }
 

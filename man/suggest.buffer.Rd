@@ -12,7 +12,7 @@ Determines a suitable buffer width for an integration \link{mask}. The
 `buffer' in question defines a concave polygon around a detector array
 constructed using \code{make.mask} with \code{type = "trapbuffer"}.  The
 method relies on an approximation to the bias of maximum likelihood
-density estimates (Efford and Marques unpubl).
+density estimates (M. Efford unpubl).
 
 }
 
@@ -69,12 +69,11 @@ too small.
 }
 
 \code{bias.D} is called internally by \code{suggest.buffer}.
-
-The package \pkg{gpclib} may be used for more accurate estimates of the length of buffer
-contours (this does not appear to be critical). Some components of
-\code{control} are specific to this part of the algorithm
-(\code{ntheta}, \code{ninterp}, \code{maxinterp}).
-
+% gpclib suppressed 2012-11-03
+% The package \pkg{gpclib} may be used for more accurate estimates of the length of buffer
+% contours (this does not appear to be critical). Some components of
+% \code{control} are specific to this part of the algorithm
+% (\code{ntheta}, \code{ninterp}, \code{maxinterp}).
 }
 \value{
 
@@ -92,9 +91,9 @@ contours (this does not appear to be critical). Some components of
   
 The algorithm in \code{bias.D} uses one-dimensional numerical
 integration of a polar approximation to site-specific detection
-probability. By default, and when \pkg{gpclib} is not available, this
-uses a further 3-part linear approximation for the length of contours
-of distance-to-nearest-detector (\eqn{r}) as a function of \eqn{r}.
+probability. This uses a further 3-part linear approximation for the
+length of contours of distance-to-nearest-detector (\eqn{r}) as a
+function of \eqn{r}.
 
 The approximation seems to work well for a compact detector array, but
 it should not be taken as an estimate of the bias for any other purpose:
@@ -125,16 +124,13 @@ The potential components of \code{control} are --
   \item{\code{spline.df = 10 } }{ effective degrees of freedom for
     \code{smooth.spline} }
   
-  \item{\code{use.gpclib = FALSE }}{ logical to use \pkg{gpclib} if
-    installed }
-  
-  \item{\code{ntheta = 60 } }{ integer value for smoothness of contours
-    (straight-line approximation to arc lengths)}
-  
-  \item{\code{ninterp = 5 } }{ number of points to interpolate between
-  trapspacing/2 and trapspacing/2 ^0.5 on the contour-length vs buffer
-  curve }
-
+%  \item{\code{use.gpclib = FALSE }}{ logical to use \pkg{gpclib} if
+%    installed } 
+%  \item{\code{ntheta = 60 } }{ integer value for smoothness of contours
+%    (straight-line approximation to arc lengths)}  
+%  \item{\code{ninterp = 5 } }{ number of points to interpolate between
+%  trapspacing/2 and trapspacing/2 ^0.5 on the contour-length vs buffer
+%  curve }
 }
 
 }

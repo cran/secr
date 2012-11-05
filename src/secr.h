@@ -308,6 +308,24 @@ void trappingpolygon (
     int    *resultcode
 );
 /*---------------------------------------------------------------------*/
+void trappingtelemetry (
+    double *lambda,  /* Parameter : expected detection events per hectare */
+    double *sigma,   /* Parameter : detection scale */
+    double *z,       /* Parameter : detection shape (hazard) */
+    int    *ss,      /* number of occasions */
+    int    *N,       /* number of animals */
+    double *animals, /* x,y points of animal range centres (first x, then y)  */
+    int    *fn,      /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,      /* truncation radius */
+    int    *binomN,  /* 0 poisson, 1 Bernoulli, or number of binomial trials */
+    int    *maxperpoly, /*   */
+    int    *n,           /* number of individuals detected */
+    int    *caught,      /* caught in session */
+    double *detectedXY,  /* x,y locations of detections  */
+    int    *value,       /* return value matrix of trap locations n x s */
+    int    *resultcode
+    );
+/*---------------------------------------------------------------------*/
 
 void trappingpolygonX (
     double *g0,          /* Parameter : detection intercept */

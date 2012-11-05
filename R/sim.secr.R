@@ -20,6 +20,10 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 ## or f(X, covar | detected)?
 ## TOO HARD - cf MARK
 
+## 2012-10-25
+## other possible exclusions:
+## mashed?
+
 {
 
 ##  check input
@@ -34,7 +38,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
     if (!all(sapply(object$fixed, is.null)))
         stop ("not implemented for fixed parameters")
 
-   Darray <- getDensityArray (predictDsurface(object))
+    Darray <- getDensityArray (predictDsurface(object))
 
 ## setup
 
@@ -108,7 +112,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 sim.secr <- function (object, nsim = 1,
     extractfn = function(x) c(deviance=deviance(x), df=df.residual(x)),
     seed = NULL, maxperpoly = 100, data = NULL, tracelevel = 1, hessian = 'none',
-    start = object$fit$par)  {
+    start = object$fit$par, ncores = 1)  {
 
 ## parametric bootstrap simulations based on a fitted secr object
 ## extractfn is a required function to extract values from an secr fit
@@ -158,16 +162,28 @@ sim.secr <- function (object, nsim = 1,
                 start = start, link = object$link, fixed = object$fixed,
                 timecov = object$timecov, sessioncov = object$sessioncov,
                 groups = object$groups, dframe = object$dframe, details = details,
-                method = object$fit$method, verify = FALSE) )
+                method = object$fit$method, verify = FALSE, ncores = 1) )
             extractfn(tempfit)
         }
         else if (is.list(test)) list() else rep(NA, n.extract)
     }
+
+    if (ncores > 1) {
+        memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
+        require(parallel)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
+        clusterEvalQ(clust, library(secr))
+        output <- parLapply(clust, data, fitmodel)
+        stopCluster(clust)
+    }
+    else
+        output <-  lapply (data, fitmodel)
+
     if (is.numeric(test)) {
-        output <- data.frame(t(sapply (data, fitmodel)))
+        output <- do.call(rbind, output)
+        output <- data.frame(output)
     }
     else {
-        output <- lapply (data, fitmodel)
         class(output) <- c('list','secrlist')
     }
 

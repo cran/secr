@@ -11,7 +11,7 @@ Density is a derived parameter when a model is fitted by maximizing the conditio
 \usage{
 derived(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
     se.esa = FALSE, se.D = TRUE, loginterval = TRUE, 
-    distribution = NULL)
+    distribution = NULL, ncores = 1)
 esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
 }
 
@@ -25,6 +25,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
   \item{se.D}{ logical for whether to calculate SE(D-hat) }
   \item{loginterval}{ logical for whether to base interval on log(D)}
   \item{distribution}{ character string for distribution of the number of individuals detected }
+  \item{ncores}{integer number of cores available for parallel processing}
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
   \item{noccasions}{ integer number of sampling occasions (see Details) } 
@@ -96,6 +97,9 @@ capture (animal not detected previously).
 
 The computation of sampling variances is relatively slow and may be
 suppressed with \code{se.esa} and \code{se.D} as desired.
+
+If \code{ncores > 1} the \pkg{parallel} package is used to create
+processes on multiple cores (see \link{Parallel} for more).
 
 }
 

@@ -14,7 +14,7 @@ Mask Diagnostics
 \usage{
 mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
     LLonly = TRUE, realpar = NULL, session = 1, file = NULL,
-    drop = "", tracelevel = 0, ...)
+    drop = "", tracelevel = 0, ncores = 1, ...)
 }
 
 \arguments{
@@ -29,6 +29,7 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   \item{file}{name of output file (optional)}
   \item{drop}{character vector: names of fitted secr object to omit}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
+  \item{ncores}{integer number of cores available for parallel processing}
   \item{\dots}{other arguments passed to secr.fit}
 }
 \details{
@@ -61,20 +62,25 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   separately; a model formula that refers to session or uses session
   covariates will cause an error.
   
-  If \code{file} is specified then detailed results (including each
-  model fit when \code{LLonly = FALSE}) are saved to an external .RData
-  file. Loading this file creates or overwrites object(s) in the
-  workspace: \code{mask.check.output} if \code{LLonly = TRUE}, otherwise
-  \code{mask.check.output} and \code{mask.check.fit}. For multiple
-  sessions these are replaced by lists with one component per session
-  (\code{mask.check.outputs} and \code{mask.check.fits}). The
-  \code{drop} argument is passed to \code{\link{trim}} and applied to
-  each fitted model; use it to save space, at the risk of limiting
-  further computation on the fitted models.
+  If \code{file} is specified and \code{ncores = 1} then detailed
+  results (including each model fit when \code{LLonly = FALSE}) are
+  saved to an external .RData file. Loading this file creates or
+  overwrites object(s) in the workspace: \code{mask.check.output} if
+  \code{LLonly = TRUE}, otherwise \code{mask.check.output} and
+  \code{mask.check.fit}. For multiple sessions these are replaced by
+  lists with one component per session (\code{mask.check.outputs} and
+  \code{mask.check.fits}). The \code{drop} argument is passed to
+  \code{\link{trim}} and applied to each fitted model; use it to save
+  space, at the risk of limiting further computation on the fitted
+  models.
 
   \code{tracelevel>0} causes more verbose reporting of progress during
   execution.
   
+  If \code{ncores > 1} the \pkg{parallel} package is used to create
+  processes on multiple cores (see \link{Parallel} for more), progress
+  messages are suppressed, and nothing is output to \code{file}.
+
   The \dots argument may be used to override existing settings in
   \code{object} - for example, a conditional likelihood fit (\code{CL =
   T}) may be selected even if the original model was fitted by

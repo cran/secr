@@ -95,7 +95,7 @@ Ecology} \bold{34}, 356--359. Available on-line at
   \pkg{secr} without fixing z. However, the hazard rate function can
   cause problems owing to its long tail, and it is not recommended. The
   check on the buffer width, usually applied automatically on completion of
-  secr.fit, causes an error and must be suppressed with verify = FALSE
+  secr.fit, causes an error and must be suppressed with biasLimit = NA
   (see Examples).
 
   Gleeson et al. (2010) address the question of whether there is enough
@@ -110,8 +110,12 @@ summary(stoatCH)
 
 \dontrun{
 stoat.model.HN <- secr.fit(stoatCH, buffer = 1000, detectfn = 0)
+
+# this generates an error unless we use biasLimit = NA
+# to suppress the default bias check
 stoat.model.HZ <- secr.fit(stoatCH, buffer = 1000, detectfn = 1,
-    verify = FALSE)
+    biasLimit = NA)
+
 stoat.model.EX <- secr.fit(stoatCH, buffer = 1000, detectfn = 2)
 confint(stoat.model.HN, "D")
 ## Profile likelihood interval(s)...

@@ -120,7 +120,7 @@ mapbeta <- function (parindx0, parindx1, beta0, betaindex)
 }
 ############################################################################################
 
-score.test <- function (secr, ..., betaindex = NULL, trace = FALSE) {
+score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) {
 
     if (!inherits(secr, 'secr'))
         stop ("only for 'secr' objects")
@@ -129,7 +129,24 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE) {
 
     if (length(models)>1) { ##  ) {
         # apply to each component of 'model' list
-        score.list <- lapply (models, score.test, secr=secr)
+
+        if (ncores > 1) {
+            require(parallel)
+            clust <- makeCluster(ncores)
+            clusterEvalQ(clust, library(secr))
+            clusterExport(clust, c("trace","prepare","mapbeta"), environment())
+#            clusterExport(clust, c("stdform","group.levels","group.factor",
+#                                   "secr.loglikfn", "makerealparameters",
+#                                   "detectorcode", "scaled.detection", "model.string",
+#                                   "untransform", "getD", ".localstuff"), environment())
+            score.list <- parLapply (clust, models, score.test, secr = secr,
+                                  betaindex = betaindex, ncores = ncores)
+            stopCluster(clust)
+        }
+        else
+            score.list <- lapply (models, score.test, secr=secr,
+                                  betaindex=betaindex, ncores=ncores)
+
         class(score.list) <- c('score.list', class(score.list))
         score.list
     }
@@ -191,6 +208,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE) {
                groups   = design$groups,
                details  = design$details,
                logmult  = design$logmult,
+               ncores   = 1,  # using cores for outer loop
                dig      = 4,
                betaw    = 11)
         }

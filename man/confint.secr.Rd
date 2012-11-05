@@ -24,7 +24,7 @@ tracelevel = 1, tol = 0.0001, bounds = NULL, ...)
   \item{newdata}{ optional dataframe of values at which to evaluate model }
   \item{tracelevel}{ integer for level of detail in reporting (0,1,2) }
   \item{tol}{ absolute tolerance (passed to \link{uniroot}) }
-  \item{bounds}{ numeric vector of outer starting values -- optional } 
+  \item{bounds}{ numeric vector of outer starting values -- optional }
   \item{\dots}{ other arguments (not used) }
 }
 \details{
@@ -45,6 +45,7 @@ backtransformed from the limits for the relevant beta parameter.
 
 If \code{bounds} is provided it should be a 2-vector or matrix of 2
 columns and length(parm) rows.
+
 } 
 
 \value{ 

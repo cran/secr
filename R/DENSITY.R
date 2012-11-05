@@ -6,6 +6,7 @@
 ## 2010-11-21 added cutval to read.capthist
 ## 2010-11-26 trapcovnames passed to read.traps covnames
 ## 2010-12-01 suppressed warning re- detectors not recognised by Density
+## 2012-10-19 telemetry detector type
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
 
@@ -79,6 +80,8 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
 
     if (!(fmt %in% c('XY','trapID')))
         stop ("allowed formats are 'XY' and 'trapID'")
+    if ((detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
+        stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
     replacedefaults <- function (default, user) replace(default, names(user),
@@ -87,6 +90,8 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
         nx <- nchar(x)
         tolower(substring(x, nx-3, nx))
     }
+    if (missing(trapfile) & (detector=='telemetry'))
+        trapfile <- 0  ## dummy value; not used
     if ((filetype(captfile)=='.csv') & is.null(list(...)$sep))
         nfield <- max(count.fields(captfile, sep=',', ...))
     else
@@ -121,13 +126,23 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     defaultdots <- list(sep = '', comment.char = '#')
     if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
     dots <- replacedefaults (defaultdots, list(...))
-
-    readtraps <- function (x)
+    readtraps <- function (x) {
+        if (detector == 'telemetry') {
+            buffer <- c(-10,10)
+            trps <- expand.grid(x = range(capt$X)+buffer,
+                                y = range(capt$Y)+buffer)[c(1,3,4,2,1),]
+            rownames(trps) <- 1:5
+            class(trps) <- c('traps', 'data.frame')
+            attr(trps, 'polyID') <- factor(rep(1,nrow(trps)))
+            attr(trps, 'detector') <- 'telemetry'
+            trps
+        }
+        else
         do.call ('read.traps', c(list(file = x), detector = detector,
                                  list(covnames = trapcovnames), dots) )
+    }
 
     trps <- sapply(trapfile, readtraps, simplify = FALSE)
-
     if (length(trps)==1) trps <- trps[[1]]
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval,

@@ -37,12 +37,14 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detec
 
     if (ID == 'numyb') {
         temp <- matrix(1:(nx*ny), ncol = ny)
+        if (ny>1)  # 2012-07-13
         for (i in seq(2,ny,2)) temp[,i] <- rev(temp[,i])
     }
 
     if (ID == 'numxb') {  ## YES
         temp <- t(matrix(1:(nx*ny), ncol = nx))
-        for (i in seq(2,nx,2)) temp[i,] <- rev(temp[i,])
+        if (nx>1)  # 2012-07-13
+            for (i in seq(2,nx,2)) temp[i,] <- rev(temp[i,])
     }
 
     if (ID == 'alphax') {
@@ -59,7 +61,7 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detec
 
     ## added 2010 03 24
     if (ID == 'xy') {
-        leadingzero <- function (x) formatC(x, width=max(nchar(x)), flag="0")
+        ## see utility.R for function leadingzero 2012-09-04
         colA <- leadingzero(1:nx)
         rowA <- leadingzero(1:ny)
         row.names(grid) <- apply(expand.grid(colA, rowA), 1,
@@ -140,6 +142,12 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
     grid
 }
 ###############################################################################
+
+make.telemetry <- function (...) {
+    temp <- make.poly(...)
+    detector(temp) <- 'telemetry'
+    temp
+}
 
 make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
                            exclusive = FALSE)

@@ -96,9 +96,9 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         session.xy <- 0
     }
 
-    if (dettype == 8) {    # times -- phony use of 'signal'
-        session.signal <- times(session.capthist)
-    }
+#    if (dettype == 8) {    # times -- phony use of 'signal'
+#        session.signal <- times(session.capthist)
+#    }
 
     trps  <- unlist(session.traps, use.names=F)
 
@@ -143,7 +143,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 
 # print(i)
 # print(nrow(X))
-# print(as.double(X))
+# print(head(X))
 # print(object$CL)
 # print(dettype)
 # print(details$param)
@@ -160,7 +160,6 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 # cat('details$minprob',details$minprob,'\n')
 # cat('details$nmix',details$nmix,'\n')
 # cat('normal',normal,'\n')
-# cat('cuerate',cuerate,'\n')
 # print(table(indices))
 # print(dim(indices))
 # print(Xrealparval)
@@ -207,6 +206,52 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 }
 ###############################################################################
 
+## 2012-11-01 NOT PUBLISHED
+
+fxisum.contour <- function (object, sessnum = 1, border = 100, nx =
+    64, include0 = FALSE, plt = TRUE, add = FALSE, ...) {
+
+    if (ms(object)) {
+        session.traps <- traps(object$capthist)[[sessnum]]
+        nc <- nrow(object$capthist[[sessnum]])
+        if (include0) {
+            dpar <- detectpar(object)
+            nocc <- ncol(object$capthist[[sessnum]])
+            D <- predict(object, newdata=data.frame(session=sessnum))['D','estimate']
+        }
+    }
+    else {
+        session.traps <- traps(object$capthist)
+        nc <- nrow(object$capthist)
+        if (include0) {
+            D <- predict(object)['D','estimate']
+            nocc <- ncol(object$capthist)
+            dpar <- detectpar(object)
+        }
+    }
+    tempmask <- make.mask (session.traps, border, nx = nx, type = 'traprect')
+    xlevels <- unique(tempmask$x)
+    ylevels <- unique(tempmask$y)
+    fxi <- function (ni) {
+        fxi.secr(object, i = ni, X = tempmask, sessnum = sessnum, normal = TRUE)
+    }
+    temp <- sapply(1:nc, fxi)
+    z <- apply(temp,1,sum)
+    A <- attr(tempmask, 'area')
+    z <- z * nc / sum(z) / A
+    if (include0) {
+        pd <- pdot(tempmask, session.traps, detectfn = object$detectfn,
+                   detectpar = dpar, noccasions = nocc, binomN = object$binomN)
+        pd <- (1-pd) * D
+        z <- z + pd
+    }
+    contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, ...)
+    if (plt)
+        invisible(z)
+    else
+        z
+}
+
 fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode =
     FALSE, plotmode = FALSE, normal = TRUE, ...) {
@@ -225,6 +270,7 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
 
     fxi <- function (ni) {
         z <- fxi.secr(object, i = ni, X = tempmask, normal = normal)
+
         if (is.null(levels)) {
             temp <- sort(z, decreasing = T)
             levels <- approx (x = cumsum(temp)/sum(temp), y = temp, xout= p)$y
@@ -263,7 +309,8 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         }
         templines
     }
-    temp <- lapply(i, fxi)
+    temp <- sapply(1:i, fxi)
+
     if (plt)
         invisible(temp)
     else

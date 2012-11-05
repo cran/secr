@@ -31,6 +31,7 @@
 /* 2012-02-01 also collaps mufn,mufnsph to one and simplified dnorm call */
 
 #include "secr.h"
+#include <time.h>
 
 FILE *out;      /* for debugging */
 /*==============================================================================*/
@@ -98,12 +99,12 @@ void gxy (int *n, int *fn, double *par, double *w, double *xy) {
     int j;
     fnp = gethfn(*fn);
     for (i=0; i< *n; i++) {
+        theta = unif_rand() * 2 * M_PI;
         for (j=0; j<maxj; j++) {
             r = *w * sqrt(unif_rand());
             if (unif_rand() < fnp(par, r))
                 break;
         }
-        theta = unif_rand() * 2 * M_PI;
         xy[i]      = r * cos(theta);
         xy[*n + i] = r * sin(theta);
     }
@@ -1723,6 +1724,11 @@ void secrloglik (
 
     /* MAINLINE */
 
+     clock_t ticks1, ticks2;
+     int timing = 0;
+     ticks1 = clock();
+
+
 /* WAS    #include "Isecrloglik.def" */
 /**********************************************************************/
 /*                     code shared with pwuniform                     */
@@ -1823,6 +1829,12 @@ JUST DUPLICATE
     else
         nval = 4;    /* 1-4, mostly not used */
 
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 1: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
+    }
+
     gk = (double *) S_alloc(*cc * nk * *mm, sizeof(double));
     pmix = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
     detspec = (double *) R_alloc(nval, sizeof(double));
@@ -1919,6 +1931,11 @@ JUST DUPLICATE
     if ((*detect==0) || (*detect==1) || (*detect==3) || 
         (*detect==4) || (*detect==5) || (*detect==12)) {
         *binomN = 1;
+    }
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 2: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
     }
 
     if (switch1) {
@@ -2049,6 +2066,12 @@ JUST DUPLICATE
 	prwfn = prwisignalnoise;   /* experimental 2012-02-07 */
     }
 
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 3: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
+    }
+
     /*=================================================================*/
     /* need nk, pmix and gk0 for pndot() in case there are no captures */
     if (*nc == 0) goto eval;
@@ -2072,6 +2095,7 @@ JUST DUPLICATE
 
         /* recognise when not fully specified by n.s, c  */
         /* this arises when model = bk, Bk               */
+        /* and when detector covariates vary by time     */
         fullns = 0;
         for (n=0; n < nc1; n++) {
             for (s=0; s < *ss; s++) {
@@ -2085,6 +2109,12 @@ JUST DUPLICATE
             }
             if (fullns == 1) break;
         }
+
+	if (timing) {
+	    ticks2 = clock();
+	    Rprintf("check 3.2: time used %15d ticks\n", ticks2-ticks1); 
+	    ticks1 = ticks2;
+	}
 
         for (i=0; i<*cc; i++) hc0[i] = -1;
         next = 0;        
@@ -2128,6 +2158,11 @@ JUST DUPLICATE
 		}
             }
         }
+    }
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 3.4: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
     }
 
     if ((*detect == 3) || (*detect == 4)) {
@@ -2270,11 +2305,6 @@ eval:    /* skip to here from within include block if no captures */
                     tempsum += pmix[*nmix * n + x] * temp;
                 }    /* end of loop over mixtures */
 
-/*
-	Rprintf("n %14d \n", n);
-	Rprintf("prwi sum %14.8f \n", tempsum);
-	Rprintf("a[n] %14.8f \n", a[n]);
-*/
                 templog = log(tempsum/a[n]);
                 a[n] = *area * a[n];
 
@@ -2283,14 +2313,17 @@ eval:    /* skip to here from within include block if no captures */
 		*value += templog;
                 R_CheckUserInterrupt();
             }        /* end of loop over individuals */
-/*
-	Rprintf("a %14.8f \n", a[0]);
-*/
         }
     }
     /*-------------------------------------------------------------------------------------------*/
 
     else {  /* *like==0,2  Full or Partial likelihood */
+
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 3.5: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
+    }
 
         for (g=0; g<*gg; g++) {
             sumD[g] = 0;
@@ -2298,13 +2331,17 @@ eval:    /* skip to here from within include block if no captures */
             for (m=0; m<*mm; m++)  {
                 sumD[g] += Dmask[*mm * g + m];
                 for (x=0; x<*nmix; x++) {
-		    /* closed population */
 		    pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0,
 				 *ss, nk, *cc0, *nmix, gsb0val, *param);
                     sumDp[g] += pdt * pmix[*nmix * g + x] * Dmask[*mm * g + m];
                 }
             }
         }
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 4: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
+    }
 
         *value = 0;
         /* compute likelihood component from pr(wi) */
@@ -2346,6 +2383,11 @@ eval:    /* skip to here from within include block if no captures */
             if (*distrib>=2) *value += gbinomFP (ng[g], (double) *distrib,
                 sumDp[g] * *area / *distrib, 1);
         }
+    }
+    if (timing) {
+	ticks2 = clock();
+	Rprintf("check 5: time used %15d ticks\n", ticks2-ticks1); 
+	ticks1 = ticks2;
     }
 
     *resultcode = 0;   /* successful termination secrloglik */
@@ -2872,106 +2914,106 @@ switch1 = 0  Don't bother with code used only to normalize pdf
     }
 
     if (switch1) {
-    if (*detect == 0) {
-        for (k=0; k<*kk; k++) {
-            for (m=0; m<*mm; m++) {
-                if (switch0)
-                for (c=0; c<*cc0; c++) {
-                    gi = i3(c,k,m,*cc0,nk);
-                    gk0[gi] = gfn(k, m, c, gsb0val,
-                        *cc0, traps, mask, nk, *mm, miscparm);
-                }
-                for (c=0; c<*cc; c++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = gfn(k, m, c, gsbval,
-                        *cc, traps, mask, nk, *mm, miscparm);
-                }
-            }
-        }
-    }
-    else if ((*detect == 1) || (*detect == 2) || (*detect==5) || (*detect==8) || (*detect==9)) {
-        for (k=0; k<*kk; k++) {
-            for (m=0; m<*mm; m++) {
-                if (switch0)
-                for (c=0; c<*cc0; c++) {
-                    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk,
-                        *mm, miscparm);
-                    gi = i3(c,k,m,*cc0,nk);
-                    gk0[gi] = 1 - countp(0, *binomN, lambda);
-                }
-                for (c=0; c<*cc; c++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = gfn(k, m, c, gsbval, *cc,
-                        traps, mask, nk, *mm, miscparm);
-                }
-            }
-        }
-    }
-    else if ((*detect == 3) || (*detect == 6)) {
-        if (switch0)
-        for (c=0; c<*cc0; c++) {
-            par[0] = gsb0val[c];
-            par[1] = gsb0val[*cc0 + c];
-            par[2] = gsb0val[2* *cc0 + c];
-            stdint = gintegral(*fn, par);
-            for (k=0; k<nk; k++) {               /* over parts */
-                for (m=0; m<*mm; m++) {
-                    hk = par[0] * integral2D (*fn, m, 0, par, 1,
-                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
-                    gi = i3(c, k, m, *cc0, nk);
-                    gk0[gi] = 1 - countp (0, *binomN, hk);
-                }
-            }
-        }
-        R_CheckUserInterrupt();
-        for (c=0; c<*cc; c++) {
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral(*fn, par);
-            detspec[2+c] = stdint;               /* passed to prwipolygon */
-            for (k=0; k<nk; k++) {               /* over parts */
-                for (m=0; m<*mm; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = par[0] * integral2D (*fn, m, 0, par, 1, traps, mask,
-                        cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
-                }
-            }
-        }
-    }
-    else if ((*detect == 4) || (*detect == 7)) {
-        if (switch0)
-        for (c=0; c<*cc0; c++) {
-            par[0] = gsb0val[c];
-            par[1] = gsb0val[*cc0 + c];
-            par[2] = gsb0val[2* *cc0 + c];
-            stdint = gintegral1(*fn, par);
-            for (k=0; k<nk; k++) {               /* over transects */
-                for (m=0; m<*mm; m++) {
-                    hk = par[0] * integral1D (*fn, m, c, gsb0val, *cc0, traps, mask,
-                        cumk[k], cumk[k+1]-1, cumk[nk], *mm)/stdint;
-                    gi = i3(c,k,m,*cc0,nk);
-                    gk0[gi] = 1 - countp (0, *binomN, hk);
-                }
-            }
-        }
-        R_CheckUserInterrupt();
-        for (c=0; c<*cc; c++) {
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral1(*fn, par);
-            detspec[2+c] = stdint;               /* passed to prwitransect */
-            for (k=0; k<nk; k++) {               /* over transects */
-                for (m=0; m<*mm; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
-                        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
-                }
-            }
-        }
-    }
-    else error ("unrecognised detector type in external C fn secrloglik");
+	if (*detect == 0) {
+	    for (k=0; k<*kk; k++) {
+		for (m=0; m<*mm; m++) {
+		    if (switch0)
+			for (c=0; c<*cc0; c++) {
+			    gi = i3(c,k,m,*cc0,nk);
+			    gk0[gi] = gfn(k, m, c, gsb0val,
+					  *cc0, traps, mask, nk, *mm, miscparm);
+			}
+		    for (c=0; c<*cc; c++) {
+			gi = i3(c,k,m,*cc,nk);
+			gk[gi] = gfn(k, m, c, gsbval,
+			     *cc, traps, mask, nk, *mm, miscparm);
+		    }
+		}
+	    }
+	}
+	else if ((*detect == 1) || (*detect == 2) || (*detect==5) || (*detect==8) || (*detect==9)) {
+	    for (k=0; k<*kk; k++) {
+		for (m=0; m<*mm; m++) {
+		    if (switch0)
+			for (c=0; c<*cc0; c++) {
+			    lambda = gfn(k, m, c, gsb0val, *cc0, traps, mask, *kk,
+					 *mm, miscparm);
+			    gi = i3(c,k,m,*cc0,nk);
+			    gk0[gi] = 1 - countp(0, *binomN, lambda);
+			}
+		    for (c=0; c<*cc; c++) {
+			gi = i3(c,k,m,*cc,nk);
+			gk[gi] = gfn(k, m, c, gsbval, *cc,
+				     traps, mask, nk, *mm, miscparm);
+		    }
+		}
+	    }
+	}
+	else if ((*detect == 3) || (*detect == 6)) {
+	    if (switch0)
+		for (c=0; c<*cc0; c++) {
+		    par[0] = gsb0val[c];
+		    par[1] = gsb0val[*cc0 + c];
+		    par[2] = gsb0val[2* *cc0 + c];
+		    stdint = gintegral(*fn, par);
+		    for (k=0; k<nk; k++) {               /* over parts */
+			for (m=0; m<*mm; m++) {
+			    hk = par[0] * integral2D (*fn, m, 0, par, 1,
+			      traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
+			    gi = i3(c, k, m, *cc0, nk);
+			    gk0[gi] = 1 - countp (0, *binomN, hk);
+			}
+		    }
+		}
+	    R_CheckUserInterrupt();
+	    for (c=0; c<*cc; c++) {
+		par[0] = gsbval[c];
+		par[1] = gsbval[*cc + c];
+		par[2] = gsbval[2* *cc + c];
+		stdint = gintegral(*fn, par);
+		detspec[2+c] = stdint;               /* passed to prwipolygon */
+		for (k=0; k<nk; k++) {               /* over parts */
+		    for (m=0; m<*mm; m++) {
+			gi = i3(c,k,m,*cc,nk);
+			gk[gi] = par[0] * integral2D (*fn, m, 0, par, 1, traps, mask,
+			      cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
+		    }
+		}
+	    }
+	}
+	else if ((*detect == 4) || (*detect == 7)) {
+	    if (switch0)
+		for (c=0; c<*cc0; c++) {
+		    par[0] = gsb0val[c];
+		    par[1] = gsb0val[*cc0 + c];
+		    par[2] = gsb0val[2* *cc0 + c];
+		    stdint = gintegral1(*fn, par);
+		    for (k=0; k<nk; k++) {               /* over transects */
+			for (m=0; m<*mm; m++) {
+			    hk = par[0] * integral1D (*fn, m, c, gsb0val, *cc0, traps, mask,
+						      cumk[k], cumk[k+1]-1, cumk[nk], *mm)/stdint;
+			    gi = i3(c,k,m,*cc0,nk);
+			    gk0[gi] = 1 - countp (0, *binomN, hk);
+			}
+		    }
+		}
+	    R_CheckUserInterrupt();
+	    for (c=0; c<*cc; c++) {
+		par[0] = gsbval[c];
+		par[1] = gsbval[*cc + c];
+		par[2] = gsbval[2* *cc + c];
+		stdint = gintegral1(*fn, par);
+		detspec[2+c] = stdint;               /* passed to prwitransect */
+		for (k=0; k<nk; k++) {               /* over transects */
+		    for (m=0; m<*mm; m++) {
+			gi = i3(c,k,m,*cc,nk);
+			gk[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
+			      traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm) / stdint;
+		    }
+		}
+	    }
+	}
+	else error ("unrecognised detector type in external C fn secrloglik");
     }  /* end switch1 */
     R_CheckUserInterrupt();
 
@@ -3106,7 +3148,6 @@ eval:    /* skip to here from within include block if no captures */
 /**********************************************************************/
 /*               end of code shared with secrloglik                   */
 /**********************************************************************/
-
 
     /*--------------------------------------------------------*/
 
@@ -3291,12 +3332,14 @@ eval:    /* skip to here from within include block if no captures */
         else {
             for (x=0; x<*nmix; x++) {
                 temp += pmix[x] * prwfn (i, *which-1, 1, *ss, x, w, xy, signal, PIA,
-	   	    gkx, *binomN, detspecx, hx, hindex, *cc, *nc, nk, 
+/*2012-11-01  	    gkx, *binomN, detspecx, hx, hindex, *cc, *nc, nk,  */
+	   	    gkx, *binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
                     *ss, *xx, *nmix, gfn, gsbval, traps, X, *minprob);
             }
         }
         value[i] = temp / sumprwi;
     }
+
     *resultcode = 0;   /* successful termination pwuniform */
 }
 /*==============================================================================*/

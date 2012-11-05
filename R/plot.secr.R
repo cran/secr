@@ -8,91 +8,10 @@
 ## 2010 11 01 enabled plot detectfn=9
 ## 2011 03 26 reversed order of first two arguments of dfn's
 ## default of limits changed to FALSE in plot.secr()
+## 2012-10-21 moved HN etc to utility.r
 ############################################################################################
 
 
-    HN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]
-        g0 * exp (-r^2 / 2 / sigma^2)
-    }
-
-    HZ <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * (1 - exp (-(r / sigma)^-z))
-    }
-
-    EX <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * exp (-r / sigma)
-    }
-    UN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]
-        ifelse (r<=sigma, g0, 0)
-    }
-    CHN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
-    }
-    WEX <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
-    }
-    ANN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        g0 * exp (-(r-w)^2 / 2 / sigma^2)
-    }
-    CLN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        CV2 <- (z/sigma)^2
-        sdlog <- log(1 + CV2)^0.5
-        meanlog <- log(sigma) - sdlog^2/2
-        g0 * plnorm(r, meanlog, sdlog, lower.tail = FALSE)
-    }
-    CG <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
-    }
-    CN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        x <- z * (r - sigma)
-        g0 * (1 + (1 - exp(x)) / (1 + exp(x)))/2
-    }
-    BSS <- function (r, pars, cutval) {
-        b0 <- pars[1]; b1 <- pars[2]
-        gam <- -(b0 + b1 * r);
-        pnorm (gam, mean=0, sd=1, lower.tail=FALSE)
-    }
-    SS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(cutval))
-            stop ("require 'details$cutval' for signal strength plot")
-        mu <- beta0 + beta1 * r
-        1 - pnorm (q=cutval, mean=mu, sd=sdS)
-    }
-    SSS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(cutval))
-            stop ("require 'details$cutval' for signal strength plot")
-        ## spherical so assume distance r measured from 1 m
-        mu <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
-        mu[r<1] <- beta0
-        1 - pnorm (q=cutval, mean=mu, sd=sdS)
-    }
-    SN <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
-        muN <- pars[4]; sdN <- pars[5]
-        muS <- beta0 + beta1 * r
-        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
-    }
-
-    SNS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
-        muN <- pars[4]; sdN <- pars[5]
-        ## spherical so assume distance r measured from 1 m
-        muS <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
-        muS[r<1] <- beta0
-        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
-    }
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
     sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
@@ -206,7 +125,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
 
                 # grad[i,] <- fdHess (pars = x$fit$par, fun = lkdfn, r = xval[i])$gradient
                 # grad[i,] <- grad (func = lkdfn, x = x$fit$par, r = xval[i])  ## needs numDeriv
-                grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'functions.R'
+                grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'utility.R'
                 vc <- vcov (x)
                 gfn <- function(gg) {
                     gg <- matrix(gg, nrow = 1)

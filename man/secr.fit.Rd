@@ -20,7 +20,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     binomN = NULL, start = NULL, link = list(), fixed = list(),
     timecov = NULL, sessioncov = NULL, groups = NULL,
     dframe = NULL, details = list(), method = "Newton-Raphson",
-    verify = TRUE, biasLimit = 0.01, trace = NULL, ...)
+    verify = TRUE, biasLimit = 0.01, trace = NULL, ncores = 1, ...)
 }
 
 \arguments{
@@ -47,6 +47,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{biasLimit}{ numeric threshold for predicted relative bias due to
   buffer being too small }
   \item{trace}{ logical, if TRUE then output each evaluation of the likelihood, and other messages}
+  \item{ncores}{ integer number of cores available for parallel processing}
   \item{\dots}{ other arguments passed to the maximization function }
 }
 
@@ -61,9 +62,11 @@ likelihood is also used, with a warning, when detector type = "single"
 (see Efford et al. 2009 for justification). The default \code{model} is
 null (constant density and detection probability). The set of variables
 available for use in linear predictors includes some that are
-constructed automatically (t, T, b, B), group (g), and others that
-appear in the \code{covariates} of the input data. See \link{secr models} and
-\url{../doc/secr-overview.pdf} for more on defining models.
+constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
+others that appear in the \code{covariates} of the input data. See also
+\code{\link{timevaryingcov}} to construct time-varying detector
+covariates, and \link{secr models} and \url{../doc/secr-overview.pdf} for
+more on defining models.
 
 \code{buffer} and \code{mask} are alternative ways to define the region
 of integration (see \link{mask}).
@@ -133,6 +136,9 @@ the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) to be
 used for multi-catch detectors (default 0 for Borchers and Efford). This
 parameterisation does not allow detector covariates.
 
+\code{telemetrysigma} = TRUE uses coordinate information from telemetry
+when capthist has attribute `xylist' (see \code{\link{addTelemetry}}).
+
 If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood (minimize the negative log
 likelihood); otherwise \code{\link[stats]{optim}} is used with the
@@ -153,6 +159,12 @@ If \code{buffer} is used rather than \code{mask}, and \code{biasLimit}
     is performed when \code{mask} is specified, when \code{biasLimit} is 0,
     negative or NA, or when the detector type is "polygon", "transect",
     "polygonX" or "transectX".
+
+If \code{ncores > 1} the \pkg{parallel} package will be used to create
+processes on multiple cores (see \link{Parallel} for more). Specifying
+extra cores may improve the speed of multi-session analyses (it may also
+slow them down, as data must be copied back and forth). There is
+presently no benefit for single-session analyses.
 
 }
 
@@ -298,6 +310,8 @@ setting \code{verify = FALSE}. This is now done by setting
 
 \examples{
 
+\dontrun{
+
 ## construct test data (array of 48 `multi-catch' traps)
 
 detectors <- make.grid (nx = 6, ny = 8, detector = "multi")
@@ -307,8 +321,6 @@ detections <- sim.capthist (detectors, popn = list(D = 10,
 ## fit & print null (constant parameter) model
 secr0 <- secr.fit (detections)
 secr0   ## uses print method for secr
-
-\dontrun{
 
 ## compare fit of null model with learned-response model for g0
 

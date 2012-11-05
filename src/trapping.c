@@ -207,6 +207,93 @@ void trappingpolygon (
 }
 /*==============================================================================*/
 
+void trappingtelemetry (
+    double *lambda,  /* Parameter : expected detection events per hectare */
+    double *sigma,   /* Parameter : detection scale */
+    double *z,       /* Parameter : detection shape (hazard) */
+    int    *ss,      /* number of occasions */
+    int    *N,       /* number of animals */
+    double *animals, /* x,y points of animal range centres (first x, then y)  */
+    int    *fn,      /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,      /* truncation radius */
+    int    *binomN,  /* 0 poisson, 1 Bernoulli, or number of binomial trials */
+    int    *maxperpoly, /*   */
+    int    *n,           /* number of individuals detected */
+    int    *caught,      /* caught in session */
+    double *detectedXY,  /* x,y locations of detections  */
+    int    *value,       /* return value matrix of trap locations n x s */
+    int    *resultcode
+)
+
+{
+    int    i,j,s,t;
+    int    nc = 0;
+    int    np = 1;       /* number of points each call of gxy */
+    int    nd = 0;
+    int    count;
+    double par[3];
+    double ws;
+    int    maxdet;
+    double xy[2];
+    double *workXY;
+    int    *sortorder;
+    double *sortkey;
+
+    *resultcode = 1;
+    GetRNGstate();
+    maxdet = *N * *ss * *maxperpoly;
+    workXY = (double*) R_alloc(maxdet*2, sizeof(double));
+    sortorder = (int*) R_alloc(maxdet, sizeof(int));
+    sortkey = (double*) R_alloc(maxdet, sizeof(double));
+
+    for (i=0; i<*N; i++) caught[i] = 0;
+    for (s=0; s<*ss; s++) {
+        ws = 10 * sigma[s];
+        par[0] = lambda[s];
+        par[1] = sigma[s];
+        par[2] = z[s];
+        if (lambda[s]>0) {
+            for (i=0; i<*N; i++) {
+                count = rcount (*binomN, lambda[s]); 
+                /* require maximum at r=0 */
+                if (*fn == 6) error ("annular normal not allowed in trappingtelemetry");
+                par[0] = 1;
+                for (j=0; j<count; j++) {
+                    gxy (&np, fn, par, &ws, xy);            /* simulate location */
+                    xy[0] = xy[0] + animals[i];
+                    xy[1] = xy[1] + animals[*N + i];
+		    if (caught[i]==0) {            /* first capture of this animal */
+			nc++;
+			caught[i] = nc;
+			for (t=0; t<*ss; t++)
+			    value[*ss * (nc-1) + t] = 0;
+		    }
+		    nd++;
+		    if (nd >= maxdet) {
+			*resultcode = 2;           /* error */
+			return;
+		    }
+		    value[*ss * (caught[i]-1) + s]++;
+		    workXY[(nd-1)*2] = xy[0];
+		    workXY[(nd-1)*2+1] = xy[1];
+		    sortkey[nd-1] = (double) (s * *N + caught[i]);
+		}
+	    }
+	}
+    }
+    for (i=0; i<nd; i++)
+        sortorder[i] = i;
+    if (nd>0) rsort_with_index (sortkey, sortorder, nd);
+    for (i=0; i<nd; i++) {
+        detectedXY[i]    = workXY[sortorder[i]*2];
+        detectedXY[i+nd] = workXY[sortorder[i]*2+1];
+    }
+    *n = nc;
+    *resultcode = 0;
+    PutRNGstate();
+}
+/*==============================================================================*/
+
 void trappingtransect (
     double *lambda,      /* Parameter : expected detection events per metre? */
     double *sigma,       /* Parameter : detection scale */
@@ -798,7 +885,8 @@ void trappingsignal (
                         muS  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk, 1);
                     signalvalue = norm_rand() * sdS[s] + muS;
                     if ((*fn == 12) || (*fn == 13)) {
-			noisevalue = norm_rand() * sdN[s] + muN[s];
+			noisevalue = norm_rand() * sdN[s] + muN[s];  
+			/* 2012-09-19 shouldn't this be SminusN? */
 			if ((signalvalue-noisevalue) > *cut) {
 			    if (caught[i]==0) {              /* first capture of this animal */
 				nc++;

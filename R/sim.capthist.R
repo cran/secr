@@ -82,7 +82,7 @@ sim.capthist <- function (
                 covariates = NULL, Ndist = popn$Ndist)
         }
         if (poplist) {
-            if (any(p.available) != 1)
+            if (any(p.available != 1))
                 warning ("incomplete availability not implemented ",
                          "for population lists")
         }
@@ -474,38 +474,63 @@ sim.capthist <- function (
                 attr(w, 'times') <- temp$times[1:sum(w)]
             }
         }
-        else if (detector(traps) %in% c('polygon','transect')) {
+        else if (detector(traps) %in% c('polygon','transect','telemetry')) {
             simfunctionname <- paste('trapping', detector(traps), sep='')
             if (simfunctionname == 'trappingpolygon') {
                 nk <- length(levels(polyID(traps)))
                 k <- table(polyID(traps))
             }
-            else {
+            if (simfunctionname == 'trappingtransect') {
                 nk <- length(levels(transectID(traps)))
                 k <- table(transectID(traps))
             }
 
-            temp <- .C(simfunctionname, PACKAGE = 'secr',
-                as.double(g0),
-                as.double(sigma),
-                as.double(z),
-                as.integer(noccasions),
-                as.integer(nk),
-                as.integer(k),
-                as.integer(N),
-                as.double(animals),
-                as.double(unlist(traps)),
-                as.integer(usage),
-                as.integer(detectfn),
-                as.double(truncate^2),
-                as.integer(detectpar$binomN),
-                as.integer(maxperpoly),
-                n = integer(1),
-                caught = integer(N),
-                detectedXY = double (N*noccasions*nk*maxperpoly*2),
-                value = integer(N*noccasions*nk),
-                resultcode = integer(1)
-            )
+            if (simfunctionname == 'trappingtelemetry') {
+                nk <- 1
+                polynames <- '1'
+
+                temp <- .C(simfunctionname, PACKAGE = 'secr',
+                           as.double(g0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(N),
+                           as.double(animals),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           as.integer(detectpar$binomN),
+                           as.integer(maxperpoly),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions*50*maxperpoly*2),
+                           value = integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
+            }
+            else {
+                temp <- .C(simfunctionname, PACKAGE = 'secr',
+                           as.double(g0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(nk),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.integer(usage),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           as.integer(detectpar$binomN),
+                           as.integer(maxperpoly),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions*nk*maxperpoly*2),
+                           value = integer(N*noccasions*nk),
+                           resultcode = integer(1)
+                           )
+                polynames <- levels(polyID(traps))
+            }
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)
                     stop ("more than ", maxperpoly, "  detections per animal",
@@ -514,7 +539,7 @@ sim.capthist <- function (
                     stop ("call to ",simfunctionname, " failed")
             }
             w <- array(dim=c(noccasions, nk, temp$n),
-                dimnames = list(1:noccasions, levels(polyID(traps)), NULL))
+                dimnames = list(1:noccasions, polynames, NULL))
 
             if (temp$n > 0) {
                 w[,,] <- temp$value[1:prod(dim(w))]

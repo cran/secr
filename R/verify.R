@@ -7,6 +7,7 @@
 ## 2011 02 15 validpoly
 ## 2011 03 19 adjustments to allow unmarked; need more complete check of unmarked
 ## 2012 02 02 signal check applied at level of whole sound
+## 2012-10-22 xylist checked
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -93,8 +94,7 @@ overlappoly <- function (xy, polyID) {
         }
         OK
     }
-
-    lxy <- split (xy, polyID)
+    lxy <- split (xy, levels(polyID))
     nr <- length(lxy)
     if (nr<2)
         FALSE
@@ -121,7 +121,7 @@ validpoly <- function (xy, polyID, nx = 500) {
         }
         cross <= 2
     }
-    lxy <- split (xy, polyID)
+    lxy <- split (xy, levels(polyID))
     temp <- lapply(lxy, OKpoly)
     all(unlist(temp))
 }
@@ -199,7 +199,7 @@ verify.traps <- function (object, report = 2, ...) {
 
         single <- detector(object) %in% c('single')
         area <- FALSE
-        poly <- detector(object) %in% c('polygon','polygonX')
+        poly <- detector(object) %in% c('polygon','polygonX', 'telemetry')
 
         usagedetectorsOK <- TRUE
         usagenonzeroOK <- TRUE
@@ -333,12 +333,13 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         ## preliminaries
         dim3 <- length(dim(object)) == 3
-        count <- detector(traps(object)) %in% c('count', 'polygon','transect')
+        count <- detector(traps(object)) %in% .localstuff$countdetectors
         area <- FALSE
         binary <- detector(traps(object)) %in% c('proximity')
         single <- detector(traps(object)) %in% c('single')
         signal <- detector(traps(object)) %in% c('signal','signalnoise')
         poly <- detector(traps(object)) %in% c('polygon', 'polygonX')
+        telem <- detector(traps(object)) %in% c('telemetry')
         transect <- detector(traps(object)) %in% c('transect', 'transectX')
         unmarked <- detector(traps(object)) %in% c('unmarked')
 
@@ -360,6 +361,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         xyontransectOK <- TRUE
         IDOK <- TRUE
         rownamesOK <- TRUE
+        xylistOK <- TRUE
 
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
@@ -440,7 +442,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         ## 10
         if (nrow(object) > 0) {
-            if (poly | transect) {
+            if (poly | transect | telem) {
                 detectornumberOK <- ifelse (dim3,
                     length(levels(polyID(traps(object)))) == dim(object)[3],
                     max(abs(object)) <= ndetector(traps(object)))
@@ -502,7 +504,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## 14
         if (poly) {
             xy <- xy(object)
-            if (detector(traps(object))=='polygon')
+            if (detector(traps(object)) %in% c('polygon'))
                 xyOK <- nrow(xy) == sum(abs(object))
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
@@ -521,14 +523,28 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             ontransect <- ontransect == trap(object, names = F)
             xyontransectOK <- all(ontransect)
         }
+        if (telem) {
+            xyOK <- nrow(xy) == sum(abs(object))
+        }
 
         ## 15
         rownamesOK <- !any(duplicated(rownames(object)))
 
+        ## 16
+        ## 2012-10-22
+        zeros <- apply(abs(object)>0,1,sum)==0
+        # pc <- detector(traps(object)) %in% c('proximity','count')
+        xyl <- attr(object,'xylist')
+        if (!is.null(xyl) | any(zeros)) {
+            xylistOK <- all(names(xyl) %in% row.names(object))
+            if (!all(row.names(object)[zeros] %in% names(xyl)))
+                xylistOK <- FALSE
+        }
+
         errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,
             deadOK, singleOK, binaryOK, countOK, cutvalOK, signalOK,
             detectornumberOK, covariatesOK, usageoccasionsOK, usageOK,
-            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK))
+            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK, xylistOK))
 
         if (report > 0) {
             if (errors) {
@@ -630,6 +646,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
                 if (!rownamesOK) {
                     cat ("Duplicated row names (animal ID)\n")
+                }
+                if (!xylistOK) {
+                    cat ("Telemetry data (xylist) does not match capture histories\n")
                 }
             }
 

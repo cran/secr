@@ -3,6 +3,7 @@
 \alias{make.circle}
 \alias{make.poly}
 \alias{make.transect}
+\alias{make.telemetry}
 
 \title{ Build Detector Array }
 
@@ -23,6 +24,8 @@ make.poly (polylist = NULL, x = c(-50,-50,50,50),
 
 make.transect (transectlist = NULL, x = c(-50,-50,50,50),
     y = c(-50,50,50,-50), exclusive = FALSE)
+
+make.telemetry (...) 
 
 }
 
@@ -46,7 +49,8 @@ make.transect (transectlist = NULL, x = c(-50,-50,50,50),
   \item{exclusive}{ logical; if TRUE animal can be detected only once
   per occasion }
   \item{verify}{ logical if TRUE then the resulting traps object is
-  checked with \code{\link{verify}}}
+    checked with \code{\link{verify}}}
+  \item{...}{arguments passed to \code{make.poly}}
     
 }
 
@@ -96,6 +100,9 @@ differ.
 Transects are defined by a sequence of vertices as for polygons, except 
 that they are not closed.
 
+\code{make.telemetry} merely calls \code{make.poly} and assigns
+`telemetry' as the detector type of the result.
+
 }
 
 \value{
@@ -120,9 +127,12 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 }
 
-\seealso{ \code{\link{read.traps}},\code{\link{detector}},
+\seealso{
+  \code{\link{read.traps}},\code{\link{detector}},
   \code{\link{print.traps}}, \code{\link{plot.traps}},
-  \code{\link{traps}}, \code{\link{make.tri}} }
+  \code{\link{traps}}, \code{\link{make.tri}},
+  \code{\link{addTelemetry}}
+}
 
 \note{ Several methods are provided for manipulating detector arrays - see \code{\link{traps}}.
 

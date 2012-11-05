@@ -8,13 +8,14 @@
 ## 2012-01-22 purged phi/turnover
 ## 2012-01-31 experimental addition of parameter cut
 ## 2012-04-06 'fixed' bug fixed (see functions.r)
+## 2012-07-24 unmash component of details
 ################################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     buffer = NULL, CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL,
     link = list(), fixed = list(), timecov = NULL, sessioncov = NULL,
     groups = NULL, dframe = NULL, details = list(), method = 'Newton-Raphson',
-    verify = TRUE, biasLimit = 0.01, trace = NULL, ...)
+    verify = TRUE, biasLimit = 0.01, trace = NULL, ncores = 1, ...)
 
 {
 # Fit spatially explicit capture recapture model
@@ -56,6 +57,14 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     cl   <- match.call(expand.dots = TRUE)
 
+    if (ncores > 1) {
+        require (parallel)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
+        clusterEvalQ(clust, library(secr))
+    }
+    else
+        clust <- NULL
+
     #################################################
     ## Default detection function
 
@@ -86,11 +95,14 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     defaultdetails <- list(distribution = 'poisson', scalesigma = FALSE,
         scaleg0 = FALSE, hessian = 'auto', trace = TRUE, LLonly = FALSE,
         centred = FALSE, binomN = 1, cutval = 0,
-        minprob = 1e-50, tx = 'identity', param = 0)
+        minprob = 1e-50, tx = 'identity', param = 0,
+        unmash = FALSE, telemetrysigma = FALSE, debug = FALSE)
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
         defaultdetails$binomN <- 0   ## Poisson
     if (!is.null(attr(capthist,'cutval')))
         defaultdetails$cutval <- attr(capthist,'cutval')
+    else if (ms(capthist) & !is.null(attr(capthist[[1]],'cutval')))   ## 2012-09-04
+        defaultdetails$cutval <- attr(capthist[[1]],'cutval')
     if (is.logical(details$hessian))
         details$hessian <- ifelse(details$hessian, 'auto', 'none')
     details <- replace (defaultdetails, names(details), details)
@@ -118,6 +130,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         (details$binomN != 1)    ## 2011-01-29
     anypoly  <- any(detector(traps(capthist)) %in% c('polygon',  'polygonX'))
     anytrans <- any(detector(traps(capthist)) %in% c('transect', 'transectX'))
+    alltelem <- all(detector(traps(capthist)) %in% c('telemetry'))
+    if (alltelem) CL <- TRUE
 
     if (MS) {
        if (any (sapply(traps(capthist), detector) == 'single'))
@@ -158,7 +172,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (usebuffer) {
         if (is.null(buffer)) {
             buffer <- 100
-            if (!(detector(traps(capthist))=='presence'))
+            if (!(detector(traps(capthist))=='presence') & !alltelem)
                 warning ("using default buffer width 100 m")
         }
         if (MS) mask <- lapply (traps(capthist), make.mask, buffer = buffer)
@@ -249,6 +263,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 	pnames <- c(pnames, 'pID')
         if (model$pID != ~1)
             stop ("'pID' must be constant in this implementation")
+    }
+    if (alltelem) {
+        rnum <- match(c('D','g0'), pnames)
+        pnames <- pnames[-rnum[!is.na(rnum)]]
     }
     fnames <- names(fixed)
     pnames <- pnames[!(pnames %in% fnames)]        ## drop fixed real parameters
@@ -371,6 +389,14 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         start <- mapbeta(start$parindx, parindx, coef(start)$beta, NULL)
     }
 
+    ###################################################
+    # send data to worker processes once, not each eval
+    ###################################################
+    if (ncores > 1) {
+        clusterExport(clust, c("capthist", "mask", "groups",
+            "design","design0", "detectfn"), envir = environment())
+    }
+
     #############################
     # Single evaluation option
     #############################
@@ -395,6 +421,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                        groups     = groups,
                        details    = details,
                        logmult    = TRUE,     ## add if possible
+                       ncores     = ncores,
+                       clust      = clust
                        )
 
       return(c(logLik=LL))
@@ -419,6 +447,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                 warning ("'secr.fit' failed because initial values not found",
                     " (data sparse?); specify transformed values in 'start'")
                 return (list(call=cl, fit=NULL))
+            }
+
+            ## 2012-07-24
+            if (details$unmash & !CL) {
+                nmash <- attr(capthist[[1]], 'n.mash')
+                if (!is.null(nmash)) {
+                    n.clust <- length(nmash)
+                    start3$D <- start3$D / n.clust
+                }
             }
 
             if (details$scaleg0 & anycount)
@@ -568,6 +605,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
+                        ncores     = ncores,
+                        clust      = clust,
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
                         stepmax    = 10)
@@ -595,6 +634,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                         groups     = groups,
                         details    = details,
                         logmult    = TRUE,     ## add if possible
+                        ncores     = ncores,
+                        clust      = clust,
                         betaw      = betaw,   # for trace format
                         hessian    = tolower(details$hessian)=='auto',
                         method     = method)
@@ -638,7 +679,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                             groups     = groups,
                             details    = details,
                             logmult    = TRUE,     ## add if possible
-                            betaw      = betaw,    ## for trace format
+                            ncores     = ncores,
+                            clust      = clust,
+                            betaw      = betaw    ## for trace format
                      )
             }
             grad.Hess <- fdHess(this.fit$par, fun = loglikfn, .relStep = 0.001, minAbsPar=0.1)
@@ -704,10 +747,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                   N = N,                   ## added 2011-11-10
                   version = desc$Version,  ## added 2009 09 21
                   starttime = starttime,   ## added 2009 09 21
-                  proctime = (proc.time() - ptm)[1]
+                  proctime = (proc.time() - ptm)[3]
              )
 
-    attr (temp, 'class') <- 'secr'
+    class(temp) <- 'secr'
 
     ## check introduced 2010-12-01 & adjusted 2011-09-28
     ## bias.D not for polygon & transect detectors
@@ -718,6 +761,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (usebuffer & (this.fit$value < 1e9) &
         (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
         !(detector(traps(capthist)) %in% c('cue','unmarked','presence')) &
+        is.null(attr(capthist,'xylist')) &
         validbiasLimit) {
         if (MS) {
             nsess <- length(capthist)
@@ -747,6 +791,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     memo(paste('Completed in ', round(temp$proctime,2), ' seconds at ',
         format(Sys.time(), "%H:%M:%S %d %b %Y"),
         sep=''), details$trace)
+
+    if (ncores > 1) {
+        stopCluster(clust)
+    }
+
     temp
 
 }

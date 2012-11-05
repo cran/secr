@@ -56,6 +56,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                     groups     = object$groups,
                     details    = details,
                     logmult    = logmult,
+                    ncores     = 1,
                     betaw      = max(max(nchar(object$betanames)),8))
                 templl - gamma * predicted (beta2)
             }
@@ -83,6 +84,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                 groups     = object$groups,
                 details    = details,
                 logmult    = logmult,
+                ncores     = 1,
                 betaw      = max(max(nchar(object$betanames)),8))
             ## cat ('gamma ', gamma, '  coef ', lagrange.fit$estimate, '  lp ', lp,
             ##     '  lp - targetLL ', lp-targetLL, '\n')

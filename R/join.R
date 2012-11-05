@@ -1,4 +1,4 @@
-## 2011-12-01, 2011-12-07
+## 2011-12-01, 2011-12-07, 2012-06-08, 2012-11-04
 ## join returns single-session object from list of inputs
 
 # should new trap ID be numeric , character or factor???
@@ -79,6 +79,9 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         df$newtrap <- paste(df$newtrap,df$sess, sep=".")
     }
 
+    # 2012-06-08 ensure retain all occasions
+    df$newocc <- factor(df$newocc, levels = 1:sum(nocc))
+
     #  if (outputdetector %in% .localstuff$exclusivedetectors) {
     if (outputdetector %in% c('single','multi','transectX','polygonX')) {
         alivesign <- df$alive*2 - 1
@@ -117,21 +120,52 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
 }
 
-RMarkInput <- function (object, grouped = TRUE) {
+RMarkInput <- function (object, grouped = FALSE, covariates = TRUE) {
     if (!inherits(object, "capthist"))
         stop ("requires single-session capthist object")
     if (ms(object))
         stop ("requires single-session capthist object - use 'join'")
     if (length(dim(object)) != 2)
-        CH <- reduce(object, outputdetector = 'multi')
+        CH0 <- reduce(object, outputdetector = 'multi')
     else
-        CH <- object
+        CH0 <- object
     ntimes <- ncol(object)
     alive <- apply(object,1,function(x) all(x>=0))
-    CH <- pmin(abs(CH),1)
-    CH <- cbind(CH, alive) ## add single-digit code as last column
+    CH <- pmin(abs(CH0),1)
+
+    if (is.logical(covariates)) {
+        if (covariates) {
+            if (is.null(covariates(CH0)))
+                stop("no covariates in object")
+            covnames <- names(covariates(CH0))
+        }
+        else
+            covnames <- ""
+    }
+    else {
+        covnames <- covariates
+        if (is.character(covariates)) {
+            if (is.null(covariates(CH0)))
+                stop("no covariates in object")
+        }
+        found <- covnames %in% names(covariates(CH0))
+        if (any(!found)) {
+            stop(paste(covnames[!found], collapse=','), " not in covariates(object)")
+        }
+    }
+
+    if (any(covnames != "")) {
+        if (grouped) {
+            warning("'grouped' is incompatible with individual covariates and will be ignored")
+            grouped <- FALSE
+        }
+    }
+
+    if (grouped)   ## bug fix 2012-07-04
+        CH <- cbind(CH, alive) ## add single-digit code as last column
     CH <- data.frame(ch = apply(CH, 1, paste, collapse=''),
         stringsAsFactors = FALSE)
+
     if (grouped) {
         temp <- table(CH$ch)
         alive <- as.numeric(substring(names(temp),ntimes+1,ntimes+1))
@@ -142,8 +176,12 @@ RMarkInput <- function (object, grouped = TRUE) {
         CH <- CH[order(CH$ch, decreasing = TRUE),]
         row.names(CH) <- 1:nrow(CH)
     }
-    else
+    else {
         CH$freq <- ifelse(alive,1,-1)
+        if (any(covnames != "")) {
+            CH[,covnames] <- covariates(CH0)[,covnames]
+        }
+    }
     attr(CH, "interval") <- attr(object, "interval")
     if (is.null(attr(CH,"interval")))
         attr(CH, "interval") <- rep(0,ntimes-1)
@@ -175,7 +213,7 @@ unjoin <- function (object, interval, ...) {
     return(newobj)
 }
 
-unRMarkInput <- function(df) {
+unRMarkInput <- function(df, covariates = TRUE) {
     if (!is.data.frame(df))
         stop("requires dataframe input")
     if (!all(c('ch','freq') %in% names(df)))
@@ -197,8 +235,18 @@ unRMarkInput <- function(df) {
     CH[cbind(1:nrow(CH), apply(CH,1,last))] <- alive
     # transfer covariates if present
     if (ncol(df)>2) {
-        cov <- df[,-match(c('ch','freq'),names(df)), drop = FALSE]
-        covariates(CH) <- cov[freq,]
+        if (is.logical(covariates)) {
+            if (covariates)
+                covnames <- names(df)[-match(c('ch','freq'),names(df))]
+            else
+                covnames <- ""
+        }
+        else {
+            covnames <- covariates[covariates %in% names(df)]
+        }
+
+        if (any(covnames != ""))
+        covariates(CH) <- df[freq, covnames, drop = FALSE]
     }
     CH
 }

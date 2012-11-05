@@ -4,7 +4,7 @@
 
 ## Murray Efford 2012-04-09,10,11,12
 
-## Requires 'raster' and 'igraph' packages:
+## Requires 'raster' and 'igraph0' packages:
 
 ## Robert J. Hijmans & Jacob van Etten (2011). raster: Geographic
 ##  analysis and modeling with raster data. R package version 1.9-33.

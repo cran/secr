@@ -5,12 +5,14 @@
 ## 2010 07 01 alpha detection function
 ## 2011 06 15 tidy up
 ## 2011 12 20 maxtries argument
+## 2012-11-02 ncores
+## 2012-11-02 proctime[3]
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3,
     min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
-    maxbox = 5, maxtries = 2, ...) {
+    maxbox = 5, maxtries = 2, ncores = 1, ...) {
 
     ## ... passed to sim.popn e.g. buffer = 100, Ndist = 'fixed'
     ## boxsize may be vector of length np
@@ -36,13 +38,29 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     np <- length(pnames)
     traps <- traps(capthist)
     noccasions <- ncol(capthist)
+
     if (length(boxsize)==1) boxsize <- rep(boxsize, np)
     else if (boxsize != np)
         stop ("invalid boxsize vector")
     if (is.null(mask)) core <- expand.grid(x=range(traps$x),y=range(traps$y))
 
+    ## added 2012-11-02
+    if (ncores > 1) {
+        require(parallel)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
+        clusterEvalQ(clust, library(secr))
+        clusterExport(clust, c("capthist", "predictorfn", "predictortype",
+                               "maxtries", "negloglikM0", "negloglikMb",
+                               "jack.est", "M0", "Mb", "Mh", "traps", "pnames",
+                               "noccasions", "mask", "core", "odds","invodds",
+                               "RPSV", "pfn"),
+                      environment())
+    }
+    else
+        clust <- NULL
+
     # to simulate one realization
-    simfn <- function (parval) {
+    simfn <- function (parval, ...) {
         D <- parval[1]
         detectpar <- as.list(parval[-1])
         names(detectpar) <- pnames[-1]
@@ -89,7 +107,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     if (is.null(start)) {
         cat('\nFinding starting values ...\n')
         flush.console()
-        if (is.null(mask)) {
+         if (is.null(mask)) {
             automask <- make.mask(traps, buffer=3*RPSV(capthist))
             start <- unlist(autoini(capthist, automask))
         }
@@ -125,7 +143,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         ## indices <- numeric(0)
 
         repeat {
-            newsim <- t(apply(basedesign,1,simfn))
+
+            if (ncores > 1) {
+                list(...) # evaluate any promises cf boot
+                newsim <- parRapply(clust, basedesign, simfn)
+                newsim <- t(matrix(newsim, ncol = nrow(basedesign)))
+            }
+            else {
+                newsim <- t(apply(basedesign,1,simfn))
+            }
+
             OK <- (newsim[,3]>0) & (!is.na(newsim[,3]))  ## require valid RPSV
             sim <- rbind(sim, newsim[OK,])
             ## indices <- c(indices, baseindices[OK])
@@ -163,7 +190,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         cat('\n')
         vardesign <- matrix(par, nrow = var.nsim, ncol = np, byrow = T)
         colnames(vardesign) <- pnames
-        newsim <- t(apply(vardesign,1,simfn))
+
+        if (ncores > 1) {
+            list(...) # evaluate any promises cf boot
+            newsim <- parRapply(clust, vardesign, simfn)
+            newsim <- t(matrix(newsim, ncol = nrow(vardesign)))
+        }
+        else {
+            newsim <- t(apply(vardesign,1,simfn))
+        }
+
         V <- var(newsim)  ## additional simulations for var-covar matrix
         vcov <- B %*% V %*% t(B)
 
@@ -194,12 +230,16 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     dimnames(vcov) <- list(pnames, pnames)
     par['g0'] <- invodds(par['g0'])
 
+    if (ncores > 1) {
+        stopCluster(clust)
+    }
+
     list(call = cl,
         IP = data.frame(estimate=unlist(par), SE.estimate=diag(vcov)^0.5),
         vcov = vcov,
         ip.nsim = nrow(sim),
         variance.bootstrap = bootstrap,
-        proctime = as.numeric((proc.time() - ptm)[1])
+        proctime = as.numeric((proc.time() - ptm)[3])
     )
 }
 ##################################################

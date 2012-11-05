@@ -7,6 +7,7 @@
 ## 2010 03 04 use scaled.detection from functions.R
 ## 2010 03 09 fixed bug : need to call scaled.detection when !is.null(real)
 ## 2011-04-04 added noccasions; debugged 2011-04-07
+## 2012-10-21 added check to return NA with dettype==13
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -99,14 +100,16 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             ## allow for old design object
             if (length(dim(object$design0$PIA))==4)
                 dim(object$design0$PIA) <- c(dim(object$design0$PIA),1)
-            PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]
+            # replaced 2012-09-21
+            # PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]
+            PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
             ncolPIA <- dim(object$design0$PIA)[2]
-
             #############################################
             ## trick to allow for changed data 2009 11 20
             ## nmix>1 needs further testing 2010 02 26
             ## NOTE 2010-11-26 THIS LOOKS WEAK
             if (dim(PIA)[2] != n) {
+                # 2012-09-21
                 PIA <- array(rep(PIA[1,1,,,],n), dim=c(s,K,nmix,n))
                 PIA <- aperm(PIA, c(4,1,2,3))   ## n,s,K,nmix
                 ncolPIA <- n     ## 2010 02 26
@@ -119,11 +122,10 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             Xrealparval0 <- scaled.detection (realparval0, FALSE,
                 object$details$scaleg0, NA)
         }
-
         ## new code 2010-11-26
         used <- usage(traps)
         if (any(used==0))
-        PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
+            PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
         ncolPIA <- n
 
         param <- object$details$param
@@ -131,33 +133,60 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
         miscparm <- object$details$cutval
         useD <- FALSE
-        temp <- .C("integralprw1", PACKAGE = 'secr',
-            as.integer(dettype),
-            as.integer(param),
-            as.double(Xrealparval0),
-            as.integer(n),
-            as.integer(s),
-            as.integer(k),
-            as.integer(m),
-            as.integer(nmix),
-            as.double(unlist(traps)),
-            as.double(unlist(mask)),
-            as.integer(nrow(Xrealparval0)), # rows in lookup
-            as.integer(PIA),                # index of nc*,S,K to rows in realparval0
-            as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
-            as.double(cell),
-            as.double(miscparm),
-            as.integer(object$detectfn),
-            as.integer(object$details$binomN),
-            as.integer(useD),
-            a=double(n),
-            resultcode=integer(1)
-       )
-       if (temp$resultcode == 3)
-           stop ("groups not implemented in external function 'integralprw1'")
-       if (temp$resultcode != 0)
-           stop ("error in external function 'integralprw1'")
-       return(temp$a)
+
+#        print(dettype)
+#        print(param)
+#        print(Xrealparval0)
+#        print(n)
+#        print(s)
+#        print(k)
+#        print(m)
+#        print(nmix)
+#        print(summary(traps))
+#        print(summary(mask))
+#        print(nrow(Xrealparval0))
+#        print(PIA)
+#        print(ncolPIA)
+#        print(cell)
+#        print(miscparm)
+#        print(object$detectfn)
+#        print(object$details$binomN)
+#        print(useD)
+
+        ## protection added 2012-10-21
+        if (dettype %in% c(13)) {
+            return(NA)
+        }
+        else {
+            temp <- .C("integralprw1", PACKAGE = 'secr',
+                       as.integer(dettype),
+                       as.integer(param),
+                       as.double(Xrealparval0),
+                       as.integer(n),
+                       as.integer(s),
+                       as.integer(k),
+                       as.integer(m),
+                       as.integer(nmix),
+                       as.double(unlist(traps)),
+                       as.double(unlist(mask)),
+                       as.integer(nrow(Xrealparval0)), # rows in lookup
+                       as.integer(PIA),                # index of nc*,S,K to rows in realparval0
+                       as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n,
+                                                       # else ncolPIA = 1 or ngrp
+                       as.double(cell),
+                       as.double(miscparm),
+                       as.integer(object$detectfn),
+                       as.integer(object$details$binomN),
+                       as.integer(useD),
+                       a=double(n),
+                       resultcode=integer(1)
+                       )
+            if (temp$resultcode == 3)
+                stop ("groups not implemented in external function 'integralprw1'")
+            if (temp$resultcode != 0)
+                stop ("error in external function 'integralprw1'")
+            return(temp$a)
+        }
     }
 }
 ############################################################################################

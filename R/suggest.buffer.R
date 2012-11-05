@@ -1,4 +1,5 @@
 ## added argument noccasions in calls to pdot 2010-12-19
+## blocked gpclib 2012-11-03
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NULL) {
     gr <- function (r) {
@@ -44,16 +45,18 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
         else
             invlogit(predict(pdotr.spline,r)$y) * l(r)
     }
-    punion2 <- function(polygons, ntheta) {
-        ## from Remko Duursma on R list 6/3/2010
-        vec <- c(1,ntheta+1,0,t(polygons[[1]]))
-        for (p in polygons[-1]) {
-            clip <- c(1,ntheta+1,0, t(p))
-            vec <- .Call("Rgpc_polygon_clip", vec, clip, 3,
-                         PACKAGE="gpclib")
-        }
-        as(vec, "gpc.poly")
-    }
+
+    ## punion2 disabled to avoid R CMD check NOTE 2012-11-03
+#    punion2 <- function(polygons, ntheta) {
+#        ## from Remko Duursma on R list 6/3/2010
+#        vec <- c(1,ntheta+1,0,t(polygons[[1]]))
+#        for (p in polygons[-1]) {
+#            clip <- c(1,ntheta+1,0, t(p))
+#            vec <- .Call("Rgpc_polygon_clip", vec, clip, 3,
+#                         PACKAGE="gpclib")
+#        }
+#        as(vec, "gpc.poly")
+#    }
     lth <- function (x) {
         hull <- get.pts(x)
         sum(sapply(hull, function(xy) {
@@ -62,15 +65,15 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
             sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))
         }))
     }
-    perimeterfn <- function (buffer, traps, ntheta = 60) {
-        theta <- (2 * pi) * (0:ntheta)/ntheta
-        pts <- data.frame(x = buffer * cos(theta), y = buffer * sin(theta))
-        centres <- split(traps,rownames(traps))
-        polys <- lapply(centres, function (x) {
-            temp <- sweep(pts, MARGIN = 2, FUN='+', STATS = unlist(x))
-        })
-        lth(punion2(polys, ntheta))
-    }
+#    perimeterfn <- function (buffer, traps, ntheta = 60) {
+#        theta <- (2 * pi) * (0:ntheta)/ntheta
+#        pts <- data.frame(x = buffer * cos(theta), y = buffer * sin(theta))
+#        centres <- split(traps,rownames(traps))
+#        polys <- lapply(centres, function (x) {
+#            temp <- sweep(pts, MARGIN = 2, FUN='+', STATS = unlist(x))
+#        })
+#        lth(punion2(polys, ntheta))
+#    }
 
     detectfn <- valid.detectfn(detectfn)
     if (!(detector(traps) %in% .localstuff$pointdetectors))
@@ -81,8 +84,9 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)
     defaultcontrol <- list(bfactor = 20, masksample = 1000, spline.df = 10,
-                           scale = 10000, use.gpclib = FALSE, ntheta = 60,
-                           ninterp = 5, maxinterp = NULL, method = 1)
+#                           scale = 10000, use.gpclib = FALSE, ntheta = 60,
+#                           ninterp = 5, maxinterp = NULL,
+                           scale = 10000, ntheta = 60, method = 1)
     if (detectfn %in% c(1,2,7))
        defaultcontrol$bfactor <- 200
     if (is.null(control))
@@ -140,18 +144,21 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
 
     ## make function to return linear approximation to contour length at radius r
     ## assuming spacing/2 <= r < (scale*spacing)
-    if ((system.file(package = "gpclib") != "") & control$use.gpclib) {
-        if (control$ninterp<2)
-            stop ("requires 'control$ninterp' >= 2")
-        if (is.null(control$maxinterp))
-            control$maxinterp <- trapspacing/2^0.5
-        critx <- c(seq(trapspacing/2, control$maxinterp, len=control$ninterp),
-                   trapspacing * control$scale)
-        if (!require(gpclib, quietly = TRUE))
-            stop ("package 'gpclib' required in bias.D")
-        crity <- sapply(critx, perimeterfn, traps)
-    }
-    else {
+
+    ## alternate gpclib call disabled to avoid R CMD check NOTE 2012-11-03
+    # if ((system.file(package = "gpclib") != "") & control$use.gpclib) {
+    #     if (control$ninterp<2)
+    #         stop ("requires 'control$ninterp' >= 2")
+    #     if (is.null(control$maxinterp))
+    #         control$maxinterp <- trapspacing/2^0.5
+    #     critx <- c(seq(trapspacing/2, control$maxinterp, len=control$ninterp),
+    #                trapspacing * control$scale)
+    #     if (!require(gpclib, quietly = TRUE))
+    #         stop ("package 'gpclib' required in bias.D")
+    #     crity <- sapply(critx, perimeterfn, traps)
+    #  }
+    # else
+    {
         hull <- buffer.contour(traps, buffer = 0, convex = TRUE, plt = FALSE, ntheta = 1)
         perimeter <- sum(sapply(hull, function (xy) sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))))
         perimeter <- perimeter + 2 * pi * trapspacing/2^0.5

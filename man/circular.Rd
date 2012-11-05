@@ -62,6 +62,10 @@ Vector of values for the required radii or probabilities.
 Calhoun, J. B. and Casby, J. U. (1958) Calculation of home range and
 density of small mammals. Public Health Monograph No. 55. United States
 Government Printing Office.
+
+Johnson, R. A. and Wichern, D. W. (1982) Applied multivariate
+statistical analysis. Prentice-Hall, Englewood Cliffs, New Jersey, USA.
+
 }
 
 \note{

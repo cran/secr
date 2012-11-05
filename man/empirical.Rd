@@ -220,7 +220,7 @@ t4.16 <- make.systematic (n = 16, cluster = t4,
 popn1 <- sim.popn (D = 5, core = testregion,
     buffer = 0)
 capt1 <- sim.capthist(t4.16, popn = popn1)
-fit1 <- secr.fit(mash(capt1), CL = TRUE)
+fit1 <- secr.fit(mash(capt1), CL = TRUE, trace = FALSE)
 
 ## Visualize sampling
 tempmask <- make.mask(t4.16, spacing = 10, type =
@@ -243,7 +243,7 @@ derived.mash(fit1)
 popn2 <- sim.popn (D = 5, core = testregion, buffer = 0,
     model2D = "hills", details = list(hills = c(-2,3)))
 capt2 <- sim.capthist(t4.16, popn = popn2)
-fit2 <- secr.fit(mash(capt2), CL = TRUE)
+fit2 <- secr.fit(mash(capt2), CL = TRUE, trace = FALSE)
 derived(fit2)
 derived.mash(fit2)
 

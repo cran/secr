@@ -10,8 +10,10 @@
 \usage{
 \method{subset}{capthist}(x, subset = NULL, occasions = NULL, traps = NULL,
     sessions = NULL, cutval = NULL, dropnullCH = TRUE, dropnullocc = FALSE,
-    dropunused = TRUE, droplowsignals = TRUE, renumber = FALSE, ...)
-\method{split}{capthist}(x, f, drop = FALSE, prefix = "S", ...)
+    dropunused = TRUE, droplowsignals = TRUE, dropNAsignals = FALSE,
+    cutabssignal = TRUE, renumber = FALSE, ...)
+
+\method{split}{capthist}(x, f, drop = FALSE, prefix = "S", bytrap = FALSE, ...)
 }
 \arguments{
   \item{x}{ object of class \code{capthist} }
@@ -27,10 +29,17 @@
     dropped }
   \item{droplowsignals}{ logical for whether cutval should be applied at each
   microphone rather than to sound as a whole } 
+  \item{dropNAsignals}{ logical for whether detections with missing
+    signal should be dropped } 
+  \item{cutabssignal}{ logical for whether to apply cutval to absolute
+    signal strength or the difference between signal and noise}
   \item{renumber}{ logical for whether row.names should be replaced with sequence number in new \code{capthist} }
   \item{f}{ factor or object that may be coerced to a factor }
   \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
-  \item{prefix}{ a character prefix to be used for component names when values of f are numeric }
+  \item{prefix}{ a character prefix to be used for component names when
+    values of f are numeric }
+  \item{bytrap}{logical; if TRUE then each level of f identifies traps
+  to include }
   \item{...}{ other arguments (not used currently) }
 }
 \details{
@@ -90,6 +99,9 @@ plot(tempcapt3)
 
 split (tempcapt2, f = sample (c("A","B"), nrow(tempcapt2), 
     replace = TRUE))
+
+## split out captures on alternate rows of a grid
+split(captdata, f = rep(1:2, 50), bytrap = TRUE)
 
 }
 
