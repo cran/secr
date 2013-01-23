@@ -59,7 +59,8 @@ which should return a vector equal in length to the number of parameters
 (np = 3). Simulations of the 2-D population use \code{\link{sim.popn}}.
 The simulated population is sampled with \code{\link{sim.capthist}}
 according to the detector type (e.g., `single' or `multi') and detector
-layout specified in traps(capthist).
+layout specified in traps(capthist), including allowance for varying
+effort if the layout has a \code{\link{usage}} attribute.
 
 \dots may be used to control aspects of the simulation by passing named
 arguments (other than D) to \code{sim.popn}. The most important arguments of

@@ -1,42 +1,79 @@
 \name{reduce.capthist}
+\alias{reduce.traps}
 \alias{reduce.capthist}
 
-\title{ Combine Occasions Or Convert Detector Types }
+\title{ Combine Occasions Or Detectors }
 
 \description{
 
-Combine columns (occasions) in a \code{capthist} object to create a new
-data set, possibly converting between detector types
+Use these methods to combine data from multiple occasions or multiple detectors in a
+\code{capthist} or \code{traps} object, creating a new data set and possibly converting
+between detector types.
 
 }
 
 \usage{
 
-\method{reduce}{capthist}(object, columns = NULL, outputdetector = 
-    detector(traps(object)), select='last', dropunused = TRUE,
-    verify = TRUE, sessions = NULL, by = 1, \dots) 
+\method{reduce}{traps}(object, newtraps = NULL, span = NULL, rename = FALSE, \dots)
+
+\method{reduce}{capthist}(object, newtraps = NULL, span = NULL, rename =
+    FALSE, newoccasions = NULL, by = 1, outputdetector =
+    detector(traps(object)), select = 'last', dropunused = TRUE, verify
+    = TRUE, sessions = NULL, \dots)
 
 }
 
 \arguments{
-  \item{object}{ \code{capthist} object }
-  \item{columns}{ list in which each component is a vector of subscripts for occasions to be pooled }
-  \item{outputdetector}{ character value giving detector type for output }
-  \item{select}{ character value for method to resolve conflicts }
-  \item{dropunused}{ logical, if TRUE any never-used detectors are dropped }
-  \item{verify}{ logical, if TRUE the \code{verify} function is applied to the output }
-  \item{sessions}{ vector of session indices or names (optional) }
+
+  \item{object}{ \code{traps or capthist} object }
+
+  \item{newtraps}{ list in which each component is a vector of
+  subscripts for detectors to be pooled }
+
+  \item{span}{ numeric maximum span in metres of new detector }
+
+  \item{rename}{logical; if TRUE the new detectors will be numbered from
+1, otherwise a name will be constructed from the old detector names}
+  
+  \item{newoccasions}{ list in which each component is a vector of
+  subscripts for occasions to be pooled }
+
   \item{by}{ number of old occasions in each new occasion }
-  \item{\dots}{ other arguments (not used currently) }
+
+  \item{outputdetector}{character value giving \link{detector} type for output }
+
+  \item{select}{ character value for method to resolve conflicts }
+
+  \item{dropunused}{ logical, if TRUE any never-used detectors are dropped }
+
+  \item{verify}{ logical, if TRUE the \code{verify} function is applied to the output }
+
+  \item{sessions}{ vector of session indices or names (optional) }
+
+  \item{\dots}{ other arguments passed by reduce.traps to hclust }
 
 }
 
 \details{
 
-The first component of \code{columns} defines the columns of
+ 
+  reduce.traps --
+  
+Grouping may be specified explicitly via \code{newtraps}, or
+implicitly by \code{span}. 
+
+If \code{span} is specified a clustering of detector sites will be
+performed with \code{\link{hclust}} and detectors will be assigned to
+groups with \code{\link{cutree}}. The default algorithm in \code{hclust}
+is complete linkage, which tends to yield compact, circular clusters;
+each will have diameter less than or equal to \code{span}.
+
+reduce.capthist --
+  
+The first component of \code{newoccasions} defines the columns of
 \code{object} for new occasion 1, the second for new occasion 2, etc. If
-\code{columns} is NULL then all occasions are output. Subscripts in a
-component of \code{columns} that do not match an occasion in the input
+\code{newoccasions} is NULL then all occasions are output. Subscripts in a
+component of \code{newoccasions} that do not match an occasion in the input
 are ignored. When the output detector is one of the trap types
 (`single', `multi'), reducing capture occasions can result in locational
 ambiguity for individuals caught on more than one occasion, and for
@@ -49,14 +86,13 @@ second, randomly select* one animal per trap per day; third, when
 collapsing multiple days use the first capture, if any, in each
 trap.
 
-Usage data in the \code{traps} attribute are also
-pooled if present; a trap is considered `used' on a pooled occasion if
-it was used on any contributing occasion.
+Usage data in the \code{traps} attribute are also pooled if present;
+usage is summed over contributing occasions and detectors.
 
 * i.e., in the case of a single capture, use that capture; in the case of
 multiple `competing' captures draw one at random.
 
-If \code{columns} is not provided then old occasions are grouped into
+If \code{newoccasions} is not provided then old occasions are grouped into
 new occasions as indicated by the \code{by} argument. For example, if
 there are 15 old occasions and \code{by = 5} then new occasions will be
 formed from occasions 1:5, 6:10, and 11:15. A warning is given when the
@@ -71,19 +107,58 @@ one for each session in a multi-session dataset. This is done by setting
 
 \value{
 
-An object of class \code{capthist} with number of columns equal to
-\code{length(occasions)}. The detector type is inherited from \code{object}
-unless a new type is specified with the argument \code{outputdetector}.
+  reduce.traps --
+
+  An object of class traps with detectors combined according to
+  \code{newtraps} or \code{span}. The new object has an attribute
+  `newtrap', a vector of length equal to the original number of
+  detectors. Each element in newtrap is the index of the new detector to
+  which the old detector was assigned (see Examples).
+
+  The object has no clusterID or clustertrap attribute.
+  
+  reduce.capthist --
+  
+An object of class capthist with number of occasions (columns) equal to
+\code{length(newoccasions)}; detectors may simulataneously be aggregated
+as with \code{reduce.traps}. The detector type is inherited from \code{object}
+unless a new type is specified with the argument
+\code{outputdetector}. 
 
 }
 
-\seealso{ \code{\link{capthist}}, \code{\link{subset.capthist}} }
+\seealso{
+  
+  \code{\link{capthist}}, \code{\link{subset.capthist}},
+  \code{\link{hclust}}, \code{\link{cutree}}
+  
+}
+
+\section{Warning}{The argument named `columns' was renamed to
+  `newoccasions' in version 2.5.0, and arguments were added to
+  reduce.capthist for the pooling of detectors. Old code should work as
+  before if all arguments are named and `columns' is changed. }
+
+\note{
+
+  The reduce method may be used to re-assign the detector type (and
+  hence data format) of a capthist object without combining occasions or
+  detectors. Set the \code{object} and \code{outputdetector} arguments
+  and leave others at their default values.
+  
+  Automated clustering can produce unexpected outcomes. In particular,
+  there is no guarantee that clusters will be equal in size. You should
+  inspect the results of reduce.traps especially when using \code{span}.
+
+  reduce.traps is not implemented for polygons or transects.
+  
+}
 
 \examples{
 tempcapt <- sim.capthist (make.grid(nx = 6, ny = 6), nocc = 6)
 class(tempcapt)
 
-pooled.tempcapt <- reduce(tempcapt, col = list(1,2:3,4:6))
+pooled.tempcapt <- reduce(tempcapt, newocc = list(1,2:3,4:6))
 summary (pooled.tempcapt)
 
 pooled.tempcapt2 <- reduce(tempcapt, by = 2)
@@ -92,7 +167,19 @@ summary (pooled.tempcapt2)
 ## collapse multi-session dataset to single-session 'open population'
 onesess <- join(reduce(ovenCH, by = "all"))
 summary(onesess)
+
+# group detectors within 60 metres
+plot (traps(captdata))
+plot (reduce(captdata, span = 60), add = TRUE)
+
+# plot linking old and new
+old <- traps(captdata)
+new <- reduce(old, span = 60)
+newtrap <- attr(new, 'newtrap')
+plot(old, border = 10)
+plot(new, add = TRUE, detpar = list(pch = 16), label = TRUE)
+segments (new$x[newtrap], new$y[newtrap], old$x, old$y)
+
 }
 
 \keyword{ manip }
-

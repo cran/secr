@@ -103,18 +103,21 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 }
 
 \note{
-  These functions only work with homogeneous Poisson density models and
-  do not allow incomplete usage (some detectors not used on some occasions).
+  These functions only work with homogeneous Poisson density models.
 }
 
 \examples{
 
 fxi.secr(secrdemo.0, i = 1, X = c(365,605))
 
-plot(secrdemo.0$capthist)
 ## contour first 5 detection histories
+plot(secrdemo.0$capthist)
 fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
     plotmode = TRUE, drawlabels = FALSE)
+
+## extract modes only
+fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
+t(sapply(fxiout, "[[", "mode"))
 
 }
 

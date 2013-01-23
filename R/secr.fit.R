@@ -92,11 +92,23 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     #################################################
     ## Use input 'details' to override various defaults
 
-    defaultdetails <- list(distribution = 'poisson', scalesigma = FALSE,
-        scaleg0 = FALSE, hessian = 'auto', trace = TRUE, LLonly = FALSE,
-        centred = FALSE, binomN = 1, cutval = 0,
-        minprob = 1e-50, tx = 'identity', param = 0,
-        unmash = FALSE, telemetrysigma = FALSE, debug = FALSE)
+    defaultdetails <- list(distribution = 'poisson',
+                           scalesigma = FALSE,
+                           scaleg0 = FALSE,
+                           hessian = 'auto',
+                           trace = TRUE,
+                           LLonly = FALSE,
+                           centred = FALSE,
+                           binomN = 1,
+                           cutval = 0,
+                           minprob = 1e-50,
+                           tx = 'identity',
+                           param = 0,
+                           unmash = FALSE,
+                           telemetrysigma = FALSE,
+                           ignoreusage = FALSE,
+                           debug = FALSE)
+
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
         defaultdetails$binomN <- 0   ## Poisson
     if (!is.null(attr(capthist,'cutval')))
@@ -107,7 +119,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         details$hessian <- ifelse(details$hessian, 'auto', 'none')
     details <- replace (defaultdetails, names(details), details)
     if (!is.null(trace)) details$trace <- trace
-    if (!is.null(binomN)) details$binomN <- binomN   ## 2011 01 28
+    if (!is.null(binomN)) {
+        if (detector(traps(capthist)) == 'count') {
+            if (tolower(binomN) == 'usage')
+                binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
+            if (tolower(binomN) == 'poissonhazard')
+                binomN <- -1  ## interpret g() as true detection function 2013-01-07
+        }
+        details$binomN <- binomN   ## 2011 01 28
+    }
     if (details$LLonly)  details$trace <- FALSE
     if (detector(traps(capthist)) != 'multi') details$param <- 0
 
@@ -118,7 +138,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
 
     #################################################
-    ## NEW multi-session capthist object 12/2/09
     ## MS - indicator TRUE if multi-session (logical)
     ## sessionlevels - names of sessions (character)
 
@@ -126,8 +145,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     sessionlevels <- session(capthist)
 
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    anycount <- any(detector(traps(capthist)) %in% .localstuff$countdetectors) &
-        (details$binomN != 1)    ## 2011-01-29
+    anycount <- any(detector(traps(capthist)) %in% .localstuff$countdetectors)
     anypoly  <- any(detector(traps(capthist)) %in% c('polygon',  'polygonX'))
     anytrans <- any(detector(traps(capthist)) %in% c('transect', 'transectX'))
     alltelem <- all(detector(traps(capthist)) %in% c('telemetry'))
@@ -190,6 +208,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     nc <- ifelse (MS, sum(sapply(capthist, nrow)), nrow(capthist))
     if (nc < 1)
         warning (nc, " detection histories")
+
+    #################################################
+    ## orphan mark-resight code - not currently used
 
     if (MS) {
         q  <- attr(capthist[[1]],'q')
@@ -285,9 +306,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     details$nmix <- nmix
 
-    #################################################
+    ############################################
     ## Specialisations
-
+    ############################################
     if (CL & !(is.null(groups) | (detector(traps(capthist))=='cue'))) {
         groups <- NULL
         warning ("groups not valid with CL; groups ignored")
@@ -312,19 +333,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             stop ('Cannot use scaleg0 with groups')
     }
 
-    #################################
+    ############################################
     # Link functions (model-specific)
-    #################################
+    ############################################
     defaultlink <- list(D='log', g0='logit', sigma='log', z='log', w='log', pID='logit',
         beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog', pmix='logit',
         cuerate='log', cut='identity')
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
-
-# 2012-04-06    link[!(names(link) %in% pnames)] <- NULL
-# 2012-04-06    replace with
     link[!(names(link) %in% c(fnames,pnames))] <- NULL
-
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
     if (!(detector(traps(capthist))=='cue')) link$cuerate <- NULL
 
@@ -337,9 +354,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, dframe,
         naive = T, bygroup = !CL)
 
-    ###############################
+    ############################################
     # Prepare density design matrix
-    ###############################
+    ############################################
     D.modelled <- !CL & is.null(fixed$D)
     if (!D.modelled) {
        designD <- matrix(nrow = 0, ncol = 0)
@@ -369,10 +386,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         nDensityParameters <- length(Dnames)
     }
 
-    #############################
+    ############################################
     # Parameter mapping (general)
-    #############################
-
+    ############################################
     np <- sapply(design$designMatrices, ncol)
     np <- c(D = nDensityParameters, np)
     NP <- sum(np)
@@ -380,26 +396,27 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     names(parindx) <- names(np)
     if (!D.modelled) parindx$D <- NULL
 
-    ###################################################
-    # Option to generate start values from previous fit
-    ###################################################
+    ############################################
+    # Optionally start from previous fit
+    ############################################
 
     if (inherits(start, 'secr')) {
         ## use 'mapbeta' from score.test.R
         start <- mapbeta(start$parindx, parindx, coef(start)$beta, NULL)
     }
 
-    ###################################################
-    # send data to worker processes once, not each eval
-    ###################################################
+    ############################################
+    # send data to worker processes
+    # do it once, not each eval
+    ############################################
     if (ncores > 1) {
         clusterExport(clust, c("capthist", "mask", "groups",
             "design","design0", "detectfn"), envir = environment())
     }
 
-    #############################
+    ############################################
     # Single evaluation option
-    #############################
+    ############################################
     .localstuff$iter <- 0
     if (details$LLonly) {
       if (is.null(start))
@@ -410,7 +427,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
       LL <- - secr.loglikfn (beta = start,
                        parindx    = parindx,
                        link       = link,
-                       fixed      = fixed,
+                       fixedpar   = fixed,
                        designD    = designD,
                        design     = design,
                        design0    = design0,
@@ -428,28 +445,32 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
       return(c(logLik=LL))
     }
 
-    ###############################
+    ############################################
     # Start values (model-specific)
-    ###############################
-    ## 'start' is vector of beta values (i.e. transformed)
+    # 'start' is vector of beta values (i.e. transformed)
+    ############################################
 
     if (is.null(start)) {
         start3 <- list(D=NA, g0=NA, sigma=NA)
-
-          if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) { ## not for signal attenuation
+        ## not for signal attenuation
+        if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
             memo('Finding initial parameter values...', details$trace)
             ## autoini uses default buffer dbar * 4
             if (MS)
-                start3 <- autoini (capthist[[1]], mask[[1]]) ## Use session 1 - can be risky
+                ## Using session 1, but this can be risky
+                start3 <- autoini (capthist[[1]], mask[[1]],
+                                   binomN = details$binomN,
+                                   ignoreusage = details$ignoreusage)
             else
-                start3 <- autoini (capthist, mask)
+                start3 <- autoini (capthist, mask,
+                                   binomN = details$binomN,
+                                   ignoreusage = details$ignoreusage)
+
             if (any(is.na(unlist(start3)))) {
                 warning ("'secr.fit' failed because initial values not found",
-                    " (data sparse?); specify transformed values in 'start'")
+                         " (data sparse?); specify transformed values in 'start'")
                 return (list(call=cl, fit=NULL))
             }
-
-            ## 2012-07-24
             if (details$unmash & !CL) {
                 nmash <- attr(capthist[[1]], 'n.mash')
                 if (!is.null(nmash)) {
@@ -457,7 +478,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                     start3$D <- start3$D / n.clust
                 }
             }
-
             if (details$scaleg0 & anycount)
                 stop ("'scaleg0' not compatible with count detectors")
             ## next two stmts must be this order (g0 then sigma)
@@ -506,6 +526,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             }
             default$D <- 2 * nrow(tempcapthist) / (nrow(tempmask)*attr(tempmask,'area'))
             default$g0 <- sum(tempcapthist) / nrow(tempcapthist) / ncol(tempcapthist)
+            if (details$binomN > 1)
+                default$g0 <- default$g0 / details$binomN
+            if ((details$binomN == 1) & (detector(traps(capthist)) %in% c('polygon','transect'))) {
+                ## assume using usage for binomN
+                usge <- usage(traps(capthist))
+                default$g0 <- default$g0 / mean(usge[usge>0])
+            }
             default$sigma <- RPSV(tempcapthist)
         }
         if (is.na(default$sigma)) default$sigma <- 20
@@ -537,30 +564,31 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     NP <- NP + nmiscparm
     stopifnot (length(start) == NP)
 
-    ##########################
+    ############################################
     # Fixed beta parameters
-    ##########################
+    ############################################
     fb <- details$fixedbeta
     if (!is.null(fb)) {
         if (!(length(fb)== NP))
             stop ("invalid fixed beta - require NP-vector")
         if (sum(is.na(fb))==0)
             stop ("cannot fix all beta parameters")
-        start <- start[is.na(fb)]  ## drop unwanted betas; remember later to adjust parameter count
+        ## drop unwanted betas; remember later to adjust parameter count
+        start <- start[is.na(fb)]
         NP <- length(start)
     }
-    ##########################
+    ############################################
     # Variable names (general)
-    ##########################
+    ############################################
     betanames <- unlist(sapply(design$designMatrices, colnames))
     names(betanames) <- NULL
     realnames <- names(model)
     if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
     betanames <- sub('..(Intercept))','',betanames)
 
-    #################################
+    ############################################
     # Variable names (model-specific)
-    #################################
+    ############################################
 
     if (detector(traps(capthist))=='cue') {
         betanames <- c(betanames, 'cuerate')
@@ -570,46 +598,52 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         betanames <- c(betanames, 'muN', 'sdN')
         realnames <- c(realnames, 'muN', 'sdN')
     }
-
     ## allow for fixed beta parameters
     if (!is.null(details$fixedbeta))
         betanames <- betanames[is.na(details$fixedbeta)]
-
     betaw <- max(max(nchar(betanames)),8)   # for 'trace' formatting
 
-    #####################
+    ############################################
     # Maximize likelihood
-    #####################
+    ############################################
 
     memo('Maximizing likelihood...', details$trace)
-    if (details$trace) cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
+    if (details$trace)
+        cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
 
     loglikefn <- secr.loglikfn
     if (!is.null(q))
         stop ("mark-resight option not operative")
         ## loglikefn <- MRsecr.loglikfn
 
-    if (tolower(method) %in% c('newton-raphson', 'nr')) {
+    ## arguments always passed to loglikefn
+    secrargs <- list(
+                     link       = link,
+                     fixedpar   = fixed,
+                     parindx    = parindx,
+                     capthist   = capthist,
+                     mask       = mask,
+                     CL         = CL,
+                     detectfn   = detectfn,
+                     designD    = designD,
+                     design     = design,
+                     design0    = design0,
+                     groups     = groups,
+                     details    = details,
+                     logmult    = TRUE,     # add if possible
+                     ncores     = ncores,
+                     clust      = clust,
+                     betaw      = betaw)    # for trace format
+
+    ############################################
+    ## calls for specific maximisation methods
+    lcmethod <- tolower(method)
+    if (lcmethod %in% c('newton-raphson')) {
         args <- list (p         = start,
-                        f          = loglikefn,
-                        link       = link,
-                        fixed      = fixed,
-                        parindx    = parindx,
-                        capthist   = capthist,
-                        mask       = mask,
-                        CL         = CL,
-                        detectfn   = detectfn,
-                        designD    = designD,
-                        design     = design,
-                        design0    = design0,
-                        groups     = groups,
-                        details    = details,
-                        logmult    = TRUE,     ## add if possible
-                        ncores     = ncores,
-                        clust      = clust,
-                        betaw      = betaw,   # for trace format
-                        hessian    = tolower(details$hessian)=='auto',
-                        stepmax    = 10)
+                      f         = loglikefn,
+                      hessian   = tolower(details$hessian)=='auto',
+                      stepmax   = 10)
+        args <- c(args, secrargs)
         args <- replace (args, names(list(...)), list(...))
         this.fit <- do.call (nlm, args)
         this.fit$par <- this.fit$estimate     # copy for uniformity
@@ -618,36 +652,46 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             warning ("possible maximization error: nlm returned code ",
                 this.fit$code, ". See ?nlm")
     }
-    else {
+    #-----------------------------------------------------------------
+    else if (method %in% c("Nelder-Mead", "BFGS", "CG", "L-BFGS-B",
+                             "SANN", "Brent")) {
         args <- list(par     = start,
-                        fn         = loglikefn,
-                        link       = link,
-                        fixed      = fixed,
-                        parindx    = parindx,
-                        capthist   = capthist,
-                        mask       = mask,
-                        CL         = CL,
-                        detectfn   = detectfn,
-                        designD    = designD,
-                        design     = design,
-                        design0    = design0,
-                        groups     = groups,
-                        details    = details,
-                        logmult    = TRUE,     ## add if possible
-                        ncores     = ncores,
-                        clust      = clust,
-                        betaw      = betaw,   # for trace format
-                        hessian    = tolower(details$hessian)=='auto',
-                        method     = method)
+                     fn      = loglikefn,
+                     hessian = tolower(details$hessian)=='auto',
+                     method  = method)
+        args <- c(args, secrargs)
         args <- replace (args, names(list(...)), list(...))
         this.fit <- do.call (optim, args)
-        # default method = 'BFGS', control=list(parscale=c(1,0.1,5))
         if (this.fit$convergence != 0)
             warning ("probable maximization error: optim returned convergence ",
                 this.fit$convergence, ". See ?optim")
     }
 
-    this.fit$method <- method         ## remember what method we used...
+    #-----------------------------------------------------------------
+    # trial 2012-11-12
+    # else if (lcmethod %in% c('bhhh','nm','nr')) {
+    #     if (lcmethod == 'bhhh')
+    #         stop ('BHHH method not available yet, sorry')
+    #     args <- list (logLik = loglikefn,
+    #                   start  = start,
+    #                   method = method,
+    #                   neglik = FALSE)
+    #     args <- c(args, secrargs)
+    #     args <- replace (args, names(list(...)), list(...))
+    #     require(maxLik)
+    #     this.fit <- do.call (maxLik, args)
+    #     this.fit$par <- this.fit$estimate      # copy for uniformity
+    #     this.fit$value <- -this.fit$maximum    # copy for uniformity
+    #     this.fit$hessian <- -this.fit$hessian  # maximised LL
+    #     if (this.fit$code > 2)
+    #         warning ("possible maximization error: maxLik returned code ",
+    #             this.fit$code, ". See ?maxLik")
+    #  }
+    #-----------------------------------------------------------------
+    else stop ("maximisation method", method, "not recognised")
+    ############################################################################
+
+    this.fit$method <- method         ## remember which method we used...
     covar <- NULL
     N <- NULL
     if (this.fit$value > 1e9) {     ## failed
@@ -655,37 +699,18 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     else {
 
-
-        ############################
-        # Variance-covariance matrix
-        ############################
+    ############################################
+    ## Variance-covariance matrix
+    ############################################
 
         if (tolower(details$hessian)=='fdhess') {
             require (nlme)
             memo ('Computing Hessian with fdHess in nlme', details$trace)
             loglikfn <- function (beta) {
-               -secr.loglikfn(
-                            beta       = beta,
-                            parindx    = parindx,
-                            link       = link,
-                            fixed      = fixed,
-                            designD    = designD,
-                            design     = design,
-                            design0    = design0,
-                            capthist   = capthist,
-                            mask       = mask,
-                            detectfn   = detectfn,
-                            CL         = CL,
-                            groups     = groups,
-                            details    = details,
-                            logmult    = TRUE,     ## add if possible
-                            ncores     = ncores,
-                            clust      = clust,
-                            betaw      = betaw    ## for trace format
-                     )
+               do.call(secr.loglikfn, c(list(beta=beta), secrargs))
             }
             grad.Hess <- fdHess(this.fit$par, fun = loglikfn, .relStep = 0.001, minAbsPar=0.1)
-            this.fit$hessian <- -grad.Hess$Hessian
+            this.fit$hessian <- grad.Hess$Hessian
         }
 
         if (!is.null(this.fit$hessian)) {
@@ -717,9 +742,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
     }
 
+    ############################################
+    ## form output list
+    ############################################
+
     desc <- packageDescription("secr")  ## for version number
 
-    temp <- list (call = cl,
+    output <- list (call = cl,
                   capthist = capthist,
                   mask = mask,
                   detectfn = detectfn,
@@ -728,33 +757,33 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                   sessioncov = sessioncov,
                   groups = groups,
                   dframe = dframe,
-                  design = design,      ## added 2009 09 05
-                  design0 = design0,    ## added 2009 06 25
-                  start = start,        ## added 2009 09 09
+                  design = design,
+                  design0 = design0,
+                  start = start,
                   link = link,
                   fixed = fixed,
                   parindx = parindx,
                   model = model,
                   details = details,
-
                   vars = vars,
                   betanames = betanames,
                   realnames = realnames,
-
                   fit = this.fit,
                   beta.vcv = covar,
-#                 D = D,                   ## dropped 2011-11-10
-                  N = N,                   ## added 2011-11-10
-                  version = desc$Version,  ## added 2009 09 21
-                  starttime = starttime,   ## added 2009 09 21
+                  N = N,
+                  version = desc$Version,
+                  starttime = starttime,
                   proctime = (proc.time() - ptm)[3]
              )
 
-    class(temp) <- 'secr'
+    class(output) <- 'secr'
 
-    ## check introduced 2010-12-01 & adjusted 2011-09-28
-    ## bias.D not for polygon & transect detectors
+    ############################################
+    ## buffer bias check
+    ## not for polygon & transect detectors
     ## adjust for user-spec biasLimit 2012-01-10
+    ############################################
+
     validbiasLimit <- !is.null(biasLimit)
     validbiasLimit <- validbiasLimit & is.finite(biasLimit)
     validbiasLimit <- validbiasLimit & (biasLimit>0)
@@ -767,8 +796,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             nsess <- length(capthist)
             bias <- numeric(nsess)
             for (i in 1:nsess) {
-                biastemp <- try(bias.D(buffer, traps(capthist)[[i]], detectfn = temp$detectfn,
-                    detectpar = detectpar(temp)[[i]], noccasions = ncol(capthist[[i]])))
+                biastemp <- try( bias.D(buffer, traps(capthist)[[i]],
+                                        detectfn = output$detectfn,
+                                        detectpar = detectpar(output)[[i]],
+                                        noccasions = ncol(capthist[[i]]),
+                                        binomN = details$binomN) )
                 if (inherits(biastemp, 'try-error'))
                    warning('could not perform bias check')
                 else
@@ -776,10 +808,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             }
         }
         else {
-            bias <- try(bias.D(buffer, traps(capthist), detectfn=temp$detectfn,
-                detectpar = detectpar(temp), noccasions = ncol(capthist)))
-            if (inherits(bias, 'try-error'))
+            bias <- try( bias.D(buffer, traps(capthist),
+                                detectfn = output$detectfn,
+                                detectpar = detectpar(output),
+                                noccasions = ncol(capthist),
+                                binomN = details$binomN) )
+            if (inherits(bias, 'try-error')) {
                 warning('could not perform bias check')
+                bias <- 0  ## 2012-12-18 suppresses second message
+            }
             else
                 bias <- bias$RB.D
         }
@@ -788,7 +825,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                      "buffer = ", buffer)
     }
 
-    memo(paste('Completed in ', round(temp$proctime,2), ' seconds at ',
+    ############################################
+
+    memo(paste('Completed in ', round(output$proctime,2), ' seconds at ',
         format(Sys.time(), "%H:%M:%S %d %b %Y"),
         sep=''), details$trace)
 
@@ -796,6 +835,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         stopCluster(clust)
     }
 
-    temp
+    output
 
 }

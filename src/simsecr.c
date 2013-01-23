@@ -3,6 +3,8 @@
 
     2012-02-13 Tentatively extended for 'signalnoise' detectors 
 
+    2012-12-23 implemented variable effort EXCEPT polygon & transect detetcors
+
 */
 
 #include "secr.h"
@@ -86,7 +88,7 @@ void simsecr (
     int    *nmix,       /* number of classes */
     double *animals,    /* x,y points of animal range centres (first x, then y) */
     double *traps,      /* x,y locations of traps (first x, then y) */
-    int    *used,       /* ss x kk array of 0/1 codes for usage */
+    double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *btype,      /* code for behavioural response 
                            0 none
                            1 individual
@@ -109,7 +111,6 @@ void simsecr (
     int    *resultcode
 )
 {
-
     double d2val;
     double p;
     int    i,j,k,l,s;
@@ -127,6 +128,7 @@ void simsecr (
     double g0 = 0;
     double sigma = 0;
     double z = 0;
+    double Tski = 1.0;  
     double *work = NULL;
     double *noise = NULL;   /* detectfn 12,13 only */
     int    *sortorder = NULL;
@@ -201,7 +203,7 @@ void simsecr (
     double signalvalue;
     double noisevalue;
     double cut;
-
+    double *ex;
     /*========================================================*/
     /* MAIN LINE */
 
@@ -322,12 +324,17 @@ void simsecr (
             /* make tran */
             for (i=0; i<*N; i++) {  /* animals */
                 for (k=0; k<nk; k++) { /* traps */
-                    if (used[s * nk + k]) {                        
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
                         d2val = d2(i,k, animals, traps, *N, nk);
-                        p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);   /* effectively infinite w2 */
+                        p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);  /* effectively inf w2 */
+
+			if (fabs(Tski-1) > 1e-10) 
+			    p = 1 - pow(1-p, Tski);
+                        
                         event_time = randomtime(p);
                         if (event_time <= 1) {
                             tran[tr_an_indx].time   = event_time;
@@ -382,14 +389,16 @@ void simsecr (
             for (i=0; i<*N; i++) {
                 hsum[i] = 0;
                 for (k=0; k<nk; k++) {
-                        getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-			    bswitch (*btype, *N, i, k, caughtbefore), 
-                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
-                    d2val = d2(i,k, animals, traps, *N, nk);
-                    p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
-                    p = p * used[s * nk + k];           /* zero if not used */
-                    h[k * *N + i] = -log(1 - p);
-                    hsum[i] += h[k * *N + i];
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
+			getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
+				bswitch (*btype, *N, i, k, caughtbefore), 
+				gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
+			d2val = d2(i,k, animals, traps, *N, nk);
+			p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
+			h[k * *N + i] = - Tski * log(1 - p);
+			hsum[i] += h[k * *N + i];
+		    }
                 }
 
                 for (k=0; k<nk; k++) {
@@ -417,7 +426,8 @@ void simsecr (
         else if ((*detect >= 1) && (*detect <= 2)) {
             for (i=0; i<*N; i++) {
                 for (k=0; k<nk; k++) {
-                    if (used[s * nk + k]) {
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
@@ -428,13 +438,18 @@ void simsecr (
 
                         if (p>0) {
                             if (*detect == 1) {
-                                count = Random() < p;              /* binary proximity */
+				if (fabs(Tski-1) > 1e-10)
+				    p = 1 - pow(1-p, Tski);
+                                count = Random() < p;            /* binary proximity */
                             }
-                            else if (*detect == 2) {               /* count proximity */
-                                count = rcount(*binomN, p);
+                            else if (*detect == 2) {             /* count proximity */
+				if (*binomN == 1)
+				    count = rcount(round(Tski), p, 1);
+				else
+				    count = rcount(*binomN, p, Tski);
                             }
                             if (count>0) {
-                                if (caught[i]==0) {                /* first capture of this animal */
+                                if (caught[i]==0) {              /* first capture of this animal */
                                     nc++;
                                     caught[i] = nc;
                                     for (j=0; j<*ss; j++)
@@ -469,6 +484,7 @@ void simsecr (
                 getpar (i, s, 0, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 		    bswitch (*btype, *N, i, 0, caughtbefore), 
                     gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
+
                 maybecaught = Random() < g0;
 
                 if (w > (10 * sigma)) 
@@ -486,7 +502,8 @@ void simsecr (
                     xy[0] = xy[0] + animals[i];
                     xy[1] = xy[1] + animals[*N + i];
                     for (k=0; k<nk; k++) {                      /* each polygon */
-                        if (used[s * nk + k]) {
+			Tski = Tsk[s * nk + k];
+			if (fabs(Tski) > 1e-10) {
                             n1 = cumk[k];
                             n2 = cumk[k+1]-1;
                             inside(xy, &n1, &n2, &sumk, traps, gotcha);  /* assume closed */
@@ -513,6 +530,7 @@ void simsecr (
         /* -------------------------------------------------------------------------------- */
         /* exclusive transect detectors  */
         else if (*detect == 4) {
+	    ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
             for (i=0; i<*N; i++) {                            /* each animal */
                 animal.x = animals[i];
                 animal.y = animals[i + *N];
@@ -520,10 +538,11 @@ void simsecr (
                 /* ------------------------------------ */
                 /* sum hazard */
                 for (k=0; k<nk; k++) {            
-                    if (used[s * nk + k]) {
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
-                            bswitch (*btype, *N, i, k, caughtbefore), 
-                            gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
+				bswitch (*btype, *N, i, k, caughtbefore), 
+				gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
 	                par[0] = g0;
                         par[1] = sigma;
                         par[2] = z;
@@ -531,13 +550,14 @@ void simsecr (
                         n2 = cumk[k+1]-1;
                         stdint = gintegral1(*fn, par);
                         sumhaz += -log(1 - par[0] * integral1D (*fn, i, 0, par, 1, traps, 
-                            animals, n1, n2, sumk, *N) / stdint);
+			    animals, n1, n2, sumk, *N, ex) / stdint);
                     }
                 }
                 /* ------------------------------------ */
 
                 for (k=0; k<nk; k++) {                        /* each transect */
-                    if (used[s * nk + k]) {
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
    			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
@@ -548,7 +568,7 @@ void simsecr (
                         n2 = cumk[k+1]-1;
                         stdint = gintegral1(*fn, par);
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, traps, animals,
-                            n1, n2, sumk, *N) / stdint;
+						       n1, n2, sumk, *N, ex) / stdint;
     	                pks = (1 - exp(-sumhaz)) * (-log(1-lambdak)) / sumhaz;
                         count = Random() < pks;
                         maxg = 0;
@@ -613,7 +633,7 @@ void simsecr (
                 getpar (i, s, 0, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 		    bswitch (*btype, *N, i, 0, caughtbefore), 
                     gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
-                count = rcount(*binomN, g0);
+                count = rcount(*binomN, g0, Tski);
                 w = 10 * sigma;
                 par[0] = 1;
                 par[1] = sigma;
@@ -623,7 +643,8 @@ void simsecr (
                     xy[0] = xy[0] + animals[i];
                     xy[1] = xy[1] + animals[*N + i];
                     for (k=0; k<nk; k++) {                      /* each polygon */
-                        if (used[s * nk + k]) {
+			Tski = Tsk[s * nk + k];
+			if (fabs(Tski) > 1e-10) {
                             n1 = cumk[k];
                             n2 = cumk[k+1]-1;
                             inside(xy, &n1, &n2, &sumk, traps, gotcha);  /* assume closed */
@@ -654,11 +675,13 @@ void simsecr (
         /* -------------------------------------------------------------------------------- */
         /* transect detectors  */
         else if (*detect == 7) {
+	    ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
             for (i=0; i<*N; i++) {                            /* each animal */
                 animal.x = animals[i];
                 animal.y = animals[i + *N];
                 for (k=0; k<nk; k++) {                        /* each transect */
-                    if (used[s * nk + k]) {
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
  			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
@@ -669,8 +692,8 @@ void simsecr (
                         n2 = cumk[k+1]-1;
                         stdint = gintegral1(*fn, par);
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, traps, animals,
-                            n1, n2, sumk, *N) / stdint;
-                        count = rcount(*binomN, lambdak);    /* number of detections on transect */
+						       n1, n2, sumk, *N, ex) / stdint;
+                        count = rcount(*binomN, lambdak, Tski);  /* numb detections on transect */
                         maxg = 0;
                         if (count>0) {                       /* find maximum - approximate */
                             for (l=0; l<=100; l++) {
@@ -737,7 +760,8 @@ void simsecr (
 	    }
             for (i=0; i<*N; i++) {
                 for (k=0; k<nk; k++) {
-                    if (used[s * nk + k]) {
+		    Tski = Tsk[s * nk + k];
+		    if (fabs(Tski) > 1e-10) {
                         /* sounds not recaptured */
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 				0, gsb0, gsb0val, gsb0, gsb0val, &beta0, &beta1, &sdS);

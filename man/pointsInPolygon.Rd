@@ -17,7 +17,7 @@ pointsInPolygon(xy, poly, logical = TRUE)
 
   \item{poly}{2-column matrix or dataframe containing perimeter points of polygon, or
     a SpatialPolygonsDataFrame object from package \pkg{sp}, or a `mask'
-    object}
+    object (see Warning)}
 
   \item{logical}{logical to control the output when `poly' is a mask
   (see Details)}
@@ -49,6 +49,9 @@ same as first).
 \seealso{
 \code{\link[sp]{overlay}} 
 }
+
+\section{Warning}{If \code{poly} is a mask object then its cells must be
+aligned to the x- and y- axes}
 
 \examples{
 

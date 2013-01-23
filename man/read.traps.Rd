@@ -8,7 +8,7 @@
 
 \usage{
 read.traps(file = NULL, data = NULL, detector = "multi", covnames =
-NULL, ...)
+NULL, binary.usage = TRUE, ...)
 }
 
 \arguments{
@@ -16,7 +16,9 @@ NULL, ...)
   \item{data}{ data frame of detector coordinates }
   \item{detector}{ character string for detector type }
   \item{covnames}{ character vector of names for detector covariate
-  fields }
+    fields }
+  \item{binary.usage}{logical; if FALSE will read usage fields as
+  continuous effort}
   \item{\dots}{ other arguments to pass to \code{read.table} }
 }
 

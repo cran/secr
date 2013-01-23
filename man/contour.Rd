@@ -16,7 +16,7 @@ adds a conventional `boundary strip' to a detector (trap) array, where
 \usage{
 
 pdot.contour(traps, border = NULL, nx = 64, detectfn = 0,
-    detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = 5,
+    detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = NULL,
     binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly = NULL, plt = TRUE,
     add = FALSE, ...)
 
@@ -34,7 +34,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
   \item{detectpar}{ list of values for named parameters of detection
   function }
   \item{noccasions}{ number of sampling occasions}
-  \item{binomN}{ integer c ode for discrete distribution (see
+  \item{binomN}{ integer code for discrete distribution (see
   \code{\link{secr.fit}}) }
   \item{levels}{ vector of levels for p.(X)}
   \item{poly}{ matrix of two columns, the x and y
@@ -51,13 +51,16 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
 compute the p.(X) at each mask point.
 
 if \code{convex = FALSE}, \code{buffer.contour} constructs a mask and
-contours the points on the basis of distance to the nearest trap at the
+contours the points on the basis of distance to the nearest detector at the
 levels given in \code{buffer}.
 
 if \code{convex = TRUE}, \code{buffer.contour} constructs a set of
 potential vertices by adding points on a circle of radius =
 \code{buffer} to each detector location; the desired contour is the
 convex hull of these points (this algorithm derives from Efford, 2009).
+
+ If \code{traps} has a \link{usage} attribute then \code{noccasions} is
+  set accordingly; otherwise it must be provided.
 
 Increase \code{nx} for smoother lines, at the expense of speed.
 
@@ -72,9 +75,10 @@ Increase \code{nx} for smoother lines, at the expense of speed.
 
 \references{
 
-  Efford, M. G. (2009) \emph{DENSITY 4.4: software for spatially
-explicit capture--recapture}. Department of Zoology, University of
-Otago, Dunedin, New Zealand \url{http://www.otago.ac.nz/density}.
+  Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially
+explicit capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand
+\url{http://www.otago.ac.nz/density}.
 
 }
 
@@ -88,6 +92,9 @@ Otago, Dunedin, New Zealand \url{http://www.otago.ac.nz/density}.
   FALSE} (this will be passed via \dots to \code{contour}). Other useful
   arguments of \code{contour} are \code{col} (colour of contour lines)
   and \code{lwd} (line width).
+
+  You may wish to consider function gBuffer in package \pkg{rgeos} as an
+  alternative to \code{buffer.contour}..
   
 }
 
@@ -103,7 +110,7 @@ possumtraps <- traps(possumCH)
 plot(possumtraps, border = 270)
 pdot.contour(possumtraps, detectfn = 0, nx = 128, detectpar =
     detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
-    add = TRUE)
+    noccasions = 5, add = TRUE)
 
 ## clipping to polygon
 olddir <- setwd(system.file("extdata", package = "secr"))
@@ -112,7 +119,7 @@ oldpar <- par(xpd = TRUE, mar = c(1,6,6,6))
 plot(possumtraps, border = 400, gridlines = FALSE)
 pdot.contour(possumtraps, detectfn = 0, nx = 256, detectpar =
     detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
-    add = TRUE, poly = possumarea, col = "blue")
+    noccasions = 5, add = TRUE, poly = possumarea, col = "blue")
 lines(possumarea)
 setwd(olddir)
 par(oldpar)

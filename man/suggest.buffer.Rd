@@ -18,9 +18,10 @@ density estimates (M. Efford unpubl).
 
 \usage{
 suggest.buffer(object, detectfn = NULL, detectpar = NULL, 
-    noccasions = NULL, RBtarget = 0.001, interval = NULL, ...)
+    noccasions = NULL, ignoreusage = FALSE, RBtarget = 0.001,
+    interval = NULL, binomN = NULL, ...)
 
-bias.D (buffer, traps, detectfn, detectpar, noccasions,
+bias.D (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL,
     control = NULL)
 
 }
@@ -32,8 +33,13 @@ bias.D (buffer, traps, detectfn, detectpar, noccasions,
   \item{detectpar}{ list of values for named parameters of detection
   function -- see \link{detectpar} }
   \item{noccasions}{ number of sampling occasions}
+  \item{ignoreusage}{logical for whether to discard usage information from
+    \code{traps(capthist)}}
   \item{RBtarget}{ numeric target for relative bias of density estimate }
-  \item{interval}{ a vector containing the end-points of the interval to be searched }
+  \item{interval}{ a vector containing the end-points of the interval to
+    be searched }
+  \item{binomN}{ integer code for distribution of counts (see
+  \code{\link{secr.fit}}) }
   \item{...}{ other argument(s) passed to \code{bias.D} }
   \item{buffer}{ vector of buffer widths }
   \item{traps}{ `traps' object }

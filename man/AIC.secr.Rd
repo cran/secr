@@ -2,6 +2,7 @@
 \alias{AIC.secr}
 \alias{logLik.secr}
 \alias{AIC.secrlist}
+\alias{secrlist}
 
 \title{ Compare SECR Models }
 
@@ -17,6 +18,7 @@ Information Criterion) are preferred.
 \method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10)
 \method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10)
 \method{logLik}{secr}(object, ...)
+secrlist(...)
 }
 
 \arguments{
@@ -54,6 +56,11 @@ model-averaged estimates of real or beta parameters with
 Anderson 2002).
 
 The argument \code{k} is included for consistency with the generic method \code{AIC}.
+
+\code{secrlist} forms a list of fitted models (an object of class
+`secrlist') from the fitted models in \dots.  Arguments may include
+secrlists. If secr components are named the model names will be retained
+(see Examples).
 
 }
 
@@ -106,6 +113,11 @@ overdispersion has yet to be addressed (cf QAIC in MARK).
 ## secrdemo.b has a learned trap response
 
 AIC(secrdemo.0, secrdemo.b)
+
+## Form secrlist and pass to AIC.secr
+temp <- secrlist(null = secrdemo.0, learnedresponse = secrdemo.b)
+AIC(temp)
+
 }
 
 \keyword{ models }

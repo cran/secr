@@ -4,6 +4,7 @@
 #define huge 1e10
 #define maxnpoly 1000   
 #define maxnmix 2    
+#define maxvertices 200    
 
 /* source to include */
 #include <math.h>
@@ -42,12 +43,12 @@ typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, 
 
 typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
    double[], int, double[], double[], int[], int, int, int, int, int, int, gfnptr, double[],
-   double[], double[], double);
+   double[], double [], double[], double);
 /*
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
      int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[], 
-     double traps[], double mask[], double minp);
+     double traps[], double Tsk[], double mask[], double minp);
 */
 
 typedef double (*fnptr)(double[], double);
@@ -60,38 +61,50 @@ typedef double (*fnptr)(double[], double);
 /* secr.c */
 /*---------*/
 
-void pdotpoint (double *xy, int *nxy, double *traps, int *used, int *kk, int *fn, 
-               double *par, int *nocc, double *w2, int *binomN, double *value);
+void pdotpoint (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *kk, 
+               int *fn, double *par, int *nocc, double *w2, int *binomN, double *value);
 
-void pdotpoly (double *xy, int *nxy, double *traps, int *used, int *nk, 
+void pdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk, 
 	       int *kk, int *fn, double *par, int *nocc, int *binomN, double *value);
 
-void pdottransect (double *xy, int *nxy, double *traps, int *used, int *nk, 
-    int *kk, int *fn, double *par, int *nocc, int *binomN, double *value);
+/*
+void pdottransect (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk, 
+               int *kk, int *fn, double *par, int *nocc, int *binomN, double *value);
+*/
 
 void integralprw1 (
     int    *detect,    /* detector 0 multi, 1 proximity etc. */
     int    *param,     /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
     double *gsb0val,   /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    int    *nc,        /* number of individuals */   
+    int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] !!!!!*/
+    int    *nc,        /* number of individuals */
     int    *ss,        /* number of occasions */
     int    *kk,        /* number of traps */
     int    *mm,        /* number of points on mask */
-    int    *nmix,      /* number of mixtures */ 
+    int    *gg,          /* number of groups   !!!!! */
+    int    *nmix,      /* number of mixtures */
     double *traps,     /* x,y locations of traps (first x, then y) */
+    double *Tsk,       /* s x k matrix effort on occasion s at at detector k */
     double *mask,      /* x,y points on mask (first x, then y) */
     int    *cc0,       /* number of g0/sigma/b combinations [naive animal] */
-    int    *gsb0,      /* lookup which g0/sigma/b to use for given n, S, K [naive animal] */
-    int    *ncol,      /* number of columns in gsb0; added 2009 06 25 */
+    int    *PIA0,      /* lookup which g0/sigma/b combination to use for given n, S, K
+                          [naive animal] */
+    int    *ncol,      /* number of columns in PIA0; added 2009 06 25 */
     double *area,      /* area associated with each mask point (ha) */
-    double *miscparm,  /* miscellaneous parameters */
-    int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, etc. */
+    double *miscparm,  /* miscellaneous parameters (cuerate etc) */
+    int    *fn,        /* codes
+                          0 = halfnormal,
+                          1 = hazard rate,
+                          2 = exponential,
+                          9 = binary signal strength,
+                          10 = signal strength,
+                          11 = signal strength spher, */
     int    *binomN,    /* number of trials for 'count' detector modelled with binomial */
-/*    double *cut,     transformed signal strength threshold for detection */
     int    *useD,      /* logical : does third column of mask contain D weight? 2011-05-05 */
     double *a,         /* return value integral of pr(w0) */
     int    *resultcode /* 0 for successful completion */
-);
+    );
+
 /*---------------------------------------------------------------------*/
 
 void secrloglik (
@@ -110,6 +123,7 @@ void secrloglik (
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
@@ -166,6 +180,7 @@ void naived (
     double *sigma,      /* Parameter : detection scale */
     int    *kk,         /* number of traps */
     int    *nc,
+    int    *wt,         /* integer weights */
     double *traps,      /* x,y locations of traps (first x, then y) */
     double *animals,    /* x,y locations of traps (first x, then y) */
     int    *fn,         /* code 0 = halfnormal ONLY */
@@ -178,6 +193,7 @@ void naiveRPSV (
     double *z,          /* parameter : detection shape (probably fixed) */
     int    *kk,         /* number of traps */
     int    *nc,
+    int    *wt,         /* integer weights */
     double *traps,      /* x,y locations of traps (first x, then y)   */
     double *animals,    /* x,y locations of animals (first x, then y) */
     int    *fn,         /* code 0 = halfnormal ONLY */
@@ -192,6 +208,7 @@ void naivecap2 (
     int    *ss,         /* number of occasions */
     int    *kk,         /* number of traps */
     int    *mm,
+    int    *wt,         /* integer trap weights */
     double *traps,      /* x,y locations of traps (first x, then y) */
     double *mask,       /* x,y points on mask (first x, then y) */
     int    *fn,         /* code 0 = halfnormal ONLY */
@@ -233,6 +250,7 @@ void pwuniform (
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     int    *cc,          /* number of g0/sigma/b combinations  */
@@ -266,7 +284,7 @@ void simsecr (
     int    *nmix,       /* number of classes */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
-    int    *used,       /* ss x kk array of 0/1 codes for used */
+    double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *btype,      /* code for behavioural response 0 none 1 b 2 bk 3 k */
     int    *Markov,     /* code 0 if behavioural response is learned, 1 if Markov */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
@@ -295,7 +313,7 @@ void trappingpolygon (
     int    *N,           /* number of animals */
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
-    int    *used,        /* ss x npoly array of 0/1 codes for usage */
+    double *Tsk,         /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,          /* truncation radius */
     int    *binomN,      /* 0 poisson, 1 Bernoulli, or number of trials for 
@@ -337,7 +355,7 @@ void trappingpolygonX (
     int    *N,           /* number of animals */
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
-    int    *used,        /* ss x npoly array of 0/1 codes for usage */
+    double *Tsk,         /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,          /* truncation radius */
     int    *n,           /* number of individuals detected */
@@ -358,7 +376,7 @@ void trappingtransect (
     int    *N,           /* number of animals */
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
-    int    *used,        /* ss x ntransect array of 0/1 codes for usage */
+    double *Tsk,         /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,          /* truncation radius */
     int    *binomN,      /* 0 poisson, 1 Bernoulli, or number of trials for 
@@ -382,7 +400,7 @@ void trappingtransectX (
     int    *N,           /* number of animals */
     double *animals,     /* x,y points of animal range centres (first x, then y)  */
     double *traps,       /* x,y polygon vertices (first x, then y)  */
-    int    *used,        /* ss x ntransect array of 0/1 codes for usage */
+    double *Tsk,         /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,          /* truncation radius */
     int    *n,           /* number of individuals detected */
@@ -406,7 +424,7 @@ void trappingsignal (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
-    int    *used,      /* ss x kk array of 0/1 codes for usage */
+    double *Tsk,       /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,        /* code 10 = signal strength, 11 = signal strength with spherical spr */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
@@ -426,7 +444,7 @@ void trappingtimes (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
-    int    *used,      /* ss x kk array of 0/1 codes for usage */
+    double *Tsk,       /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
     int    *n,         /* number of individuals caught */
@@ -446,7 +464,7 @@ void trappingcount (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
-    int    *used,       /* code 0 unused 1 used for each trap x occasion */
+    double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 11 = normal signal */
     double *w2,         /* truncation radius */
     int    *binomN,     /* number of trials for 'count' detector modelled with binomial */
@@ -466,7 +484,7 @@ void trappingmulti (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
-    int    *used,       /* code 0 unused 1 used for each trap x occasion */
+    double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
     int    *n,          /* number of individuals caught */
@@ -485,7 +503,7 @@ void trappingsingle (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
-    int    *used ,      /* code 0 unused 1 used for each trap x occasion */
+    double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
     int    *n,          /* number of individuals caught */
@@ -637,7 +655,28 @@ double d2 (
     double A2[],
     int A1rows,
     int A2rows);
-/*---------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------------*/
+
+/* customised dpois */
+double gpois (int count, double lambda, int uselog);
+/*--------------------------------------------------------------------------*/
+
+/* customised dbinom */
+double gbinom(int count, int size, double p, int uselog);
+/*--------------------------------------------------------------------------*/
+
+/* customised dnbinom parameterised as size, mu */
+double gnbinom (int count, int size, double mu, int uselog);
+/*--------------------------------------------------------------------------*/
+
+/* binomial density allowing non-integer (floating point) size */
+double gbinomFP (int count, double size, double p, int uselog);
+/*--------------------------------------------------------------------------*/
+
+/* probability of count with distribution specified by binomN */
+double countp (int count, int binomN, double lambda);
+/*--------------------------------------------------------------------------*/
 
 double mufn (
     int k,
@@ -672,7 +711,7 @@ double Random ();
 
 double distance (struct rpoint p1, struct rpoint p2);
 
-double rcount (int binomN, double lambda);
+double rcount (int binomN, double lambda, double Tsk);
 /*---------------------------------------------------------------------*/
 
 struct rpoint getxy(
@@ -691,20 +730,6 @@ double gintegral1 (
     double par[]);
 /*---------------------------------------------------------------------*/
 
-double integral1D (
-    int fn, 
-    int m, 
-    int c, 
-    double gsbval[], 
-    int cc, 
-    double traps[], 
-    double mask[], 
-    int n1, 
-    int n2, 
-    int kk, 
-    int mm);
-/*---------------------------------------------------------------------*/
-
 double randomtime (double p);
 /*---------------------------------------------------------------------*/
 
@@ -720,6 +745,7 @@ double gr (
     struct rpoint animal);
 /*---------------------------------------------------------------------*/
 
+/* random point from 2-D radial distribution specified by g function */
 void gxy (
     int *n, 
     int *fn,
@@ -767,3 +793,16 @@ void alongtransect (
     double *tol,
     double *along);
 /*---------------------------------------------------------------------*/
+
+/* for transect detectors */
+double integral1D
+    (int fn, int m, int c, double gsbval[], int cc, double traps[],
+     double mask[], int n1, int n2, int kk, int mm, double ex[]);
+/*---------------------------------------------------------------------*/
+
+/* for polygon detectors */
+double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[],
+		    double mask[], int n1, int n2, int kk, int mm, double ex[]);
+
+/*---------------------------------------------------------------------*/
+

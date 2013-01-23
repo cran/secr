@@ -7,6 +7,7 @@
 ## 2011 12 20 maxtries argument
 ## 2012-11-02 ncores
 ## 2012-11-02 proctime[3]
+## 2012-12-30 usage OK
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
@@ -40,14 +41,17 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     noccasions <- ncol(capthist)
 
     if (length(boxsize)==1) boxsize <- rep(boxsize, np)
-    else if (boxsize != np)
+    else if (length(boxsize) != np)
         stop ("invalid boxsize vector")
-    if (is.null(mask)) core <- expand.grid(x=range(traps$x),y=range(traps$y))
+    if (is.null(mask))
+        core <- expand.grid(x = range(traps$x), y = range(traps$y))
+    else
+        core <- NULL
 
     ## added 2012-11-02
     if (ncores > 1) {
         require(parallel)
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
+        clust <- makeCluster(ncores, methods = TRUE, useXDR = FALSE)
         clusterEvalQ(clust, library(secr))
         clusterExport(clust, c("capthist", "predictorfn", "predictortype",
                                "maxtries", "negloglikM0", "negloglikMb",
@@ -65,6 +69,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         detectpar <- as.list(parval[-1])
         names(detectpar) <- pnames[-1]
         detectpar[['g0']] <- invodds(detectpar[['g0']])
+
         attempts <- 0
         repeat {
             if (is.null(mask))
@@ -146,11 +151,11 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
             if (ncores > 1) {
                 list(...) # evaluate any promises cf boot
-                newsim <- parRapply(clust, basedesign, simfn)
+                newsim <- parRapply(clust, basedesign, simfn, ...)   ## ...added 2012-11-08
                 newsim <- t(matrix(newsim, ncol = nrow(basedesign)))
             }
             else {
-                newsim <- t(apply(basedesign,1,simfn))
+                newsim <- t(apply(basedesign,1,simfn, ...))   ## ...added 2012-11-080
             }
 
             OK <- (newsim[,3]>0) & (!is.na(newsim[,3]))  ## require valid RPSV

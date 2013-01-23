@@ -54,7 +54,7 @@ In \code{secr.fit} the output component `proctime' misrepresents the
 elapsed processing time when multiple cores are used.
 
 Worker processes are created in \code{secr.fit} with \code{makeCluster}
-and the options \code{methods = FALSE, useXDR = FALSE}. This has been
+and the options \code{methods = FALSE}, \code{useXDR = FALSE}. This has been
 tested only on Windows systems.
 
 The code used internally by \pkg{secr} is quite simple and could be

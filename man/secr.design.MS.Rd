@@ -1,13 +1,17 @@
 \name{secr.design.MS}
 \alias{secr.design.MS}
+\alias{make.lookup}
+
 \title{ Construct Detection Model Design Matrices and Lookups }
 \description{
-  Internal function used by \code{\link{secr.fit}}. 
+  Internal functions used by \code{\link{secr.fit}}. 
 }
 \usage{
-secr.design.MS(capthist, models, timecov = NULL, sessioncov = NULL, 
+secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
     groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
     ...)
+
+make.lookup (tempmat)
 }
 \arguments{
   \item{capthist}{ \code{capthist} object }
@@ -18,7 +22,9 @@ secr.design.MS(capthist, models, timecov = NULL, sessioncov = NULL,
   \item{dframe}{ optional data frame of design data for detection parameters }
   \item{naive}{ logical if TRUE then modelled detection probability is for a naive animal (not caught previously); if FALSE then detection probability is contingent on individual's history of detection }
   \item{bygroup}{ logical if TRUE then the individual dimension of the parameter matrix is automatically collapsed to one row per group; if FALSE then the full dimensionality is retained (one row per individual) }
-  \item{\dots}{ other arguments passed to the \R function \code{\link{model.matrix}} }
+  \item{\dots}{ other arguments passed to the \R function
+    \code{\link{model.matrix}} }
+  \item{tempmat}{matrix for which row lookup required}
 }
 \details{
 
@@ -39,7 +45,7 @@ detector.
 }
 \value{
   
-  A list with the components
+  For \code{secr.design.MS}, a list with the components
   
   \item{designMatrices}{ list of reduced design matrices, one for each
     real detection parameter }
@@ -52,7 +58,10 @@ detector.
 
   \item{PIA}{ Parameter Index Array - index to row of parameterTable for
     a given session, animal, occasion and detector; dim(PIA) = c(R,n,S,K) }
-  
+
+  For \code{make.lookup}, a list with components
+  \item{lookup}{ matrix of unique rows}
+  \item{index}{ indices in lookup of the original rows}
 }
 
 \examples{

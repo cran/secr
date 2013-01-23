@@ -3,10 +3,6 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 # Return scaled Pr(wi|X) for one nominated detection history,
 # where X holds coordinates of points
 
-    MS <- ms(object)
-    if (MS) sessionlevels <- session(object$capthist)   ## was names(capthist) 2009 08 15
-    else sessionlevels <- 1
-
     X <- matrix(unlist(X), ncol = 2)
     beta <- coef(object)$beta
     details <- object$details
@@ -15,17 +11,14 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
                                        object$link, object$fixed)
 
     #--------------------------------------------------------------------
-
     D.modelled <- !object$CL & is.null(object$fixed$D)
     if (D.modelled)
         if (object$model$D != ~1)
             stop ("fxi.secr requires uniform density")
     #--------------------------------------------------------------------
 
-    ####################################################
-
     ## in multi-session case must get session-specific data from lists
-    if (MS) {
+    if (ms(object)) {
         session.capthist <- object$capthist[[sessnum]]
         session.traps    <- traps(object$capthist)[[sessnum]]
         session.mask     <- object$mask[[sessnum]]
@@ -39,11 +32,16 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 
     #--------------------------------------------------------------------
 
-    used <- usage(session.traps)
-    if (!is.null(used)) {
-        if (sum (used) != (ndetector(session.traps) * ncol(used)))
-            stop ("fxi.secr is not implemented for incomplete usage")
-    }
+#     2012-12-12 remove restriction
+#    used <- usage(session.traps)
+#    if (!is.null(used)) {
+#        if (sum (used) != (ndetector(session.traps) * ncol(used)))
+#            stop ("fxi.secr is not implemented for incomplete usage")
+#    }
+
+    xylist <- attr(session.capthist,'xylist')
+    if (!is.null(xylist))
+        stop ("fxi.secr is not implemented for telemetry models")
 
     if (nrow(session.capthist)==0)
         stop ("no data for session ", sessnum)
@@ -71,7 +69,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         ngrp <- 1
     }
 
-    if ((dettype == 5) | (dettype == 9)) {    # signal strength
+    if (dettype %in% c(5,9,12)) {    # signal strength
         session.signal <- signal(session.capthist)
         session.signal <- switch( details$tx,
             log = log(session.signal),
@@ -84,23 +82,44 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     else
         session.signal <- 0
 
-    if (dettype %in% c(3,4,6,7)) {
+        ## miscparm is used to package beta parameters that are not modelled
+        ## and hence do not have a beta index specified by parindx.
+        ## This includes the signal threshold and the mean and sd of noise.
+
+    miscparm <- c(0,0,0)
+    if (object$detectfn %in% c(12,13))   ## experimental signal-noise
+        miscparm[] <- c(details$cutval,coef(object)[max(unlist(object$parindx))+1:2])   ## fudge: last 2
+    else if (object$detectfn %in% c(10,11))  ## Dawson&Efford 2009 models
+        miscparm[] <- details$cutval
+
+#    if (detector(session.traps)=='cue') {
+#        miscparm <- exp(coef(object)['cuerate','beta'])
+#    }
+
+    if (dettype %in% c(3,6,13)) {    # polygonX, polygon, telemetry
         k <- table(polyID(session.traps))
         K <- length(k)
-        k <- c(k,0)
+        k <- c(k,0)   ## zero terminate
         session.xy <- xy(session.capthist)
     }
     else {
-        k <- nrow(session.traps)
-        K <- k
-        session.xy <- 0
+        if (dettype %in% c(4,7)) {
+            k <- table(transectID(session.traps))
+            K <- length(k)
+            k <- c(k,0) ## zero terminate
+            session.xy <- xy(session.capthist)
+        }
+        else {
+            k <- nrow(session.traps)
+            K <- k
+            session.xy <- 0
+        }
     }
-
-#    if (dettype == 8) {    # times -- phony use of 'signal'
-#        session.signal <- times(session.capthist)
-#    }
-
+    binomN <- details$binomN
     trps  <- unlist(session.traps, use.names=F)
+    usge <- usage(session.traps)
+    if (is.null(usge))
+        usge <- matrix(1, nrow=K, ncol = s)
 
     #------------------------------------------
     # allow for scaling of detection parameters
@@ -125,7 +144,6 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         Dtemp <- NA
     Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
 
-
     if (!all(is.finite(Xrealparval))) {
         cat ('beta vector :', beta, '\n')
         stop ("invalid parameters in 'pwuniform'")
@@ -133,13 +151,6 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 
     sessg <- 1   ## max one group
     indices <- object$design$PIA[sessg,1:nc,1:s,1:K,]
-
-    if (detector(session.traps)=='cue') {
-        miscparm <- exp(coef(object)['cuerate','beta'])
-    }
-    else {
-        miscparm <- details$cutval
-    }
 
 # print(i)
 # print(nrow(X))
@@ -164,6 +175,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 # print(dim(indices))
 # print(Xrealparval)
 # print(head(trps))
+# print(head(usge))
 # print(cell)
 # print(nrow(session.mask))
 
@@ -185,6 +197,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         as.integer(ngrp),
         as.integer(details$nmix),
         as.double(trps),
+        as.double(usge),
         as.double(session.mask),
         as.double(Xrealparval),
         as.integer(nrow(Xrealparval)), # number of rows in lookup table
@@ -193,7 +206,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         as.double(miscparm),
         as.integer(normal),
         as.integer(object$detectfn),
-        as.integer(details$binomN),
+        as.integer(binomN),
         as.double(details$minprob),
         value=double(nrow(X)),
         resultcode=integer(1))
@@ -289,7 +302,6 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         templines <- label.levels(templines)
 
         wh <- which.max(unlist(lapply(templines, function(y) y$level)))
-
         if (length(templines) > 0) {   ## 2011-04-14
             cc <- templines[[wh]]
             cc <- data.frame(cc[c('x','y')])
@@ -309,7 +321,8 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         }
         templines
     }
-    temp <- sapply(1:i, fxi)
+    #temp <- sapply(1:i, fxi)  ## fixed 2012-11-09
+    temp <- lapply(i, fxi)
 
     if (plt)
         invisible(temp)

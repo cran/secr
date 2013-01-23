@@ -667,7 +667,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     ## otherwise assume K,S,n
                     used <- aperm(used, c(3,1,2))
                 }
-                PIA[1, , , ,] <- PIA[1, , , ,] * rep(used,nmix)
+                # 2012-12-17
+                # PIA[1, , , ,] <- PIA[1, , , ,] * rep(used,nmix)
+                PIA[1, , , ,] <- PIA[1, , , ,] * rep(used>0,nmix)
             }
             else for (r in 1:R) {
                 ## 2011-11-28 - fix bug Deb Wilson 25/11/2011
@@ -677,7 +679,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     if (length(dim(temp)) == 3)
                         stop("3-D usage not available with multiple sessions")
                     use[1:nrow(temp), 1:ncol(temp)] <- temp  # padding
-                    PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
+                    # 2012-12-17
+                    # PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
+                    PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use>0,rep(n,S*K)),nmix)
                 }
             }
         }

@@ -66,6 +66,11 @@ read.SPACECAP(AC, TD, detector = "proximity", session = "1")
 }
 \references{
   
+Gopalaswamy, A.M., Royle, J.A., Hines, J.E., Singh, P., Jathanna, D.,
+Kumar, N.S. and Karanth, K.U. (2012) Program SPACECAP: software for
+estimating animal density using spatially explicit capture--recapture
+models. \emph{Methods in Ecology and Evolution} \bold{3}, 1067--1072.
+
 Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and Karanth,
 K. U. (2010) SPACECAP: A program to estimate animal abundance and
 density using Bayesian spatially explicit capture-recapture

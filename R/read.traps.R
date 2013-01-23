@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## read.traps.R
-## last changed 2011-02-20
+## 2012-12-18 binary.usage
 ## Read detector locations from text file in DENSITY format
 ############################################################################################
 
@@ -15,7 +15,8 @@ renamepolyrows <- function (tr) {
     tr
 }
 
-read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames = NULL, ...)
+read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames = NULL,
+                        binary.usage = TRUE,  ...)
 ## possibly add sortrows argument, but risk breaking covariates, polygon etc.
 {
 
@@ -104,31 +105,49 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 temp2 <- temp[,3]
             splitfield <- matrix(unlist(strsplit(as.character(temp2),'/')),
                 byrow = T, nrow = length(temp2))                            # before '/'
-            used <- gsub(' ','', splitfield[,1,drop=FALSE])                 # remove blanks
-            used <- gsub('//t','', used)                                    # remove tabs
-            used <- gsub(',','', used)                                      # remove commas
-            nocc <- max(nchar(used))
 
-            if (nocc>0) {
+            if (binary.usage) {
+                used <- gsub(' ','', splitfield[,1,drop=FALSE])                 # remove blanks
+                used <- gsub('//t','', used)                                    # remove tabs
+                used <- gsub(',','', used)                                      # remove commas
+                nocc <- max(nchar(used))
+                if (nocc>0) {
+                    if (detector %in% .localstuff$polydetectors) {
+                        used <- used[tempindex]
+                        nocc <- max(nchar(used))   ## recompute
+                        if (any(nchar(used) != nocc))
+                            stop ("'usage' fields suggest varying number ",
+                                  "of occasions")
+                        usge <- (matrix(unlist(strsplit(used,split='')),
+                             byrow = TRUE, ncol = nocc)>0) * 1
+                        dimnames(usge) <- list( tempID, 1:nocc)
+                        usage(traps) <- usge
+                    }
+                    else {
+                        if (any(nchar(used) != nocc))
+                            stop ("'usage' fields suggest varying number ",
+                                  "of occasions")
+                        usge <- (matrix(unlist(strsplit(used,split='')),
+                            byrow = TRUE, ncol = nocc)>0) * 1
+                        dimnames(usge) <- list(dimnames(traps)[[1]], 1:nocc)
+                        usage(traps) <- usge
+                    }
+                }
+            }
+            else {
+                ## tentative 2012-12-18
+                tempcon <- textConnection(splitfield[,1, drop = FALSE])
+                usge <- as.matrix(read.table(tempcon))
+                close(tempcon)
+                nocc <- ncol(usge)
                 if (detector %in% .localstuff$polydetectors) {
-                    used <- used[tempindex]
-                    nocc <- max(nchar(used))   ## recompute
-                    if (any(nchar(used) != nocc))
-                        stop ("'usage' fields suggest varying number ",
-                              "of occasions")
-                    usage(traps) <- matrix(unlist(strsplit(used,split='')),
-                                           byrow=T, ncol = nocc)>0
-                    dimnames(attr(traps, 'usage')) <- list( tempID, 1:nocc)
+                    usge <- usge[tempindex,]
+                    dimnames(usge) <- list( tempID, 1:nocc)
                 }
                 else {
-                    if (any(nchar(used) != nocc))
-                        stop ("'usage' fields suggest varying number ",
-                              "of occasions")
-                    usage(traps) <- matrix(unlist(strsplit(used,split='')),
-                                           byrow=T, ncol = nocc)>0
-                    dimnames(attr(traps, 'usage')) <- list(dimnames(traps)[[1]],
-                                           1:nocc)
+                    dimnames(usge) <- list(dimnames(traps)[[1]], 1:nocc)
                 }
+                usage(traps) <- usge
             }
 
             if (ncol(splitfield)>1) {
@@ -154,8 +173,11 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             }
         }
     }
-    attr(traps,'spacex') <- min(dist(unique(traps$x)))
-    attr(traps,'spacey') <- min(dist(unique(traps$y)))
+
+    ux <- unique(traps$x)
+    uy <- unique(traps$y)
+    attr(traps,'spacex') <- ifelse (length(ux)>1, min(dist(ux)), NA)
+    attr(traps,'spacey') <- ifelse (length(uy)>1, min(dist(uy)), NA)
     spacing(traps) <- spacing(traps)   ## !!
     traps
 }

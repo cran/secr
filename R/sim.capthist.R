@@ -145,15 +145,15 @@ sim.capthist <- function (
         if (is.null(detector(traps)))
             stop ("'traps' lacks detector type")
 
-        usage <- usage(traps)
-        if (is.null(usage))
-            usage <- matrix (1, nrow = ndetector(traps), ncol = noccasions)
+        usge <- usage(traps)
+        if (is.null(usge))
+            usge <- matrix (1, nrow = ndetector(traps), ncol = noccasions)
         else {
-            if (nrow(usage) != ndetector(traps))
+            if (nrow(usge) != ndetector(traps))
                 stop ("invalid usage matrix; number of rows ",
                       "must match number of detectors")
-            if (ncol(usage) != noccasions) {
-                noccasions <- ncol(usage)
+            if (ncol(usge) != noccasions) {
+                noccasions <- ncol(usge)
                 warning ("'noccasions' does not match usage ",
                          "attribute of 'traps'; ignored")
             }
@@ -206,6 +206,15 @@ sim.capthist <- function (
         ##   12  signal-noise (signalnoise detectors only)
         ##   13  signal-noise with spherical spreading (signalnoise detectors only)
 
+        ## 2012-12-23
+        if (!is.null(usage(traps))) {
+            if (!is.null(noccasions)) {
+                if (noccasions != ncol(usage(traps)))
+                    warning ("noccasions differs from ncol(usage); using latter")
+            }
+            noccasions <- ncol(usage(traps))
+        }
+
         ## extended for uniform (detectfn=4) 2010-06-13
         if (detectfn %in% c(0:4))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
         if (detectfn %in% c(5))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
@@ -219,12 +228,15 @@ sim.capthist <- function (
             sdS = 2, cutval = 10, muN = 40, sdN = 2, sdM = 0, tx = 'identity')
         else defaults <- c(defaults, list(truncate = 1e+10))
 
-        ## changed 2011-01-28
         defaults$binomN <- 0
         if (detector(traps) == 'proximity') defaults$binomN <- 1
         if (detector(traps) %in% c('signal','signalnoise')) defaults$binomN <- 1
         if (detector(traps) == 'cue') defaults$cuerate <- 3
-        if (!is.null(binomN)) detectpar$binomN <- binomN
+        if (!is.null(binomN)) {
+            if ((detector(traps) == 'count') & (tolower(binomN) == 'usage'))
+                binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
+            detectpar$binomN <- binomN
+        }
         detectpar <- replacedefaults(defaults, detectpar)
 
         if (detectfn %in% c(0,1,2,3,4,5,6,7)) {
@@ -232,10 +244,12 @@ sim.capthist <- function (
             sigma <- expand(detectpar$sigma, noccasions)
             z     <- expand(ifelse(detectfn %in% c(5,6),
                 detectpar$w, detectpar$z), noccasions)
-            if ((detector(traps) %in% .localstuff$countdetectors) &
-               (detectpar$binomN != 1))
-                validatepar(g0, c(0,Inf))
-            else validatepar(g0, c(0,1))
+            if (detector(traps) %in% .localstuff$countdetectors) {
+                if (detectpar$binomN == 0)
+                    validatepar(g0, c(0,Inf))  ## Poisson lambda
+                else
+                    validatepar(g0, c(0,1))    ## Binomial p
+            }
             validatepar(sigma, c(1e-10,Inf))
             validatepar(z, c(0,Inf))
         }
@@ -305,7 +319,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
-                as.integer(usage),
+                as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
                 n = integer(1),
@@ -342,7 +356,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
-                as.integer(usage),
+                as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
                 n = integer(1),
@@ -375,10 +389,39 @@ sim.capthist <- function (
         }
 
         else
+        if (detector(traps) %in% c('proximity', 'presence','unmarked')) {
+            binomN <- 1
+            temp <- .C("trappingproximity", PACKAGE = 'secr',
+                as.double(g0),
+                as.double(sigma),
+                as.double(z),
+                as.integer(noccasions),
+                as.integer(k),
+                as.integer(N),
+                as.double(animals),
+                as.double(unlist(traps)),
+                as.double(usge),
+                as.integer(detectfn),
+                as.double(truncate^2),
+                as.integer(binomN),
+                n = integer(1),
+                caught = integer(N),
+                value = integer(N*noccasions*k),
+                resultcode = integer(1)
+            )
+            if (temp$resultcode != 0)
+                stop ("call to 'trappingcount' failed")
+            w <- array(dim=c(noccasions, k, temp$n), dimnames =
+                list(1:noccasions,NULL, NULL))
+            if (temp$n>0) {
+                w[,,] <- temp$value[1:(temp$n*noccasions*k)]
+            }
+            w <- aperm(w, c(3,1,2))
+        }
+        else
         ## includes presence 2011-09-26
-        if (detector(traps) %in% c('proximity', 'count', 'presence','unmarked')) {
-            binomN <- switch(detector(traps), proximity=1,
-                             count=detectpar$binomN, presence=1, unmarked = 1)
+        if (detector(traps) %in% c('count')) {
+            binomN <- detectpar$binomN
             temp <- .C("trappingcount", PACKAGE = 'secr',
                 as.double(g0),
                 as.double(sigma),
@@ -388,7 +431,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
-                as.integer(usage),
+                as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
                 as.integer(binomN),
@@ -424,7 +467,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
-                as.integer(usage),
+                as.double(usge),
                 as.integer(detectfn),
                 n = integer(1),
                 caught = integer(N),
@@ -453,7 +496,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
-                as.integer(usage),
+                as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
                 n = integer(1),
@@ -518,7 +561,7 @@ sim.capthist <- function (
                            as.integer(N),
                            as.double(animals),
                            as.double(unlist(traps)),
-                           as.integer(usage),
+                           as.double(usge),
                            as.integer(detectfn),
                            as.double(truncate^2),
                            as.integer(detectpar$binomN),

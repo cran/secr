@@ -51,6 +51,8 @@
 ## 2012-09-14 signalframe extract/replace function
 ## 2012-10-24 predict.secr drops unused columns of newdata from names of output components
 ## 2012-10-25 plot.capthist checks for zero captures and proximity tracks
+## 2012-12-22 extended usage<-
+## 2013-01-16 fixed rbind.traps for usage
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -66,7 +68,6 @@ session    <- function (object, ...) UseMethod("session")
 trim       <- function (object, drop, keep) UseMethod("trim")
 timevaryingcov <- function (object, ...) UseMethod("timevaryingcov")
 
-reduce     <- function (object, columns, ...) UseMethod("reduce")
 rotate     <- function (object, degrees, centrexy=NULL, ...) UseMethod("rotate")
 shift      <- function (object, shiftxy, ...) UseMethod("shift")
 flip       <- function (object, lr=F, tb=F, ...) UseMethod("flip")
@@ -599,18 +600,6 @@ trim.default <- function (object, drop, keep)     {
     object
 }
 
-reduce.default <- function (object, columns, ...) {
-  object <- as.matrix(object)
-  if (any(is.na(object)))
-      warning ("NAs in input converted to zero")
-  firsttrap <- function (y) y[abs(y)>0][1]    # first non-zero
-  fnmulti   <- function (occ) apply (object[,occ,drop=F], 1, firsttrap)
-  nrow <- nrow(object)
-  nnew <- length(columns)
-  temp <- sapply (columns, fnmulti)
-  temp[is.na(temp)] <- 0
-  temp
-}
 ###############################################################################
 
 rotate.default <- function (object, degrees, centrexy=NULL, ...) {
@@ -672,7 +661,63 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 
 # Generic methods for replacing values
 
-'usage<-' <- function (object, value) structure (object, usage = value)
+'usage<-' <- function (object, value) {
+
+## extended 2012-12-22
+## bug : loses session names when called as usage(traps(ovenCH)) <- c(1,10)
+
+    if (ms(object)) {
+        ## replicate across sessions as required
+        if (!is.list(value)) {
+            nonmatrix <- length(dim(value)) != 2
+            valuelist <- vector(mode='list', length=length(object))
+            if (nonmatrix & (length(value)>2)) {
+                if (length(value) != (length(valuelist)+1))
+                    stop("invalid value vector - how many occasions?")
+                for (i in 1:length(valuelist)) valuelist[[i]] <- value[c(1,i+1)]
+            }
+            else
+                for (i in 1:length(valuelist)) valuelist[[i]] <- value
+        }
+        else
+            valuelist <- value
+        temp <- mapply('usage<-', object, valuelist, SIMPLIFY = FALSE)
+        class(temp) <- c('list','traps')
+        temp
+    }
+    else {
+        if (!is.null(value)) {
+            nonmatrix <- length(dim(value)) != 2
+            if (nonmatrix) {
+                value <- unlist(value)
+                if (length(value) == 1) {
+                    if (is.null(usage(object)))
+                        stop("requires number of occasions")
+                    else noccasions <- ncol(usage(object))
+                }
+                else
+                    noccasions <- value[2]
+                value <- value[1]
+            }
+            else {
+                noccasions <- NULL
+                value <- as.matrix(value)  ## coerce dataframe to matrix
+            }
+            if (is.null(noccasions)) {
+                if (is.null(dim(value)))
+                    stop("usage value should be matrix or scalar with noccasions")
+                else if (nrow(value) != ndetector(object))
+                    stop("mismatch between value and number of detectors")
+            }
+            else {
+                ## assume value is scalar
+                value <- matrix(value, nrow = ndetector(object), ncol = noccasions)
+            }
+        }
+        structure (object, usage = value)
+    }
+}
+
 'clusterID<-' <- function (object, value) structure (object, cluster = value)
 'clustertrap<-' <- function (object, value) structure (object, clustertrap = value)
 
@@ -764,7 +809,11 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 
 'xy<-' <- function (object, value) {
     if (!is.null(value)) {
-        if (nrow(value) != sum(abs(object)))
+        if (detector(traps(object)) %in% .localstuff$exclusivedetectors)
+            ndetections <- sum(abs(object)>0)
+        else
+            ndetections <- sum(abs(object))
+        if (nrow(value) != ndetections)
             stop ("requires one location per detection")
         if (!(detector(traps(object)) %in% .localstuff$polydetectors) |
                 !(inherits(object,'capthist')))
@@ -1066,8 +1115,10 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
         detector(temp) <- detector(x)
 
         ## 2011-05-09
-        clusterID(temp) <- factor(clusterID(x)[rowsubset])
-        clustertrap(temp) <- factor(clustertrap(x)[rowsubset])
+        if (!is.null(clusterID(x))) {
+            clusterID(temp) <- factor(clusterID(x)[rowsubset])
+            clustertrap(temp) <- factor(clustertrap(x)[rowsubset])
+        }
 
         ## restore polyiD, transectID, usage, covariates
         if (detector(x) %in% c('polygon', 'polygonX', 'telemetry'))
@@ -1108,13 +1159,15 @@ rbind.traps <- function (..., renumber = TRUE) {
             stop ("all arguments must be 'traps' objects")
         if (is.null(covariates(x)) != is.null(covariates(allargs[[1]]) ))
             stop ("covariates must be provided for all or none")
-        if (is.null(timevaryingcov(x)) != is.null(timevaryingcov(allargs[[1]]) ))
-            result <- TRUE
-        if (!is.null(usage(x)))
-            if (ncol(usage(x)) != ncol(usage(allargs[[1]])))
-                stop ("'usage' is defined for varying number of occasions")
+# 2013-01-16
+#        if (!is.null(usage(x)))
+#            if (ncol(usage(x)) != ncol(usage(allargs[[1]])))
+#                stop ("'usage' is defined for varying number of occasions")
+#                warning ("'usage' is defined for varying number of occasions")
         if (detector(x) != detector(allargs[[1]]))
             warning ("detector types vary; using first")
+        if (is.null(timevaryingcov(x)) != is.null(timevaryingcov(allargs[[1]]) ))
+            result <- TRUE
         result
     }
 
@@ -1146,6 +1199,8 @@ rbind.traps <- function (..., renumber = TRUE) {
 
     ## covariates 2010 07 05, 2010-08-28
     tempcov <- lapply(allargs, covariates)
+    common <- Reduce(intersect, lapply(tempcov, names))
+    tempcov <- lapply(tempcov, function(x) x[,common, drop = FALSE])
     covariates(temp) <- do.call(rbind, tempcov)
     timevaryingcov(temp) <- timevaryingcov(allargs[[1]])
 
@@ -1162,6 +1217,7 @@ rbind.traps <- function (..., renumber = TRUE) {
     }
 
     ## usage
+    ## tweaked 2013-01-16
     tempusage <- lapply(allargs, usage)
     if (any(!sapply(tempusage, is.null))) {
         nocc <- unique(unlist(sapply(tempusage, ncol)))
@@ -1172,16 +1228,18 @@ rbind.traps <- function (..., renumber = TRUE) {
         fillmissing <- function(x, nr) {
             flush.console()
             if(is.null(x))
-                matrix(1, nrow = nr, ncol = nocc)
+                x <- matrix(1, nrow = nr, ncol = nocc)
             else {
-                if (ncol(x) < nocc)
-                    cbind(x, matrix(0, nrow = nr, ncol = nocc))
-                else
-                    x
+                if (ncol(x) < nocc) {
+                    x <- cbind(x, matrix(0, nrow = nr, ncol = nocc-ncol(x)))
+                }
             }
+            dimnames(x)[[2]] <- 1:ncol(x)
+            x
         }
-        for (i in 1: length(temp))
+        for (i in 1: length(tempusage)) {
             tempusage[[i]] <- fillmissing(tempusage[[i]], nr[i])
+        }
         usage(temp) <- do.call(rbind, tempusage)
     }
 
@@ -1224,17 +1282,18 @@ rbind.traps <- function (..., renumber = TRUE) {
 plot.traps <- function(x,
     border = 100,
     label = FALSE,
-    offset=c(6,6),
+    offset = c(6,6),
     add = FALSE,
     hidetr = FALSE,
     detpar=list(),
     txtpar=list(),
-    bg='white',
-    gridlines=TRUE,
-    gridspace=100,
-    gridcol='grey',
-    markused=FALSE,
-    markvarying=FALSE,
+    bg = 'white',
+    gridlines = TRUE,
+    gridspace = 100,
+    gridcol = 'grey',
+    markused = FALSE,
+    markvarying = FALSE,
+    markvertices = FALSE,
     labelclusters = FALSE,
     ... )
 {
@@ -1245,7 +1304,7 @@ plot.traps <- function(x,
             border, label, offset,
             add, hidetr, detpar, txtpar,
             bg, gridlines, gridspace, gridcol,
-            markvarying, ...)
+            markused, markvarying, markvertices, labelclusters, ...)
     }
     else {
 
@@ -1254,6 +1313,8 @@ plot.traps <- function(x,
         dcol <- 'red'
         detpar <- replacedefaults (list(col=dcol, pch=3, cex=0.8), detpar)
         txtpar <- replacedefaults (list(col='blue', cex=0.7), txtpar)
+        if (is.logical(markvertices))
+            markvertices <- markvertices * 2  ## 0 or 2
 
         if (!is.null(usage(x))) {
             used <- apply(attr(x,'usage'),1,function(z) any(z>0))
@@ -1284,12 +1345,22 @@ plot.traps <- function(x,
                     segments(strtx, yi, finx, yi, col=gridcol)
             }
         }
+        plotvertices <- function (df) {
+            if (markvertices == 1)
+                i <- c(1, nrow(df))
+            else
+                i <- 1:nrow(df)
+            points(df$x[i], df$y[i], pch = detpar$pch, bg = bg, col=detpar$col)
+        }
 
         if (hidetr==F) {
             if (detector(x) %in% c('polygon','polygonX', 'telemetry')) {
                 templist <- split (x, levels(polyID(x)), prefix='')
                 lapply(templist, function (y)
                        polygon (y$x, y$y, col=detpar$col, density=0))
+                if (markvertices > 0) {
+                    lapply(templist, plotvertices)
+                }
                 if (label) for (k in 1:length(templist)) {
                     xbar <- mean(range(templist[[k]]$x))
                     ybar <- mean(range(templist[[k]]$y))
@@ -1298,7 +1369,10 @@ plot.traps <- function(x,
             }
             else if (detector(x) %in% c('transect','transectX')) {
                 templist <- split (x, levels(transectID(x)), prefix='')
-                lapply(templist, function (y) lines (y$x, y$y, col=detpar$col))
+                lapply(templist, function (df) lines (df$x, df$y, col=detpar$col))
+                if (markvertices > 0) {
+                    lapply(templist, plotvertices)
+                }
                 if (label) for (k in 1:length(templist)) {
                     xbar <- mean(range(templist[[k]]$x))
                     ybar <- mean(range(templist[[k]]$y))
@@ -1334,29 +1408,35 @@ plot.traps <- function(x,
 summary.traps <- function(object, getspacing = TRUE, ...) {
 
 #### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
-
     if (ms(object)) lapply(object, summary.traps, getspacing = getspacing, ...)
     else {
         if (is.null(object$x) | is.null(object$y))
             stop ("not a valid 'traps' object")
         nd <- nrow(object)
         np <- NA
+        sumusage <- NULL
+        rangeusage <- NULL
+        sumcovar <- NULL
+
         if (detector(object) %in% .localstuff$polydetectors) {
             spacing <- NA
         }
         else {
             spacing <- spacing(object, recalculate = getspacing)
 
-            # unclear why following is not for polydetectors?
+            # unclear why following is not for polydetectors?  FAULTY 2012-12-18
             if (is.factor(covariates(object))) {
                 susage <- by(usage(object), covariates(object), function(y) apply(y,2,sum))
                 sumusage <- matrix(unlist(susage), byrow = T, nrow = length(susage))
                 dimnames(sumusage) <- list(levels(covariates(object)), names(susage[[1]]))
             }
-            else if (!is.null(usage(object)))  sumusage <- apply(usage(object),2,sum)
-                 else sumusage <- NULL
-            sumcovar <- NULL
-                tempcovar <- covariates(object)
+            else if (!is.null(usage(object)))  {
+                sumusage <- apply(usage(object)>0, 2, sum)
+                nocc <- ncol(usage(object))
+                rangeusage <- matrix(apply(usage(object), 2, range), ncol=nocc)
+                dimnames(rangeusage) <- list(c('min','max'), 1:nocc)
+            }
+            tempcovar <- covariates(object)
 
             if (!is.null(tempcovar))
                 if ((nrow(tempcovar)>0) & (ncol(tempcovar)>0)) ## amended to check ncol 2009 09 18
@@ -1390,6 +1470,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
           area  = area,
           totallength = totallength,
           usage = sumusage,
+          rangeusage = rangeusage,
           covar = sumcovar,
           tvc = tvc
         )
@@ -1423,6 +1504,10 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
     }
     cat ('x-range          ', x$xrange, 'm \n')
     cat ('y-range          ', x$yrange, 'm \n')
+    if (!is.null(x$rangeusage)) {
+        cat ('Usage range by occasion\n')
+        print(x$rangeusage, ...)
+    }
     if (!terse) {
         if (!is.null(x$covar)) {
             cat ('\n')
@@ -1430,7 +1515,7 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
             print(x$covar, ...)
         }
         if (!is.null(x$usage)) {
-            cat ('Usage by occasion', '\n')
+            cat ('Usage>0 by occasion', '\n')
             print(x$usage, ...)
         }
         if (!is.null(x$tvc)) {
@@ -2382,10 +2467,12 @@ summary.capthist <- function(object, terse = FALSE, ...) {
             }
         }
         if (!is.null(traps)) {
-            if (!is.null(usage(traps)))
+            if (!is.null(usage(traps))) {
                 counts[8,] <- apply(usage(traps),2,function(x) sum(x>0))
-            else
+            }
+            else {
                 counts[8,] <- rep(ndetector(traps),nocc)
+            }
         }
 
         counts <- as.data.frame(counts)
@@ -2415,7 +2502,6 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                                       noise = summary(noise(object)),
                                       diffSN = summary(signal(object)-noise(object)))
         }
-
         zeros <- sum(apply(abs(object),1,sum)==0)
         xyl <- attr(object,'xylist')
         if (is.null(xyl))
@@ -2970,7 +3056,19 @@ predict.secrlist <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.0
     savenew = FALSE, scaled = FALSE, ...) {
     lapply(object, predict, newdata, se.fit, alpha, savenew, scaled, ...)
 }
+############################################################################################
 
+## 2012-11-14
+secrlist <- function(...) {
+    dots <- match.call(expand.dots = FALSE)$...
+    allargs <- list(...)
+    allargs <- lapply(allargs, function(x) if (inherits(x, 'secr')) list(x) else x)
+    temp <- do.call(c, allargs)
+    if (!all(sapply(temp, function(x) inherits(x, 'secr'))))
+        stop ("objects must be of class 'secr' or 'secrlist'")
+    class(temp) <- 'secrlist'
+    temp
+}
 ############################################################################################
 
 coef.secr <- function (object, alpha=0.05, ...) {
@@ -3084,11 +3182,10 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
     if (det %in% .localstuff$countdetectors) {
         cat ('Count model     :  ')
         if (x$details$binomN == 0) cat ('Poisson \n')
-        if (x$details$binomN == 1) cat ('Bernoulli \n')
-        if (x$details$binomN < 0) cat ('Negative binomial k = ', abs(x$details$binomN), '\n')
-        if (x$details$binomN > 1) cat('Binomial', x$details$binomN, '\n')
+        else if (x$details$binomN == 1) cat ('Binomial, size from usage\n')
+        else if (x$details$binomN < 0) cat ('Negative binomial k = ', abs(x$details$binomN), '\n')
+        else if (x$details$binomN > 1) cat('Binomial', x$details$binomN, '\n')
     }
-
     if (!ms(x$capthist))
     cat ('Mask area       : ', attr(x$mask,'area') * nrow(x$mask), 'ha \n')
 

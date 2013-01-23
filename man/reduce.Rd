@@ -1,5 +1,6 @@
 \name{reduce}
 \alias{reduce}
+\alias{reduce.default}
 
 \title{ Combine Columns }
 
@@ -8,7 +9,8 @@ Combine columns in a matrix-like object to create a new data set using the first
 }
 
 \usage{
-reduce (object, columns, ...)
+reduce (object, ...)
+\method{reduce}{default}(object, columns, \dots)
 }
 
 \arguments{
@@ -18,15 +20,19 @@ reduce (object, columns, ...)
 }
 
 \details{
-The first element of \code{columns} defines the columns of \code{object} for the first new column, the second for the second new column etc.
-This is a generic method. A method exists for objects of class \code{capthist}.
+  
+The first element of \code{columns} defines the columns of \code{object}
+for the first new column, the second for the second new column etc.
+This is a generic method. More useful methods exist for \code{capthist} and
+\code{traps} objects.
+
 }
 
 \value{
 A matrix with number of columns equal to \code{length(columns)}.
 }
 
-\seealso{ \code{\link{capthist}}, \code{\link{reduce.capthist}} }
+\seealso{ \code{\link{capthist}}, \code{\link{reduce.capthist}}, \code{\link{reduce.traps}} }
 
 \examples{
 

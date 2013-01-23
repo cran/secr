@@ -9,17 +9,32 @@
 }
 
 \usage{
-autoini(capthist, mask, detectfn = 0, thin = 0.2)
+autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001, 
+    binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE)
 }
 
 \arguments{
 
-  \item{capthist}{\code{capthist} object}
-  \item{mask}{\code{mask} object compatible with the detector layout in
+\item{capthist}{\code{capthist} object}
+
+\item{mask}{\code{mask} object compatible with the detector layout in
     \code{capthist}}
-  \item{detectfn}{integer code or character string for shape of
+
+\item{detectfn}{integer code or character string for shape of
   detection function 0 = halfnormal}
-  \item{thin}{proportion of points to retain in mask }}
+
+\item{thin}{proportion of points to retain in mask }
+
+\item{tol}{numeric absolute tolerance for numerical root finding }
+
+\item{binomN}{integer code for distribution of counts (see \code{\link{secr.fit}}) }
+
+\item{adjustg0}{logical for whether to adjust g0 for usage (effort) and
+  binomN }
+
+\item{ignoreusage}{logical for whether to discard usage information from
+\code{traps(capthist)}}
+}
 
 \details{
 
@@ -51,6 +66,22 @@ values are NA.
 
 If the mask has more than 100 points then a proportion 1--\code{thin} of
 points are discarded at random to speed execution.
+
+The argument \code{tol} is passed to \code{\link{uniroot}}. It may be a
+vector of two values, the first for g0 and the second for sigma.
+
+If \code{traps(capthist)} has a \link{usage} attribute (defining effort
+on each occasion at each detector) then the value of g0 is divided by
+the mean of the non-zero elements of usage. This adjustment is not
+precise.
+
+If \code{adjustg0} is TRUE then an adjustment is made to g0 depending
+on the value of \code{binomN}. For Poisson counts (\code{binomN = 0})
+the adjustment is linear on effort (adjusted.g0 = g0 /
+usage). Otherwise, the adjustment is on the hazard scale (adjusted.g0 =
+1 -- (1 -- g0) ^ (1 / (usage x binomN))). An arithmetic average is taken
+over all non-zero usage values (i.e. over used detectors and times). If
+usage is not specified it is taken to be 1.0.
 
 }
 

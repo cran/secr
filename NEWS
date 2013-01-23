@@ -1,3 +1,83 @@
+Changes in version 2.5.0 (2013-01-24)
+
+New features or changed behaviour of old functions
+
+    o   detector usage may be non-binary 'effort', and if binary is coded
+    consistently as numeric (0/1) rather than logical (FALSE/TRUE)
+
+    o   snip() new function splits transects into shorter sections
+
+    o   reduce.traps() new method aggregates data from nearby detectors
+
+    o   reduce.capthist() re-written with new arguments; optionally
+    calls a reduce.traps (see previous)
+
+    o   usage.plot() new function to plot detector-specific usage(effort)
+
+    o   sim.capthist() noccasions argument must be specified, either
+    explicitly or implicitly via the usage attribute of traps.
+
+    o   pdot() and pdot.contour() respect the usage attribute of the
+    traps argument, from which noccasions will be taken if usage is
+    present; no default is provided for noccasions.
+
+    o   secrlist() new function makes list of fitted models (class 'secrlist')
+
+    o   plot.traps() acquires argument markvertices for emphasising
+    points on transects, polygons
+
+    o   fxi.contour() and fxi.secr() enabled for detector arrays with
+    incomplete usage
+
+    o   new definition of usage has several flow on effects:
+    reduce.capthist() records the summed usage on pooled occasions,
+    join() retains usage, summary.traps() and print.secr report range
+    of trap-specific usage for each occasion, etc.
+
+    o   autoini() acquires arguments tol (default 0.001, previously
+    fixed), binomN, adjustg0, and ignoreusage.
+
+    o   suggest.buffer() acquires argument ignoreusage
+
+    o   secr.fit() new details component ignoreusage (default FALSE)
+
+    o   read.traps() acquires argument 'binary.usage'; binary.usage =
+    FALSE allows input of continuous effort fields
+
+    o   derived() returns NULL and a warning rather than an error if input
+    is not a fitted model
+
+    o   exports the internal function make.lookup()
+
+    o   binomial count models now parameterised g0 = p rather than g0 =
+    pN in secr.fit() and sim.capthist(); this will change estimated g0
+    from these models
+
+Bugs fixed
+
+    o   fxi.contour() output format no longer data dependent; argument
+    'i' may be used to select a range of animals to plot
+
+    o   ip.secr() various adjustments
+
+    o   secr.fit() integration for polygon and transect detector types
+    used memory inefficiently
+
+    o   secr.fit() could fail with distribution = 'binomial'
+    (i.e. fixed-N) when virtually all individuals in the estimated
+    population were detected (n near N).
+
+    o   plot.traps() confusion among minor arguments for multi-session plots
+
+    o   secr.fit() could be very slow with exclusive detectors
+    (e.g., 'multi','polygonX') when usage varied
+
+    o   derived.external() bad 'clust' argument in esagradient call    
+
+    o   secr.make.newdata did not work with factor tcov
+
+    o   addCovariates() did not accept missing values in character fields
+
 Changes in version 2.4.0 (2012-11-05)
 
 New features or changed behaviour of old functions
@@ -96,6 +176,11 @@ Bugs fixed
 
     o   simulate.secr() could fail with multi-session model when mask
     size varied between sessions
+
+    o   likelihood for multisession models included multinomial
+    component only for last session; this did not affect estimates,
+    but causes AIC to differ between 2.4.0 and previous versions
+    [noted retrospectively 2013-01-03 thanks to Eric Howe]
 
 Changes in version 2.3.2 (2012-05-15)
 

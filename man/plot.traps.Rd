@@ -11,7 +11,8 @@
 \method{plot}{traps}(x, border = 100, label = FALSE, offset = c(6,6), add = FALSE,
   hidetr = FALSE, detpar = list(), txtpar = list(), bg = "white",
   gridlines = TRUE, gridspace = 100, gridcol = "grey", 
-  markused = FALSE, markvarying = FALSE, labelclusters = FALSE, ...)
+  markused = FALSE, markvarying = FALSE, markvertices = FALSE,
+  labelclusters = FALSE, ...)
 }
 
 \arguments{
@@ -30,6 +31,7 @@
   \item{markused}{ logical to distinguish detectors used on at least one
   occasion}
   \item{markvarying}{ logical to distinguish detectors whose usage varies among occasions }
+  \item{markvertices}{ logical or 0,1,2 for plotting transect or polygon points }
   \item{labelclusters}{ logical to label clusters}
   \item{\dots}{ arguments to pass to \code{eqscplot} }
 }
@@ -44,6 +46,11 @@ exit.
 
 Axes are not labeled. Use \code{\link{axis}} and \code{\link{mtext}} if
 necessary.
+
+\code{markvertices} determines whether the vertices of each transect or
+polygon will be emphasised by overplotting a point symbol
+(detpar$pch). Value may be logical (TRUE, FALSE) or integer (0 = no
+points, 1 = terminal vertices only, 2 = all vertices).
 
 \code{labelclusters} requires \code{x} to have attributes `clusterID' and
 `clustertrap'.

@@ -8,6 +8,7 @@
 ## 2010 03 09 fixed bug : need to call scaled.detection when !is.null(real)
 ## 2011-04-04 added noccasions; debugged 2011-04-07
 ## 2012-10-21 added check to return NA with dettype==13
+## 2012-11-13 updated for groups
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -32,10 +33,10 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     if (is.null(beta) & is.null(real))
         beta <- object$fit$par
 
-    traps   <- attr(capthists, 'traps')  ## need session-specific traps
-    if (!(detector(traps) %in% .localstuff$individualdetectors))
+    trps   <- traps(capthists)  ## need session-specific traps
+    if (!(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for esa")
-    dettype <- detectorcode(traps)
+    dettype <- detectorcode(trps)
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
     constant <- !is.null(noccasions)    ## fix 2011-04-07
@@ -55,17 +56,20 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     ##############################################
 
     if (dettype %in% c(3,6)) {
-        k <- c(table(polyID(traps)),0)
+        k <- c(table(polyID(trps)),0)
         K <- length(k)-1
     }
     else if (dettype %in% c(4,7)) {
-        k <- c(table(transectID(traps)),0)
+        k <- c(table(transectID(trps)),0)
         K <- length(k)-1
     }
     else {
-        k <- nrow(traps)
+        k <- nrow(trps)
         K <- k
     }
+
+    binomN <- object$details$binomN
+
     m      <- length(mask$x)            ## need session-specific mask...
     cell   <- attr(mask,'area')
 
@@ -79,7 +83,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             real <- as.list(real)
             names(real) <- parnames(object$detectfn)
         }
-        a <- cell * sum(pdot(X = mask, traps = traps, detectfn = object$detectfn,
+        a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
                              detectpar = real, noccasions = noccasions))
         return(rep(a,n))
     }
@@ -122,9 +126,17 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             Xrealparval0 <- scaled.detection (realparval0, FALSE,
                 object$details$scaleg0, NA)
         }
-        ## new code 2010-11-26
-        used <- usage(traps)
-        if (any(used==0))
+        ## force to binary 2012-12-17
+        ## used <- usage(trps)
+        usge <- usage(trps)
+        if (is.null(usge)) {
+            usge <- matrix(1, nrow = K, ncol = s)
+            used <- 1
+        }
+        else {
+            used <- (usge > 1e-10) * 1
+        }
+        if (any(used == 0))
             PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
         ncolPIA <- n
 
@@ -142,7 +154,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
 #        print(k)
 #        print(m)
 #        print(nmix)
-#        print(summary(traps))
+#        print(summary(trps))
+#        print(usge)
 #        print(summary(mask))
 #        print(nrow(Xrealparval0))
 #        print(PIA)
@@ -162,12 +175,15 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.integer(dettype),
                        as.integer(param),
                        as.double(Xrealparval0),
+                       as.integer(rep(1,n)),                 # dummy groups 2012-11-13
                        as.integer(n),
                        as.integer(s),
                        as.integer(k),
                        as.integer(m),
+                       as.integer(1),                        # dummy ngroups 2012-11-13
                        as.integer(nmix),
-                       as.double(unlist(traps)),
+                       as.double(unlist(trps)),
+                       as.double(usge),
                        as.double(unlist(mask)),
                        as.integer(nrow(Xrealparval0)), # rows in lookup
                        as.integer(PIA),                # index of nc*,S,K to rows in realparval0
@@ -176,13 +192,11 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.double(cell),
                        as.double(miscparm),
                        as.integer(object$detectfn),
-                       as.integer(object$details$binomN),
+                       as.integer(binomN),             # 2012-12-18
                        as.integer(useD),
                        a=double(n),
                        resultcode=integer(1)
                        )
-            if (temp$resultcode == 3)
-                stop ("groups not implemented in external function 'integralprw1'")
             if (temp$resultcode != 0)
                 stop ("error in external function 'integralprw1'")
             return(temp$a)

@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.4.0\cr
-Date: \tab 2012-11-05\cr
+Version: \tab 2.5.0\cr
+Date: \tab 2013-01-24\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -42,7 +42,7 @@ Models are fitted in \pkg{secr} by maximizing either the full likelihood
 or the likelihood conditional on the number of individuals observed
 (\eqn{n}). Conditional likelihood models are limited to homogeneous
 Poisson density, but allow continuous individual covariates for
-detection. Fitting (function \code{\link{secr.fit}}) creates an object
+detection. A model fitted with \code{\link{secr.fit}} is an object
 of class \code{secr}. Generic methods (plot, print, summary, etc.) are
 provided for each object class.
 
@@ -56,6 +56,7 @@ help index. Several vignettes complement the help pages:
   \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
   \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
   \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
+  \url{../doc/secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
 }
 The help pages are also available as \url{../doc/secr-manual.pdf}.
 
