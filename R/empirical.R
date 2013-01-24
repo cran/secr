@@ -4,9 +4,10 @@
 ## design-based variance of derived density
 ## 2011 05 10 - derived.systematic quarantined in 'under development' folder
 ## 2012 03 17 - derived.nj extended to single n
+## 2012 12 24 - clust argument required in derived.external
 ############################################################################################
 
-## source ('d:\\density secr 2.3\\secr\\r\\empirical.R')
+## source ('d:\\density secr 2.5\\secr\\r\\empirical.R')
 
 ############################################################################
 
@@ -171,7 +172,7 @@ derived.external <- function (object, sessnum = NULL, nj, cluster,
     alpha = 0.05, loginterval = TRUE) {
 
     se.deriveesa <- function (selection, asess, noccasions) {
-        CLesa  <- esagradient (object, selection, asess, noccasions)
+        CLesa  <- esagradient (object, selection, asess, noccasions, clust = NULL)
         sqrt(CLesa %*% object$beta.vcv %*% CLesa)
     }
 

@@ -14,21 +14,24 @@
 ## 2011 01 24 debugged pdotpoly
 ## 2011 02 06 allow polygonX, transectX
 ## 2011 06 13 moved spatialscale to utility.R
+## 2012 12 24 binomN = 'usage'
 ###############################################################################
 
 getbinomN <- function (binomN, detectr) {
     if (detectr %in% .localstuff$countdetectors) {
         if (is.null(binomN))
-            0
+            return(0)
+        else if (binomN == 'usage')
+            return(1)
         else
-            binomN
+            return(binomN)
     }
     else
-        1
+        return(1)
 }
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                  noccasions = 5, binomN = NULL) {
+                  noccasions = NULL, binomN = NULL) {
 
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
@@ -46,45 +49,35 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     detectpars <- unlist(detectpar[parnames(detectfn)])
     if ((detectfn>9) & (detectfn!=20))  detectpars <- c(detectpars, detectpar$cutval)
 
-    if (!is.null(usage(traps)))
-        used <- unlist(usage(traps))
-    else
-        used <- rep(1, nrow(traps) * noccasions) ## exceeds need length for polygons, transects
-
+    if (!is.null(usage(traps))) {
+        usge <- unlist(usage(traps))
+        if (!is.null(noccasions))
+            if (noccasions != ncol(usage(traps)))
+                warning ("ignoring specified noccasions as it differs from ncol of usage matrix")
+        noccasions <- ncol(usage(traps))
+    }
+    else {
+        if (is.null(noccasions))
+            stop("must specify noccasions when traps does not have usage attribute")
+        usge <- rep(1, ndetector(traps) * noccasions)
+    }
+    dettype <- detectorcode(traps)
     binomN <- getbinomN (binomN, detector(traps))
 
     X <- matrix(unlist(X), ncol = 2)
-    if (detector(traps) %in% c('polygon','polygonX')) {
-        k <- table(polyID(traps))
-        K <- length(k)
-        k <-  c(k,0)   ## zero terminate
+    if (detector(traps) %in% c('polygon','polygonX','transect', 'transectX')) {
+        k <- table(polyID(traps))   ## also serves transectID
+        K <- length(k)              ## number of polygons/transects
+        k <-  c(k,0)                ## zero terminate
         temp <- .C('pdotpoly', PACKAGE = 'secr',
             as.double(X),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
-            as.integer(used),
+            as.integer(dettype),
+            as.double(usge),
             as.integer(K),
             as.integer(k),
             as.integer(detectfn),   ## hn
-            as.double(detectpars),
-            as.integer(noccasions),
-            as.integer(binomN),
-            value = double(nrow(X))
-        )
-        temp$value
-    }
-    else if (detector(traps) %in% c('transect', 'transectX')) {
-        k <- table(transectID(traps))
-        K <- length(k)
-        k <-  c(k,0)   ## zero terminate
-         temp <- .C('pdottransect', PACKAGE = 'secr',
-            as.double(X),
-            as.integer(nrow(X)),
-            as.double(unlist(traps)),
-            as.integer(used),
-            as.integer(K),
-            as.integer(k),
-            as.integer(detectfn),
             as.double(detectpars),
             as.integer(noccasions),
             as.integer(binomN),
@@ -97,7 +90,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
             as.double(X),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
-            as.integer(used),
+            as.integer(dettype),
+            as.double(usge),
             as.integer(ndetector(traps)),
             as.integer(detectfn),
             as.double(detectpars),
@@ -108,7 +102,6 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         temp$value
     }
 }
-
 ############################################################################################
 
 esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL, detectfn,
@@ -133,8 +126,6 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
         binomN <- getbinomN (binomN, detector(object))   ## must now be traps object
         a <- pdot (max.mask, object, detectfn, detectpar, noccasions, binomN)
         d <- distancetotrap(max.mask, object)
-        # 2011-01-24 in case equal d
-        # ord <- order(d)
         ord <- order(d,a)
         cellsize <-  attr(max.mask, 'spacing')^2/10000
         a <- a[ord]
@@ -244,7 +235,7 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
 
 pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                          noccasions = 5, binomN = NULL, levels = seq(0.1, 0.9, 0.1),
+                          noccasions = NULL, binomN = NULL, levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, plt = TRUE, add = FALSE, ...) {
     if (is.null(border))
         border <- 5 * spatialscale(detectpar, detectfn)
@@ -265,9 +256,6 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
         contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels)
 }
 ############################################################################################
-
-
-## SEE ALSO gBuffer in rgeos
 
 buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
                             plt = TRUE, add = FALSE, poly = NULL, ...) {

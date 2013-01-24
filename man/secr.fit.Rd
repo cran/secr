@@ -64,9 +64,9 @@ null (constant density and detection probability). The set of variables
 available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
 others that appear in the \code{covariates} of the input data. See also
-\code{\link{timevaryingcov}} to construct time-varying detector
-covariates, and \link{secr models} and \url{../doc/secr-overview.pdf} for
-more on defining models.
+\code{\link{usage}} for varying effort, \code{\link{timevaryingcov}} to
+construct other time-varying detector covariates, and \link{secr models}
+and \url{../doc/secr-overview.pdf} for more on defining models.
 
 \code{buffer} and \code{mask} are alternative ways to define the region
 of integration (see \link{mask}).
@@ -92,7 +92,7 @@ are of type `count', `polygon' or `transect':
 
 \itemize{
 \item{binomN > 1} {binomial with size binomN}
-\item{binomN = 1} {Bernoulli}
+\item{binomN = 1} {binomial with size determined by \link{usage}}
 \item{binomN = 0} {Poisson}
 \item{binomN < 0} {negative binomial with size abs(binomN) -- see 
   \code{\link[stats]{dnbinom}}}
@@ -115,6 +115,10 @@ of the Hessian matrix from which variances and covariances are obtained.
 Options are "none" (no variances), "auto" (the default) or "fdhess" (use
 the function fdHess in \pkg{nlme}).  If "auto" then the Hessian from the
 optimisation function is used.
+
+\code{details$ignoreusage} = TRUE causes the function to ignore
+usage (varying effort) information in the traps component. The default
+(\code{details$ignoreusage} = FALSE) is to include usage in the model.
 
 \code{details$LLonly} = TRUE causes the function to returns a single
 evaluation of the log likelihood at the `start' values.
@@ -303,6 +307,7 @@ setting \code{verify = FALSE}. This is now done by setting
   \code{\link{print.secr}},
   \code{\link{region.N}},
   \code{\link{troubleshooting}}
+  \code{\link{usage}},
   \code{\link{vcov.secr}},
   \code{\link{verify}},
 

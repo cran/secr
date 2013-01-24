@@ -1,7 +1,7 @@
 ###############################################################################
 ## package 'secr'
 ## telemetry.R
-## towards fitting detection function to telemetry data
+## fitting detection function to telemetry data
 ## 2012-10-19,20,21,22
 ###############################################################################
 
@@ -15,6 +15,7 @@ distances <- function (X, Y) {
     }
     t(apply(X, 1, onerow))
 }
+###############################################################################
 
 telemetryloglik <- function(CH, detectfn, sigma, z) {
     ## assume one occasion
@@ -35,6 +36,7 @@ telemetryloglik <- function(CH, detectfn, sigma, z) {
     L1 <- unlist(lapply(xylist, oneID))
     list(value = sum(log(L1)), resultcode = 0)
 }
+###############################################################################
 
 addTelemetry <- function (detectionCH, telemetryCH) {
     ## combine capture histories from telemetry and hair snags etc.
@@ -60,6 +62,7 @@ addTelemetry <- function (detectionCH, telemetryCH) {
     attr(CH, 'xylist') <- xylist # for both non-empty and empty CH
     CH
 }
+###############################################################################
 
 outsidemask <- function(capthist, mask, threshold = spacing(mask) / sqrt(2)) {
     xylist <- attr(capthist, 'xylist')
@@ -69,9 +72,10 @@ outsidemask <- function(capthist, mask, threshold = spacing(mask) / sqrt(2)) {
     }
     sapply(xylist, dfun) > threshold
 }
+###############################################################################
 
 telemloglik <- function(capthist, traps, mask, detectfn = 0, detectpar) {
-    ## experimental
+    ## experimental - doesn't allow covariates
     n <- dim(capthist)[1]
     J <- dim(capthist)[2]
     K <- dim(capthist)[3]
@@ -116,10 +120,9 @@ telemloglik <- function(capthist, traps, mask, detectfn = 0, detectpar) {
                  sweep(1-gkm, STATS=1-wij, MARGIN=1, FUN = '*'))   # not detected
          }
         prwm <- apply(prw,2,prod)            ## product over detectors
-        prwm <- prwm * pmask[[id]]$dbvn       ## m-length vectors
+        prwm <- prwm * pmask[[id]]$dbvn      ## m-length vectors
         loglik <- loglik + log(sum(prwm))    ## sum prob over mask_i points
     }
     loglik
 }
-
-# telemloglik (temp, traps(temp), make.mask(traps(temp), buffer=200), detectpar=c(0.2,30))
+###############################################################################

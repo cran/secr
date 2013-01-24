@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## split.traps.R
-## last changed 2012 09 14
+## last changed 2012 09 14, 2012-12-18 (usage)
 ############################################################################################
 
 split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...) {
@@ -50,7 +50,9 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
   else {
 
       if (detector(x) %in% .localstuff$polydetectors) {
-          if (length(f) > length(levels(polyID(x))))
+#          if (length(f) > length(levels(polyID(x))))
+# 2012-12-11
+          if (length(unique(f)) > length(levels(polyID(x))))
               warning ("split factor does not match traps object")
       }
 

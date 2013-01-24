@@ -47,9 +47,114 @@ double d2 (
     );
 }
 /*--------------------------------------------------------------------------*/
+/* customised dpois */
+double gpois (int count, double lambda, int uselog)
+{
+    if (count == 0) {
+        if (uselog)
+            return (-lambda);
+        else
+            return (exp(-lambda));
+    }
+    else
+        return (dpois(count, lambda, uselog));
+}
+/*--------------------------------------------------------------------------*/
+
+/* customised dbinom */
+double gbinom(int count, int size, double p, int uselog)
+{
+    double x;
+    int i;
+    if (count == 0) {
+        p = 1 - p;
+        x = p;
+        for (i=1; i< size; i++) x = x*p;
+        if (uselog) x = log(x);
+        return (x);   /* faster */
+    }
+    else
+        return (dbinom (count, size, p, uselog));
+}
+/*--------------------------------------------------------------------------*/
+
+/* customised dnbinom parameterised as size, mu */
+double gnbinom (int count, int size, double mu, int uselog)
+{
+    /* prob = size / (size + mu) */
+    size = fabs(size);  /* in case negative 'binomN' passed */
+
+    if (count == 0) {  /* faster - added 2010-10-11*/
+        if (uselog) return( log(size/(size+mu)) * log(size) );
+        else return (pow(size/(size+mu), size));
+    }
+    else
+        return (dnbinom (count, size, size/(size+mu), uselog));
+}
+/*--------------------------------------------------------------------------*/
+
+/* binomial density allowing non-integer (floating point) size */
+double gbinomFP (int count, double size, double p, int uselog)
+{
+    return ( lgamma(size+1) - lgamma(size-count+1) - lgamma(count+1) +
+             count * log(p) + (size - count) * log (1-p) );
+}
+/*--------------------------------------------------------------------------*/
+
+/* probability of count with distribution specified by binomN */
+double countp (int count, int binomN, double lambda) {
+    /* Poisson */
+    if (binomN == 0) {
+	if (count == 0) 
+            return (exp(-lambda));
+	else
+	    return (dpois(count, lambda, 0));
+        /* return ( gpois (count, lambda, 0)); replaced 2012-12-18 */
+    }
+
+    /* Bernoulli */
+    else if (binomN == 1) {
+        if (count == 0)
+            return ( 1 - lambda );
+        else
+            return ( lambda );
+    }
+
+    /* negative binomial */
+    else if (binomN < 0)
+        return ( gnbinom (count, binomN, lambda, 0) );
+
+    /* binomial */
+    else
+        return ( gbinom (count, binomN, lambda, 0) );
+/*        return ( gbinom (count, binomN, lambda / binomN, 0) ); replaced 2012-12-23 */
+}
+/*--------------------------------------------------------------------------*/
 
 double distance (struct rpoint p1, struct rpoint p2) {
     return(sqrt ((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
+}
+/*--------------------------------------------------------------------------*/
+
+/* random point from 2-D radial distribution specified by g function */
+void gxy (int *n, int *fn, double *par, double *w, double *xy) {
+    int maxj = 1000000;
+    double r;
+    double theta;
+    fnptr fnp = hn;
+    int i = 0;
+    int j;
+    fnp = gethfn(*fn);
+    for (i=0; i< *n; i++) {
+        theta = unif_rand() * 2 * M_PI;
+        for (j=0; j<maxj; j++) {
+            r = *w * sqrt(unif_rand());
+            if (unif_rand() < fnp(par, r))
+                break;
+        }
+        xy[i]      = r * cos(theta);
+        xy[*n + i] = r * sin(theta);
+    }
 }
 /*--------------------------------------------------------------------------*/
 
@@ -428,7 +533,6 @@ double SegCircle2 (
 
 /*----------------------------------------------------------------*/
 
-
 double randomtime (double p)
 /* return random event time for event with probability p */
 {
@@ -497,31 +601,37 @@ double Random () {
 
 /* random count from different distributions */
 
-double rcount (int binomN, double lambda) {
+double rcount (int binomN, double lambda, double Tsk) {
 
     /* Poisson */
     if (binomN == 0)
-        return ( rpois(lambda) );
-
-    /* Bernoulli */
-    else if (binomN == 1) {
-        if (Random() < lambda)
-            return (1);
-        else
-            return (0);
-    }
+        return ( rpois(lambda * Tsk) );
 
     /* negative binomial */
     else if (binomN < 0) {
         /* must use 'size, prob' parameters */
         /* prob = size / (size + mu) */
         binomN = abs(binomN);
-        return ( rnbinom(binomN, binomN / (binomN+lambda)) );
+        return ( rnbinom(binomN, binomN / (binomN+ (lambda * Tsk))) );
     }
 
-    /* binomial */
-    else
-        return ( rbinom(binomN, lambda / binomN) );
+    else { 
+        if (fabs(Tsk-1) > 1e-10)               /* not 1.0 */
+	    lambda = 1 - pow(1-lambda, Tsk);   /* 2012-12-18 */
+
+	/* Bernoulli */
+	if (binomN == 1) {
+	    if (Random() < lambda)
+		return (1);
+	    else
+		return (0);
+	}
+
+	/* binomial */
+	else
+/*	    return ( rbinom(binomN, lambda / binomN) ); changed 2012-12-23 */
+	    return ( rbinom(binomN, lambda) );
+    }
 }
 /*----------------------------------------------------------------*/
 

@@ -197,7 +197,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
                beta     = beta,
                parindx  = design$parindx,
                link     = design$link,
-               fixed    = list(),
+               fixedpar = list(),
                designD  = design$D.design,
                design   = design$design,
                design0  = design$design0,

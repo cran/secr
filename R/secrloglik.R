@@ -1,7 +1,7 @@
 ###############################################################################
 ## package 'secr'
-## functions.R
-## miscellaneous functions
+## secrloglik.R
+## likelihood evaluation functions
 ## last changed
 ## 2009 12 10 mixtures
 ## 2010 02 05 update signal-strength detection functions
@@ -18,6 +18,12 @@
 ## 2012-02-07 add noise to signal if detector = signalnoise
 ## 2012-02-13 tweaked signalnoise
 ## 2012-10-19,22 telemetry
+## 2012-11-12 renamed from functions.R
+## 2012-11-12 neglik argument for secr.loglikfn
+## 2012-11-12 'fixed' argument renamed to fixedpar to avoid conflict with maxLik
+## 2012-12-17 pass usage to secrloglik
+## 2013-01-08 details$ignoreusage added
+## 2013-01-23 minprob passed as component of details
 ###############################################################################
 
 
@@ -42,6 +48,7 @@ secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata),dimnames=list(NULL,c('estimate','se')))
     mat <- model.matrix(model, data=newdata)
+
     ## drop pmix beta0 column from design matrix (always zero)
     if (field=='pmix') {
         mat <- mat[,-1,drop=FALSE]
@@ -61,33 +68,6 @@ secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
         return(temp)
     }
 }
-
-############################################################################################
-
-## work in progress
-# secr.deriv.inv.link <- function (model, x, beta.vcv) {
-#     vars <- all.vars(model)
-#     if (any(!(vars %in% names(newdata))))
-#         stop ('some model parameters not found in newdata')
-#     newdata <- as.data.frame(newdata)
-#     mat <- model.matrix(model, data=newdata)
-#     apply(mat,1,function(x) sum(outer(x,x) * beta.vcv[indx,indx]))  # link scale
-#
-#
-# "deriv.inverse.link" <-
-# function(real,x,link)
-# {
-# real=as.vector(real)
-# switch(link,
-#
-# logit=x*real*(1-real),
-# log=x*real,
-# identity=x,
-# sin=x*cos(asin(2*real-1))/2,
-# )
-# }
-#
-# }
 
 ############################################################################################
 
@@ -178,9 +158,9 @@ getD <- function (designD, beta, mask, parindx, link, fixed,
 }
 ###############################################################################
 
-secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
+secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
     design0, capthist, mask, detectfn, CL, groups, details, logmult, ncores,
-    clust, dig = 3, betaw = 10)
+    clust, dig = 3, betaw = 10, neglik = TRUE)
 
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
 
@@ -191,9 +171,11 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 # details$trace=T sends a one-line report to the screen
 
 {
-    minprob <- details$minprob
-    if (is.null(minprob)) minprob <- 1e-50
+    ## for models fitted with old versions we need to fillin these values
+    if (is.null(details$minprob)) details$minprob <- 1e-50
     if (is.null(details$debug)) details$debug <- FALSE   ## 2012-10-28
+    if (is.null(details$ignoreusage)) details$ignoreusage <- FALSE  ## 2013-01-23
+    if (is.null(details$unmash)) details$unmash <- FALSE ## 2013-01-23
 
     if (ms(capthist))
         sessionlevels <- session(capthist)
@@ -220,15 +202,15 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D'))]
     detlink <- link[!(names(link) %in% c('D'))]
-    realparval  <- makerealparameters (design, beta, detparindx, detlink, fixed)
-    realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixed)
+    realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
+    realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
     #--------------------------------------------------------------------
 
     #--------------------------------------------------------------------
     # Density
-    D.modelled <- !CL & is.null(fixed$D)
+    D.modelled <- !CL & is.null(fixedpar$D)
     if (!CL ) {
-        D <- getD (designD, beta, mask, parindx, link, fixed,
+        D <- getD (designD, beta, mask, parindx, link, fixedpar,
                     levels(grp[[1]]), sessionlevels)
         if (sum(D) <= 0)
             warning ("invalid density <= 0")
@@ -346,9 +328,15 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 #            session.signal <- times(session.capthist)
 #        }
 
-        trps  <- unlist(session.traps, use.names=F)
+        trps <- unlist(session.traps, use.names=F)
+        usge <- usage(session.traps)
+        if (is.null(usge) | details$ignoreusage)
+            usge <- matrix(1, nrow = K, ncol = s)
 
-        #------------------------------------------
+        #---------------------------------------------------
+        binomN <- details$binomN
+        #---------------------------------------------------
+
         ## differentiate so density & g do not both need to use sessions
         if (CL)
             density <- 0
@@ -356,10 +344,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
             density <- D[1:m,,min(dim(D)[3],sessnum)]
             ## optional scaling by session-specific number of clusters
             ## 2012-07-24
-            unmash <- details$unmash
-            if (is.null(unmash))
-                unmash <- FALSE
-            if (unmash) {
+            if (details$unmash) {
                 nmash <- attr(session.capthist, 'n.mash')
                 if (!is.null(nmash))
                     density <- density * length(nmash)
@@ -367,7 +352,12 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         }
 
         #------------------------------------------
-        # allow for scaling of detection parameters
+        # allow for scaling of detection
+
+# print(D)
+# print(sessnum)
+# print(D.modelled)
+# 'subscript out of bounds' 2012-12-14 dontrun output
 
         Dtemp <- ifelse (D.modelled, D[1,1,sessnum], NA)
         Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
@@ -409,15 +399,24 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         # debug
         #-------------------------------------------
         if (details$debug) {
-           arglist <- list(CL=CL, dettype=dettype, param=details$param, distrib=distrib,
-                           capthist=session.capthist, xy=unlist(session.xy),
-                           signal=session.signal, grp=session.grp, nc=nc, s=s, k=k, m=m,
-                           ngroup=ngroup, nmix=details$nmix, trps=trps, mask=session.mask,
-                           density=density, Xrealparval=Xrealparval, Xrealparval0=Xrealparval0,
-                           nrowXrealparval=nrow(Xrealparval), nrowXrealparval0=nrow(Xrealparval0),
-                           PIA=design$PIA[sessg,1:nc,1:s,1:K,], tempPIA0=tempPIA0,
-                           cell=cell, miscparm=miscparm, detectfn=detectfn,
-                           binomN=details$binomN, minprob=minprob)
+
+           arglist <- list(CL=CL, dettype=dettype,
+                           details=details, distrib=distrib,
+                           capthist=session.capthist,
+                           xy=unlist(session.xy),
+                           signal=session.signal, grp=session.grp,
+                           nc=nc, s=s, k=k, m=m, ngroup=ngroup,
+                           nmix=details$nmix, trps=trps, usge=usge,
+                           mask=session.mask, density=density,
+                           Xrealparval=Xrealparval,
+                           Xrealparval0=Xrealparval0,
+                           nrowXrealparval=nrow(Xrealparval),
+                           nrowXrealparval0=nrow(Xrealparval0),
+                           PIA=design$PIA[sessg,1:nc,1:s,1:K,],
+                           tempPIA0=tempPIA0, cell=cell,
+                           miscparm=miscparm, detectfn=detectfn,
+                           binomN=binomN)
+
            save(arglist, file= paste('arglist',sessnum,'.RData',sep=''))
        }
 
@@ -502,7 +501,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
         # typical call (not 'presence' or 'unmarked')
         #--------------------------------------------
         else {
-                temp <- .C('secrloglik', PACKAGE = 'secr',
+
+            temp <- .C('secrloglik', PACKAGE = 'secr',
                 as.integer(CL),       # 0 = full, 1 = CL
                 as.integer(dettype),  # 0 = multicatch, 1 = proximity, etc
                 as.integer(details$param), # 0 = Borchers & Efford, 1 Gardner & Royle
@@ -519,6 +519,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 as.integer(ngroup),
                 as.integer(details$nmix),
                 as.double(trps),
+                as.double(usge),
                 as.double(session.mask),
                 as.double(density),                            # density at each mask point x ngroup cols
                 as.double(Xrealparval),
@@ -530,15 +531,14 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
                 as.double(cell),                               # mask cell area
                 as.double(miscparm),                           # miscellaneous parameter
                 as.integer(detectfn),
-                as.integer(details$binomN),
-                as.double(minprob),
+                as.integer(binomN),
+                as.double(details$minprob),
                 a=double(nc),
                 value=double(1),
                 resultcode=integer(1))
         }
 
         LL <- ifelse (temp$resultcode == 0, LL + temp$value, NA)
-
         ####################################################
         ## unclear whether this is correct wrt groups
         if (logmult & (detector(session.traps) %in% .localstuff$simpledetectors)) {
@@ -552,7 +552,7 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
     if (ncores > 1) {
         clusterExport(clust, c("realparval", "details", "grp", "beta",
-            "parindx", "minprob"), envir = environment())
+            "parindx"), envir = environment())
         loglik <- sum(parSapply(clust, 1:nsession, sessionLL))
     }
     else {
@@ -573,34 +573,8 @@ secr.loglikfn <- function (beta, parindx, link, fixed, designD, design,
 
         flush.console()
     }
-
-   if (is.finite(loglik)) -loglik   # return the negative loglikelihood
-   else 1e10
-
+   loglik <- ifelse(is.finite(loglik), loglik, -1e10)
+   ifelse (neglik, -loglik, loglik)
 }
 ############################################################################################
 
-make.lookup <- function (tempmat) {
-
-    ## should add something to protect make.lookup from bad data...
-    nrw <- nrow(tempmat)
-    ncl <- ncol(tempmat)
-
-    temp <- .C("makelookup",  PACKAGE='secr',
-        as.double(tempmat),
-        as.integer(nrw),
-        as.integer(ncl),
-        unique = integer(1),
-        y      = double(nrw * ncl),
-        index  = integer(nrw),
-        result = integer(1))
-
-    if (temp$result != 0)
-        stop ("error in external function 'makelookup'; ",
-              "perhaps problem is too large")
-    lookup <- matrix(temp$y[1:(ncl*temp$unique)], nrow = temp$unique, byrow = T)
-
-    colnames(lookup) <- colnames(tempmat)
-    list (lookup=lookup, index=temp$index)
-}
-###############################################################################

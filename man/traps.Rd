@@ -33,12 +33,26 @@ The required attribute `detector' records the type of detector
 ("single", "multi" or "proximity" etc.; see \code{\link{detector}} for
 more).
 
-Other possible attributes of a \code{traps} object are average
-\code{\link{spacing}}, trap-specific covariates (\code{covariates}), and
-a matrix of binary (0/1) codes indicating whether each detector was used
-on each occasion (\code{usage}). If usage is specified, at least one
-detector must be `used' on each occasion.
+Other possible attributes of a \code{traps} object are:
 
+\tabular{ll}{
+ \code{\link{spacing}} \tab mean distance to nearest detector \cr
+ \code{spacex} \tab \cr
+ \code{spacey} \tab  \cr
+ \code{\link{covariates}} \tab dataframe of trap-specific covariates \cr
+ \code{\link{clusterID}} \tab identifier of the cluster to which each detector belongs  \cr
+ \code{\link{clustertrap}} \tab sequence number of each trap within its cluster  \cr  
+ \code{\link{usage}} \tab a traps x occasions matrix of effort (may be binary 
+ 0/1)\cr
+ 
+ \code{newtrap} \tab vector recording aggregation of detectors by
+ \code{\link{reduce.traps}}\cr
+
+   }
+
+If usage is specified, at least one detector must be `used' (usage non-zero)
+    on each occasion.
+    
 Various array geometries may be constructed with functions such as
 \code{\link{make.grid}} and \code{\link{make.circle}}, and these may be
 combined or placed randomly with \code{\link{trap.builder}}. 
@@ -63,14 +77,18 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
   
 Generic methods are provided to select rows
 (\code{\link{subset.traps}}), combine two or more arrays
-(\code{\link{rbind.traps}}), shift an array (\code{\link{shift.traps}}),
-and to rotate an array (\code{\link{rotate.traps}}).  The attributes
-\code{usage} and \code{covariates} may be extracted or replaced using
-generic methods of the same name.
+(\code{\link{rbind.traps}}), aggregate detectors
+(\code{\link{reduce.traps}}), shift an array
+(\code{\link{shift.traps}}), or rotate an array
+(\code{\link{rotate.traps}}).
+
+The attributes \code{usage} and \code{covariates} may be extracted or
+replaced using generic methods of the same name.
 
 }
 
 \seealso{ \code{\link{make.grid}}, \code{\link{read.traps}},
+  \code{\link{rbind.traps}}, \code{\link{reduce.traps}},
   \code{\link{plot.traps}}, \code{\link{secr.fit}},
   \code{\link{spacing}}, \code{\link{detector}},
   \code{\link{covariates}}, \code{\link{trap.builder}} }

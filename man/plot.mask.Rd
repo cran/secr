@@ -144,7 +144,8 @@ plot (tempmask)
 ## restrict to points over an arbitrary detection threshold,
 ## add covariate, plot image and overlay traps
 
-tempmask <- subset(tempmask, pdot(tempmask,temptrap)>0.001)
+tempmask <- subset(tempmask, pdot(tempmask, temptrap,
+    noccasions = 5)>0.001)
 covariates (tempmask) <- data.frame(circle = 
     exp(-(tempmask$x^2 + tempmask$y^2)/10000) )
 plot (tempmask, covariate = "circle", dots = FALSE, axes = TRUE, 

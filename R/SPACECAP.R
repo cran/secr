@@ -3,10 +3,8 @@
 ## SPACECAP.R
 ## Write captures and detector locations to text files SPACECAP format
 ## Read captures and detector locations from text files in SPACECAP format
-## 2010 04 10, 2010 04 30
+## 2010 04 10, 2010 04 30, 2012 12 18
 ############################################################################################
-
-# source ('d:\\density secr 1.4\\spacecap\\SPACECAP.R')
 
 write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, filestem='') {
 
@@ -31,8 +29,10 @@ write.SPACECAP <- function (object, mask = NULL, buffer = 100, ndec = 2, fileste
 
     ## traps
     temp <- trps
-    if (!is.null(usage(trps)))
-        temp <- cbind(temp,usage(trps))
+    if (!is.null(usage(trps))) {
+        usage(traps) <- (usage(traps)>0) * 1  ## force to binary for SPACECAP 2012-12-17
+        temp <- cbind(temp, usage(trps))
+    }
     else
         temp <- cbind(temp, matrix(1, nrow = ntrap, ncol = nocc))
     cat (c('LOC_ID', 'X_Coord','Y_Coord',1:nocc), sep=',', file=TD)
@@ -87,10 +87,12 @@ read.SPACECAP <- function (AC, TD, detector = 'proximity', session = '1') {
     detector(traps) <- detector
     covariates(traps) <- NULL
     if (any(used != 1))  ## don't bother if all detectors always used
-        usage(traps) <- used
-    attr(traps, "spacex") <- min(dist(unique(traps$x)))
-    attr(traps, "spacey") <- min(dist(unique(traps$y)))
-
+        usage(traps) <- as.matrix(used)   ## 2012-12-18
+    ux <- unique(traps$x)
+    uy <- unique(traps$y)
+    attr(traps,'spacex') <- ifelse (length(ux)>1, min(dist(ux)), NA)
+    attr(traps,'spacey') <- ifelse (length(uy)>1, min(dist(uy)), NA)
+    spacing(traps) <- spacing(traps)   ## !!
     capt$session <- rep(session,nrow(capt))
     capt <- capt[,c('session','ANIMAL_ID','SO','LOC_ID')]
     make.capthist(capt, traps, fmt = 'trapID', noccasions = nocc)

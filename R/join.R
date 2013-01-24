@@ -29,7 +29,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     }
 
     if (!ms(object) | !inherits(object, 'capthist'))
-        stop("requires multi-session capthist object")
+        stop("requires multi-session capthist object or list of single-session capthist")
 
     outputdetector <- detector(traps(object)[[1]])
     nsession <- length(object)
@@ -42,12 +42,12 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         df[[sess]] <- onesession (sess)
     }
     df <- do.call(rbind, df)
+
     n <- length(unique(df$newID))
     condition.usage <- function (trp, i, nocc) {
         us <- matrix(0, nrow=nrow(trp), ncol=sum(nocc))
         s1 <- c(1, cumsum(nocc)+1)[i]
         s2 <- cumsum(nocc)[i]
-
         if (is.null(usage(trp)))
             us[,s1:s2] <- 1
         else
@@ -60,53 +60,39 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     temptrp <- traps(object)
     for (i in 1:length(temptrp))
         temptrp[[i]] <- condition.usage(temptrp[[i]], i, nocc)
+
     alltemptrp <- do.call(rbind, c(temptrp, renumber = FALSE))
-    if (remove.dupl.sites) {
-        # create thinned traps object
-        temp <- as.matrix(dist(alltemptrp))
-        diag(temp) <- 1e10
-        temp[upper.tri(temp)] <- 1e10
-        drop <- apply(temp, 1, function(x) any(x<tol))
-        newtraps <- subset(alltemptrp, !drop)
+    newtraps <- alltemptrp
+    df$newtrap <- paste(df$newtrap,df$sess, sep=".")
 
-        usage(newtraps) <- NULL   ## drop usage!
-        traplookup <- nearesttrap(alltemptrp, newtraps)
-        names(traplookup) <- rownames(alltemptrp)
-        df$newtrap <- traplookup[paste(df$newtrap, df$sess, sep=".")]
-    }
-    else {
-        newtraps <- alltemptrp
-        df$newtrap <- paste(df$newtrap,df$sess, sep=".")
-    }
-
-    # 2012-06-08 ensure retain all occasions
+    # ensure retain all occasions
     df$newocc <- factor(df$newocc, levels = 1:sum(nocc))
 
-    #  if (outputdetector %in% .localstuff$exclusivedetectors) {
-    if (outputdetector %in% c('single','multi','transectX','polygonX')) {
+    if (outputdetector %in% .localstuff$exclusivedetectors) {
         alivesign <- df$alive*2 - 1
         tempnew <- matrix(0, nrow = n, ncol = sum(nocc))
         dimnames(tempnew) <- list(unique(df$newID), 1:sum(nocc))
         tempnew[cbind(df$newID, df$newocc)] <- as.numeric(df$newtrap) * alivesign
     }
     else {
-## FUDGE 2011-12-23 - not for publication
-        df$newtrap <- factor(df$newtrap, levels=1:nrow(newtraps)) #rownames(newtraps))
+        df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
         tempnew <- table(df$newID, df$newocc, df$newtrap)
         alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
         alivesign[is.na(alivesign)] <- TRUE
         alivesign <- alivesign * 2 - 1
         tempnew <- tempnew * alivesign
     }
-
     class(tempnew) <- 'capthist'
     traps(tempnew) <- newtraps
     session(tempnew) <- 1
     neworder <- order (df$newocc, df$newID, df$newtrap)
+
     if (!is.null(df$x))
         xy(tempnew) <- df[neworder,c('x','y'), drop = FALSE]
+
     if (!is.null(df$signal))
         signal(tempnew) <- df[neworder,'signal']
+
     if (!is.null(covariates(object))) {
         tempcov <- do.call(rbind, covariates(object))
         IDcov <- unlist(lapply(object,rownames))
@@ -115,7 +101,11 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         rownames(tempcov) <- rownames(tempnew)
         covariates(tempnew) <- tempcov
     }
+
+    if (remove.dupl.sites)
+        tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
     attr(tempnew, 'interval') <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
+
     tempnew
 
 }
@@ -206,8 +196,9 @@ unjoin <- function (object, interval, ...) {
         return(object)
     }
     newobj <- vector(mode='list', length=nsess)
-    for (sess in 1:nsess)
+    for (sess in 1:nsess) {
         newobj[[sess]] <- subset(object, occasions = (session==sess), ...)
+    }
     class (newobj) <- c('list','capthist')
     session(newobj) <- 1:nsess
     return(newobj)

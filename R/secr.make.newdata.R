@@ -97,8 +97,23 @@ secr.make.newdata <- function (object) {
         if (v=='K') newdata$K <- rep(factor(0, levels=c(0,1)),nr)    # naive
         if (v=='bkc') newdata$bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
         if (v=='Bkc') newdata$Bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
-        if (v=='tcov') newdata$tcov <- rep(0,nr)        # ideally use mean or standardize?
-        if (v=='kcov') newdata$kcov <- rep(0,nr)        # ditto
+        if (v=='tcov') {
+            timecov <- object$timecov
+            if (is.factor(timecov)) {
+                newdata$tcov <- rep(factor(levels(timecov)[1], levels = levels(timecov)))
+            }
+            else
+                newdata$tcov <- rep(0,nr)        # ideally use mean or standardize?
+        }
+        if (v=='kcov') {
+            kcov <- covariates(traps(object$capthist))[,1]
+            if (is.factor(kcov)) {
+                newdata$kcov <- rep(factor(levels(kcov)[1], levels = levels(kcov)))
+            }
+            else {
+                newdata$kcov <- rep(0,nr)        # ditto
+            }
+        }
         if (v=='Session') newdata$Session <- as.numeric( factor(newdata$session,
             levels = session(capthist) ) ) - 1    # based on sequence in capthist
     }

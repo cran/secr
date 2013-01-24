@@ -10,6 +10,7 @@
 ## 2012-10-28 model.string moved here
 ## 2012-11-03 gradient moved here
 ## 2012-11-03 several other functions moved here from functions.r
+## 2012-12-03 make.lookup moved here
 ###############################################################################
 
 .localstuff <- new.env()
@@ -310,7 +311,7 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         OK <- overlay (xy, poly)
         !is.na(OK)
     }
-    else if (inherits(poly, 'mask')) {   2012-04-13
+    else if (inherits(poly, 'mask')) {  # 2012-04-13
         if (ms(poly))
             stop ("multi-session masks not supported")
         sp <- spacing(poly)
@@ -728,3 +729,28 @@ group.factor <- function (capthist, groups, sep='.')
     }
 }
 ############################################################################################
+
+make.lookup <- function (tempmat) {
+
+    ## should add something to protect make.lookup from bad data...
+    nrw <- nrow(tempmat)
+    ncl <- ncol(tempmat)
+
+    temp <- .C(makelookup,
+        as.double(tempmat),
+        as.integer(nrw),
+        as.integer(ncl),
+        unique = integer(1),
+        y      = double(nrw * ncl),
+        index  = integer(nrw),
+        result = integer(1))
+
+    if (temp$result != 0)
+        stop ("error in external function 'makelookup'; ",
+              "perhaps problem is too large")
+    lookup <- matrix(temp$y[1:(ncl*temp$unique)], nrow = temp$unique, byrow = T)
+
+    colnames(lookup) <- colnames(tempmat)
+    list (lookup=lookup, index=temp$index)
+}
+###############################################################################

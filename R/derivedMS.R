@@ -72,7 +72,7 @@ CLmeanesa <- function (beta, object, individuals, sessnum, noccasions = NULL)
 ############################################################################################
 
 esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.001, clust)
-##  noccasion = NULL added 2011-04-04
+##  noccasions = NULL added 2011-04-04
 {
   beta <- object$fit$par
   if (object$detectfn %in% c(0,2,9)) {    ## halfnormal, exponential and binary SS
@@ -132,12 +132,16 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                loginterval, distribution)
     }
     else {
-
         if (!is.null(distribution)) {
             if (tolower(distribution) %in% c('poisson','binomial'))
                 object$details$distribution <- distribution
             else stop ("distribution not recognised")
         }
+        if (!inherits(object, 'secr')) {
+            warning ("requires fitted secr model")
+            return (NULL)
+        }
+        else
 
         if (is.list(object$capthist) & is.null(sessnum)) {
             ## recursive call if MS

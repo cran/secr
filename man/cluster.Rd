@@ -9,7 +9,8 @@
 
 \description{
   
-  Extract or replace cluster information of a \code{traps} object, or
+  Clusters are uniform groups of detectors. Use these functions to
+  extract or replace cluster information of a \code{traps} object, or
   extract cluster information for each detection in a \code{capthist}
   object.
   
@@ -48,7 +49,7 @@ clustertrap(object) <- value
 \value{
 
   Factor (\code{clusterID}) or integer-valued vector
-  (\code{clustertrap}.
+  (\code{clustertrap}).
 
   \code{clusterID(object)} may be NULL.
   
@@ -56,7 +57,7 @@ clustertrap(object) <- value
 
 \seealso{
 
-\code{\link{traps}}, \code{\link{trap.builder}},
+\code{\link{traps}}, \code{\link{trap.builder}}, \code{\link{mash}},
 \code{\link{derived.cluster}}, \code{\link{cluster.counts}},
 \code{\link{cluster.centres}}
 

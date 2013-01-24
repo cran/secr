@@ -1,9 +1,11 @@
 ## added argument noccasions in calls to pdot 2010-12-19
-## blocked gpclib 2012-11-03
+## 2012-11-03 blocked gpclib
+## 2012-12-18 warning for usage
+## 2012-12-24 binomN argument
 
-bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NULL) {
+bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
-        if (detectfn==7) {
+        if (detectfn == 7) {
             CV2 <- (detectpar$z / detectpar$sigma)^2
             sdlog <- log(1 + CV2)^0.5
             meanlog <- log(detectpar$sigma) - sdlog^2/2
@@ -46,7 +48,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
             invlogit(predict(pdotr.spline,r)$y) * l(r)
     }
 
-    ## punion2 disabled to avoid R CMD check NOTE 2012-11-03
+## punion2 disabled to avoid R CMD check NOTE 2012-11-03
 #    punion2 <- function(polygons, ntheta) {
 #        ## from Remko Duursma on R list 6/3/2010
 #        vec <- c(1,ntheta+1,0,t(polygons[[1]]))
@@ -57,6 +59,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
 #        }
 #        as(vec, "gpc.poly")
 #    }
+
     lth <- function (x) {
         hull <- get.pts(x)
         sum(sapply(hull, function(xy) {
@@ -65,6 +68,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
             sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))
         }))
     }
+
 #    perimeterfn <- function (buffer, traps, ntheta = 60) {
 #        theta <- (2 * pi) * (0:ntheta)/ntheta
 #        pts <- data.frame(x = buffer * cos(theta), y = buffer * sin(theta))
@@ -80,6 +84,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
     if (!(detector(traps) %in% .localstuff$individualdetectors))
         stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
+    if (!is.null(usage(traps)))
+        warning ("bias.D() does not allow for variable effort (detector usage)")
 
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)
@@ -99,7 +105,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
         buffs <- (round(bfactor):round(bfactor*2)) * trapspacing
         wayout <- sweep(cbind(buffs,rep(0,length(buffs))), STAT = unlist(apply(traps,2,max)),
                         MAR=2, FUN='+')
-        pdotwo <- pdot(wayout, traps, detectfn, detectpar, noccasions)
+        pdotwo <- pdot(wayout, traps, detectfn, detectpar, noccasions, binomN)
         tempesa <- esa.plot(traps, max.buffer= trapspacing*control$bfactor,
                        spacing = trapspacing/2, detectfn = detectfn,
                        detectpar=detectpar, noccasions=noccasions,
@@ -125,7 +131,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
 
         buff <- distancetotrap(temp2, traps)
 
-        temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions)
+        temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions, binomN)
         if (control$method == 1) {
             tempfit <- nls ( temp3 ~ (1 - (1 - gr(buff))^ (noccasions*k) ), start=list(k=2))
             if (tempfit$convInfo$isConv)
@@ -191,7 +197,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, control = NU
 }
 
 suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasions = NULL,
-    RBtarget = 0.001, interval = NULL, ...) {
+    ignoreusage = FALSE,  RBtarget = 0.001, interval = NULL, binomN = NULL, ...) {
     if (ms(object)) {
         if (inherits(object,'secr')) {
             nsess <- length(object$capthist)
@@ -219,10 +225,10 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         for (i in 1:nsess) {
             if (inherits(object,'capthist'))
                 buffer[i] <- suggest.buffer(object[[i]], detectfn,
-                    detectpar[[i]], noccasions[i], RBtarget)
+                    detectpar[[i]], noccasions[i], ignoreusage, RBtarget, interval, binomN, ...)
             else
                 buffer[i] <- suggest.buffer(traps[[i]], detectfn,
-                    detectpar[[i]], noccasions[i], RBtarget)
+                    detectpar[[i]], noccasions[i], ignoreusage, RBtarget, interval, binomN, ...)
          }
         buffer
     }
@@ -238,6 +244,12 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 detectfn <- object$detectfn
             if (is.null(noccasions))
                 noccasions <- ncol(object$capthist)
+            if (is.null(ignoreusage)) {
+                if (!is.null(object$details$ignoreusage))
+                    ignoreusage <- object$details$ignoreusage   ## assume not an old model
+                else
+                    ignoreusage <- FALSE
+            }
         }
         else {
             if (inherits(object, 'capthist')) {
@@ -245,7 +257,8 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 noccasions <- ncol(object)
                 if (is.null(detectpar)) {
                     tempmask <- make.mask (traps, 6*RPSV(object))
-                    detectpar <- autoini (object, tempmask)[parnames(0)]
+                    detectpar <- autoini (object, tempmask,
+                        ignoreusage = ignoreusage)[parnames(0)]
                     tempdp <- lapply(detectpar,formatC,4)
                     warning ("using automatic 'detectpar' ",
                         paste(names(detectpar), "=", tempdp, collapse=", "),
@@ -258,6 +271,7 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
             }
             else {
                 traps <- object
+                ## could retrieve noccasions from usage here...
             }
         }
         if (is.null(interval)) {
@@ -271,7 +285,7 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
             stop ("require passive individual detectors (not unmarked or presence)")
 
         fn <- function (w) {
-            bias.D(w, traps, detectfn, detectpar, noccasions, ...)$RB.D - RBtarget
+            bias.D(w, traps, detectfn, detectpar, noccasions, binomN, ...)$RB.D - RBtarget
         }
         temp <- try(round(uniroot (fn, interval)$root), silent = TRUE)
         if (inherits(temp, 'try-error')) {

@@ -7,6 +7,8 @@
 ## 2010-11-26 trapcovnames passed to read.traps covnames
 ## 2010-12-01 suppressed warning re- detectors not recognised by Density
 ## 2012-10-19 telemetry detector type
+## 2013-01-11 adjust call to count.fields etc to allow binary.usage
+##            to be passed through to read.traps
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
 
@@ -78,6 +80,8 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
                           noccasions = NULL, covnames = NULL, trapcovnames = NULL,
                           cutval = NULL, verify = TRUE, noncapt = 'NONE', ...) {
 
+    dots <- match.call(expand.dots = FALSE)$...
+
     if (!(fmt %in% c('XY','trapID')))
         stop ("allowed formats are 'XY' and 'trapID'")
     if ((detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
@@ -92,10 +96,18 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
     }
     if (missing(trapfile) & (detector=='telemetry'))
         trapfile <- 0  ## dummy value; not used
-    if ((filetype(captfile)=='.csv') & is.null(list(...)$sep))
-        nfield <- max(count.fields(captfile, sep=',', ...))
-    else
-        nfield <- max(count.fields(captfile, ...))
+
+    countargs <- dots[names(dots) %in% names(formals(count.fields))]
+    if (filetype(captfile)=='.csv')
+        countargs$sep <- ','
+    countargs$file <- captfile
+    nfield <- max(do.call(count.fields, countargs))
+
+# overridden 2013-01-11
+#    if ((filetype(captfile)=='.csv') & is.null(list(...)$sep))
+#        nfield <- max(count.fields(captfile, sep=',', ...))
+#    else
+#        nfield <- max(count.fields(captfile, ...))
 
     if (fmt == 'trapID') {
         nvar <- 4
@@ -106,12 +118,12 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
         colcl <- c('character','character',NA,NA,NA, rep(NA,nfield-nvar))
     }
 
-    defaultdots <- list(sep = '', comment.char = '#')
-    if (filetype(captfile)=='.csv') defaultdots$sep <- ','
-    dots <- replacedefaults (defaultdots, list(...))
-
+    defaultargs <- list(sep = '', comment.char = '#')
+    if (filetype(captfile)=='.csv') defaultargs$sep <- ','
+    captargs <- replacedefaults (defaultargs, list(...))
+    captargs <- captargs[names(captargs) %in% names(formals(read.table))]
     capt <- do.call ('read.table', c(list(file = captfile, as.is = TRUE,
-        colClasses = colcl), dots) )
+        colClasses = colcl), captargs) )
 
     ## let's be clear about this...
     if (fmt =='trapID')
@@ -144,6 +156,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
 
     trps <- sapply(trapfile, readtraps, simplify = FALSE)
     if (length(trps)==1) trps <- trps[[1]]
+
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval,
         noncapt = noncapt)

@@ -40,7 +40,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 
     Darray <- getDensityArray (predictDsurface(object))
 
-## setup
+    ## setup
 
     ngrp <- dim(Darray)[2]
     nsession <- dim(Darray)[3]
@@ -151,7 +151,6 @@ sim.secr <- function (object, nsim = 1,
         if (any(class(data) != c('list','secrdata')))
             stop("invalid data")
     }
-
     fitmodel <- function (sc) {
         i <<- i+1
         memo (paste('sim.secr fitting replicate',i,'...'), tracelevel>0)
@@ -162,7 +161,8 @@ sim.secr <- function (object, nsim = 1,
                 start = start, link = object$link, fixed = object$fixed,
                 timecov = object$timecov, sessioncov = object$sessioncov,
                 groups = object$groups, dframe = object$dframe, details = details,
-                method = object$fit$method, verify = FALSE, ncores = 1) )
+                method = object$fit$method, verify = FALSE, biasLimit = NA,
+                ncores = 1) )
             extractfn(tempfit)
         }
         else if (is.list(test)) list() else rep(NA, n.extract)
@@ -240,6 +240,9 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             output
         }
     }
+
+    if (is.null(object$details$ignoreusage)) object$details$ignoreusage <- FALSE  ## 2013-01-23
+    if (is.null(object$details$miscparm)) object$details$miscparm <- 0  ## 2013-01-23
 
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)
@@ -331,8 +334,10 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
         }
         #------------------------------------------
         ## simulate this session...
-        used <- unlist(usage(session.traps))
-        if (is.null(used)) used <- rep(1,s*K)
+        usge <- usage(session.traps)
+
+        if (is.null(usge) | object$details$ignoreusage)
+            usge <- matrix(1, nrow = K, ncol = s)
         NR <- N[sessnum]
 
         if (detector(session.traps) %in% .localstuff$exclusivedetectors) {
@@ -344,11 +349,9 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             ## maxdet <- NR * s * K * 10
             maxdet <- NR * s * K * maxperpoly
         }
-        miscparm <- object$details$cutval
-        miscparm <- ifelse (is.null(miscparm), 0, miscparm)
         if ((object$detectfn==12) || (object$detectfn==13)) {
             ## muN, sdN
-            miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
+            object$details$miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
         }
 
         temp <- .C('simsecr', PACKAGE = 'secr',
@@ -365,11 +368,11 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             as.integer(object$details$nmix),
             as.double(session.animals),
             as.double(trps),
-            as.integer(used),
+            as.double(usge),
             as.integer(btype),
             as.integer(Markov),
             as.integer(binomN),                # used only for count detector checked 2010-12-01
-            as.double(miscparm),
+            as.double(object$details$miscparm),
             as.integer(object$detectfn),
             as.integer(maxperpoly),
             n = integer(1),
@@ -379,7 +382,6 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             value = integer(NR*s*K),
             resultcode = integer(1)
         )
-
         if (temp$resultcode != 0) {
           if ((temp$resultcode == 2) && (dettype %in% c(6,7)))
               stop (">100 detections per animal per polygon per occasion")

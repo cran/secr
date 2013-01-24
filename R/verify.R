@@ -466,12 +466,15 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             usageoccasionsOK <- ncol(usage(traps(object))) == ncol(object)
 
             if (detectionsOK) {
-
-                notused <- !usage(traps(object))  ## traps x occasions
+                # 2012-12-17
+                # notused <- !usage(traps(object))   ## traps x occasions
+                notused <- usage(traps(object)) == 0 ## traps x occasions
                 if (dim3) {
                     if (usagedetectorsOK && usageoccasionsOK) {
                         tempobj <- aperm(object, c(2,3,1))   ## occasion, traps, animal sKn
-                        tempuse <- array(t(usage(traps(object))), dim=dim(tempobj))  ## replicated to fill...
+                        # 2012-12-17
+                        # tempuse <- array(t(usage(traps(object))), dim=dim(tempobj))
+                        tempuse <- array(t(usage(traps(object))>0), dim=dim(tempobj)) # repl to fill
                         conflcts <- (abs(tempobj)>0) && (tempuse==0)
                         tempobjmat <- array(tempobj[,,1], dim= dim(tempobj)[1:2])
                         occasion <- rep(row(tempobjmat), dim(tempobj)[3])
@@ -532,13 +535,15 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         ## 16
         ## 2012-10-22
-        zeros <- apply(abs(object)>0,1,sum)==0
-        # pc <- detector(traps(object)) %in% c('proximity','count')
-        xyl <- attr(object,'xylist')
-        if (!is.null(xyl) | any(zeros)) {
-            xylistOK <- all(names(xyl) %in% row.names(object))
-            if (!all(row.names(object)[zeros] %in% names(xyl)))
-                xylistOK <- FALSE
+        if (nrow(object)>0) {
+            zeros <- apply(abs(object)>0,1,sum)==0
+            # pc <- detector(traps(object)) %in% c('proximity','count')
+            xyl <- attr(object,'xylist')
+            if (!is.null(xyl) | any(zeros)) {
+                xylistOK <- all(names(xyl) %in% row.names(object))
+                if (!all(row.names(object)[zeros] %in% names(xyl)))
+                    xylistOK <- FALSE
+            }
         }
 
         errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,

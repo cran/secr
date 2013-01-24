@@ -120,7 +120,7 @@ FTHLbn.fit <- secr.fit(hornedlizardCH, details =
 collate(FTHL.fit, FTHLbn.fit)[,,,"D"]
 
 ## Collapse occasions (does not run faster)
-hornedlizardCH.14 <- reduce(hornedlizardCH, columns =
+hornedlizardCH.14 <- reduce(hornedlizardCH, newoccasions =
     list(1:14), outputdetector = "polygon")
 FTHL14.fit <- secr.fit(hornedlizardCH.14, binomN = 14)
 }

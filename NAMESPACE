@@ -66,6 +66,7 @@ export (buffer.contour)
 export (detectpar)
 export (distancetotrap)
 export (nearesttrap)
+export (secrlist)
 export (MS.capthist)
 export (rbind.capthist)
 export (join)
@@ -94,6 +95,7 @@ export (predictDsurface)
 export (rectangularMask)
 export (spotHeight)
 export (randomHabitat)
+export (make.lookup)
 
 # new generics
 export (reduce)
@@ -131,6 +133,7 @@ S3method (ms, secr)
 export (covariates)
 export (timevaryingcov)
 export (usage)
+export (usagePlot)
 export (detector)
 export (clusterID)
 export (clustertrap)
@@ -143,6 +146,7 @@ export (animalID)
 export (alive)
 export (xy)
 export (alongtransect)
+export (snip)
 export (signalframe)
 export (signalmatrix)
 export (signal)
@@ -198,7 +202,7 @@ S3method(summary, traps)
 S3method(print, summary.traps)
 S3method(rbind, traps)
 S3method(subset, traps)
-
+S3method(reduce, traps)
 S3method(rotate, traps)
 S3method(shift, traps)
 S3method(flip, traps)
@@ -254,6 +258,7 @@ S3method(summary, Dsurface)
 useDynLib (
     secr,
     pdotpoint,
+    pdotpoly,
     integralprw1,
     secrloglik,
     trappingsingle,

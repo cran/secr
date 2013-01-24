@@ -2,6 +2,7 @@
 ## package 'secr'
 ## addCovariates.R
 ## 2011-11-01
+## 2013-01-19 handles missing values in character fields
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL) {
@@ -64,11 +65,12 @@ addCovariates <- function (object, spatialdata, columns = NULL) {
             df <- df[,columns, drop = FALSE]
 
         ## check new covariates OK
-        fn <- function(x)
+        fn <- function(x) {
             if (is.numeric(x))
                 !any(is.na(x))
             else
-                !any(x == "")
+                !any((x == "") | is.na(x))
+        }
         OK <- all(apply(df, 2, fn))
         if (!OK)
             warning ("missing values among new covariates")
