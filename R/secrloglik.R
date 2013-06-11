@@ -47,19 +47,24 @@ secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
         stop ("one or more model covariates not found in 'newdata'")
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata),dimnames=list(NULL,c('estimate','se')))
-    mat <- model.matrix(model, data=newdata)
+    mat <- model.matrix(model, data = newdata)
 
     ## drop pmix beta0 column from design matrix (always zero)
     if (field=='pmix') {
         mat <- mat[,-1,drop=FALSE]
     }
     lpred[,1] <- mat %*% beta[indx]
-    if (is.null(beta.vcv)) return ( cbind(newdata,lpred) )
-    else {
 
-        vcv <- beta.vcv[indx,indx]    ## OR maybe all betas?
-        nrw <- 1:nrow(mat)
-        vcv <- apply(expand.grid(nrw, nrw), 1, function(ij)
+    ## replaced for robustness 2013-06-06
+    ## if (is.null(beta.vcv)) return ( cbind(newdata,lpred) )
+    if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
+    else {
+        vcv <- beta.vcv[indx,indx, drop = FALSE]    ## OR maybe all betas?
+## bug fix 2013-04-14
+## nrw <- 1:nrow(mat)
+## vcv <- apply(expand.grid(nrw, nrw), 1, function(ij)
+        nrw <- nrow(mat)
+        vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
             mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
         vcv <- matrix (vcv, nrow = nrw)
         lpred[,2] <- diag(vcv)^0.5
@@ -76,14 +81,22 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
         ## linear predictor for real parameter i
         Yp <- design$designMatrices[[i]] %*% beta[parindx[[i]]]
         if (names(link)[i] == 'pmix') {
-            mlogit.untransform(Yp, design$parameterTable[,'pmix'])
+            ## 2013-04-14 index of class groups (pmix sum to 1.0 within latentmodel)
+            h2 <- grep('.h2',dimnames(design$designMatrices[[i]])[[2]], fixed=T)
+            h3 <- grep('.h3',dimnames(design$designMatrices[[i]])[[2]], fixed=T)
+            tmp <- design$designMatrices[[i]][,-c(h2,h3), drop = FALSE]
+            tmph <- design$designMatrices[[i]][,c(h2,h3), drop = FALSE]
+            latentmodel <- as.numeric(factor(apply(tmp,1,paste, collapse='')))
+            refclass <- apply(tmph,1,sum) == 0
+            Yp[refclass] <- NA
+            Yp <- mlogit.untransform(Yp, latentmodel)
+            Yp[design$parameterTable[,i]]
         }
         else {
             Yp <- untransform(Yp, link[[i]])
             Yp[design$parameterTable[,i]]   ## replicate as required
         }
     }
-
     ## construct matrix of detection parameters
     nrealpar  <- length(design$designMatrices)
     parindx$D <- NULL ## detection parameters only
@@ -159,7 +172,7 @@ getD <- function (designD, beta, mask, parindx, link, fixed,
 ###############################################################################
 
 secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
-    design0, capthist, mask, detectfn, CL, groups, details, logmult, ncores,
+    design0, capthist, mask, detectfn, CL, hcov, groups, details, logmult, ncores,
     clust, dig = 3, betaw = 10, neglik = TRUE)
 
 # Return the negative log likelihood for inhomogeneous Poisson spatial capture-recapture model
@@ -185,6 +198,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
     if ((ncores>1) & missing(clust))
         stop("not ready for multicore here")
 
+    nmix <- details$nmix
+
     #--------------------------------------------------------------------
     # Groups
     grp  <- group.factor (capthist, groups)
@@ -192,11 +207,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
 
     #--------------------------------------------------------------------
     # Fixed beta
-    fb <- details$fixedbeta
-    if (!is.null(fb)) {
-        fb[is.na(fb)] <- beta  ## partial beta (varying only)
-        beta <- fb             ## complete beta
-    }
+    beta <- fullbeta(beta, details$fixedbeta)
 
     #--------------------------------------------------------------------
     # Detection parameters
@@ -204,7 +215,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
     detlink <- link[!(names(link) %in% c('D'))]
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
-    #--------------------------------------------------------------------
 
     #--------------------------------------------------------------------
     # Density
@@ -242,6 +252,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         sessg <- min (sessnum, design$R)
         cell <- attr(session.mask,'area')
         session.mask <- as.matrix(session.mask[,1:2])
+        knownclass <- getknownclass(session.capthist, nmix, hcov)
 
         LL <- 0
 
@@ -354,11 +365,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         #------------------------------------------
         # allow for scaling of detection
 
-# print(D)
-# print(sessnum)
-# print(D.modelled)
-# 'subscript out of bounds' 2012-12-14 dontrun output
-
         Dtemp <- ifelse (D.modelled, D[1,1,sessnum], NA)
         Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
         Xrealparval0 <- scaled.detection (realparval0, details$scalesigma, details$scaleg0, Dtemp)
@@ -406,7 +412,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                            xy=unlist(session.xy),
                            signal=session.signal, grp=session.grp,
                            nc=nc, s=s, k=k, m=m, ngroup=ngroup,
-                           nmix=details$nmix, trps=trps, usge=usge,
+                           nmix=nmix, trps=trps, usge=usge,
                            mask=session.mask, density=density,
                            Xrealparval=Xrealparval,
                            Xrealparval0=Xrealparval0,
@@ -501,7 +507,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         # typical call (not 'presence' or 'unmarked')
         #--------------------------------------------
         else {
-
             temp <- .C('secrloglik', PACKAGE = 'secr',
                 as.integer(CL),       # 0 = full, 1 = CL
                 as.integer(dettype),  # 0 = multicatch, 1 = proximity, etc
@@ -517,19 +522,20 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                                # or transect detector
                 as.integer(m),
                 as.integer(ngroup),
-                as.integer(details$nmix),
+                as.integer(nmix),
+                as.integer(knownclass), ## 2013-04-12
                 as.double(trps),
                 as.double(usge),
                 as.double(session.mask),
-                as.double(density),                            # density at each mask point x ngroup cols
+                as.double(density),                          # density at each mask point x ngroup cols
                 as.double(Xrealparval),
                 as.double(Xrealparval0),
-                as.integer(nrow(Xrealparval)),                 # number of rows in lookup table
-                as.integer(nrow(Xrealparval0)),                # ditto, naive
-                as.integer(design$PIA[sessg,1:nc,1:s,1:K,]),   # index of nc,S,K,mix to rows in Xrealparval
-                as.integer(tempPIA0),                          # index of ngroup,S,K,mix to rows in Xrealparval0
-                as.double(cell),                               # mask cell area
-                as.double(miscparm),                           # miscellaneous parameter
+                as.integer(nrow(Xrealparval)),               # number of rows in lookup table
+                as.integer(nrow(Xrealparval0)),              # ditto, naive
+                as.integer(design$PIA[sessg,1:nc,1:s,1:K,]), # index of nc,S,K,mix to rows in Xrealparval
+                as.integer(tempPIA0),                        # index of ngroup,S,K,mix to rows in Xrealparval0
+                as.double(cell),                             # mask cell area
+                as.double(miscparm),                         # miscellaneous parameter
                 as.integer(detectfn),
                 as.integer(binomN),
                 as.double(details$minprob),
@@ -539,11 +545,12 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         }
 
         LL <- ifelse (temp$resultcode == 0, LL + temp$value, NA)
+
         ####################################################
         ## unclear whether this is correct wrt groups
         if (logmult & (detector(session.traps) %in% .localstuff$simpledetectors)) {
             LL <- LL + logmultinom(session.capthist,
-                                           group.factor(session.capthist, groups))
+                                   group.factor(session.capthist, groups))
         }
         LL
 

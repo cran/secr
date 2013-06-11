@@ -53,7 +53,6 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
     }
     nmaskrow <- max(maskrows)
     dims  <- c(nmaskrow, ngrp, R)
-
     ## special case where new meanSD passed
     if (!is.null(meanSD)) {
         if (ms(mask))
@@ -151,7 +150,7 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
             temp <- df[, found, drop = FALSE]
             ## pad with replicated row 1 to ensure rectangular
             if (nrow(temp) < n)
-                rbind(temp, temp[rep(1,n-nrow(df)),])
+                rbind(temp, temp[rep(1,n-nrow(df)),,drop=FALSE])  ## drop=F added 2013-03-10
             else
                 temp
         }

@@ -51,7 +51,7 @@ Acrobat Reader (\url{../doc/secr-manual.pdf}; see also ?secr) and use
 There is a support forum at \url{http://www.phidot.org/forum} under
 `DENSITY|secr'. Please read the FAQ there before posting. See below for
 more \R tips. Some specific problems with \code{secr.fit} are covered in
-\link{troubleshooting}.
+\link{Troubleshooting}.
 
 }
 
@@ -90,36 +90,7 @@ minprob), whereas Density has no explicit limit.
 
 \section{ How can I speed up model fitting and model selection?}{
 
-If you don't need to model variation in density over space or time then
-consider maximizing the conditional likelihood in \code{secr.fit} (CL =
-TRUE). This reduces the complexity of the optimization problem,
-especially where there are several sessions and you want
-session-specific density estimates (by default, \code{derived} returns a
-separate estimate for each session even if the detection parameters are
-constant across sessions).
-
-Check the extent and spacing of the habitat mask that you are using.
-Execution time is roughly proportional to the number of mask points
-(\code{nrow(mymask)}).  Default settings can lead to very large masks
-for detector arrays that are elongated `north-south' because the number
-of points in the east-west direction is fixed. Compare results with a
-much sparser mask (e.g., nx = 32 instead of nx = 64).
-
-Do you really need to fit that complex model? Chasing down small
-decrements in AIC is so last-century. Remember that detection parameters
-are mostly nuisance parameters, and models with big differences in AIC
-may barely differ in their density estimates. This is a good topic for
-further research - we seem to need a `focussed information criterion'
-(Claeskens and Hjort 2008) to discern the differences that matter.
-
-If your detectors are arranged in similar clusters (e.g., small square
-grids) then try the function \code{\link{mash}}.
-
-Use \code{score.test} to compare nested models. At each stage this
-requires only the more simple model to have been fitted in full; further
-processing is required to obtain a numerical estimate of the gradient of
-the likelihood surface for the more complex model, but this is much
-faster than maximizing the likelihood.
+  There are many ways - see \link{Speed tips}.
 
 }
 
@@ -127,20 +98,21 @@ faster than maximizing the likelihood.
   
   Some computations can be run in parallel on multiple processors (most
   desktops these days have multiple cores), but capability is
-  limited. Check the 'ncores' argument of
-  sim.secr() and secr.fit() and ?ncores. The speed gain is significant
-  for parametric bootstrap computations in sim.secr. Parallelisation is
-  also allowed for the session likelihood components of a multi-session
-  model in secr.fit(), but gains there seem to be small or negative.
+  limited. Check the 'ncores' argument of sim.secr() and secr.fit() and
+  ?ncores. The speed gain is significant for parametric bootstrap
+  computations in sim.secr. Parallelisation is also allowed for the
+  session likelihood components of a multi-session model in secr.fit(),
+  but gains there seem to be small or negative.
   
 }
 
 \section{ Can a model use detector-level covariates that vary over
   time?}{
 
-  Yes. See ?timevaryingcov. This is an obvious way to control for
-  varying effort that cannot be described by the `usage' atribute
-  (which allows only used vs. not used). A tip: covariate models fit
+  Yes. See ?timevaryingcov. However, a more direct way to control for
+  varying effort is provided - see the `\link{usage}' atribute, which
+  now allows continuous measure of effort
+  (\url{../doc/secr-varyingeffort.pdf}). A tip: covariate models fit
   more quickly when the covariate takes only a few different values.
   
   }

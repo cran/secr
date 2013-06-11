@@ -9,6 +9,8 @@
 ## 2011 03 27 multiple sessions
 ## 2011 09 09 p.available; session numbers
 ## 2011 09 30 presence, unmarked treated as special case of proximity
+## 2013 04 04 extend to k-specific g0
+## 2013 05 10 extend to general learned response (recapfactor)
 ###############################################################################
 
 expand <- function (x, n, q = 0, default = 1) {
@@ -21,6 +23,13 @@ expand <- function (x, n, q = 0, default = 1) {
             y[] <- x
         y
     }
+}
+
+expandsk <- function (x, s, k, default = 1) {
+    if (is.null(x))
+        matrix(default, nrow = s, ncol = k)
+    else
+        matrix(x, nrow = s, ncol = k)
 }
 
 sim.capthist <- function (
@@ -200,11 +209,17 @@ sim.capthist <- function (
         ##    5  w-exponential
         ##    6  annular normal
         ##    7  cumulative lognormal
+        ##    8  cumulative gamma??
         ##    9  binary signal strength (b0 = (beta0-c)/sdS, b1 = beta1/sdS)
         ##   10  signal strength (signal detectors only)
         ##   11  signal strength with spherical spreading (signal detectors only)
         ##   12  signal-noise (signalnoise detectors only)
         ##   13  signal-noise with spherical spreading (signalnoise detectors only)
+        ##   14  hazard halfnormal
+        ##   15  hazard hazard-rate
+        ##   16  hazard exponential
+        ##   17  annular normal
+        ##   18  cumulative gamma??
 
         ## 2012-12-23
         if (!is.null(usage(traps))) {
@@ -216,17 +231,22 @@ sim.capthist <- function (
         }
 
         ## extended for uniform (detectfn=4) 2010-06-13
+        ## extended for hazard XX detection functions 2013-04-24
         if (detectfn %in% c(0:4))  defaults <- list(g0 = 0.2, sigma = 25, z = 1)
         if (detectfn %in% c(5))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
         if (detectfn %in% c(6))    defaults <- list(g0 = 0.2, sigma = 25, w = 10)
-        if (detectfn %in% c(7))    defaults <- list(g0 = 0.2, sigma = 25, z = 5)
+        if (detectfn %in% c(7,8))    defaults <- list(g0 = 0.2, sigma = 25, z = 5)
         if (detectfn %in% c(9))  defaults <- list(b0 = 1, b1=-0.1, cutval = 60,
             tx = 'identity')
         if (detectfn %in% c(10,11))  defaults <- list(beta0 = 90, beta1=-0.2,
             sdS = 2, cutval = 60, sdM = 0, tx = 'identity')
+        if (detectfn %in% c(14:16))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 1)
+        if (detectfn %in% c(17))  defaults <- list(lambda0 = 0.2, sigma = 25, w =10)
+        if (detectfn %in% c(18))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 5)
+
         if (detectfn %in% c(12,13))  defaults <- list(beta0 = 90, beta1=-0.2,
             sdS = 2, cutval = 10, muN = 40, sdN = 2, sdM = 0, tx = 'identity')
-        else defaults <- c(defaults, list(truncate = 1e+10))
+        else defaults <- c(defaults, list(truncate = 1e+10, recapfactor = 1.0))
 
         defaults$binomN <- 0
         if (detector(traps) == 'proximity') defaults$binomN <- 1
@@ -239,17 +259,28 @@ sim.capthist <- function (
         }
         detectpar <- replacedefaults(defaults, detectpar)
 
-        if (detectfn %in% c(0,1,2,3,4,5,6,7)) {
-            g0    <- expand(detectpar$g0, noccasions)
+        if (detectfn %in% c(0:7, 14:18)) {
+            # g0    <- expand(detectpar$g0, noccasions)
+            # changed to matrix for s- and k-specific g0 2013-04-04
+            if (detectfn %in% (0:7)) {
+                g0    <- expandsk(detectpar$g0, s = noccasions, k = ndetector(traps))
+                if (detector(traps) %in% .localstuff$countdetectors) {
+                    if (detectpar$binomN == 0)
+                        validatepar(g0, c(0,Inf))  ## Poisson lambda
+                    else
+                        validatepar(g0, c(0,1))    ## Binomial p
+                }
+                df0 <- g0
+            }
+            else  {
+                lambda0 <- expandsk(detectpar$lambda0, s = noccasions, k = ndetector(traps))
+                validatepar(lambda0, c(0,Inf))  ## Poisson lambda
+                df0 <- lambda0
+            }
+
             sigma <- expand(detectpar$sigma, noccasions)
             z     <- expand(ifelse(detectfn %in% c(5,6),
                 detectpar$w, detectpar$z), noccasions)
-            if (detector(traps) %in% .localstuff$countdetectors) {
-                if (detectpar$binomN == 0)
-                    validatepar(g0, c(0,Inf))  ## Poisson lambda
-                else
-                    validatepar(g0, c(0,1))    ## Binomial p
-            }
             validatepar(sigma, c(1e-10,Inf))
             validatepar(z, c(0,Inf))
         }
@@ -270,7 +301,7 @@ sim.capthist <- function (
             validatepar(sdN, c(0,Inf))
         }
         else if (detectfn %in% c(9)) {
-            g0 <- expand(detectpar$b0, noccasions)
+            df0 <- expandsk(detectpar$b0, s = noccasions, k = ndetector(traps))
             sigma <- expand(detectpar$b1, noccasions)
             z <- 0
             cutval <- detectpar$cutval
@@ -281,6 +312,22 @@ sim.capthist <- function (
                 1e+10, detectpar$truncate)
             validatepar(truncate, c(1e-10, Inf)) ## must be positive
         }
+
+        # Allow general learned response for traps
+        if (detector(traps) %in% c('single','multi')) {
+            rfl <- length(detectpar$recapfactor)
+            if (!(rfl %in% 1:2))
+                stop ("invalid recapfactor")
+            if (rfl==1)
+                detectpar$recapfactor <- c(detectpar$recapfactor,1)
+            df0 <- c(df0, df0 * detectpar$recapfactor[1])
+            sigma <- c(sigma, sigma * detectpar$recapfactor[2])
+        }
+        else {
+            if (any(detectpar$recapfactor != 1.0))
+                stop("learned response available only for 'single', 'multi' detectors")
+        }
+
         if (!inherits(popn,'popn')) # generate if not provided
         {
             popn <- replacedefaults(list(D = 5, buffer = 100,
@@ -311,7 +358,7 @@ sim.capthist <- function (
         if (detector(traps) %in% c('single','multi')) {
             simfunctionname <- paste('trapping', detector(traps), sep='')
             temp <- .C(simfunctionname, PACKAGE = 'secr',
-                as.double(g0),
+                as.double(df0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
@@ -347,7 +394,7 @@ sim.capthist <- function (
                 k <- table(transectID(traps))
             }
             temp <- .C(simfunctionname, PACKAGE = 'secr',
-                as.double(g0),
+                as.double(df0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
@@ -392,7 +439,7 @@ sim.capthist <- function (
         if (detector(traps) %in% c('proximity', 'presence','unmarked')) {
             binomN <- 1
             temp <- .C("trappingproximity", PACKAGE = 'secr',
-                as.double(g0),
+                as.double(df0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
@@ -423,7 +470,7 @@ sim.capthist <- function (
         if (detector(traps) %in% c('count')) {
             binomN <- detectpar$binomN
             temp <- .C("trappingcount", PACKAGE = 'secr',
-                as.double(g0),
+                as.double(df0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
@@ -488,7 +535,7 @@ sim.capthist <- function (
         else
         if (detector(traps) == 'times') {
             temp <- .C("trappingtimes", PACKAGE = 'secr',
-                as.double(g0),
+                as.double(df0),
                 as.double(sigma),
                 as.double(z),
                 as.integer(noccasions),
@@ -533,7 +580,7 @@ sim.capthist <- function (
                 polynames <- '1'
 
                 temp <- .C(simfunctionname, PACKAGE = 'secr',
-                           as.double(g0),
+                           as.double(df0),
                            as.double(sigma),
                            as.double(z),
                            as.integer(noccasions),
@@ -552,7 +599,7 @@ sim.capthist <- function (
             }
             else {
                 temp <- .C(simfunctionname, PACKAGE = 'secr',
-                           as.double(g0),
+                           as.double(df0),
                            as.double(sigma),
                            as.double(z),
                            as.integer(noccasions),

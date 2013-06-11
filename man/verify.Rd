@@ -61,6 +61,7 @@ method is called when no specific method is available (i.e. class not
   \item Coordinates of detection(s) do not lie on any transect
   (`transect' or `transectX' detectors)
   \item Row names (animal identifiers) not unique
+  \item Levels of factor covariate(s) differ between sessions
 }
 
 \code{verify.traps}
@@ -73,12 +74,14 @@ method is called when no specific method is available (i.e. class not
   \item Polygons concave east-west (`polygon' detectors)
   \item PolyID missing or not factor
   \item Polygon detector is concave in east-west direction
+  \item Levels of factor trap covariate(s) differ between sessions
 }
 
 \code{verify.mask}
 \enumerate{
   \item Valid x and y coordinates
   \item Number of rows in covariates dataframe differs from expected
+  \item Levels of factor mask covariate(s) differ between sessions
 }
 
 Earlier errors may mask later errors: fix & re-run.

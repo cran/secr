@@ -8,6 +8,7 @@
 ## 2011 03 19 adjustments to allow unmarked; need more complete check of unmarked
 ## 2012 02 02 signal check applied at level of whole sound
 ## 2012-10-22 xylist checked
+## 2013-05-09 tweak to avoid error in checkcovariatelevels when no covariates
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -176,6 +177,35 @@ xyontransect <- function (xy, trps, tol=0.01) {
 }
 ############################################################################################
 
+checkcovariatelevels <- function (cov) {
+    ## cov is a list of dataframes of covariates
+    ## tweak 2013-05-09 to avoid error when no covariates
+    xfactor <- function(x) {
+        if ((nrow(x)>0) & (ncol(x)>0))
+            names(x)[sapply(x,is.factor)]
+        else
+            NULL
+    }
+    factornames <- sapply(cov, xfactor)
+    factornames <- unique(unlist(factornames))
+    if (length(factornames) > 0) {
+        if (any(sapply(cov, function(x) !all(factornames %in% names(x))))) {
+            return(FALSE)
+        }
+        else {
+            checklevels <- function(variable) {
+                baselevels <- levels(cov[[1]][,variable])
+                lev <- lapply(cov, function(x) levels(x[,variable]))
+                all(sapply(lev[-1], function(x) identical(x,baselevels)))
+            }
+            return(all(sapply(factornames, checklevels)))
+        }
+    }
+    else
+        return(TRUE)
+}
+############################################################################################
+
 verify.traps <- function (object, report = 2, ...) {
 
 ## Check internal consistency of 'traps' object
@@ -191,6 +221,15 @@ verify.traps <- function (object, report = 2, ...) {
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report,1))
         anyerrors <- any(sapply(temp, function(x) x$errors))
+
+        ## check covariate factor levels conform across sessions
+        if (!all(sapply(covariates(object), is.null))) {
+            trapcovariatelevelsOK <- checkcovariatelevels(covariates(object))
+            if (!trapcovariatelevelsOK & report>0) {
+                warning ('Levels of factor trap covariate(s) differ between sessions')
+            }
+        }
+
         if ((report == 2) && !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))
@@ -206,6 +245,7 @@ verify.traps <- function (object, report = 2, ...) {
         areaOK <- TRUE
         polyIDOK <- TRUE
         polyconvexOK <- TRUE
+        trapcovariatesOK <- TRUE
 
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
@@ -215,8 +255,8 @@ verify.traps <- function (object, report = 2, ...) {
         trapNAOK <- !any(is.na(object))
 
         ## 2
-        trapcovariatesOK <- ifelse (is.null(covariates(object)),
-            TRUE, nrow(covariates(object)) == ndetector(object))
+        if (!is.null(covariates(object)))
+            trapcovariatesOK <- nrow(covariates(object)) == ndetector(object)
 
         ## 'usage' of traps
         if (!is.null(usage(object))) {
@@ -325,6 +365,14 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report, 1))
         anyerrors <- any(sapply(temp, function(x) x$errors))
+
+        ## check covariate factor levels conform across sessions
+        if (!all(sapply(covariates(object), is.null))) {
+            covariatelevelsOK <- checkcovariatelevels(covariates(object))
+            if (!covariatelevelsOK & report>0) {
+                warning ('Levels of factor covariate(s) differ between sessions')
+            }
+        }
         if ((report == 2) && !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))
@@ -372,10 +420,13 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         trapspresentOK <- !is.null(traps(object))
 
         ## standalone check of detectors
+        ## this is done one session at a time
+        ## so does not check between session agreement of covariates
         if (trapspresentOK)
             trapcheck <- verify(traps(object), report = 0)  ## delay reporting
         else
             trapcheck <- list(errors=TRUE)
+
         ## 2
         trapsOK <- !trapcheck$errors
 
@@ -485,11 +536,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
                 else {
                     if (usagedetectorsOK && usageoccasionsOK) {
-## 2011-03-29
-##                        OK <- as.numeric(object)>0
-##                        occasion <- as.numeric(col(object))[OK]
-##                        ID <- row.names(object)[as.numeric(row(object))[OK]]
-##                        detector <- as.numeric(object)[OK]
                         occasion <- occasion(object)
                         ID <- animalID(object, names = FALSE)
                         detector <- trap(object, names = FALSE)
@@ -682,6 +728,14 @@ verify.mask <- function (object, report = 2, ...) {
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report, 1))
         anyerrors <- any(sapply(temp, function(x) x$errors))
+
+        ## check covariate factor levels conform across sessions
+        if (!all(sapply(covariates(object), is.null))) {
+            covariatelevelsOK <- checkcovariatelevels(covariates(object))
+            if (!covariatelevelsOK & report>0) {
+                warning ('Levels of factor mask covariate(s) differ between sessions')
+            }
+        }
         if ((report == 2) && !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))

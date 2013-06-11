@@ -1,35 +1,16 @@
 ################################################################################## package 'secr'
 ## circular.R
 ## "circular error probable"
-## last changed 2011 06 12
+## last changed 2011 06 12; 2013-04-19; 2013-04-24; 2013-05-11
 ################################################################################
-# Functions from plot.secr.R
-# HN <- function (r, pars, cutval)
-# HZ <- function (r, pars, cutval)
-# EX <- function (r, pars, cutval)
-# UN <- function (r, pars, cutval)
-# CHN <- function (r, pars, cutval)
-# WEX <- function (r, pars, cutval)
-# ANN <- function (r, pars, cutval)
-# CLN <- function (r, pars, cutval)
-# CG <- function (r, pars, cutval)
-# CN <- function (r, pars, cutval)
-# BSS <- function (r, pars, cutval)
-# SS <- function (r, pars, cutval)
-# SSS <- function (r, pars, cutval)
 
-## source ('d:\\density secr 2.1\\secr\\r\\CEP.R')
-# source ('d:\\density secr 2.1\\secr\\r\\plot.secr.R')  # dfn's
-# source ('d:\\density secr 2.1\\secr\\r\\utility.R')    # parnames
-# source ('d:\\density secr 2.1\\secr\\r\\pdot.R')    # spatial scale
+circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, ...) {
 
-circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL) {
-
-    ## convert character detectfn to numeric code
+    ## translate character detectfn to numeric code
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    if (detectfn %in% c(0,2,3)) {
+    if (detectfn %in% c(0,2,3,14,16)) {
         ## if input is a named list
         if (!is.null(detectpar)) {
             sigma <- detectpar$sigma
@@ -38,45 +19,62 @@ circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL) {
     }
     else
         if (is.null(detectpar))
-            stop ("require detectpar in list format except for ",
+            stop ("require detectpar, in list format, except for ",
                   "halfnormal, exponential and uniform")
     detectpar$g0 <- 1  ## always
+    detectpar$lambda0 <- 1  ## 2013-04-19
+    truncate <- detectpar$truncate
+    if (is.null(truncate))
+         truncate <- Inf
+    OK <- truncate == Inf
     detectpar <- detectpar[parnames(detectfn)]  ## correct order
     pars <- unlist(detectpar)
     cutval <- ifelse (detectfn %in% c(9,10,11), detectpar$cutval, NA)
     scale <- spatialscale (detectpar, detectfn) ## see pdot.R; assumes cutval in detectpar
 
     ## use formula for halfnormal
-    if (detectfn == 0) {
+    if (OK & (((detectfn == 0) & !hazard) | ((detectfn == 14) & hazard))) {
         (-2*log(1-p))^0.5 * sigma
     }
+    else if (OK & (((detectfn == 2) & !hazard) | ((detectfn == 16) & hazard))) {
+        fnr <- function (r, this.p) {
+            1 - (r/sigma + 1) * exp(-r/sigma) - this.p
+        }
+        getroot <- function (p) uniroot(fnr, c(0,200*scale), this.p = p)$root
+        sapply(p, getroot)
+    }
     ## uniform is dead easy
-    else if (detectfn == 3) {
+    else if (OK & ((detectfn == 3) & !hazard)) {
         p^0.5 * sigma
     }
     ## otherwise integrate
     else {
-        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
-        rdfn <- function (r, pars, cutval)
-            r * dfn(r, pars, cutval)
-        I1 <- integrate (rdfn, 0, Inf, pars, cutval)$value
+        dfn <- getdfn (detectfn)
+        rdfn <- function (r, pars, cutval)  {
+            haz <- dfn(r, pars, cutval)
+            if (hazard) haz <- -log(1-haz)
+            haz[!is.finite(haz)] <- 0
+            r * haz
+        }
+        I1 <- integrate (rdfn, 0, truncate, pars, cutval, ...)$value
 
         fnr <- function (r, this.p) {
-            I2 <- integrate (rdfn, 0, r, pars, cutval)$value
+            I2 <- integrate (rdfn, 0, min(r,truncate), pars, cutval, ...)$value
             I2 / I1 - this.p
         }
-        getroot <- function (p) uniroot(fnr, c(0,100*scale), this.p = p)$root
+        getroot <- function (p) uniroot(fnr, c(0,200*scale), this.p = p)$root
         sapply(p, getroot)
     }
 }
 
-circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL) {
+
+circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, ...) {
 
     ## convert character detectfn to numeric code
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    if (detectfn %in% c(0,2,3)) {
+    if (detectfn %in% c(0,2,3,14,16)) {
         ## if input is a named list
         if (!is.null(detectpar)) {
             sigma <- detectpar$sigma
@@ -85,33 +83,44 @@ circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL) {
     }
     else
         if (is.null(detectpar))
-            stop ("require detectpar in list format except for ",
+            stop ("require detectpar, in list format, except for ",
                   "halfnormal, exponential and uniform")
-    detectpar$g0 <- 1  ## always
+    detectpar$g0 <- 1       ## always
+    detectpar$lambda0 <- 1  ## always
+    truncate <- detectpar$truncate
+    if (is.null(truncate))
+         truncate <- Inf
+    OK <- truncate == Inf
     detectpar <- detectpar[parnames(detectfn)]  ## correct order
     pars <- unlist(detectpar)
     cutval <- ifelse (detectfn %in% c(9,10,11), detectpar$cutval, NA)
 
     scale <- spatialscale (detectpar, detectfn) ## see pdot.R; assumes cutval in detectpar
 
-
     ## use formula for halfnormal
-    if (detectfn == 0) {
+    if (OK & (((detectfn == 0) & !hazard) | ((detectfn == 14) & hazard))) {
         1 - exp(-(r/sigma)^2 / 2)
     }
+    else if (OK & (((detectfn == 2) & !hazard) | ((detectfn == 16) & hazard))) {
+        1 - (r/sigma + 1) * exp(-r/sigma)
+    }
     ## uniform is dead easy
-    else if (detectfn == 3) {
+    else if (OK & (detectfn == 3) & !hazard) {
         (r/sigma)^2
     }
     ## otherwise integrate
     else {
-        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
-        rdfn <- function (r, pars, cutval)
-            r * dfn(r, pars, cutval)
-        I1 <- integrate (rdfn, 0, Inf, pars, cutval)$value
+        dfn <- getdfn(detectfn)
+        rdfn <- function (r, pars, cutval) {
+            haz <- dfn(r, pars, cutval)
+            if (hazard) haz <- -log(1-haz)
+            haz[!is.finite(haz)] <- 0
+            r * haz
+        }
+        I1 <- integrate (rdfn, 0, truncate, pars, cutval, ...)$value
 
         fnr <- function (r) {
-            I2 <- integrate (rdfn, 0, r, pars, cutval)$value
+            I2 <- integrate (rdfn, 0, min(r,truncate), pars, cutval, ...)$value
             I2 / I1
         }
         sapply(r, fnr)

@@ -4,6 +4,7 @@
 ## Evaluate alternative mask buffer width and spacing
 ## 2010 10 15, 2010-10-17, 2010-10-18, 2010-10-20, 2010-10-31, 2011-06-17
 ## 2012-11-02 ncores
+## 2013-05-03 extended default link for lambda0
 ###############################################################################
 
 bisect <- function(f, a, b, tol = 1e-6) {
@@ -179,7 +180,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
         nspacing <- length(spacings)
 
         if (LLonly) {
-            defaultlink <- list(D='log', g0='logit', sigma='log', z='log',
+            defaultlink <- list(D='log', g0='logit', lambda0='log', sigma='log', z='log',
                 w='log', pID='logit', beta0='identity', beta1='neglog',
                 sdS='log', b0='log', b1='neglog', pmix='logit')
             anycount <- detector(trps) %in% .localstuff$countdetectors

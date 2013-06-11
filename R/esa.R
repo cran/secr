@@ -9,6 +9,7 @@
 ## 2011-04-04 added noccasions; debugged 2011-04-07
 ## 2012-10-21 added check to return NA with dettype==13
 ## 2012-11-13 updated for groups
+## 2013-06-06 updated for fixed beta
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -33,6 +34,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     if (is.null(beta) & is.null(real))
         beta <- object$fit$par
 
+    beta <- fullbeta(beta, object$details$fixedbeta)
+
     trps   <- traps(capthists)  ## need session-specific traps
     if (!(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for esa")
@@ -44,9 +47,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         noccasions <- s
     }
 
-    nmix    <- object$details$nmix
-    if (is.null(nmix))
-        nmix <- 1
+    nmix    <- getnmix (object$details)
+    knownclass <- getknownclass(capthists, nmix, object$hcov)
 
     ##############################################
     ## adapt for marking occasions only 2009 10 24
@@ -175,13 +177,14 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.integer(dettype),
                        as.integer(param),
                        as.double(Xrealparval0),
-                       as.integer(rep(1,n)),                 # dummy groups 2012-11-13
+                       as.integer(rep(0,n)),                 # dummy groups 2012-11-13, 2013-04-16
                        as.integer(n),
                        as.integer(s),
                        as.integer(k),
                        as.integer(m),
-                       as.integer(1),                        # dummy ngroups 2012-11-13
+                       as.integer(1),                  # dummy ngroups 2012-11-13
                        as.integer(nmix),
+                       as.integer(knownclass),         # 2013-04-12
                        as.double(unlist(trps)),
                        as.double(usge),
                        as.double(unlist(mask)),

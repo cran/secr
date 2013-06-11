@@ -18,7 +18,13 @@ fn 8  cumulative gamma
 fn 9  binary signal strength
 fn 10 signal strength
 fn 11 signal strength with spherical spreading
-fn 12 signal strength with spherical spreading; cut is estimated
+fn 12 signal strength + noise
+fn 13 signal strength with spherical spreading + noise
+fn 14 hazard halfnormal
+fn 15 hazard hazard rate
+fn 16 hazard exponential
+fn 17 hazard annular normal
+fn 18 hazard cumulative gamma
 */
 
 /*
@@ -61,7 +67,7 @@ fnptr gethfn (int fn)
     if (fn == 0)
         return(hn);
     else if (fn == 1)
-        return(hz);
+        return(hr);
     else if (fn == 2)
         return(he);
     else if (fn == 3)
@@ -84,6 +90,16 @@ fnptr gethfn (int fn)
         return(hsigsph);
     else if (fn == 12)
         return(hsigsph);
+    else if (fn == 14)
+        return(hhn);
+    else if (fn == 15)
+        return(hhr);
+    else if (fn == 16)
+        return(hex);
+    else if (fn == 17)
+        return(han);
+    else if (fn == 18)
+        return(hcumg);
     else (error("unknown or invalid detection function"));
     return(hn);
 }
@@ -94,13 +110,13 @@ gfnptr getgfn (int fn)
     if (fn == 0)
         return(ghn);
     else if (fn == 1)
-        return(ghz);
+        return(ghr);
     else if (fn == 2)
         return(ghe);
     else if (fn == 3)
         return(ghnc);
     else if (fn == 4)
-        error("uniform detection function not allowed here");
+        return(gun); /* error("uniform detection function not allowed here"); */
     else if (fn == 5)
         return(ghf);
     else if (fn == 6)
@@ -119,6 +135,16 @@ gfnptr getgfn (int fn)
         return(gsigSN);
     else if (fn == 13)
         return(gsigsphSN);
+    else if (fn == 14)
+        return(lhn);
+    else if (fn == 15)
+        return(lhr);
+    else if (fn == 16)
+        return(lex);
+    else if (fn == 17)
+        return(lan);
+    else if (fn == 18)
+        return(lcg);
     else (error("unknown or invalid detection function"));
     return(ghn);
 }
@@ -128,7 +154,7 @@ double hn (double param [], double r) {
     return(param[0] * exp(- r * r / 2 / param[1] / param[1]));
 }
 /*--------------------------------------------------------------------*/
-double hz (double param [], double r) {
+double hr (double param [], double r) {
     return(param[0] * (1 - exp(- pow(r / param[1], -param[2]))));
 }
 /*--------------------------------------------------------------------*/
@@ -212,6 +238,38 @@ double hsigsph (double param [], double r) {
 }
 /*--------------------------------------------------------------------*/
 
+/* hazard halfnormal */
+double hhn (double param [], double r) {
+    return(1 - exp( - param[0] * exp(- r * r / 2 / param[1] / param[1])));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard hazard rate */
+double hhr (double param [], double r) {
+    return(1 - exp( - param[0] * ( 1 - exp(- pow(r / param[1], -param[2])))));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard exponential */
+double hex (double param [], double r) {
+    return (1 - exp( - param[0] * exp(-r / param[1])));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard annular normal */
+double han (double param [], double r) {
+    return (1 - exp( - param[0] * exp(-(r-param[2])*(r-param[2]) / 2 /
+				   param[1] / param[1])));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard cumulative gamma */
+double hcumg (double param [], double r) {
+    return (1 - exp( - (1 - exp( - param[0] * exp(-r / param[1])))));
+}
+/*--------------------------------------------------------------------*/
+
+
 /* halfnormal */
 double ghn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
@@ -236,7 +294,7 @@ double ghnc
 /*--------------------------------------------------------------------*/
 
 /* hazard rate */
-double ghz
+double ghr
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
@@ -251,6 +309,17 @@ double ghe
     double mask[], int kk, int mm, double miscparm [])
 {
     return (gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c]));
+}
+/*--------------------------------------------------------------------*/
+
+/* uniform */
+double gun
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    if (d2(k, m, traps, mask, kk, mm) < (gsbval[cc + c]*gsbval[cc + c]))
+	return (gsbval[c]);
+    else return (0);
 }
 /*--------------------------------------------------------------------*/
 
@@ -406,6 +475,67 @@ double gsigsphSN
     muN = miscparm[1];    
     sdN = miscparm[2];    
     return (pnorm(cut, muS-muN, sqrt(sdS*sdS+sdN*sdN), 0, 0));    /* upper */
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard halfnormal */
+double lhn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    return (1 - exp(- gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 /
+				      gsbval[cc + c] / gsbval[cc + c])));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard hazard rate */
+double lhr
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    double d, g0, sigma, z;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    g0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    z = gsbval[cc * 2 + c];
+    return (1 - exp(- g0 * ( 1 - exp(- pow(d /sigma , - z)))));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard exponential */
+double lex
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    return (1 - exp(-gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c])));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard annular normal */
+double lan
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    double d, w, g0, sigma;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    g0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    w = gsbval[cc * 2 + c];
+    return (1 - exp(-g0 * exp(-(d-w)*(d-w) / 2 / sigma / sigma)));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard cumulative gamma */
+double lcg
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm [])
+{
+    double d, g0, sigma, z;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    g0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    z = gsbval[cc * 2 + c];
+    return (1 - exp(- g0 * pgamma(d,z,sigma/z,0,0))); 
 }
 /*--------------------------------------------------------------------*/
 

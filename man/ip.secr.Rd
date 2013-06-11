@@ -219,7 +219,7 @@ from a simple halfnormal model if variances are not required.
 \seealso{
 
 \code{\link{capthist}}, \code{\link{secr.fit}}, \code{\link{RPSV}}, \code{\link{autoini}},
-    \code{\link{sim.popn}}, \code{\link{detection functions}}
+    \code{\link{sim.popn}}, \code{\link{Detection functions}}
 
 }
 

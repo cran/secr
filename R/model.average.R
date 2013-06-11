@@ -4,20 +4,35 @@
 ## Last changed 2010 02 17 fixed use of newdata (previously ignored)
 ## 2010 03 09 fixed sort order of collate with sessioncov
 ## 2011-11-05 covar = TRUE bugfix
+## 2013-06-10 criterion
+## 2013-06-10 MATA
 ############################################################################################
 
+MATA <- function (wt, est, se, alpha) {
+    ## Turek and Fletcher 2012 "model-averaged tail area" interval
+    fn <- function (theta, lcl = TRUE) {
+        sum(wt * pnorm((est-theta) / se, lower.tail = lcl )) - alpha/2
+    }
+    lcl <- uniroot (fn, interval = c(min(est - 10*se), max(est)), lcl = FALSE)$root
+    ucl <- uniroot (fn, interval = c(min(est), upper = max(est + 10*se)), lcl = TRUE)$root
+    cbind(lcl, ucl)
+}
+
 model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
-    alpha = 0.05, dmax = 10, covar = FALSE, average = 'link') {
+    alpha = 0.05, dmax = 10, covar = FALSE, average = 'link', criterion = c('AICc','AIC'),
+    CImethod = c('Wald', 'MATA')) {
 
     ########
     ## SETUP
-    object <- list(...)
-    if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
-        if (length(object)>1)
-            warning("using first argument (list) and discarding others")
-        object <- object[[1]]
-    }
 
+    ## 2013-04-20
+
+    object <- secrlist(...)
+    if (!is.null(names(object)))
+        modelnames <- names(object)
+    else
+        modelnames <- as.character(match.call(expand.dots=FALSE)$...)
+    criterion <- criterion[1]
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
         stop ("require fitted 'secr' objects")
     if ( length(object) < 2 )
@@ -88,11 +103,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
 
     ## WEIGHTS
 
-    AICc  <- sapply(object, function(x) AIC(x)$AICc)
-    dAICc <- AICc - min(AICc)
-    OK <- abs(dAICc) < abs(dmax)
-    sumdAICc <- sum(exp(-dAICc[OK]/2))
-    AICwt <- ifelse ( OK, exp(-dAICc/2) / sumdAICc, 0)
+    AICdf <- AIC(object, sort = FALSE, dmax = dmax, criterion = criterion)
+    wt <- unlist(AICdf[,paste(criterion, 'wt', sep = '')])
 
     ## AVERAGE
 
@@ -100,12 +112,16 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         nr   <- 1
         ests <- lapply (object, function(x) coef(x)[parnames, 'beta'])
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
-        wtd <- sweep(ests, MARGIN = 3, STATS = AICwt, FUN = '*')
+        estse <- lapply (object, function(x) coef(x)[parnames, 'SE.beta'])   ## for MATA
+        estse <- array(unlist(estse), dim=c(nr, np, nsecr))
+        ests <- array(unlist(ests), dim=c(nr, np, nsecr))
+        estse <- array(unlist(estse), dim=c(nr, np, nsecr))
+        wtd <- sweep(ests, MARGIN = 3, STATS = wt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
         ## fails if no dimnames on x$beta.vcv:
         vcvs <- lapply (object, function(x) { vcov(x)[parnames, parnames] })
         vcv1 <- array(unlist(vcvs), dim=c(np, np, nsecr))  ## between beta parameters
-        vcv <- sweep (vcv1, MARGIN = 3, STATS = AICwt, FUN = '*')
+        vcv <- sweep (vcv1, MARGIN = 3, STATS = wt, FUN = '*')
         vcv <- apply(vcv, 1:2, sum)
         sewtd  <- diag(vcv)^0.5
     }
@@ -119,9 +135,12 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         }
         predicted <- lapply (object, getLP)
         ests <- lapply (predicted, function(x) lapply(x[parnames], function(y) y[, 'estimate'] ))
+        estse <- lapply (predicted, function(x) lapply(x[parnames], function(y) y[, 'se'] ))
         if (average == 'real') {
             ests <- lapply (ests, function (x) Xuntransform(unlist(x),
                 varnames=rep(parnames, rep(nr, np)), linkfn=links))
+            estse <- mapply (function (x,se.x) se.Xuntransform(unlist(x), unlist(se.x),
+                varnames=rep(parnames, rep(nr, np)), linkfn=links), ests, estse)
             vcvs <- lapply (object, vcov, realnames = parnames, newdata=newdata)
         }
         else {
@@ -129,14 +148,15 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         }
 
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
-        wtd <- sweep(ests, MARGIN = 3, STATS = AICwt, FUN = '*')
+        estse <- array(unlist(estse), dim=c(nr, np, nsecr))
+        wtd <- sweep(ests, MARGIN = 3, STATS = wt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
 
         ## variance from Burnham & Anderson 2004 eq (4)
         vcv1 <- array(unlist(vcvs), dim=c(nr, nr, np, nsecr))  ## between rows of newdata
         betak <- sweep(ests, MARGIN = 1:2, STATS = wtd, FUN='-')
         vcv2 <- array(apply(betak, 2:3, function(x) outer(x,x)), dim=c(nr,nr,np,nsecr))
-        vcv <- sweep (vcv1 + vcv2, MARGIN = 4, STATS = AICwt, FUN = '*')
+        vcv <- sweep (vcv1 + vcv2, MARGIN = 4, STATS = wt, FUN = '*')
         vcv <- apply(vcv, 1:3, sum)
         sewtd  <- apply(vcv, 3, function (x) diag(x)^0.5)
 
@@ -152,6 +172,11 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
         output[1,2,] <- sewtd
         output[1,3,] <- wtd - z*sewtd
         output[1,4,] <- wtd + z*sewtd
+        ## overwrite confidence intervals if MATA requested
+        if (CImethod == 'MATA') {
+            for (p in 1:np)
+                output[1,3:4,p]  <- MATA(wt, ests[1,p,], estse[1,p,], alpha)
+        }
         dimnames(output) <- list(NULL,
             c('beta', 'SE.beta', 'lcl', 'ucl'),
             parnames)
@@ -177,8 +202,12 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
                 output[i,3,] <- Xuntransform(wtd[i,]-z*sewtd[i,], links, parnames)
                 output[i,4,] <- Xuntransform(wtd[i,]+z*sewtd[i,], links, parnames)
             }
+            ## overwrite confidence intervals if MATA requested
+            if (CImethod == 'MATA') {
+                for (p in 1:np)
+                    output[i,3:4,p] <- untransform(MATA(wt,ests[i,p,], estse[i,p,],alpha), links[[p]])
+            }
         }
-
         dimnames(output) <- list(rownames,
             c('estimate', 'SE.estimate', 'lcl', 'ucl'),
             parnames)
@@ -211,16 +240,25 @@ model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NU
 collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     scaled = FALSE, alpha = 0.05, perm = 1:4, fields = 1:4) {
 
-    object <- list(...)
-    if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
 
-        if (length(object)>1)
-            warning ("using first argument (list) and discarding others")
-        object <- object[[1]]
+    ## 2013-04-20
+    object <- secrlist(...)
+    if (!is.null(names(object)))
         modelnames <- names(object)
-    }
     else
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
+
+#
+#    object <- list(...)
+#    if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
+#
+#        if (length(object)>1)
+#            warning ("using first argument (list) and discarding others")
+#        object <- object[[1]]
+#        modelnames <- names(object)
+#    }
+#    else
+#        modelnames <- as.character(match.call(expand.dots=FALSE)$...)
 
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
         stop ("require fitted secr objects")
@@ -256,11 +294,12 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     getLP <- function (object1) {  ## for predicted values of real parameters
         getfield <- function (x) {
+
             secr.lpredictor (newdata = newdata, model = object1$model[[x]],
                 indx = object1$parindx[[x]], beta = object1$fit$par,
                 beta.vcv = object1$beta.vcv, field = x)
         }
-        sapply (names(object1$model), getfield, simplify=FALSE)
+        sapply (names(object1$model), getfield, simplify = FALSE)
     }
 
     if (is.null(newdata)) {
@@ -308,16 +347,16 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     if (type=='real') {
         predict <- lapply (object, getLP)
-        ############################################################################################
+    ############################################################################################
         nmix <- object[[1]]$details$nmix   ## assume constant over models...
         if (nmix > 1) {
             predict <- lapply(predict,
                 function(x) {
-                    ## modified 2010 03 09
+                    ## modified 2010 03 09, 2013-04-14, 2013-04-19
                     temp <- matrix(x$pmix[,'estimate'], ncol = nmix)
                     if (nmix==2) temp[,x$pmix[,'h2']] <- x$pmix[,'estimate']
                     if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
-                    temp2 <- apply(temp, 1, function(est) logit(mlogit.untransform(est, 1:nmix)))
+                    temp2 <- apply(temp, 1, clean.mlogit)
                     x$pmix[,'estimate'] <- as.numeric(t(temp2))
                     if (nmix==2)
                         x$pmix[x$pmix$h2==1,'se'] <- x$pmix[x$pmix$h2==2,'se']
@@ -374,17 +413,18 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
         output[1,4,,] <- stripped[1,1,,,drop=FALSE]+z*stripped[1,2,,,drop=FALSE]
     }
 
-    if (type=='real')
+    if (type=='real') {
         dimnames(output) <- list(rownames,
             c('estimate', 'SE.estimate', 'lcl', 'ucl'),
             parnames,
             modelnames)
-    else
+    }
+    else {
         dimnames(output) <- list(NULL,
             c('beta', 'SE.beta', 'lcl', 'ucl'),
             parnames,
             modelnames)
-
+    }
     ## default dimensions:
     ## row, model, statistic, parameter
     output <- aperm(output, c(1,4,2,3))

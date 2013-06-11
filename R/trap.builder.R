@@ -9,6 +9,8 @@
 ## 2012-02-07 mash noise
 ## 2012-07-26 mash cleans out trap attributes; names sessions for list input
 ## 2012-09-17 mash moved to mash.r
+## 2013-03-02 exclude, exclmethod arguments added
+## 2013-04-20 replace deprecated overlay with over
 ###############################################################################
 
 ## spsurvey uses sp
@@ -28,7 +30,8 @@ boundarytoSPDF <- function (boundary) {
 
 trap.builder <- function (n = 10, cluster, region = NULL, frame =
     NULL, method = 'SRS', edgemethod = 'clip', samplefactor = 2,
-    ranks = NULL, rotation = NULL, detector, plt = FALSE, add = FALSE) {
+    ranks = NULL, rotation = NULL, detector,  exclude = NULL,
+    exclmethod = 'clip', plt = FALSE, add = FALSE) {
 
     ## region may be -
     ## matrix x,y
@@ -52,7 +55,16 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     allinside <- function (xy) {
         xy <- SpatialPoints(as.matrix(xy))
-        !any(is.na(overlay (xy, region)))
+        ## 2013-04-20
+        ## !any(is.na(overlay (xy, region)))
+        !any(is.na(over (xy, region)))
+    }
+
+    alloutside <- function (xy) {
+        xy <- SpatialPoints(as.matrix(xy))
+        ## 2013-04-20
+        ## all(is.na(overlay (xy, exclude)))
+        all(is.na(over (xy, exclude)))
     }
 
     position <- function (i, cluster) {
@@ -97,22 +109,33 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             stop ("specify at least one of 'region' or 'frame'")
         }
         SPDF <- inherits(region, 'SpatialPolygonsDataFrame')
+        SPDFx <- inherits(exclude, 'SpatialPolygonsDataFrame')
         if (!SPDF) {
             region <- matrix(unlist(region), ncol = 2)
             region <- rbind (region, region[1,])  # force closure of polygon
             region <- boundarytoSPDF(region)
         }
-        if (plt & !add)
+        if (!SPDFx & !is.null(exclude)) {
+            exclude <- matrix(unlist(exclude), ncol = 2)
+            exclude <- rbind (exclude, exclude[1,])  # force closure of polygon
+            exclude <- boundarytoSPDF(exclude)
+        }
+        if (plt & !add) {
             plot(region)
+            if (!is.null(exclude))
+                plot(exclude, col='lightgrey', add=TRUE, border='lightgrey')
+        }
     }
     else {
         if (plt & !add) {
-            if (!is.null(region))
+            if (!is.null(region)) {
                 plot(region)
-            else {
-                require (MASS)
-                eqscplot (frame, axes=F, xlab='', ylab='', pch=1, cex=0.5)
             }
+            else {
+                eqscplot (frame, axes = F, xlab = '', ylab = '', pch = 1, cex = 0.5)
+            }
+            if (!is.null(exclude))
+                plot(exclude, col = 'lightgrey', add = T)
         }
     }
 
@@ -187,38 +210,51 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         traps <- lapply(1:(ntrial), position, cluster)
     }
 
-    if (edgemethod %in% c('clip', 'allowoverlap')) {
-        if (n==1)
-            traps <- traps[[1]]
-        else {
-            traps <- traps[1:n]
-            traps$renumber <- FALSE
-            traps <- do.call(rbind, traps)
+    if (!(edgemethod %in% c('clip','allowoverlap','allinside')))
+        stop ("edgemethod not recognised")
+
+    if (!(exclmethod %in% c('clip','alloutside')))
+        stop ("exclmethod not recognised")
+
+    if ((edgemethod == 'allinside') | (exclmethod == 'alloutside')) {
+        if (edgemethod %in% c('allinside')) {
+            if (is.null(region))
+                stop ("allinside requires 'region'")
+            OK <- sapply(traps, allinside)
         }
-        if (edgemethod == 'clip') {
-            xy <- SpatialPoints(as.matrix(traps))
-            OK <- overlay (xy, region)
-            traps <- subset(traps, subset = !is.na(OK))
-        }
-    }
-    else if (edgemethod %in% c('allinside')) {
-        if (is.null(region))
-            stop ("allinside requires 'region'")
-        OK <- sapply(traps, allinside)
+        else OK <- length(traps)
+        if (!is.null(exclude) & (exclmethod=='alloutside'))
+            OK <- OK & sapply(traps, alloutside)
         if (method == 'all')
             n <- sum(OK)
         if (sum(OK) < n)
             stop ("not enough clusters inside polygon")
-        traps <- traps[OK][1:n]   ## first n usable clusters
-        if (n==1)
-            traps <- traps[[1]]
-        else {
-            traps$renumber <- FALSE
-            traps <- do.call(rbind, traps)
-        }
+        traps <- traps[OK]
     }
+    traps <- traps[1:n]   ## first n usable clusters
+
+    ## convert list of clusters to flat traps object
+    if (n == 1)
+        traps <- traps[[1]]
     else {
-        stop ("edgemethod not recognised")
+        traps$renumber <- FALSE
+        traps <- do.call(rbind, traps)
+    }
+
+    ## drop excluded sites, if requested
+    if (edgemethod == 'clip') {
+        xy <- SpatialPoints(as.matrix(traps))
+        ## 2013-04-20
+        ## OK <- overlay (xy, region)
+        OK <- over (xy, region)
+        traps <- subset(traps, subset = !is.na(OK))
+    }
+    if (!is.null(exclude) & (exclmethod == 'clip')) {
+        xy <- SpatialPoints(as.matrix(traps))
+        ## 2013-04-20
+        ##  notOK <- overlay (xy, exclude)
+        notOK <- over (xy, exclude)
+        traps <- subset(traps, subset = is.na(notOK))
     }
 
     ## renumber clusters
@@ -319,7 +355,9 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         x = seq(0, by = rx, len = nx) + origin[1],
         y = seq(0, by = ry, len = ny) + origin[2])
     centres <- SpatialPoints(as.matrix(centres))
-    OK <- !is.na(overlay (centres, region))
+    ## 2013-04-20
+    ## OK <- !is.na(overlay (centres, region))
+    OK <- !is.na(over (centres, region))
     centres <- coordinates(centres[OK,])
     trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)

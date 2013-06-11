@@ -2,7 +2,7 @@
 ## package 'secr'
 ## telemetry.R
 ## fitting detection function to telemetry data
-## 2012-10-19,20,21,22
+## 2012-10-19,20,21,22 2013-06-07
 ###############################################################################
 
 distances <- function (X, Y) {
@@ -19,11 +19,13 @@ distances <- function (X, Y) {
 
 telemetryloglik <- function(CH, detectfn, sigma, z) {
     ## assume one occasion
-    dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS)
+    dfn <- getdfn (detectfn)
     rdfn <- function (r, pars) r * dfn(r, pars, 0)
-    # for HN cf Johnson & Wichern 4.4, noting det(vcv) for 2-D involves sigma^2
-    g0 <- switch (detectfn+1, 1 / (sigma^2 * 2 * pi),
-                  1/integrate (rdfn, 0, sigma * 20, pars=c(1, sigma, z))$value)
+    # for HHN cf Johnson & Wichern 4.4, noting det(vcv) for 2-D involves sigma^2
+    if ((detectfn == 14) | (detectfn == 'HHN') | (detectfn == 'Hazard halfnormal'))
+        g0 <- 1 / (sigma^2 * 2 * pi)
+    else
+        g0 <- 1/integrate (rdfn, 0, sigma * 20, pars=c(1, sigma, z))$value
     parm <- c(g0, sigma, z)
     xylist <- attr(CH,'xylist')
     if (is.null(xylist))
@@ -79,9 +81,7 @@ telemloglik <- function(capthist, traps, mask, detectfn = 0, detectpar) {
     n <- dim(capthist)[1]
     J <- dim(capthist)[2]
     K <- dim(capthist)[3]
-    ## detection functions are in plot.secr.r
-    g <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG,
-                 BSS, SS, SSS, SN, SNS)
+    g <- getdfn (detectfn)
     xylist <- attr(capthist, 'xylist')
     centrexy <- t(sapply(xylist, apply, 2, mean))
 

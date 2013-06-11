@@ -62,8 +62,10 @@ Efford (2004) and other papers below for details.
 Detection parameters in \code{detectpar} are specific to the detection
 function, which is indicated by a numeric code (\code{\link{detectfn}}).
 Parameters may vary with time - for this provide a vector of length
-\code{noccasions}.  The default detection parameters are \code{list(g0 =
-0.2, sigma = 25, z = 1)}.
+\code{noccasions}.  The g0 parameter may vary both by time and detector
+- for this provide a matrix with \code{noccasions} rows and as many
+columns as there are detectors. The default detection parameters are
+\code{list(g0 = 0.2, sigma = 25, z = 1)}.
 
 The default is to simulate a single session. This may be overridden by
 providing a list of populations to sample (argument \code{popn}) or by
@@ -91,6 +93,14 @@ availability is not implemented for sampling lists of populations.
 \code{detectpar} may include a component `truncate' for the distance
 beyond which detection probability is set to zero. By default this value
 is NULL (no specific limit).
+
+\code{detectpar} may also include a component `recaptfactor' for a
+general learned trap response. For `single' and `multi' detector types
+the probability of detection changes by this factor for all occasions
+after the occasion of first capture. Attempted use with other detector
+types causes an error. If recapfactor x g(d) > 1.0, g(d) is truncated at
+1.0. Other types of response (site-specific bk, Markovian B) are not
+allowed.
 
 If \code{popn} is specified by an object of class `popn' then any
 individual covariates will be passed on; the \code{covariates} attribute
@@ -173,7 +183,7 @@ detections in C code; an error results if the is number is exceeded.
 
 \seealso{
     \code{\link{sim.popn}}, \code{\link{capthist}}, \code{\link{traps}},
-    \code{\link{popn}}, \code{\link{detection functions}}, \code{\link[stats]{simulate}}
+    \code{\link{popn}}, \code{\link{Detection functions}}, \code{\link[stats]{simulate}}
 }
 
 \examples{

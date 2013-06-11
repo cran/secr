@@ -85,7 +85,7 @@ usagePlot(simgrid, occasion = NULL, border = 20, scale = 1.5, fill = FALSE,
 
 \dontrun{
 # bubble plot in package 'sp'
-require(sp)
+library(sp)
 simgrid$usage <- usage(simgrid)[,1]  ## occasion 1
 class(simgrid) <- 'data.frame'
 coordinates(simgrid) <- c('x','y')

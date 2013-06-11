@@ -17,10 +17,9 @@ across space, possibly at a probability sample of points.
 
 \usage{
 
-trap.builder (n = 10, cluster, region = NULL, frame =
-    NULL, method = "SRS", edgemethod = "clip", samplefactor = 2,
-    ranks = NULL, rotation = NULL, detector, plt = FALSE,
-    add = FALSE) 
+trap.builder (n = 10, cluster, region = NULL, frame = NULL, method = "SRS",
+edgemethod = "clip", samplefactor = 2, ranks = NULL, rotation = NULL,
+detector, exclude = NULL, exclmethod = "clip", plt = FALSE, add = FALSE) 
 
 mash (object, origin = c(0,0), clustergroup = NULL, \dots)
 
@@ -41,7 +40,9 @@ cluster.centres (object)
     (multiple of n) }
   \item{ranks}{ vector of relative importance (see Details)}
   \item{rotation}{ angular rotation of each cluster about centre (degrees) }
-  \item{detector}{ character detector type (see \code{\link{detector}}) }
+  \item{detector}{ character detector type (see \code{\link{detector}})}
+  \item{exclude}{ polygon(s) from which detectors are to be excluded}
+  \item{exclmethod}{character string (see Details)}
   \item{plt}{ logical: should array be plotted? }
   \item{add}{ logical: add to existing plot }
   \item{object}{ single-session multi-cluster capthist object, or traps
@@ -69,8 +70,9 @@ cluster.centres (object)
   specified, sampling uses the finite frame but sites may be clipped
   using the polygon.
 
-  \code{region} may be a two-column matrix or dataframe of x-y coordinates
-  for the boundary, or a SpatialPolygonsDataFrame object from \pkg{sp}.
+  \code{region} and \code{exclude} may be a two-column matrix or
+  dataframe of x-y coordinates for the boundary, or a
+  SpatialPolygonsDataFrame object from \pkg{sp}.
   
   \code{method} may be "SRS", "GRTS", "all" or "rank". "SRS" takes a simple
   random sample (without replacement in the case of a finite sampling
@@ -84,7 +86,9 @@ cluster.centres (object)
   
   \code{edgemethod} may be "clip" (reject individual detectors),
   "allowoverlap" (no action) or "allinside" (reject whole cluster if any
-  component is outside \code{region}). Sufficient additional samples
+  component is outside \code{region}). Similarly, \code{exclmethod} may
+  be "clip" (reject individual detectors) or "alloutside" (reject whole cluster if any
+  component is outside \code{exclude}). Sufficient additional samples
   (\code{(samplefactor--1) * n}) must be drawn to allow for replacement
   of any rejected clusters; otherwise, an error is reported (`not enough
   clusters within polygon').
@@ -148,7 +152,7 @@ cluster.centres (object)
 \note{
 
   The function \code{\link{make.systematic}} should be used to generate
-  systematic random layouts.
+  systematic random layouts. It calls \code{trap.builder}.
 
   The sequence number of the cluster to which each detector belongs, and
   its within-cluster sequence number, may be retrieved with the
@@ -179,6 +183,14 @@ tempgrid <- trap.builder (n = 20, cluster = minigrid,
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
     plt = TRUE)
 
+## as before, but excluding detectors from a polygon
+tempgrid <- trap.builder (n = 40, cluster = minigrid,
+    method = "GRTS", edgemethod = "allinside", region =
+    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
+    exclude = cbind(x = c(3000,7000,7000,3000), y =
+    c(2000,2000,4000,4000)), exclmethod='alloutside',
+    plt = TRUE)
+
 ## one detector in each 100-m grid cell -
 ## a form of stratified simple random sample
 origins <- expand.grid(x = seq(0, 900, 100),
@@ -188,7 +200,6 @@ temp <- trap.builder (frame = XY, method = "all",
     detector = "multi")
 ## same as temp <- read.traps(data = XY)
 plot(temp, border = 0)  ## default grid is 100 m
-
 
 ## simulate some data
 ## regular lattice of mini-arrays

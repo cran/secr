@@ -68,6 +68,9 @@ the signal is above \code{cutval} on at least one. In this case all
 retained sounds are treated as detected on all microphones. This fails
 when signals are already missing on some channels.
 
+Subsetting is awkward with multi-session input when the criterion is an
+individual covariate. See the Examples for omne way this can be tackled.
+
 }
 
 \value{
@@ -102,6 +105,18 @@ split (tempcapt2, f = sample (c("A","B"), nrow(tempcapt2),
 
 ## split out captures on alternate rows of a grid
 split(captdata, f = rep(1:2, 50), bytrap = TRUE)
+
+## Applying a covariate criterion across all sessions of a
+## multi-session capthist object e.g. selecting male ovenbirds from the
+## 2005--2009 ovenCH dataset. We include a resriction on occasions
+## to demonstrate the use of 'MoreArgs'. Note that mapply() creates a
+## list, and the class of the output must be restored manually.
+
+ovenCH.males <- mapply(subset, ovenCH,
+    subset = lapply(ovenCH, function(x) covariates(x)$Sex == 'M'),
+    MoreArgs = list(occasions = 1:5))
+class(ovenCH.males) <- class(ovenCH)
+summary(ovenCH.males)
 
 }
 

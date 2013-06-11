@@ -58,5 +58,5 @@ esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
 
 \seealso{ \code{\link{esa.plot}}, \code{\link{mask}},
 \code{\link{pdot}}, \code{\link{make.mask}}, \code{\link{mask.check}},
-\code{\link{detection functions}} }
+\code{\link{Detection functions}} }
 \keyword{ hplot }

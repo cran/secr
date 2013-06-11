@@ -1,5 +1,5 @@
-\name{troubleshooting}
-\alias{troubleshooting}
+\name{Troubleshooting}
+\alias{Troubleshooting}
 
 \title{ Problems in Fitting SECR Models }
 
@@ -22,11 +22,10 @@ you.
   
   \itemize{
 
-    \item Try another maximization method (\code{method =
-  'Nelder-Mead'} is more robust than the default). A message may suggest
-  using \code{method = 'BFGS'}, but this is not so often useful as
-  originally thought. The same maximum likelihood should be found
-  regardless of method, so AIC values are comparable across methods.
+    \item Try another maximization method (\code{method = 'Nelder-Mead'}
+  is more robust than the default). The same maximum likelihood should
+  be found regardless of method, so AIC values are comparable across
+  methods.
   
   \item Repeat the maximization with different starting values. You can use
 \code{secr.fit(..., start = last.model)} where \code{last.model} is a
@@ -105,6 +104,11 @@ See also the section `Potential problems' in
   e.g., by casting `groups' as `sessions'. Memory is less often an issue
   on 64-bit systems (see link below).
 
+}
+
+\section{Estimates from mixture models appear unstable}{
+  These models have known problems due to multimodality of the
+  likelihood. See \url{../doc/secr-finitemixtures.pdf}.
 }
 
 \seealso{\code{\link{secr.fit}}, \code{\link[base]{Memory-limits}} }

@@ -32,6 +32,10 @@
 /* 2012-12-17 Tsk effort adjustment */
 /* 2012-12-23 radical hack - remove switch0 etc etc */
 /* 2012-12-25 cleaned */
+/* 2013-04-14 known classes (hcov) for CL = T */
+/* 2013-04-16 change group indexing to zero-based */
+/* 2013-04-17 known classes (hcov) for CL = F (incompatible with groups) */
+/* 2013-06-05 known class coded 1 for unknown, >1 for known */
 
 /*
         *detect may take values -
@@ -984,11 +988,12 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *detect,
     double Tski = 1.0;
     cutval[0] = 0;
 
-    if (*fn>13)
-        if (*fn != 20) error("require detectfn<14");
+    if (*fn>18)
+        if (*fn != 20) error("pdotpoint requires detectfn < 18");
     g0 = par[0];
     sigma = par[1];
-    if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) || (*fn == 20)))
+    if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) || (*fn == 20)
+	  || (*fn == 14) || (*fn == 16)))
         z = par[2];
     if ((*fn == 10) || (*fn == 11) || (*fn == 12) || (*fn == 13))
         cutval[0] = par[3];
@@ -1467,29 +1472,35 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
 }
 /*=============================================================*/
 
-int getpmix(int gpar, int nc1, int *nmix, int *nc, int *cc, int *ss, int nk, 
-	    int *like, int grp[], int PIA[], double gsbval[], double pmix[]){
+int getpmix(int gpar, int nc1, int *nmix, int knownclass[], int *nc, int *cc, int *ss, 
+            int nk, int grp[], int PIA[], double gsbval[], double pmixg[], 
+            double pmixn[]){
 
-    /*---------------------------------------------------------*/
-    /* mixture proportions                                     */
-    /* by group for full likelihood, by animal otherwise       */
+    /*-------------------------------*/
+    /* mixture proportions           */
+    /* by group and by animal        */
 
-    int g, i, n, c, x, wxi;
-    for (i=0; i < nc1 * *nmix; i++) pmix[i] = 1; /* default */
+    int g, n, c, x, wxi;
+    double pmix;
     if (*nmix>1) {
-        /* one extra real parameter */
+        /* one extra real parameter for h2 */
         gpar++;
-
         for (n=0; n<nc1; n++) {
             for (x=0; x<*nmix; x++) {
                 wxi = i4(n,0,0,x,*nc,*ss,nk);
                 c = PIA[wxi] - 1;
-                if (*like != 1) {
-                    g = grp[n]-1;
-                    pmix[*nmix * g + x] = gsbval[*cc * (gpar-1) + c];
-                }
-                else
-                    pmix[*nmix * n + x] = gsbval[*cc * (gpar-1) + c];
+		pmix = gsbval[*cc * (gpar-1) + c];
+		g = grp[n]-1;
+		pmixg[*nmix * g + x] = pmix;
+                
+		if (knownclass[n] > 1) {
+		    if (knownclass[n] == (x+2))   /* knownclass=2 maps to x=0 */
+			pmixn[*nmix * n + x] = 1;
+		    else 
+			pmixn[*nmix * n + x] = 0;
+		}
+		else
+		    pmixn[*nmix * n + x] = pmix;
             }
         }
     }
@@ -1540,15 +1551,15 @@ int fillcumk(int *detect, int kk[], int cumk[]){
 }
 /*=============================================================*/
 
-void fillng(int *nc, int *gg, int *grp, int ng[]) {
+void fillng(int nc, int gg, int *grp, int ng[]) {
     int g, n;
     /* Count number per group (not used for CL)                */
     /* Assume histories sorted by group = individual           */
     /* CH are numbered 0 <= n < *nc in C code                  */
-    for (g=0; g<*gg; g++)
+    for (g=0; g<gg; g++)
         ng[g] = 0;
-    for (n=0; n<*nc; n++) { 
-        g = grp[n]-1;
+    for (n=0; n<nc; n++) { 
+        g = grp[n] - 1; 
         ng[g]++;
     }
 }
@@ -1565,6 +1576,7 @@ void integralprw1 (
     int    *mm,        /* number of points on mask */
     int    *gg,        /* number of groups */
     int    *nmix,      /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,     /* x,y locations of traps (first x, then y) */
     double *Tsk,       /* nk x s usage matrix */
     double *mask,      /* x,y points on mask (first x, then y) */
@@ -1588,27 +1600,26 @@ void integralprw1 (
 )
 
 {
-    int n,m,x;
+    int i,n,m,x;
     double asum = 0;
     double *gk0;
     double D = 1.0;
     int cumk[maxnpoly];
     int nk = 0;
     int nc1;
-    double *pmix;      /* proportion in each mixture */
+    double *pmixg;      /* proportion in each mixture by group*/
+    double *pmixn;      /* proportion in each mixture by individual*/
     int gpar = 2;
-    int like[1];   /* for getpmix */
     int    *ng;       /* number per group */
     double *detspec = NULL;
     int nv;
 
     *resultcode = 1;                   /* generic failure */
-    like[0] = 1;  /* NOT SURE */
 
     /* groups are not used in functions that call integralprw1 */
     /* but we go through the motions...*/
     ng = (int *) R_alloc(*gg, sizeof(int));
-    fillng(nc, gg, grp, ng);                                    /* number per group */
+    fillng(*nc, *gg, grp, ng);                                    /* number per group */
     nk = fillcumk(detect, kk, cumk);                            /* detections per polygon */
 
     /*---------------------------------------------------------*/
@@ -1628,9 +1639,12 @@ void integralprw1 (
     /* Allocate space for array of naive detection probability */
     gk0 = (double *) R_alloc(*cc0 * nk * *mm, sizeof (double));
 
-    pmix = (double *)  R_alloc(*nc * *nmix, sizeof (double));
-    gpar = getpmix(gpar, nc1, nmix, nc, cc0, ss, nk, like,
-		   grp, PIA0, gsb0val, pmix);
+    pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
+    pmixn = (double *)  R_alloc(*nc * *nmix, sizeof (double));
+    for (i=0; i < *gg * *nmix; i++) pmixg[i] = 1; /* default */
+    for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
+    gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc0, ss, nk, 
+		   grp, PIA0, gsb0val, pmixg, pmixn);
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
 	       traps, mask, gsb0val, miscparm, detspec, gk0); 
 
@@ -1644,7 +1658,7 @@ void integralprw1 (
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
                     if (*useD > 0) D = mask[2 * *mm + m];
-                    asum += pmix[*nmix * n + x] * D * pndot (m, n, 1, *ss, x,
+                    asum += pmixn[*nmix * n + x] * D * pndot (m, n, 1, *ss, x,
    		        *ncol, PIA0, gk0, *detect, *binomN, Tsk, *ss, nk, *cc0, 
 			*nmix, gsb0val, *param);
                 }
@@ -1680,6 +1694,7 @@ void secrloglik (
     int    *mm,          /* number of points on mask */
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
     double *traps,       /* x,y locations of traps (first x, then y) */
     double *Tsk,         /* nk x s usage matrix */
     double *mask,        /* x,y points on mask (first x, then y) */
@@ -1729,6 +1744,7 @@ void secrloglik (
 
     /* group arrays */
     int    *ng;       /* number per group */
+    int    *nm;       /* number per known mixture class */
     double *sumD;     
     double *sumDp;    
 
@@ -1752,7 +1768,10 @@ void secrloglik (
     double *gk0 = NULL;
 
     /* mixture membership probability */
-    double *pmix = NULL;
+    double *pmixg = NULL;
+    double *pmixn = NULL;
+    double pmixnx;
+    int known = 0;
 
     /* passing data to prwfn */
     double *detspec = NULL;
@@ -1807,22 +1826,53 @@ void secrloglik (
     if ((*gg > 1) && (*like == 1)) nested = 1;                 
     /*---------------------------------------------------------*/
 
-    ng = (int *) R_alloc(*gg, sizeof(int));
-    fillng(nc, gg, grp, ng);                                    /* number per group */
+    /* Number per known mixture, and total in known class */
+    /* On input, knownclass 1 is used for 'unknown' : */
+    /* knownclass 1 -> nm[0] 'unknown' */
+    /* knownclass 2 -> nm[1] 'latent class 1' */
+    /* knownclass 3 -> nm[2] 'latent class 2' */
+    nm = (int *) R_alloc(*nmix + 1, sizeof(int));
+    fillng(*nc, *nmix+1, knownclass, nm);                           
+    if (*nmix > 1) {
+	for (x = 1; x < (*nmix+1); x++)
+	known += nm[x];
+    }
 
-    nk = fillcumk(detect, kk, cumk);                            /* detections per polygon */
-    gfn = getgfn(*fn);                                          /* see utils.c */
+    /* Number per group */
+    ng = (int *) R_alloc(*gg, sizeof(int));
+    fillng(*nc, *gg, grp, ng);                                    
+
+    /* Detections per polygon */
+    nk = fillcumk(detect, kk, cumk);                            
+
+    /* Select detection function and detector */
+    /* see utils.c for these functions */
+    gfn = getgfn(*fn);                                          
     prwfn = getprwfn(*detect, *param);
 
+    /* 'start' is index to position of ancillary data for each
+       individual, used for polygon, transect and sound detectors */
     if ( (*detect == 3) || (*detect==4) ) 
 	start = (int *) R_alloc(nc1 * *ss, sizeof(int));
     else if (((*detect>=5) && (*detect<=9)) || (*detect==12)) 
 	start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
     nd = getstart(detect, start, nc1, nc, ss, nk, w);
 
-    pmix = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
-    gpar = getpmix(gpar, nc1, nmix, nc, cc, ss, nk, like,
-		   grp, PIA, gsbval, pmix);
+    pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
+    pmixn = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
+    for (i=0; i < (*gg * *nmix); i++) pmixg[i] = 1; /* default */
+    for (i=0; i < (nc1 * *nmix); i++) pmixn[i] = 1; /* default */
+    gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, 
+		   grp, PIA, gsbval, pmixg, pmixn);
+
+/* DEBUG 
+    for (g=0; g < *gg; g++)
+    for (x=0; x < *nmix; x++)
+    Rprintf("g %d x %d pmixg %6.4f \n", g, x, pmixg[*nmix * g + x]);
+    for (n=0; n < *nc; n++)
+    for (x=0; x < *nmix; x++)
+    Rprintf("n %d x %d pmixn %6.4f \n", n, x,  pmixn[*nmix * n + x]);
+end DEBUG */
 
     nv = nval(detect, nc1, cc, ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
@@ -1878,6 +1928,7 @@ void secrloglik (
             }
         }
 	if (indiv == 0) {
+	    /* Rprintf("all same\n"); */
             /* all individuals the same */
             /* save time by doing this once, rather than inside n loop */
             for (x=0; x<*nmix; x++) {
@@ -1933,111 +1984,216 @@ void secrloglik (
         }
         else {   /* not nested (standard option) */
 
+	    /* display pmix
+	       for (x=0; x<*nmix; x++) {
+	       Rprintf("%3d", x);
+	       for (n=0; n<*nc; n++) {                    
+	       Rprintf("%5.2f", pmix[*nmix * n + x]);
+	       }
+	       Rprintf("\n");
+	       }
+	    */
+
             /* Loop over individuals... */
             for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
                 a[n] = 0;
                 tempsum = 0;
-                for (x=0; x<*nmix; x++) {
-                    temp = 0;
-                    if (indiv > 0)
-                        asum[x] = 0;
-                    for (m=0; m<*mm; m++) {
+                if (knownclass[n] == 1) {
+                    /* unknown class : weighted by probability of membership */
+		    for (x=0; x<*nmix; x++) {
+			pmixnx = pmixn[*nmix * n + x];
+			if (pmixnx > 1e-6) {
+			    temp = 0;
+			    if (indiv > 0)
+				asum[x] = 0;
+			    for (m=0; m<*mm; m++) {
+				if (indiv > 0)
+				    asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0, *detect, 
+		  		        *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
+				prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+					      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+					      gfn, gsbval, traps, Tsk, mask, *minprob);
+				temp += prwi;
+			    }
+			    a[n] += pmixnx * asum[x];
+			    tempsum += pmixnx * temp;
+			}
+		    }    /* end of loop over mixtures */
+		    templog = log(tempsum/a[n]);
+		}
+		else {
+                    /* known class does not require probability of membership */
+		    x = imax2(0, knownclass[n]-2);
+		    temp = 0;
+		    if (indiv > 0)
+			asum[x] = 0;
+		    for (m=0; m<*mm; m++) {
 			if (indiv > 0)
 			    asum[x] += pndot (m, n, 1, *ss, x, *nc, PIA0, gk0, *detect, 
-                                *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
+					*binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
 			prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
 				      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
 				      gfn, gsbval, traps, Tsk, mask, *minprob);
 			temp += prwi;
-                    }
-                    a[n] += pmix[*nmix * n + x] * asum[x];
-                    tempsum += pmix[*nmix * n + x] * temp;
-                }    /* end of loop over mixtures */
-
-                templog = log(tempsum/a[n]);
-                a[n] = *area * a[n];
-
+		    }
+		    a[n] = asum[x];
+		    templog = log(temp/a[n]);
+		}
+		a[n] = *area * a[n];		
                 if (!R_FINITE(templog)) *resultcode = 9;
 		if (*resultcode == 9) return;
 		*value += templog;
                 R_CheckUserInterrupt();
             }        /* end of loop over individuals */
+
+	    /* multinomial probability of known class membership (excludes coeficient) */
+
+	    if (known>0) {
+		tempsum = 0;
+		for (x=0; x<*nmix; x++) {
+		    asum[x] = 0;
+		    for (m=0; m<*mm; m++) {
+			asum[x] += pndot (m, 0, 1, *ss, x, *nc, PIA0, gk0, *detect, 
+					  *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
+		    }
+		    tempsum += asum[x] * pmixg[x];
+		}
+		for (x=0; x<*nmix; x++) 
+		    *value += nm[x+1] * log(asum[x] * pmixg[x] / tempsum); 
+		if (!R_FINITE(*value)) *resultcode = 9;
+	    }
+
         }
     }
     /*-------------------------------------------------------------------------------------------*/
 
     else {  /* *like==0,2  Full or Partial likelihood */
-
 	sumD = (double *) R_alloc(*gg, sizeof(double));
 	sumDp = (double *) R_alloc(*gg, sizeof(double));
+	for (g=0; g<*gg; g++) {
+	    sumD[g] = 0;
+	    sumDp[g] = 0;
+	}
+	if ((known>0) && (*nmix>1)) {
+	    /* no groups, only mixture classes; use group 0 for aggregates */
+	    for (m=0; m<*mm; m++)  {
+		sumD[0] += Dmask[m];
+		for (x=0; x<*nmix; x++) {
+		    pdt = pndot (m, 0, 1, *ss, x, *gg, PIA0, gk0, *detect, *binomN, 
+				 Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
+		    sumDp[0] += pdt * pmixg[x] * Dmask[m];  
+		}
+	    }
+	}
+	else {
+	    /* groups incompatible with mixtures containing some known */
+	    for (g=0; g<*gg; g++) {
+		for (m=0; m<*mm; m++)  {
+		    sumD[g] += Dmask[*mm * g + m];
+		    for (x=0; x<*nmix; x++) {
+			pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0, *detect, *binomN, 
+				     Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
+			sumDp[g] += pdt * pmixg[*nmix * g + x] * Dmask[*mm * g + m];
+		    }
+		}
+	    }
+	}
 
-        for (g=0; g<*gg; g++) {
-            sumD[g] = 0;
-            sumDp[g] = 0;
-            for (m=0; m<*mm; m++)  {
-                sumD[g] += Dmask[*mm * g + m];
-                for (x=0; x<*nmix; x++) {
-		    pdt = pndot (m, g, 1, *ss, x, *gg, PIA0, gk0, *detect, *binomN, 
-                        Tsk, *ss, nk, *cc0, *nmix, gsb0val, *param);
-                    sumDp[g] += pdt * pmix[*nmix * g + x] * Dmask[*mm * g + m];
-                }
-            }
-        }
-
-    /* 3 */
-     if (timing) ticks = timestamp(ticks, &counter);
+	/* 3 */
+	if (timing) ticks = timestamp(ticks, &counter);
                    
         *value = 0;
         /* compute likelihood component from pr(wi) */
         if (*like == 0)   /* Full likelihood only */
         for (n=0; n < *nc; n++) {
-            g = grp[n]-1;
-            temp = 0;
-            for (x=0; x<*nmix; x++) {
-                for (m=0; m<*mm; m++) {
+	    g = grp[n]-1;
+	    temp = 0;
+
+	    if (knownclass[n] == 1) {
+		/* unknown class : weighted by probability of membership */
+		for (x=0; x<*nmix; x++) {
+		    pmixnx = pmixg[*nmix * g + x];
+		    for (m=0; m<*mm; m++) {
+			prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
+				      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
+				      gfn, gsbval, traps, Tsk, mask, *minprob);
+			
+			tempp = prwi * pmixnx * Dmask[*mm * g + m];	    
+			/* Simply aborting at this point does not work 2011-01-30 */
+			/* so following condition is not used */
+			if (tempp < 0) {
+			    *resultcode = 8;
+			    return;
+			}
+			else
+			    temp += tempp;
+		    }
+		}
+	    }
+	    else {
+                x = imax2(0, knownclass[n]-2);
+		for (m=0; m<*mm; m++) {
 		    prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
-				detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
-				  gfn, gsbval, traps, Tsk, mask, *minprob);
-
-		    tempp = prwi * pmix[*nmix * g + x] * Dmask[*mm * g + m];	    
-                    /* Simply aborting at this point does not work 2011-01-30 */
-		    /* so following condition is not used */
-                    if (tempp < 0) {
-                        *resultcode = 8;
-                        return;
-                    }
-                    else
-                        temp += tempp;
-                }
-            }
-            templog = log(temp);
-            if (!R_FINITE(templog)) *resultcode = 9;
+				  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
+				  gfn, gsbval, traps, Tsk, mask, *minprob);		    
+		    tempp = prwi * Dmask[m];	    
+		    temp += tempp;
+		}
+	    }
+	    templog = log(temp);
+	    if (!R_FINITE(templog)) *resultcode = 9;
 	    if (*resultcode == 9) return;
-            *value += templog;
-            R_CheckUserInterrupt();
-        }
-    /* 4 */
-     if (timing) ticks = timestamp(ticks, &counter);
+	    *value += templog;
+	    R_CheckUserInterrupt();
+	}
 
-        /* compute likelihood component due to n */
-        for (g=0; g<*gg; g++) {
-            *value -= ng[g] * log(sumDp[g]);
-	    tempN = sumD[g] * *area;
+	/* 4 */
+	if (timing) ticks = timestamp(ticks, &counter);
+
+	if ((known>0) && (*nmix>1)) {
+	    /* likelihood component due to n */
+	    tempN = sumD[0] * *area;
             /* Poisson */
-            if (*distrib == 0) *value += gpois(ng[g], sumDp[g] * *area, 1);
+            if (*distrib == 0) *value += gpois(*nc, sumDp[0] * *area, 1);
             /* binomial */
             if (*distrib == 1) {
-		if (ng[g] > tempN) {
+		if (*nc > tempN) {
 		    *resultcode = 8;
 		    return;
 		}
-		*value += gbinomFP (ng[g], tempN, sumDp[g] / sumD[g], 1);
+		*value += gbinomFP (*nc, tempN, sumDp[0] / sumD[0], 1);
 	    }
-            /* superbinomial (specified N) */
-            if (*distrib>=2) *value += gbinomFP (ng[g], (double) *distrib,
-                sumDp[g] * *area / *distrib, 1);
-        }
+            /* likelihood component due to denominator of f() */
+            *value -= *nc * log(sumDp[0]);
+            /* adjustment for mixture probabilities when class known */
+	    for (x=0; x<*nmix; x++)
+		*value += nm[x+1] * log(pmixg[x]);
+	}
+	else {
+	    /* no known mixture classes */
+	    for (g=0; g<*gg; g++) {
+		/* likelihood component due to n */
+		tempN = sumD[g] * *area;
+		/* Poisson */
+		if (*distrib == 0) *value += gpois(ng[g], sumDp[g] * *area, 1);
+		/* binomial */
+		if (*distrib == 1) {
+		    if (ng[g] > tempN) {
+			*resultcode = 8;
+			return;
+		    }
+		    *value += gbinomFP (ng[g], tempN, sumDp[g] / sumD[g], 1);
+		}
+		/* likelihood component due to denominator of f() */
+		*value -= ng[g] * log(sumDp[g]);
+		
+		/* special case: superbinomial (specified N) */
+		if (*distrib>=2) *value += gbinomFP (ng[g], (double) *distrib,
+						     sumDp[g] * *area / *distrib, 1);
+	    }
+	}
     }
+
     *resultcode = 0;   /* successful termination secrloglik */
 }
 /*==============================================================================*/
@@ -2334,6 +2490,7 @@ void pwuniform (
     int    *mm,          /* number of points on mask */
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
     double *Tsk,         /* nk x s usage matrix */
     double *mask,        /* x,y points on mask (first x, then y) */
@@ -2355,7 +2512,8 @@ void pwuniform (
     int    i,j,n,g,k,m,c,s,x;
     int    *ng;       /* number per group */
     int    gi;
-    double *pmix;
+    double *pmixg = NULL;
+    double *pmixn = NULL;
     double temp;
     double sumprwi = 1.0;
     double prwi;
@@ -2412,7 +2570,7 @@ void pwuniform (
     /*---------------------------------------------------------*/
 
     ng = (int *) R_alloc(*gg, sizeof(int));
-    fillng(nc, gg, grp, ng);                                    /* number per group */
+    fillng(*nc, *gg, grp, ng);                                    /* number per group */
 
     nk = fillcumk(detect, kk, cumk);                            /* detections per polygon */
     gfn = getgfn(*fn);                                          /* see utils.c */
@@ -2424,9 +2582,12 @@ void pwuniform (
 	start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
     nd = getstart(detect, start, nc1, nc, ss, nk, w);
 
-    pmix = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
-    gpar = getpmix(gpar, nc1, nmix, nc, cc, ss, nk, like, grp, PIA, 
-		   gsbval, pmix);
+    pmixn = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
+    pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
+    for (i=0; i < *gg * *nmix; i++) pmixg[i] = 1; /* default */
+    for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
+    gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, grp, PIA, 
+		   gsbval, pmixg, pmixn);
 
     nv = nval(detect, nc1, cc, ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
@@ -2465,7 +2626,6 @@ void pwuniform (
     }
 
     if (*normal > 0) {
-	/* Rprintf("normalising\n"); */
         sumprwi = 0;
         for (x=0; x<*nmix; x++) {
             temp = 0;
@@ -2475,7 +2635,7 @@ void pwuniform (
                               Tsk, mask, *minprob);
 		temp += prwi;
             }
-            sumprwi += pmix[x] * temp;
+            sumprwi += pmixg[x] * temp;
         }    /* end of loop over mixtures */
         if (sumprwi< fuzz)
             error("zero prwi in external function pwuniform");
@@ -2573,7 +2733,7 @@ void pwuniform (
                                c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
                                if (c >= 0) {
                                    gi = i3(c,k,m,*cc,nk);
-                                   p += pmix[*nmix * g + x] * gkx[gi];
+                                   p += pmixg[*nmix * g + x] * gkx[gi];
 			       }
                             }
                             hx[hc0x[c0] * *xx + m] += hazard (p);
@@ -2630,7 +2790,7 @@ void pwuniform (
         }
         else {
             for (x=0; x<*nmix; x++) {
-                temp += pmix[x] * prwfn (i, *which-1, 1, *ss, x, w, xy, signal, PIA,
+                temp += pmixg[x] * prwfn (i, *which-1, 1, *ss, x, w, xy, signal, PIA,
 					 gkx, *binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
 					 *ss, *xx, *nmix, gfn, gsbval, traps, Tsk, X, *minprob);
             }

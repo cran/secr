@@ -53,6 +53,10 @@
 ## 2012-10-25 plot.capthist checks for zero captures and proximity tracks
 ## 2012-12-22 extended usage<-
 ## 2013-01-16 fixed rbind.traps for usage
+## 2013-02-07 timevaryingcov<- bug fixed
+## 2013-03-14 predict.secr acquires argument 'type'
+## 2013-06-08 print.secr includes Mixture (hcov) :
+## 2013-06-10 plot.capthist has safe on.exit return to old palette
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -745,7 +749,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'timevaryingcov<-' <- function (object, value) {
-## 2012-10-31
+## 2012-10-31, modified 2013-02-07
     if (is.null(value))
         structure (object, timevaryingcov = NULL)
     else {
@@ -764,7 +768,8 @@ flip.default <- function (object, lr=F, tb=F, ...) {
                 stop("value should be a list of one or more named vectors")
             if (!is.null(usage(object))) {
                 OK <- sapply(value, function(x)
-                             (ncol(usage) == length(x)))
+# bug fixed 2013-02-07       (ncol(usage) == length(x)))
+                             (ncol(usage(object)) == length(x)))
                 if (any(!OK))
                     warning ("mismatch between number of occasions in usage and timevaryingcov")
             }
@@ -1328,7 +1333,6 @@ plot.traps <- function(x,
 
         if (!add) {
             par(bg=bg)
-            require(MASS)
             ## axes = FALSE blocks bty = 'o' 2011-05-08
             eqscplot (x$x, x$y, xlim=range(x$x)+buff, ylim=range(x$y)+buff,
                 xlab='', ylab='', type='n', axes=F, ...)
@@ -1549,7 +1553,6 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
 
         if (add==FALSE)
         {
-            require(MASS)
             if (frame)
                 eqscplot (x$x, x$y, xlab='', ylab='', xlim=range(vertices$x),
                     ylim=range(vertices$y), type='n', axes = FALSE, ...)
@@ -2065,7 +2068,8 @@ plot.capthist <- function(x, rad = 5,
     # see also version in d:\single sample with stems=F, mst=F 2009 02 22
 
 {
-## recursive if list of capthist
+
+    ## recursive if list of capthist
     if (ms(x)) {
         sapply (x, plot.capthist,
             rad = rad, hidetraps = hidetraps, tracks = tracks,
@@ -2205,6 +2209,9 @@ plot.capthist <- function(x, rad = 5,
         ###########
         ## MAINLINE
 
+        ## suggested by Mike Meredith 2013-05-24
+        opal <- palette() ; on.exit(palette(opal))
+
         traps <- traps(x)
         detectr <- detector(traps)
         nocc <- ncol(x)
@@ -2299,7 +2306,6 @@ plot.capthist <- function(x, rad = 5,
             if (is.null(icolours)) {
                 icolours <- topo.colors(max(nj)*1.5)
             }
-            opal <- palette()
             palette (icolours)
             npal <- length(icolours)
             if (max(nj) < npal) {
@@ -2314,7 +2320,6 @@ plot.capthist <- function(x, rad = 5,
                 fg <- cols
             par(cappar)
             points(centres, col = fg, bg = cols, pch = cappar$pch, cex = cappar$cex)
-            palette(opal)
 
             if (ncap) {
                 par(labpar)
@@ -2723,13 +2728,15 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
       ppoly = TRUE, polycol='red', ...)
 {
     if (ms(x)) {
-        lapply (x, plot.mask, ...)
+        ## 2013-02-12 pass all arguments
+        lapply (x, plot.mask, border = border, add = add, covariate = covariate,
+                axes = axes, dots = dots, col = col, breaks = breaks, meshcol =
+                meshcol, ppoly = ppoly, polycol = polycol, ...)
     }
     else {
 
         buff <- c(-border,+border)
         if (!add) {
-            require(MASS)
             eqscplot (x$x, x$y,
             xlim=range(x$x)+buff, ylim=range(x$y)+buff,
             xlab='', ylab='',
@@ -2855,16 +2862,20 @@ trim.secr <- function (object, drop = c('mask','design','design0'), keep = NULL)
 ############################################################################################
 
 
-predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
-    savenew = FALSE, scaled = FALSE, ...) {
+predict.secr <- function (object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
+                          alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
 
     if (is.null(object$fit)) {
         warning ("empty (NULL) object")
         return(NULL)
     }
+    type <- match.arg(type)
+    if ((type == "link") & scaled)
+        stop ("scaling requires type = 'response'")
+
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
 
-    ## 2012-07-24
+    ## unmashing 2012-07-24
     unmash <- object$details$unmash
     if (object$CL | is.null(unmash)) unmash <- FALSE
 
@@ -2872,14 +2883,15 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     models <- object$model
 
     ## drop unused columns 2012-10-24
-    vars <- unlist(lapply(models, all.vars))                       ## 2012-10-24
-    usedvars <- c('session', 'group', vars)                        ## 2012-10-24
-    newdata <- newdata[,names(newdata) %in% usedvars, drop=FALSE]  ## 2012-10-24
+    vars <- unlist(lapply(models, all.vars))
+    usedvars <- c('session', 'g', vars)   ## changed from 'group' 2013-06-05
+    newdata <- newdata[,names(newdata) %in% usedvars, drop = FALSE]
 
     if ('cuerate' %in% object$realnames) {
         parindices$cuerate <- max(unlist(parindices)) + 1
         models$cuerate <- ~1
     }
+
     if (object$detectfn %in% c(12,13)) {
         ## experimental parameters not fitted
         ## construct dummies
@@ -2924,7 +2936,6 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     }
 
     predict <- sapply (object$realnames, getfield, simplify = FALSE)
-
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     if (se.fit)  out <- list(nrow(newdata))
     else {
@@ -2935,22 +2946,21 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
     }
     if (!is.null(predict$pmix)) {
         nmix <- object$details$nmix
-
-        ######################
-        ## replaced 2010 03 10
-        # predict$pmix$estimate <- logit(mlogit.untransform(predict$pmix$estimate, 1:nmix))
-
         # assuming mixture is always last dimension...
         temp <- matrix(predict$pmix$estimate, ncol = nmix)
-        temp2 <- apply(temp, 1, function(est) logit(mlogit.untransform(est, 1:nmix)))
+        temp2 <- apply(temp, 1, clean.mlogit)
         predict$pmix$estimate <- as.numeric(t(temp2))
-        ######################
-
-        predict$pmix$se <- NA    ## uncertain
+        if (nmix>2)  ## condition added 2013-04-14
+            predict$pmix$se <- NA    ## uncertain
+        else {
+            predict$pmix$se[as.numeric(newdata$h2)==1] <-
+                predict$pmix$se[as.numeric(newdata$h2)==2]
+        }
     }
     for (new in 1:nrow(newdata)) {
         lpred  <- sapply (predict, function(x) x[new,'estimate'])
-        Xlpred <- Xuntransform(lpred, object$link, object$realnames)
+        if (type == "response")
+            Xlpred <- Xuntransform(lpred, object$link, object$realnames)
 
         if (ms(object)) {
             if (!('session' %in% names(newdata))) {
@@ -2990,20 +3000,32 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
 
         if (se.fit) {
             selpred <- sapply (predict,function(x) x[new,'se'])
-            temp <- data.frame (
-              row.names = object$realnames,
-              link = unlist(object$link[object$realnames]),
-              estimate = Xlpred,
-              SE.estimate = se.Xuntransform (lpred, selpred, object$link, object$realnames),
-              lcl = Xuntransform(lpred-z*selpred, object$link, object$realnames),
-              ucl = Xuntransform(lpred+z*selpred, object$link, object$realnames)
-              )
-            # truncate density at zero; adjust for mash()
-            if ('D' %in% row.names(temp)) {
-                temp['D', -1][temp['D',-1]<0] <- 0
-                if (!is.null(n.mash)) {
-                    temp['D', -1] <- temp['D', -1] / n.clust
+            if (type == "response") {
+                temp <- data.frame (
+                    row.names = object$realnames,
+                    link = unlist(object$link[object$realnames]),
+                    estimate = Xlpred,
+                    SE.estimate = se.Xuntransform (lpred, selpred, object$link, object$realnames),
+                    lcl = Xuntransform(lpred-z*selpred, object$link, object$realnames),
+                    ucl = Xuntransform(lpred+z*selpred, object$link, object$realnames)
+                )
+                ## truncate density at zero; adjust for mash()
+                if ('D' %in% row.names(temp)) {
+                    temp['D', -1][temp['D',-1]<0] <- 0
+                    if (!is.null(n.mash)) {
+                        temp['D', -1] <- temp['D', -1] / n.clust
+                    }
                 }
+            }
+            else {
+                temp <- data.frame (
+                    row.names = object$realnames,
+                    link = unlist(object$link[object$realnames]),
+                    estimate = lpred,
+                    SE.estimate = selpred,
+                    lcl = lpred-z*selpred,
+                    ucl = lpred+z*selpred
+                )
             }
 
             # drop non-estimated rows
@@ -3035,13 +3057,18 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
             }
         }
         else { # no SE; terse format
-            if ('D' %in% names(Xlpred)) {
-                Xlpred['D'] <- ifelse (Xlpred['D']<0, 0, Xlpred['D'])
-                if (!is.null(n.mash)) {
-                    Xlpred['D'] <- Xlpred['D'] / n.clust
-                }
+            if (type == "link") {
+                out[new, (ncol(newdata)+1) : ncol(out)] <- lpred
             }
-            out[new, (ncol(newdata)+1) : ncol(out)] <- Xlpred
+            else {
+                if ('D' %in% names(Xlpred)) {
+                    Xlpred['D'] <- ifelse (Xlpred['D']<0, 0, Xlpred['D'])
+                    if (!is.null(n.mash)) {
+                        Xlpred['D'] <- Xlpred['D'] / n.clust
+                    }
+                }
+                out[new, (ncol(newdata)+1) : ncol(out)] <- Xlpred
+            }
         }
     }
     if (savenew) attr(out, 'newdata') <- newdata
@@ -3052,9 +3079,9 @@ predict.secr <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
 ############################################################################################
 ## 2010-10-22
 
-predict.secrlist <- function (object, newdata = NULL, se.fit = TRUE, alpha = 0.05,
-    savenew = FALSE, scaled = FALSE, ...) {
-    lapply(object, predict, newdata, se.fit, alpha, savenew, scaled, ...)
+predict.secrlist <- function (object, newdata = NULL, type = c("response","link"), se.fit = TRUE,
+                              alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
+    lapply(object, predict, newdata, type, se.fit, alpha, savenew, scaled, ...)
 }
 ############################################################################################
 
@@ -3064,6 +3091,9 @@ secrlist <- function(...) {
     allargs <- list(...)
     allargs <- lapply(allargs, function(x) if (inherits(x, 'secr')) list(x) else x)
     temp <- do.call(c, allargs)
+    ## added 2013-06-06
+    if (is.null(names(temp)))
+        names(temp) <- paste("secr", 1:length(temp), sep="")
     if (!all(sapply(temp, function(x) inherits(x, 'secr'))))
         stop ("objects must be of class 'secr' or 'secrlist'")
     class(temp) <- 'secrlist'
@@ -3102,7 +3132,7 @@ detectpar <- function(object, ...) {
         temp <- split(temp[,1], rownames(temp))
         temp <- c(temp, object$fixed)
         temp <- temp[parnames(object$detectfn)]
-        if (object$detectfn > 9)
+        if ((object$detectfn > 9) & (object$detectfn <14))
             temp <- c(temp, list(cutval = object$details$cutval))
         temp
     }
@@ -3123,14 +3153,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
 
     cat ('\n')
 
-    if (is.character(x$call))     ## pre secr 1.5 object
-        cl <- x$call
-    else {
-        cl <- paste(names(x$call)[-1],x$call[-1], sep=' = ', collapse=', ' )
-        cl <- paste('secr.fit(', cl, ')')
-    }
-
-    cat(strwrap(cl, getOption('width')), sep='\n  ')
+    print(x$call)
 
     if (!is.null(x$version)) {
         cat ('secr ', x$version, ', ', x$starttime, '\n', sep='')
@@ -3207,6 +3230,9 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
         if (x$details$param == 1)
             cat ('Gardner, Royle & Wegan parameterisation for multi-catch traps','\n')
     }
+    ## 2013-06-08
+    if (!is.null(x$hcov))
+        cat ('Mixture (hcov)  : ', x$hcov, '\n')
     cat ('Fixed (real)    : ', fixed.string(x$fixed), '\n')
     cat ('Detection fn    : ', detectionfunctionname(x$detectfn), '\n')
     if (!x$CL)
@@ -3244,7 +3270,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
     if (!is.null(x$realpar))
         print( x$realpar )
     else {
-        temp <- predict (x, newdata, alpha)
+        temp <- predict (x, newdata, type = "response", alpha = alpha)
         nd <- length(temp)
         if (is.data.frame(temp)) print(temp, ...)
         else for (new in 1:nd) {
@@ -3314,42 +3340,18 @@ logLik.secr <- function(object, ...) {
 
 ############################################################################################
 
-AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10) {
-
-    if (k != 2)
-        stop ("'AIC.secr' defined only for k = 2")
-
+AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC')) {
     allargs <- list(...)
     modelnames <- (c ( as.character(match.call(expand.dots=FALSE)$object),
           as.character(match.call(expand.dots=FALSE)$...) ))
-    if (any(sapply(allargs,class) != 'secr'))
-        stop ("arguments must be secr objects")
-    allargs <- c(list(object), allargs)
-
-#    if (!all.equal(sapply (allargs, function(x) detector(traps(x$capthist)))))
-#    stop('Models not compatible')
-#    if (!all.equal(sapply (allargs, function(x) x$CL)))
-#    stop('Models not compatible')
-
-    output <- data.frame(t(sapply(allargs, oneline.secr)), stringsAsFactors=F)
-    for (i in 3:6)
-    output[,i] <- as.numeric(output[,i])
-    output$dAICc <- output$AICc - min(output$AICc)
-
-    OK <- abs(output$dAICc) < abs(dmax)
-    sumdAICc <- sum(exp(-output$dAICc[OK]/2))
-    output$AICwt <- ifelse ( OK, round(exp(-output$dAICc/2) / sumdAICc,4), 0)
-
-    row.names(output) <- modelnames
-    if (sort) output <- output [order(output$AICc),]
-
-    if (nrow(output)==1) { output$dAICc <- NULL; output$AICwt <- NULL}
-    output
+    allargs <- secrlist(object, allargs)
+    names(allargs) <- modelnames
+    AIC(allargs, sort=sort, k=k, dmax=dmax, criterion=criterion)
 }
 ############################################################################################
 ############################################################################################
 
-    AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10) {
+AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC')) {
 
     if (k != 2)
         stop ("AIC.secr defined only for k = 2")
@@ -3357,29 +3359,26 @@ AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10) {
     if (length(list(...)) > 0)
         warning ("... argument ignored in 'AIC.secrlist'")
 
+    criterion <- criterion[1]
     modelnames <- names(object)
     allargs <- object
     if (any(sapply(allargs,class) != 'secr'))
         stop ("components of 'object' must be 'secr' objects")
 
-#    if (!all.equal(sapply (allargs, function(x) detector(traps(x$capthist)))))
-#    stop('Models not compatible')
-#    if (!all.equal(sapply (allargs, function(x) x$CL)))
-#    stop('Models not compatible')
-
     output <- data.frame(t(sapply(allargs, oneline.secr)), stringsAsFactors=F)
     for (i in 3:6)
     output[,i] <- as.numeric(output[,i])
-    output$dAICc <- output$AICc - min(output$AICc)
 
-    OK <- abs(output$dAICc) < abs(dmax)
-    sumdAICc <- sum(exp(-output$dAICc[OK]/2))
-    output$AICwt <- ifelse ( OK, round(exp(-output$dAICc/2) / sumdAICc,4), 0)
-
+    output$delta <- output[,criterion] - min(output[,criterion])
+    OK <- abs(output$delta) < abs(dmax)
+    sumdelta <- sum(exp(-output$delta[OK]/2))
+    output$wt <- ifelse ( OK, round(exp(-output$delta/2) / sumdelta,4), 0)
     row.names(output) <- modelnames
-    if (sort) output <- output [order(output$AICc),]
+    if (sort) output <- output [order(output[,criterion]),]
+    names(output)[7] <- paste('d',criterion,sep='')
+    names(output)[8] <- paste(criterion,'wt',sep='')
+    if (nrow(output)==1) { output[,8] <- NULL; output[,7] <- NULL}
 
-    if (nrow(output)==1) { output$dAICc <- NULL; output$AICwt <- NULL}
     output
 }
 ############################################################################################

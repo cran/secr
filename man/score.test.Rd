@@ -39,6 +39,10 @@ must be evaluated several times, but many fewer times than would be
 needed to fit the model. The score statistic is an approximation to the
 likelihood ratio; this allows the difference in AIC to be estimated.
 
+Covariates are inferred from components of the reference model
+\code{secr}. If the new models require additional covariates these may
+usually be added to the respective component of \code{secr}. 
+
 Mapping of parameters between the fitted and alternative models
 sometimes requires user intervention via the \code{betaindex} argument.
 For example \code{betaindex} = c(1,2,4) is the correct mapping when
@@ -108,6 +112,11 @@ Morgan, B. J. T., Palmer, K. J. and Ridout, M. S. (2007) Negative score test sta
     st <- score.test (secrdemo.0, g0 ~ b)
     st
     score.table(st)
+
+    ## adding a time covariate to separate occasions (1,2) from (3,4,5)
+    secrdemo.0$timecov <- data.frame(t2 = factor(c(1,1,2,2,2)))
+    st2 <- score.test (secrdemo.0, g0 ~ t2)
+    score.table(st,st2)
 }
 
 }

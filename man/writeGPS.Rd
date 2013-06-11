@@ -78,7 +78,7 @@ quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
 ## the grid comprises single multi-catch detectors.
 
 \dontrun{
-require(maptools)
+library(maptools)
 setwd(system.file("extdata", package = "secr"))
 possumarea <- readShapePoly("possumarea")  
 possumgrid <- make.systematic(spacing = 100, region =

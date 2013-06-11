@@ -97,7 +97,7 @@ from locations of individuals on a passive detector array. \emph{Ecology} \bold{
 
 \seealso{
 
-\code{\link{capthist}}, \code{\link{ovenbird}}, \code{\link{detection functions}} 
+\code{\link{capthist}}, \code{\link{ovenbird}}, \code{\link{Detection functions}} 
 
 }
 

@@ -51,7 +51,7 @@ A vector of probabilities, one for each row in X.
 }
 
 \seealso{ \code{\link{secr}}, \code{\link{make.mask}},
-  \code{\link{detection functions}}, \code{\link{pdot.contour}} }
+  \code{\link{Detection functions}}, \code{\link{pdot.contour}} }
 
 \examples{
   temptrap <- make.grid()

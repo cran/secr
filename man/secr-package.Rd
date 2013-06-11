@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.5.0\cr
-Date: \tab 2013-01-24\cr
+Version: \tab 2.6.0\cr
+Date: \tab 2013-06-11\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -119,6 +119,16 @@ for analysing capture-recapture data from passive detector arrays.
 \emph{Animal Biodiversity and Conservation} \bold{27},
  217--228.
 
+Efford, M. G. and Fewster, R. M. (2013) Estimating population
+  size by spatially explicit capture--recapture. \emph{Oikos}
+  \bold{122}, 918--928.
+ 
+Royle, J. A. and Gardner, B. (2011) Hierarchical spatial
+capture--recapture models for estimating density from trapping
+arrays. In: A.F. O'Connell, J.D. Nichols \& K.U. Karanth (eds)
+\emph{Camera Traps in Animal Ecology: Methods and Analyses}. Springer,
+Tokyo.  Pp. 163--190.
+ 
 }
 
 \keyword{ package }

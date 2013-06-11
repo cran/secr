@@ -28,7 +28,7 @@ usage(object) <- value
   interpreted as effort. This corresponds to the constant T_s used for
   the duration of sampling by Borchers and Efford (2008). Effort is
   modelled as a known linear coefficient of detection probability on the
-  hazard scale (\url{../doc/secr-varyingeffort.pdf}). 
+  hazard scale (\url{../doc/secr-varyingeffort.pdf}; Efford et al. 2013). 
   
   For replacement, various forms are possible for \code{value}:
 
@@ -52,6 +52,12 @@ usage(object) <- value
   usage(object) returns the usage matrix of the \code{traps}
   object. \code{usage(object)} may be NULL.
   
+}
+
+\references{
+Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in
+  capture--recapture studies. \emph{Methods in Ecology
+    and Evolution}. \url{http://dx.doi.org/10.1111/2041-210X.12049}.
 }
 
 \note{

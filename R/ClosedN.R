@@ -4,7 +4,6 @@
 # Based on Otis et al. 1978, C code of Anne Chao etc.
 # modified 2010-09-05 for AICcwt
 # modified 2011-05-04 for only non-ML estimators
-
 # source('d:\\density secr 1.4\\secr\\r\\closedN.R')
 
 ############################################################################
@@ -471,7 +470,9 @@ chao.th2.est <- function (X) {
 
     c1 <- fi[1] - 2*fi[2]/(tt-1)
     c.2 <- 1 - c1/temp1
-    if (c.2 > 1e-6) {
+    if (c.2 > 1e-6){
+    ## should probably restrict as follows 2013-04-20
+    ## if ((c.2 > 1e-6) & (tt>3)){
         n0  <- D/c.2     # fails if no recaptures
         r2  <- max(n0*temp2/temp3-1, 0.0)
         n2  <- n0 + fi[1]/c.2*r2
@@ -483,6 +484,7 @@ chao.th2.est <- function (X) {
         dn0 <- numeric(tt)
         dn0[1] <- 1/c.2 * (1 + D/temp1)
         dn0[2] <- 1/c.2 - 2*c.2^-2 * (1/temp1/(tt-1)+c1*sq2)*D
+        if (tt>2)  ## inserted 2013-04-20 to eliminate warning
         dn0[3:tt] <- 1/c.2 - c.2^-2 * (3:tt) * c1 *sq2 * D
         if (abs(r2) < 1e-6) {
             sum1 <- sum( dn0^2 * fi)

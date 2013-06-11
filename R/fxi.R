@@ -196,6 +196,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         as.integer(m),
         as.integer(ngrp),
         as.integer(details$nmix),
+        as.integer(getknownclass(session.capthist, details$nmix, object$hcov)),
         as.double(trps),
         as.double(usge),
         as.double(session.mask),

@@ -10,16 +10,22 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 }
 
 \usage{
-\method{predict}{secr}(object, newdata = NULL, se.fit = TRUE, alpha = 0.05, 
-    savenew = FALSE, scaled = FALSE, \dots)
+\method{predict}{secr}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
+    alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
+
+\method{predict}{secrlist}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
+    alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
 
 detectpar (object, \dots) 
 
 }
 
 \arguments{
-  \item{object}{ \code{secr} object output from \code{secr.fit} }
-  \item{newdata}{ optional dataframe of values at which to evaluate model }
+  \item{object}{ \code{secr} object output from \code{secr.fit}, or list
+  of \code{secr} objects (secrlist) }
+  \item{newdata}{ optional dataframe of values at which to evaluate
+    model }
+  \item{type}{ character; type of prediction required. The default ("response") provides estimates of the 'real' parameters.} 
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
   \item{savenew}{ logical for whether newdata should be saved }
@@ -27,11 +33,21 @@ detectpar (object, \dots)
   \item{\dots}{ other arguments }
 }
 \details{
-The variables in the various linear predictors are described in \link{secr models} and listed for the particular model in the \code{vars} component of \code{object}.
+  
+The variables in the various linear predictors are described in
+\link{secr models} and listed for the particular model in the
+\code{vars} component of \code{object}.
 
-Optional \code{newdata} should be a dataframe with a column for each of the variables in the model (see `vars' component of \code{object}).  If \code{newdata} is missing then a dataframe is constructed automatically.  Default \code{newdata} are for a naive animal on the first occasion; numeric covariates are set to zero and factor covariates to their base (first) level. 
+Optional \code{newdata} should be a dataframe with a column for each of
+the variables in the model (see `vars' component of \code{object}).  If
+\code{newdata} is missing then a dataframe is constructed automatically.
+Default \code{newdata} are for a naive animal on the first occasion;
+numeric covariates are set to zero and factor covariates to their base
+(first) level.
 
-Standard errors are by the delta method (Lebreton et al. 1992).  Confidence intervals are backtransformed from the link scale.
+Standard errors for parameters on the response (real) scale are by the
+delta method (Lebreton et al. 1992), and confidence intervals are
+backtransformed from the link scale.
 
 The argument \code{scaled} applies only to the detection parameters g0
 and sigma, and only to models fitted with \code{scalesigma} or

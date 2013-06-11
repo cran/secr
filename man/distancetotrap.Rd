@@ -42,7 +42,10 @@ on a habitat mask.
 \note{
 
   It is no longer (from version 2.3.0) necessary for `traps' to be a
-  traps object.
+  traps object. It may be any 2-column matrix or dataframe of
+  coordinates. From version 2.6.0 `traps' may also be a simple (one-polygon)
+  SpatialPolygonsDataFrame object from \pkg{sp}, in which case distances
+  are to the boundary vertices (use with care!).
 
 }
 

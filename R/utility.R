@@ -11,6 +11,12 @@
 ## 2012-11-03 gradient moved here
 ## 2012-11-03 several other functions moved here from functions.r
 ## 2012-12-03 make.lookup moved here
+## 2013-04-12 getknownclass()
+## 2013-04-12 getnmix()
+## 2013-04-13 h.levels()
+## 2013-04-20 new detection functions
+## 2013-06-06 fullbeta function (was part of secrloglik)
+## 2013-06-08 get.nmix extended to allow hcov and not h2/h3 model for g0,sigma
 ###############################################################################
 
 .localstuff <- new.env()
@@ -44,20 +50,31 @@
       'signal strength',
       'signal strength spherical',
       'signal-noise',
-      'signal-noise spherical')
+      'signal-noise spherical',
+      'hazard halfnormal',
+      'hazard hazard rate',
+      'hazard exponential',
+      'hazard annular normal',
+      'hazard cumulative gamma')
+
+.localstuff$DFN <- c('HN', 'HR', 'EX', 'CHN', 'UN', 'WEX', 'ANN', 'CLN', 'CG',
+                     'BSS', 'SS', 'SSS', 'SN', 'SNS', 'HHN', 'HHR', 'HEX', 'HAN', 'HCG')
 
 detectionfunctionname <- function (fn) {
     .localstuff$detectionfunctions[fn+1]
 }
+
 detectionfunctionnumber <- function (detname) {
-    dfn <- match (tolower(detname), .localstuff$detectionfunctions)
+    dfn <- match (toupper(detname), .localstuff$DFN)
+    if (is.na(dfn))
+        dfn <- match (tolower(detname), .localstuff$detectionfunctions)
     if (is.na(dfn))
         stop ("unrecognised detection function ", detname)
     dfn-1
 }
 parnames <- function (detectfn) {
     parnames <- switch (detectfn+1,
-        c('g0','sigma'),
+        c('g0','sigma'),   ## 0
         c('g0','sigma','z'),
         c('g0','sigma'),
         c('g0','sigma','z'),
@@ -71,12 +88,22 @@ parnames <- function (detectfn) {
         c('beta0','beta1', 'sdS'),    ## include cutval?
         c('beta0','beta1', 'sdS','muN','sdN'),
         c('beta0','beta1', 'sdS','muN','sdN'),
-        ,,,,,,
+        c('lambda0','sigma'),
+        c('lambda0','sigma','z'),
+        c('lambda0','sigma'),
+        c('lambda0','sigma','w'),
+        c('lambda0','sigma','z'),
+        ,
         c('g0','sigma')    ## 20
     )
 }
+getdfn <- function (detectfn) {
+    switch (detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS,
+                       SN, SNS, HHN, HHR, HEX, HAN, HCG)
+}
 
-valid.detectfn <- function (detectfn, valid = c(0:3,5:13)) {
+valid.detectfn <- function (detectfn, valid = c(0:3,5:18)) {
+# exclude 4 uniform: too numerically flakey
     if (is.null(detectfn))
         stop ("requires 'detectfn'")
     if (is.character(detectfn))
@@ -132,7 +159,7 @@ discreteN <- function (n, N) {
 }
 
 ndetector <- function (traps) {
-    if (detector(traps) %in% c('polygon', 'transect','polygonX', 'transectX','telemetry'))
+    if (detector(traps) %in% .localstuff$polydetectors)
         length(levels(polyID(traps)))
     else
         nrow(traps)
@@ -234,7 +261,7 @@ fixed.string <- function (fixed) {
 
 var.in.model <- function(v,m) v %in% unlist(lapply(m, all.vars))
 
-get.nmix <- function (model) {
+get.nmix <- function (model, capthist, hcov) {
     model$D <- NULL  ## ignore density model
     nmix <- 1
     if (any(var.in.model('h2', model))) {
@@ -244,7 +271,16 @@ get.nmix <- function (model) {
     }
     if (any(var.in.model('h3', model))) {
         nmix <- 3
-        warning ("implementation of 3-part mixtures is not reliable")
+    }
+    if ((nmix == 1) & (!is.null(hcov))) {
+        if (ms(capthist))
+            capthist <- capthist[[1]]
+        lev <- levels(factor(covariates(capthist)[,hcov]))   ## always alphabetical
+        if (length(lev) < 2)
+            stop ("hcov covariate not found or has less than 2 levels")
+        if (length(lev) > 2)
+            warning ("hcov covariate has more than 2 levels; using only first two")
+        nmix <- 2
     }
     nmix
 }
@@ -308,7 +344,9 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         if (!require (sp))
             stop ("package 'sp' required for pointsInPolygon()")
         xy <- SpatialPoints(xy)
-        OK <- overlay (xy, poly)
+        ## 2013-04-20 update for deprecation of 'overlay'
+        ## OK <- overlay (xy, poly)
+        OK <- over (xy, poly)
         !is.na(OK)
     }
     else if (inherits(poly, 'mask')) {  # 2012-04-13
@@ -321,7 +359,9 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         mask <- round(mask/sp) + 1
         xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
         xy <- round(xy/sp) + 1
-        xy[xy<0] <- NA
+        ## 2013-03-06 tweak
+        ## xy[xy<0] <- NA
+        xy[xy<=0] <- NA
         xy[,1][xy[,1]>max(mask$x)] <- NA
         xy[,2][xy[,2]>max(mask$y)] <- NA
         maskmatrix <- matrix(0, ncol = max(mask$y), nrow = max(mask$x))
@@ -398,88 +438,108 @@ leadingzero <- function (x) {
 
 ###############################################################################
 
-    HN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]
-        g0 * exp (-r^2 / 2 / sigma^2)
-    }
+## Detection functions
 
-    HZ <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * (1 - exp (-(r / sigma)^-z))
-    }
+HN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]
+    g0 * exp (-r^2 / 2 / sigma^2)
+}
+HR <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    g0 * (1 - exp (-(r / sigma)^-z))
+}
+EX <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]
+    g0 * exp (-r / sigma)
+}
+UN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]
+    ifelse (r<=sigma, g0, 0)
+}
+CHN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
+}
+WEX <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
+    ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
+}
+ANN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
+    g0 * exp (-(r-w)^2 / 2 / sigma^2)
+}
+CLN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    CV2 <- (z/sigma)^2
+    sdlog <- log(1 + CV2)^0.5
+    meanlog <- log(sigma) - sdlog^2/2
+    g0 * plnorm(r, meanlog, sdlog, lower.tail = FALSE)
+}
+CG <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    g0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
+}
+CN <- function (r, pars, cutval) {
+    g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    x <- z * (r - sigma)
+    g0 * (1 + (1 - exp(x)) / (1 + exp(x)))/2
+}
+BSS <- function (r, pars, cutval) {
+    b0 <- pars[1]; b1 <- pars[2]
+    gam <- -(b0 + b1 * r);
+    pnorm (gam, mean=0, sd=1, lower.tail=FALSE)
+}
+SS <- function (r, pars, cutval) {
+    beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
+    if (is.null(cutval))
+        stop ("require 'details$cutval' for signal strength plot")
+    mu <- beta0 + beta1 * r
+    1 - pnorm (q=cutval, mean=mu, sd=sdS)
+}
+SSS <- function (r, pars, cutval) {
+    beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
+    if (is.null(cutval))
+        stop ("require 'details$cutval' for signal strength plot")
+    ## spherical so assume distance r measured from 1 m
+    mu <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
+    mu[r<1] <- beta0
+    1 - pnorm (q=cutval, mean=mu, sd=sdS)
+}
+SN <- function (r, pars, cutval) {
+    beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
+    muN <- pars[4]; sdN <- pars[5]
+    muS <- beta0 + beta1 * r
+    1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
+}
+SNS <- function (r, pars, cutval) {
+    beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
+    muN <- pars[4]; sdN <- pars[5]
+    ## spherical so assume distance r measured from 1 m
+    muS <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
+    muS[r<1] <- beta0
+    1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
+}
+HHN <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]
+    1 - exp(-lambda0 * exp (-r^2 / 2 / sigma^2))
+}
+HHR <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    1 - exp(-lambda0 * ( 1 - exp (-(r / sigma)^-z)))
+}
+HEX <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]
+    1 - exp(-lambda0 * exp (-r / sigma))
+}
+HAN <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
+    lambda0 * exp (-(r-w)^2 / 2 / sigma^2)
+}
+HCG <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    lambda0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
+}
 
-    EX <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * exp (-r / sigma)
-    }
-    UN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]
-        ifelse (r<=sigma, g0, 0)
-    }
-    CHN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * ( 1 - (1 - exp (-r^2 / 2 / sigma^2)) ^ z )
-    }
-    WEX <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        ifelse(r<=w, g0, g0*exp (-(r-w) / sigma))
-    }
-    ANN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-        g0 * exp (-(r-w)^2 / 2 / sigma^2)
-    }
-    CLN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        CV2 <- (z/sigma)^2
-        sdlog <- log(1 + CV2)^0.5
-        meanlog <- log(sigma) - sdlog^2/2
-        g0 * plnorm(r, meanlog, sdlog, lower.tail = FALSE)
-    }
-    CG <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        g0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
-    }
-    CN <- function (r, pars, cutval) {
-        g0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
-        x <- z * (r - sigma)
-        g0 * (1 + (1 - exp(x)) / (1 + exp(x)))/2
-    }
-    BSS <- function (r, pars, cutval) {
-        b0 <- pars[1]; b1 <- pars[2]
-        gam <- -(b0 + b1 * r);
-        pnorm (gam, mean=0, sd=1, lower.tail=FALSE)
-    }
-    SS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(cutval))
-            stop ("require 'details$cutval' for signal strength plot")
-        mu <- beta0 + beta1 * r
-        1 - pnorm (q=cutval, mean=mu, sd=sdS)
-    }
-    SSS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3]
-        if (is.null(cutval))
-            stop ("require 'details$cutval' for signal strength plot")
-        ## spherical so assume distance r measured from 1 m
-        mu <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
-        mu[r<1] <- beta0
-        1 - pnorm (q=cutval, mean=mu, sd=sdS)
-    }
-    SN <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
-        muN <- pars[4]; sdN <- pars[5]
-        muS <- beta0 + beta1 * r
-        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
-    }
-
-    SNS <- function (r, pars, cutval) {
-        beta0 <- pars[1]; beta1 <- pars[2]; sdS <- pars[3];
-        muN <- pars[4]; sdN <- pars[5]
-        ## spherical so assume distance r measured from 1 m
-        muS <- beta0 - 10 * log ( r^2 ) / 2.302585 + beta1 * (r-1)
-        muS[r<1] <- beta0
-        1 - pnorm (q=cutval, mean=muS-muN, sd=sqrt(sdS^2+sdN^2))
-    }
 ############################################################################################
 
 gradient <- function (pars, fun, eps=0.001, ...)
@@ -532,6 +592,12 @@ distancetotrap <- function (X, traps) {
     }
     else
         trps <- traps
+
+    if (inherits(trps, 'SpatialPolygonsDataFrame')) {
+        trps <- coordinates(trps@polygons[[1]]@Polygons[[1]])
+        warning("using only first polygon of SpatialPolygonsDataFrame")
+    }
+
     temp <- .C("nearest",  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
@@ -553,6 +619,10 @@ nearesttrap <- function (X, traps) {
     ## with x coord in col 1 and y coord in col 2
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
+    if (inherits(traps, 'SpatialPolygonsDataFrame')) {
+        traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
+        warning("using only first polygon of SpatialPolygonsDataFrame")
+    }
     temp <- .C("nearest",  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
@@ -594,15 +664,51 @@ se.untransform <- function (beta, sebeta, link) {
           sin = NA)         ####!!!!
 }
 
+# mlogit.untransform <- function (beta, mix) {
+#     ## beta should include values for all classes (mixture components)
+#     nmix <- max(mix)    ## assume zero-based
+#     b <- beta[2:nmix]    ## 2010 02 26
+#     pmix <- numeric(nmix)
+#     pmix[2:nmix] <- exp(b) / (1+sum(exp(b)))
+#     pmix[1] <- 1 - sum(pmix[2:nmix])
+#     pmix[mix]   ## same length as input
+# }
 
-mlogit.untransform <- function (beta, mix) {
-    nmix <- max(mix)    ## assume zero-based
-    ##  b <- beta[match(2:nmix, mix)] -- 2010 02 26
-    b <- beta[2:nmix]    ## 2010 02 26
-    pmix <- numeric(nmix)
-    pmix[2:nmix] <- exp(b) / (1+sum(exp(b)))
-    pmix[1] <- 1 - sum(pmix[2:nmix])
-    pmix[mix]   ## same length as input
+mlogit.untransform <- function (beta, latentmodel) {
+    if (!missing(latentmodel)) {
+        tmp <- split(beta, latentmodel)
+        unlist(lapply(tmp, mlogit.untransform))
+    }
+    else {
+        ## beta should include values for all classes (mixture components)
+        nmix <- length(beta)
+        if (sum(is.na(beta)) != 1) {
+            ## replaced 2013-06-06
+            ## stop ("require NA for a single reference class in mlogit.untransform")
+            rep(NA, length(beta))
+        }
+        else {
+            nonreference <- !is.na(beta)   # not reference class
+            b <- beta[nonreference]
+            pmix <- numeric(nmix)
+            pmix[nonreference] <- exp(b) / (1+sum(exp(b)))
+            pmix[!nonreference] <- 1 - sum(pmix[nonreference])
+            pmix
+        }
+    }
+}
+
+clean.mlogit <- function(x) {
+## bad line removed 2013-05-09
+##    x <- x/sum(x)
+    x[1] <- NA   ## assumed reference class
+    logit(mlogit.untransform(x))
+}
+
+mlogit <- function (x) {
+    ## return the mlogit of an unscaled vector of positive values
+    ## 2013-04-14
+    logit(x/sum(x))
 }
 
 # vector version of transform()
@@ -692,6 +798,26 @@ group.levels <- function (capthist, groups, sep='.') {
 }
 ############################################################################################
 
+h.levels <- function (capthist, hcov, nmix) {
+    ## determine the first nmix levels of a factor individual covariate
+    if (is.null(hcov))
+        as.character(1:nmix)
+    else {
+        if (ms(capthist)) {
+            ## take first session as we can assume factor covariates have same levels in
+            ## all sessions
+            capthist <- capthist[[1]]
+        }
+        hcov <- covariates(capthist)[,hcov]
+        if (!is.factor(hcov)) {
+            warning("hcov was coerced to a factor")
+            hcov <- factor(hcov)
+        }
+        levels(hcov)[1:nmix]
+    }
+}
+############################################################################################
+
 n.occasion <- function (capthist) {
 ## return the number of sampling occasions for each session in capthist
     if (inherits(capthist, 'list')) {
@@ -736,7 +862,7 @@ make.lookup <- function (tempmat) {
     nrw <- nrow(tempmat)
     ncl <- ncol(tempmat)
 
-    temp <- .C(makelookup,
+    temp <- .C('makelookup', PACKAGE = 'secr',
         as.double(tempmat),
         as.integer(nrw),
         as.integer(ncl),
@@ -752,5 +878,50 @@ make.lookup <- function (tempmat) {
 
     colnames(lookup) <- colnames(tempmat)
     list (lookup=lookup, index=temp$index)
+}
+###############################################################################
+
+## 2013-04-12, 2013-06-05
+## Return an integer vector of class membership defined by a categorical
+## individual covariate in a capthist object. Individuals of unknown
+## class (including those with class exceeding nmix) are coded 1,
+## others as (class number + 1). When no mixture is specified (nmix == 1)
+## all are coded as unknown.
+getknownclass <- function(capthist, nmix, hcov) {
+    if (ms(capthist)) {
+        lapply(capthist, getknownclass, nmix = nmix, hcov = hcov)
+    }
+    else {
+        if ((nmix>1) & (!is.null(hcov))) {
+            tmp <- as.numeric(factor(covariates(capthist)[,hcov])) + 1
+            tmp[is.na(tmp) | (tmp>(nmix+1))] <- 1
+            attr(tmp,'levels') <- levels(factor(covariates(capthist)
+                                                [,hcov]))[1:nmix]
+            tmp
+        }
+        else
+            rep(1,nrow(capthist))
+    }
+}
+
+###############################################################################
+
+getnmix <- function (details) {
+    if (is.null(details$nmix))
+       1
+    else
+       details$nmix
+}
+
+###############################################################################
+
+## expand beta parameter vector using template of 'fixed beta'
+## fixed beta fb input is missing (NA) for estimated beta parameters
+fullbeta <- function (beta, fb) {
+    if (!is.null(fb)) {
+        fb[is.na(fb)] <- beta  ## partial beta (varying only)
+        beta <- fb             ## complete beta
+    }
+    beta
 }
 ###############################################################################

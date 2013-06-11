@@ -27,7 +27,7 @@ bias.D (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL,
 }
 
 \arguments{
-  \item{object}{ `secr', `traps' or `capthist' object }
+  \item{object}{ single-session `secr', `traps' or `capthist' object }
   \item{detectfn}{ integer code or character string for shape of
   detection function 0 = halfnormal etc. -- see \link{detectfn}}
   \item{detectpar}{ list of values for named parameters of detection
@@ -162,11 +162,13 @@ lines(RB)
 ## compare to esa plot
 esa.plot (temptraps, max.buffer = 150, spacing = 4, detectfn = 0,
   detectpar = detpar, noccasions = 5, as.density = F)
+
 }
 
-## compare detection histories and fitted model as 
-suggest.buffer(ovenCH)
-suggest.buffer(ovenbird.model.1)
+## compare detection histories and fitted model as input 
+suggest.buffer(captdata)
+suggest.buffer(secrdemo.0)
+
 }
 
 \keyword{ models }
