@@ -83,6 +83,7 @@ void integralprw1 (
     int    *mm,        /* number of points on mask */
     int    *gg,          /* number of groups   !!!!! */
     int    *nmix,      /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,     /* x,y locations of traps (first x, then y) */
     double *Tsk,       /* s x k matrix effort on occasion s at at detector k */
     double *mask,      /* x,y points on mask (first x, then y) */
@@ -122,6 +123,7 @@ void secrloglik (
     int    *mm,          /* number of points on mask */
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
     double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
@@ -249,6 +251,7 @@ void pwuniform (
     int    *mm,          /* number of points on mask */
     int    *gg,          /* number of groups */
     int    *nmix,        /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
     double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
@@ -559,7 +562,7 @@ fnptr gethfn (int fn);
 /* these exist in two forms 'g' and 'h' */
 
 double hn (double param [], double r);
-double hz (double param [], double r);
+double hr (double param [], double r);
 double he (double param [], double r);
 double hnc (double param [], double r);
 double un (double param [], double r);
@@ -570,6 +573,11 @@ double hcg (double param [], double r);
 double hsigbin  (double param [], double r);
 double hsig (double param [], double r);
 double hsigsph (double param [], double r);
+double hhn (double param [], double r);
+double hhr (double param [], double r);
+double hex (double param [], double r);
+double han (double param [], double r);
+double hcumg (double param [], double r);
 
 double ghn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
@@ -577,10 +585,13 @@ double ghn
 double ghnc 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double ghz 
+double ghr 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 double ghe 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double gun
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 double ghf 
@@ -614,6 +625,21 @@ double gsigSN
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 double gsigsphSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double lhn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double lhr
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double lex 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double lan 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double lcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 

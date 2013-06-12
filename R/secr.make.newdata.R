@@ -20,6 +20,8 @@ secr.make.newdata <- function (object) {
     timecov <- object$timecov
     sessioncov <- object$sessioncov
     nmix <- object$details$nmix
+    hcov <- object$hcov
+
     if(is.null(nmix)) nmix <- 1
 
     findvars.MS <- function (cov, vars, dimcov, use.all) {
@@ -75,8 +77,7 @@ secr.make.newdata <- function (object) {
     dims <- c(R, ngrp, nmix)
     basevars <- list(session = sessions)
     if (ngrp>1) basevars$g <- factor(grouplevels)
-    if (nmix==2) basevars$h2 <- factor(1:2)
-    if (nmix==3) basevars$h3 <- factor(1:3)
+    if (nmix>1) basevars[paste('h',nmix,sep='')] <- list(h.levels(capthist, hcov, nmix))
     newdata <- expand.grid(basevars)
     nr <- nrow(newdata)  ## one row for each session, group and mixture
     if (ngrp==1)

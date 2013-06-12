@@ -89,7 +89,7 @@ row).
 
 }
 
-\seealso{ \code{\link{detection functions}}, \code{\link{plot}}, \code{\link{secr}} }
+\seealso{ \code{\link{Detection functions}}, \code{\link{plot}}, \code{\link{secr}} }
 
 \examples{
 

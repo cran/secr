@@ -136,7 +136,7 @@ plot (temptrap, add = TRUE)
 ## classes by Ed Pebesma and Roger Bivand.
 
 \dontrun{
-require(maptools)
+library(maptools)
 setwd(system.file("extdata", package = "secr"))
 possumarea <- readShapePoly("possumarea")  ## possumarea.shp etc.
 possummask2 <- make.mask(traps(possumCH), spacing = 20,

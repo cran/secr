@@ -39,15 +39,15 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     ## added 2010-07-01
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
-    if ((detectfn > 9) & (detectfn!=20) & is.null(detectpar$cutval))
-        stop ("requires 'cutval' for detectfn > 9")
+    if ((detectfn > 9) & (detectfn<14) & is.null(detectpar$cutval))
+        stop ("requires 'cutval' for detectfn 10:13")
     if (ms(traps))
         stop ("requires single-session traps")
 
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
 
     detectpars <- unlist(detectpar[parnames(detectfn)])
-    if ((detectfn>9) & (detectfn!=20))  detectpars <- c(detectpars, detectpar$cutval)
+    if ((detectfn>9) & (detectfn<14))  detectpars <- c(detectpars, detectpar$cutval)
 
     if (!is.null(usage(traps))) {
         usge <- unlist(usage(traps))

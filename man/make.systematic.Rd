@@ -86,7 +86,7 @@ temp <- make.systematic(c(6, 6), mini, region, plt = TRUE,
 ## a single multi-catch detector
 
 \dontrun{
-require(maptools)
+library(maptools)
 setwd(system.file("extdata", package = "secr"))
 possumarea <- readShapePoly("possumarea")  
 possumgrid <- make.systematic(spacing = 100, region =

@@ -261,7 +261,7 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
     ## design matrices etc.
     dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 0)
     design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
-        object$groups, object$dframe)
+        object$groups, object$hcov, object$dframe)
     realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
         object$fixed)  # naive
 
@@ -269,7 +269,7 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
     if (btype > 0) {
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
-            object$groups, object$dframe)
+            object$groups, object$hcov, object$dframe)
         realparval1 <- makerealparameters (design1, beta, object$parindx, object$link,
             object$fixed)  # caught before
     }

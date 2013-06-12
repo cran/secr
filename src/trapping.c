@@ -14,6 +14,8 @@ trappingsignal
 trappingtelemetry
 trappingtimes
 
+2013-04-04 extended to allow k-specific g0
+
 */
 
 #include "secr.h"
@@ -36,7 +38,7 @@ void trappingsingle (
     int    *resultcode /* 0 for successful completion */
 )
 {
-    int    i,j,k,s;
+    int    i,j,k,s,gi,si;
     int    nc         = 0;
     int    tr_an_indx = 0;
     double d2val;
@@ -77,7 +79,11 @@ void trappingsingle (
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
 		    d2val = d2(i,k, animals, traps, *N, *kk);
-		    p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
+/*		    p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
+/*		    p = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2);  */
+		    gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
+                    si = (caught[i]>0) * *ss + s;
+		    p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
 
 		    if (fabs(Tski-1) > 1e-10)           /* 2012 12 26 */
 			p = 1 - exp(Tski * log(1 - p));
@@ -156,7 +162,7 @@ void trappingmulti (
     double hsum[*N];
     double cump[*kk+1];
     double runif;
-    int    i,j,k,s;
+    int    i,j,k,s,gi,si;
     int    nc;
     double d2val;
     double p;
@@ -176,7 +182,11 @@ void trappingmulti (
             for (k=0; k<*kk; k++)
             {
                 d2val = d2(i,k, animals, traps, *N, *kk);
-                p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
+                /* p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
+                /* p = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2);  */
+		gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
+                si = (caught[i]>0) * *ss + s;
+		p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
 		/* p = p * used[s * *kk + k];  zero if not used 2009 11 09 */
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
@@ -250,7 +260,9 @@ void trappingproximity (
 		Tski = Tsk[s * *kk + k];
                 if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
+                    /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
+                    theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
+
                     if (theta>0) {
                         count = rcount (1, theta, Tski);
                         if (count>0)
@@ -318,7 +330,8 @@ void trappingcount (
 		Tski = Tsk[s * *kk + k];
                 if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
+                    /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
+                    theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (theta>0) {
 			if (*binomN == 1)
 			    count = rcount (round(Tski), theta, 1);
@@ -1266,12 +1279,13 @@ void trappingtimes (
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
                     timevalue = 0;
                     d2val = d2(i,k, animals, traps, *N, *kk);
-                    lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2);
+                    /* lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
+                    lambda = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (lambda>0) {
                         while (timevalue < 1) {
                             timevalue += rexp(1/lambda);
                             if (timevalue < 1) {
-                                if (caught[i]==0) {                 /* first capture of this animal */
+                                if (caught[i]==0) {     /* first capture of this animal */
                                     nc++;
                                     caught[i] = nc;
                                     for (j=0; j<*ss; j++)

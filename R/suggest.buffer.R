@@ -2,6 +2,9 @@
 ## 2012-11-03 blocked gpclib
 ## 2012-12-18 warning for usage
 ## 2012-12-24 binomN argument
+## 2013-04-19 hazard halfnormal, hazard exponential
+## 2013-04-20 hazard annular normal, hazard cumulative gamma\
+## 2013-04-23 hazard hazard rate
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
@@ -29,8 +32,15 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
                 pnorm (-(detectpar$b0 + detectpar$b1 * r), mean=0, sd=1, lower.tail = FALSE),
                 pnorm (q = detectpar$cutval, mean = detectpar$beta0 + detectpar$beta1 * r,
                    sd = detectpar$sdS, lower.tail = FALSE),
-                pnorm (q = detectpar$cutval, mean = mu, sd = detectpar$sdS, lower.tail = FALSE)
-        )
+                pnorm (q = detectpar$cutval, mean = mu, sd = detectpar$sdS, lower.tail = FALSE),
+                ,,
+                1 - exp(-detectpar$lambda0 * exp(-r^2/2/detectpar$sigma^2)),
+                1 - exp(-detectpar$lambda0 * (1 - exp(-(r/detectpar$sigma)^-detectpar$z))),
+                1 - exp(-detectpar$lambda0 * exp(-r/detectpar$sigma)),
+                1 - exp(-detectpar$lambda0 * exp(-(r-detectpar$w)^2/2/detectpar$sigma^2)),
+                1 - exp(-detectpar$lambda0 * ( 1 - pgamma(r, shape = detectpar$z,
+                    scale = detectpar$sigma/detectpar$z)))
+          )
     }
 
     integrand1 <- function (r) {
@@ -84,7 +94,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
     if (!(detector(traps) %in% .localstuff$individualdetectors))
         stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
-    if (!is.null(usage(traps)))
+        if (!is.null(usage(traps)))
         warning ("bias.D() does not allow for variable effort (detector usage)")
 
     ntraps <- nrow(traps)
@@ -130,7 +140,6 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
 #        temp2[,2] <- temp2[,2] * (dy + 2 * buff) + mean(traps$y)
 
         buff <- distancetotrap(temp2, traps)
-
         temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions, binomN)
         if (control$method == 1) {
             tempfit <- nls ( temp3 ~ (1 - (1 - gr(buff))^ (noccasions*k) ), start=list(k=2))
@@ -284,6 +293,8 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require passive individual detectors (not unmarked or presence)")
 
+        if (ignoreusage)
+            usage(traps) <- NULL
         fn <- function (w) {
             bias.D(w, traps, detectfn, detectpar, noccasions, binomN, ...)$RB.D - RBtarget
         }

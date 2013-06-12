@@ -106,7 +106,7 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \seealso{ \code{\link{mask}}, \code{\link{pdot}},
   \code{\link{make.mask}}, \code{\link{mask.check}},
-  \code{\link{detection functions}} }
+  \code{\link{Detection functions}} }
 
 \examples{
 

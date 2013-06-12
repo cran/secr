@@ -8,8 +8,8 @@
 }
 \usage{
 secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
-    groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
-    ...)
+    groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
+    keep.dframe = FALSE, full.dframe = FALSE, ...)
 
 make.lookup (tempmat)
 }
@@ -18,10 +18,21 @@ make.lookup (tempmat)
   \item{models}{ list of formulae for parameters of detection }
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
   \item{sessioncov}{ optional dataframe of values of session-specific covariate(s). }
-  \item{groups}{ optional vector of one or more variables with which to form groups. Each element should be the name of a factor variable in the \code{covariates} attribute of \code{capthist}. }
+  \item{groups}{ optional vector of one or more variables with which to
+    form groups. Each element should be the name of a factor variable in
+    the \code{covariates} attribute of \code{capthist}. }
+  \item{hcov}{ character name of an individual (capthist) covariate for known class
+    membership in h2 models}
   \item{dframe}{ optional data frame of design data for detection parameters }
   \item{naive}{ logical if TRUE then modelled detection probability is for a naive animal (not caught previously); if FALSE then detection probability is contingent on individual's history of detection }
-  \item{bygroup}{ logical if TRUE then the individual dimension of the parameter matrix is automatically collapsed to one row per group; if FALSE then the full dimensionality is retained (one row per individual) }
+  \item{bygroup}{ logical if TRUE then the individual dimension of the
+    parameter matrix is automatically collapsed to one row per group; if
+    FALSE then the full dimensionality is retained (one row per
+    individual) }
+  \item{keep.dframe}{logical; if TRUE the dataframe of design data is
+    included in the output}
+  \item{full.dframe}{logical; if FALSE then padding rows are purged from
+    output dframe (ignored if \code{keep.dframe = FALSE})}
   \item{\dots}{ other arguments passed to the \R function
     \code{\link{model.matrix}} }
   \item{tempmat}{matrix for which row lookup required}
@@ -33,14 +44,19 @@ use. \dots may be used to pass \code{contrasts.arg} to
 \code{model.matrix}. 
 
 Each real parameter is notionally different for each unique combination
-of session, individual, occasion and detector, i.e., for \eqn{R}
+of session, individual, occasion, detector and latent class, i.e., for \eqn{R}
 sessions, \eqn{n} individuals, \eqn{S} occasions and \eqn{K} detectors
 there are \emph{potentially} \eqn{R \times n \times S \times K}{R x n x
-S x K} different values. Actual models always predict a much reduced set
+S x K x M} different values. Actual models always predict a \emph{much} reduced set
 of distinct values, and the number of rows in the design matrix is
 reduced correspondingly; a parameter index array allows these to
 retrieved for any combination of session, individual, occasion and
 detector.
+
+The \code{keep.dframe} option is provided for the rare occasions that a
+user may want to check the data frame that is an intermediate step in
+computing each design matrix with \code{\link{model.matrix}} (i.e. the
+data argument of \code{model.matrix}).
 
 }
 \value{
@@ -53,11 +69,20 @@ detector.
   \item{parameterTable}{ index to row of the reduced design matrix for
   each real detection parameter; dim(parameterTable) = c(uniquepar, np),
   where uniquepar is the number of unique combinations of paramater
-  values (uniquepar < \eqn{RnSK}) and np is the number of parameters in
+  values (uniquepar < \eqn{RnSKM}) and np is the number of parameters in
   the detection model. }
 
   \item{PIA}{ Parameter Index Array - index to row of parameterTable for
-    a given session, animal, occasion and detector; dim(PIA) = c(R,n,S,K) }
+    a given session, animal, occasion and detector; dim(PIA) =
+    c(R,n,S,K,M) }
+
+  \item{R}{ number of sessions}
+
+  Optionally (\code{keep.dframe = TRUE}) -
+  \item{dframe}{ dataframe of design data, one column per covariate, one
+    row for each c(R,n,S,K,M). For multi-session models n, S, and K
+  refer to the maximum across sessions}
+  \item{validdim}{ list giving the valid dimensions (n, S, K, M) before padding}
 
   For \code{make.lookup}, a list with components
   \item{lookup}{ matrix of unique rows}
@@ -67,8 +92,22 @@ detector.
 \examples{
 secr.design.MS (captdata, models = list(g0 = ~b))$designMatrices
 secr.design.MS (captdata, models = list(g0 = ~b))$parameterTable
+
+## peek at design data constructed for learned response model
+head(captdata)
+temp <- secr.design.MS (captdata, models = list(g0 = ~b),
+    keep.dframe = TRUE)
+a1 <- temp$dframe$animal == 1 &  temp$dframe$detector \%in\% 8:10
+temp$dframe[a1,]
+
+## ... and trap specific learned response model
+temp <- secr.design.MS (captdata, models = list(g0 = ~bk),
+    keep.dframe = TRUE)
+a1 <- temp$dframe$animal == 1 &  temp$dframe$detector \%in\% 8:10
+temp$dframe[a1,]
+
 }
 
-\seealso{ \code{\link{D.designdata}} }
+\seealso{ \code{\link{D.designdata}}, \code{\link{model.matrix}} }
 
 \keyword{ manip }

@@ -15,8 +15,8 @@ Information Criterion) are preferred.
 }
 
 \usage{
-\method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10)
-\method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10)
+\method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC'))
+\method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC'))
 \method{logLik}{secr}(object, ...)
 secrlist(...)
 }
@@ -26,8 +26,9 @@ secrlist(...)
       \code{\link{secr.fit}}, or a list of such objects with class c("list","secrlist") }
   \item{\dots}{ other \code{secr} objects }
   \item{sort}{ logical for whether rows should be sorted by ascending AICc }
-  \item{k}{ numeric, the penalty per parameter to be used; always k = 2 in this method}
-  \item{dmax}{ numeric, the maximum AIC difference for inclusion in confidence set}
+  \item{k}{ numeric, penalty per parameter to be used; always k = 2 in this method}
+  \item{dmax}{ numeric, maximum AIC difference for inclusion in confidence set}
+  \item{criterion}{ character, criterion to use for model comparison and weights}
 }
 
 \details{
@@ -46,10 +47,11 @@ where \eqn{K} is the number of "beta" parameters estimated. The sample size
 number of rows in \code{capthist}).
 
 Model weights are calculated as \deqn{w_i = \frac{\exp(-\Delta_i / 2)}{
-\sum{\exp(-\Delta_i / 2)}}}{w_i = exp(-dAICc_i / 2) / sum{ exp(-dAICc_i
-/ 2) }}
+\sum{\exp(-\Delta_i / 2)}}}{w_i = exp(-delta_i / 2) / sum{ exp(-delta_i
+/ 2) }}, where \eqn{\Delta}{delta} refers to differences in AIC or AICc depending on the
+argument `criterion'.
 
-Models for which dAICc > \code{dmax} are given a weight of zero and are
+Models for which delta > \code{dmax} are given a weight of zero and are
 excluded from the summation. Model weights may be used to form
 model-averaged estimates of real or beta parameters with
 \code{\link{model.average}} (see also Buckland et al. 1997, Burnham and
@@ -71,9 +73,14 @@ secrlists. If secr components are named the model names will be retained
   \item{npar }{number of parameters estimated}
   \item{logLik }{maximized log likelihood}
   \item{AIC }{Akaike's Information Criterion}
-  \item{AICc }{AIC with small-sample adjustment of Hurvich & Tsai (1989)}
+  \item{AICc }{AIC with small-sample adjustment of Hurvich & Tsai
+    (1989)}
+  And depending on \code{criterion}:
   \item{dAICc }{difference between AICc of this model and the one with smallest AICc}
-  \item{AICwt }{AICc model weight}
+  \item{AICcwt }{AICc model weight}
+  or
+  \item{dAIC }{difference between AIC of this model and the one with smallest AIC}
+  \item{AICwt }{AIC model weight}
 
   \code{logLik.secr} returns an object of class `logLik' that has
   attribute \code{df} (degrees of freedom = number of estimated
@@ -87,6 +94,10 @@ Buckland S. T., Burnham K. P. and Augustin, N. H. (1997) Model selection: an int
 Burnham, K. P. and Anderson, D. R. (2002) \emph{Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach}. Second edition. New York: Springer-Verlag.
 
 Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model selection in small samples. \emph{Biometrika} \bold{76}, 297--307.
+
+Turek, D. and Fletcher, D. (2012) Model-averaged Wald confidence
+intervals. \emph{Computational statistics and data analysis} \bold{56},
+2809--2815.
 
 }
 
@@ -102,6 +113,12 @@ cannot be compared.
 
 The issue of goodness-of-fit and possible adjustment of AIC for
 overdispersion has yet to be addressed (cf QAIC in MARK).
+
+From version 2.6.0 the user may select between AIC and AICc for
+comparing models, whereas previously only AICc was used and AICc weights
+were reported as `AICwt'). There is evidence that AIC may be better for
+model averaging even when samples are small sizes - Turek and Fletcher
+(2012).
 
 }
 

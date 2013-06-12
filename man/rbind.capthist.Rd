@@ -48,7 +48,9 @@
 
     Sessions to be pooled must have the same number of capture occasions
     and use the same detectors (traps). At present there is no function
-    to pool data from different detector arrays.
+    to pool capthist data from different detector arrays. For this it is
+    recommended that you merge the input files and rebuild the capthist
+    object from scratch.
 
     The names of arguments other than \dots should be given in full. If
 \code{renumber = TRUE} (the default), the session name will be prepended

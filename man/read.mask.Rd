@@ -45,6 +45,15 @@ object of class \code{mask} with type `user'
 \seealso{ \code{\link{mask}} }
 
 \note{
+
+  \code{read.mask} creates a single-session mask. If used in
+\code{\link{secr.fit}} with a multi-session capthist object a
+single-session mask will be replicated to the number of sessions. This
+is appropriate if all sessions relate to the same geographical
+region. If the `sessions' relate to different regions you will need to
+construct a multi-session mask as a list of single-session
+masks (e.g. \code{mask <- list(mask1, mask2, mask3)}).
+
 The package \pkg{SPACECAP} uses a `state-space' file in `csv' text
 format with columns `X_COORD', `Y_COORD' and `HABITAT'. Such a file may
 be input directly to \code{read.mask}; rows with HABITAT != 1 are dropped.

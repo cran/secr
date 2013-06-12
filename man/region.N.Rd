@@ -158,9 +158,8 @@ Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
-Efford, M. G. and Fewster, R. M. (2012) Estimating population size by
-spatially explicit capture--recapture. Oikos
-\url{http://dx.doi.org/10.1111/j.1600-0706.2012.20440.x}
+Efford, M. G. and Fewster, R. M. (2013) Estimating population size by
+spatially explicit capture--recapture. \emph{Oikos} \bold{122}, 918--928.
 
 Johnson, D. S., Laake, J. L. and Ver Hoef, J. M. (2010) A model-based
 approach for making ecological inference from distance sampling

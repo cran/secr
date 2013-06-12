@@ -69,7 +69,7 @@ These arguments are used only for petal plots: \code{rad},
 \code{trkpar}, and \code{labpar}.
 
 If \code{icolours = NULL} and \code{varycol = TRUE} then a vector of
-colours is generated automatically as terrain.colors((nrow(x)+1) * 1.5).
+colours is generated automatically as topo.colors((nrow(x)+1) * 1.5).
 If there are too few values in \code{icolours} for the number of
 individuals then colours will be re-used. 
 
@@ -127,7 +127,7 @@ legend (locator(1), pch = 21, pt.bg = temp$colour,
 
 \dontrun{
 ## try varying individual colours - requires RColorBrewer
-require(RColorBrewer)
+library(RColorBrewer)
 plot(infraCH[[2]], icolours = brewer.pal(12, 'Set3'), tracks = T,
     bg = 'black', cappar = list(cex = 2), border = 10, rad = 2,
     gridlines=F)

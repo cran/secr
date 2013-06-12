@@ -18,7 +18,7 @@ likelihood. Data must have been assembled as an object of class
 secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
     mask = NULL, buffer = NULL, CL = FALSE, detectfn = NULL,
     binomN = NULL, start = NULL, link = list(), fixed = list(),
-    timecov = NULL, sessioncov = NULL, groups = NULL,
+    timecov = NULL, sessioncov = NULL, hcov = NULL, groups = NULL,
     dframe = NULL, details = list(), method = "Newton-Raphson",
     verify = TRUE, biasLimit = 0.01, trace = NULL, ncores = 1, ...)
 }
@@ -39,6 +39,8 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{model}{ list with optional components `D', `g0', `sigma' and `z', each symbolically defining a linear predictor for the relevant real parameter using \code{formula} notation }
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
   \item{sessioncov}{ optional dataframe of values of session-specific covariate(s). }
+  \item{hcov}{ character name of individual covariate for known
+  membership of mixture classes (ignored if not h2 or h3 model). }
   \item{groups}{ optional vector of one or more variables with which to form groups. Each element should be the name of a factor variable in the \code{covariates} attribute of \code{capthist}. }
   \item{dframe}{ optional data frame of design data for detection parameters }
   \item{details}{ list of additional settings, mostly model-specific (see Details) }
@@ -69,7 +71,9 @@ construct other time-varying detector covariates, and \link{secr models}
 and \url{../doc/secr-overview.pdf} for more on defining models.
 
 \code{buffer} and \code{mask} are alternative ways to define the region
-of integration (see \link{mask}).
+of integration (see \link{mask}). If \code{mask} is not specified then a
+mask of type "trapbuffer" will be constructed automatically using the
+specified buffer width in metres.
 
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
@@ -102,52 +106,32 @@ The default with these detectors is to fit a Poisson distribution. The
 `size' parameter of the negative binomial is not estimated: it must be
 supplied. \code{binomN} should be an integer unless negative.
 
-\code{details} is used for various specialized settings --
-
-\code{details$distribution} specifies the distribution of the number of
-individuals detected; this may be conditional on the number in the
-masked area ("binomial") or unconditional ("poisson").
-\code{distribution} affects the sampling variance of the estimated
-density. The default is "poisson". See also Note.
-
-\code{details$hessian} is a character string controlling the computation
-of the Hessian matrix from which variances and covariances are obtained.
-Options are "none" (no variances), "auto" (the default) or "fdhess" (use
-the function fdHess in \pkg{nlme}).  If "auto" then the Hessian from the
-optimisation function is used.
-
-\code{details$ignoreusage} = TRUE causes the function to ignore
-usage (varying effort) information in the traps component. The default
-(\code{details$ignoreusage} = FALSE) is to include usage in the model.
-
-\code{details$LLonly} = TRUE causes the function to returns a single
-evaluation of the log likelihood at the `start' values.
-
-\code{details$scalesigma} = TRUE causes sigma to be scaled by
-\eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}.
-
-\code{details$scaleg0} = TRUE causes g0 to be scaled by
-\eqn{\mathrm{sigma}^{-2}}{sigma^-2}.
-
-\code{details$centred} = TRUE causes coordinates of both traps and mask
-to be centred on the centroid of the traps, computed separately for each
-session in the case of multi-session data. This may be necessary to
-overcome numerical problems when x- or y-coordinates are large
-numbers. The default is not to centre coordinates.
-
-\code{details$param} = 1 causes the Gardner & Royle parameterisation of
-the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) to be
-used for multi-catch detectors (default 0 for Borchers and Efford). This
-parameterisation does not allow detector covariates.
-
-\code{telemetrysigma} = TRUE uses coordinate information from telemetry
-when capthist has attribute `xylist' (see \code{\link{addTelemetry}}).
+\code{details} is used for various specialized settings listed below. These are
+described separately - see \code{\link{details}}.
+\tabular{ll}{
+centred \tab centre x-y coordinates\cr
+distribution \tab binomial vs Poisson N\cr
+fixedbeta \tab specify fixed beta parameter(s)\cr
+hessian \tab variance method\cr
+ignoreusage \tab override usage in traps object of capthist\cr
+intwidth2 \tab controls optimise when only one parameter\cr
+LLonly \tab compute one likelihood for values in \code{start} \cr
+param \tab optional parameterisation for multi-catch detectors\cr
+scaleg0 \tab structural relationshp between g0 and sigma\cr
+scalesigma \tab structural relationship between sigma and density\cr
+telemetrysigma \tab use coordinate information from telemetry\cr
+}
 
 If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood (minimize the negative log
 likelihood); otherwise \code{\link[stats]{optim}} is used with the
 chosen method ("BFGS", "Nelder-Mead", etc.).  If maximization fails a
 warning is given appropriate to the method.
+
+From secr 2.5.1, method = 'none' may be used to skip likelihood
+maximization and compute only the hessian for the current dataset at the
+values in start, and the corresponding variance-covariance matrix of
+beta parameters. The computation uses fdHess from \pkg{nlme}.
 
 If \code{verify} = TRUE then \code{\link{verify}} is called to check
 capthist and mask; analysis is aborted if "errors" are found. Some
@@ -184,6 +168,7 @@ components
   \item{CL }{saved input}
   \item{timecov }{saved input}
   \item{sessioncov }{saved input}
+  \item{hcov }{saved input (from 2.6.0)}
   \item{groups }{saved input}
   \item{dframe }{saved input}
   
@@ -199,7 +184,7 @@ components
   (typically `D', `g0', `sigma'),giving the name of the link function
   used for each real parameter.}
 
-\item{fixed }{saved input}  
+  \item{fixed }{saved input}  
 
   \item{parindx }{list with one component for each real parameter giving
     the indices of the `beta' parameters associated with each real
@@ -251,10 +236,6 @@ Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
 
-Gardner, B., Royle, J. A. and Wegan, M. T. (2009) Hierarchical models
-for estimating density from DNA mark-recapture studies. \emph{Ecology}
-\bold{90}, 1106--1115.
-
 }
 
 \note{
@@ -269,22 +250,14 @@ are provided. \code{derived} is used to compute the derived parameters
 `esa' (effective sampling area) and `D' (density) for models fitted by
 maximizing the conditional likelihood (CL = TRUE).
 
-The component `distribution' of argument `details' may also take a
-    numeric value larger than nrow(capthist), rather than "binomial" or
-    "poisson". The likelihood then treats n as a binomial draw from a
-    superpopulation of this size, with consequences for the variance of
-    density estimates. This can help to reconcile MLE with Bayesian
-    estimates using data augmentation.
-    
 Components `version' and `starttime' were introduced in version 1.2.7,
 and recording of the completion time in `fitted' was discontinued.
 
  The Newton-Raphson algorithm is fast, but it sometimes fails to compute
 the information matrix correctly, causing some or all standard errors to
 be set to NA. This usually indicates a major problem in fitting the
-model, and parameter estimates should not be trusted. The alternative
-\code{method = "BFGS"} often works better in these cases, or use
-\code{details = list(hessian = "fdhess")}.
+model, and parameter estimates should not be trusted. See
+\link{Troubleshooting}.
 
 The component D in output was replaced with N from version 2.3. Use
 \code{\link{region.N}} to obtain SE or confidence intervals for N-hat,
@@ -298,15 +271,17 @@ setting \code{verify = FALSE}. This is now done by setting
 
 \seealso{
 
-  \link{detection functions},
+  \link{Detection functions},
   \code{\link{AIC.secr}},
   \code{\link{capthist}},
+  \code{\link{details}},
   \code{\link{derived}},
   \code{\link{mask}},
   \code{\link{predict.secr}},
   \code{\link{print.secr}},
   \code{\link{region.N}},
-  \code{\link{troubleshooting}}
+  \link{Speed tips}
+  \link{Troubleshooting}
   \code{\link{usage}},
   \code{\link{vcov.secr}},
   \code{\link{verify}},

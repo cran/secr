@@ -239,7 +239,6 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 ## 2011-05-05
 ############################################################################################
 
-## see also Dpdot in pdot.R
 ## modelled on esa.R
 
 sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
@@ -271,8 +270,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
         stop ("require individual detector type for sumDpdot")
 
     dettype <- detectorcode(trps)
-    nmix    <- object$details$nmix
-    nmix    <- ifelse (is.null(nmix), 1, nmix)
+    nmix    <- getnmix(object$details)
+    knownclass <- getknownclass(capthists, nmix, object$hcov)
 
     ##############################################
     ## adapt for marking occasions only 2009 10 24
@@ -387,13 +386,14 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             as.integer(dettype),
             as.integer(param),
             as.double(Xrealparval0),
-            as.integer(rep(1,n)),    # dummy groups 2012-11-13
+            as.integer(rep(0,n)),    # dummy groups 2012-11-13
             as.integer(n),
             as.integer(s),
             as.integer(k),
             as.integer(m),
             as.integer(1),          # dummy ngroups 2012-11-13
             as.integer(nmix),
+            as.integer(knownclass),
             as.double(unlist(trps)),
             as.double(usge),
             as.double(as.numeric(unlist(mask))),
@@ -408,9 +408,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             a = double(n),
             resultcode = integer(1)
        )
-                                        # 2012-11-13
-#       if (temp$resultcode == 3)
-#           stop ("groups not implemented in external function 'integralprw1'")
        if (temp$resultcode != 0)
            stop ("error in external function 'integralprw1'")
 

@@ -1,3 +1,857 @@
+Changes in version 2.3.2 (2012-05-15)
+
+New features or changed behaviour of old functions
+
+    o   new function randomHabitat() generates random binary landscape
+    that may be used with sim.popn()
+
+    o   secr.fit() 'biasLimit' argument sets threshold of bias for
+    buffer-width check, or turns off bias checking (biasLimit = NA)
+
+    o   mash() now works with signal detectors
+
+    o   secr.design.MS() trial with 3-D usage
+
+    o   read.traps() now accepts multiple covariate fields after '/'
+
+    o   plot.traps() new argument `labelclusters' to label points at
+    level of cluster rather separate traps
+
+    o   detector covariates may vary within a session. This uses a new
+    traps attribute 'timevaryingcov', and entails changes to
+    secr.design.MS()
+
+    o   subset.capthist() new argument 'droplowsignals' to apply a
+    new signal threshold at the level of whole sounds rather than specific
+    microphones, and verify() check relaxed to allow such data
+
+    o   new detector type 'signalnoise' for paired measurements of
+    signals and background noise (not fully documented)
+
+    o   capthist objects whose detector is of type 'signalnoise' include
+    a 'noise' attribute with extraction and replacement methods like
+    'signal'. make.capthist() has been adapted to accept noise
+    measurements in the field after signal (i.e. 6 or 7) and to accept
+    further signal covariates in other columns (not fully documented)
+
+    o   derived.nj() gives model-based variance estimates when nj is
+    scalar (length 1); new argument 'area' for binomial-n variance
+    calculation
+
+    o   sim.popn() argument 'D' may now specify a covariate in the
+    'core' mask, or a constant, to use for cell-specific density with
+    model2D = 'IHP'
+
+    o   make.mask() acquires new argument 'ny' used only with new type
+    'rectangular'
+
+    o   pointsInPolygon() accepts mask as polygon input, and acquires
+    new argument 'logical'
+
+    o   print.capthist() adjusted to allow NULL detector
+    (i.e. nonspatial data)
+
+    o   unRMarkInput() converts RMark dataframe to single-session
+    capthist object.
+
+Bugs fixed
+
+    o   plot.capthist() 'ncap' argument did not work with some detectors
+
+    o   make.capthist() scrambled the order of ancillary data (signal
+    strength, x-y coordinates) when input not sorted by animalID; this
+    may have prevented the fitting of models for signal-strength or
+    polygon detectors (also affects read.capthist(), read.DA(),
+    read.SPACECAP() and mash() as these call make.capthist()).
+
+    o   subset.capthist() lost mash-related attributes of the input
+    (n.mash, centres)
+
+    o   secr.fit() failed with fixed real parameters in version 2.3.1
+
+    o   make.mask() 'boundingbox' attribute sometimes out by spacing/2
+
+    o   region.N() 'nlowerbound' and 'RN.method' argements ignored when nsess>1
+
+    o   autoini() could fail when all detections at site of first capture
+
+    o   predict.secr failed with multi-session user-supplied 'newdata' not
+    containing 'session' (still required for mashed data)
+
+Known bugs
+
+    o   secr.fit() with signal detector: it is not effective to vary
+    cutval only via the 'details' argument - use subset.capthist on the
+    input data
+
+Other
+
+    o the 'possum' dataset was found to include animals that had been
+    re-tagged after previously losing a tag (see ?possum). 
+
+Changes in version 2.3.1 (2011-12-20)
+
+New features or changed behaviour of old functions
+
+    o   secr.fit() new behavioural response models bk, Bk, k, K (e.g. g0
+    ~ bk for trap-specific learned response); sim.secr() modified for
+    these models
+
+    o   join() new function for making single-session capthist from
+    multiple inputs, joining them 'side by side' (number of new
+    occasions = sum of old); unjoin() reverses this.
+
+    o   RMarkInput() new function to create object for input to RMark
+
+    o   reduce.capthist() argument 'by' may take the character value
+    "all" indicating that all columns (occasions) should be collapsed
+    to one.
+
+    o   secr.fit() "backdoor" entry of predictors via the 'dframe'
+    argument is now enabled (not for groups)
+
+    o   ip.secr() new argument 'maxtries' for greater stability with
+    sparse datasets, and related changes, but see Warning on ip.secr
+    help page.
+
+Bugs fixed
+
+    o   secr.fit() failed when detector usage was specified for some
+    sessions, but not all, and possibly with other multi-session data
+
+Other
+    o   C code tweaked to avoid warnings
+
+
+Changes in version 2.3.0 (2011-11-18)
+
+New features or changed behaviour of old functions
+
+    o   predictDsurface() predicts height of fitted density surface
+    across a mask
+
+    o   `Dsurface' new S3 class with methods head, tail, plot, print and
+    summary
+
+    o   head() and tail() new methods for mask, traps and capthist objects
+
+    o   spotHeight() new function for interrogating the density or
+    other covariates of a plotted Dsurface or mask
+
+    o   secr.fit() fits multi-session spatial trend models using mask
+    covariates
+
+    o   distancetotrap() no longer requires second argument to have
+    'detector' attribute (i.e. may be matrix of coordinates other than
+    a 'traps' object)
+
+    o   region.N() argument RN.method = 'poisson' uses faster variance
+    computation, and parts of the function have been re-coded; E(n) is
+    no longer computed by region.N - see expected.n() instead.
+
+    o   region.N() population size is now adjusted automatically for the
+    number of clusters in `mashed' models; it relates to a single
+    cluster unless 'regionmask' is specified
+
+    o   make.mask() has new logical argument 'poly.habitat' to determine
+    whether polygons represent habitat or non-habitat, allowing
+    exclusion of designated areas.
+
+    o   read.mask() now saves covariates from the input file or
+    dataframe, and has new argument 'columns' to select the columns to
+    save.
+
+    o   plot.mask() acquires argument 'meshcol' for colour of pixel
+    borders when dots = FALSE (replaces manipulation of par()$fg)
+
+    o   rectangularMask() new function expands an irregular mask to fill
+    its bounding box (useful for plotting covariate contours; used
+    internally by plot.Dsurface)
+
+    o   sim.popn() and subset.popn() acquire 'poly' argument to
+    constrain points to a lie within or outside polygon(s); may be
+    matrix of coordinates or SpatialPolygonsDataFrame object from
+    package sp. The subset.popn() method also acquires arguments
+    'poly.habitat' and 'keep.poly'.
+
+    o   pointsInPolygon() new function (previously internal as
+    'insidepoly'). Polygon may be matrix of x-y coordinates or
+    SpatialPolygonsDataFrame object from package 'sp'.
+
+    o   secr.fit() allows the user to specify a spatial model for
+    density (i.e. the intensity surface of an inhomogeneous Poisson
+    distribution) via an external R function instead of the usual
+    linear model. The function is passed as component 'userDfn' in the
+    'details' argument of secr.fit(). See vignette
+    `secr-densitysurfaces.pdf'.
+
+    o   an secr object created by secr.fit() no longer includes D, the
+    predicted density at each mask point. Instead it has a component N
+    for the summed density of each group and session. deviance.secr()
+    has been changed to use this for the N of binomial models. D no
+    longer in default drop vector of trim().
+
+    o   secr.make.newdata() now uses values from covariates(mask) to
+    construct default newdata for predict.secr (previously set to
+    zero, which could cause an error with factor covariates)
+
+    o   tile() replicates popn object on 3 x 3 grid
+
+    o   addCovariates() new function to add spatial covariates to a mask
+    or traps object from an ESRI shapefile or other spatial data
+    source
+
+    o   subset.capthist() argument 'dropnull' replaced with separate
+    arguments 'dropnullCH' and dropnullocc'; 'traps' argument may be
+    character vector; other recoding for greater clarity and reliability
+
+
+Bugs fixed
+
+    o   region.N() sometimes computed SE even when se.N = FALSE
+
+    o   subset.mask() output bounding box was too small by spacing/2
+
+    o   model.average() did not work with covar = TRUE
+
+    o   secr.fit() models with detector-level covariates of detection
+    parameters were not fitted. Fix required substantial re-write of C
+    code for log likelihood.
+
+Other
+    o   the mask and fitted models packaged with possum data have
+    changed
+
+    o   new vignette 'secr-densitysurfaces.pdf' describes fitting,
+    evaluation and plotting of density surfaces, including the use of
+    user-defined model functions.
+
+    o   many small changes to documentation
+
+Changes in version 2.2.0 (2011-10-01)
+
+New features or changed behaviour of old functions
+
+    o   rbind.capthist() has new logical argument 'verify', and along
+    with MS.capthist(), has been considerably revised with assistance
+    from Mike Meredith. Its behaviour has changed with respect to
+    pooling of covariates, coordinates (xy) and signal strength.
+
+    o   experimental 'presence' detector type (undocumented)
+
+    o   secr.fit() allows more than one parameter to be fixed
+
+    o   sim.capthist() has new argument 'p.available' for incomplete
+    availability (random or Markovian between sessions) (applies only
+    to multi-session sampling of a single population)
+
+    o   levels of polyID and transectID factors retain order of input
+    dataframe in make.poly() and make.transect()
+
+    o   sim.capthist() for transects now handles uniform detection
+    function (detectfn = 4) separately (without integration, which is
+    faster)
+
+    o   simulate.secr(), sim.secr() and sim.capthist() have new argument
+    'maxperpoly' for the user to control memory allocation when
+    sampling areas and transects
+
+    o   the lognormal confidence interval for realised N returned by
+    region.N() is by default now based only on unobserved fraction of
+    population, so the lower limit cannot be less than n (the number
+    observed). The original behaviour may be restored by setting the
+    new argument 'nlowerbound'.
+
+    o   expected.n() default for bycluster argument changed to FALSE,
+    and other minor changes to match help page
+
+    o   a subset method has been provided for popn objects
+
+    o   verify.capthist() checks that rownames are not duplicated
+
+    o   bad parameter values* (detection parameters or density) during
+    likelihood maximisation trigger warnings but should not abort
+    estimation. *These can result from the nlm optimiser 'trying'
+    invalid parts of the parameter space, and can safely be ignored if
+    the convergence code of the ultimate fit is zero.
+
+Other
+
+    o   'unmarked' is no longer an extraction function because unmarked
+    data are now stored in a 3-D array, like proximity detection
+    histories
+
+    o   the external C code has been substantially re-arranged
+
+Bugs fixed
+
+    o   transectlength() and searcharea unreliable when multiple
+    transects or polygons, and did not handle multiple sessions (now
+    return a list in this case)
+
+    o   make.mask() trivial bug checking class of polygon
+
+    o   expected.n() bycluster failed with multisession capthist
+
+    o   sim.capthist() multiple sessions not assigned distinct names
+
+    o   rbind.capthist() and MS.capthist() failed with some inputs
+    (concatenating single and multiple sessions, pooling single and
+    multiple sessions)
+
+    o   region.N() failed for some multi-session inputs
+
+    o   plot.popn() with 'circles' option gave error when no animals in
+    population; now plots a blank map
+
+
+Known bugs
+
+    o   confint.secr (profile likelihood intervals) not working for
+    multi-session inputs, and maybe other complex models
+
+Changes in version 2.1.0 (2011-06-17)
+
+New functions
+
+    o   circular.r() reports the radius (quantile) containing a
+    specified fraction of a bivariate distribution; circular.p() is
+    its inverse (fraction within specified radius)
+
+    o   trap.builder() builds complex detector arrays. Combined with
+    make.grid() etc., it provides capability similar to the Trap
+    Builder in Density. make.systematic() generates rectangular arrays
+    of detector clusters with a random origin.
+
+    o   region.N() calculates the expected number of individuals in a
+    user-defined region from a fitted secr model
+
+    o   expected.n() calculates the expected number of detected
+    individuals given a fitted secr model; may be stratified by
+    cluster.
+
+    o   writeGPS() uploads detector coordinates to a connected GPS
+    (assumes GPSBabel software installed).
+
+    o   clusterID(), clusterID<-, clustertrap(), and clustertrap<- for
+    extracting and replacing cluster attributes of a compound traps
+    object (clusterID() and clustertrap() also work with capthist
+    objects)
+
+    o   derived.cluster(), derived.mash(), derived.external(),
+    derived.nj(), derived.session() for empirical variance estimation
+    from various designs (replacing empirical.varD())
+
+    o   mash() to collapse multi-cluster capthist objects. Mashed input
+    is 'unmashed' by the predict method for secr objects, derived()
+    and derived.mash()
+
+    o   cluster.counts() returns the number of individuals detected per
+    cluster in a single-session multi-cluster capthist object
+
+    o   cluster.centres() returns the x- and y-coordinates of cluster
+    centres in a single-session multi-cluster traps object
+
+    o   alongtransect() returns the distance of each detection along the
+    transect with which it is associated (transect data only)
+
+New features or changed behaviour of old functions
+
+    o   reduce.capthist() has new argument 'by' for grouping occasions
+
+    o   sim.capthist() has a new argument 'nsessions' for simulating a
+    multiple session capthist object, and the existing option of
+    providing in argument 'popn' a list of populations to sample has
+    been documented (this also generates multi-session output)
+
+    o   sim.popn() argument 'model2D' has a new options 'coastal' and
+    'hills'. 'coastal' simulates a density gradient (Fewster and
+    Buckland 2004 ADS Ch 10)
+
+    o   subset.traps() has new argument 'occasions' to select
+    columns from the usage matrix; also default NULL value of 'subset'
+    argument causes all rows to be selected.
+
+    o   plot.popn() has new argument 'circles' for plotting a circle of
+    given radius (in metres) around each animal location
+
+    o   plot.capthist() new argument 'type' is used to specify new
+    colour-coded frequency plots 'n.per.detector', 'n.per.cluster'
+
+    o   make.mask() argument 'type' has new options 'clusterrect' and
+    'clusterbuffer' for efficient masks around dispersed clusters of
+    detectors; also new argument 'check.poly' for whther to warn if
+    traps lie outside polygon
+
+    o   esa() new argument 'noccasions' to compute effective sampling
+    area when the number of occasions differs from the fitted model
+    (assuming constant detection parameters)
+
+    o   derived() output fields 'varcomp1' and 'varcomp2' have been
+    replaced with their more familiar equivalents 'CVn' and 'CVa', and
+    'CVD' is added
+
+    o   animalID() returns a zero-length character value instead of ''
+    when argument has no detections, for consistency with similar
+    functions
+
+    o   polyarea() extended for polygon classes from package 'sp', using
+    package 'rgeos'
+
+    o   read.mask() has 'data' argument (like read.traps) for mask input
+    directly from a dataframe
+
+    o   read.capthist() and make.capthist() have new argument 'noncapt'
+    that allows a session to be recorded in which there were no
+    detections
+
+    o   logmultinom() returns 0 if there were no detections
+
+    o   secr.fit() recalculates the multinomial coefficient for each
+    likelihood evaluation. This is more flexible, but less efficient,
+    and it is possible that reported log likelihoods will differ from
+    previous versions
+
+    o   summary.capthist() has new argument 'terse' for summary table
+    from multi-session capthist objects
+
+    o   plot.traps() has new argument 'markused' to show detectors used on
+    at least one occasion
+
+Other
+
+    o   LazyDataCompression: xz
+
+    o   New detector type 'unmarked' partially implemented (counts of
+    unmarked animals per detector); functions unmarked() and unmarked()<-
+
+    o   Allow zero detections per session
+
+    o   flip, shift and rotate methods for popn objects
+
+    o   ovenbird dataset includes additional fitted model
+    ovenbird.model.D for trend in density across years
+
+    o   'Not run' code in Examples checked for errors
+
+Bugs fixed
+
+    o   ip.secr() not working
+
+    o   mask.check() sometimes failed when asked to compute likelihoods
+
+    o   write.traps() header in output file faulty when covariates
+    present
+
+    o   sim.popn() failed when population was empty; now returns popn
+    with zero rows
+
+    o   plot.traps() 'markvarying' argument showed all used detectors
+
+    o   plot.mask() 'add' argument was ignored
+
+    o   make.grid() with hollow = TRUE and nx<3 or ny<3 caused an error
+
+    o   subset.capthist() could fail with trapping data (single, multi)
+    when unused trap sites were dropped, because trap numbers were not
+    reassigned
+
+    o   sim.capthist() with renumber = FALSE mislabelled rows in the
+    capthist object
+
+    o   closedN() failed when used with non-ML estimators alone
+
+    o   distancetotrap() had ceased to work with non-trap objects
+
+    o   rbind.capthist() ignored xy and signal, so failed with polygon,
+    transect or acoustic data
+
+    o   mask.check() failed in the unusual case that a detector was on
+    the edge of the fitted mask and 'buffers' defaulted to a multiple
+    of the buffer inferred from that mask
+
+Changes in version 2.0.0 (2011-02-21)
+
+New functions
+
+    o   sort method for capthist objects (sort.capthist)
+
+    o   alive() extracts the status of an animal at each detection
+
+    o   fxi.secr(), fxi.contour(), fxi.mode() for estimating the
+    location of an individual with a given detection history (these
+    require a fitted secr model)
+
+    o   read.DA(), write.DA() convert polygon data to and from BUGS
+    format for data augmentation & MCMC
+
+New features or changed behaviour of old functions
+
+    o   new likelihood implementation and many improvements to the
+    functionality of 'polygon' and 'transect' detectors; also new
+    vignette 'secr-polygondetectors.pdf'
+
+    o   new detector types 'polygonX' and 'transectX' for
+    non-independent (exclusive) polygon and transect searches. Animals
+    can be detected on at most one exclusive polygon or transect on
+    any occasion
+
+    o   in secr.fit() and sim.capthist() binomN has been elevated to a
+    named argument from a component of details (secr.fit) or detectpar
+    (sim.capthist). It is used to specify the discrete distribution
+    for counts. The default value of binomN is Poisson for count-type
+    detectors ('count', 'polygon', 'transect')
+
+    o   secr.fit() logical values TRUE and FALSE for argument
+    details$hessian may be used instead of 'auto' and 'none'
+
+    o   secr.fit() check on buffer width not performed when 'verify = FALSE'
+
+    o   secr.fit() allows user to choose Gardner & Royle
+    parameterisation of detection function for multi-catch detectors
+    (details = list(param = 1))
+
+    o   secr.fit() triggers warning when maximization fails
+
+    o   make.poly() and make.transect() have new argument 'exclusive' to
+    create traps objects with detector types polygonX and transectX
+
+    o   verify.traps() now checks that polygons are not concave in
+    east-west direction
+
+    o   make.poly() has new argument 'verify' to enforce shape check
+
+    o   log likelihood reported for fitted SECR models includes the
+    multinomial coefficient only for detector types 'multi' (including
+    'single'), 'proximity' and 'count'. The reported log likelihood
+    for 'signal' detectors will differ from previous versions by a
+    data-specific constant (given by logmultinom())
+
+    o   reduce.capthist() now retains row names from input (function has
+    been re-written and may show other subtle changes)
+
+    o   write.capthist(), write.traps() and write.captures() now export
+    covariates if requested. Also note changed position of dots argument.
+
+    o   secr.fit() the component 'distribution' of argument 'details'
+    may take a numeric value larger than nrow(capthist), rather than
+    'binomial' or 'poisson'. The likelihood then treats n as a
+    binomial draw from a superpopulation of this size, with
+    consequences for the variance of density estimates (cf data
+    augmentation)
+
+    o   make.capthist() and read.capthist() now coerce only character
+    covariates to factors; numeric covariates are left as numeric.
+
+    o   print.traps no longer adds a column for polygon or transect polyID
+
+New dataset
+
+    o   flat-tailed horned lizard polygon search from Royle & Young
+    (2008) (thanks to Andy Royle and Kevin Young for assistance with
+    this)
+
+Bugs fixed
+
+    o   read.table() sometimes failed when reading covariates -
+    mechanism now more robust
+
+    o   summary.traps() lost summary of usage and covariates
+
+    o   make.capthist() and read.capthist() stored signal strengths
+    incorrectly.
+
+    o   plot.capthist() labelled first captures incorrectly when used
+    with 'polygon' detectors; also several other bugs fixed in the
+    course of testing polygon detectors, and now fails gracefully
+    when the palette is inadequate for 'varycol'
+
+    o   simulate.secr() ignored 'distribution' of fitted secr model
+    (binomial or poisson), with consequences for sim.secr() (always
+    Poisson)
+
+    o   moves() did not work with transect data
+
+    o   summary.capthist() and counts() mis-reported the numbers of
+    detections and detectors visited for proximity and count detectors
+    when losses > 0 (no other known effects)
+
+    o   plot.secr() limits = TRUE not working
+
+    o   secr.fit() non-default settings of 'method' did not work
+    (e.g. method = 'BFGS')
+
+Other
+
+    o   check for too few observations when computing AICc (suggested by
+    Mike Meredith)
+
+    o   removed incorrect line ZipData: yes from package Description file
+
+    o   removed multinomial term from polygon, transect and signal likelihoods
+
+
+Changes in version 1.5.1 (2010-12-02)
+
+Changed defaults 
+
+    o   in secr.fit() the distribution fitted to counts now defaults to
+    Poisson rather than Bernoulli (i.e. by default details$binomN = 0
+    when detector(traps(capthist)) = 'count')
+    o   plot.secr() confidence limits are computed only if requested
+    explicitly ( default: limits = FALSE)
+    o   the argument `buffer' in secr.fit() now defaults to NULL; a
+    value of 100 is substituted if it is needed (i.e. neither mask nor
+    buffer specified). This allows a warning to be given when the
+    user relies on the default; it has no other effect.
+    o   in secr.fit() the default detection parameter values when
+    detectfn = 9 are now b0 = 2 and b1 = -0.1; this works for the
+    dataset 'captdata', but in general you need to set 'start'.
+    o   pdot() default 'detectpar' is now list(g0 = 0.2, sigma = 25, z =
+    1) (consistent with sim.capthist())
+
+Changed output
+
+    o   the single value of 'esa' returned by derived() is now the
+    harmonic mean (reciprocal of arithmetic mean of reciprocals)
+    rather than the arithmetic mean, following a suggestion by David
+    Borchers. This matters only when esa varies between individuals
+    due to the inclusion of individual covariates in the detection
+    model. Density estimates are unchanged.
+
+New functions
+
+    o   mask.check() evaluates the effect of varying buffer width and
+    mask spacing on either the likelihood or density estimates from
+    secr.fit(). This implements and extends the functionality of
+    'Tools | ML SECR log likelihood' in Density 4.
+    o   esa.plot() displays the effect of mask buffer width on effective
+    sampling area (esa) for fixed values of detection
+    parameters. Examine the asymptotic curve to choose a buffer width
+    for model fitting. 
+    o   suggest.buffer() proposes a buffer width to keep the
+    buffer-related relative bias of D-hat within a bound
+    o   detectpar() extracts the central estimates of detection function
+    parameters from a fitted model as a list
+    o   pdot.contour() display contours of the net probability of
+    detection p.(X)
+    o   buffer.contour() adds a conventional 'boundary strip' to a
+    detector (trap) array, where the argument 'buffer' represents the
+    strip width(s)
+    o   utility functions polyarea() to calculate the area of a simple
+    polygon and ms() to indicate whether an object has data from
+    multiple sessions
+    o   methods spacing.default() and 'spacing<-' to extract or replace
+    mean detector spacing attribute of a 'traps' or 'mask' object (or compute if 
+    NULL)
+    o   methods AIC.secrlist(), plot.secrlist() and predict.secrlist()
+    for lists of fitted models that have been assigned the class
+    c('list','secrlist')
+    o   method logLik.secr() for consistency with standard model fitting
+    functions
+
+New features in old functions
+
+    o   closedN() now computes AICc model weights for models within dmax
+    of the best model.
+    o   new detection functions (7) 'cumulative lognormal' and (8)
+    'cumulative gamma' are alternative 3-parameter functions. (8)
+    lacks the heavy tail of (1) 'hazard rate'.
+    o   pdot() uses compiled C code for ordinary detectors and is much faster 
+    o   pdot() should now work for all detection functions 
+    o   pdot() now takes account of incomplete 'usage' of detectors
+    o   'covariates<-' now allows replacement of individual covariates in
+    a multi-session capthist object (replacement value should be a list
+    of dataframes)
+    o   plot.mask() now handles multi-session masks
+    o   detectfnplot() and attenuationplot() now allow the argument 'pars'
+    to be a list from detectpar()
+    o   make.mask() now clips a masks constructed by any method to a
+    boundary polygon if one is provided (previously required type =
+    'polygon')
+    o   make.mask() and related functions now accept boundary polygons
+    in the form of a SpatialPolygonsDataFrame object from 'sp'. This
+    effectively adds support for ESRI shapefiles as readShapePoly() in
+    the maptools package reads a shapefile and creates a
+    SpatialPolygonsDataFrame object (see Examples in ?make.mask).
+    Polygons in a shapefile may have multiple parts and/or holes.
+    o   a new argument in make.mask() controls the saving or otherwise 
+    of a boundary polygon (keep.mask)
+    o   read.traps() has a new argument 'covnames' and can accept more
+    than one covariate 
+    o   read.capthist() has a new argument 'trapcovnames' that is passed
+    to read.traps()
+    o   read.capthist() has a new argument 'cutval' and can be used to
+    input signal strength data. Detections with signal strength
+    missing (NA) or below 'cutval' are discarded. Likewise in
+    make.capthist().
+
+Other
+
+    o secr.fit() generates a warning when the 'buffer' appears to be
+    too small (predicted RB(D-hat) > 0.01); applies only when 'mask'
+    not specified.
+    o   datasets now use 'lazy loading' so it is not necessary to call the
+    data() function before referring to data objects
+    o   the MASS and nlme packages have been shifted from Depends to
+    Suggests; they are now loaded as required (for eqscplot() and
+    fdHess()) 
+    o   the utils package is added under Depends for its function
+    packageVersion()
+    o   the sp, maptools and gpclib packages are added under Suggests
+    o   the warning from secr.fit() when the user relied on the default
+    detectfn (0) has been suppressed
+    o   substantial speed improvement in distancetotrap(), with benefits
+    for several other functions
+    o   output from secr.fit() now includes the actual call rather than
+    the just call as a character string, and print.secr() has been modified
+    to interpret call as a string (users should notice no difference)
+    o   secr.fit() now gives an explicit error message when individual
+    covariates appear in a full-likelihood model
+    o   definition of compound halfnormal detection function changed to
+    allow g(0) < 1, and now consistent with other functions
+    o	tweaked documentation of sim.secr
+    o	revised message for missing cutval in plot.secr and detectfnplot
+    o	suppressed `spacing not computed' message in summary.traps
+    o	documentation revised for detection functions, and tweaked for 
+    secr.fit wrt binomN
+    o	additions to vignette 'secr-datainput.pdf'
+    o	plot.secr() and detectfnplot() streamlined internally, and now
+    handle 'binary signal strength' function
+    o   help pages for flip(), rotate(), shiftxy(), flip.traps(),
+    rotate.traps() and shiftxy.traps() have been consolidated under
+    'transformations'
+    o   verify.capthist() no longer rejects negative counts (animal died)
+    o   undocumented detectors 'quadratbinary' and 'quadratcount' removed
+    o   cosmetic changes to many warning and error messages
+
+Bugs fixed
+
+    o	annular halfnormal detection function not working in sim.capthist()
+    o   confusion between detection functions 3 & 4 in ip.secr(),
+    plot.secr() and detectfnplot()
+    o   read.traps() did not set the 'spacing' attribute    
+    o   make.capthist() failed with 'polygon' detector when some points
+    outside any polygon; now discards such points, with a warning, as
+    originally intended
+    o   read.traps() could fail reading usage fields from a trap layout file
+    o   polyarea() could suffer from numeric overflow with integer
+    coordinates, so coordinates now coerced to floating point (solved
+    flow-on problem in summary.traps() with polygon detectors)
+    o   esa() sometimes ignored incomplete detector usage
+    o   sim.secr() failed with 'count' detector when traps object lacked a
+    'binomN' attribute, and did not work with negative 'binomN'; now
+    takes 'binomN' from 'details' of fitted secr object, default 0
+    (Poisson).
+    o   sim.secr() did not handle inhomogeneous Poisson density
+    correctly, and could make excessive memory demands
+
+Changes in version 1.4.1 (2010-08-29)
+
+New functions
+    o   empirical.varD() computes an estimate of the sampling error of a
+    Horvitz-Thompson-like estimate of density for replicated spatial
+    samples.  The formulation closely resembles that in conventional
+    distance sampling with equal-length transects.
+
+    o   moves() returns a list of the distances between consecutive
+    detections for each animal in a capthist object (meaningful only
+    for trap-like detectors, for which the sequence of detections is
+    unambiguous).
+
+    o   make.tri() generates a detector array based on a triangular grid
+    and clip.hex() retains a hexagonal subset.
+
+New features in old functions
+    o   MS.capthist() now accepts any combination of single-session
+    capthist objects, multi-session capthist objects, and lists of
+    single-session capthist objects.
+
+    o   sim.popn() now optionally generates a spatiotemporal population
+    i.e. a list whose components form a time series of simple popn
+    objects with mortality and recruitment and movement between
+    times. Two new arguments are used (number.from and nsession);
+    turnover parameters are passed as presently undocumented
+    components of 'details'.
+
+    o   sim.capthist now generates a multi-session capthist object when
+    passed a list of populations (see preceding).
+
+    o   sim.capthist now has an option to truncate detections beyond a
+    fixed radius, regardless of the shape of the detection
+    function. The radius is specified as component `truncate` in the
+    `detectpar` argument. The default is no truncation (truncate =
+    NULL).
+
+    o   secr.fit() new automatic model effect 'Session' coded as 0:(R-1)
+    where R is the number of sessions. Contrast with lower-case
+    'session' which is a factor. Equivalent to manual sessioncov =
+    data.frame(0:(R-1)); useful for modelling trend.
+
+    o   secr.fit() new automatic covariates 'x2', 'y2','xy' for density
+    trend models (defined for all points on habitat mask).
+
+    o   new detection function = 6 'annular normal' has peak at distance
+    +w where parameter w >= 0.
+
+    o   Various functions with the argument 'detectfn' (secr.fit(),
+    sim.capthist(), detectfnplot() etc.) now allow the name of the
+    function to be supplied as a character value (e.g. 'halfnormal';
+    see ?detectfn for names). Values are still stored as the integer
+    codes.
+
+    o	rbind.mask() now handles covariates rather than discarding them
+    with a warning; rbind.traps() has been revised internally.
+
+    o   read.capthist() and make.capthist() accept negative occasion
+    numbers for death on capture even when detector type is not
+    'single' or 'multi'.  Previously this coding was ignored because
+    modelling of such data poses problems; responsibility now lies
+    with the user.
+
+Bugs fixed
+    o   write.captures() and write.capthist() used row (animal) number
+    rather than row names (animal identifiers) when detector='single'
+    or detector='multi'. This has been rectified.
+
+    o   write.captures() and write.capthist() when used with
+    multi-session data lost the session names and exported all
+    detections as session 1. Actual session names are now used to
+    distinguish sessions in the output.
+
+    o   sim.capthist() became confused when detectfn=3 or
+    detectfn=4. Simulation with a compound halfnormal detection
+    function (3) or uniform detection function (4) should now work.
+
+    o   rbind.popn() returned with meaningless 'Ndist' and 'model2D'
+    attributes. Now Ndist is set to 'user' and 'model2D' to the value
+    for the first contributing population.
+
+    o   secr.fit() with distribution = 'binomial' failed to calculate
+    the asymptotic variance of D because it called the R function
+    dbinom that takes only integer values for the size parameter
+    (N). This call has been replaced by a local function that accepts
+    non-integer N. The associated warning has been suppressed.
+
+    o   rbind.traps() should now combine covariates and usage correctly.
+
+    o   secr.make.newdata() failed with trend-over-occasion models (T),
+    causing errors in predict.secr(), collate() and model.average(). 
+
+Other
+    o	Displays startup message
+
+    o   Minor improvements to documentation (alias for detectfn, all
+    data objects documented etc.)
+
+    o	details$binomN argument of secr.fit has been documented. binomN is
+    used to specify the discrete distribution fitted to count data
+    (binomial, Poisson etc.), and the size parameter of the binomial.
+
+    o   print.mask() has been dropped as print.dataframe() works
+    perfectly well with masks.
+
+
 Changes in version 1.4.0 (2010-05-07)
 
 New functions

@@ -64,7 +64,7 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \seealso{
 
-  \code{\link{capthist}}, \code{\link{detection functions}},
+  \code{\link{capthist}}, \code{\link{Detection functions}},
   \code{\link{secr.fit}}
 
 }

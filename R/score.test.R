@@ -20,6 +20,7 @@ prepare <- function (secr, newmodel) {
     timecov  <- secr$timecov
     sessioncov <- secr$sessioncov
     groups   <- secr$groups
+    hcov     <- secr$hcov
     dframe   <- secr$dframe  ## never used?
     CL       <- secr$CL
     detectfn <- secr$detectfn
@@ -30,8 +31,8 @@ prepare <- function (secr, newmodel) {
     if (is.null(sessionlevels)) sessionlevels <- '1'
     grouplevels  <- group.levels(capthist, groups)
 
-    design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, dframe)
-    design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, dframe,
+    design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe)
+    design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
                                naive=T, bygroup=!CL)
     if (CL) D.designmatrix <- NULL
     else {
@@ -81,7 +82,7 @@ prepare <- function (secr, newmodel) {
        D.design  = D.designmatrix,
        design    = design,
        design0   = design0,
-
+       hcov      = hcov,
        groups    = groups,
        betanames = betanames,
        details   = details,
@@ -135,10 +136,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
             clust <- makeCluster(ncores)
             clusterEvalQ(clust, library(secr))
             clusterExport(clust, c("trace","prepare","mapbeta"), environment())
-#            clusterExport(clust, c("stdform","group.levels","group.factor",
-#                                   "secr.loglikfn", "makerealparameters",
-#                                   "detectorcode", "scaled.detection", "model.string",
-#                                   "untransform", "getD", ".localstuff"), environment())
             score.list <- parLapply (clust, models, score.test, secr = secr,
                                   betaindex = betaindex, ncores = ncores)
             stopCluster(clust)
@@ -205,6 +202,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
                mask     = design$mask,
                detectfn = design$detectfn,
                CL       = design$CL,
+               hcov     = design$hcov,
                groups   = design$groups,
                details  = design$details,
                logmult  = design$logmult,
@@ -219,9 +217,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
         ## fdHess is from package nlme
         require(nlme)
         grad.Hess <- fdHess(beta1, fun = loglikfn, design = newsecr,
-                         .relStep = 0.001,
-                         minAbsPar=0.1)
-
+                            .relStep = 0.001, minAbsPar=0.1)
         u.star <- grad.Hess$gradient
         i.star <- -grad.Hess$Hessian
 

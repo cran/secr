@@ -9,48 +9,70 @@
 ## 2011 11 27 add k, K, bkc, Bkc, bkn, bn models
 ## 2012 01 20 preliminary work on time-varying trap covariates
 ## 2012 09 10 k, K models did not work with multi-session data
+## 2013 03 10 bug in findvars.MS insertdim calls : c(x,1) as already expanded over sessions
+## 2013-03-11 keep.dframe, full.dframe
+## 2013-03-11 Session only as needed
+## 2013-03-11 check levels do not vary between sessions
+## 2013-03-11 dropped models$phi <- NULL (not needed)
 
-################################################################################
-## source ('d:\\density secr 2.3\\secr\\R\\secr.design.MS.R')
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
-    groups = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE, ...) {
+                            groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE,
+                            bygroup = FALSE, keep.dframe = FALSE, full.dframe = FALSE,
+                            ...) {
 
 ## Generate design matrix, reduced parameter array, and parameter index array (PIA)
 ## for detection function parameters
 ## 'capthist' must be of class 'capthist' or 'list'
-##
 ## uses pad1 to pad session-specific covar to constant length with first value,
 ## pad1 defined in 'utility.R'
+
+## bygroup = T results in one row per group instead of one row per individual
+## This setting is used for 'naive' table
+## groups is a vector of factor names whose intersection defines group
+## groups only defined for CL = FALSE  [corrected 2011-11-27]
+## use of 'g' requires valid groups definition
+## grouping variables are also added individually to dframe
+
+    #--------------------------------------------------------------------------------
     findvars.MS <- function (cov, vars, dimcov) {
         ## function to add covariates to a design data frame 'dframe'
         ## cov may be a dataframe or list of dataframes, one per session (R > 1),
         ## if list, then require predictors to appear in all sessions
         ## uses insertdim from utility.R
         ## NOT to be used to add group variables
-        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- scale(vals)
+        ## Does _not_ standardize numeric covariates:
+        ##     if (!is.factor(vals)) vals <- scale(vals)
 
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
         else {
             found <- ''
-            if (!is.data.frame(cov)) {   ## therefore assume is a list
+            if (!is.data.frame(cov)) {
+                ## therefore assume cov is a list, one per session
+                ## care required as sessions may differ in n, S, K
+                ## solution is to pad to max [n,S,K] over sessions
                 if (!is.list(cov) | (R==1))
                     stop ("irregular covariates; check multisession structure")
                 covnames <- lapply(cov, names)
                 varincov <- sapply(covnames, function(nam) vars %in% nam)
                 if (length(vars)>1) found <- vars[apply(varincov,1,all)]
                 else found <- vars[all(varincov)]
-
                 for (variable in found) {
-                    ## vals <- unlist(lapply(cov, function(x) pad1(x[,variable],
-                    ##     dims[dimcov])))
-                    ## pad only on first dimension 2012-09-21
-                    vals <- unlist(lapply(cov, function(x) pad1(x[,variable],
-                        dims[dimcov[1]])))
+                    ## if factor, check all levels the same 2013-03-11
+                    if (any(sapply(cov, function(x) is.factor(x[,variable])))) {
+                        baselevels <- levels(cov[[1]][,variable])
+                        lev <- lapply(cov, function(x) levels(x[,variable]))
+                        if (!all(sapply(lev[-1], function(x) identical(x,baselevels)))) {
+                            print(lev)
+                            stop("covariate factor levels differ between sessions")
+                        }
+                    }
+                    ## pad on first dimension
+                    vals <- lapply(cov, function(x) pad1(x[,variable], dims[dimcov[1]]))
+                    vals <- unlist(vals)
                     if (any(is.na(vals)))
                         stop ("covariate missing values not allowed")
-
                     dframe[,variable] <<- insertdim (vals, dimcov, dims)
                 }
             }
@@ -72,6 +94,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             vars <<- vars[!(vars %in% found)]
         }
     }
+    #--------------------------------------------------------------------------------
 
     findvars.traptime <- function (covindices, vars) {
         ## function to add time-specific trap covariates to a design data frame 'dframe'
@@ -115,24 +138,14 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         }
         vars <<- vars[!(vars %in% found)]
     }
+    #--------------------------------------------------------------------------------
 
-    # bygroup = T results in one row per group instead of one row per individual
-    # This setting is used for 'naive' table
-    # groups is a vector of factor names whose intersection defines group
-    # groups only defined for CL = FALSE  [corrected 2011-11-27]
-    # use of 'g' requires valid groups definition
-    # grouping variables are also added individually to dframe
     models$D <- NULL                          # drop density model
-    models$phi <- NULL                        # drop phi model 2011-11-30
     npar     <- length(models)                # real parameters
     parnames <- names(models)                 # typically c('g0', 'sigma', 'z')
     vars     <- unique (unlist(sapply (models, all.vars)))
     vars     <- vars[!(vars %in% groups)]     # groups treated separately
-    nmix     <- get.nmix(models)
-
-    if (sum(c('b','bn','B','bk','bkn','Bk','bkc','Bkc', 'k', 'K') %in% vars) > 1)
-    stop ("model should not use more than one type of behavioural response")
-
+    nmix     <- get.nmix(models, capthist, hcov)
     trps    <- traps(capthist)                 # session-specific trap array
     used    <- usage(trps)                     # session-specific usage
     zcov    <- covariates(capthist)            # session-specific individual covariates
@@ -147,23 +160,18 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     MS   <- ms(capthist) # logical for multi-session
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    getnk <- function (object) {
-        ifelse (detector(object) %in% .localstuff$polydetectors,
-            length(table(polyID(object))),
-            nrow(object))
-    }
 
     if (MS) {
         R <- length(capthist)
         n <- ifelse (bygroup, ngrp, max(sapply(capthist, nrow))) # max over sessions
         S <- max(sapply(capthist, ncol))                         # max over sessions
-        K <- max(sapply(trps, getnk))                            # max over sessions
+        K <- max(sapply(trps, ndetector))                        # max over sessions
     }
     else {
         R <- 1
         n <- ifelse (bygroup, ngrp, nrow(capthist))
         S <- ncol(capthist)
-        K <- getnk(trps)
+        K <- ndetector(trps)
     }
     ## cover unmarked case
     if (n == 0) n <- 1
@@ -199,7 +207,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # user-specified dframe
     # 2011-11-27
     if (is.null(dframe)) {
-        dframe <- data.frame(dummy=rep(1, dframenrow))
+        ## data frame with dframenrow rows and no columns 2013-03-11
+        dframe <- data.frame(row.names = 1:dframenrow)
         dframevars <- ""
     }
     else {
@@ -223,26 +232,41 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         dframevars <- names(dframe)
     }
     #--------------------------------------------------------------------------
+    ## session, Session
 
-    ## BUG FIXED 2009 12 22
-    ## Default action of following was to sort levels
-    ## but these are allowed to be in arbitrary order
-    ##    dframe$session <- factor( insertdim (sessionlevels, 1, dims))
+    dframe$session <- factor( insertdim (sessionlevels, 1, dims),
+                             levels = sessionlevels)
 
-    dframe$session <- factor( insertdim (sessionlevels, 1, dims), levels = sessionlevels)
-    dframe$Session <- insertdim (0:(R-1), 1, dims)
+    if ('Session' %in% vars) {
+        dframe$Session <- insertdim (0:(R-1), 1, dims)
+    }
 
     #--------------------------------------------------------------------------
-    if ('t' %in% vars)
+    ## t, T, tcov
+
+    if ('t' %in% vars) {
         dframe$t <- factor( insertdim (1:S, 3, dims) )
+    }
+    if ('T' %in% vars) {
+        dframe$T <- insertdim (0:(S-1), c(3,1), dims)
+    }
 
-    #--------------------------------------------------------------------------
-    ## 2009 10 07 mark-resight
-    q <- attr(capthist, 'q')
-    if (any((q > 0) & (q < S))) {
-        ## marking  on occasions 1:q, sighting on occasions (q+1):S
-        ## following line must be revised for vector q (varying by session)
-        dframe$sighting <- factor( insertdim (rep(0:1, c(q, S-q)), 3, dims) )
+    if ('tcov' %in% vars) {
+        if (is.null(timecov))
+            stop ("requires valid time covariate 'timecov'")
+        if (length(unlist(timecov)) > S)                                             ### CHECK
+            warning ("length of 'timecov' exceeds number of occasions")
+        if (is.data.frame(timecov)) {
+            if (nrow(timecov) < S)
+                stop ("requires valid time covariate 'timecov'")
+            timecov <- timecov[,1,drop=F]  ## retain only first
+        }
+        else {
+            if (any(sapply(timecov, nrow) < S))
+                stop ("requires valid time covariate 'timecov'")
+            timecov <- lapply (timecov, function(x) pad1(x[,1], S))
+        }
+        dframe$tcov <- insertdim (unlist(timecov), c(3,1), dims)
     }
 
     #--------------------------------------------------------------------------
@@ -296,6 +320,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
 
     ## behavioural response fields
+
+    if (sum(c('b','bn','B','bk','bkn','Bk','bkc','Bkc', 'k', 'K') %in% vars) > 1)
+    stop ("model should not use more than one type of behavioural response")
 
     ## assume sessions are same type
     #  prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
@@ -503,30 +530,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
        }
     }
     #--------------------------------------------------------------------------
-
-    if ('tcov' %in% vars) {
-        if (is.null(timecov))
-            stop ("requires valid time covariate 'timecov'")
-        if (length(unlist(timecov)) > S)                                             ### CHECK
-            warning ("length of 'timecov' exceeds number of occasions")
-        if (is.data.frame(timecov)) {
-            if (nrow(timecov) < S)
-                stop ("requires valid time covariate 'timecov'")
-            timecov <- timecov[,1,drop=F]  ## retain only first
-        }
-        else {
-            if (any(sapply(timecov, nrow) < S))
-                stop ("requires valid time covariate 'timecov'")
-            timecov <- lapply (timecov, function(x) pad1(x[,1], S))
-        }
-        dframe$tcov <- insertdim (unlist(timecov), c(3,1), dims)
-    }
-
-    if ('T' %in% vars) {
-        dframe$T <- insertdim (0:(S-1), c(3,1), dims)
-    }
-
-    #--------------------------------------------------------------------------
     if ('kcov' %in% vars) {
         if (is.null(trapcov))
             stop ("model uses trap covariates, but valid covariate ",
@@ -541,32 +544,36 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## h2 or h3
     if (nmix > 1) {
         mixture <- paste('h',nmix,sep='')
-        dframe[,mixture] <- insertdim(factor(1:nmix), 5, dims)
+        classnames <- h.levels(capthist, hcov, nmix)
+        tempclass <- insertdim(classnames, 5, dims)
+        dframe[,mixture] <- factor(tempclass)
     }
 
     #--------------------------------------------------------------------------
+    ## 2009 10 07 mark-resight
+    q <- attr(capthist, 'q')
+    if (any((q > 0) & (q < S))) {
+        ## marking  on occasions 1:q, sighting on occasions (q+1):S
+        ## following line must be revised for vector q (varying by session)
+        dframe$sighting <- factor( insertdim (rep(0:1, c(q, S-q)), 3, dims) )
+    }
+    #--------------------------------------------------------------------------
+
     ## all autovars should have now been dealt with
     vars <- vars[!(vars %in% c(autovars, dframevars))]
 
     #--------------------------------------------------------------------------
-    # add zcov, sessioncov, trapcov, timecov
+    # add zcov, sessioncov, timecov, trapcov
 
-    if ((length(vars)>1) & (R>1))
-        warning ("implementation of user covariates with multi-session ",
-                 "data is not fully tested")
-
-    ##  if (!bygroup) findvars.MS (zcov, vars, 2)   ## CL only
-    ## by session 2012-09-21
+    ## corrected 2012-09-21, 2013-03-10 to allow for multiple sessions c(x,1)
     if (!bygroup) findvars.MS (zcov, vars, c(2,1))   ## CL only
-
     findvars.MS (sessioncov, vars, 1)
-    findvars.MS (timecov, vars, 3)      ## session-specific list
-    findvars.MS (trapcov, vars, 4)      ## session-specific list
+    findvars.MS (timecov, vars, c(3,1))      ## session-specific list
+    findvars.MS (trapcov, vars, c(4,1))      ## session-specific list
 
     #--------------------------------------------------------------------------
     # 2012-01-20 time-varying trap covariates
     # modified 2012-10-31
-
     if (MS)
         tvc <- timevaryingcov(trps)
     else
@@ -590,9 +597,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         stop ("covariate(s) ", paste(vars,collapse=","), " not found")
     }
 
-    #------------------------------------------
-    # DOES NOT STANDARDIZE COVARIATES (cf Dmat)
+    #=========================================================================
+    # OK, we now have a complete dframe
+    # Next construct the design matrices, PIA, and deal with usage
+    #=========================================================================
 
+    #------------------------------------------------------------
     make.designmatrix <- function (formula, prefix, ...) {
      # combine formula and dframe to generate design matrix
         if (is.null(formula)) {
@@ -601,11 +611,14 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         else {
             tempmat <- model.matrix(formula, dframe, ...)
             ## drop pmix beta0 column from design matrix
-            if (prefix=='pmix') tempmat <- tempmat[,-1,drop=FALSE]
+            if (prefix=='pmix') {
+                tempmat <- tempmat[,-1,drop=FALSE]
+            }
             temp <- make.lookup (tempmat)   # retain unique rows
             list (model=temp$lookup, index=temp$index)
         }
     }
+    #------------------------------------------------------------
 
     ## replace NA with dummy value '0' to stop model.matrix dropping rows added as padding
     ## might be more efficient to allow it to drop and then match later
@@ -613,7 +626,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     # list with one component per real parameter
     # each of these is a list with components 'model' and 'index'
-
     designMatrices <- sapply (1:length(models), simplify=FALSE,
         function (x) make.designmatrix(models[[x]], names(models[x])))
     names(designMatrices) <- names(models)
@@ -655,8 +667,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # 'used' is list if MS
 
     if ((!is.null(used)) & (length(used)>0)) {
-##2012-01-21, 2012-02-05
-##            if (any(!used)) {
         if (!is.null(unlist(used)))
         if (any(!unlist(used))) {
             if (!MS) {
@@ -668,19 +678,15 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     used <- aperm(used, c(3,1,2))
                 }
                 # 2012-12-17
-                # PIA[1, , , ,] <- PIA[1, , , ,] * rep(used,nmix)
                 PIA[1, , , ,] <- PIA[1, , , ,] * rep(used>0,nmix)
             }
             else for (r in 1:R) {
-                ## 2011-11-28 - fix bug Deb Wilson 25/11/2011
                 if (!is.null(used[[r]])) {
                     use <- array (0, dim=c(S,K))
                     temp <- t(used[[r]])  # dim (S',K')
                     if (length(dim(temp)) == 3)
                         stop("3-D usage not available with multiple sessions")
                     use[1:nrow(temp), 1:ncol(temp)] <- temp  # padding
-                    # 2012-12-17
-                    # PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use,rep(n,S*K)),nmix)
                     PIA[r, , , ,] <- PIA[r, , , ,] * rep(rep(use>0,rep(n,S*K)),nmix)
                 }
             }
@@ -688,7 +694,49 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------
-    list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R)
+    if (keep.dframe) {
+        ## 2013-03-11
+        purge.dframe <- function (validdim) {
+            ## drop padding rows in dframe
+            tmps <- split(dframe, dframe$session)
+            ia <- array(1:prod(dims[-1]), dim = dims[-1])
+            getsess  <- function (x,valid) {
+                inddf <- do.call(expand.grid, lapply(valid, seq_len))
+                names(inddf) <- c('animal','occasion','detector','mixture')
+                ind <- as.matrix(inddf)
+                x <- x[as.vector(ia[ind]),]
+                x <- cbind(inddf, x)
+                row.names(x) <- 1:nrow(x)
+                x
+            }
+            dfs <- mapply(getsess, tmps, validdim, SIMPLIFY = FALSE)
+            do.call(rbind, dfs)
+        }
+
+        if (MS) {
+            validdim <- as.list(data.frame(t(matrix(c(sapply(capthist, nrow),
+                          sapply(capthist, ncol),
+                          sapply(trps, ndetector),
+                          rep(nmix,R)), nrow = R))))
+            names(validdim) <- sessionlevels
+        }
+        else
+            validdim <- list(dim(PIA)[2:5])
+
+        ## optionally purge rows that pad each session to constant nrows
+        if (!full.dframe)
+            dframe <- purge.dframe(validdim)
+        else {
+            inddf <- do.call(expand.grid, lapply(dims, seq_len))[,-1]
+            names(inddf) <- c('animal','occasion','detector','mixture')
+            dframe <- cbind(inddf,dframe)
+        }
+        dframe <- dframe[,c(5,1:4,6:ncol(dframe))]
+        list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
+             dframe = dframe, validdim = validdim)
+    }
+    else
+        list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R)
 }
 ############################################################################################
 

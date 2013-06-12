@@ -9,6 +9,8 @@
 ## 2011 03 26 reversed order of first two arguments of dfn's
 ## default of limits changed to FALSE in plot.secr()
 ## 2012-10-21 moved HN etc to utility.r
+## 2013-04-20 new detection functions HHN, HHR, HEX, HAN, HCG
+## 2013-04-24 uses getdfn from utility.r
 ############################################################################################
 
 
@@ -47,8 +49,10 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
         else {
             pars <- predicted[parnames(x$detectfn),'estimate']
             pars[is.na(pars)] <- unlist(x$fixed)
-            dfn <- switch (x$detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS,
-                           SSS, SN, SNS)
+            dfn <- getdfn(x$detectfn)
+            ## superceded 2013-04-24
+            ## switch (x$detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS,
+            ##               SSS, SN, SNS, HHN, HHR, HEX, HAN, HCG)
             if (sigmatick) {
               sigma <- pars[2]
               y <- dfn(sigma, pars, x$details$cutval)
@@ -157,9 +161,13 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             ylim <- c(0, 1)
         }
         else {
+            if (x$detectfn %in% 14:18)
+                yname <- 'lambda0'
+            else
+                yname <- 'g0'
             getmax <- function(x) {
-                g0 <- x['g0','estimate']
-                se.g0 <- x['g0','SE.estimate']
+                g0 <- x[yname,'estimate']
+                se.g0 <- x[yname,'SE.estimate']
                 if (limits & is.finite(se.g0))  ## is.finite 2010-10-10
                     min(1, g0 + z * se.g0)
                 else
@@ -168,7 +176,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             if (is.data.frame(temp)) maxg0 <- getmax(temp)
             else maxg0 <- max(sapply (temp, getmax))
 
-            if (is.na(maxg0)) maxg0 <- x$fixed$g0
+            if (is.na(maxg0)) maxg0 <- x$fixed[yname]
             if (maxg0 > 0.75) maxg0 <- max(maxg0,1)
             ylim <- c(0, maxg0)
         }
@@ -201,7 +209,9 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     gline <- function (pars) {
         ## here pars is a vector of parameter values
 
-        dfn <- switch (detectfn+1, HN, HZ, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS,SN,SNS)
+        dfn <- getdfn(detectfn)
+        ## switch (detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS,SN,SNS,
+        ##               HHN, HHR, HEX, HAN, HCG)
         if (sigmatick) {
             sigma <- pars[2]
             y <- dfn(sigma, pars,details$cutval)
@@ -235,7 +245,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3,5,5)[detectfn+1]
+    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3,5,5,2,3,2,3,3)[detectfn+1]
 
     if (ncol(pars) != needp)
         stop ("require ", needp, " parameters for ",
@@ -246,7 +256,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
             ylim <- c(0, 1)
         }
         else {
-            ylim <- c(0, max(pars[,1]))   ## g0
+            ylim <- c(0, max(pars[,1]))   ## g0 or lambda0
         }
     }
 
