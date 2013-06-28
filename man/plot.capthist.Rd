@@ -46,7 +46,7 @@
 
 \details{ 
 
-By default, a `petal' plot is generated in the style of Density (Efford 2007)
+By default, a `petal' plot is generated in the style of Density (Efford 2012)
 using \code{eqscplot} from the MASS library. If \code{type =
 "n.per.detector"} or \code{type = "n.per.cluster"} the result is a
 colour-coded plot of the number of individuals at each unit, pooled over
@@ -85,9 +85,9 @@ individuals then colours will be re-used.
 
 \references{ 
 
-  Efford, M. G. (2007) \emph{Density 4.1: software for spatially
-  explicit capture--recapture}.  Department of Zoology, University of
-  Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 }
 

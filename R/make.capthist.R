@@ -121,7 +121,6 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 
         nocc      <- max(abs(captures[,3]))
         nocc      <- ifelse (is.null(noccasions), nocc, noccasions)
-
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
         if (is.null(cutval) && detector(traps)  %in% c('cue','signal','signalnoise'))

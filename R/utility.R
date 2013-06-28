@@ -17,6 +17,10 @@
 ## 2013-04-20 new detection functions
 ## 2013-06-06 fullbeta function (was part of secrloglik)
 ## 2013-06-08 get.nmix extended to allow hcov and not h2/h3 model for g0,sigma
+## 2013-06-15 inflate()
+
+## 2013-06-17 I have so far resisted the temptation to add HCU hazard cumulative uniform df
+##            based on Horne & Garton 2006
 ###############################################################################
 
 .localstuff <- new.env()
@@ -147,6 +151,11 @@ detectorcode <- function (object, MLonly = TRUE) {
             stop ("Unrecognised detector type")
     }
     detcode
+}
+
+## 2013-06-16
+ndetectpar <- function (detectfn) {
+    length(parnames(detectfn))
 }
 
 replacedefaults <- function (default, user) replace(default, names(user), user)
@@ -923,5 +932,19 @@ fullbeta <- function (beta, fb) {
         beta <- fb             ## complete beta
     }
     beta
+}
+###############################################################################
+
+## inflate a convex outline along all radii by linear factor 'rmult'
+## 2013-06-15
+inflate <- function (xy, rmult = 1) {
+    xy <- as.matrix(xy)
+    centre <- apply(xy, 2, mean)
+    xy <- sweep(xy, MARGIN = 2, STATS = centre, FUN = '-')
+    r <- apply(xy, 1, function(z) sqrt(sum(z^2)))
+    theta <- atan2 (xy[,2], xy[,1])
+    r <- r * rmult
+    xy <- cbind(r * cos(theta), r * sin(theta))
+    sweep(xy, MARGIN = 2, STATS = centre, FUN = '+')
 }
 ###############################################################################

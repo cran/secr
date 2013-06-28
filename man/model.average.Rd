@@ -42,8 +42,8 @@ collate (..., realnames = NULL, betanames = NULL, newdata = NULL,
 \details{
 
 Models to be compared must have been fitted to the same data and use the
-same likelihood method (full vs conditional). If \code{realnames} ==
-NULL and \code{betanames} == NULL then all real parameters will be
+same likelihood method (full vs conditional). If \code{realnames} =
+NULL and \code{betanames} = NULL then all real parameters will be
 averaged; in this case all models must use the same real parameters. To
 average beta parameters, specify \code{betanames} (this is ignored if a
 value is provided for \code{realnames}). See \code{\link{predict.secr}}

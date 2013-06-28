@@ -259,11 +259,11 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         #----------------------------------------
         # 2012-10-20,21
         # mingled proximity & telemetry
-        xylist <- attr(session.capthist,'xylist')
+        xylist <- attr(session.capthist, 'xylist')
         if (!is.null(xylist)) {
             if (.localstuff$iter < 1) {
                 outside <- outsidemask (session.capthist, session.mask)
-                if (sum(outside)>0)
+                if (sum(outside) > 0)
                     warning (sum(outside), " centres lie outside mask and",
                              " will be assigned to the nearest mask point")
             }
@@ -281,7 +281,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             if (details$telemetrysigma) {
                 index <- ifelse(nrow(realparval)==1, 1, sessnum)
                 sigma <- realparval[index,'sigma']
-                z <- ifelse (detectfn %in% c(1,3,5,6,7,8), realparval[index,'z'], 1)
+                z <- ifelse (ndetectpar(detectfn) == 3, realparval[index,'z'], 1)
                 LL <- LL + telemetryloglik (T.session.capthist, detectfn, sigma, z)$value
             }
         }
@@ -499,8 +499,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             ## xy locations of individuals
             ## does not allow within-session models
             index <- ifelse(nrow(Xrealparval)==1, 1, sessnum)
-            sigma <- Xrealparval[index,'sigma']
-            z <- ifelse (detectfn %in% c(1,3,5,6,7,8), Xrealparval[index,'z'], 1)
+            sigma <- Xrealparval[index, 'sigma']
+            z <- ifelse (ndetectpar(detectfn) == 3, Xrealparval[index,'z'], 1)
             temp <- telemetryloglik (session.capthist, detectfn, sigma, z)
         }
         #--------------------------------------------

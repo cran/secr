@@ -30,7 +30,7 @@ y-coordinates, separated by white space. The coordinates optionally may
 be followed by a string of codes `0' or `1' indicating whether the
 detector was operated on each occasion. Trap-specific covariates may be
 added at the end of the line preceded by `/'. This format is compatible
-with the Density software (Efford 2007), except that all detectors are
+with the Density software (Efford 2012), except that all detectors are
 assumed to be of the same type (usage codes greater than 1 are treated
 as 1), and more than one covariate may be specified.
 
@@ -70,9 +70,9 @@ y-coordinates, the detector type (`single', `multi', `proximity',
 
 \references{ 
 
-Efford, M. G. (2007) \emph{Density 4.1: software for spatially explicit
-capture--recapture}. Department of Zoology, University of Otago,
-Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

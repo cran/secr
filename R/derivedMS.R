@@ -4,6 +4,7 @@
 ## 2010-10-22 allow object to be secrlist
 ## 2011-03-27 adjustments for zero capthist
 ## 2012-11-03 CLdensity and CLgradient moved from functions.R
+## 2013-06-24 fixed bug in esa dummy grp (0 should be 1) that caused intermittent fault in derived
 ############################################################################################
 
 
@@ -126,8 +127,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
 ## groups within sessions
 ## groups to be found in covariates(object$capthist) cf
 
-
-    if (inherits(object, 'secrlist')) {
+if (inherits(object, 'secrlist')) {
         lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
                loginterval, distribution)
     }
@@ -152,8 +152,8 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                 clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
                 clusterEvalQ(clust, library(secr))
                 output <- parLapply(clust, jj, derived, object = object, groups = groups,
-                                    alpha = alpha, se.esa = se.esa, se.D = se.D,
-                                    loginterval = loginterval, distribution = distribution, ncores = 1)
+                    alpha = alpha, se.esa = se.esa, se.D = se.D, loginterval = loginterval,
+                    distribution = distribution, ncores = 1)
                 stopCluster(clust)
             }
             else {
@@ -271,7 +271,6 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                 else
                     individuals <-  split (numeric(0), grp) ## list of empty grp levels
             }
-
             n <- length(individuals)
             if ( n > 1)
                 out <- lapply (individuals, getderived)

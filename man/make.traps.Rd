@@ -115,9 +115,9 @@ and possibly other attributes.
 
 \references{ 
 
-Efford, M.G. (2007) \emph{Density 4.1: software for spatially explicit
-capture--recapture}. Department of Zoology, University of Otago,
-Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

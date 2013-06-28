@@ -301,7 +301,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             stop ("'pID' must be constant in this implementation")
     }
     if (alltelem) {
-        rnum <- match(c('D','g0'), pnames)
+        if (detectfn %in% 0:8)  ## 2013-06-15
+            rnum <- match(c('D','g0'), pnames)
+        else
+            rnum <- match(c('D','lambda0'), pnames)
         pnames <- pnames[-rnum[!is.na(rnum)]]
     }
     fnames <- names(fixed)
@@ -670,13 +673,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     ## calls for specific maximisation methods
     lcmethod <- tolower(method)
-##  if ((lcmethod %in% c('optimise')) & (NP == 1)) {
-## 2013-04-21
+    ## 2013-04-21
     if (NP == 1) {
         lcmethod <- "optimise"
         signs <- c(-1,1) * sign(start)
-        print(start)
-        print( start*(1 + details$intwidth2 * signs))
         args <- list (f         = loglikefn,
             interval  = start * (1 + details$intwidth2 * signs))
         args <- c(args, secrargs)

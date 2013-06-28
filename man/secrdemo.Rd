@@ -38,7 +38,7 @@ at (365,365).
 
 Dataframe \code{trapXY} contains the data from the Density input file
 `trap.txt', and \code{captXY} contains the data from `capt.txt' (Efford
-2007).
+2012).
 
 The fitted models use a halfnormal detection function and the likelihood
 for multi-catch traps (expect estimates of g0 to be biased because of
@@ -58,9 +58,11 @@ trap saturation Efford et al.  2009). The first is a null model
  
 }
 
-\source{ Efford, M.G. (2007) Density 4.1: software for spatially
-explicit capture-recapture. Department of Zoology, University of Otago,
-Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
+\references{
+
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:
