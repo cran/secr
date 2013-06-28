@@ -386,7 +386,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             as.integer(dettype),
             as.integer(param),
             as.double(Xrealparval0),
-            as.integer(rep(0,n)),    # dummy groups 2012-11-13
+#            as.integer(rep(0,n)),    # dummy groups 2012-11-13
+            as.integer(rep(1,n)),        # dummy groups 2012-11-13; 2013-06-24
             as.integer(n),
             as.integer(s),
             as.integer(k),

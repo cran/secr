@@ -1,3 +1,18 @@
+Changes in version 2.6.1 (2013-06-28)
+
+New features or changed behaviour of old functions
+
+    o   read.telemetry() new function for importing coordinates from
+    radiotelemetry
+    o   shift method for mask objects
+
+Bugs fixed
+    o   autoini(), esa(), derived() and region.N() could cause R to
+    crash unpredictably (only 2.6.0)
+
+Other
+    o   sim.capthist() rewritten with explicit entry points to C code
+
 Changes in version 2.6.0 (2013-06-11)
 
 New features or changed behaviour of old functions

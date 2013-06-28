@@ -57,6 +57,7 @@
 ## 2013-03-14 predict.secr acquires argument 'type'
 ## 2013-06-08 print.secr includes Mixture (hcov) :
 ## 2013-06-10 plot.capthist has safe on.exit return to old palette
+## 2013-06-15 shift.mask
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -995,9 +996,14 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
 
 shift.traps <- function (object, shiftxy, ...)
 {
-##    if (ms(object)) lapply(object, shift.traps, shiftxy, ...)
-##    else
+  object$x <- object$x + shiftxy[1]
+  object$y <- object$y + shiftxy[2]
+  object
+}
+###############################################################################
 
+shift.mask <- function (object, shiftxy, ...)
+{
   object$x <- object$x + shiftxy[1]
   object$y <- object$y + shiftxy[2]
   object

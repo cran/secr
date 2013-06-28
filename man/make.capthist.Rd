@@ -37,7 +37,7 @@ the input data frame \code{captures} represents a detection on one
 occasion. The capture data frame may be formed from a text file with
 \code{read.table}.
 
-Input formats are based on the Density software (Efford 2009; see also
+Input formats are based on the Density software (Efford 2012; see also
 \url{../doc/secr-datainput.pdf}). If \code{fmt = "XY"} the required
 fields are (session, ID, occasion, x, y) in that order. If \code{fmt =
 "trapID"} the required fields are (session, ID, occasion, trap), where
@@ -117,9 +117,9 @@ object of class c("list","capthist") comprising a list of single-session
 
 \references{
 
-Efford, M. G. (2009) \emph{Density 4.4: software for spatially explicit
-capture--recapture}. Department of Zoology, University of Otago,
-Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 }
 

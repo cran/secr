@@ -30,7 +30,8 @@ addTelemetry (detectionCH, telemetryCH)
   It is assumed that a number of animals have been radiotagged in the
 vicinity of the detector array, and their telemetry data
 (xy-coordinates) have been input to \code{telemetryCH}, perhaps using
-\code{read.capthist} with \code{detector = "telemetry"} and \code{fmt = "XY"}.
+\code{\link{read.capthist}} with \code{detector = "telemetry"} and \code{fmt =
+  "XY"}, or with \code{\link{read.telemetry}}.
 
 A new capthist object is built comprising all the detection
 histories in \code{detectionCH}, plus empty (all-zero) histories for
@@ -63,7 +64,7 @@ not yet fully documented.
 
 \seealso{
   
-  \code{\link{capthist}}, \code{\link{make.telemetry}}
+  \code{\link{capthist}}, \code{\link{make.telemetry}}, \code{\link{read.telemetry}}
   
 }
 

@@ -8,6 +8,7 @@ export (expected.n)
 export (ip.secr)
 export (pfn)
 export (read.traps)
+export (read.telemetry)
 export (make.grid)
 export (make.circle)
 export (make.tri)
@@ -231,6 +232,7 @@ S3method(plot, mask)
 S3method(summary, mask)
 S3method(print, summary.mask)
 S3method(spacing, mask)
+S3method(shift, mask)
 
 S3method(print, secr)
 S3method(plot, secr)
@@ -263,6 +265,14 @@ useDynLib (
     secrloglik,
     trappingsingle,
     trappingmulti,
+    trappingproximity,
+    trappingcount,
+    trappingpolygon,
+    trappingpolygonX,
+    trappingtransect,
+    trappingtransectX,
+    trappingtelemetry,
+    trappingsignal,
     trappingtimes,
     simsecr,
     naived,

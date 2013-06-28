@@ -458,6 +458,26 @@ void trappingtimes (
 );
 /*---------------------------------------------------------------------*/
 
+void trappingproximity (
+    double *g0,        /* Parameter : detection intercept  */
+    double *sigma,     /* Parameter : detection scale */
+    double *z,         /* Parameter : detection shape (hazard) */
+    int    *ss,        /* number of occasions */
+    int    *kk,        /* number of traps */
+    int    *N,         /* number of animals */
+    double *animals,   /* x,y points of animal range centres (first x, then y)  */
+    double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
+    int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,        /* truncation radius */
+    int    *binomN,    /* 0 poisson, 1 Bernoulli, or number of trials for 'count'
+                          detector modelled with binomial */
+    int    *n,         /* number of individuals caught */
+    int    *caught,    /* caught in session */
+    int    *value,     /* return value matrix of trap locations n x s */
+    int    *resultcode
+    );
+
 void trappingcount (
     double *g0,         /* Parameter : detection intercept */
     double *sigma,      /* Parameter : detection scale */

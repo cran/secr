@@ -162,13 +162,11 @@ lines(RB)
 ## compare to esa plot
 esa.plot (temptraps, max.buffer = 150, spacing = 4, detectfn = 0,
   detectpar = detpar, noccasions = 5, as.density = F)
-
 }
 
-## compare detection histories and fitted model as input 
+## compare detection histories and fitted model as input
 suggest.buffer(captdata)
 suggest.buffer(secrdemo.0)
-
 }
 
 \keyword{ models }

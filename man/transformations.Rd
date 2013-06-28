@@ -9,6 +9,7 @@
 \alias{shift}
 \alias{shift.traps}
 \alias{shift.popn}
+\alias{shift.mask}
 
 \title{ Transform Point Array }
 
@@ -34,6 +35,8 @@ shift (object, shiftxy, ...)
 \method{flip}{popn} (object, lr = F, tb = F, ...)
 \method{rotate}{popn}(object, degrees, centrexy = NULL, \dots)
 \method{shift}{popn}(object, shiftxy, \dots)
+
+\method{shift}{mask}(object, shiftxy, \dots)
 
 }
 

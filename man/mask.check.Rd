@@ -153,9 +153,9 @@ Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
-Efford, M. G. (2009) \emph{DENSITY 4.4: software for spatially explicit
-capture--recapture}. Department of Zoology, University of Otago, Dunedin,
-New Zealand \url{http://www.otago.ac.nz/density}.
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 }
 

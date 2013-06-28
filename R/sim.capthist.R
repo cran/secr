@@ -11,6 +11,7 @@
 ## 2011 09 30 presence, unmarked treated as special case of proximity
 ## 2013 04 04 extend to k-specific g0
 ## 2013 05 10 extend to general learned response (recapfactor)
+## 2013 06 28 explicit entry points to C code (not simfunctionname)
 ###############################################################################
 
 expand <- function (x, n, q = 0, default = 1) {
@@ -353,27 +354,46 @@ sim.capthist <- function (
             animals <- unlist(popn)
         }
         k <- nrow(traps)
+        simfunctionname <- paste('trapping', detector(traps), sep='')
         ################################
 
         if (detector(traps) %in% c('single','multi')) {
-            simfunctionname <- paste('trapping', detector(traps), sep='')
-            temp <- .C(simfunctionname, PACKAGE = 'secr',
-                as.double(df0),
-                as.double(sigma),
-                as.double(z),
-                as.integer(noccasions),
-                as.integer(k),
-                as.integer(N),
-                as.double(animals),
-                as.double(unlist(traps)),
-                as.double(usge),
-                as.integer(detectfn),
-                as.double(truncate^2),
-                n = integer(1),
-                caught = integer(N),
-                value=integer(N*noccasions),
-                resultcode = integer(1)
-            )
+            if (detector(traps) == 'single')
+                temp <- .C('trappingsingle', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.double(usge),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           n = integer(1),
+                           caught = integer(N),
+                           value=integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
+            else
+                temp <- .C('trappingmulti', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.double(usge),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           n = integer(1),
+                           caught = integer(N),
+                           value=integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
             if (temp$resultcode != 0)
                 stop ("call to '", simfunctionname, "' failed")
             w <- matrix(ncol = temp$n, nrow = noccasions, dimnames =
@@ -384,34 +404,52 @@ sim.capthist <- function (
 
         else
         if (detector(traps) %in% c('polygonX','transectX')) {
-            simfunctionname <- paste('trapping', detector(traps), sep='')
-            if (simfunctionname == 'trappingpolygonX') {
+            if (detector(traps) == 'polygonX') {
                 nk <- length(levels(polyID(traps)))
                 k <- table(polyID(traps))
+                temp <- .C('trappingpolygonX', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(nk),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.double(usge),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions),
+                           value = integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
             }
             else {
                 nk <- length(levels(transectID(traps)))
                 k <- table(transectID(traps))
+                temp <- .C('trappingtransectX', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(nk),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.double(usge),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions),
+                           value = integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
             }
-            temp <- .C(simfunctionname, PACKAGE = 'secr',
-                as.double(df0),
-                as.double(sigma),
-                as.double(z),
-                as.integer(noccasions),
-                as.integer(nk),
-                as.integer(k),
-                as.integer(N),
-                as.double(animals),
-                as.double(unlist(traps)),
-                as.double(usge),
-                as.integer(detectfn),
-                as.double(truncate^2),
-                n = integer(1),
-                caught = integer(N),
-                detectedXY = double (N*noccasions),
-                value = integer(N*noccasions),
-                resultcode = integer(1)
-            )
             if (temp$resultcode != 0)
                 stop ("call to '", simfunctionname, "' failed")
 
@@ -457,7 +495,7 @@ sim.capthist <- function (
                 resultcode = integer(1)
             )
             if (temp$resultcode != 0)
-                stop ("call to 'trappingcount' failed")
+                stop ("call to 'trappingproximity' failed")
             w <- array(dim=c(noccasions, k, temp$n), dimnames =
                 list(1:noccasions,NULL, NULL))
             if (temp$n>0) {
@@ -565,40 +603,10 @@ sim.capthist <- function (
             }
         }
         else if (detector(traps) %in% c('polygon','transect','telemetry')) {
-            simfunctionname <- paste('trapping', detector(traps), sep='')
-            if (simfunctionname == 'trappingpolygon') {
+            if (detector(traps) == 'polygon') {
                 nk <- length(levels(polyID(traps)))
                 k <- table(polyID(traps))
-            }
-            if (simfunctionname == 'trappingtransect') {
-                nk <- length(levels(transectID(traps)))
-                k <- table(transectID(traps))
-            }
-
-            if (simfunctionname == 'trappingtelemetry') {
-                nk <- 1
-                polynames <- '1'
-
-                temp <- .C(simfunctionname, PACKAGE = 'secr',
-                           as.double(df0),
-                           as.double(sigma),
-                           as.double(z),
-                           as.integer(noccasions),
-                           as.integer(N),
-                           as.double(animals),
-                           as.integer(detectfn),
-                           as.double(truncate^2),
-                           as.integer(detectpar$binomN),
-                           as.integer(maxperpoly),
-                           n = integer(1),
-                           caught = integer(N),
-                           detectedXY = double (N*noccasions*50*maxperpoly*2),
-                           value = integer(N*noccasions),
-                           resultcode = integer(1)
-                           )
-            }
-            else {
-                temp <- .C(simfunctionname, PACKAGE = 'secr',
+                temp <- .C('trappingpolygon', PACKAGE = 'secr',
                            as.double(df0),
                            as.double(sigma),
                            as.double(z),
@@ -620,6 +628,53 @@ sim.capthist <- function (
                            resultcode = integer(1)
                            )
                 polynames <- levels(polyID(traps))
+            }
+            if (detector(traps) == 'transect') {
+                nk <- length(levels(transectID(traps)))
+                k <- table(transectID(traps))
+                temp <- .C('trappingtransect', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(nk),
+                           as.integer(k),
+                           as.integer(N),
+                           as.double(animals),
+                           as.double(unlist(traps)),
+                           as.double(usge),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           as.integer(detectpar$binomN),
+                           as.integer(maxperpoly),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions*nk*maxperpoly*2),
+                           value = integer(N*noccasions*nk),
+                           resultcode = integer(1)
+                           )
+                polynames <- levels(polyID(traps))
+            }
+            if (detector(traps) == 'telemetry') {
+                nk <- 1
+                polynames <- '1'
+                temp <- .C('trappingtelemetry', PACKAGE = 'secr',
+                           as.double(df0),
+                           as.double(sigma),
+                           as.double(z),
+                           as.integer(noccasions),
+                           as.integer(N),
+                           as.double(animals),
+                           as.integer(detectfn),
+                           as.double(truncate^2),
+                           as.integer(detectpar$binomN),
+                           as.integer(maxperpoly),
+                           n = integer(1),
+                           caught = integer(N),
+                           detectedXY = double (N*noccasions*50*maxperpoly*2),
+                           value = integer(N*noccasions),
+                           resultcode = integer(1)
+                           )
             }
             if (temp$resultcode != 0) {
                 if (temp$resultcode == 2)

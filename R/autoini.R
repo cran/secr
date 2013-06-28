@@ -107,7 +107,8 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           as.integer(dettype),
           as.integer(param),
           as.double(g0sigma0),
-          as.integer(rep(0,nc)),        # group number 2012-11-13; 2013-04-16
+#          as.integer(rep(0,nc)),        # group number 2012-11-13; 2013-04-16
+          as.integer(rep(1,nc)),        # group number 2012-11-13; 2013-04-16 2013-06-24
           as.integer(nc),
           as.integer(s),
           as.integer(k),

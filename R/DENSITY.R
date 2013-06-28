@@ -88,8 +88,8 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
-    replacedefaults <- function (default, user) replace(default, names(user),
-        user)
+##    replacedefaults <- function (default, user) replace(default, names(user),
+##        user)
     filetype <- function(x) {
         nx <- nchar(x)
         tolower(substring(x, nx-3, nx))
@@ -98,16 +98,10 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID
         trapfile <- 0  ## dummy value; not used
 
     countargs <- dots[names(dots) %in% names(formals(count.fields))]
-    if (filetype(captfile)=='.csv')
+    if (filetype(captfile) == '.csv')
         countargs$sep <- ','
     countargs$file <- captfile
     nfield <- max(do.call(count.fields, countargs))
-
-# overridden 2013-01-11
-#    if ((filetype(captfile)=='.csv') & is.null(list(...)$sep))
-#        nfield <- max(count.fields(captfile, sep=',', ...))
-#    else
-#        nfield <- max(count.fields(captfile, ...))
 
     if (fmt == 'trapID') {
         nvar <- 4

@@ -44,7 +44,6 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{noncapt}{ character value; animal ID used for `no captures' }
   \item{\dots}{ other arguments passed to \code{read.table},
     \code{write.table} and \code{count.fields} }
-
   \item{object}{ \code{capthist} object with the captures and trap locations to export }
   \item{filestem}{ character value used to form names of output files }
   \item{sess}{ character session identifier }
@@ -124,17 +123,18 @@ and detector covariates.
 
 \references{
 
-Efford, M. G. (2009) \emph{DENSITY 4.4: software for spatially explicit
-capture--recapture}. Department of Zoology, University of Otago, Dunedin,
-New Zealand \url{http://www.otago.ac.nz/density}.
+Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
+capture--recapture}. Department of Mathematics and Statistics,
+University of Otago, Dunedin, New Zealand
+\url{http://www.otago.ac.nz/density}.
 
 }
 
 \note{
 
-  The DENSITY formats accommodate `single', `multi' and `proximity'
+  The original DENSITY formats accommodate `single', `multi' and `proximity'
   data. Data for the newer detector types (`count', `signal', `polygon',
-  `polygonX', `transect' and `transectX') may be input using the
+  `polygonX', `transect', `transectX' and `telemetry') may be input using the
   DENSITY formats with minor variations. They may also be output with
   \code{write.capthist}, but a warning is given that DENSITY does not
   understand these data types. See \code{\link{detector}} and
@@ -158,7 +158,7 @@ New Zealand \url{http://www.otago.ac.nz/density}.
 
 \seealso{
 
-  \code{\link{read.traps}}, \code{\link{make.capthist}},
+  \code{\link{read.telemetry}}, \code{\link{read.traps}}, \code{\link{make.capthist}},
   \code{\link{write.captures}}, \code{\link{write.traps}}, \code{\link{read.table}}
 
 }

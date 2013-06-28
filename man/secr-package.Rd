@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.6.0\cr
-Date: \tab 2013-06-11\cr
+Version: \tab 2.6.1\cr
+Date: \tab 2013-06-28\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
