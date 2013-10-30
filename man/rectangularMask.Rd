@@ -44,7 +44,7 @@ The results are unpredictable if the mask has been rotated.
 
 rMask <- rectangularMask(possummask)
 plot(rMask)
-plot(possummask, add = TRUE, col = 'blue')
+plot(possummask, add = TRUE, col = "blue")
 
 }
 \keyword{ manip }

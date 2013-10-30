@@ -9,9 +9,12 @@ A mask object is a set of points with optional attributes.
 }
 
 \usage{
-make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64, 
-    type = "traprect", poly = NULL, poly.habitat = TRUE,
+
+make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64, type =
+    c("traprect", "trapbuffer", "pdot", "polygon", "clusterrect",
+    "clusterbuffer", "rectangular"), poly = NULL, poly.habitat = TRUE,
     keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, ...)
+
 }
 
 \arguments{
@@ -20,8 +23,7 @@ make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
   \item{spacing}{ spacing between grid points (metres) }
   \item{nx}{ number of grid points in `x' direction }
   \item{ny}{ number of grid points in `y' direction (type = `rectangular') }
-  \item{type}{ character string for method to use (`traprect',
-  `trapbuffer', `pdot', `polygon', `clusterrect', `clusterbuffer', `rectangular') }
+  \item{type}{ character string for method }
   \item{poly}{ bounding polygon to which mask should be clipped (see Details) }
   \item{poly.habitat}{ logical for whether poly represents habitat or
   its inverse (non-habitat)}

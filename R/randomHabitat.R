@@ -2,7 +2,8 @@
 ## Modified Random Cluster method of Saura and Martinez-Millan 2000
 ## Landscape Ecology 15: 661-678
 
-## Murray Efford 2012-04-09,10,11,12
+## Murray Efford 2012-04-09,10,11,12;
+## 2013-07-09 replaced call to obsolete raster function 'adjacency'
 
 ## Requires 'raster' and 'igraph0' packages:
 
@@ -42,8 +43,10 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         n <- nx * ny
 
         ## create rasterLayer
-        require(raster)
-        layer <- raster(nrows = ny, ncols = nx, xmn = minx, xmx = maxx, ymn = miny, ymx = maxy)
+        if (!require(raster))
+            stop ("unable to load raster package")
+        layer <- raster(nrows = ny, ncols = nx, xmn = minx, xmx = maxx,
+                                ymn = miny, ymx = maxy)
 
         ## A. Percolation map generation
         values(layer) <- rep(0, n)
@@ -64,7 +67,11 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         ## D. Filling in image
         cellsUnassigned <- (1:n)[is.na(values(clumped))]
         cellsAssigned <- (1:n)[!is.na(values(clumped))]
-        tempadj <- adjacency (clumped, cellsUnassigned, cellsAssigned, directions = 8)
+
+# 2013-07-09 replace obsolete function from raster
+#        tempadj <- adjacency (clumped, cellsUnassigned, cellsAssigned, directions = 8)
+        tempadj <- adjacent (clumped, cells = cellsUnassigned, target = cellsAssigned,
+                             directions = 8)
         tempadj <- split(tempadj[,2], tempadj[,1])
         fillinType <- function (adjcells) {
             type <- values(clumped)[adjcells]

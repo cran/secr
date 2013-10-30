@@ -144,7 +144,7 @@ model.average(possum.model.0, possum.model.b, possum.model.h2)
 ## i.e. restrict to "not previously tagged"
 NPT <- !covariates(possumCH)$prev.tagged
 possum.model.0.NPT <- secr.fit(subset(possumCH,NPT), mask =
-    possummask, trace=F)
+    possummask, trace = FALSE)
 predict(possum.model.0)[1,2]/ predict(possum.model.0.NPT)[1,2]
 ## ...about 9\%
 }

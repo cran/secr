@@ -23,20 +23,21 @@ Empirical Variance of H-T Density Estimate
 
 \usage{
 
-derived.nj ( nj, esa, se.esa,  method = "SRS", xy = NULL,
-    alpha = 0.05, loginterval = TRUE, area = NULL ) 
+derived.nj ( nj, esa, se.esa, method = c("SRS", "local", "poisson",
+    "binomial"), xy = NULL, alpha = 0.05, loginterval = TRUE, area =
+    NULL )
 
-derived.mash ( object, sessnum = NULL,  method = "SRS",
+derived.mash ( object, sessnum = NULL,  method = c("SRS", "local"),
     alpha = 0.05, loginterval = TRUE)
 
-derived.cluster ( object, sessnum = NULL,  method = "SRS",
+derived.cluster ( object, sessnum = NULL,  method = c("SRS", "local"),
     alpha = 0.05, loginterval = TRUE)
 
-derived.session ( object,  method = "SRS", xy = NULL,
+derived.session ( object,  method = c("SRS", "local"), xy = NULL,
     alpha = 0.05, loginterval = TRUE )
 
 derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
-    mask = NULL, noccasions = NULL,  method = "SRS", xy = NULL,
+    mask = NULL, noccasions = NULL,  method = c("SRS", "local"), xy = NULL,
     alpha = 0.05, loginterval = TRUE)
 
 }
@@ -104,10 +105,12 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   (\code{method = "SRS"}) or using the neighbourhood variance estimator
   recommended by Stevens and Olsen (2003) for generalized random
   tessellation stratified (GRTS) samples and implemented in package
-  \pkg{spsurvey} (\code{method = "local"}). For
-  `local' variance estimates, the centre of each replicate must be
-  provided in \code{xy}, except where centres may be inferred from the
-  data.
+  \pkg{spsurvey} (\code{method = "local"}). For `local' variance
+  estimates, the centre of each replicate must be provided in \code{xy},
+  except where centres may be inferred from the data. The options
+  \code{method = "poisson"} and \code{method = "binomial"} use
+  theoretical (model-based) variance rather than the empirical spatial
+  variance.
    
   }
 
@@ -201,9 +204,9 @@ derived.nj(nj, temp["esa",1:2])
 
 ## If nj vector has length 1, a theoretical variance is used...
 msk <- ovensong.model.1$mask
-A <- nrow(msk) * attr(msk, 'area')
-derived.nj (sum(nj), temp["esa",1:2], method = 'poisson')
-derived.nj (sum(nj), temp["esa",1:2], method = 'binomial', area = A)
+A <- nrow(msk) * attr(msk, "area")
+derived.nj (sum(nj), temp["esa",1:2], method = "poisson")
+derived.nj (sum(nj), temp["esa",1:2], method = "binomial", area = A)
 
 \dontrun{
 
@@ -263,6 +266,7 @@ derived.external (fit2, nj = nj, cluster = t1, buffer = 100,
     noccasions = 1)
 
 ## Review plots
+library(MASS)
 base.plot <- function() {
     eqscplot( testregion, axes = FALSE, xlab = "",
         ylab = "", type = "n")

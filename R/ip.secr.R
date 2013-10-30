@@ -50,7 +50,6 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
     ## added 2012-11-02
     if (ncores > 1) {
-        require(parallel)
         clust <- makeCluster(ncores, methods = TRUE, useXDR = FALSE)
         clusterEvalQ(clust, library(secr))
         clusterExport(clust, c("capthist", "predictorfn", "predictortype",
@@ -436,7 +435,9 @@ Mh <- function (fi) {
 }
 ##################################################
 
-pfn <- function (capthist, N.estimator) {
+pfn <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
+    N.estimator <- tolower(N.estimator)
+    N.estimator <- match.arg(N.estimator)
     ## capthist single-session only; ignoring deads
     n <- nrow(capthist)         ## number of individuals
     cts <- abind(counts(capthist, c('n','f','u')), along=1)
@@ -444,7 +445,6 @@ pfn <- function (capthist, N.estimator) {
     ui <- cts['u', - ncol(cts)] ## drop total at end
     fi <- cts['f', - ncol(cts)] ## drop total at end
     nocc <- ncol(capthist)      ## number of occasions
-    N.estimator <- tolower(N.estimator)
     estimates <- switch (N.estimator,
         n = c(n, sum(ni)/n/nocc),
         null = M0(c(sum(ni), n, nocc)),

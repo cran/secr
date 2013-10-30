@@ -112,18 +112,6 @@ pdot.contour(possumtraps, detectfn = 0, nx = 128, detectpar =
     detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
     noccasions = 5, add = TRUE)
 
-## clipping to polygon
-olddir <- setwd(system.file("extdata", package = "secr"))
-possumarea <- read.table("possumarea.txt", header = TRUE)
-oldpar <- par(xpd = TRUE, mar = c(1,6,6,6))
-plot(possumtraps, border = 400, gridlines = FALSE)
-pdot.contour(possumtraps, detectfn = 0, nx = 256, detectpar =
-    detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
-    noccasions = 5, add = TRUE, poly = possumarea, col = "blue")
-lines(possumarea)
-setwd(olddir)
-par(oldpar)
-
 ## convex and concave buffers
 plot(possumtraps, border = 270)
 buffer.contour(possumtraps, buffer = 100, add = TRUE, col = "blue")
@@ -141,6 +129,22 @@ sapply(buff.convex, polyarea)
 buff.concave2 <- buffer.contour(possumtraps, buffer = 100,
     nx = 128, plt = FALSE)
 sum (sapply(buff.concave2, polyarea))
+
+\dontrun{
+
+## clipping to polygon
+olddir <- setwd(system.file("extdata", package = "secr"))
+possumarea <- read.table("possumarea.txt", header = TRUE)
+oldpar <- par(xpd = TRUE, mar = c(1,6,6,6))
+plot(possumtraps, border = 400, gridlines = FALSE)
+pdot.contour(possumtraps, detectfn = 0, nx = 256, detectpar =
+    detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
+    noccasions = 5, add = TRUE, poly = possumarea, col = "blue")
+lines(possumarea)
+setwd(olddir)
+par(oldpar)
+
+}
 
 }
 

@@ -40,7 +40,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
   \item{sessioncov}{ optional dataframe of values of session-specific covariate(s). }
   \item{hcov}{ character name of individual covariate for known
-  membership of mixture classes (ignored if not h2 or h3 model). }
+  membership of mixture classes. }
   \item{groups}{ optional vector of one or more variables with which to form groups. Each element should be the name of a factor variable in the \code{covariates} attribute of \code{capthist}. }
   \item{dframe}{ optional data frame of design data for detection parameters }
   \item{details}{ list of additional settings, mostly model-specific (see Details) }
@@ -74,6 +74,9 @@ and \url{../doc/secr-overview.pdf} for more on defining models.
 of integration (see \link{mask}). If \code{mask} is not specified then a
 mask of type "trapbuffer" will be constructed automatically using the
 specified buffer width in metres.
+
+\code{hcov} is used to define a hybrid mixture model, used especially to
+model sex differences (see \code{\link{hcov}}).
 
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
@@ -128,7 +131,7 @@ likelihood); otherwise \code{\link[stats]{optim}} is used with the
 chosen method ("BFGS", "Nelder-Mead", etc.).  If maximization fails a
 warning is given appropriate to the method.
 
-From secr 2.5.1, method = 'none' may be used to skip likelihood
+From secr 2.5.1, \code{method = "none"} may be used to skip likelihood
 maximization and compute only the hessian for the current dataset at the
 values in start, and the corresponding variance-covariance matrix of
 beta parameters. The computation uses fdHess from \pkg{nlme}.
@@ -246,8 +249,12 @@ hectare. 1 ha = 10000 m^2 = 0.01 km^2. To convert density to animals /
 km^2, multiply by 100.
 
 \code{print}, \code{AIC}, \code{vcov}, and \code{predict} methods
-are provided. \code{derived} is used to compute the derived parameters
-`esa' (effective sampling area) and `D' (density) for models fitted by
+are provided. Take care with using AIC: not all models are comparable
+(see Notes section of \code{\link{AIC.secr}}) and large differences in
+AIC may relate to trivial differences in estimated density.
+
+\code{derived} is used to compute the derived parameters `esa'
+(effective sampling area) and `D' (density) for models fitted by
 maximizing the conditional likelihood (CL = TRUE).
 
 Components `version' and `starttime' were introduced in version 1.2.7,
@@ -276,6 +283,7 @@ setting \code{verify = FALSE}. This is now done by setting
   \code{\link{capthist}},
   \code{\link{details}},
   \code{\link{derived}},
+  \code{\link{hcov}},
   \code{\link{mask}},
   \code{\link{predict.secr}},
   \code{\link{print.secr}},

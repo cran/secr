@@ -52,7 +52,7 @@ coordinates, and a `traps' object with detector type = `telemetry'
 \examples{
 
 \dontrun{
-gps2008CH <- read.telemetry('gps2008.txt')
+gps2008CH <- read.telemetry("gps2008.txt")
 plot( gps2008CH, gridsp = 10000)
 head(gps2008CH)
 secr.fit(gps2008CH, start = c(log(4000)))

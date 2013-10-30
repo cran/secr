@@ -102,9 +102,6 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 spacing <- spacing(mask)
             }
             if (inherits(region, 'SpatialPolygonsDataFrame')) {
-                if (!require (sp))
-                    stop ("package 'sp' required for SpatialPolygonsDataFrame ",
-                          "in region.N")
                 bbox <- bbox(region)
             }
             else {
@@ -164,8 +161,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 #               dENdphi <- gradient (object$fit$par[indx],
 #                    betaEN, object = object, region = region, session =
 #                    session, group = group)
-                require (nlme)
-                dENdphi <- fdHess (object$fit$par[indx],
+                dENdphi <- nlme::fdHess (object$fit$par[indx],
                     betaEN, object = object, region = regionmask, group = group,
                     session = session)$gradient
                 beta.vcv <- object$beta.vcv[indx,indx]
@@ -189,8 +185,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                     cellarea, constant = FALSE, oneminus = TRUE)[1]
                 RN <- n + notdetected
                 ## evaluate gradient of RN wrt betas at MLE
-                require (nlme)
-                dNdbeta <- fdHess (object$fit$par, betaRN, object = object,
+                dNdbeta <- nlme::fdHess (object$fit$par, betaRN, object = object,
                     region = regionmask)$gradient
                 ## compute variance from gradient & vcv
                 pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta

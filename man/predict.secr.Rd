@@ -2,6 +2,7 @@
 \alias{predict.secr}
 \alias{predict.secrlist}
 \alias{detectpar}
+\alias{detectpar.secr}
 
 \title{ SECR Model Predictions }
 
@@ -16,7 +17,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 \method{predict}{secrlist}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
     alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
 
-detectpar (object, \dots) 
+\method{detectpar}{secr}(object, \dots) 
 
 }
 
@@ -25,7 +26,7 @@ detectpar (object, \dots)
   of \code{secr} objects (secrlist) }
   \item{newdata}{ optional dataframe of values at which to evaluate
     model }
-  \item{type}{ character; type of prediction required. The default ("response") provides estimates of the 'real' parameters.} 
+  \item{type}{ character; type of prediction required. The default ("response") provides estimates of the `real' parameters.} 
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
   \item{savenew}{ logical for whether newdata should be saved }
@@ -64,6 +65,11 @@ this may be overcome by passing a one-line \code{newdata} to
 \code{predict} via the \dots argument. Groups and mixtures are a
 headache for \code{detectpar}: it merely returns the estimated detection
 parameters of the first group or mixture.
+
+If the `a0' parameterization has been used in \code{secr.fit} (i.e.,
+\code{object$details$param == 3}) then \code{detectpar} automatically
+backtransforms (a0, sigma) to (g0, sigma) or (lambda0, sigma) depending
+on the value of \code{object$detectfn}.
 
 }
 

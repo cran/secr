@@ -98,7 +98,7 @@ minprob), whereas Density has no explicit limit.
   
   Some computations can be run in parallel on multiple processors (most
   desktops these days have multiple cores), but capability is
-  limited. Check the 'ncores' argument of sim.secr() and secr.fit() and
+  limited. Check the `ncores' argument of sim.secr() and secr.fit() and
   ?ncores. The speed gain is significant for parametric bootstrap
   computations in sim.secr. Parallelisation is also allowed for the
   session likelihood components of a multi-session model in secr.fit(),

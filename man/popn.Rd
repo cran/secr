@@ -8,7 +8,12 @@ Encapsulate the locations of a set of individual animals.
 }
 
 \details{
-An object of class \code{popn} records the locations of a set of individuals, together with ancillary data such as their sex.  Often used for a realisation of a spatial point process (e.g. homogeneous Poisson) with known density (intensity).  Locations are stored in a data frame with columns `x' and `y'.
+  
+An object of class \code{popn} records the locations of a set of
+individuals, together with ancillary data such as their sex.  Often used
+for a realisation of a spatial point process (e.g. homogeneous Poisson)
+with known density (intensity).  Locations are stored in a data frame
+with columns `x' and `y'.
 
 A \code{popn} object has attributes
 \tabular{ll}{

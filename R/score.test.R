@@ -132,7 +132,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
         # apply to each component of 'model' list
 
         if (ncores > 1) {
-            require(parallel)
             clust <- makeCluster(ncores)
             clusterEvalQ(clust, library(secr))
             clusterExport(clust, c("trace","prepare","mapbeta"), environment())
@@ -215,8 +214,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
         # cat('logmult', newsecr$logmult, '\n')
 
         ## fdHess is from package nlme
-        require(nlme)
-        grad.Hess <- fdHess(beta1, fun = loglikfn, design = newsecr,
+        grad.Hess <- nlme::fdHess(beta1, fun = loglikfn, design = newsecr,
                             .relStep = 0.001, minAbsPar=0.1)
         u.star <- grad.Hess$gradient
         i.star <- -grad.Hess$Hessian

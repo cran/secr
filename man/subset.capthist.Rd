@@ -113,7 +113,7 @@ split(captdata, f = rep(1:2, 50), bytrap = TRUE)
 ## list, and the class of the output must be restored manually.
 
 ovenCH.males <- mapply(subset, ovenCH,
-    subset = lapply(ovenCH, function(x) covariates(x)$Sex == 'M'),
+    subset = lapply(ovenCH, function(x) covariates(x)$Sex == "M"),
     MoreArgs = list(occasions = 1:5))
 class(ovenCH.males) <- class(ovenCH)
 summary(ovenCH.males)

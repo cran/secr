@@ -13,17 +13,6 @@
 
 secr.make.newdata <- function (object) {
 
-    capthist <- object$capthist
-    mask <- object$mask
-    vars <- object$vars
-    groups <- object$groups
-    timecov <- object$timecov
-    sessioncov <- object$sessioncov
-    nmix <- object$details$nmix
-    hcov <- object$hcov
-
-    if(is.null(nmix)) nmix <- 1
-
     findvars.MS <- function (cov, vars, dimcov, use.all) {
         ## function to add covariates to a design data frame 'dframe'
         ## cov may be a dataframe or list of dataframes, one per session (R > 1),
@@ -69,15 +58,29 @@ secr.make.newdata <- function (object) {
             vars <<- vars[!(vars %in% found)]
         }
     }
+
+    capthist <- object$capthist
+    mask <- object$mask
+    vars <- object$vars
+    groups <- object$groups
+    timecov <- object$timecov
+    sessioncov <- object$sessioncov
+    nmix <- object$details$nmix
+    hcov <- object$hcov
+
+    if(is.null(nmix)) nmix <- 1
+    mixvar <- switch(nmix, character(0),'h2','h3')
+
     nocc <- max(n.occasion (capthist))
     grouplevels <- group.levels(capthist, groups)
     ngrp <- max(1, length(grouplevels))
     sessions <- session(capthist)
     R <- length(sessions)
     dims <- c(R, ngrp, nmix)
+
     basevars <- list(session = sessions)
     if (ngrp>1) basevars$g <- factor(grouplevels)
-    if (nmix>1) basevars[paste('h',nmix,sep='')] <- list(h.levels(capthist, hcov, nmix))
+    if (nmix>1) basevars[mixvar] <- list(h.levels(capthist, hcov, nmix))
     newdata <- expand.grid(basevars)
     nr <- nrow(newdata)  ## one row for each session, group and mixture
     if (ngrp==1)

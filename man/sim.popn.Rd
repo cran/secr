@@ -10,11 +10,10 @@ Simulate a Poisson process representing the locations of individual animals.
 
 \usage{
 
-sim.popn (D, core, buffer = 100, model2D = "poisson",
-    buffertype = "rect", poly = NULL, covariates =
-    list(sex = c(M = 0.5, F = 0.5)), number.from = 1,
-    Ndist = "poisson", nsession = 1, details = NULL,
-    seed = NULL, ...)
+sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
+  "IHP", "coastal", "hills"), buffertype = "rect", poly = NULL, covariates =
+  list(sex = c(M = 0.5, F = 0.5)), number.from = 1, Ndist = c("poisson", "fixed"),
+  nsession = 1, details = NULL, seed = NULL, ...)
 
 tile(popn, method = "reflect")
 
@@ -25,8 +24,7 @@ tile(popn, method = "reflect")
   IHP case) }
   \item{core}{ data frame of points defining the core area }
   \item{buffer}{ buffer radius about core area }
-  \item{model2D}{ character string for 2-D distribution ("poisson",
-  "cluster", "IHP", "coastal") }
+  \item{model2D}{ character string for 2-D distribution }
   \item{buffertype}{ character string for buffer type }
   \item{poly}{ bounding polygon (see Details)}
   \item{covariates}{ list of named covariates }
@@ -223,7 +221,7 @@ title("reflect")
 
 \dontrun{
 ## simulate from inhomogeneous fitted density model
-regionmask <- make.mask(traps(possumCH), type = 'polygon',
+regionmask <- make.mask(traps(possumCH), type = "polygon",
     spacing = 20, poly = possumremovalarea)
 dsurf <- predictDsurface(possum.model.Dh2, regionmask)
 possD <- covariates(dsurf)$D.0

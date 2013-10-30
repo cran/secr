@@ -17,16 +17,16 @@ localvar <- function (z, xy) {
     ## choice of output verified by comparing to
     ## sum ((nj - n/J)^2) * J / (J-1) for ovensong vector
     ## with vartype='SRS'
-    if (!require(spsurvey))
-        stop ("package 'spsurvey' required for local variance")
-    temp1 <- total.est(z = z, wgt = rep(1,length(z)),
+    ## if (!require(spsurvey))
+    ##    stop ("package 'spsurvey' required for local variance")
+    temp1 <- spsurvey::total.est(z = z, wgt = rep(1,length(z)),
         x = xy$x, y = xy$y)
     temp1[1,4]^2
 }
 
-derived.nj <- function ( nj, esa, se.esa, method = 'SRS', xy = NULL,
+derived.nj <- function ( nj, esa, se.esa, method = c('SRS','local','poisson','binomial'), xy = NULL,
     alpha = 0.05, loginterval = TRUE, area = NULL ) {
-
+    method <- match.arg(method)
     esa <- unlist(esa)
     if (length(esa) == 2) {
         se.esa <- esa[2]
@@ -72,8 +72,9 @@ derived.nj <- function ( nj, esa, se.esa, method = 'SRS', xy = NULL,
 }
 ############################################################################
 
-derived.session <- function ( object, method = 'SRS', xy = NULL,
+derived.session <- function ( object, method = c('SRS','local'), xy = NULL,
     alpha = 0.05, loginterval = TRUE ) {
+    method <- match.arg(method)
     if (!inherits (object, 'secr') | !ms(object))
         stop ("requires fitted multi-session model")
     if (('session' %in% object$vars) | ('Session' %in% object$vars) |
@@ -87,9 +88,8 @@ derived.session <- function ( object, method = 'SRS', xy = NULL,
 
 ############################################################################
 
-derived.mash <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.05,
-                          loginterval = TRUE) {
-
+derived.mash <- function (object, sessnum = NULL, method = c('SRS',
+                          'local'), alpha = 0.05, loginterval = TRUE) {
     if (ms(object) & (is.null(sessnum))) {
             ## recursive call if MS
             sessnames <- session(object$capthist)
@@ -102,6 +102,7 @@ derived.mash <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.05,
             output
     }
     else {
+        method <- match.arg(method)
         if (is.null(sessnum)) {
             n.mash <- attr(object$capthist, 'n.mash')
             centres <- attr(object$capthist, 'centres')
@@ -127,7 +128,7 @@ derived.mash <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.05,
     }
 }
 ####################################################################################
-derived.cluster <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.05,
+derived.cluster <- function (object, sessnum = NULL, method = c('SRS','local'), alpha = 0.05,
     loginterval = TRUE) {
 
     if (ms(object)) {
@@ -142,6 +143,7 @@ derived.cluster <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.0
             output
     }
     else {
+        method <- match.arg(method)
         if (is.null(sessnum)) {
             capthist <- object$capthist
             sessnum <- 1
@@ -168,7 +170,7 @@ derived.cluster <- function (object, sessnum = NULL, method = 'SRS', alpha = 0.0
 ####################################################################################
 
 derived.external <- function (object, sessnum = NULL, nj, cluster,
-    buffer = 100, mask = NULL, noccasions = NULL, method = 'SRS', xy = NULL,
+    buffer = 100, mask = NULL, noccasions = NULL, method = c('SRS','local'), xy = NULL,
     alpha = 0.05, loginterval = TRUE) {
 
     se.deriveesa <- function (selection, asess, noccasions) {
@@ -183,12 +185,13 @@ derived.external <- function (object, sessnum = NULL, nj, cluster,
             output <- vector('list', nsess )
             for (i in 1:nsess) {
                 output[[i]] <- derived.external(object, sessnum = i, nj, cluster,
-                    buffer, mask, noccasions, alpha, loginterval)
+                    buffer, mask, noccasions, method, xy, alpha, loginterval)
             }
             names(output) <- sessnames
             output
     }
     else {
+        method <- match.arg(method)
         if (!(inherits(cluster, 'traps')) | ms(cluster))
             stop ("cluster should be a single-session traps object")
 

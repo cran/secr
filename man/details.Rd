@@ -55,13 +55,24 @@ is the `start' value.
 \code{details$LLonly} = TRUE causes the function to returns a single
 evaluation of the log likelihood at the `start' values.
 
-\code{details$param} = 1 causes the Gardner & Royle parameterisation of
-the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) to be
-used for multi-catch detectors (default 0 for Borchers and Efford). This
-parameterisation does not allow detector covariates.
+\code{details$param} chooses between various parameterisations of the
+SECR model. The default \code{details$param = 0} is the formulation in
+orchers and Efford (2008) and later papers.
+
+\code{details$param = 1} selects the Gardner & Royle parameterisation of
+the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) when
+the detector type is `multi'. This parameterisation does not allow
+detector covariates.
+
+\code{details$param = 2} selects a currently unpublished
+parameterisation in terms of (\eqn{esa(g_0, \sigma)}, \eqn{\sigma}).
+
+\code{details$param = 3} selects a currently unpublished
+parameterisation in terms of (\eqn{a_0(g_0, \sigma)}, \eqn{\sigma}).
 
 \code{details$scaleg0} = TRUE causes g0 to be scaled by
-\eqn{\mathrm{sigma}^{-2}}{sigma^-2}.
+\eqn{\mathrm{sigma}^{-2}}{sigma^-2}. Deprecated from 2.6.2: use a0
+parameterisation instead.
 
 \code{details$scalesigma} = TRUE causes sigma to be scaled by
 \eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}.

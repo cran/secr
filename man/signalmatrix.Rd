@@ -12,7 +12,7 @@ extra columns.
 
 \usage{
 signalmatrix(object, noise = FALSE, recodezero = FALSE,
-    prefix = 'Ch', signalcovariates = NULL)
+    prefix = "Ch", signalcovariates = NULL, names = NULL)
 
 }
 
@@ -22,7 +22,8 @@ signalmatrix(object, noise = FALSE, recodezero = FALSE,
   \item{recodezero}{logical; if TRUE zero signals are set to NA}
   \item{prefix}{character value used to form channel names}
   \item{signalcovariates}{character vector of covariate names from signalframe to
-  add as columns}
+    add as columns}
+  \item{names}{character vector of column names}
 }
 
 \details{
@@ -36,6 +37,10 @@ columns of the signal frame to collapse and add as columns to the right
 of the actual signal data. Ordinarily there will be multiple rows in
 signalframe for each row in the output; the covariate value is taken
 from the first matching row.
+
+If \code{names} is not provided, column names are constructed from the
+detector names. If the length of \code{names} is less than the number of
+columns, simple numerical names are constructed.
 
 }
 

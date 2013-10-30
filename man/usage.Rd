@@ -57,7 +57,7 @@ usage(object) <- value
 \references{
 Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in
   capture--recapture studies. \emph{Methods in Ecology
-    and Evolution}. \url{http://dx.doi.org/10.1111/2041-210X.12049}.
+    and Evolution} \bold{4}, 629--636.
 }
 
 \note{

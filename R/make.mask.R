@@ -7,10 +7,12 @@
 ###############################################################################
 
 make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
-    type = 'traprect', poly = NULL, poly.habitat = TRUE, keep.poly = TRUE,
+    type = c("traprect", "trapbuffer", "pdot", "polygon", "clusterrect",
+    "clusterbuffer", "rectangular"), poly = NULL, poly.habitat = TRUE, keep.poly = TRUE,
     check.poly = TRUE, pdotmin = 0.001, ...)
 {
 
+    type <- match.arg(type)
     if (missing(traps)) traps <- NULL
     if (ms(traps)) {         ## a list of traps objects
         if (inherits(poly, 'list') & (!is.data.frame(poly)))
@@ -35,11 +37,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
 
         if (!is.null(poly)) {
             SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
-            if (SPDF) {
-                if (!require(sp))
-                    stop ("package 'sp' required for poly in make.mask")
-            }
-            else {
+            if (!SPDF) {
                 poly <- matrix(unlist(poly), ncol = 2)
                 poly <- rbind (poly, poly[1,])  # force closure of poly
             }

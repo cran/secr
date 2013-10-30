@@ -14,8 +14,8 @@ from multiple fitted secr models.
 \usage{
 
 model.average(..., realnames = NULL, betanames = NULL, newdata = NULL, 
-    alpha = 0.05, dmax = 10, covar = FALSE, average = "link",
-    criterion = c('AICc','AIC'), CImethod = c('Wald', 'MATA'))
+    alpha = 0.05, dmax = 10, covar = FALSE, average = c("link", "real"),
+    criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"))
 
 collate (..., realnames = NULL, betanames = NULL, newdata = NULL, 
     scaled = FALSE, alpha = 0.05, perm = 1:4, fields = 1:4)

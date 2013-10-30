@@ -17,7 +17,7 @@ functions \code{read.traps} and \code{make.capthist}.
 
 \usage{
 
-read.capthist(captfile, trapfile, detector = "multi", fmt = "trapID",
+read.capthist(captfile, trapfile, detector = "multi", fmt = c("trapID","XY"),
     noccasions = NULL, covnames = NULL, trapcovnames = NULL,
     cutval = NULL, verify = TRUE, noncapt = "NONE", ...)
 
@@ -30,8 +30,9 @@ write.capthist(object, filestem = deparse(substitute(object)),
 
   \item{captfile}{ name of capture data file }
   \item{trapfile}{ name of trap layout file }
-  \item{detector}{ character value for detector type (`single', `multi' etc.) }
-  \item{fmt}{ character value for capture format (`XY' or `trapID') }
+  \item{detector}{ character value for detector type (`single', `multi',
+  `proximity', etc.) }
+  \item{fmt}{ character value for capture format (`trapID' or `XY') }
   \item{noccasions}{ number of occasions on which detectors were
     operated }
   \item{covnames}{ character vector of names for individual covariate
@@ -166,7 +167,7 @@ University of Otago, Dunedin, New Zealand
 \examples{
 
 ## export ovenbird capture histories
-## the files 'ovenCHcapt.txt' and 'ovenCHtrap.txt' are
+## the files "ovenCHcapt.txt" and "ovenCHtrap.txt" are
 ## placed in the current folder (check with dir())
 
 write.capthist(ovenCH)

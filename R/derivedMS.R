@@ -148,7 +148,6 @@ if (inherits(object, 'secrlist')) {
             sessnames <- session(object$capthist)
             jj <- match (sessnames, session(object$capthist))
             if (ncores > 1) {
-                require(parallel)
                 clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
                 clusterEvalQ(clust, library(secr))
                 output <- parLapply(clust, jj, derived, object = object, groups = groups,
@@ -228,7 +227,6 @@ if (inherits(object, 'secrlist')) {
             ## mainline
 
             if (ncores > 1) {
-                require(parallel)
                 clust <- makeCluster(ncores, methods=FALSE, useXDR=FALSE)
             }
             else {

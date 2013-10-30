@@ -36,6 +36,7 @@
 /* 2013-04-16 change group indexing to zero-based */
 /* 2013-04-17 known classes (hcov) for CL = F (incompatible with groups) */
 /* 2013-06-05 known class coded 1 for unknown, >1 for known */
+/* 2013-07-02 slight adjustments for param=2 (treated as param=0) */
 
 /*
         *detect may take values -
@@ -89,7 +90,27 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
     double Tski;
     if (binomN < 0) error ("negative binomN not allowed in C fn pndot");
     pp = 1;
-    if (param == 0) {
+    if (param == 1) {
+        for (s=s1-1; s<s2; s++) {
+            Ei = 0;
+            wxi = i4(n,s,0,x,ncol,ss,kk);
+            c = PIA0[wxi] - 1;
+            p0 = gsb0val[c];     /* value for first detector */
+            for (k=0; k< kk; k++) {
+                wxi = i4(n,s,k,x,ncol,ss,kk);
+                c = PIA0[wxi] - 1;
+                if (c >= 0) {    /* drops unset traps */
+                    if (p0 != gsb0val[c])
+			error("trap-specific p0 not allowed with G&R param");
+                    gi = i3(c,k,m,cc0,kk);
+                    Ei += (1-gk0[gi]) / p0;
+                }
+            }
+            pp *= (1 - p0 * exp(-1/Ei));
+        }
+        return (1 - pp);
+    }
+    else {
         for (s=s1-1; s<s2; s++) {
             for (k=0; k< kk; k++) {
                 wxi = i4(n,s,k,x,ncol,ss,kk);
@@ -120,26 +141,6 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
                     pp *= g1;
                 }
             }
-        }
-        return (1 - pp);
-    }
-    else {
-        for (s=s1-1; s<s2; s++) {
-            Ei = 0;
-            wxi = i4(n,s,0,x,ncol,ss,kk);
-            c = PIA0[wxi] - 1;
-            p0 = gsb0val[c];     /* value for first detector */
-            for (k=0; k< kk; k++) {
-                wxi = i4(n,s,k,x,ncol,ss,kk);
-                c = PIA0[wxi] - 1;
-                if (c >= 0) {    /* drops unset traps */
-                    if (p0 != gsb0val[c])
-			error("trap-specific p0 not allowed with G&R param");
-                    gi = i3(c,k,m,cc0,kk);
-                    Ei += (1-gk0[gi]) / p0;
-                }
-            }
-            pp *= (1 - p0 * exp(-1/Ei));
         }
         return (1 - pp);
     }
@@ -1265,10 +1266,10 @@ prwfnptr getprwfn (int detect, int param)
 {
     prwfnptr prwfn;
     prwfn = prwicount; /* default */
-    if ((detect == 0) && (param == 0))
-        prwfn = prwimulti;
-    else if ((detect == 0) && (param == 1))
+    if ((detect == 0) && (param == 1))
         prwfn = prwimultiGR;
+    else if (detect == 0)
+        prwfn = prwimulti;
     else if (detect == 1)
         prwfn = prwiprox;
     else if (detect == 3)

@@ -18,6 +18,9 @@
 ## 2013-06-06 fullbeta function (was part of secrloglik)
 ## 2013-06-08 get.nmix extended to allow hcov and not h2/h3 model for g0,sigma
 ## 2013-06-15 inflate()
+## 2013-07-19 a0 in valid.detectpar
+## 2013-10-28 fixed mlogit.untransform
+## 2013-10-29 fixpmix moved here: code was in model.average.R and methods.R
 
 ## 2013-06-17 I have so far resisted the temptation to add HCU hazard cumulative uniform df
 ##            based on Horne & Garton 2006
@@ -120,6 +123,15 @@ valid.detectfn <- function (detectfn, valid = c(0:3,5:18)) {
 valid.detectpar <- function (detectpar, detectfn) {
     if (is.null(detectpar) | is.null(detectfn))
         stop ("requires valid 'detectpar' and 'detectfn'")
+
+    ## 2013-07-19, 2013-10-22
+    ## replace a0 with g0 or lambda0 as appropriate to detectfn
+    if ('a0' %in% names(detectpar)) {
+        aname <- if (detectfn %in% 0:8) 'g0' else 'lambda0'
+        lambda0 <- detectpar[['a0']] / 2 / pi / detectpar[[2]]^2 * 10000
+        detectpar[[aname]] <- if (detectfn %in% 0:8) 1-exp(-lambda0) else lambda0
+    }
+
     if (!all(parnames(detectfn) %in% names(detectpar)))
         stop ("requires 'detectpar' ", paste(parnames(detectfn), collapse=','),
             " for ", detectionfunctionname(detectfn), " detectfn")
@@ -272,6 +284,7 @@ var.in.model <- function(v,m) v %in% unlist(lapply(m, all.vars))
 
 get.nmix <- function (model, capthist, hcov) {
     model$D <- NULL  ## ignore density model
+    model$pmix <- NULL ## pmix alone cannot make this a mixture model
     nmix <- 1
     if (any(var.in.model('h2', model))) {
         nmix <- 2
@@ -284,15 +297,51 @@ get.nmix <- function (model, capthist, hcov) {
     if ((nmix == 1) & (!is.null(hcov))) {
         if (ms(capthist))
             capthist <- capthist[[1]]
-        lev <- levels(factor(covariates(capthist)[,hcov]))   ## always alphabetical
+        if (is.factor(covariates(capthist)[,hcov]))
+            lev <- levels(covariates(capthist)[,hcov])
+        else
+            lev <- levels(factor(covariates(capthist)[,hcov]))
+        if (all(is.na(covariates(capthist)[,hcov])))
+            stop ("hcov missing for all individuals, but detection model invariant")
         if (length(lev) < 2)
-            stop ("hcov covariate not found or has less than 2 levels")
+            stop ("hcov covariate not found or has fewer than 2 levels")
         if (length(lev) > 2)
             warning ("hcov covariate has more than 2 levels; using only first two")
         nmix <- 2
     }
     nmix
 }
+############################################################################################
+
+fixpmix <- function(x, nmix) {
+
+    ## x is a list with component pmix that is a matrix (dataframe)
+    ## with columns 'estimate' and 'se' (and possibly others)
+    ## referring to the linear predictor of pmix (i.e. on mlogit
+    ## scale) and rows corresponding to rows in newdata
+    ## (i.e. arbitrary combinations of predictors, including mixture
+    ## class h2 or h3)
+
+    ## It is necessary that newdata include all levels of the mixture
+    ## class.
+
+    ## used in collate and predict.secr
+
+    ## 2013-10-29
+    ## assuming mixture is always last dimension...
+    temp <- matrix(x$pmix[,'estimate'], ncol = nmix)
+    if (nmix==2) temp[,x$pmix[,'h2']] <- x$pmix[,'estimate']
+    if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
+    temp2 <- apply(temp, 1, clean.mlogit)
+    x$pmix[,'estimate'] <- as.numeric(t(temp2))
+    if (nmix==2)
+        x$pmix[as.numeric(x$pmix$h2)==1,'se'] <- x$pmix[as.numeric(x$pmix$h2)==2,'se']
+    else
+        x$pmix[,'se'] <- rep(NA, nrow(x$pmix))   ## don't know how
+    x
+}
+
+############################################################################################
 
 add.cl <- function (df, alpha, loginterval, lowerbound = 0) {
 
@@ -350,8 +399,6 @@ spatialscale <- function (object, detectfn, session = '') {
 pointsInPolygon <- function (xy, poly, logical = TRUE) {
     xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
     if (inherits(poly, "SpatialPolygonsDataFrame")) {
-        if (!require (sp))
-            stop ("package 'sp' required for pointsInPolygon()")
         xy <- SpatialPoints(xy)
         ## 2013-04-20 update for deprecation of 'overlay'
         ## OK <- overlay (xy, poly)
@@ -685,8 +732,12 @@ se.untransform <- function (beta, sebeta, link) {
 
 mlogit.untransform <- function (beta, latentmodel) {
     if (!missing(latentmodel)) {
-        tmp <- split(beta, latentmodel)
-        unlist(lapply(tmp, mlogit.untransform))
+        ## this old code disordered the returned values; 2013-10-28
+        ## tmp <- split(beta, latentmodel)
+        ## unlist(lapply(tmp, mlogit.untransform))
+        for (i in unique(latentmodel))
+            beta[latentmodel==i] <- mlogit.untransform(beta[latentmodel==i])
+        beta
     }
     else {
         ## beta should include values for all classes (mixture components)

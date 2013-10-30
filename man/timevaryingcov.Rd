@@ -57,7 +57,7 @@ from a file.
 \examples{
 
 # make a trapping grid with simple covariates
-temptrap <- make.grid(nx = 6, ny = 8, detector = 'proximity')
+temptrap <- make.grid(nx = 6, ny = 8, detector = "proximity")
 covariates (temptrap) <- data.frame(matrix(
     c(rep(1,48*3),rep(2,48*2)), ncol = 5))
 head(covariates (temptrap))

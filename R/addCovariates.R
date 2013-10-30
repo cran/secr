@@ -39,14 +39,12 @@ addCovariates <- function (object, spatialdata, columns = NULL) {
             stop ("spatialdata type unrecognised or unsupported")
 
         if (type == "shapefile") {
-            if (!require (maptools))
-                stop ("package 'maptools' required for ", type)
+            ## if (!require (maptools))
+            ##    stop ("package 'maptools' required for ", type)
             polyfilename <- spatialdata  ## strip shp?
-            spatialdata <- readShapePoly(polyfilename)
+            spatialdata <- maptools::readShapePoly(polyfilename)
         }
         if (type %in% c("shapefile", "SPDF", "SGDF")) {
-            if (!require (sp))
-                 stop ("package 'sp' required for ", type)
             xy <- matrix(unlist(object), ncol = 2)
             xy <- SpatialPoints(xy)
             df <- over (xy, spatialdata)
