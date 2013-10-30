@@ -98,7 +98,7 @@ telemloglik <- function(capthist, traps, mask, detectfn = 0, detectpar) {
         }
         tempmask <- tempmask[close,, drop = FALSE]
         # require(mvtnorm)
-        # dbvn <- apply(tempmask, 1, dmvnorm, mean=c(0,0), sigma=vcv, log=FALSE)
+        # dbvn <- apply(tempmask, 1, mvtnorm::dmvnorm, mean=c(0,0), sigma=vcv, log=FALSE)
         # mymvn is faster and produces identical result
         invS <- solve(vcv)
         mymvn <- function(XY) exp(-(XY %*% invS %*% XY)/2) / 2/pi/det(vcv)

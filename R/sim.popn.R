@@ -44,11 +44,15 @@ tile <- function (popn, method = "reflect") {
         stop ("unrecognised method")
 }
 
-sim.popn <- function (D, core, buffer = 100, model2D = 'poisson',
-    buffertype = 'rect', poly = NULL, covariates = list(sex =
-    c(M = 0.5,F = 0.5)), number.from = 1, Ndist = 'poisson',
-    nsession = 1, details = NULL, seed = NULL, ...)
-{
+sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
+  "cluster", "IHP", "coastal", "hills"), buffertype = 'rect', poly = NULL,
+  covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
+  = c('poisson','fixed'), nsession = 1, details = NULL, seed = NULL,
+  ...)  {
+
+    model2D <- match.arg(model2D)
+    Ndist <- match.arg(Ndist)
+
     if (nsession > 1) {
         discrete <- function(x) {
             fr <- x-trunc(x)

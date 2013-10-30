@@ -29,9 +29,10 @@ boundarytoSPDF <- function (boundary) {
 ###############################################################################
 
 trap.builder <- function (n = 10, cluster, region = NULL, frame =
-    NULL, method = 'SRS', edgemethod = 'clip', samplefactor = 2,
-    ranks = NULL, rotation = NULL, detector,  exclude = NULL,
-    exclmethod = 'clip', plt = FALSE, add = FALSE) {
+    NULL, method = c("SRS", "GRTS", "all", "rank"), edgemethod =
+    c("clip", "allowoverlap", "allinside"), samplefactor = 2, ranks =
+    NULL, rotation = NULL, detector, exclude = NULL, exclmethod =
+    c("clip", "alloutside"), plt = FALSE, add = FALSE) {
 
     ## region may be -
     ## matrix x,y
@@ -49,9 +50,10 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     # 5. rbind
     #####################################################
 
-    if (!require(sp))
-        stop ("package 'sp' required in trap.builder")
     .local <- new.env()   ## for clusteri
+    method <- match.arg(method)
+    edgemethod <- match.arg(edgemethod)
+    exclmethod <- match.arg(exclmethod)
 
     allinside <- function (xy) {
         xy <- SpatialPoints(as.matrix(xy))
@@ -154,14 +156,14 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ####################################
     else if (method == 'GRTS') {
-        if (!require (spsurvey))
-            stop ("package 'spsurvey' required for grts in trap.builder")
+        ## if (!require (spsurvey))
+        ##    stop ("package 'spsurvey' required for grts in trap.builder")
         ## make a list in the format needed by grts()
         design <- list(None = list(panel = c(Panel1 = n),
             seltype = "Equal", over = ntrial))
         src <-ifelse (is.null(frame), 'sp.object', 'att.frame')
         typ <-ifelse (is.null(frame), 'area', 'finite')
-        GRTS.sites <- grts (design = design, type.frame = typ,
+        GRTS.sites <- spsurvey::grts (design = design, type.frame = typ,
             src.frame = src, sp.object = region, att.frame = frame,
             shapefile = FALSE)
         origins <- coordinates(GRTS.sites)
@@ -295,9 +297,6 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
 ## 'cluster' is a traps object for one module
 ## 'region' is a rectangular survey region
 ## ... arguments passed to trap.builder (rotate, detector)
-
-    if (!require(sp))
-        stop ("package 'sp' required in make.systematic")
 
     SPDF <- inherits(region, "SpatialPolygonsDataFrame")
     if (!SPDF) {

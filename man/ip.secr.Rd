@@ -23,7 +23,7 @@ ip.secr (capthist, predictorfn = pfn, predictortype = "null",
     centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
     var.nsim = 1000, maxbox = 5, maxtries = 2, ncores = 1, ...)
 
-pfn(capthist, N.estimator)
+pfn(capthist, N.estimator = c("n", "null","zippin","jackknife") )
 
 }
 

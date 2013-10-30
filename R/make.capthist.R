@@ -6,9 +6,10 @@
 ## 2012-02-09 revamped sorting
 ## 2012-02-12 finished tidy up related to signalframe
 ## 2012-10-19 telemetry detector type
+## 2013-10-29 noccasions derived from usage
 ############################################################################################
 
-make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
+make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01,
     noncapt = 'NONE', signalcovariates = NULL)
 
@@ -31,6 +32,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
 #   column 7    Noise     (optional)
 
 {
+    fmt <- match.arg(fmt)
     session <- captures[,1]
     sessionlevels <- unique(session)  ## retains order
 
@@ -77,33 +79,33 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
         if (!(fmt %in% c('trapID','XY')))
             stop ("capture format not recognised")
         if (fmt!='trapID') {
-          if (ncol(captures)<5)
-              stop ("too few columns in capture matrix")
-          if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
-              captTrap <- xyinpoly(captures[,4:5], traps)
-              if (any(captTrap==0)) {
-                  captures <- captures[captTrap>0,]  ## first! 2010-11-17
-                  captTrap <- captTrap[captTrap>0]
-                  warning ("detections with coordinates outside ",
-                           "polygon(s) were dropped")
-              }
-          }
-          else if (detector(traps) %in% c('transect','transectX')) {
-              captTrap <- xyontransect(captures[,4:5], traps, tol)
-              if (any(captTrap==0)) {
-                  captTrap <- captTrap[captTrap>0]
-                  captures <- captures[captTrap>0,]
-                  warning ("detections with coordinates not on ",
-                           "any transect were dropped")
-              }
-          }
-          else {
-              trapID    <- interaction(traps$x, traps$y)
-              captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
-              if (any(is.na(captTrap)))
-                  stop ("failed to match some capture locations ",
-                        "to detector sites")
-          }
+            if (ncol(captures)<5)
+                stop ("too few columns in capture matrix")
+            if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
+                captTrap <- xyinpoly(captures[,4:5], traps)
+                if (any(captTrap==0)) {
+                    captures <- captures[captTrap>0,]  ## first! 2010-11-17
+                    captTrap <- captTrap[captTrap>0]
+                    warning ("detections with coordinates outside ",
+                             "polygon(s) were dropped")
+                }
+            }
+            else if (detector(traps) %in% c('transect','transectX')) {
+                captTrap <- xyontransect(captures[,4:5], traps, tol)
+                if (any(captTrap==0)) {
+                    captTrap <- captTrap[captTrap>0]
+                    captures <- captures[captTrap>0,]
+                    warning ("detections with coordinates not on ",
+                             "any transect were dropped")
+                }
+            }
+            else {
+                trapID    <- interaction(traps$x, traps$y)
+                captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
+                if (any(is.na(captTrap)))
+                    stop ("failed to match some capture locations ",
+                          "to detector sites")
+            }
         }
         else {
             if (detector(traps) %in% .localstuff$polydetectors)
@@ -113,14 +115,14 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 stop ("failed to match some capture locations ",
                       "to detector sites")
         }
-
-
-        #  if (bysession & ( length(levels(session)) > 1)) {
-        #    captures[,2] <- interaction(session, captures[,2], drop = TRUE)
-        #  }
-
-        nocc      <- max(abs(captures[,3]))
-        nocc      <- ifelse (is.null(noccasions), nocc, noccasions)
+        if (!is.null(usage(traps))) {   ## 2013-10-29
+            nocc <- ncol(usage(traps))
+            if (nocc <  max(abs(captures[,3])))
+                stop("fewer usage fields than max(occasion)")
+        }
+        else
+            nocc <- max(abs(captures[,3]))
+        nocc <- ifelse (is.null(noccasions), nocc, noccasions)
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
         if (is.null(cutval) && detector(traps)  %in% c('cue','signal','signalnoise'))
@@ -138,11 +140,6 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
             else
                 rowOrder <- order (uniqueID)
             uniqueID <- uniqueID[rowOrder]
-#                if (length(dim(wout))==3)
-#                    wout[,,] <- wout[rowOrder,,]
-#                else
-#                    wout[,] <- wout[rowOrder,]
-#                dimnames(wout)[[1]] <- dimnames(wout)[[1]][rowOrder]
         }
 
         captID <- as.numeric(factor(captures[,2], levels=uniqueID))
@@ -173,7 +170,6 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 w[deadindices] <- w[deadindices] * -1
                 #################################
             }
-
         }
         else {
             w     <- matrix(0, nrow = nID, ncol = nocc)
@@ -220,7 +216,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
             if (ncol(captures) >= startcol)
                 zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
             if (!is.null(zi)) {
-                # find first match of ID with positive value for each covar
+                ## find first match of ID with positive value for each covar
                 temp <- zi[1:length(uniqueID),,drop=FALSE]
                 temp[,] <- NA
 
@@ -231,7 +227,7 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                     tempj2 <- sapply(tempj, nonmissing)
                     ## 2011-01-20 only convert to factor if character
                     if (is.character(tempj2))
-                       tempj2 <- factor(tempj2)
+                        tempj2 <- factor(tempj2)
                     temp[,j] <- tempj2
                     rownames(temp) <- names(tempj)          ## 2010 02 26
                 }
@@ -241,24 +237,15 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                         stop ("number of covariate names does not match")
                     names(temp) <- covnames
                 }
-                ## added 'FALSE' 2010 02 24 -
-## probably redundant given new use of uniqueID 2012-02-09
-##                if (sortrows) temp <- temp[rowOrder,,drop = FALSE]
                 attr(wout,'covariates') <- temp
             }
             else attr(wout,'covariates') <- data.frame()
-
         }
-
         class (wout) <- 'capthist'
         traps(wout) <- traps
         session(wout)  <- as.character(captures[1,1])
-
         if (nrow(wout) > 0) {
-
             if (detector(traps) %in% .localstuff$polydetectors) {
-                ## 2011-01-21
-##                xy <- captures[order(captTrap, captures[,3],captures[,2]),4:5]
                 xy <- captures[detectionOrder,4:5]
                 names(xy) <- c('x','y')
                 attr(wout,'detectedXY') <- xy
@@ -283,20 +270,15 @@ make.capthist <- function (captures, traps, fmt = 'trapID', noccasions = NULL,
                 if (!is.null(signalcovariates)) {
                     if (!all(signalcovariates %in% names(captures)))
                         stop ("missing signal covariate(s)")
-
+                    ## need to maintain order 2012-09-15
                     attr(wout, 'signalframe') <- cbind(attr(wout, 'signalframe'),
-# captures[,signalcovariates])
-# need to maintain order 2012-09-15
                         captures[detectionOrder,signalcovariates])
                 }
                 attr(wout, 'cutval')   <- cutval
-                ## dropunused = FALSE? 2012-01-11
-
                 ## apply cutval
                 wout <- subset(wout, cutval = cutval)
             }
         }
-
         wout
     }   ## end of single-session call
 }

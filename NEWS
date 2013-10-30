@@ -1,3 +1,36 @@
+Changes in version 2.7.0 (2013-10-30)
+
+New features or changed behaviour of old functions
+    o   secr.fit() uses optional parameterisation (a0(g0,sigma), sigma) when 
+    	a0 in model or details = list(param = 3). See Efford and Mowat ms.
+    o   detectpar(), signal(), noise() become generic methods
+    o   signalmatrix() new argument for column names
+    o   rbind.capthist() enabled for signal detector CH
+    o   AIC.secrlist() checks whether models differ in hcov
+    o   secr.fit() allows pmix to be a fixed parameter in h2 models
+    o   secr.fit() allows pmix to depend on session in h2 models
+    o   LR.test() generalized to any class of model with logLik method
+
+Bugs fixed
+    o  animalID() returned zero-length character vector for empty CH regardless of names argument
+    o  secr.fit() failed with automatic start values, polygon data, and detectfn>13
+    o  predict.secr() lost labels for latent classes when latent class not in model
+    o  collate() failed for pmix when model used hcov 
+    o  derived.external() could fail with multi-session model
+    o  read.capthist not reading noccasions from usage fields of trap files  
+
+Other
+    o   added documentation for hybrid mixture model see ?hcov
+    o   updated code for scaleg0 option in secr.fit (but see below)
+    o   updated package dependencies for R 3.0.2
+    o   more extensive use of match.arg and explicit options for character arguments
+    o   replaced call to obsolete 'raster' function adjacency() in randomHabitat()
+
+Deprecated 
+    o   secr.fit() details$scaleg0 has been superceded by the a0
+        parameterization (details$param = 3) and will become obsolete in a
+        future release.
+
 Changes in version 2.6.1 (2013-06-28)
 
 New features or changed behaviour of old functions

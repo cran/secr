@@ -82,7 +82,7 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 olddir <- setwd (system.file("extdata", package="secr"))
 
 ## construct capthist object from raw data
-captdata  <- read.capthist ('capt.txt', 'trap.txt', fmt = 'XY')
+captdata  <- read.capthist ("capt.txt", "trap.txt", fmt = "XY")
 
 ## generate demonstration fits
 secrdemo.0 <- secr.fit (captdata)

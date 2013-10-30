@@ -119,11 +119,11 @@ circular.p(1:3)
 
 ## halfnormal, hazard-rate and exponential
 circular.r ()
-circular.r (detectfn = 'HR', detectpar = list(sigma = 1, z = 4))
-circular.r (detectfn = 'EX')
-circular.r (detectfn = 'HHN')
-circular.r (detectfn = 'HHR', detectpar = list(sigma = 1, z = 4))
-circular.r (detectfn = 'HEX')
+circular.r (detectfn = "HR", detectpar = list(sigma = 1, z = 4))
+circular.r (detectfn = "EX")
+circular.r (detectfn = "HHN")
+circular.r (detectfn = "HHR", detectpar = list(sigma = 1, z = 4))
+circular.r (detectfn = "HEX")
 
 plot(seq(0, 5, 0.01), circular.p(r = seq(0, 5, 0.01)),
     type = "l", xlab = "Radius (multiples of sigma)", ylab = "Probability")
@@ -146,11 +146,11 @@ legend (2.8, 0.3, legend = c("halfnormal","hazard-rate, z = 4", "exponential"),
 ## "Error in integrate(rdfn, 0, r, pars, cutval, ...) : 
 ##   maximum number of subdivisions reached"
 
-circular.r (p = seq(0.1,0.9,0.01), detectfn = 'HR',
+circular.r (p = seq(0.1,0.9,0.01), detectfn = "HR",
     detectpar = list(sigma = 10, z = 8))
 
 ## this succeeds:
-circular.r (p = seq(0.1,0.9,0.01), detectfn = 'HR',
+circular.r (p = seq(0.1,0.9,0.01), detectfn = "HR",
     detectpar = list(sigma = 10, z = 8), subdivisions = 300)
 }
 

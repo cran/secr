@@ -92,13 +92,16 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 \seealso{  \code{\link{traps}}, \code{\link{make.grid}}, \code{\link{detector}} }
 
 \examples{
-## Replace file name with a valid local name and remove '#' 
-# read.traps ("c:\\\\myfolder\\\\mytraps.txt", detector="proximity")
-## \mytraps.txt' should have lines like this 
+
+\dontrun{
+## Replace file name with a valid local name 
+read.traps ("c:/myfolder/mytraps.txt", detector = "proximity")
+## "mytraps.txt" should have lines like this 
 # 1     365     365
 # 2     365     395
 # 3     365     425
 # etc.
+}
 
 }
 \keyword{ IO }

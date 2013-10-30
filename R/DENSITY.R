@@ -76,20 +76,17 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 }
 ############################################################################################
 
-read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = 'trapID',
+read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trapID','XY'),
                           noccasions = NULL, covnames = NULL, trapcovnames = NULL,
                           cutval = NULL, verify = TRUE, noncapt = 'NONE', ...) {
 
+    fmt <- match.arg(fmt)
     dots <- match.call(expand.dots = FALSE)$...
 
-    if (!(fmt %in% c('XY','trapID')))
-        stop ("allowed formats are 'XY' and 'trapID'")
     if ((detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
-##    replacedefaults <- function (default, user) replace(default, names(user),
-##        user)
     filetype <- function(x) {
         nx <- nchar(x)
         tolower(substring(x, nx-3, nx))

@@ -14,7 +14,7 @@
     icolours = NULL, randcol = FALSE, 
     lab1cap = FALSE, laboffset = 4, ncap = FALSE, 
     splitocc = NULL, col2 = "green",
-    type = "petal",
+    type = c("petal", "n.per.detector", "n.per.cluster"),
     cappar = list(cex = 1.3, pch = 16, col = "blue"), 
     trkpar = list(col = "blue", lwd = 1), 
     labpar = list(cex = 0.7, col = "black"), ...)
@@ -128,8 +128,8 @@ legend (locator(1), pch = 21, pt.bg = temp$colour,
 \dontrun{
 ## try varying individual colours - requires RColorBrewer
 library(RColorBrewer)
-plot(infraCH[[2]], icolours = brewer.pal(12, 'Set3'), tracks = T,
-    bg = 'black', cappar = list(cex = 2), border = 10, rad = 2,
+plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = T,
+    bg = "black", cappar = list(cex = 2), border = 10, rad = 2,
     gridlines=F)
 }
 

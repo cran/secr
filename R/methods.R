@@ -58,6 +58,9 @@
 ## 2013-06-08 print.secr includes Mixture (hcov) :
 ## 2013-06-10 plot.capthist has safe on.exit return to old palette
 ## 2013-06-15 shift.mask
+## 2013-08-17 subset.capthist hardened so copes with signal detectors with zero rows
+## 2013-08-30 detectpar becomes method
+## 2013-10-29 fixpmix code for predict.secr moved to utility.R
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -78,6 +81,9 @@ shift      <- function (object, shiftxy, ...) UseMethod("shift")
 flip       <- function (object, lr=F, tb=F, ...) UseMethod("flip")
 
 ms         <- function (object, ...) UseMethod("ms")
+detectpar  <- function (object, ...) UseMethod("detectpar")
+signal     <- function (object, ...) UseMethod("signal")
+noise      <- function (object, ...) UseMethod("noise")
 
 # Default methods for specialised functions
 
@@ -308,16 +314,34 @@ clustertrap <- function (object) {
     }
 }
 
-signal <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
+signal.default <- function(object, ...) {
+    stop ("only for capthist and cuelist data")
+}
 
+signal.capthist <- function (object, ...) {
     if (ms(object)) {
         lapply(object, signal)
     }
     else {
         if (detector(traps(object)) %in% c('cue','signal','signalnoise')) {
             attr(object, 'signalframe')$signal
+        }
+        else
+            NULL
+    }
+}
+
+noise.default <- function(object, ...) {
+    stop ("only for capthist and cuelist data")
+}
+
+noise.capthist <- function (object, ...) {
+    if (ms(object)) {
+        lapply(object, noise)
+    }
+    else {
+        if (detector(traps(object)) %in% c('signalnoise')) {
+            attr(object, 'signalframe')$noise
         }
         else
             NULL
@@ -341,10 +365,10 @@ signalframe <- function (object) {
 }
 
 signalmatrix <- function (object, noise = FALSE, recodezero = FALSE,
-    prefix = 'Ch', signalcovariates = NULL) {
+    prefix = 'Ch', signalcovariates = NULL, names = NULL) {
     if (ms(object)){
         lapply(object, signalmatrix, noise = noise, recodezero = recodezero,
-               prefix=prefix, signalcovariates = signalcovariates)
+               prefix=prefix, signalcovariates = signalcovariates, names = names)
     }
     else {
         if (!detector(traps(object)) %in% .localstuff$detectors3D)
@@ -366,29 +390,22 @@ signalmatrix <- function (object, noise = FALSE, recodezero = FALSE,
             tmpsignal[tmpsignal==0] <- NA
         tmpsignal <- tmpsignal[,1,,drop=FALSE]
         tmpsignal <- as.data.frame(tmpsignal)
-        names(tmpsignal) <- paste(prefix, rownames(traps(object)), sep='')
+        ## added 2013-09-03
+        if (!is.null(names)) {
+            if (length(names)==ncol(tmpsignal))
+                names(tmpsignal) <- names
+            else
+                names(tmpsignal) <- paste(prefix, 1:ncol(tmpsignal), sep='')
+        }
+        else {
+            names(tmpsignal) <- paste(prefix, rownames(traps(object)), sep='')
+        }
         if (!is.null(signalcovariates)) {
             sf <- signalframe(object)
             firstID <- match(rownames(tmpsignal), sf$Selection)
             tmpsignal[,signalcovariates] <- sf[firstID,signalcovariates]
         }
         tmpsignal
-    }
-}
-
-noise <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-
-    if (ms(object)) {
-        lapply(object, noise)
-    }
-    else {
-        if (detector(traps(object)) %in% c('signalnoise')) {
-            attr(object, 'signalframe')$noise
-        }
-        else
-            NULL
     }
 }
 
@@ -458,9 +475,13 @@ animalID <- function (object, names = TRUE) {
         lapply(object, animalID, names=names)
     }
     else {
-        if (nrow(object) == 0)
+        if (nrow(object) == 0) {
            ## ''
+            if (names)
            character(0)  ## 2011-04-08
+            else
+                numeric(0) ## 2013-09-09
+       }
         else {
             if (names & !is.null(row.names(object)))  ## 2011-08-18 null check
                 values <- row.names(object)
@@ -509,12 +530,10 @@ detectionindex <- function (object) {
 }
 
 polyarea <- function (xy, ha = TRUE) {
-    if (!require(sp))
-        stop ("package 'sp' required for polyarea")
     if (inherits(xy, 'SpatialPolygons')) {
-        if (!require(rgeos))
-            stop ("package rgeos is required for area of SpatialPolygons")
-        temparea <- gArea(xy)
+        ## if (!require(rgeos))
+        ##    stop ("package rgeos is required for area of SpatialPolygons")
+        temparea <- rgeos::gArea(xy)
     }
     else {
         nr <- length(xy$x)
@@ -870,17 +889,23 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'signalframe<-' <- function (object, value) {
-    value <- as.data.frame(value)
-    if (nrow(value) != sum(abs(object)))
-        stop ("requires one row per detection")
-    if (!('signal' %in% names(value)))
-        stop ("value does not contain column 'signal'")
-    if (!(detector(traps(object)) %in% c('signal','signalnoise')) |
-        !(inherits(object,'capthist')))
-        stop ("requires 'capthist' object with 'signal' or 'signalnoise' detector")
-    if (ms(object))
-        stop ("requires single-session 'capthist' object")
-    structure (object, signalframe = value)
+    if (is.null(value)) {
+        attr(object, 'signalframe') <- NULL
+        object
+    }
+    else {
+        value <- as.data.frame(value)
+        if (nrow(value) != sum(abs(object)))
+            stop ("requires one row per detection")
+        if (!('signal' %in% names(value)))
+            stop ("value does not contain column 'signal'")
+        if (!(detector(traps(object)) %in% c('signal','signalnoise')) |
+            !(inherits(object,'capthist')))
+            stop ("requires 'capthist' object with 'signal' or 'signalnoise' detector")
+        if (ms(object))
+            stop ("requires single-session 'capthist' object")
+        structure (object, signalframe = value)
+    }
 }
 
 'signal<-' <- function (object, value) {
@@ -1782,6 +1807,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
                 factor(animalID(x, names = FALSE), levels = 1:nrow(x))[signalOK],
                 factor(occasion(x), levels = 1:ncol(x))[signalOK],
                 factor(trap(x, names = FALSE), levels = 1:nk)[signalOK])
+            if (nrow(x)>0)  ## 2013-08-17
             x[] <- newcount * sign(x)  ## retain deads, in principle
         }
 
@@ -1800,8 +1826,10 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ## for signalframe 2012-02-11
         if (dim3) {
             i <- x
-            i[] <- 1:length(i)
-            i <- i[subset, occasions, traps, drop = FALSE]
+            if (nrow(x) > 0) {
+                i[] <- 1:length(i)
+                i <- i[subset, occasions, traps, drop = FALSE]
+            }
         }
 
         #################################
@@ -1877,19 +1905,21 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ## subset signal of signal capthist
         ## revised 2012-07-28
         if (detector %in% c('cue','signal','signalnoise')) {
-            if (!droplowsignals) {
-                if (any(x<=0))
-                    stop ("droplowsignals = FALSE cannot be applied to CH",
-                          " objects with incomplete detection")
-                signalOK <- TRUE
-            }
-            # otherwise signalOK remains a logical vector with length equal
-            # to the original number of detections
+            if (nrow(x)>0) {
+                if (!droplowsignals) {
+                    if (any(x<=0))
+                        stop ("droplowsignals = FALSE cannot be applied to CH",
+                              " objects with incomplete detection")
+                    signalOK <- TRUE
+                }
+            ## otherwise signalOK remains a logical vector with length equal
+            ## to the original number of detections
             ## subset, traps and occasions are logical vectors 2011-01-21, 2011-11-14
             OK <- occasions[signaldf$occ] & subset[signaldf$ID] & traps[signaldf$trap] & signalOK
             signaldf <- signaldf[OK,, drop = FALSE]
             signaldf <- signaldf[order(signaldf$trap, signaldf$occ, signaldf$ID),, drop = FALSE]
             attr(temp, 'signalframe') <- signaldf[,-(1:3), drop = FALSE]
+        }
             attr(temp, 'cutval') <- cutval
         }
 
@@ -2064,7 +2094,7 @@ plot.capthist <- function(x, rad = 5,
    lab1cap = FALSE, laboffset = 4,
    ncap = FALSE,
    splitocc = NULL, col2 = 'green',
-   type = 'petal',
+   type = c("petal", "n.per.detector", "n.per.cluster"),
    cappar = list(cex=1.3, pch=16, col='blue'),
    trkpar = list(col='blue', lwd=1),
    labpar = list(cex=0.7, col='black'),
@@ -2217,7 +2247,7 @@ plot.capthist <- function(x, rad = 5,
 
         ## suggested by Mike Meredith 2013-05-24
         opal <- palette() ; on.exit(palette(opal))
-
+        type <- match.arg(type)
         traps <- traps(x)
         detectr <- detector(traps)
         nocc <- ncol(x)
@@ -2752,8 +2782,6 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         if (!is.null(attr(x,'polygon')) & ppoly) {
             poly <- attr(x,'polygon')
             if (class(poly) == "SpatialPolygonsDataFrame") {
-                if (!require(sp))
-                    stop ("package 'sp' required to plot polygon in plot.mask")
 # plot(poly, col = polycol, add = TRUE)
 # poor control of colours
                 plot(poly, add = TRUE)
@@ -2890,9 +2918,10 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
 
     ## drop unused columns 2012-10-24
     vars <- unlist(lapply(models, all.vars))
-    usedvars <- c('session', 'g', vars)   ## changed from 'group' 2013-06-05
+    ## cover case that h2,h3 not in model 2013-10-28
+    mixvar <- switch(object$details$nmix, character(0),'h2','h3')
+    usedvars <- c('session', 'g', vars, mixvar)
     newdata <- newdata[,names(newdata) %in% usedvars, drop = FALSE]
-
     if ('cuerate' %in% object$realnames) {
         parindices$cuerate <- max(unlist(parindices)) + 1
         models$cuerate <- ~1
@@ -2951,17 +2980,8 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
             out[,varname] <- rep(NA,nrow(out))
     }
     if (!is.null(predict$pmix)) {
-        nmix <- object$details$nmix
-        # assuming mixture is always last dimension...
-        temp <- matrix(predict$pmix$estimate, ncol = nmix)
-        temp2 <- apply(temp, 1, clean.mlogit)
-        predict$pmix$estimate <- as.numeric(t(temp2))
-        if (nmix>2)  ## condition added 2013-04-14
-            predict$pmix$se <- NA    ## uncertain
-        else {
-            predict$pmix$se[as.numeric(newdata$h2)==1] <-
-                predict$pmix$se[as.numeric(newdata$h2)==2]
-        }
+        ## fixpmix in utility.R is shared with collate()
+        predict <- fixpmix(predict, nmix = object$details$nmix)
     }
     for (new in 1:nrow(newdata)) {
         lpred  <- sapply (predict, function(x) x[new,'estimate'])
@@ -2971,9 +2991,6 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
         if (ms(object)) {
             if (!('session' %in% names(newdata))) {
                 n.mash <- NULL
-                ## before 2012-05-14 was:
-                ## stop ("could not discern session in predict... ",
-                ##       "see the package author!")
             }
             else {
                 sess <- newdata[new, 'session']
@@ -3125,7 +3142,11 @@ coef.secr <- function (object, alpha=0.05, ...) {
 }
 ############################################################################################
 
-detectpar <- function(object, ...) {
+detectpar.default <- function(object, ...) {
+    stop ("only for secr and cuesecr models")
+}
+
+detectpar.secr <- function(object, ...) {
     extractpar <- function (temp) {
 
         if (!is.data.frame(temp))   ## assume list
@@ -3137,7 +3158,18 @@ detectpar <- function(object, ...) {
         temp <- temp[, 'estimate', drop = F]
         temp <- split(temp[,1], rownames(temp))
         temp <- c(temp, object$fixed)
-        temp <- temp[parnames(object$detectfn)]
+        pnames <- parnames(object$detectfn)
+        if (object$details$param == 2) pnames[1] <- 'esa'
+        if (object$details$param == 3) {
+            a0index <- match ('a0', names(temp))
+            sigmaindex <- match ('sigma', names(temp))
+            lambda0 <- temp[[a0index]] / 2 / pi / temp[[sigmaindex]]^2 * 10000
+            temp[[a0index]] <- if (object$detectfn %in% 14:18) lambda0 else 1-exp(-lambda0)
+            names(temp)[a0index] <- if (object$detectfn %in% 0:8) 'g0'
+            else if (object$detectfn %in% 14:18) 'lambda0'
+            else stop ('invalid combination of param=3 and detectfn')
+        }
+        temp <- temp[pnames]
         if ((object$detectfn > 9) & (object$detectfn <14))
             temp <- c(temp, list(cutval = object$details$cutval))
         temp
@@ -3153,6 +3185,7 @@ detectpar <- function(object, ...) {
     else
         extractpar(temppred)
 }
+
 ############################################################################################
 
 print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
@@ -3365,7 +3398,14 @@ AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion 
     if (length(list(...)) > 0)
         warning ("... argument ignored in 'AIC.secrlist'")
 
-    criterion <- criterion[1]
+    if (length(object) > 1) {
+        ## check added 2013-10-14
+        hcovs <- sapply(object, function(x) if (is.null(x$hcov)) '' else x$hcov)
+        if (length(unique(hcovs)) > 1)
+            stop ("AIC invalid when models use different hcov")
+    }
+
+    criterion <- match.arg(criterion)
     modelnames <- names(object)
     allargs <- object
     if (any(sapply(allargs,class) != 'secr'))

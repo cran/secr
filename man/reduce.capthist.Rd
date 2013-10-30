@@ -18,7 +18,7 @@ between detector types.
 
 \method{reduce}{capthist}(object, newtraps = NULL, span = NULL, rename =
     FALSE, newoccasions = NULL, by = 1, outputdetector =
-    detector(traps(object)), select = 'last', dropunused = TRUE, verify
+    detector(traps(object)), select = "last", dropunused = TRUE, verify
     = TRUE, sessions = NULL, \dots)
 
 }
@@ -175,7 +175,7 @@ plot (reduce(captdata, span = 60), add = TRUE)
 # plot linking old and new
 old <- traps(captdata)
 new <- reduce(old, span = 60)
-newtrap <- attr(new, 'newtrap')
+newtrap <- attr(new, "newtrap")
 plot(old, border = 10)
 plot(new, add = TRUE, detpar = list(pch = 16), label = TRUE)
 segments (new$x[newtrap], new$y[newtrap], old$x, old$y)

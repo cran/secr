@@ -4,14 +4,8 @@
 \alias{trap}
 \alias{alive}
 \alias{xy}
-\alias{signalframe}
-\alias{signal}
-\alias{noise}
 \alias{alongtransect}
 \alias{xy<-}
-\alias{signalframe<-}
-\alias{signal<-}
-\alias{noise<-}
 
 \title{ Dissect Spatial Capture History Object }
 
@@ -28,12 +22,6 @@ alive(object)
 alongtransect(object, tol = 0.01)
 xy(object)
 xy(object) <- value
-signalframe(object)
-signalframe(object) <- value
-signal(object)
-signal(object) <- value
-noise(object)
-noise(object) <- value
 }
 
 \arguments{
@@ -73,13 +61,6 @@ For \code{occasion}, a vector of numeric values, one per detection.
 
 For \code{xy}, a dataframe with one row per detection and columns `x' and `y'.
 
-For \code{signalframe} , a dataframe containing signal data and
-covariates, one row per detection. The data frame has one row per
-detection. See \code{\link{signalmatrix}} for a matrix with one row per
-cue and columns for different microphones.
-
-For \code{signal} and \code{noise}, a numeric vector with one element per detection.
-
 If \code{object} has multiple sessions, the result is a list with one
 component per session.
 
@@ -96,9 +77,6 @@ temp <- sim.capthist(popn = list(D = 1), make.grid(detector
     = "count"))
 cbind(ID = as.numeric(animalID(temp)), occ = occasion(temp),
     trap = trap(temp))
-
-## ovensong dataset has very simple signalframe
-head(signalframe(signalCH))
 
 }
 

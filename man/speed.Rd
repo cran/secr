@@ -53,6 +53,17 @@ using a full AIC comparison.
 
 }
 
+\section{Break problem down}{
+
+  Suppose you are fitting models to multiple separate datasets that fit
+  the general description of `sessions'. If you are fitting separate
+  detection parameters to each session (i.e., you do not need to pool
+  detection information), and you are not modelling trend in density
+  across sessions, then it is much quicker to fit each session
+  separately than to try to do it all at once. See Examples.
+  
+}
+
 \section{Mash replicated clusters of detectors}{
 
 If your detectors are arranged in similar clusters (e.g., small square
@@ -68,7 +79,7 @@ grids) then try the function \code{\link{mash}}.
   individual on one occasion are rare) then it is efficient to treat
   proximity data as multi-catch data (dimension n x S, maximum of one
   detection per occasion). Use \code{reduce(proxCH, outputdetector =
-  'multi')}.
+  "multi")}.
   
 }
 
@@ -76,7 +87,7 @@ grids) then try the function \code{\link{mash}}.
   
   Some computations can be run in parallel on multiple processors (most
   desktops these days have multiple cores), but capability is
-  limited. Check the 'ncores' argument of sim.secr() and secr.fit() and
+  limited. Check the `ncores' argument of sim.secr() and secr.fit() and
   ?ncores. The speed gain is significant for parametric bootstrap
   computations in sim.secr. Parallelisation is also allowed for the
   session likelihood components of a multi-session model in secr.fit(),
@@ -97,7 +108,7 @@ grids) then try the function \code{\link{mash}}.
 
 Model fitting is not needed to assess power. The precision of estimates
   from secr.fit can be predicted without laboriously fitting models to
-  simulated datasets. Just use \code{method = 'none'} to obtain the asymptotic
+  simulated datasets. Just use \code{method = "none"} to obtain the asymptotic
   variance at the known parameter values for which data have been
   simulated (e.g. with sim.capthist()).
 
@@ -120,6 +131,31 @@ anticipate the summary statistics you will want and save only these.
   
 Claeskens, G. and Hjort N. L. (2008) \emph{Model Selection and Model
 Averaging}. Cambridge: Cambridge University Press.
+
+}
+
+\examples{
+
+\dontrun{
+
+## compare timing of combined model with separate single-session models
+## for 5-session ovenbird mistnetting data: 2977/78 = 38-fold difference
+
+system.time(fit1 <- secr.fit(ovenCH, buffer = 300, model = list(D ~
+    session, g0 ~ session, sigma ~ session)))
+##   user  system elapsed 
+## 2875.06   62.59 2977.26 
+
+system.time(fit2 <- lapply (ovenCH, secr.fit, buffer = 300))
+##   user  system elapsed 
+##  75.61    1.95   77.65 
+
+## ratio of density estimates
+collate(fit1)[,1,1,"D"] / sapply(fit2, function(x) predict(x)["D","estimate"])
+## session=2005 session=2006 session=2007 session=2008 session=2009 
+##    1.0000066    1.0000692    1.0000001    0.9999543    0.9999285 
+
+}
 
 }
 

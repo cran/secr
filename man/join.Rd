@@ -89,7 +89,7 @@ Occasions survive intact; to pool occasions use
 
 joined.ovenCH <- join (ovenCH)
 summary(joined.ovenCH)
-attr(joined.ovenCH, 'interval')
+attr(joined.ovenCH, "interval")
 
 summary(unjoin(joined.ovenCH))
 

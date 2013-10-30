@@ -10,6 +10,7 @@
 ## 2012-10-21 added check to return NA with dettype==13
 ## 2012-11-13 updated for groups
 ## 2013-06-06 updated for fixed beta
+## 2013-07-20 reparameterize esa,a0
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -78,15 +79,15 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     if (constant) {
         ## assume constant
         if (is.null(beta))
-            real <- detectpar(object)
+            realparval <- detectpar(object)
         else {
-            real <- makerealparameters (object$design0, beta,
+            realparval <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
-            real <- as.list(real)
-            names(real) <- parnames(object$detectfn)
+            realparval <- as.list(realparval)
+            names(realparval) <- parnames(object$detectfn)
         }
         a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
-                             detectpar = real, noccasions = noccasions))
+                             detectpar = realparval, noccasions = noccasions))
         return(rep(a,n))
     }
     else {
@@ -94,13 +95,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             if (is.null(real))
                 stop ("requires real parameter values")
             PIA <- rep(1, n * s * K * nmix)    ## nmix added 2010 02 25
-
-            ## new code 2010-11-26
             realparval0 <- matrix(rep(real, rep(n,length(real))), nrow = n)   ## UNTRANSFORMED
-            ## replacing...
-            ##        realparval0 <- matrix(real, nrow = 1)   ## UNTRANSFORMED
-            ##        ncolPIA <- 1
-            Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
         }
         else {
             ## allow for old design object
@@ -125,9 +120,13 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             realparval0 <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
 
-            Xrealparval0 <- scaled.detection (realparval0, FALSE,
-                object$details$scaleg0, NA)
         }
+        Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
+        if (object$details$param == 2)
+            Xrealparval0 <- reparameterize.esa (Xrealparval0, mask, trps, object$detectfn, s)
+        if (object$details$param == 3)
+            Xrealparval0 <- reparameterize.a0 (Xrealparval0, object$detectfn)
+
         ## force to binary 2012-12-17
         ## used <- usage(trps)
         usge <- usage(trps)

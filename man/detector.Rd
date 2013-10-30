@@ -68,7 +68,7 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 }
 
 \examples{
-## Default detector type is 'multi'
+## Default detector type is "multi"
 temptrap <- make.grid(nx = 6, ny = 8)
 detector(temptrap) <- "proximity"
 summary(temptrap)

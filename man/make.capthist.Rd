@@ -8,7 +8,7 @@
 }
 
 \usage{
-make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
+make.capthist(captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE,
     cutval = NULL, tol = 0.01, noncapt = "NONE", signalcovariates)
 }
@@ -16,7 +16,7 @@ make.capthist(captures, traps, fmt = "trapID", noccasions = NULL,
 \arguments{
   \item{captures}{ dataframe of capture records in one of two possible formats (see Details) }
   \item{traps}{ object of class \code{traps} describing an array of passive detectors }
-  \item{fmt}{ character string for capture format. Valid values are "XY" and "trapID". }
+  \item{fmt}{ character string for capture format. }
   \item{noccasions}{ number of occasions on which detectors were operated }
   \item{covnames}{ character vector of names for individual covariate fields }
   \item{bysession}{ logical, if true then ID are made unique by session }

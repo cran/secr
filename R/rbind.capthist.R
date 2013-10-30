@@ -163,24 +163,25 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         xy(temp) <- do.call(rbind, tempxy)
 
         ## signal
-        tempsig <- lapply(object, signal)
-        if (!any(sapply(tempsig, is.null))) {
-            stop("rbind.capthist not yet updated for signalframe structure")
-            signal(temp) <- do.call(c, tempsig)
-            cutvals <- sapply(object, function(x) attr(x,'cutval'))
-            attr(temp, 'cutval') <- max(cutvals)
-            temp <- subset(temp, cutval = max(cutvals))
-        }
-        else
-            if (!all(sapply(tempsig, is.null)))
-                stop ("signal attribute missing in one or more sessions")
+        tempsig <- lapply(object, signalframe)
+        signalframe(temp) <- do.call(rbind, tempsig)
+#        if (!is.null(signalframe))
+#            stop("rbind.capthist not yet updated for signalframe structure")
+#            signal(temp) <- do.call(c, tempsig)
+#            cutvals <- sapply(object, function(x) attr(x,'cutval'))
+#            attr(temp, 'cutval') <- max(cutvals)
+#            temp <- subset(temp, cutval = max(cutvals))
+#        }
+#        else
+#            if (!all(sapply(tempsig, is.null)))
+#                stop ("signal attribute missing in one or more sessions")
 
         ##################################################
         ## messy problem of correct order of detections
-        if (!is.null(xy(temp)) | !is.null(signal(temp))) {
+        if (!is.null(xy(temp)) | !is.null(signalframe(temp))) {
             occ <- unlist(lapply(object, occasion))
             ID  <- lapply(object, animalID, names = FALSE)
-            maxID <- sapply(ID, max)
+            maxID <- suppressWarnings(sapply(ID, max))
             nID <- sapply(ID, length)
             ID <- unlist(ID)
             uniqueID <- ID + rep(c(0, cumsum(maxID[-length(maxID)])), nID)
@@ -188,8 +189,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             neworder <- order (occ, uniqueID, trp)
             if (!is.null(xy(temp)))
                 xy(temp) <- xy(temp)[neworder,,drop=F]
-            if (!is.null(signal(temp)))
-                signal(temp) <- signal(temp)[neworder]
+            if (!is.null(signalframe(temp)))
+                signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
         }
         ##################################################
 

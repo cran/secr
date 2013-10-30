@@ -22,8 +22,8 @@ simulated data.
 
 sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
     deviance(x), df = df.residual(x)), seed = NULL, maxperpoly = 100,
-    data = NULL, tracelevel = 1, hessian = "none", start =
-    object$fit$par, ncores = 1)
+    data = NULL, tracelevel = 1, hessian = c("none", "auto", "fdHess"),
+    start = object$fit$par, ncores = 1)
 
 }
 

@@ -24,6 +24,8 @@
 ## 2012-12-17 pass usage to secrloglik
 ## 2013-01-08 details$ignoreusage added
 ## 2013-01-23 minprob passed as component of details
+## 2013-07-02 param=2 esa parameterisation in secrloglik
+## 2013-07-19 param=3 a0 parameterisation in secrloglik
 ###############################################################################
 
 
@@ -82,10 +84,14 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
         Yp <- design$designMatrices[[i]] %*% beta[parindx[[i]]]
         if (names(link)[i] == 'pmix') {
             ## 2013-04-14 index of class groups (pmix sum to 1.0 within latentmodel)
-            h2 <- grep('.h2',dimnames(design$designMatrices[[i]])[[2]], fixed=T)
-            h3 <- grep('.h3',dimnames(design$designMatrices[[i]])[[2]], fixed=T)
-            tmp <- design$designMatrices[[i]][,-c(h2,h3), drop = FALSE]
-            tmph <- design$designMatrices[[i]][,c(h2,h3), drop = FALSE]
+            cols <- dimnames(design$designMatrices[[i]])[[2]]
+            h2 <- grep('.h2', cols, fixed=T)
+            h3 <- grep('.h3', cols, fixed=T)
+            h2c <- grep(':h2', cols, fixed=T)
+            h3c <- grep(':h3', cols, fixed=T)
+            h.cols <- c(h2,h3,h2c,h3c)
+            tmp <- design$designMatrices[[i]][,-h.cols, drop = FALSE]
+            tmph <- design$designMatrices[[i]][,h.cols, drop = FALSE]
             latentmodel <- as.numeric(factor(apply(tmp,1,paste, collapse='')))
             refclass <- apply(tmph,1,sum) == 0
             Yp[refclass] <- NA
@@ -130,6 +136,8 @@ scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
     realnames <- dimnames(realparval)[[2]]
     sigmaindex <- match('sigma', realnames)
     g0index <- match('g0', realnames)
+    if (is.na(g0index))
+        g0index <- match('lambda0', realnames)
     if (scalesigma) {   ## assuming previous check that scalesigma OK...
         if (is.na(D)) sigmaindex <- NA
         if (is.na(sigmaindex))
@@ -142,6 +150,56 @@ scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
         realparval[,g0index]  <- realparval[,g0index] / realparval[,sigmaindex]^2
     }
     realparval
+}
+
+###############################################################################
+
+reparameterize.esa <- function (realparval, mask, traps, detectfn, nocc) {
+
+    ## esa, sigma parameterisation 2013-07-01
+    ## could whole fn be coded in C?
+    g0fromesa <- function (a, sigma, z, lower = 0, upper = 1) {
+        fx <- function(g0) {
+            ## pdot accounts for 'usage'
+            ## pdot selects appropriate g0/lambda0 according to detectfn
+            (sum(pdot(mask, traps, detectfn = detectfn,
+                          detectpar = list(g0 = g0, lambda0 = g0, sigma = sigma, z = z),
+                      noccasions = nocc)) * cell) - a
+        }
+        tmp <- try(uniroot(fx, lower=lower, upper=upper), silent = TRUE)
+        ## debug if (inherits(tmp, 'try-error')) print(c(fx(lower),fx(upper)))
+        if (inherits(tmp, 'try-error')) 0.0001 else tmp$root
+    }
+    cell <- attr(mask, 'area')
+    realnames <- dimnames(realparval)[[2]]
+    sigmaindex <- match('sigma', realnames)
+    esaindex <- match('esa', realnames)
+    z <- ifelse (ndetectpar(detectfn) == 3, realparval[, match('z', realnames)], 1)
+    if (is.na(esaindex) | is.na(sigmaindex))
+        stop ("'param = 2' requires both 'esa' and 'sigma' in model")
+    realparval[,esaindex]  <- unlist(mapply(g0fromesa,
+                                            realparval[,esaindex],  ## a
+                                            realparval[,sigmaindex],
+                                            z
+                                            ))
+    realparval
+}
+###############################################################################
+
+reparameterize.a0 <- function (realparval, detectfn) {
+    ## a0, sigma parameterisation 2013-07-19
+    matswitch <- is.matrix(realparval)
+    if (matswitch)
+        realparval <- data.frame(realparval)
+    if (! all (c('a0','sigma') %in% names(realparval)))
+        stop ("'param = 3' requires both 'a0' and 'sigma' in model")
+    if (!(detectfn %in% c(0:8, 14:18)))
+        stop ('invalid combination of param=3 and detectfn')
+    # updated 2013-10-22
+    lambda0 <- realparval$a0 / 2 / pi / realparval$sigma^2 * 10000
+    realparval$a0 <- if (detectfn %in% 0:8) 1-exp(-lambda0) else lambda0
+    names(realparval)[names(realparval)=='a0'] <- if (detectfn<9) 'g0' else 'lambda0'
+    if (matswitch) as.matrix(realparval) else realparval
 }
 ###############################################################################
 
@@ -253,7 +311,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         cell <- attr(session.mask,'area')
         session.mask <- as.matrix(session.mask[,1:2])
         knownclass <- getknownclass(session.capthist, nmix, hcov)
-
         LL <- 0
 
         #----------------------------------------
@@ -369,6 +426,14 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
         Xrealparval0 <- scaled.detection (realparval0, details$scalesigma, details$scaleg0, Dtemp)
 
+        if (details$param == 2) {
+            Xrealparval <- reparameterize.esa (Xrealparval,session.mask,session.traps,detectfn,s)
+            Xrealparval0 <- reparameterize.esa (Xrealparval0,session.mask,session.traps,detectfn,s)
+        }
+        else if (details$param == 3) {
+            Xrealparval <- reparameterize.a0 (Xrealparval, detectfn)
+            Xrealparval0 <- reparameterize.a0 (Xrealparval0, detectfn)
+        }
         #-----------------------------------------
         # check valid parameter values
         if (!all(is.finite(Xrealparval))) {
@@ -510,7 +575,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             temp <- .C('secrloglik', PACKAGE = 'secr',
                 as.integer(CL),       # 0 = full, 1 = CL
                 as.integer(dettype),  # 0 = multicatch, 1 = proximity, etc
-                as.integer(details$param), # 0 = Borchers & Efford, 1 Gardner & Royle
+                as.integer(details$param), # 0 = Borchers & Efford, 1 Gardner & Royle, etc.
                 as.integer(distrib),  # Poisson = 0 vs binomial = 1 (distribution of n)
                 as.integer(session.capthist),
                 as.double(unlist(session.xy)),         # polygon or transect detection locations
@@ -543,7 +608,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 value=double(1),
                 resultcode=integer(1))
         }
-
+# print(temp$value)
+# print(temp$resultcode)
         LL <- ifelse (temp$resultcode == 0, LL + temp$value, NA)
 
         ####################################################

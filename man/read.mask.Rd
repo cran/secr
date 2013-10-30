@@ -63,7 +63,7 @@ be input directly to \code{read.mask}; rows with HABITAT != 1 are dropped.
 ## Replace file name with a valid local name and remove `#'
 # read.mask (file = "c:\\\\myfolder\\\\mask.txt",
 # spacing = 3, header = TRUE)
-## `mask.txt' should have lines like this
+## "mask.txt" should have lines like this
 # x   y
 # 265 265
 # 268 265

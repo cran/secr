@@ -18,21 +18,25 @@ MATA <- function (wt, est, se, alpha) {
     cbind(lcl, ucl)
 }
 
-model.average <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
-    alpha = 0.05, dmax = 10, covar = FALSE, average = 'link', criterion = c('AICc','AIC'),
-    CImethod = c('Wald', 'MATA')) {
+model.average <- function (..., realnames = NULL, betanames = NULL,
+    newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
+    c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
+    c('Wald', 'MATA')) {
 
     ########
     ## SETUP
 
-    ## 2013-04-20
+    ## 2013-04-20, 2013-10-29
+
+    CImethod <- match.arg(CImethod)
+    criterion <- match.arg(criterion)
+    average <- match.arg(average)
 
     object <- secrlist(...)
     if (!is.null(names(object)))
         modelnames <- names(object)
     else
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
-    criterion <- criterion[1]
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
         stop ("require fitted 'secr' objects")
     if ( length(object) < 2 )
@@ -248,18 +252,6 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     else
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
 
-#
-#    object <- list(...)
-#    if (inherits(object[[1]],'list') & !(inherits(object[[1]],'secr'))) {
-#
-#        if (length(object)>1)
-#            warning ("using first argument (list) and discarding others")
-#        object <- object[[1]]
-#        modelnames <- names(object)
-#    }
-#    else
-#        modelnames <- as.character(match.call(expand.dots=FALSE)$...)
-
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
         stop ("require fitted secr objects")
     if ( length(object) < 2 )
@@ -345,29 +337,14 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     rownames <- apply(newdata, 1, function(x) paste(names(newdata), '=', x, sep='', collapse=','))
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
 
-    if (type=='real') {
+    if (type == 'real') {
         predict <- lapply (object, getLP)
-    ############################################################################################
         nmix <- object[[1]]$details$nmix   ## assume constant over models...
         if (nmix > 1) {
-            predict <- lapply(predict,
-                function(x) {
-                    ## modified 2010 03 09, 2013-04-14, 2013-04-19
-                    temp <- matrix(x$pmix[,'estimate'], ncol = nmix)
-                    if (nmix==2) temp[,x$pmix[,'h2']] <- x$pmix[,'estimate']
-                    if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
-                    temp2 <- apply(temp, 1, clean.mlogit)
-                    x$pmix[,'estimate'] <- as.numeric(t(temp2))
-                    if (nmix==2)
-                        x$pmix[x$pmix$h2==1,'se'] <- x$pmix[x$pmix$h2==2,'se']
-                    else
-                        x$pmix[,'se'] <- rep(NA, nrow(x$pmix))   ## don't know how
-                    x
-                }
-            )
+            ## for each fitted model...
+            ## code in fixpmix (see utility.R) shared with predict.secr
+            predict <- lapply(predict, fixpmix, nmix = nmix)
         }
-        ############################################################################################
-
         stripped <- lapply(predict, function(x) lapply(x[parnames], function(y) y[, c('estimate','se')] ))
         stripped <- array(unlist(stripped), dim=c(nr, 2, np, nsecr))
     }

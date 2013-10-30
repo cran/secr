@@ -77,7 +77,7 @@ not yet fully documented.
 
 # detectors
 te <- make.telemetry()
-tr <- make.grid(detector = 'proximity')
+tr <- make.grid(detector = "proximity")
 
 # simulated population and 50\% telemetry sample
 totalpop <- sim.popn(tr, D = 20, buffer = 100)
@@ -105,8 +105,8 @@ fit2a   <- secr.fit(combinedCH, CL = TRUE,           ## combined, using info
 
 # improved precision when focus on realised population
 # (compare CVD)
-derived(fit.tr, distribution = 'binomial')
-derived(fit2, distribution = 'binomial')
+derived(fit.tr, distribution = "binomial")
+derived(fit2, distribution = "binomial")
 
 # may also use CL = FALSE
 

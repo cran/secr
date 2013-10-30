@@ -75,7 +75,6 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
         flush.console()
 
         if (ncores > 1) {
-            require(parallel)
             clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
             clusterEvalQ(clust, library(secr))
             clusterExport(clust, c("object", "details"), environment())

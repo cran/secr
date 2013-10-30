@@ -22,7 +22,7 @@ you.
   
   \itemize{
 
-    \item Try another maximization method (\code{method = 'Nelder-Mead'}
+    \item Try another maximization method (\code{method = "Nelder-Mead"}
   is more robust than the default). The same maximum likelihood should
   be found regardless of method, so AIC values are comparable across
   methods.

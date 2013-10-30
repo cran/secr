@@ -17,7 +17,7 @@ Note). }
 
 region.N (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson')
+    keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson")
 
 }
 
@@ -188,7 +188,7 @@ region.N(ovenbird.model.D)
 temp <- region.N(possum.model.0, possumarea, spacing = 40,
     keep.region = TRUE)
 temp
-plot (attr(temp, "region"), type = 'l')
+plot (attr(temp, "region"), type = "l")
 }
 
 }

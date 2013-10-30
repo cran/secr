@@ -129,7 +129,7 @@ The colour palettes \code{\link[grDevices]{topo.colors}},
 \code{demo.pal} function in the Examples code on their help page.
 
 The package \pkg{RColorBrewer} is a good source of palettes. Try
-\code{display.brewer.all()} and e.g., \code{col = brewer.pal(7, 'YlGn')}.
+\code{display.brewer.all()} and e.g., \code{col = brewer.pal(7, "YlGn")}.
 
 }
 

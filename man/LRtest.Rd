@@ -14,7 +14,8 @@ LR.test(model1, model2)
 }
 \details{
 
-  The fitted models are expected to be of class `secr' or `openCR'. 
+  The fitted models must be of a class for which there is a logLik
+  method (e.g., `secr' or `lm'). Check with \code{methods("logLik")}.
   
   The test statistic is twice the difference of the maximized
   likelihoods. It is compared to a chi-square distribution with df equal
@@ -31,7 +32,7 @@ LR.test(model1, model2)
   \item{parameter }{degrees of freedom of the approximate chi-squared distribution of the test statistic }
   \item{p.value }{probability of test statistic assuming chi-square distribution}
   \item{method }{character string indicating the type of test performed }
-  \item{data.name }{character string with names of secr models compared }
+  \item{data.name }{character string with names of models compared }
 }
 
 \seealso{ \code{\link{AIC.secr}}, \code{\link{score.test}}  }

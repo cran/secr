@@ -109,10 +109,10 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 }
 ############################################################################################
 
-sim.secr <- function (object, nsim = 1,
-    extractfn = function(x) c(deviance=deviance(x), df=df.residual(x)),
-    seed = NULL, maxperpoly = 100, data = NULL, tracelevel = 1, hessian = 'none',
-    start = object$fit$par, ncores = 1)  {
+sim.secr <- function (object, nsim = 1, extractfn = function(x)
+    c(deviance=deviance(x), df=df.residual(x)), seed = NULL,
+    maxperpoly = 100, data = NULL, tracelevel = 1, hessian =
+    c('none','auto','fdHess'), start = object$fit$par, ncores = 1) {
 
 ## parametric bootstrap simulations based on a fitted secr object
 ## extractfn is a required function to extract values from an secr fit
@@ -120,6 +120,7 @@ sim.secr <- function (object, nsim = 1,
 ## 'hessian' overrides value in object$details
 ## set hessian='auto' if extractfn requires variance-covariance matrix
 
+    hessian <- match.arg(hessian)
     cl   <- match.call(expand.dots = TRUE)
     cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
     cl <- paste('sim.secr(', cl, ')')
@@ -170,7 +171,6 @@ sim.secr <- function (object, nsim = 1,
 
     if (ncores > 1) {
         memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
-        require(parallel)
         clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
         clusterEvalQ(clust, library(secr))
         output <- parLapply(clust, data, fitmodel)

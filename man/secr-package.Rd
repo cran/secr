@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.6.1\cr
-Date: \tab 2013-06-28\cr
+Version: \tab 2.7.0\cr
+Date: \tab 2013-10-30\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -81,13 +81,10 @@ documentation or new features consistent with the overall design.
 \section{Acknowledgements}{
 
 David Borchers made many of these methods possible with his work on the
-likelihood, and I'm grateful for his continuing advice. Jeff Laake
-provided encouragement and reviewed an early version. Ray Brownrigg got
-my Windows code running under Unix. Deanna Dawson edited some of the
-documentation (the cleaner bits!) and her support and collaboration were
-important throughout. Tiago Marques and Mike Meredith suggested many
-improvements to the documentation and provided valued criticism and
-support.
+likelihood. Deanna Dawson edited some of the documentation (the cleaner
+bits!) and her support and collaboration were important
+throughout. Tiago Marques and Mike Meredith suggested many improvements
+to the documentation and provided valued criticism and support.
 
 }
 
@@ -110,6 +107,10 @@ D. L. Thomson, E. G. Cooch and M. J. Conroy (eds) \emph{Modeling
 Demographic Processes in Marked Populations}. Springer, New York. Pp.
 255--269.
 
+Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in
+  capture--recapture studies. \emph{Methods in Ecology and Evolution}
+  \bold{4}, 629--636.
+
 Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
@@ -125,7 +126,7 @@ Efford, M. G. and Fewster, R. M. (2013) Estimating population
  
 Royle, J. A. and Gardner, B. (2011) Hierarchical spatial
 capture--recapture models for estimating density from trapping
-arrays. In: A.F. O'Connell, J.D. Nichols \& K.U. Karanth (eds)
+arrays. In: A.F. O'Connell, J.D. Nichols and K.U. Karanth (eds)
 \emph{Camera Traps in Animal Ecology: Methods and Analyses}. Springer,
 Tokyo.  Pp. 163--190.
  

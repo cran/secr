@@ -623,7 +623,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## replace NA with dummy value '0' to stop model.matrix dropping rows added as padding
     ## might be more efficient to allow it to drop and then match later
     dframe[is.na(dframe)] <- 0
-
     # list with one component per real parameter
     # each of these is a list with components 'model' and 'index'
     designMatrices <- sapply (1:length(models), simplify=FALSE,

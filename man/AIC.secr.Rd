@@ -15,8 +15,8 @@ Information Criterion) are preferred.
 }
 
 \usage{
-\method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC'))
-\method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c('AICc','AIC'))
+\method{AIC}{secr}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c("AICc","AIC"))
+\method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c("AICc","AIC"))
 \method{logLik}{secr}(object, ...)
 secrlist(...)
 }
@@ -104,12 +104,32 @@ intervals. \emph{Computational statistics and data analysis} \bold{56},
 \note{
 
 It is not be meaningful to compare models by AIC if they relate to
-different data or habitat masks. For example, an `secrlist' generated
-and saved to file by \code{mask.check} may be supplied as the object
-argument of \code{AIC.secrlist}, but the results are not
-informative. Likewise, models fitted by the conditional likelihood
-(\code{CL = TRUE}) and full likelihood (\code{CL = FALSE}) methods
-cannot be compared.
+different data or habitat masks.
+
+Specifically:
+
+\itemize{
+
+  \item an `secrlist' generated and saved to file by \code{mask.check}
+may be supplied as the object argument of \code{AIC.secrlist}, but the
+results are not informative
+
+\item models fitted by the conditional likelihood (\code{CL = TRUE}) and
+full likelihood (\code{CL = FALSE}) methods cannot be compared
+
+\item hybrid mixture models (using hcov argument of secr.fit) should not
+be compared with other models
+
+\item grouped models (using groups argument of secr.fit) should not be
+compared with other models
+
+\item multi-session models should not be compared with single-session
+models based on the same data.
+
+}
+
+A likelihood-ratio test (\code{\link{LR.test}}) is a more direct way to
+compare two models.
 
 The issue of goodness-of-fit and possible adjustment of AIC for
 overdispersion has yet to be addressed (cf QAIC in MARK).

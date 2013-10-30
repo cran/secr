@@ -64,7 +64,7 @@ tempcapt <- sim.capthist(temptrans, popn = list(D = 2,
 tempCH <- snip(tempcapt, by = 20)
 
 ## collapse from 'transect' to 'multi', discarding location within transects
-tempCH <- reduce(tempCH, outputdetector = 'count')
+tempCH <- reduce(tempCH, outputdetector = "count")
 
 ## fit secr model and examine H-T estimates of density
 derived(secr.fit(tempCH, buffer = 300, CL = TRUE, trace = FALSE))

@@ -248,7 +248,6 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 }
             }
             ij.df <- expand.grid (i=spacings, j=buffers)
-            require(parallel)
             clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
             temp <- clusterEvalQ(clust, library(secr))
             clusterExport(clust, c("newcall", "trps", "spacing", "poly",

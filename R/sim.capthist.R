@@ -125,6 +125,7 @@ sim.capthist <- function (
                     available <- runif(nrow(popn)) < p.vect
                 }
             }
+
             output[[t]] <- sim.capthist(traps, temppop, detectfn, detectpar,
                 nocc[t], 1, binomN, 1, renumber, seed, maxperpoly)
             session( output[[t]] ) <- t   ## added 2011-09-09
