@@ -17,7 +17,8 @@ Note). }
 
 region.N (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson")
+    keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson",
+    pooled.RN = FALSE)
 
 }
 
@@ -49,7 +50,10 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
     computing log interval for realised N}
 
   \item{RN.method}{ character string for method used to calculate
-  realised N (RN) and its sampling variance. `poisson' or `MSPE'.}
+    realised N (RN) and its sampling variance. `poisson' or `MSPE'.}
+
+  \item{pooled.RN}{ logical; if TRUE the estimate of realised N for a multi-session
+  model is computed as if for combined sampling with all detectors (see Details)}
 
 }
 \details{
@@ -85,6 +89,14 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   in `mashed' models (see \code{\link{mash}}). However, the population
   size reported is that associated with a single cluster unless
   \code{regionmask} is specified.
+
+\code{pooled.RN = TRUE} handles the special case of a multi-session
+model in which the region of interest spans several patches (i.e.,
+sampling in each session is localised within \code{region}. This is not
+yet fully implemented.
+  
+  Use \code{\link{par.region.N}} to apply \code{region.N} in parallel to
+  several models.
 
 }
 

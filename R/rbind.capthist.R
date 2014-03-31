@@ -3,6 +3,7 @@
 ## rbind.capthist accepts single session objects in pool list
 ## pooled sessions named correctly
 ## verify option
+## rbind.capthist merges polygons
 
 flatten <- function(x) {
 ## 7/6/2010, 12/9/2011
@@ -60,6 +61,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
     names(allargs) <- lapply(dots, as.character)
     if (length(dots)==1) object <- allargs[[1]]
     else object <- allargs
+
+    newMCP <- TRUE ## option 2013-11-20
 
     ## Catch singleton - added 2011-09-12
     if ((length(dots) == 1) & !ms(object) )
@@ -133,7 +136,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
           if (any(dim(x)[-1] != dim(object[[1]])[-1]))
                   stop ("varying numbers of occasions and/or detectors ",
                       "in rbind.capthist", call. = FALSE)
-          if (!identical(traps(x), traps(object[[1]])))
+          notPoolPoly <- !(detector(traps(object[[1]])) %in% c('polygon','polygonX', 'telemetry'))
+          if (!identical(traps(x), traps(object[[1]])) & notPoolPoly)
               stop ("cannot pool capthist with different",
                   " detector arrays in rbind.capthist", call. = FALSE)
         }
@@ -144,7 +148,22 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         ## form new object
         temp <- abind(..., along = 1)
         class(temp) <- c('capthist')
-        traps(temp) <- traps(object[[1]])
+        trps <- traps(object[[1]])
+        mergepoly <- detector(trps) %in% c('polygon','telemetry')
+        if (mergepoly) {
+            srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
+            tmp <- Polygons(srl,1)
+            require (maptools)
+            tmp2 <- maptools::unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
+            ## tmp2 <- unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
+            trps <- as.data.frame(getcoord(tmp2)[[1]])
+            rownames(trps) <- 1:nrow(trps)
+            class(trps) <- c('traps', 'data.frame')
+            detector(trps) <- detector( traps(object[[1]]))
+            polyID(trps) <- rep(1,nrow(trps))
+            ## note any covariates have been abandoned
+        }
+        traps(temp) <- trps
 
         ## 2011-09-13 common covariates
         tempcov <- covariates(object)

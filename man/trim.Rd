@@ -16,7 +16,7 @@ Drop unwanted components from a \code{list} object, usually to save space.
 \usage{
 
 \method{trim}{default}(object, drop, keep)
-\method{trim}{secr}(object, drop = c("mask", "design", "design0"), 
+\method{trim}{secr}(object, drop = c("call", "mask", "design", "design0"), 
     keep = NULL)
 
 }

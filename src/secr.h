@@ -128,6 +128,7 @@ void secrloglik (
     double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
+    double *pimask,      /* individual probability density */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     int    *cc,          /* number of g0/sigma/b combinations  */
@@ -339,6 +340,7 @@ void trappingtelemetry (
     int    *fn,      /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,      /* truncation radius */
     int    *binomN,  /* 0 poisson, 1 Bernoulli, or number of binomial trials */
+    int    *exactn,  /* 0 or a positive integer for the exact number of fixes per animal */
     int    *maxperpoly, /*   */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */

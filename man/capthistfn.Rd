@@ -6,6 +6,8 @@
 \alias{xy}
 \alias{alongtransect}
 \alias{xy<-}
+\alias{telemetryxy}
+\alias{telemetered}
 
 \title{ Dissect Spatial Capture History Object }
 
@@ -22,6 +24,9 @@ alive(object)
 alongtransect(object, tol = 0.01)
 xy(object)
 xy(object) <- value
+telemetryxy(object, includeNULL = FALSE)
+telemetered(object)
+
 }
 
 \arguments{
@@ -31,6 +36,8 @@ xy(object) <- value
     than names }
   \item{tol}{ tolerance for snapping to transect line (m) }
   \item{value}{ replacement value (see Details) }
+  \item{includeNULL}{logical; if TRUE a NULL component is included for
+  untelemetered animals } 
 
 }
 \details{

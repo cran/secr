@@ -88,15 +88,16 @@ class membership.
   When you display a fitted secr model the parameter estimates are in a
   final section headed `Fitted (real) parameters evaluated at base
   levels of covariates'. The same output may be obtained by calling the
-  \code{predict} method directly (\code{predict} has the advantage that
-  you can obtain estimates for other than the base levels of the
-  covariates by specifying \code{newdata}). [Note: \code{predict} is
-  generic, and you must consult ?predict.secr to see the help for the
-  specific im plementation of this method for fitted secr objects].
+  \code{predict} method directly. Calling \code{predict} has the advantage
+  that you can obtain estimates for levels of the covariates other than
+  the base levels, by specifying \code{newdata}. An example below shows
+  how to specify h2 in \code{newdata}. [Note: \code{predict}
+  is generic, and you must consult ?predict.secr to see the help for the
+  specific implementation of this method for fitted secr objects].
 
   The output from \code{predict.secr} for a mixture model is a list with
   one component for each (possibly latent) class. Each row corresponds
-  to a fitted real parameter, ordinarily at least the detection
+  to a fitted real parameter: ordinarily these include the detection
   parameters (e.g., g0, sigma) and the mixing proportion (pmix).
 
   In the case of a model fitted by maximizing the full likelihood
@@ -196,6 +197,9 @@ fit.h2 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
     model = list(g0 ~ h2, sigma ~ h2))
 predict(fit.h2)
 
+## specifying newdata for h2 - equivalent to predict(fit.h2)
+predict(fit.h2, newdata = data.frame(h2 = factor(c('f','m'))))
+
 ## conditional likelihood fit of preceding model
 ## estimate of sex ratio does not change 
 fit.CL.h2 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
@@ -212,7 +216,7 @@ fit.CL.h2.50 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
     CL = TRUE, model = list(g0 ~ h2, sigma ~ h2), fixed = list(pmix = 0.5))
 LR.test(fit.CL.h2, fit.CL.h2.50)
 
-## did sexes show extra-compensatory variation in sigma?
+## did sexes show extra-compensatory variation in lambda0?
 ## (Efford and Mowat ms)
 fit.CL.a0 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
     CL = TRUE, model = list(a0 ~ 1, sigma ~ h2))

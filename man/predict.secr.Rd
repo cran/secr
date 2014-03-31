@@ -17,7 +17,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 \method{predict}{secrlist}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
     alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
 
-\method{detectpar}{secr}(object, \dots) 
+\method{detectpar}{secr}(object, \dots, byclass = FALSE) 
 
 }
 
@@ -32,6 +32,8 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
   \item{savenew}{ logical for whether newdata should be saved }
   \item{scaled}{ logical for scaling of sigma and g0 (see Details) }
   \item{\dots}{ other arguments }
+  \item{byclass}{ logical; if TRUE values are returned for each latent
+  class in a mixture model, or class in a hybrid mixture (hcov) model}
 }
 \details{
   

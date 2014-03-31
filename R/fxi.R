@@ -39,7 +39,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 #            stop ("fxi.secr is not implemented for incomplete usage")
 #    }
 
-    xylist <- attr(session.capthist,'xylist')
+    xylist <- telemetryxy(session.capthist)   ## attr(session.capthist,'xylist')
     if (!is.null(xylist))
         stop ("fxi.secr is not implemented for telemetry models")
 
@@ -86,11 +86,11 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         ## and hence do not have a beta index specified by parindx.
         ## This includes the signal threshold and the mean and sd of noise.
 
-    miscparm <- c(0,0,0)
+    miscparm <- numeric(4)
     if (object$detectfn %in% c(12,13))   ## experimental signal-noise
-        miscparm[] <- c(details$cutval,coef(object)[max(unlist(object$parindx))+1:2])   ## fudge: last 2
+        miscparm[1:3] <- c(details$cutval,coef(object)[max(unlist(object$parindx))+1:2])   ## fudge: last 2
     else if (object$detectfn %in% c(10,11))  ## Dawson&Efford 2009 models
-        miscparm[] <- details$cutval
+        miscparm[1] <- details$cutval
 
 #    if (detector(session.traps)=='cue') {
 #        miscparm <- exp(coef(object)['cuerate','beta'])

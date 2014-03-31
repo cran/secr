@@ -17,7 +17,7 @@ you.
 \section{secr.fit finishes, but some or all of the variances are missing}{
   
   This usually means the model did not fit and the estimates should not
-  be used. Extremely large variances or standard errors also indicate
+  be trusted. Extremely large variances or standard errors also indicate
   problems.
   
   \itemize{
@@ -26,11 +26,17 @@ you.
   is more robust than the default). The same maximum likelihood should
   be found regardless of method, so AIC values are comparable across
   methods.
-  
+
   \item Repeat the maximization with different starting values. You can use
 \code{secr.fit(..., start = last.model)} where \code{last.model} is a
 previously fitted secr object.
 
+    \item If you think the estimates are right but there was a problem
+    in computing the variances, try re-running secr.fit() with the
+    previous model as starting values (see preceding) and set
+    \code{method = "none"}. This bypasses maximization and computes the
+    variances afresh using \code{fdHess} from \pkg{nlme}.
+  
 \item Try a finer mask (e.g., vary argument \code{nx} in
 \code{\link{make.mask}}). Check that the extent of the mask matches your
 data.

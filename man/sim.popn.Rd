@@ -12,8 +12,8 @@ Simulate a Poisson process representing the locations of individual animals.
 
 sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
   "IHP", "coastal", "hills"), buffertype = "rect", poly = NULL, covariates =
-  list(sex = c(M = 0.5, F = 0.5)), number.from = 1, Ndist = c("poisson", "fixed"),
-  nsession = 1, details = NULL, seed = NULL, ...)
+  list(sex = c(M = 0.5, F = 0.5)), number.from = 1, Ndist = c("poisson",
+  "fixed", "specified"), nsession = 1, details = NULL, seed = NULL, ...)
 
 tile(popn, method = "reflect")
 
@@ -54,11 +54,12 @@ covariate with the given probabilities of membership in each class. No
 mechanism is provided for generating continuous covariates, but these
 may be added later (see Examples).
 
-Ndist may be `poisson' or `fixed'. The number of individuals \eqn{N} has
+Ndist should usually be `poisson' or `fixed'. The number of individuals \eqn{N} has
 expected value \eqn{DA}. If \eqn{DA} is non-integer then Ndist = "fixed"
 results in \eqn{N \in \{ \mathrm{trunc}(DA), \mathrm{trunc}(DA)+1 \} }{N
 in \{ trunc(DA), trunc(DA)+1 \} }, with probabilities set to yield
-\eqn{DA} individuals on average.
+\eqn{DA} individuals on average. The option `specified' is undocumented;
+it is used in some open-population simulations.
 
 If \code{model2D = "cluster"} then the simulated population approximates a Neyman-Scott
 clustered Poisson distribution. Ancillary parameters are passed as
@@ -93,10 +94,13 @@ simulated.  \code{core} should be a habitat \link{mask} and \code{D}
 should be either a vector of length equal to the number of cells (rows)
 in \code{core} or the name of a covariate in \code{core} that contains
 cell-specific densities (animals / hectare), or a constant. The number
-of individuals in each cell is Poisson-distributed with mean \eqn{DA}
-where \eqn{A} is the cell area (an attribute of the
-mask). \code{buffertype} and \code{buffer} are ignored, as the extent of
-the population is governed entirely by the mask in \code{core}.
+of individuals in each cell is either (i) Poisson-distributed with mean
+\eqn{DA} where \eqn{A} is the cell area (an attribute of the mask)
+(\code{Ndist = "poisson"} or (ii) multinomial with size \eqn{DA} and
+relative cell probabilities given by D (\code{Ndist =
+"fixed"}). \code{buffertype} and \code{buffer} are ignored, as the
+extent of the population is governed entirely by the mask in
+\code{core}.
 
 If \code{model2D = "coastal"} then a form of inhomogeneous Poisson
 distribution is simulated in which the x- and y-coordinates are drawn from

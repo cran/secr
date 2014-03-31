@@ -130,6 +130,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
                 # grad[i,] <- fdHess (pars = x$fit$par, fun = lkdfn, r = xval[i])$gradient
                 # grad[i,] <- grad (func = lkdfn, x = x$fit$par, r = xval[i])  ## needs numDeriv
                 grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'utility.R'
+
                 vc <- vcov (x)
                 gfn <- function(gg) {
                     gg <- matrix(gg, nrow = 1)
@@ -153,7 +154,6 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
                 data.frame(x=xval, y=y)
         }
     }
-
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard-rate z!
     temp <- predict (x, newdata)
     if (is.null(ylim)) {
@@ -208,10 +208,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
 
     gline <- function (pars) {
         ## here pars is a vector of parameter values
-
         dfn <- getdfn(detectfn)
-        ## switch (detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN,CLN,CG,BSS,SS,SSS,SN,SNS,
-        ##               HHN, HHR, HEX, HAN, HCG)
         if (sigmatick) {
             sigma <- pars[2]
             y <- dfn(sigma, pars,details$cutval)

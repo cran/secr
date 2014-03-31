@@ -57,10 +57,14 @@ levels given in \code{buffer}.
 if \code{convex = TRUE}, \code{buffer.contour} constructs a set of
 potential vertices by adding points on a circle of radius =
 \code{buffer} to each detector location; the desired contour is the
-convex hull of these points (this algorithm derives from Efford, 2009).
+convex hull of these points (this algorithm derives from Efford, 2012).
 
- If \code{traps} has a \link{usage} attribute then \code{noccasions} is
+If \code{traps} has a \link{usage} attribute then \code{noccasions} is
   set accordingly; otherwise it must be provided.
+
+If \code{traps} is for multiple sessions then detectpar should be a list
+of the same length, one component per session, and noccasions may be a
+numeric vector of the same length.
 
 Increase \code{nx} for smoother lines, at the expense of speed.
 
@@ -69,7 +73,10 @@ Increase \code{nx} for smoother lines, at the expense of speed.
   
   Coordinates of the plotted contours are returned as a list with one
   component per polygon. The list is returned invisibly if \code{plt =
-  TRUE}.  
+    TRUE}.
+
+  For multi-session input (\code{traps}) the value is a list of such
+  lists, one per session.
   
 }
 
@@ -95,6 +102,9 @@ University of Otago, Dunedin, New Zealand
 
   You may wish to consider function gBuffer in package \pkg{rgeos} as an
   alternative to \code{buffer.contour}..
+
+  \code{buffer.contour} failed with multi-session \code{traps} before
+  \pkg{secr} 2.8.0.
   
 }
 
@@ -134,6 +144,7 @@ sum (sapply(buff.concave2, polyarea))
 
 ## clipping to polygon
 olddir <- setwd(system.file("extdata", package = "secr"))
+possumtraps <- traps(possumCH)
 possumarea <- read.table("possumarea.txt", header = TRUE)
 oldpar <- par(xpd = TRUE, mar = c(1,6,6,6))
 plot(possumtraps, border = 400, gridlines = FALSE)

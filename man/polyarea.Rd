@@ -18,12 +18,14 @@ polyarea(xy, ha = TRUE)
   \item{ha}{logical if TRUE output is converted from square metres to hectares}
 }
 \details{
-  For SpatialPolygons or SpatialPolygonsDataFrame objects it is
-  necessary to have installed the packages \pkg{sp} and \pkg{rgeos}.
+  For SpatialPolygons or SpatialPolygonsDataFrame objects, the packages
+  \pkg{sp} and \pkg{rgeos} are used.
 }
+
 \value{
   A scalar.
 }
+
 \seealso{
   \code{\link{buffer.contour}}
 }

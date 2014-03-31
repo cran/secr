@@ -99,7 +99,7 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
         }
     }
     else
-        dframe <- data.frame(intercapt = rep(1, nmaskrow * ngrp * R))
+        dframe <- data.frame(intercept = rep(1, nmaskrow * ngrp * R))
 
     #--------------------------------------------------------------------------
     ## groups

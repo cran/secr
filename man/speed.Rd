@@ -92,6 +92,10 @@ grids) then try the function \code{\link{mash}}.
   computations in sim.secr. Parallelisation is also allowed for the
   session likelihood components of a multi-session model in secr.fit(),
   but gains there seem to be small or negative.
+
+  Functions \code{\link{par.secr.fit}}, \code{\link{par.derived}}, and
+\code{\link{par.secr.fit}} are an alternative and more effective way to
+take advantage of multiple cores when fitting several models.
   
 }
 

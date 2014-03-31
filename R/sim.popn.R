@@ -10,6 +10,7 @@
 ## 2011-10-20  poly argument
 ## 2012-04-10  IHP D may be covariate; more checks
 ## 2012-04-10  MRC
+## 2013-11-23 IHP for Ndist fixed
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -47,7 +48,7 @@ tile <- function (popn, method = "reflect") {
 sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
   "cluster", "IHP", "coastal", "hills"), buffertype = 'rect', poly = NULL,
   covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
-  = c('poisson','fixed'), nsession = 1, details = NULL, seed = NULL,
+  = c('poisson','fixed','specified'), nsession = 1, details = NULL, seed = NULL,
   ...)  {
 
     model2D <- match.arg(model2D)
@@ -146,12 +147,13 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         ##########################
 
         if (model2D %in% c('IHP')) {
+
             nr <- nrow(core)
             if (!inherits(core, 'mask'))
                 stop ("for model2D = IHP, 'core' should be a habitat mask")
             if ((length(D) == 1) & (is.character(D)))
                 D <- covariates(core)[,D]
-            if ((length(D) == nr) & (is.numeric(D)))
+            if ((length(D) == 1) & (is.numeric(D)))   ## was == 1
                 D <- rep(D, nr)
             if (any(is.na(D))) {
                 D[is.na(D)] <- 0
@@ -162,10 +164,23 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 warning ("negative D set to zero")
             }
             ## end of addition 2012-04-10
-            if (Ndist != 'poisson')
-                stop ("IHP not implemented for fixed or specified N")
-            nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per mask cell
-            N <- sum(nm)
+
+## replaced 2013-11-23
+##            if (Ndist != 'poisson')
+##                stop ("IHP not implemented for fixed or specified N")
+##            nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per cell
+##            N <- sum(nm)
+
+            D <- D * attr(core,'area') ## 'area' is cell area, D vector, 1 per cell
+            if (Ndist == 'poisson') {
+                nm <- rpois(nr, D)
+                N <- sum(nm)
+            }
+            else {  ## fixed
+                N <- sum(D)
+                nm <- rmultinom (1, N, D)
+            }
+
             jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), ncol = 2)
             animals <- core[rep(1:nr, nm),] + jitter
             animals <- as.data.frame(animals)
@@ -180,14 +195,14 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             xl <- range(core$x) + buff
             yl <- range(core$y) + buff
             area <- diff(xl) * diff(yl) * 0.0001  # ha
-            allowedNdist <- c('poisson','fixed','specified')
-            if (!(Ndist %in% allowedNdist))
-                stop ("'Ndist' should be one of ",
-                      paste(sapply(allowedNdist, dQuote), collapse=","))
+##            allowedNdist <- c('poisson','fixed','specified')
+##            if (!(Ndist %in% allowedNdist))
+##                stop ("'Ndist' should be one of ",
+##                      paste(sapply(allowedNdist, dQuote), collapse=","))
             N  <- switch (Ndist,
                 poisson = rpois(1, lambda=D[1] * area),
                 fixed = discreteN (1, D[1] * area),
-                specified = D[1])
+                specified = round(D[1]))
 
             if (model2D=='poisson') {
                 animals <- data.frame (x = runif(N)*diff(xl)+xl[1], y =

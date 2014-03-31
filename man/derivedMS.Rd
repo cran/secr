@@ -101,6 +101,9 @@ suppressed with \code{se.esa} and \code{se.D} as desired.
 If \code{ncores > 1} the \pkg{parallel} package is used to create
 processes on multiple cores (see \link{Parallel} for more).
 
+For computing \code{derived} across multiple models in parallel see
+\code{\link{par.derived}}.
+
 }
 
 \value{
@@ -134,8 +137,13 @@ Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{
 
 }
 
-\seealso{ \code{\link{predict.secr}}, \code{\link{print.secr}},
-  \code{\link{secr.fit}}, \code{\link{empirical.varD}} }
+\seealso{
+  \code{\link{predict.secr}},
+  \code{\link{print.secr}},
+  \code{\link{secr.fit}},
+  \code{\link{empirical.varD}}
+  \code{\link{par.derived}}
+}
 
 \note{
 

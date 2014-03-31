@@ -15,20 +15,8 @@
 ## 2011 02 06 allow polygonX, transectX
 ## 2011 06 13 moved spatialscale to utility.R
 ## 2012 12 24 binomN = 'usage'
+## 2014-03-26 pdot.contour and buffer.contour extended to multi-session traps
 ###############################################################################
-
-getbinomN <- function (binomN, detectr) {
-    if (detectr %in% .localstuff$countdetectors) {
-        if (is.null(binomN))
-            return(0)
-        else if (binomN == 'usage')
-            return(1)
-        else
-            return(binomN)
-    }
-    else
-        return(1)
-}
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
                   noccasions = NULL, binomN = NULL) {
@@ -237,23 +225,37 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           detectpar = list(g0 = 0.2, sigma = 25, z = 1),
                           noccasions = NULL, binomN = NULL, levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, plt = TRUE, add = FALSE, ...) {
-    if (is.null(border))
-        border <- 5 * spatialscale(detectpar, detectfn)
-    tempmask <- make.mask (traps, border, nx = nx, type = 'traprect')
-    xlevels <- unique(tempmask$x)
-    ylevels <- unique(tempmask$y)
-    binomN <- getbinomN (binomN, detector(traps))
-    z <- pdot(tempmask, traps, detectfn, detectpar, noccasions, binomN)
-    if (!is.null(poly)) {
-        OK <- pointsInPolygon(tempmask, poly)
-        z[!OK] <- 0
+    if (ms(traps)) {
+        if (length(noccasions) == 1)
+            noccasions <- rep(noccasions,length(traps))
+        output <- mapply(pdot.contour, traps, detectpar, noccasions,
+                         MoreArgs = list(border = border, nx = nx,
+                         detectfn = detectfn, binomN = binomN,
+                         levels = levels, poly = poly, plt = plt, add = add, ...))
+        if (plt)
+            invisible(output)
+        else
+            output
     }
-    if (plt) {
-        contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, levels = levels, ...)
-        invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels))
+    else {
+        if (is.null(border))
+            border <- 5 * spatialscale(detectpar, detectfn)
+        tempmask <- make.mask (traps, border, nx = nx, type = 'traprect')
+        xlevels <- unique(tempmask$x)
+        ylevels <- unique(tempmask$y)
+        binomN <- getbinomN (binomN, detector(traps))
+        z <- pdot(tempmask, traps, detectfn, detectpar, noccasions, binomN)
+        if (!is.null(poly)) {
+            OK <- pointsInPolygon(tempmask, poly)
+            z[!OK] <- 0
+        }
+        if (plt) {
+            contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, levels = levels, ...)
+            invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels))
+        }
+        else
+            contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels)
     }
-    else
-        contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels)
 }
 ############################################################################################
 
@@ -271,37 +273,48 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
     }
     if (!inherits(traps, 'traps'))
         stop ("requires 'traps' object")
-    if (convex) {
-        if (!is.null(poly))
-            warning ("'poly' ignored when convex = TRUE")
-        ## could use maptools etc. to get intersection?
-        theta <- (2*pi) * (1:ntheta) / ntheta
-        if (!add & plt)
-            plot(traps, border = buffer)
-        temp <- lapply(buffer, oneconvexbuffer)
+
+    if (ms(traps)) {
+        output <- lapply(traps, buffer.contour, buffer = buffer, nx = nx, convex = convex,
+               ntheta = ntheta, plt = plt, add = add, poly = poly, ...)
         if (plt)
-            invisible (temp)
+            invisible(output)
         else
-            temp
+            output
     }
     else {
-        tempmask <- make.mask (traps, max(buffer)*1.2, nx = nx, type = 'traprect')
-        xlevels <- unique(tempmask$x)
-        ylevels <- unique(tempmask$y)
-        z <- distancetotrap(tempmask, traps)
-        if (!is.null(poly)) {
-            OK <- pointsInPolygon(tempmask, poly)
-            z[!OK] <- 1e20
+        if (convex) {
+            if (!is.null(poly))
+                warning ("'poly' ignored when convex = TRUE")
+            ## could use maptools etc. to get intersection?
+            theta <- (2*pi) * (1:ntheta) / ntheta
+            if (!add & plt)
+                plot(traps, border = buffer)
+            temp <- lapply(buffer, oneconvexbuffer)
+            if (plt)
+                invisible (temp)
+            else
+                temp
         }
-        if (plt) {
-            contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
-                 drawlabels = FALSE, levels = buffer,...)
-            invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx),
-                levels = buffer))
+        else {
+            tempmask <- make.mask (traps, max(buffer)*1.2, nx = nx, type = 'traprect')
+            xlevels <- unique(tempmask$x)
+            ylevels <- unique(tempmask$y)
+            z <- distancetotrap(tempmask, traps)
+            if (!is.null(poly)) {
+                OK <- pointsInPolygon(tempmask, poly)
+                z[!OK] <- 1e20
+            }
+            if (plt) {
+                contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
+                         drawlabels = FALSE, levels = buffer,...)
+                invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx),
+                                       levels = buffer))
+            }
+            else
+                contourLines(xlevels, ylevels, matrix(z, nrow = nx),
+                             levels = buffer)
         }
-        else
-            contourLines(xlevels, ylevels, matrix(z, nrow = nx),
-                levels = buffer)
     }
 }
 ################################################################################

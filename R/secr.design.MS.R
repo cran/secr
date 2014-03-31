@@ -14,7 +14,7 @@
 ## 2013-03-11 Session only as needed
 ## 2013-03-11 check levels do not vary between sessions
 ## 2013-03-11 dropped models$phi <- NULL (not needed)
-
+## 2014-01-25 code rearranged to allow null PIA
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
@@ -98,61 +98,53 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     findvars.traptime <- function (covindices, vars) {
         ## function to add time-specific trap covariates to a design data frame 'dframe'
-        ## cov should be a list or list of lists, one per session (R > 1),
+        ## covindices should be a list or list of lists, one per session (R > 1),
         ## if list, then require predictors to appear in all sessions
         ## uses pad1 and insertdim from utility.R
 
         found <- ''
-        dimcov <- c(1,3,4) ## session, time, trap
+        dimcov <- c(1,4,3) ## session, trap, time
         ## covindices is list of numeric or character index vectors, one component per session
         if (length(covindices) != R)
             stop ("require one set of indices per session")
         if (is.data.frame(trapcov))   ## single-session
             trapcov <- list(trapcov)
         covnames <- unique(sapply(covindices,names))
-        varincov <- sapply(covnames, function(nam) vars %in% nam)
-        if (length(vars)>1)
-            found <- vars[apply(varincov,1,all)]
-        else
-            found <- vars[all(varincov)]
+        found <- vars[vars %in% covnames]
+        vars <<- vars[!(vars %in% found)]
+
         for (variable in found) {
-            vals <- vector(mode = 'list', length = R)
             firstcol <- trapcov[[1]][,covindices[[1]][[1]][1]]
             factorlevels <- NULL
             if (is.factor(firstcol)) {
                 ## all must have same levels!!
                 factorlevels <- levels(firstcol)
             }
-            for (i in 1:R) {
-                getvals <- function (indices,trcov) {
-                    if (any(is.na(trcov[,indices])))
-                        stop ("covariate missing values not allowed")
-                    padarray(as.matrix(trcov[,indices]), dims[c(4,3)])
+            vals <- vector(mode = 'list', length = R)
+            for (i in 1:R) {  ## over sessions
+                getvals <- function (indices, trcov) {
+                    notOK <- is.na(trcov[,indices])
+                    if (any(notOK)) {
+                        warning ("detector covariate(s) missing values set to -1")
+                        trcov[,indices][notOK] <- -1
+                    }
+                    mat <- as.matrix(trcov[,indices]) ## detectors x occasions
+                    padarray(mat, dims[c(4,3)])
                 }
-                vals[[i]] <- t(getvals(covindices[[i]][[variable]], trapcov[[i]]))
+                covs <- covindices[[i]][[variable]]  ## indices this cov, this session
+                vals[[i]] <- getvals(covs, trapcov[[i]])
             }
-            vals <- unlist(vals)
+            vals <- unlist(vals)  ## concatenate sessions
             if (!is.null(factorlevels))
                 vals <- factor(vals, factorlevels)
+
             dframe[,variable] <<- insertdim (vals, dimcov, dims)
         }
-        vars <<- vars[!(vars %in% found)]
     }
     #--------------------------------------------------------------------------------
 
     models$D <- NULL                          # drop density model
     npar     <- length(models)                # real parameters
-    parnames <- names(models)                 # typically c('g0', 'sigma', 'z')
-    vars     <- unique (unlist(sapply (models, all.vars)))
-    vars     <- vars[!(vars %in% groups)]     # groups treated separately
-    nmix     <- get.nmix(models, capthist, hcov)
-    trps    <- traps(capthist)                 # session-specific trap array
-    used    <- usage(trps)                     # session-specific usage
-    zcov    <- covariates(capthist)            # session-specific individual covariates
-    trapcov <- covariates(trps)                # session-specific trap covariates
-
-    if (('g' %in% vars) & is.null(groups))
-        stop ("requires valid 'groups' covariate")
     grouplevels  <- group.levels(capthist,groups)
     ngrp    <- max(1,length(grouplevels))
 
@@ -165,16 +157,36 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         R <- length(capthist)
         n <- ifelse (bygroup, ngrp, max(sapply(capthist, nrow))) # max over sessions
         S <- max(sapply(capthist, ncol))                         # max over sessions
-        K <- max(sapply(trps, ndetector))                        # max over sessions
+        K <- max(sapply(traps(capthist), ndetector))             # max over sessions
     }
     else {
         R <- 1
         n <- ifelse (bygroup, ngrp, nrow(capthist))
         S <- ncol(capthist)
-        K <- ndetector(trps)
+        K <- ndetector(traps(capthist))
     }
     ## cover unmarked case
     if (n == 0) n <- 1
+
+    if (npar == 0) {
+        ## 2014-01-25
+        ## no detection parameters estimated
+        ## return null design object (list with no contents)
+        constantPIA <- array(1, dim=c(R,n,S,K,1))
+        return(list(designMatrices = NULL, parameterTable = NULL, PIA = constantPIA, R = R))
+    }
+
+    parnames <- names(models)                 # typically c('g0', 'sigma', 'z')
+    vars     <- unique (unlist(sapply (models, all.vars)))
+    vars     <- vars[!(vars %in% groups)]     # groups treated separately
+    nmix     <- get.nmix(models, capthist, hcov)
+    trps    <- traps(capthist)                 # session-specific trap array
+    used    <- usage(trps)                     # session-specific usage
+    zcov    <- covariates(capthist)            # session-specific individual covariates
+    trapcov <- covariates(trps)                # session-specific trap covariates
+
+    if (('g' %in% vars) & is.null(groups))
+        stop ("requires valid 'groups' covariate")
 
     #--------------------------------------------------------------------------
     # timecov may be a vector or a dataframe or a list of vectors or a list of data frames
@@ -625,6 +637,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     dframe[is.na(dframe)] <- 0
     # list with one component per real parameter
     # each of these is a list with components 'model' and 'index'
+
     designMatrices <- sapply (1:length(models), simplify=FALSE,
         function (x) make.designmatrix(models[[x]], names(models[x])))
     names(designMatrices) <- names(models)

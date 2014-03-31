@@ -1,9 +1,10 @@
 \name{plot.mask}
 \alias{plot.mask}
 \alias{plot.Dsurface}
+\alias{plot.Rsurface}
 \alias{spotHeight}
 
-\title{ Plot Habitat Mask or Density Surface }
+\title{ Plot Habitat Mask, Density or Resource Surface }
 
 \description{
   Plot a habitat mask either as points or as an \code{image}
@@ -16,6 +17,9 @@
     polycol = "red", \dots)
 
 \method{plot}{Dsurface}(x, covariate = "D", group = NULL, plottype =
+    "shaded", scale = 1, ...)
+
+\method{plot}{Rsurface}(x, covariate = "Resource", plottype =
     "shaded", scale = 1, ...)
 
 spotHeight (object, prefix = NULL, dec = 2, point = FALSE, text = TRUE,
@@ -36,11 +40,11 @@ spotHeight (object, prefix = NULL, dec = 2, point = FALSE, text = TRUE,
   \item{meshcol}{ colour for pixel borders (NA for none) }
   \item{ppoly}{ logical for whether the bounding polygon should be
        plotted (if `poly' specified) }
-  \item{polycol}{ colour for outline of polygon (\code{ppoly} = TRUE) }
+  \item{polycol}{ colour for outline of polygon (\code{ppoly} = TRUE) }     
   \item{\dots}{ other arguments passed to \code{eqscplot} (in the case
   of \code{plot.mask}), \code{plot.mask} (in the case of
-  \code{plot.Dsurface}), and \code{points} or \code{text} (in the case of \code{spotHeight}) }
-
+  \code{plot.Dsurface} and \code{plot.Rsurface}), and \code{points} or
+  \code{text} (in the case of \code{spotHeight}) }
   \item{group}{ group for which plot required, if more than 1 }
   \item{plottype}{ character string c("dots", "shaded", "contour",
     "persp") }
@@ -59,12 +63,12 @@ spotHeight (object, prefix = NULL, dec = 2, point = FALSE, text = TRUE,
 The argument \code{dots} of \code{plot.mask} selects between two
 distinct types of plot (dots and shaded (coloured) pixels).
 
-\code{plot.Dsurface} offers contour and perspective plots in addition to
-the options in \code{plot.mask}. It may take some experimentation to get
-what you want - see \code{\link[graphics]{contour}} and
-\code{\link[graphics]{persp}}.
+\code{plot.Dsurface} and \code{plot.Rsurface} offer contour and
+perspective plots in addition to the options in \code{plot.mask}. It may
+take some experimentation to get what you want - see
+\code{\link[graphics]{contour}} and \code{\link[graphics]{persp}}.
 
-If using a covariate or Dsurface to colour dots or pixels, the
+If using a covariate or Dsurface or Rsurface to colour dots or pixels, the
 \code{col} argument should be a colour vector of length equal to the
 number of levels (the default palette is \code{heat.colors}, and this
 palette will also be used whenever there are too few levels in the
@@ -82,14 +86,14 @@ vector of break points (length one more than the number of
 intervals). This gives more control and often `prettier' 
 
 \code{spotHeight} may be used to interrogate a plot produced with
-\code{plot.Dsurface}, or by \code{plot.mask} if the mask has
-covariates. \code{prefix} defaults to `density.' for Dsurface objects
-and to `' (all covariates) for mask objects. The predicted density or
-covariate at the nearest point is returned when the user clicks on the
-plot. Multiple values may be displayed (e.g., \code{prefix =
-c("lcl","ucl")} if Dsurface includes confidence limits). Click outside
-the mask or hit the Esc key to end. \code{spotHeight} deals with one
-session at a time.
+\code{plot.Dsurface} or \code{plot.Rsurface}, or by \code{plot.mask} if
+the mask has covariates. \code{prefix} defaults to `density.' for
+Dsurface objects and to `' (all covariates) for mask objects. The
+predicted density or covariate at the nearest point is returned when the
+user clicks on the plot. Multiple values may be displayed (e.g.,
+\code{prefix = c("lcl","ucl")} if Dsurface includes confidence
+limits). Click outside the mask or hit the Esc key to
+end. \code{spotHeight} deals with one session at a time.
 
 }
 

@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.7.0\cr
-Date: \tab 2013-10-30\cr
+Version: \tab 2.8.0\cr
+Date: \tab 2014-03-31\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -54,6 +54,7 @@ help index. Several vignettes complement the help pages:
   \url{../doc/secr-datainput.pdf} \tab data formats and input functions \cr
   \url{../doc/secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
   \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
+  \url{../doc/secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
   \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
   \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
   \url{../doc/secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
@@ -123,7 +124,10 @@ for analysing capture-recapture data from passive detector arrays.
 Efford, M. G. and Fewster, R. M. (2013) Estimating population
   size by spatially explicit capture--recapture. \emph{Oikos}
   \bold{122}, 918--928.
- 
+
+Efford, M. G. and Mowat, G. (2014). Compensatory heterogeneity in
+spatially explicit capture--recapture data. \emph{Ecology} (in press).
+
 Royle, J. A. and Gardner, B. (2011) Hierarchical spatial
 capture--recapture models for estimating density from trapping
 arrays. In: A.F. O'Connell, J.D. Nichols and K.U. Karanth (eds)

@@ -24,10 +24,29 @@ covariates(object) <- value
 }
 
 \value{
-  covariates(object) returns the dataframe of covariates associated with \code{object}. \code{covariates(object)} may be NULL.
+  covariates(object) returns the dataframe of covariates associated with
+  \code{object}. \code{covariates(object)} may be NULL.
+
+  Individual covariates are stored in the `covariates' attribute of a
+  \code{capthist} object.
+
+  Covariates used for modelling density are stored in the `covariates'
+  attribute of a \code{mask} object.
+  
+  Detector covariates may vary between sampling occasions. In this case,
+   columns in the detector covariates data.frame are associated with
+   particular times; the matching is controlled by the
+   \code{\link{timevaryingcov}} attribute.
+}
+
+\seealso{
+
+  \code{\link{timevaryingcov}}
+  
 }
 
 \examples{
+## detector covariates
 temptrap <- make.grid(nx = 6, ny = 8)
 covariates (temptrap) <- data.frame(halfnhalf = 
     factor(rep(c("left","right"),c(24,24))) )

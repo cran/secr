@@ -126,6 +126,11 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             Xrealparval0 <- reparameterize.esa (Xrealparval0, mask, trps, object$detectfn, s)
         if (object$details$param == 3)
             Xrealparval0 <- reparameterize.a0 (Xrealparval0, object$detectfn)
+        ## inappropriate
+        if (object$details$param == 4) {
+            stop("param = 4 not available")
+            Xrealparval0 <- reparameterize.sigmak (Xrealparval0, NA)
+        }
 
         ## force to binary 2012-12-17
         ## used <- usage(trps)
@@ -144,7 +149,30 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         param <- object$details$param
         if (is.null(param))
             param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
-        miscparm <- object$details$cutval
+
+        normalize <- object$details$normalize
+        if (is.null(normalize))
+            normalize <- FALSE
+        miscparm <- numeric(4)
+        if ((object$detectfn %in% 14:18) & normalize) {
+            miscparm <- c(1,0,1,0)
+            if (!is.null(object$details$usecov)) {
+                miscparm[2] <- 1
+                ## following may fail if some parameters fixed
+                alpha2 <- beta[object$parindx[['lambda0']][2]]
+                alpha2 <- ifelse (is.na(alpha2),0, alpha2)
+                z <- covariates(mask)[,object$details$usecov]
+                if (is.null(z))
+                    stop("no valid mask covariate")
+                mask <- cbind(mask, z * alpha2)
+                mask <- as.matrix(mask[,c(1:3,3)]) ## double last col
+            }
+            else {
+                mask <- as.matrix(mask[,c(1:2,2)])
+            }
+        }
+        else
+            miscparm[1] <- object$details$cutval
         useD <- FALSE
 
 #        print(dettype)

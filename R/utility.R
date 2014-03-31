@@ -24,6 +24,11 @@
 
 ## 2013-06-17 I have so far resisted the temptation to add HCU hazard cumulative uniform df
 ##            based on Horne & Garton 2006
+## 2013-11-09 pointsInPolygon bug fix
+## 2013-11-09 getbinomN moved from pdot
+## 2013-11-16 xy2CH telemetry; patched for covariates 2013-12-02
+## 2013-11-20 getcoord from SpatialPolygons
+## 2014-03-18 complete.beta functions for fixedbeta
 ###############################################################################
 
 .localstuff <- new.env()
@@ -403,6 +408,9 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         ## 2013-04-20 update for deprecation of 'overlay'
         ## OK <- overlay (xy, poly)
         OK <- over (xy, poly)
+        ## bug fix 2013-11-09
+        if (!is.null(dim(OK)))
+            OK <- OK[,1]
         !is.na(OK)
     }
     else if (inherits(poly, 'mask')) {  # 2012-04-13
@@ -997,5 +1005,111 @@ inflate <- function (xy, rmult = 1) {
     r <- r * rmult
     xy <- cbind(r * cos(theta), r * sin(theta))
     sweep(xy, MARGIN = 2, STATS = centre, FUN = '+')
+}
+###############################################################################
+## moved from pdot.R 2013-11-09
+getbinomN <- function (binomN, detectr) {
+    if (detectr %in% .localstuff$countdetectors) {
+        if (is.null(binomN))
+            return(0)
+        else if (binomN == 'usage')
+            return(1)
+        else
+            return(binomN)
+    }
+    else
+        return(1)
+}
+###############################################################################
+
+## convert xylist attribute of a combined dataset into a standalone capthist
+xy2CH <- function (CH, inflation = 1e-8) {
+    xylist <- telemetryxy(CH)
+    if (is.null(xylist))
+        stop ("requires xylist attribute")
+    n <- length(xylist)
+    neach <- sapply(xylist, nrow)
+    allxy <- do.call(rbind, xylist)
+    trps <-  allxy[chull(allxy),]
+    trps <- rbind(trps, trps[1,,drop=F])
+    trps <- inflate(trps, 1 + inflation)  ## see also telemetry.R
+
+    trps <- as.data.frame(trps)
+    dimnames(trps) <- list(1:nrow(trps), c('x','y'))
+    class(trps) <- c("traps","data.frame")
+    detector(trps) <- "telemetry"
+    polyID(trps) <- factor(rep(1,nrow(trps)))
+
+    rown <- rep(names(xylist), neach)
+    newCH <- array(neach, dim = c(n, 1, 1))
+    attr(newCH, "detectedXY") <- allxy
+    if (!is.null(covariates(CH))) {
+        rowlookup <- match(names(xylist), rownames(CH))
+        covariates(newCH) <- covariates(CH)[rowlookup,, drop=FALSE]
+    }
+    class(newCH) <- "capthist"
+    traps(newCH) <- trps
+    newCH
+}
+###############################################################################
+## return coordinates from simple SpatialPolygons object
+## returns list
+getcoord <- function(obj){
+    if (!inherits(obj, 'SpatialPolygons'))
+        stop ("requires SpatialPolygons object")
+    if (length(obj@polygons) > 1)
+        warning ("using only first 'polygons'")
+    Polygons <- obj@polygons[[1]]
+    lapply(Polygons@Polygons, coordinates)
+}
+
+###############################################################################
+## used by sim.capthist to update telemetry boundary polygon 2013-11-21
+refreshMCP <- function (CH) {
+    if (detector(traps(CH)) %in% c('polygon','polygonX','telemetry'))
+        allxy <- xy(CH)
+    else
+        stop ("requires polygon or telemetry detector type")
+    trps <-  allxy[chull(allxy),]
+    class(trps) <- c("traps","data.frame")
+    names(trps) <- c('x','y')
+    detector(trps) <- detector(traps(CH))
+    polyID(trps) <- rep(1,nrow(trps))
+    traps(CH) <- trps
+    CH
+}
+###############################################################################
+
+## moved from derivedMS 2013-12-15
+maskarea <- function (mask, sess = 1) {
+    if (!ms(mask)) nrow(mask) * attr(mask,'area')
+    else nrow(mask[[sess]]) * attr(mask[[sess]],'area')
+}
+###############################################################################
+
+complete.beta <- function (object) {
+    fb <- object$details$fixedbeta
+    if (!is.null(fb)) {
+        nbeta <- length(fb)
+        fb[is.na(fb)] <- object$fit$par
+        beta <- fb
+    }
+    else {
+        beta <- object$fit$par
+    }
+    beta
+}
+
+complete.beta.vcv <- function (object) {
+    fb <- object$details$fixedbeta
+    if (!is.null(fb)) {
+        nbeta <- length(fb)
+        beta.vcv <- matrix(NA, nrow = nbeta, ncol = nbeta)
+        beta.vcv[is.na(fb[row(beta.vcv)]) & is.na(fb[col(beta.vcv)])] <- object$beta.vcv
+    }
+    else {
+        beta.vcv <- object$beta.vcv
+    }
+    beta.vcv
 }
 ###############################################################################

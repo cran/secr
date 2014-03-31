@@ -6,6 +6,8 @@
 ## 2009 08 25 fixed AIC small sample adjustment
 ## 2009 08 25 block re-zeroing of AICc vs constrained model
 ## requires nlme
+## 2014-02-17 question settings in fdHess call : .relStep = 0.001, minAbsPar = 0.1
+## 2014-02-17 these are now set explicitly as arguments of score.test
 ############################################################################################
 ## source ('d:\\density secr 1.1\\secr\\R\\scoretest.R')
 ############################################################################################
@@ -121,13 +123,13 @@ mapbeta <- function (parindx0, parindx1, beta0, betaindex)
 }
 ############################################################################################
 
-score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) {
+score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
+                        .relStep = 0.001, minAbsPar = 0.1) {
 
     if (!inherits(secr, 'secr'))
         stop ("only for 'secr' objects")
 
     models <- list(...)
-
     if (length(models)>1) { ##  ) {
         # apply to each component of 'model' list
 
@@ -215,7 +217,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1) 
 
         ## fdHess is from package nlme
         grad.Hess <- nlme::fdHess(beta1, fun = loglikfn, design = newsecr,
-                            .relStep = 0.001, minAbsPar=0.1)
+                            .relStep = .relStep, minAbsPar = minAbsPar)
         u.star <- grad.Hess$gradient
         i.star <- -grad.Hess$Hessian
 

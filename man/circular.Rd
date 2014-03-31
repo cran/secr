@@ -139,21 +139,7 @@ legend (2.8, 0.3, legend = c("halfnormal","hazard-rate, z = 4", "exponential"),
 ## in this example, a more interesting comparison would use
 ## sigma = 0.58 for the exponential curve.
 
-\dontrun{
-## integrate() has a default of subdivisions = 100
-## Increasing this argument can help.
-## e.g., this fails with message
-## "Error in integrate(rdfn, 0, r, pars, cutval, ...) : 
-##   maximum number of subdivisions reached"
-
-circular.r (p = seq(0.1,0.9,0.01), detectfn = "HR",
-    detectpar = list(sigma = 10, z = 8))
-
-## this succeeds:
-circular.r (p = seq(0.1,0.9,0.01), detectfn = "HR",
-    detectpar = list(sigma = 10, z = 8), subdivisions = 300)
-}
-
+% removed dontrun example with subdivisions because it no longer works 2014-03-25
 }
 
 \keyword{ models }

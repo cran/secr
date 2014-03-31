@@ -3,6 +3,7 @@
 ## Dsurface.R
 ## 2011-10-21, modified through 2011-11-10
 ## 2012-10-25 bug fixed in getDensityArray with multi-session mask
+## 2014-03-18 fixedbeta allowed
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
@@ -100,8 +101,16 @@ predictD <- function (object, regionmask, group, session,
         }
         class(newdata) <- c('mask', 'data.frame')
         attr (newdata, 'area') <- attr(regionmask, 'area')
+
+
+        #############################################
+        ## allow for fixed beta parameters 2014-03-18
+        beta <- complete.beta(object)
+        beta.vcv <- complete.beta.vcv(object)
+        #############################################
+
         indx <- object$parindx$D
-        betaD <- object$fit$par[indx]
+        betaD <- beta[indx]
         if (object$model$D == ~1) {
             D <- untransform(betaD, object$link$D)
             D <- max(D,0) / n.clust
@@ -112,13 +121,13 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
-            mat <- model.matrix(object$model$D, data=newdata)
+            mat <- model.matrix(object$model$D, data = newdata)
             lpred <- mat %*% betaD
             temp <- untransform(lpred, object$link$D)
             temp <- pmax(temp, 0) / n.clust
 
             if (se.D | cl.D) {
-                vcv <- vcov(object) [indx,indx]
+                vcv <- beta.vcv [indx,indx]
                 selpred <- sapply(1:nrow(mat), function(i)
                     mat[i,, drop=F] %*% vcv %*% t(mat[i,, drop=F]))^0.5
                 if (se.D) {

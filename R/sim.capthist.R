@@ -41,6 +41,7 @@ sim.capthist <- function (
     noccasions = 5,
     nsessions = 1,
     binomN = NULL,
+    exactN = NULL,
     p.available = 1,
     renumber = TRUE,
     seed = NULL,
@@ -127,7 +128,8 @@ sim.capthist <- function (
             }
 
             output[[t]] <- sim.capthist(traps, temppop, detectfn, detectpar,
-                nocc[t], 1, binomN, 1, renumber, seed, maxperpoly)
+                nocc[t], 1, binomN, exactN, 1, renumber, seed, maxperpoly)
+            ## 'exactN' was missing from preceding call until 2014-02-18
             session( output[[t]] ) <- t   ## added 2011-09-09
 
         }
@@ -659,6 +661,7 @@ sim.capthist <- function (
             if (detector(traps) == 'telemetry') {
                 nk <- 1
                 polynames <- '1'
+                if (is.null(exactN)) exactN <- 0
                 temp <- .C('trappingtelemetry', PACKAGE = 'secr',
                            as.double(df0),
                            as.double(sigma),
@@ -669,6 +672,7 @@ sim.capthist <- function (
                            as.integer(detectfn),
                            as.double(truncate^2),
                            as.integer(detectpar$binomN),
+                           as.integer(exactN),
                            as.integer(maxperpoly),
                            n = integer(1),
                            caught = integer(N),
@@ -727,6 +731,8 @@ sim.capthist <- function (
                     noise(w) <- temp$noise[1:sum(w)]
             }
         }
+        if (detector(traps) %in% 'telemetry')  ## 2013-11-21
+             w <- refreshMCP(w)
 
         if (renumber && (temp$n>0)) rownames(w) <- 1:temp$n
         else {

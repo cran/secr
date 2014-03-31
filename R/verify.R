@@ -22,7 +22,7 @@ overlapcells <- function (xy) {
     vertexinside <- function (a,b) {
         OK <- FALSE
         for (k in 1:4) {
-            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
+            temp <- .C('inside',  PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -30,7 +30,7 @@ overlapcells <- function (xy) {
                 as.double (b),
                 result = integer(1))
             if (any(as.logical(temp$result))) OK <- TRUE
-            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
+            temp <- .C('inside',  PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -74,7 +74,7 @@ overlappoly <- function (xy, polyID) {
         a <- as.matrix(a)
         b <- as.matrix(b)
         for (k in 1:n.a) {
-            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
+            temp <- .C('inside',  PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (n.b-1),
@@ -84,7 +84,7 @@ overlappoly <- function (xy, polyID) {
             if (any(as.logical(temp$result))) OK <- TRUE
         }
         for (k in 1:n.b) {
-            temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
+            temp <- .C('inside',  PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (n.a-1),
@@ -133,7 +133,7 @@ xyinpoly <- function (xy, trps) {
         ## is point i inside poly k?
         polyxy <- as.matrix(lxy[[k]])
         nr <- nrow(polyxy)
-        temp <- .C('inside',  DUP = FALSE, PACKAGE = 'secr',
+        temp <- .C('inside',  PACKAGE = 'secr',
             as.double (xy[i,]),
             as.integer (0),
             as.integer (nr-1),
@@ -157,7 +157,7 @@ xyontransect <- function (xy, trps, tol=0.01) {
         ## is point i on transect k?
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
-        temp <- .C('ontransect',  DUP = FALSE, PACKAGE = 'secr',
+        temp <- .C('ontransect',  PACKAGE = 'secr',
             as.double (xy[i,]),
             as.integer (0),
             as.integer (nr-1),
@@ -238,7 +238,8 @@ verify.traps <- function (object, report = 2, ...) {
 
         single <- detector(object) %in% c('single')
         area <- FALSE
-        poly <- detector(object) %in% c('polygon','polygonX', 'telemetry')
+        poly <- detector(object) %in% c('polygon','polygonX')
+        telem <- detector(object) == 'telemetry'
 
         usagedetectorsOK <- TRUE
         usagenonzeroOK <- TRUE
@@ -276,12 +277,12 @@ verify.traps <- function (object, report = 2, ...) {
             areaOK <- areaOK & !overlapcells(object)
         }
         else
-        if (poly) {
+        if (poly | telem) {
             areaOK <- !overlappoly (object, levels(polyID(object)))
         }
 
         ## 6
-        if (poly) {
+        if (poly | telem) {
             polyIDOK <- (length(polyID(object)) == nrow(object)) &
                 is.factor(polyID(object))
         }
@@ -551,9 +552,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 14
-        if (poly) {
+        if (poly | telem) {
             xy <- xy(object)
-            if (detector(traps(object)) %in% c('polygon'))
+            if (detector(traps(object)) %in% c('polygon','telemetry'))
                 xyOK <- nrow(xy) == sum(abs(object))
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
@@ -584,7 +585,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         if (nrow(object)>0) {
             zeros <- apply(abs(object)>0,1,sum)==0
             # pc <- detector(traps(object)) %in% c('proximity','count')
-            xyl <- attr(object,'xylist')
+            xyl <- telemetryxy(object)
             if (!is.null(xyl) | any(zeros)) {
                 xylistOK <- all(names(xyl) %in% row.names(object))
                 if (!all(row.names(object)[zeros] %in% names(xyl)))
@@ -660,7 +661,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
                 if (!detectornumberOK) {
                     cat ('traps object incompatible with reported detections\n')
-                    cat ('traps(capthist) :', nrow(traps(object)), 'detectors\n')
+                    cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
                     if (dim3)
                         cat ('capthist :', dim(object)[3], 'detectors\n')
                     else
@@ -682,7 +683,8 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     print(detectorconflcts)
                 }
                 if (!xyOK) {
-                    cat ("Polygon detector xy coordinates of detections do not match counts\n")
+                    cat ("Polygon or telemetry detector xy coordinates of detections",
+                         " do not match counts\n")
                 }
                 if (!xyinpolyOK) {
                     cat ("XY coordinates not in polygon\n")
@@ -699,7 +701,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     cat ("Duplicated row names (animal ID)\n")
                 }
                 if (!xylistOK) {
-                    cat ("Telemetry data (xylist) does not match capture histories\n")
+                    cat ("Telemetry data (xylist) do not match capture histories\n")
                 }
             }
 

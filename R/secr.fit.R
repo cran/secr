@@ -16,7 +16,11 @@
 ## 2013-07-19 a0 parameterisation details$param = 3
 ## 2013-10-14 tweak a0 biasD
 ## 2013-10-28 revise pmix models
-################################################################################
+## 2013-11-09 rearrange model check code to put in warning
+## 2014-03-12 sigmak parameterisation details$param = 4
+## 2014-03-12 bufferbiascheck now in suggest.buffer
+## 2014-03-24 allow combination esa, sigmak (param 6)
+###############################################################################
 
 secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     buffer = NULL, CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL,
@@ -51,11 +55,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 #  ...        -  other arguments passed to nlm() or optim()
 
 
-    if (!inherits(capthist, 'capthist'))
-        stop ("requires 'capthist' object")
-    if ((detector(traps(capthist))=='cue') & (is.null(groups) | !CL))
-        stop ("cue detector requires CL = TRUE and groups")
-
     #################################################
     ## Remember start time and call
 
@@ -63,6 +62,22 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
 
     cl   <- match.call(expand.dots = TRUE)
+
+    ## 2014-02-13
+    if (is.character(capthist)) {
+        capthist <- get(capthist, pos=-1)
+    }
+    if (is.character(mask)) {
+        mask <- get(mask, pos=-1)
+    }
+    if (is.character(dframe)) {
+        dframe <- get(dframe, pos=-1)
+    }
+
+    if (!inherits(capthist, 'capthist'))
+        stop ("requires 'capthist' object")
+    if ((detector(traps(capthist))=='cue') & (is.null(groups) | !CL))
+        stop ("cue detector requires CL = TRUE and groups")
 
     if (ncores > 1) {
         clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
@@ -111,10 +126,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                            tx = 'identity',
                            param = 0,
                            unmash = FALSE,
+                           telemetrytype = 'concurrent',
                            telemetrysigma = FALSE,
+                           telemetrybvn = FALSE,
                            ignoreusage = FALSE,
                            debug = FALSE,
-                           intwidth2 = 0.8
+                           intwidth2 = 0.8,
+                           normalize = FALSE,
+                           usecov = NULL
+##                           , maxcallsize = 512
                            )
 
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
@@ -125,7 +145,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         defaultdetails$cutval <- attr(capthist[[1]],'cutval')
     if (is.logical(details$hessian))
         details$hessian <- ifelse(details$hessian, 'auto', 'none')
+    details$telemetrytype <- match.arg(details$telemetrytype, c('none', 'independent',
+        'dependent', 'concurrent'))
+    if (details$telemetrytype == 'independent')
+        details$telemetrysigma <- TRUE
     details <- replace (defaultdetails, names(details), details)
+    if (details$telemetrytype == 'none' && details$telemetrysigma == TRUE)
+        details$telemetrytype <- 'independent'
     if (!is.null(trace)) details$trace <- trace
     if (!is.null(binomN)) {
         if (detector(traps(capthist)) == 'count') {
@@ -272,16 +298,28 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     model <- stdform (model)  ## named, no LHS
     if (sum(c('g0','a0','lambda0') %in% names(model)) > 1)
         stop ("model should include only one of g0, a0, lambda0")
-    if ("a0" %in% names(model)) {
-        if (details$param != 3)
-            warning ("setting details$param = 3")
+
+    esa <- "esa" %in% names(model)
+    a0 <- "a0" %in% names(model)
+    sigmak <- "sigmak" %in% names(model)
+    if (esa & !sigmak) {
+        details$param <- 2
+    }
+    if (a0 & !sigmak) {
         details$param <- 3
     }
-    ## pmix, lambda0 added to defaultmodel 2013-04
-    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1, sigma=~1, z=~1,
-                         w=~1, pID=~1, beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
-                         ## pmix=~1) ## 2013-10-27
-    model <- replace (defaultmodel, names(model), model)
+    if (sigmak) {
+        if (esa) {
+            details$param <- 6
+        }
+        else {
+            if (CL)
+                stop ("sigmak parameterization requires full model, not CL, unless also 'esa'")
+            details$param <- ifelse(a0, 5, 4)
+        }
+    }
+    if (details$param > 0)
+        warning ("Using parameterization details$param = ", details$param)
 
     ## modelled parameters
     pnames <- switch (detectfn+1,
@@ -305,10 +343,14 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         c('lambda0','sigma','w'),  # 17
         c('lambda0','sigma','z'))  # 18
 
-    if (details$param == 2)
+    if (details$param %in% c(2,6))
         pnames[1] <- "esa"
-    if (details$param == 3)
+    if (details$param %in% c(3,5))
         pnames[1] <- "a0"
+    if (details$param %in% 4:6) {
+        pnames[2] <- "sigmak"
+        pnames <- c(pnames, "c")
+    }
 
     if (!CL) pnames <- c('D', pnames)
     if (!is.null(q) & nonID) {
@@ -317,16 +359,32 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             stop ("'pID' must be constant in this implementation")
     }
     if (alltelem) {
-        if (details$param %in% c(2,3))
-            stop ("telemetry not yet adapted for a0 and esa parameterisations")
-        if (detectfn %in% 0:8)  ## 2013-06-15
-            rnum <- match(c('D','g0'), pnames)
-        else
-            rnum <- match(c('D','lambda0'), pnames)
-        pnames <- pnames[-rnum[!is.na(rnum)]]
+        rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
+        rnum[is.na(rnum)] <- 0
+        pnames <- pnames[-rnum]
+    }
+    if (details$param %in% 4:6) {
+        if (! ("c" %in% names(model))) {
+            ## default to fixed c = 0
+            if (!("c" %in% names(fixed)))
+                fixed$c <- 0
+        }
     }
     fnames <- names(fixed)
     pnames <- pnames[!(pnames %in% fnames)]        ## drop fixed real parameters
+
+    ## this warning may be superfluous, and distracting
+    ## OK <- names(model) %in% pnames
+    ## if (any(!OK))
+    ##    warning ("parameters in model not consistent with detectfn : ",
+    ##             paste(names(model)[!OK], collapse = ', '))
+
+    ## 2013-11-09 only now fillout model
+    ## pmix, lambda0 added to defaultmodel 2013-04
+    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1, sigma=~1, sigmak=~1, z=~1,
+                         w=~1, c=~1, pID=~1, beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
+                         ## pmix=~1) ## 2013-10-27
+    model <- replace (defaultmodel, names(model), model)
 
     ######################################################
     # Finite mixtures - 2009 12 10, 2011 12 16, 2013 10 27
@@ -392,17 +450,19 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             stop ("cannot use 'scalesigma' with groups")
     }
     if (details$scaleg0) {
-        warning ("scaleg0 is deprecated; use a0 parameterization instead (param == 3)")
+        warning ("scaleg0 is deprecated and will soon be dropped from secr; use a0 parameterization instead (param == 3)")
         if (!is.null(groups))
             stop ('Cannot use scaleg0 with groups')
     }
-
+    if (details$scaleg0) {
+        warning ("scalesigma is deprecated and will soon be dropped from secr; use sigmak parameterization instead (param == 4")
+    }
     ############################################
     # Link functions (model-specific)
     ############################################
     defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log', a0='log',
-                        sigma='log', z='log', w='log', pID='logit', beta0='identity',
-                        beta1='neglog', sdS='log', b0='log', b1='neglog',
+                        sigma='log', sigmak='log', z='log', w='log', c='identity', pID='logit',
+                        beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog',
                         pmix='logit', cuerate='log', cut='identity')
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
@@ -455,11 +515,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     # Parameter mapping (general)
     ############################################
-    np <- sapply(design$designMatrices, ncol)
+    if (!is.null(design$designMatrices))
+        np <- sapply(design$designMatrices, ncol)
+    else {
+        np <- c(detectpar = 0)
+    }
     np <- c(D = nDensityParameters, np)
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
-    names(parindx) <- names(np)
+    names(parindx) <- names(np)[np>0]
     if (!D.modelled) parindx$D <- NULL
 
     ############################################
@@ -553,6 +617,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         #--------------------------------------------------------------
         # assemble start vector
         rpsv <- unlist(RPSV(capthist))[1]
+        n <- ifelse (ms(capthist), nrow(capthist[[1]]), nrow(capthist))
         default <- list(
             D     = ifelse (is.na(start3$D), 1, start3$D),
             g0    = ifelse (is.na(start3$g0), 0.1, start3$g0),
@@ -567,8 +632,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             b0    = 2,      ## changed from 15 2010-11-01
             b1    = -0.1,
             pmix  = 0,      ## superceded below
-            esa   = ifelse (is.na(start3$g0), 10, start3$g0 * start3$sigma^2 *
-                ndetector(traps(capthist))[1] / 2500),
+
+# esa   = ifelse (is.na(start3$g0), 10, start3$g0 * start3$sigma^2 *
+#     ndetector(traps(capthist))[1] / 2500),
+# replaced 2014-03-24
+            esa   = ifelse (is.na(start3$D), n / 5, n / start3$D),
             a0    = ifelse (is.na(start3$g0), 0.1 * rpsv^2, start3$g0 *
                 start3$sigma^2) / 10000 * 2 * pi
         )
@@ -580,6 +648,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (details$scaleg0) default$g0 <- default$g0 * default$sigma^2
         if (details$scaleg0) default$lambda0 <- default$lambda0 * default$sigma^2
         if (details$scalesigma) default$sigma <- default$sigma * default$D^0.5
+        if (details$param %in% 4:6) {
+            default$sigmak <- default$sigma * default$D^0.5
+            default$c <- 0 ## but problems if take log(c)
+        }
 
         if (detectfn %in% c(6)) {
             default$w <- default$sigma
@@ -651,6 +723,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         nmiscparm <- 1
     if (detector(traps(capthist)) %in% c('signalnoise'))
         nmiscparm <- 2
+
     NP <- NP + nmiscparm
     stopifnot (length(start) == NP)
 
@@ -781,12 +854,14 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             do.call(secr.loglikfn, c(list(beta=beta), secrargs))
         }
         grad.Hess <- nlme::fdHess(start, fun = loglikfn, .relStep = 0.001, minAbsPar=0.1)
-        this.fit <- list (value = 0, par = start,
+#        this.fit <- list (value = 0, par = start,
+        # let's keep the loglik 2014-01-25
+        this.fit <- list (value = loglikfn(start), par = start,
                           gradient = grad.Hess$gradient,
                           hessian = grad.Hess$Hessian)
         biasLimit <- NA   ## no bias assessment
     }
-    else stop ("maximisation method", method, "not recognised")
+    else stop ("maximization method", method, "not recognised")
     ############################################################################
 
     this.fit$method <- method         ## remember which method we used...
@@ -840,6 +915,12 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
 
     desc <- packageDescription("secr")  ## for version number
+
+    ## ad hoc censoring of evaluated calls from do.call 2014-02-10
+    ## wrong, and ugly...
+    ## if (object.size(cl) > details$maxcallsize)
+    ##    cl <- paste('secr.fit(',substring(as.character(cl)[2],1,details$maxcallsize),'...',sep='')
+
     output <- list (call = cl,
                   capthist = capthist,
                   mask = mask,
@@ -871,62 +952,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     class(output) <- 'secr'
 
-    ############################################
-    ## buffer bias check
-    ## not for polygon & transect detectors
-    ## adjust for user-spec biasLimit 2012-01-10
-    ############################################
-
-    validbiasLimit <- !is.null(biasLimit)
-    validbiasLimit <- validbiasLimit & is.finite(biasLimit)
-    validbiasLimit <- validbiasLimit & (biasLimit>0)
-    if (usebuffer & (this.fit$value < 1e9) &
-        (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
-        !(detector(traps(capthist)) %in% c('cue','unmarked','presence')) &
-        is.null(attr(capthist,'xylist')) &
-        validbiasLimit) {
-        if (MS) {
-            nsess <- length(capthist)
-            bias <- numeric(nsess)
-            for (i in 1:nsess) {
-                temptrps <- traps(capthist)[[i]]
-                if (details$ignoreusage)
-                    usage(temptrps) <- NULL
-                dpar <-  detectpar(output)[[i]]
-                biastemp <- try( bias.D(buffer, temptrps,
-                                        detectfn = output$detectfn,
-                                        detectpar = dpar,
-                                        noccasions = ncol(capthist[[i]]),
-                                        binomN = details$binomN) )
-                if (inherits(biastemp, 'try-error'))
-                   warning('could not perform bias check')
-                else
-                    bias[i] <- biastemp$RB.D
-            }
-        }
-        else {
-            temptrps <- traps(capthist)
-            if (details$ignoreusage)
-                usage(temptrps) <- NULL
-            dpar <-  detectpar(output)
-            bias <- try( bias.D(buffer, temptrps,
-                                detectfn = output$detectfn,
-                                detectpar = dpar,
-                                noccasions = ncol(capthist),
-                                binomN = details$binomN) )
-            if (inherits(bias, 'try-error')) {
-                warning('could not perform bias check')
-                bias <- 0  ## 2012-12-18 suppresses second message
-            }
-            else
-                bias <- bias$RB.D
-        }
-        if (any(bias > biasLimit))
-            warning ("predicted relative bias exceeds ", biasLimit, " with ",
-                     "buffer = ", buffer)
+    if (usebuffer & !is.na(biasLimit)) {
+        test <- try(bufferbiascheck(output, buffer, biasLimit))
     }
-
-    ############################################
 
     memo(paste('Completed in ', round(output$proctime,2), ' seconds at ',
         format(Sys.time(), "%H:%M:%S %d %b %Y"),

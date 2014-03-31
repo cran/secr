@@ -35,10 +35,12 @@ naivesigma <- function (obsRPSV,trps,mask,wt,detectfn,z,tol=0.001) {
         else
             obsRPSV                        # dummy value
     }
+
     if (is.null(mask))
         mask <- make.mask(trps, buffer = 10 * obsRPSV, nx=32)
     k <- nrow(trps)
     m <- nrow(mask)
+
     if (obsRPSV <= 0)   ## added 2012-04-19
         temp <- NA
     else
@@ -99,10 +101,9 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           gs0[rep(t(usage(trps)==0), each = 2)] <- -1
       }
       #--------------------------------------------
-
       area <- attr(mask,'area')  # area of single mask cell
       param <- 0    ## default Borchers & Efford parameterisation
-      miscparm <- 1  ## dummy value
+      miscparm <- c(1,0,0,0)  ## dummy value
       temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
           as.integer(dettype),
           as.integer(param),
@@ -139,7 +140,6 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 
     #############
     ## main line
-
     computeD <- TRUE
     if (length(tol)==1) tol <- rep(tol,2)
 

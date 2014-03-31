@@ -87,7 +87,7 @@ captdata  <- read.capthist ("capt.txt", "trap.txt", fmt = "XY")
 ## generate demonstration fits
 secrdemo.0 <- secr.fit (captdata)
 secrdemo.CL <- secr.fit (captdata, CL = TRUE)
-secrdemo.b <- secr.fit (captdata, model = list(g0 = ~b))
+secrdemo.b <- secr.fit (captdata, model = list(g0 ~ b))
 
 ## restore previous setting
 setwd(olddir)

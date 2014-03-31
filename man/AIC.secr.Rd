@@ -3,6 +3,7 @@
 \alias{logLik.secr}
 \alias{AIC.secrlist}
 \alias{secrlist}
+\alias{[.secrlist}
 
 \title{ Compare SECR Models }
 
@@ -10,7 +11,8 @@
 
 Terse report on the fit of one or more spatially explicit
 capture--recapture models. Models with smaller values of AIC (Akaike's
-Information Criterion) are preferred.
+Information Criterion) are preferred. Extraction ([) and logLik methods
+are included.
 
 }
 
@@ -19,6 +21,7 @@ Information Criterion) are preferred.
 \method{AIC}{secrlist}(object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c("AICc","AIC"))
 \method{logLik}{secr}(object, ...)
 secrlist(...)
+\method{[}{secrlist}(x, i)
 }
 
 \arguments{
@@ -28,7 +31,10 @@ secrlist(...)
   \item{sort}{ logical for whether rows should be sorted by ascending AICc }
   \item{k}{ numeric, penalty per parameter to be used; always k = 2 in this method}
   \item{dmax}{ numeric, maximum AIC difference for inclusion in confidence set}
-  \item{criterion}{ character, criterion to use for model comparison and weights}
+  \item{criterion}{ character, criterion to use for model comparison and
+  weights}
+  \item{x}{secrlist}
+  \item{i}{indices}
 }
 
 \details{

@@ -1,10 +1,12 @@
-## added argument noccasions in calls to pdot 2010-12-19
+## 2010-12-19 added argument noccasions in calls to pdot
 ## 2012-11-03 blocked gpclib
 ## 2012-12-18 warning for usage
 ## 2012-12-24 binomN argument
 ## 2013-04-19 hazard halfnormal, hazard exponential
 ## 2013-04-20 hazard annular normal, hazard cumulative gamma\
 ## 2013-04-23 hazard hazard rate
+## 2014-02-13 removed gpclib
+## 2014-03-12 bufferbiascheck() shifted from secr.fit
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
@@ -59,18 +61,6 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
             invlogit(predict(pdotr.spline,r)$y) * l(r)
     }
 
-## punion2 disabled to avoid R CMD check NOTE 2012-11-03
-#    punion2 <- function(polygons, ntheta) {
-#        ## from Remko Duursma on R list 6/3/2010
-#        vec <- c(1,ntheta+1,0,t(polygons[[1]]))
-#        for (p in polygons[-1]) {
-#            clip <- c(1,ntheta+1,0, t(p))
-#            vec <- .Call("Rgpc_polygon_clip", vec, clip, 3,
-#                         PACKAGE="gpclib")
-#        }
-#        as(vec, "gpc.poly")
-#    }
-
     lth <- function (x) {
         hull <- get.pts(x)
         sum(sapply(hull, function(xy) {
@@ -101,8 +91,6 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)
     defaultcontrol <- list(bfactor = 20, masksample = 1000, spline.df = 10,
-#                           scale = 10000, use.gpclib = FALSE, ntheta = 60,
-#                           ninterp = 5, maxinterp = NULL,
                            scale = 10000, ntheta = 60, method = 1)
     if (detectfn %in% c(1,2,7))
        defaultcontrol$bfactor <- 200
@@ -161,30 +149,15 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
     ## make function to return linear approximation to contour length at radius r
     ## assuming spacing/2 <= r < (scale*spacing)
 
-    ## alternate gpclib call disabled to avoid R CMD check NOTE 2012-11-03
-    # if ((system.file(package = "gpclib") != "") & control$use.gpclib) {
-    #     if (control$ninterp<2)
-    #         stop ("requires 'control$ninterp' >= 2")
-    #     if (is.null(control$maxinterp))
-    #         control$maxinterp <- trapspacing/2^0.5
-    #     critx <- c(seq(trapspacing/2, control$maxinterp, len=control$ninterp),
-    #                trapspacing * control$scale)
-    #     if (!require(gpclib, quietly = TRUE))
-    #         stop ("package 'gpclib' required in bias.D")
-    #     crity <- sapply(critx, perimeterfn, traps)
-    #  }
-    # else
-    {
-        hull <- buffer.contour(traps, buffer = 0, convex = TRUE, plt = FALSE, ntheta = 1)
-        perimeter <- sum(sapply(hull, function (xy) sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))))
-        perimeter <- perimeter + 2 * pi * trapspacing/2^0.5
-        critx <- c(trapspacing/2,
-                   trapspacing/2^0.5,
-                   trapspacing * control$scale)  ## coarse
-        crity <- c(ntraps * 2 * pi * trapspacing/2,
-                   perimeter,
-                   perimeter + 2 * pi * (trapspacing * control$scale - trapspacing/2^0.5))
-    }
+    hull <- buffer.contour(traps, buffer = 0, convex = TRUE, plt = FALSE, ntheta = 1)
+    perimeter <- sum(sapply(hull, function (xy) sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))))
+    perimeter <- perimeter + 2 * pi * trapspacing/2^0.5
+    critx <- c(trapspacing/2,
+               trapspacing/2^0.5,
+               trapspacing * control$scale)  ## coarse
+    crity <- c(ntraps * 2 * pi * trapspacing/2,
+               perimeter,
+               perimeter + 2 * pi * (trapspacing * control$scale - trapspacing/2^0.5))
     l <- approxfun(critx, crity, rule = 2)
 
     # scalar for 0-Inf
@@ -309,3 +282,62 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
     }
 }
 
+## shifted from secr.fit 2014-03-12
+
+bufferbiascheck <- function (output, buffer, biasLimit) {
+
+    ############################################
+    ## buffer bias check
+    ## not for polygon & transect detectors
+    ############################################
+
+    capthist <- output$capthist
+    validbiasLimit <- !is.null(biasLimit)
+    validbiasLimit <- validbiasLimit & is.finite(biasLimit)
+    validbiasLimit <- validbiasLimit & (biasLimit>0)
+    if ((output$fit$value < 1e9) &
+        (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
+        !(detector(traps(capthist)) %in% c('cue','unmarked','presence')) &
+        is.null(telemetryxy(capthist)) &
+        validbiasLimit) {
+        if (ms(capthist)) {
+            nsess <- length(capthist)
+            bias <- numeric(nsess)
+            for (i in 1:nsess) {
+                temptrps <- traps(capthist)[[i]]
+                if (output$details$ignoreusage)
+                    usage(temptrps) <- NULL
+                dpar <-  detectpar(output)[[i]]
+                biastemp <- try( bias.D(buffer, temptrps,
+                                        detectfn = output$detectfn,
+                                        detectpar = dpar,
+                                        noccasions = ncol(capthist[[i]]),
+                                        binomN = output$details$binomN) )
+                if (inherits(biastemp, 'try-error'))
+                    warning('could not perform bias check')
+                else
+                    bias[i] <- biastemp$RB.D
+            }
+        }
+        else {
+            temptrps <- traps(capthist)
+            if (output$details$ignoreusage)
+                usage(temptrps) <- NULL
+            dpar <-  detectpar(output)
+            bias <- try( bias.D(buffer, temptrps,
+                                detectfn = output$detectfn,
+                                detectpar = dpar,
+                                noccasions = ncol(capthist),
+                                binomN = output$details$binomN) )
+            if (inherits(bias, 'try-error')) {
+                warning('could not perform bias check')
+                bias <- 0  ## 2012-12-18 suppresses second message
+            }
+            else
+                bias <- bias$RB.D
+        }
+        if (any(bias > biasLimit))
+            warning ("predicted relative bias exceeds ", biasLimit, " with ",
+                     "buffer = ", buffer)
+    }
+}

@@ -49,7 +49,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \item{biasLimit}{ numeric threshold for predicted relative bias due to
   buffer being too small }
   \item{trace}{ logical, if TRUE then output each evaluation of the likelihood, and other messages}
-  \item{ncores}{ integer number of cores available for parallel processing}
+  \item{ncores}{ integer number of cores to be used for parallel processing}
   \item{\dots}{ other arguments passed to the maximization function }
 }
 
@@ -122,7 +122,12 @@ LLonly \tab compute one likelihood for values in \code{start} \cr
 param \tab optional parameterisation for multi-catch detectors\cr
 scaleg0 \tab structural relationshp between g0 and sigma\cr
 scalesigma \tab structural relationship between sigma and density\cr
+telemetrytype \tab treat telemetry data as independent, dependent or concurrent\cr
 telemetrysigma \tab use coordinate information from telemetry\cr
+telemetrybvn \tab use bivariate normal prior for centres of telemetered animals \cr
+normalize \tab rescale detection to individual range use \cr
+usecov \tab spatial covariate of use for normalization \cr
+%maxcallsize \tab limit to size of saved call \cr
 }
 
 If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is
@@ -157,6 +162,8 @@ extra cores may improve the speed of multi-session analyses (it may also
 slow them down, as data must be copied back and forth). There is
 presently no benefit for single-session analyses.
 
+Function \code{\link{par.secr.fit}} is an alternative and more effective
+way to take advantage of multiple cores when fitting several models.
 }
 
 \value{
@@ -285,6 +292,7 @@ setting \code{verify = FALSE}. This is now done by setting
   \code{\link{derived}},
   \code{\link{hcov}},
   \code{\link{mask}},
+  \code{\link{par.secr.fit}},
   \code{\link{predict.secr}},
   \code{\link{print.secr}},
   \code{\link{region.N}},

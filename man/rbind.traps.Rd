@@ -8,23 +8,32 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
 }
 
 \usage{
-\method{rbind}{traps}(..., renumber = TRUE)
+\method{rbind}{traps}(..., renumber = TRUE, addusage)
 }
 \arguments{
   \item{\dots}{ one or more \code{traps} objects }
-  \item{renumber}{ logical for whether row names in the new object should be set to the row indices }
+  \item{renumber}{ logical for whether row names in the new object
+    should be set to the row indices }
+  
+  \item{addusage}{ integer vector; if specified and the inputs lack
+    usage attributes then a binary usage attribute will be generated
+    with the given number of occasions for each input }
+
 }
 
 \details{
   
   An attempt to combine objects will fail if they conflict in their
   \code{covariates} attributes. Differences in the \code{usage}
-  attribute are handled as follows. If \code{usage} is specified for one
-  input but not other(s), the missing values are constructed assuming
-  all detectors were operated for the maximum number of occasions in any
-  input. If inputs differ in the number of `usage' columns (occasions),
-  the smaller matrices are padded with `zero' columns to the maximum
-  number of columns in any input.
+  attribute are handled as follows. If \code{usage} is missing for all
+  inputs and \code{addusage = TRUE} is specified then usage codes are
+  generated automatically (positive for the specified number of
+  occasions). If \code{usage} is specified for one input but not
+  other(s), the missing values are constructed assuming all detectors
+  were operated for the maximum number of occasions in any input. If
+  inputs differ in the number of `usage' columns (occasions), the
+  smaller matrices are padded with `zero' columns to the maximum number
+  of columns in any input.
 
 }
 

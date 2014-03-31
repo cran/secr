@@ -2,6 +2,7 @@
 ## package 'secr'
 ## ellipse.secr.R
 ## confidence ellipse for two named beta parameters
+## bivariate normal confidence ellipse for centre of 2-D distribution
 ## last changed 2010 02 15
 ############################################################################################
 
@@ -55,4 +56,28 @@ ellipse.secr <- function (object, par=c('g0', 'sigma'), alpha = 0.05, npts = 100
 ## ellipse.secr(secrdemo.0)
 ## ellipse.secr(secrdemo.0, link = FALSE, xlim = c(0.1,0.4),
 ##     ylim = c(20,40), alpha=0.01)
+#############################################################################################
 
+ellipse.bvn <- function (xy, alpha = 0.05, npts = 100, centroid = TRUE,
+                                add = FALSE, ...) {
+    ## xy is 2-column matrix of coordinates for one animal
+    centre <- matrix(apply(xy, 2, mean), ncol = 2)
+    vcv <- var(xy)
+    if (centroid) vcv <- vcv/nrow(xy)
+    detS <- det(vcv)^0.5  ## sqrt(generalised variance)
+    scale  <- sqrt(diag(vcv))
+    r <- vcv[1,2] / prod(scale)
+    d <- acos(r)
+    X2 <- qchisq(1-alpha, 2)
+    t <- sqrt(X2)
+    pairwise <-  solve(vcv)
+    a <- 2 * pi * (0:npts) / npts
+    x <- centre[1] + t * scale[1] * cos(a + d/2)
+    y <- centre[2] + t * scale[2] * cos(a - d/2)
+    if (!add)
+        plot(x,y, type='n', xlab='', ylab='')
+    polygon(x, y, ...)
+    out <- list(x = x, y = y, centre = centre)
+    invisible(out)
+}
+#############################################################################################

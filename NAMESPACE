@@ -7,10 +7,15 @@ importFrom(MASS, ginv)
 importFrom(MASS, eqscplot)
 importFrom(abind, abind)
 importFrom(nlme, fdHess)
+## importFrom(maptools, unionSpatialPolygons)
+## importFrom(maptools, readShapePoly)
 import(sp)
 import(parallel)
 
 export (secr.fit)
+export (par.secr.fit)
+export (par.derived)
+export (par.region.N)
 export (region.N)
 export (expected.n)
 export (ip.secr)
@@ -87,6 +92,7 @@ export (counts)
 export (model.average)
 export (collate)
 export (ellipse.secr)
+export (ellipse.bvn)
 export (LLsurface.secr)
 export (closure.test)
 export (closedN)
@@ -116,6 +122,7 @@ export (ms)
 export (detectpar)
 export (signal)
 export (noise)
+export (clone)
 
 S3method(reduce, default)
 S3method(rotate, default)
@@ -149,6 +156,9 @@ S3method(noise, default)
 S3method(signal, capthist)
 S3method(noise, capthist)
 
+S3method(clone, default)
+S3method(clone, popn)
+
 export (covariates)
 export (timevaryingcov)
 export (usage)
@@ -164,6 +174,9 @@ export (transectID)
 export (animalID)
 export (alive)
 export (xy)
+export (telemetryxy)
+export (telemetered)
+export (PG)
 export (alongtransect)
 export (snip)
 export (signalframe)
@@ -171,6 +184,12 @@ export (signalmatrix)
 export (noise)
 export (occasion)
 export (trap)
+export (Rsurface)
+export (CV)
+export (CVa)
+export (CVa0)
+export (plotMCP)
+export (xy2CH)
 
 export (traps)
 export (session)
@@ -211,8 +230,9 @@ export (secr.make.newdata)
 export (secr.design.MS)
 export (D.designdata)
 export (sim.secr)
-## not yet
-## export (phi.designdata)
+
+## export (telemetry.LT)
+## export (telemetry.LC)
 
 S3method(print, traps)
 S3method(plot, traps)
@@ -269,10 +289,14 @@ S3method(print, secrlist)
 S3method(plot, secrlist)
 S3method(predict, secrlist)
 S3method(AIC, secrlist)
+S3method('[', secrlist)
 
 S3method(print, Dsurface)
 S3method(plot, Dsurface)
 S3method(summary, Dsurface)
+
+S3method(plot, Rsurface)
+S3method(print, Rsurface)
 
 useDynLib (
     secr,
@@ -295,6 +319,7 @@ useDynLib (
     naived,
     naivecap2,
     makelookup,
-    SegCircle
+    SegCircle,
+    getdenomext
 )
 

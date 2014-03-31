@@ -14,7 +14,7 @@ of a 2-D population using an array of detectors.
 \usage{
 sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = "poisson"), detectfn = 0, detectpar = list(),
-    noccasions = 5, nsessions = 1, binomN = NULL,
+    noccasions = 5, nsessions = 1, binomN = NULL, exactN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
     maxperpoly = 100)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
@@ -32,6 +32,7 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   \item{noccasions}{ number of occasions to simulate }
   \item{nsessions}{ number of sessions to simulate }
   \item{binomN}{ integer code for distribution of counts (see Details) }
+  \item{exactN}{ integer number of telemetry fixes per occasion }
   \item{p.available}{ vector of one or two probabilities (see Details) }
   \item{renumber}{ logical for whether output rows should labeled sequentially (TRUE) or
  retain the numbering of the population from which they were drawn (FALSE) }
@@ -79,6 +80,9 @@ detections of an individual at a particular `count' detector or polygon
 on a particular occasion. A Poisson distribution is indicated by
 \code{binomN = 0}; see \code{\link{secr.fit}} for more. The distribution
 is always Bernoulli (binary) for `proximity' and `signal' detectors.
+
+If \code{exactN} is not specified or zero then the number of telemetry
+fixes is a random variable determined by the other detection settings.
 
 \code{p.available} specifies temporary non-availability for detection in
 multi-session simulations. If a single probability is specified then

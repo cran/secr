@@ -120,14 +120,14 @@ RPSV(temp4)
 
 \dontrun{
 ## compare two different model fits 
-tempfit3 <- secr.fit(temp3, CL = T, buffer = 150, model = list
+tempfit3 <- secr.fit(temp3, CL = TRUE, buffer = 150, model = list
     (g0 ~ session, sigma ~ session), trace = FALSE)
 predict(tempfit3)
 
 ## if we can tell which animals had large ranges...
 covariates(temp4) <- data.frame(range.size = rep(c("large",
     "small"), c(nrow(temp1), nrow(temp2))))
-tempfit4 <- secr.fit(temp4, CL = T, buffer = 150, model = list
+tempfit4 <- secr.fit(temp4, CL = TRUE, buffer = 150, model = list
     (g0 ~ range.size, sigma ~ range.size), trace = FALSE)
 predict(tempfit4, newdata = data.frame(range.size = c("large",
     "small")))

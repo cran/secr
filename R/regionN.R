@@ -12,12 +12,14 @@
 ## 2012-05-13 added explicit 'poisson' option in region.N for computation of RN
 
 ## 2012-08-07 potentially extend to groups by looping over sessions _and_ groups
+## 2014-03-19 pooled.RN
 
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-    keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson') {
+    keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',
+    pooled.RN = FALSE) {
 
     ## Notes
     ## se.N = FALSE returns scalar N
@@ -30,7 +32,8 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
         ## indx identifies beta parameters for density D
         object$fit$par[indx] <- betaD
         region.N(object, regionmask, spacing = NULL, session = session,
-            group = group, se.N = FALSE, keep.region = FALSE)
+            group = group, se.N = FALSE, keep.region = FALSE,
+            pooled.RN = FALSE)
     }
     ###########################################################
     ## for gradient of R.N wrt all betas
@@ -41,7 +44,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
         object$fit$par <- beta
         D <- predictD(object, regionmask, group, session)
         n + sumDpdot (object, sessnum, regionmask, D, cellarea,
-                  constant = FALSE, oneminus = TRUE)[1]
+                  constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
     }
     ###########################################################
 
@@ -59,6 +62,13 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     if (is.null(session))
         session <- session(object$capthist)
 
+    if (!ms(object))
+        pooled.RN <- FALSE
+
+    if (pooled.RN)
+        ## use only model for first session
+        session <- session[1]
+
     ####################################################################
     ## if N requested for multiple sessions,
     ## call region.N recursively for each session
@@ -75,7 +85,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 spacing = spacing, session = sess, group = group,
                 se.N = se.N, alpha = alpha, loginterval = loginterval,
                 keep.region = keep.region, nlowerbound = nlowerbound,
-                RN.method = RN.method)
+                RN.method = RN.method, pooled.RN = FALSE)
         }
         out
     }
@@ -117,8 +127,12 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
         ## region now inherits from mask, so has area attribute
         cellarea <- attr(regionmask, 'area')
         regionarea <- nrow(regionmask) * cellarea
-        if (ms(object))
-            n <- nrow(object$capthist[[session]])
+        if (ms(object)) {
+            if (pooled.RN)
+                n <- sum(sapply(object$capthist, nrow))
+            else
+                n <- nrow(object$capthist[[session]])
+        }
         else
             n <- nrow(object$capthist)
         sessnum <- match (session, session(object$capthist))
@@ -182,7 +196,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             RN.method <- tolower(RN.method)
             if (RN.method == 'mspe') {
                 notdetected <- sumDpdot (object, sessnum, regionmask, D,
-                    cellarea, constant = FALSE, oneminus = TRUE)[1]
+                    cellarea, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 ## evaluate gradient of RN wrt betas at MLE
                 dNdbeta <- nlme::fdHess (object$fit$par, betaRN, object = object,
@@ -193,7 +207,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             }
             else if (RN.method == 'poisson') {
                 notdetected <- sumDpdot (object, sessnum, regionmask, D,
-                    cellarea, constant = FALSE, oneminus = TRUE)[1]
+                    cellarea, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 seRN <- (seEN^2 - EN)^0.5
             }
@@ -237,7 +251,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 ## modelled on esa.R
 
 sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
-                      oneminus = FALSE)
+                      oneminus = FALSE, pooled = FALSE)
 
 # Return integral for given model and new mask, D
 # 'sessnum' is integer index of session (factor level of the 'session' attribute in capthist)
@@ -255,12 +269,19 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
 
     if (ms(mask))
         mask <- mask[[sessnum]]
-    beta <- object$fit$par
+
+    ## allow for fixed beta parameters 2014-03-18
+    beta <- complete.beta(object)
 
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
     noccasions <- s
-    trps   <- traps(capthists)  ## need session-specific traps
+
+    ## 2014-03-19 pooling option
+    if (pooled & ms(object))
+        trps <- do.call(rbind, c(traps(object$capthist), list(addusage = TRUE)))
+    else
+        trps   <- traps(capthists)  ## use session-specific traps
     if (!(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for sumDpdot")
 
@@ -328,6 +349,12 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
         Xrealparval0 <- scaled.detection (realparval0, FALSE,
             object$details$scaleg0, NA)
 
+##########################
+##########################
+## what about other param?
+##########################
+##########################
+
         usge <- usage(trps)
         if (is.null(usge)) {
             usge <- matrix(1, nrow = K, ncol = s)
@@ -343,7 +370,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
         param <- object$details$param
         if (is.null(param))
             param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
-        miscparm <- object$details$cutval
+        miscparm <- numeric(4)
+        miscparm[1] <- object$details$cutval
 
         ## add density as third column of mask
         if (!(length(D) %in% c(1,nrow(mask))))
@@ -454,7 +482,7 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
         ## predict for each session
         out <- vector('list')
         for (sess in session) {
-            out[[sess]] <- expected.n (object, sess, group, bycluster)
+            out[[sess]] <- expected.n (object, sess, group, bycluster, splitmask)
         }
         out
     }
@@ -478,7 +506,6 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
             trps <- traps(object$capthist)
         }
         sessnum <- match (session, session(object$capthist))
-
         #######################################################
         ## for conditional likelihood fit,
         if (object$CL) {

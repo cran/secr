@@ -173,9 +173,10 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             }
         }
     }
-
     ux <- unique(traps$x)
     uy <- unique(traps$y)
+    if (!is.numeric(ux) | !is.numeric(uy))
+        stop("non-numeric coordinates detected")
     attr(traps,'spacex') <- ifelse (length(ux)>1, min(dist(ux)), NA)
     attr(traps,'spacey') <- ifelse (length(uy)>1, min(dist(uy)), NA)
     spacing(traps) <- spacing(traps)   ## !!

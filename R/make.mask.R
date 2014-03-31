@@ -4,6 +4,7 @@
 ## 2011 10 10 transferred from methods.R
 ## 2012 04 10 fixed bug in ymax of bounding box
 ## 2012 04 11 added 'rectangular' mask type
+## 2014-03-22 all polygon type with no 'traps'
 ###############################################################################
 
 make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
@@ -43,7 +44,11 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             }
         }
 
-        if (is.null(traps))
+        ## if (is.null(traps))
+        ##    type <- 'rectangular'
+        ## replaced 2014-03-22
+        if (is.null(traps)) check.poly <- FALSE
+        if (is.null(traps) & !(type == 'polygon'))
             type <- 'rectangular'
         if (type == 'rectangular') {
             if (is.null(spacing))
@@ -129,16 +134,18 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             warning ("'pdot' mask may have been truncated; ",
                      "possibly increase buffer")
         }
-
         if (!is.null(poly)) {
             if (poly.habitat) {
-                mask <- mask[pointsInPolygon(mask, poly),]
-                if (check.poly & any (!pointsInPolygon(traps, poly)))
+                inpoly <- pointsInPolygon(mask, poly)
+                mask <- mask[inpoly,]
+                if (check.poly)
+                    if (any (!pointsInPolygon(traps, poly)))
                     warning ("some traps are outside habitat polygon")
             }
             else {
                 mask <- mask[!pointsInPolygon(mask, poly),]
-                if (check.poly & any (pointsInPolygon(traps, poly)))
+                if (check.poly)
+                    if (any (pointsInPolygon(traps, poly)))
                     warning ("some traps are inside non-habitat polygon")
             }
             if (keep.poly) {

@@ -29,8 +29,10 @@ Ancillary data are retained as attributes of a \code{capthist} object as follows
 \item{session}{ -- session identifier (required)}
 \item{covariates}{ -- dataframe of individual covariates (optional)}
 \item{cutval}{ -- threshold of signal strength for detection (`signal' only)}
-\item{signal}{ -- signal strength values, one per detection (`signal' only)}
-\item{detectedXY}{ -- dataframe of coordinates for location within polygon (`polygon' only)}
+\item{signalframe}{ -- signal strength values etc., one row per detection (`signal' only)}
+\item{detectedXY}{ -- dataframe of coordinates for location within
+  polygon (`polygon' only)}
+\item{xylist}{ -- coordinates of telemetered animals}
 }
 
 The parts of a capthist object can be assembled with the function

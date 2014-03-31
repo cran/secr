@@ -1,3 +1,103 @@
+Changes in version 2.8.0 (2014-03-31)
+
+New features or changed behaviour of old functions
+
+    o   new functions par.secr.fit(), par.region.N, and par.derived()
+    for parallel fit of multiple models
+
+    o   Rsurface() generates a smoothed 'resource availability' surface,
+    with plot and print methods
+
+    o   summary.mask() distinguishes Dsurfaces and Rsurfaces from other
+    mask types
+
+    o   sim.popn() now optionally simulates a fixed population N when
+    model2D = "IHP" (but with Ndist = "fixed" the 2-D distribution is no
+    longer strictly inhomogeneous Poisson)
+
+    o   rbind.capthist() for polygon and telemetry inputs automatically
+    forms a new search polygon that is the union of the input polygons
+
+    o   new functions CV(), CVa() and CVa0(), the latter two for
+    summarising heterogeneity in mixture models
+
+    o   rbind.traps() has new argument addusage to generate binary
+    usage attribute with number of occasions specific to each input
+
+    o   region.N() has new argument pooled.RN for extrapolating
+    realised N to a landscape sampled with multiple non-overlapping
+    detector layouts ('sessions')
+
+    o   secr.fit() allows optional parameterisations such as (D, g0,
+    sigmak) where sigma = sigmak / sqrt(D). See
+    secr-parameterisations.pdf.
+
+    o   new generic function clone() with default and popn methods
+    (replicates points a fixed or random number of times e.g. for
+    generating overdispersed cues from a distribution of sources)
+
+    o   trim() method for fitted models by default now also drops 'call'
+    component
+
+    o   pdot.contour and buffer.contour() now accept multi-session input
+
+    o   implementation of concurrent and independent telemetry improved,
+    and allows covariates; reduce.capthist() handles telemetry data
+
+    o   new functions plotMCP() to display telemetry locations and
+    ellipse.bvn() to display confidence region for centroid.
+
+    o   telemetryxy() extracts xylist attribute (telemetry coordinates)
+    of a combined capthist object
+
+    o   addTelemetry() allows detector type "multi" and no longer
+    discards individual covariates from the detection capthist if
+    there are no all-zero histories and telemetry data does not
+    include covariates
+
+    o   new function PG() returns proportion of telemetry fixes in a set
+    of polygons (i.e., 'on grid')
+
+    o   sim.capthist() has new argument exactN to specify number of
+    telemetry fixes
+
+Bugs fixed
+    o   pointsInPolygon() and hence make.mask() failed with polygon
+    input when polygon was an sp object with attribute data (2.6 only)
+
+    o   predictDsurface() and region.N() could fail or produce
+    improbable estimates when the user fixed beta parameters with
+    details$fixedbeta
+
+Known bugs
+
+    o predict.secr() fails when newdata includes only one level for h2
+    under the 'hcov' formulation
+
+    o sim.capthist() does not use a0 when it is provided in detectpar
+
+Other
+    o   sim.capthist() for telemetry data updates perimeter (MCP) of
+    simulated points
+
+    o   new score.test() arguments control numerical gradient
+    calculations by fdHess
+
+    o   secr.fit() with method = "none" now reports the log likelihood
+    at the parameter values in "start", as well as asymptotic
+    variances
+
+    o   secr.fit() now returns a density estimate when CL = FALSE and all detection
+    parameters are fixed
+
+    o   secr.fit() now accepts character values for the 'capthist' and
+    'mask' arguments; objects thus named are retrieved from the workspace.
+
+    o   read.traps() and read.capthist() now return an error if any
+    coordinate is not numeric
+
+    o   components of an secrlist may now be extracted for AIC() with '['
+
 Changes in version 2.7.0 (2013-10-30)
 
 New features or changed behaviour of old functions
@@ -115,6 +215,8 @@ New features or changed behaviour of old functions
 
     o   secrlist() generates names "secr1", "secr2" etc. for successive
     components if not already named
+
+    o   make.mask() no longer requires 'traps' argument when type = 'polygon'
 
 Bugs fixed
 

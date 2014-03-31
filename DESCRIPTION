@@ -1,11 +1,11 @@
 Package: secr
 Type: Package
 Title: Spatially explicit capture-recapture
-Version: 2.7.0
-Depends: R (>= 2.12.0)
+Version: 2.8.0
+Depends: R (>= 3.0.0)
 Imports: abind, MASS, utils, parallel, nlme, sp
 Suggests: maptools, spsurvey, rgdal, rgeos, raster
-Date: 2013-10-30
+Date: 2014-03-31
 Author: Murray Efford
 Maintainer: Murray Efford <murray.efford@otago.ac.nz>
 Description: Functions to estimate the density and size of a spatially distributed animal population sampled with an array of passive detectors, such as traps, or by searching polygons or transects. Models incorporating distance-dependent detection are fitted by maximizing the likelihood. Tools are included for data manipulation and model selection.
@@ -13,7 +13,7 @@ License: GPL (>= 2)
 LazyData: yes
 LazyDataCompression: xz
 URL: http://www.otago.ac.nz/density
-Packaged: 2013-10-30 01:30:09 UTC; Murray
+Packaged: 2014-03-31 09:07:06 UTC; Murray
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-10-30 07:33:34
+Date/Publication: 2014-03-31 12:00:03

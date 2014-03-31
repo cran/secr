@@ -19,7 +19,7 @@ overcome numerical problems when x- or y-coordinates are large
 numbers. The default is not to centre coordinates.
 
 \code{details$distribution} specifies the distribution of the number of
-individuals detected; this may be conditional on the number in the
+individuals detected \eqn{n}; this may be conditional on the number in the
 masked area ("binomial") or unconditional ("poisson").
 \code{distribution} affects the sampling variance of the estimated
 density. The default is "poisson". The component `distribution' may also
@@ -57,36 +57,81 @@ evaluation of the log likelihood at the `start' values.
 
 \code{details$param} chooses between various parameterisations of the
 SECR model. The default \code{details$param = 0} is the formulation in
-orchers and Efford (2008) and later papers.
+Borchers and Efford (2008) and later papers.
 
 \code{details$param = 1} selects the Gardner & Royle parameterisation of
 the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) when
 the detector type is `multi'. This parameterisation does not allow
 detector covariates.
 
-\code{details$param = 2} selects a currently unpublished
-parameterisation in terms of (\eqn{esa(g_0, \sigma)}, \eqn{\sigma}).
+\code{details$param = 2} selects parameterisation in terms of
+(\eqn{esa(g_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2013).
 
-\code{details$param = 3} selects a currently unpublished
-parameterisation in terms of (\eqn{a_0(g_0, \sigma)}, \eqn{\sigma}).
+\code{details$param = 3} selects parameterisation in terms of
+(\eqn{a_0(lambda0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2013). This
+parameterization is used automatically if a0 appears in the model (e.g.,
+a0 ~ 1).
+
+\code{details$param = 4} selects parameterisation of sigma in terms of
+the coefficient sigmak and constant c (sigma = sigmak /
+  D^0.5 + c) (Efford et al. in prep). If c is not included explicitly in
+  the model (e.g., c ~ 1) then it is set to zero. This
+parameterization is used automatically if sigmak appears in the model (e.g.,
+sigmak ~ 1)
+
+\code{details$param = 5} combines parameterisations (3) and (4) (first
+compute sigma from D, then compute lambda0 from sigma).
 
 \code{details$scaleg0} = TRUE causes g0 to be scaled by
 \eqn{\mathrm{sigma}^{-2}}{sigma^-2}. Deprecated from 2.6.2: use a0
 parameterisation instead.
 
 \code{details$scalesigma} = TRUE causes sigma to be scaled by
-\eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}.
+\eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}. Deprecated from 2.7.1: use sigmak
+parameterisation instead.
 
-\code{details$telemetrysigma} = TRUE uses coordinate information from telemetry
-when capthist has attribute `xylist' (see \code{\link{addTelemetry}}).
+\code{details$telemetrytype} determines how telemetry data in the
+attribute `xylist' are treated. `none' causes the xylist data to be
+ignored. `dependent' uses information on the sampling distribution of
+each home-range centre in the SECR likelihood. `concurrent' does that
+and more: it splits capthist according to telemetry status and appends
+all-zero histories to the telemetry part for any animals present in
+xylist. The default is `concurrent'. 
 
+\code{details$telemetrysigma} = TRUE uses coordinate information from
+telemetry for estimating spatial detection parameters when capthist has
+attribute `xylist' (see \code{\link{addTelemetry}}). The default is
+FALSE. \code{details$telemetrysigma} is always TRUE when
+\code{details$telemetrytype = 'independent'}.
+
+\code{details$telemetrybvn} = TRUE includes a bivariate normal prior for
+the centres of telemetered individuals when \code{details$telemetrytype}
+is `concurrent' or `dependent'; otherwise the sample mean of telemetry
+locations is taken as the known location (without uncertainty). The
+default is FALSE.
+
+\code{details$normalize} = TRUE rescales detection so that individual range use
+sums to 1.0 (cf Royle et al. 2013)
+
+\code{details$usecov} selects the mask covariate to be used for
+normalization. NULL limits denominator for normalization to
+distinguishing habitat from non-habitat.
+
+%\code{details$maxcallsize} limit to size of recorded call (default 512 ch).
 }
 
 \references{
 
-  Gardner, B., Royle, J. A. and Wegan, M. T. (2009) Hierarchical models
+Efford, M. G. and Mowat, G. (2013) Compensatory heterogeneity in
+capture--recapture data.\emph{Ecology} In press.  
+
+Gardner, B., Royle, J. A. and Wegan, M. T. (2009) Hierarchical models
 for estimating density from DNA mark-recapture studies. \emph{Ecology}
 \bold{90}, 1106--1115.
+
+Royle, J. A., Chandler, R. B., Sun, C. C. and Fuller, A. K. (2013)
+Integrating resource selection information with spatial
+capture--recapture. \emph{Methods in Ecology and Evolution} \bold{4}, 520--530.
 
 }
 

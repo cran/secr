@@ -78,6 +78,9 @@ data argument of \code{model.matrix}).
 
   \item{R}{ number of sessions}
 
+  If \code{models} is empty then all components are NULL except for PIA
+  which is an array of 1's (M set to 1).  
+
   Optionally (\code{keep.dframe = TRUE}) -
   \item{dframe}{ dataframe of design data, one column per covariate, one
     row for each c(R,n,S,K,M). For multi-session models n, S, and K
@@ -87,6 +90,7 @@ data argument of \code{model.matrix}).
   For \code{make.lookup}, a list with components
   \item{lookup}{ matrix of unique rows}
   \item{index}{ indices in lookup of the original rows}
+  
 }
 
 \examples{

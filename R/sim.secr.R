@@ -242,7 +242,7 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
     }
 
     if (is.null(object$details$ignoreusage)) object$details$ignoreusage <- FALSE  ## 2013-01-23
-    if (is.null(object$details$miscparm)) object$details$miscparm <- 0  ## 2013-01-23
+    if (is.null(object$details$miscparm)) object$details$miscparm <- numeric(4)  ## 2013-01-23, 11-15
 
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)

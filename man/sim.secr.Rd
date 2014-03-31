@@ -153,16 +153,18 @@ simulate(secrdemo.0, nsim = 2)
 \dontrun{
 
 ## this would take a long time...
-sims <- sim.secr(secrdemo.0, nsim = 99)
+## adjust ncores for your machine (see ?Parallel)
+sims <- sim.secr(secrdemo.0, nsim = 99, ncores = 8)
 deviance(secrdemo.0)
 devs <- c(deviance(secrdemo.0),sims$deviance)
 quantile(devs, probs=c(0.95))
 rank(devs)[1] / length(devs)
 
 ## to assess bias and CI coverage
+## adjust ncores for your machine (see ?Parallel)
 extrfn <- function (object) unlist(predict(object)["D",-1])
 sims <- sim.secr(secrdemo.0, nsim = 50, hessian = "auto",
-    extractfn = extrfn)
+    extractfn = extrfn, ncores = 8)
 sims
 
 ## with a larger sample, could get parametric bootstrap CI

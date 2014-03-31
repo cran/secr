@@ -1,5 +1,6 @@
 \name{addTelemetry}
 \alias{addTelemetry}
+\alias{xy2CH}
 
 \title{Combine Telemetry and Detection Data}
 
@@ -17,12 +18,15 @@ telemetry data in the new object.
 \usage{
 
 addTelemetry (detectionCH, telemetryCH)
+xy2CH (CH, inflation = 1e-08)
 
 }
 
 \arguments{
   \item{detectionCH}{single-session capthist object, detector type `proximity' or `count'}
   \item{telemetryCH}{single-session capthist object, detector type `telemetry'}
+  \item{CH}{single-session capthist object with xylist attribute}
+  \item{inflation}{numeric tolerance for polygon}
 }
 
 \details{
@@ -37,7 +41,14 @@ A new capthist object is built comprising all the detection
 histories in \code{detectionCH}, plus empty (all-zero) histories for
 every telemetered animal not in \code{detectionCH}. The telemetry
 locations are carried over from telemetryCH as attribute `xylist' (each
-component of xylist holds the coordinates of one animal).
+component of xylist holds the coordinates of one animal; use
+\code{\link{telemetryxy}} to extract).
+
+\code{xy2CH} partly reverses \code{addTelemetry}: the location
+information in the xylist attribute is converted back to a capthist with
+detector type `telemetry'. A search polygon is formed from the convex
+hull (minimum convex polygon) of the detectors, slightly inflated
+(factor \code{inflation}) to avoid numeric inclusion errors at the vertices.
 
 }
 
@@ -64,7 +75,10 @@ not yet fully documented.
 
 \seealso{
   
-  \code{\link{capthist}}, \code{\link{make.telemetry}}, \code{\link{read.telemetry}}
+  \code{\link{capthist}},
+  \code{\link{make.telemetry}},
+  \code{\link{read.telemetry}},
+  \code{\link{telemetryxy}}
   
 }
 
@@ -84,9 +98,10 @@ totalpop <- sim.popn(tr, D = 20, buffer = 100)
 tepop <- subset(totalpop, runif(nrow(totalpop)) < 0.5)
 
 # simulated detection histories and telemetry
-trCH <- sim.capthist(tr,  popn = totalpop, renumber = FALSE)
-teCH <- sim.capthist(te, popn = tepop, renumber=FALSE,
-    detectpar = list(g0 = 3, sigma = 25))
+# the original animalID (renumber = FALSE) are needed for matching
+trCH <- sim.capthist(tr,  popn = totalpop, renumber = FALSE, detectfn = "HHN")
+teCH <- sim.capthist(te, popn = tepop, renumber=FALSE, detectfn = "HHN",
+    detectpar = list(lambda0 = 3, sigma = 25))
 
 combinedCH <- addTelemetry(trCH, teCH)
 
@@ -97,11 +112,13 @@ ncapt <- apply(combinedCH,1,sum)
 points(totalpop[row.names(combinedCH)[ncapt==0],], pch = 1)
 points(totalpop[row.names(combinedCH)[ncapt>0],], pch = 16)
 
-fit.tr <- secr.fit(trCH, CL = TRUE)                  ## trapping alone
-fit.te <- secr.fit(teCH, CL = TRUE, start = log(20)) ## telemetry alone
-fit2   <- secr.fit(combinedCH, CL = TRUE)            ## combined
-fit2a   <- secr.fit(combinedCH, CL = TRUE,           ## combined, using info
-    details = list(telemetrysigma = TRUE))           ## on sigma from telemetry
+fit.tr <- secr.fit(trCH, CL = TRUE, detectfn = "HHN")  ## trapping alone
+fit.te <- secr.fit(teCH, CL = TRUE, start = log(20),   ## telemetry alone
+    detectfn = "HHN") 
+fit2   <- secr.fit(combinedCH, CL = TRUE,              ## combined
+    detectfn = "HHN")                                 
+fit2a   <- secr.fit(combinedCH, CL = TRUE, details =   ## combined, using info
+    list(telemetrysigma = TRUE), detectfn = "HHN")     ## on sigma from telemetry
 
 # improved precision when focus on realised population
 # (compare CVD)
@@ -109,7 +126,7 @@ derived(fit.tr, distribution = "binomial")
 derived(fit2, distribution = "binomial")
 
 # may also use CL = FALSE
-
+secr.fit(combinedCH, CL = FALSE, detectfn = "HHN")
 }
 
 }

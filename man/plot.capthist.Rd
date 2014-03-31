@@ -1,10 +1,11 @@
 \name{plot.capthist}
 \alias{plot.capthist}
+\alias{plotMCP}
 
 \title{ Plot Detection Histories }
 
 \description{
-  Display a plot of detection (capture) histories over a map of the detectors.
+  Display a plot of detection (capture) histories or telemetry data over a map of the detectors.
 }
 
 \usage{
@@ -18,6 +19,10 @@
     cappar = list(cex = 1.3, pch = 16, col = "blue"), 
     trkpar = list(col = "blue", lwd = 1), 
     labpar = list(cex = 0.7, col = "black"), ...)
+
+plotMCP(x, add = FALSE, col = "black", fill = NA, lab1cap = FALSE,
+laboffset = 4, ncap = FALSE, ...)
+
 }
 
 \arguments{
@@ -42,6 +47,9 @@
   \item{trkpar}{ list of named graphical parameters for tracks (passed to \code{par}) }
   \item{labpar}{ list of named graphical parameters for labels (passed to \code{par}) }
   \item{\dots}{ arguments to be passed to \code{plot.traps} }
+  \item{col}{vector of line colour numbers or names (plotMCP only)}
+  \item{fill}{vector of fill colour numbers or names (plotMCP only)}
+
 }
 
 \details{ 
@@ -73,6 +81,16 @@ colours is generated automatically as topo.colors((nrow(x)+1) * 1.5).
 If there are too few values in \code{icolours} for the number of
 individuals then colours will be re-used. 
 
+\code{plotMCP} plots minimum convex polygons of individual location
+data over a base plot of detector locations. Usually the data are
+telemetry locations in the xylist attribute of the capthist
+object; if this is not present and \code{x} is a polygon search
+capthist then the individual xy data are plotted.
+
+To overplot the point telemetry locations use \code{\link{xy2CH}} to
+first convert the xylist attribute to a full telemetry capthist object
+(see Examples).
+
 }
 
 \value{
@@ -80,6 +98,9 @@ individuals then colours will be re-used.
   For \code{type = "petal"}, the number of detections in \code{x}.
   For \code{type = "n.per.detector"} or \code{type = "n.per.cluster"}, a
   dataframe with data for a legend (see Examples).
+
+  \code{plotMCP} invisibly returns a list in which each component is a
+  2-column (x,y) dataframe of boundary coordinates for one individual.
 
 }
 
@@ -133,6 +154,22 @@ plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = T,
     gridlines=F)
 }
 
+\dontrun{
+## generate telemetry data
+## as in ?addTelemetry
+te <- make.telemetry()
+tr <- make.grid(detector = "proximity")
+totalpop <- sim.popn(tr, D = 20, buffer = 100)
+tepop <- subset(totalpop, runif(nrow(totalpop)) < 0.05)
+trCH <- sim.capthist(tr,  popn = totalpop, renumber = FALSE, detectfn = "HHN")
+teCH <- sim.capthist(te, popn = tepop, renumber=FALSE, detectfn = "HHN",
+    detectpar = list(lambda0 = 3, sigma = 25))
+combinedCH <- addTelemetry(trCH, teCH)
+
+plotMCP(combinedCH)
+plot(xy2CH(combinedCH), add=T)
+
+}
 }
 
 \keyword{ hplot }

@@ -1155,6 +1155,7 @@ void trappingtelemetry (
     int    *fn,      /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,      /* truncation radius */
     int    *binomN,  /* 0 poisson, 1 Bernoulli, or number of binomial trials */
+    int    *exactn,  /* 0 or a positive integer for the exact number of fixes per animal */
     int    *maxperpoly, /*   */
     int    *n,           /* number of individuals detected */
     int    *caught,      /* caught in session */
@@ -1193,7 +1194,10 @@ void trappingtelemetry (
         par[2] = z[s];
         if (lambda[s]>0) {
             for (i=0; i<*N; i++) {
-                count = rcount (*binomN, lambda[s], Tski); 
+		if (*exactn)
+		    count = *exactn;
+		else
+		    count = rcount (*binomN, lambda[s], Tski); 
                 /* require maximum at r=0 */
                 if (*fn == 6) error ("annular normal not allowed in trappingtelemetry");
                 par[0] = 1;

@@ -165,10 +165,6 @@ if (inherits(object, 'secrlist')) {
         }
         else {
 
-            maskarea <- function (mask, asess) {
-               if (is.data.frame(mask)) nrow(mask) * attr(mask,'area')
-               else nrow(mask[[asess]]) * attr(mask[[asess]],'area')
-            }
             se.deriveD <- function (selection, selected.a, asess) {
                 s2 <- switch (tolower(object$details$distribution),
                    poisson  = sum (1/selected.a^2),
@@ -186,7 +182,7 @@ if (inherits(object, 'secrlist')) {
                 length(a) / sum(1/a)
             }
 
-            getderived <- function (selection) {
+            getderived <- function (selection, NT = 0) {
                 if (is.null(sessnum)) sessnum <- 1
                 selected.a <- esa(object, sessnum)[selection]
                 derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
@@ -200,10 +196,10 @@ if (inherits(object, 'secrlist')) {
                     varcomp1[2] <- varDlist$s2
                     varcomp2[2] <- varDlist$varDn
                 }
-                A <- ifelse (nt>0, nrow(mask)*attr(mask,'area'),1)
+                A <- maskarea(mask)
                 temp <- data.frame (
                                     row.names = c('esa','D'),
-                                    estimate = derivedmean + nt/A,  ## see 'telemetry' below for nt
+                                    estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below
                                     SE.estimate = derivedSE)
 
                 temp <- add.cl(temp, alpha, loginterval)
@@ -219,7 +215,6 @@ if (inherits(object, 'secrlist')) {
                         temp[2,1:4] <- temp[2,1:4] / length(nmash)
                         ## message ("D was adjusted for ", length(nmash), " mashed clusters\n")
                     }
-
                 temp
             }
 
@@ -242,41 +237,36 @@ if (inherits(object, 'secrlist')) {
                 mask <- object$mask[[sessnum]]
             }
 
-            ## 2012-10-22 telemetry
-            xyl <- attr(capthist,'xylist')
-            nt <- 0  ## number of excluded telemetry animals
-            if (!is.null(xyl)) {
-                if (!is.null(groups))
-                    stop("telemetry not yet coded for groups")
+            grp <- group.factor(capthist, groups)
+            ind <- 1:nrow(capthist)
 
-                individuals <- list(1:nrow(capthist))
-                if (object$details$distribution=='binomial') {
-                    # use only non-telemetry animals
-                    telem <- row.names(capthist) %in% names(xyl)
-                    individuals[[1]] <- individuals[[1]][!telem]
-                    nt <- sum(telem) - sum(outsidemask(capthist, mask))
-                }
-                else {
-                    # use all non-zero capthist
-                    zeros <- apply(abs(capthist)>0,1,any)
-                    individuals[[1]] <- individuals[[1]][!zeros]
-                }
+            if (nrow(capthist)>0)
+                individuals <- split (ind, grp)
+            else
+                individuals <-  split (numeric(0), grp) ## list of empty grp levels
+            n <- length(individuals)   ## number of groups
+
+            xyl <- telemetryxy(capthist)   ## attr(capthist,'xylist')
+            if ( is.null(xyl) | is.null(object$details$telemetrytype) )
+                object$details$telemetrytype <- 'none'
+            if (object$details$telemetrytype == 'concurrent') {
+                telem <- telemetered(capthist)
+                nottelem <- split(!telem, grp)
+                NT <- tapply(telem, grp, sum)
+                individuals <- mapply ('[', individuals, nottelem, SIMPLIFY = FALSE)  ## drop telemetry animals
             }
             else {
-                grp <- group.factor(capthist, groups)  ## see functions.R
-                if (nrow(capthist)>0)
-                    individuals <- split (1:nrow(capthist), grp)
-                else
-                    individuals <-  split (numeric(0), grp) ## list of empty grp levels
+                NT <- numeric(n)  ## zeros
             }
-            n <- length(individuals)
+
             if ( n > 1)
-                out <- lapply (individuals, getderived)
-            else
+                out <- mapply (getderived, individuals, NT)
+            else {
                 if (n == 1)
-                    out <- getderived(individuals[[1]])
+                    out <- getderived(individuals[[1]], NT)
                 else
-                    out <- getderived(numeric(0))
+                    out <- getderived(numeric(0), NT)
+            }
             if (ncores>1) {
                 stopCluster(clust)
             }

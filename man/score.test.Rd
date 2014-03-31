@@ -7,7 +7,8 @@
   Compute score tests comparing a fitted model and a more general alternative model.
 }
 \usage{
-score.test(secr, ..., betaindex = NULL, trace = FALSE, ncores = 1)
+score.test(secr, ..., betaindex = NULL, trace = FALSE, ncores = 1, .relStep = 0.001,
+    minAbsPar = 0.1)
 
 score.table(object, ..., sort = TRUE, dmax = 10)
 
@@ -18,7 +19,10 @@ score.table(object, ..., sort = TRUE, dmax = 10)
   \item{...}{ one or more alternative models OR a fitted secr model }
   \item{trace}{ logical. If TRUE then output one-line summary at each
     evaluation of the likelihood }
-  \item{ncores}{integer number of cores available for parallel processing} 
+  \item{ncores}{integer number of cores available for parallel
+    processing} 
+  \item{.relStep}{see \code{\link[nlme]{fdHess}}}
+  \item{ minAbsPar}{see \code{\link[nlme]{fdHess}}}
   \item{betaindex}{ vector of indices mapping fitted values to parameters in the alternative model }
 
   \item{object}{ score.test object or list of such objects }
@@ -49,6 +53,11 @@ For example \code{betaindex} = c(1,2,4) is the correct mapping when
 comparing the null model (D\eqn{\sim{~}}{~}1, g0\eqn{\sim{~}}{~}1,
 sigma\eqn{\sim{~}}{~}1) to one with a behavioural effect on g0
 (D\eqn{\sim{~}}{~}1, g0\eqn{\sim{~}}{~}b, sigma\eqn{\sim{~}}{~}1).
+
+The arguments \code{.relStep} and \code{minAbsPar} control the numerical
+gradient calculation and are passed directly to
+\code{\link[nlme]{fdHess}}. More investigation is needed to determine
+optimal settings.
 
 \code{score.table} summarises one or more score tests in the form of a
 model comparison table. The \dots argument here allows the inclusion of

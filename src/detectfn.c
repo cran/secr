@@ -483,8 +483,13 @@ double lhn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
-    return (1 - exp(- gsbval[c] * exp(-d2(k, m, traps, mask, kk, mm) / 2 /
-				      gsbval[cc + c] / gsbval[cc + c])));
+    double lambda0, sigma;
+    double invdenom = 1.0;
+    lambda0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m];
+    return (1 - exp(- lambda0 * invdenom *  exp(-d2(k, m, traps, mask, kk, mm)
+						/ 2 / sigma / sigma)));    
 }
 /*--------------------------------------------------------------------*/
 
@@ -493,12 +498,14 @@ double lhr
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
-    double d, g0, sigma, z;
+    double d, lambda0, sigma, z;
+    double invdenom = 1.0;
+    if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m];
     d = sqrt(d2(k,m,traps,mask,kk,mm));
-    g0 = gsbval[c];
+    lambda0 = gsbval[c];
     sigma = gsbval[cc + c];
     z = gsbval[cc * 2 + c];
-    return (1 - exp(- g0 * ( 1 - exp(- pow(d /sigma , - z)))));
+    return (1 - exp(- lambda0 * invdenom * ( 1 - exp(- pow(d /sigma , - z)))));
 }
 /*--------------------------------------------------------------------*/
 
@@ -507,7 +514,13 @@ double lex
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
-    return (1 - exp(-gsbval[c] * exp(-sqrt(d2(k,m,traps,mask,kk,mm)) / gsbval[cc + c])));
+    double lambda0, sigma;
+    double invdenom = 1.0;
+    if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m];
+    lambda0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    return (1 - exp(-lambda0 * invdenom * exp(-sqrt(d2(k,m,traps,mask,kk,mm))
+						/ sigma)));
 }
 /*--------------------------------------------------------------------*/
 
@@ -516,12 +529,14 @@ double lan
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
-    double d, w, g0, sigma;
+    double d, w, lambda0, sigma;
+    double invdenom = 1.0;
+    if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m];
     d = sqrt(d2(k,m,traps,mask,kk,mm));
-    g0 = gsbval[c];
+    lambda0 = gsbval[c];
     sigma = gsbval[cc + c];
     w = gsbval[cc * 2 + c];
-    return (1 - exp(-g0 * exp(-(d-w)*(d-w) / 2 / sigma / sigma)));
+    return (1 - exp(-lambda0 * invdenom * exp(-(d-w)*(d-w) / 2 / sigma / sigma)));
 }
 /*--------------------------------------------------------------------*/
 
@@ -530,12 +545,13 @@ double lcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm [])
 {
-    double d, g0, sigma, z;
+    double d, lambda0, sigma, z;
+    double invdenom = 1.0;
+    if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m];
     d = sqrt(d2(k,m,traps,mask,kk,mm));
-    g0 = gsbval[c];
+    lambda0 = gsbval[c];
     sigma = gsbval[cc + c];
     z = gsbval[cc * 2 + c];
-    return (1 - exp(- g0 * pgamma(d,z,sigma/z,0,0))); 
+    return (1 - exp(- lambda0 * invdenom * pgamma(d,z,sigma/z,0,0))); 
 }
 /*--------------------------------------------------------------------*/
-

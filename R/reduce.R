@@ -8,6 +8,7 @@
 ## 2012-12-17 non-binary usage
 ## 2012-12-21 re-write reduce.capthist to include spatial lumping
 ## 2012-12-21 amalgamated 'reduce' methods
+## 2013-11-20 telemetry allowed
 ############################################################################################
 
 #----------------------------------------------------------------------------------------------------
@@ -346,7 +347,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             alive = alive(object))
         if (reducetraps)
             df$trap <- newtrapID[df$trap]
-        if (outputdetector %in% c(polygons, transects)) {
+        if (outputdetector %in% c(polygons, transects, 'telemetry')) {   ## telemetry 2013-11-20
             df$x <- xy(object)[,1]
             df$y <- xy(object)[,2]
         }
@@ -419,7 +420,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
              covariates(tempnew) <- covariates(object)[validrows,,drop=F]
 
         detectorder <- order(df$trap, df$newocc,df$ID)  ## CHECK!
-        if (outputdetector %in% c(polygons, transects))
+        if (outputdetector %in% c(polygons, transects, 'telemetry'))  ## telemetry added 2013-11-20
             xy(tempnew) <- df[detectorder,c('x','y'),drop=FALSE]
         if (outputdetector %in% c('signal','signalnoise')) {
             sigcolumns <- names(attr(object,'signalframe'))
