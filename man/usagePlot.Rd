@@ -23,8 +23,8 @@ FALSE, scale = 2, metres = TRUE, rad = 5, ...)
 \arguments{
   \item{object}{traps object with usage attribute}
   \item{add}{logical; if FALSE plot.traps is called to create a base plot}
-  \item{occasion}{integer number of the occasion for which effort is
-  plotted, or NULL}
+  \item{occasion}{integer number of the occasion(s) for which effort is
+  plotted, "ALL", or NULL}
   \item{col}{character or integer colour value}
   \item{fill}{logical; if TRUE the circle is filled with the line colour}
   \item{scale}{numeric value used to scale radius}
@@ -40,8 +40,9 @@ By default (\code{occasion = NULL}) circles representing usage on each
   occasion are plotted around the detector location at distance
   \code{rad}, as in the petal plot of
   \code{\link{plot.capthist}}. Otherwise, the usage on a single
-  specified occasion is plotted as a circle centred at the detector
-  location.
+  specified occasion, or summed over occasions
+  (\code{length(occasion)>1}, or \code{occasion = "ALL"}), is plotted as
+  a circle centred at the detector location.
   
 The \code{metres} argument switches between two methods. If \code{metres
 = TRUE}, the \code{symbols} function is used with \code{inches = FALSE} to plot
@@ -63,7 +64,7 @@ Package \pkg{sp} provides an alternative (see Examples).
 
 \seealso{
   
-  \code{\link{usage}}, \code{\link{symbols}}, code{\link[sp]{bubble}}
+  \code{\link{usage}}, \code{\link{symbols}}, \code{\link[sp]{bubble}}
   
 }
 

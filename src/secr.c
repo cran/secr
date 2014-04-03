@@ -40,7 +40,7 @@
 /* 2013-11-16 purged 'nested' cuerate code */
 /* 2013-11-23 pimask used for individual distribution of location if pimask[0] >-tol */
 /* 2013-12-01 like = 4 for CL concurrent telemetry; anyvarying funtion */
-
+/* 2014-04-03 normalization with getdenom not implemented because of memory issue see test.R, valgrind etc. */
 /*
         *detect may take values -
         0  multi-catch traps
@@ -1293,8 +1293,10 @@ void precompute(
     double stdint = 1;
     gfnptr gfn;
     double *ex; 
+    /*
     double *scale;
-    scale = (double *) R_alloc(1, sizeof(double));
+    scale = (double *) S_alloc(1, sizeof(double));  
+    */
 
     gfn = getgfn(*fn);
 
@@ -1308,8 +1310,8 @@ void precompute(
     if (*detect == 0) {
 	for (c=0; c<*cc; c++) {
 	    /*---------------------------------------------------------*/
-	    /* normalization 2013-11-10 */
-	    getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); 
+	    /* normalization NOT implemented 2013-11-10 */
+	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
 	    /*---------------------------------------------------------*/
 	    for (k=0; k<nk; k++) {
 		for (m=0; m<*mm; m++) {
@@ -1324,8 +1326,8 @@ void precompute(
 	     || (*detect==9) || (*detect==12)) {
 	for (c=0; c<*cc; c++) {
 	    /*---------------------------------------------------------*/
-	    /* normalization 2013-11-10 */
-	    getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); 
+	    /* normalization NOT implemented 2013-11-10 */
+	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
 	    /*---------------------------------------------------------*/
 	    for (k=0; k<nk; k++) {
 		for (m=0; m<*mm; m++) {

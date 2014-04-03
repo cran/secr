@@ -1,3 +1,14 @@
+Changes in version 2.8.1 (2014-04-03)
+
+New features or changed behaviour of old functions
+
+    o   usagePlot() sums over occasions when occasion = "ALL" or
+    length(occasion)>1
+
+Bugs fixed
+
+    o   reduce.traps() failed when newtraps was not specified
+
 Changes in version 2.8.0 (2014-03-31)
 
 New features or changed behaviour of old functions

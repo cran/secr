@@ -61,6 +61,8 @@ reduce.traps <- function (object, newtraps = NULL, span = NULL, rename = FALSE, 
         ## allow for vector input, or distance threshold
         if (!is.null(span))
             newtraps <- cutree (hclust(dist(object), ...), h = span)
+        if (missing(newtraps))
+            newtraps <- as.list(1:ndetector(object))  ## no change
         if (!is.list(newtraps)) {
             if (is.null(names(newtraps)))
                 names(newtraps) <- 1:length(newtraps)
@@ -70,8 +72,6 @@ reduce.traps <- function (object, newtraps = NULL, span = NULL, rename = FALSE, 
             stop ("reduce.traps is only for point detectors")
         if (any(duplicated(unlist(newtraps))))
             stop("traps should not appear in more than one group")
-        if (missing(newtraps))
-            newtraps <- as.list(1:ndetector(object))  ## no change
 
         if (any(sapply(newtraps, is.character))) {
             ## convert to numeric trap indices

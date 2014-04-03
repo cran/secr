@@ -1,6 +1,6 @@
-e0dcb4f0924768d0f12b193139a805ed *DESCRIPTION
+7e4030f22b087f620f882ab283bfe4f1 *DESCRIPTION
 6a49877388bbad5612cb09c2abccdbdf *NAMESPACE
-100c80876de59f184d73e0d2f3cac897 *NEWS
+b5f821132dc5d7aa626d0449406ecef6 *NEWS
 88ebbbf99248c98c12f6fa0f5bb2d6f8 *R/ARL.R
 4d43659a8aaf200f3135f872158f313e *R/CV.R
 e37e2153beeb117eeb9f1bb41d9633c0 *R/ClosedN.R
@@ -27,7 +27,7 @@ c5e2e910f56a61f5ef886914a45c2810 *R/derivedMS.R
 ea723778645c14b0e674296976f12df7 *R/ellipse.secr.R
 4d7813b35a51a785e9f230dedad68d07 *R/empirical.R
 2338958183580ba65c872bbfa389c305 *R/esa.R
-ab1b65565171b80497393aa287c41cb4 *R/fxi.R
+a7568dfa30b3e626d93617416e05da5d *R/fxi.R
 81dd9dd28e51a0f2b800dbeff9cf2e32 *R/head.R
 48b031542353d52f566dea339ee9c614 *R/ip.secr.R
 4892172004e9798e341c94913b435ef2 *R/join.R
@@ -48,7 +48,7 @@ dcc59a7a1fd95929bfc2fa814790573f *R/plot.secr.R
 094576fbb1f845c49d6a5a25703961dc *R/randomHabitat.R
 1624792a546f80e9f88835c6813c6a1b *R/rbind.capthist.R
 4b05efa3cc56e6bc1561c2c9946e07d1 *R/read.traps.R
-d44293d099160186d1af77b3f03514b3 *R/reduce.R
+cf6fe95acd7ea7199886c26bc25486db *R/reduce.R
 4c0740dddfd774c2e5596eab27362111 *R/regionN.R
 e85400c69a733d9df49a3cda38791205 *R/score.test.R
 2830343d71a8ab83ed7eae499bd1da2f *R/secr.design.MS.R
@@ -64,7 +64,7 @@ b4c744b23dc8d3bc3c8b328424961b06 *R/secr.make.newdata.R
 a26fb49d5646cbdb82afce2c9e5c4536 *R/suggest.buffer.R
 e7d9a218027ed31157c4522a7b466486 *R/telemetry.R
 09f4c7ca2d4cdeb31187ecf553929e15 *R/trap.builder.R
-a3f1af7d57777d8866e6ce365926e910 *R/usagePlot.R
+a9f994dfe8a0600c7b447bca61a995eb *R/usagePlot.R
 192151401298e63f8caaff39a800d351 *R/utility.R
 7d27db13a4ac822f5563c5d476282e1b *R/verify.R
 c89e347ae28cf81a9ae3924a36633e26 *R/write.captures.R
@@ -80,11 +80,11 @@ c5565b58d26db954701ca386ef6128e3 *data/ovensong.RData
 f62a91613ec060fa7b066f197ee2d591 *data/skink.RData
 89ab246349acc80c5728165725c452ab *data/stoatDNA.RData
 fd19e7a543b9c20ad3871b2b80493d9e *inst/CITATION
-23bb35ec2690e16c6730541dddbc9621 *inst/doc/index.html
+89079bd8ce40cf48514f66ffc2d82620 *inst/doc/index.html
 516f5f52d56cbf09d83d7a169f50abde *inst/doc/secr-datainput.pdf
 3a64be8a811263f6c596819f9df5c261 *inst/doc/secr-densitysurfaces.pdf
 7118f51ec463920d93e2f1651abcae34 *inst/doc/secr-finitemixtures.pdf
-6d1519e8bb3059193f68064beae6c80e *inst/doc/secr-manual.pdf
+7ca54f4a49d3c192985689c52ad6d08e *inst/doc/secr-manual.pdf
 e06d2ba201062c5b880a68e03c388fa5 *inst/doc/secr-overview.pdf
 6003824a603933753fce7140054098b0 *inst/doc/secr-parameterisations.pdf
 80a1b0c7ac1270018b5e016a84f51d2c *inst/doc/secr-polygondetectors.pdf
@@ -191,7 +191,7 @@ b94b8a89ac2fb9d60d2e703bbe8ae86d *man/rectangularMask.Rd
 089edc6b67daa570b42449c280f9904e *man/reduce.capthist.Rd
 e563b24714a60d0fe0cbb6534d2f36ef *man/region.N.Rd
 a59fe566551cbb9dd891fb0c1b1bf476 *man/score.test.Rd
-79b93e1434c8c8565d640a106268b2bb *man/secr-package.Rd
+2a6f265c9dd98f3992f8e94dc5aa37c3 *man/secr-package.Rd
 79dede9781f5154e7258378f06a9189f *man/secr.design.MS.Rd
 d2186002107890a23fd22a4704abf95d *man/secr.fit.Rd
 4f8ff2708e350489dcd399b72af1fb84 *man/secr.make.newdata.Rd
@@ -227,14 +227,14 @@ e85f2a7afee5809b89dc18f507c05d9b *man/timevaryingcov.Rd
 f6d53ba0287e2d3af2d1843096cb6446 *man/trim.Rd
 2bffda6621378bed93f049efe1084fb1 *man/troubleshooting.Rd
 cfeaf34c1ee9aa00676d86189755721f *man/usage.Rd
-ea3614bd236c84859ee353297d943a2f *man/usagePlot.Rd
+0c7d56a387f6394fdfd2fe40190ce5e0 *man/usagePlot.Rd
 2b19769be5aaede73a9fa235ee00b1d5 *man/vcov.secr.Rd
 618c2df55e5d7377bf4c7b247b29f167 *man/verify.Rd
 17c4f5fa4d446acbb11dbda2eed0f017 *man/write.Rd
 77918606a143cd36b1bfd3f06f5af7bc *man/writeGPS.Rd
 e5184542044187971e26c9f4e62865cd *src/detectfn.c
 86fc15d80fb1c2779e57eded75f77ea6 *src/polygon.c
-4edc0ad65b3f0f4d9f539fbe58199083 *src/secr.c
+64dac57922c761e538fad06dcb33e1a2 *src/secr.c
 b5a48254fadec16cfd9da77ddda57f1f *src/secr.h
 4cd258a39f15244cae7d1c7f01a0d66d *src/simsecr.c
 a00c932e2a6a87dcac481ca01e9bdd66 *src/trapping.c
