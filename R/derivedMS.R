@@ -5,6 +5,7 @@
 ## 2011-03-27 adjustments for zero capthist
 ## 2012-11-03 CLdensity and CLgradient moved from functions.R
 ## 2013-06-24 fixed bug in esa dummy grp (0 should be 1) that caused intermittent fault in derived
+## 2014-04-05 fixed bug mapply SIMPLIFY = FALSE
 ############################################################################################
 
 
@@ -258,9 +259,8 @@ if (inherits(object, 'secrlist')) {
             else {
                 NT <- numeric(n)  ## zeros
             }
-
             if ( n > 1)
-                out <- mapply (getderived, individuals, NT)
+                out <- mapply (getderived, individuals, NT, SIMPLIFY = FALSE)
             else {
                 if (n == 1)
                     out <- getderived(individuals[[1]], NT)

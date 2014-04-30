@@ -13,7 +13,7 @@
 ############################################################################################
 
 write.capthist <- function (object, filestem = deparse(substitute(object)),
-   sess = '1', ndec = 2, covariates = FALSE, ...)
+   sess = '1', ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
 
 {
     sep <- list(...)$sep
@@ -53,7 +53,9 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
                      header = tempname, ndec = ndec, covariates = covariates, ...)
         write.captures (object[[1]], file = captfile, deblank = TRUE,
             header = deparse(substitute(object), control=NULL), append = FALSE,
-            sess = session(object)[1], ndec = ndec, covariates = covariates, ...)
+            sess = session(object)[1], ndec = ndec, covariates = covariates,
+                        tonumeric = tonumeric,
+                        ...)
         for (i in 2:length(object)) {
             if (!same) {
                 trapfile <- paste(filestem, 'trap', session(object)[i], suffix, sep='')
@@ -63,14 +65,14 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 
             write.captures (object[[i]], file = captfile, deblank = TRUE,
                 header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec,
-                            covariates = covariates, ...)
+                            covariates = covariates, tonumeric = tonumeric, ...)
         }
     }
     else {
         tempname <- paste('traps(',objectname,')',sep='')
         write.captures (object, file = captfile, ..., deblank = TRUE,
             header = deparse(substitute(object), control=NULL), append = FALSE,
-            sess = session(object), ndec = ndec, covariates = covariates)
+            sess = session(object), ndec = ndec, covariates = covariates, tonumeric = tonumeric)
         write.traps (traps(object), file = trapfile, header = tempname, covariates = covariates,  ...)
     }
 }

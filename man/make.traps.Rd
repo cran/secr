@@ -129,6 +129,7 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \seealso{
   \code{\link{read.traps}},\code{\link{detector}},
+  \code{\link{trap.builder}},\code{\link{make.systematic}},  
   \code{\link{print.traps}}, \code{\link{plot.traps}},
   \code{\link{traps}}, \code{\link{make.tri}},
   \code{\link{addTelemetry}}

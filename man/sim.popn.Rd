@@ -96,7 +96,7 @@ in \code{core} or the name of a covariate in \code{core} that contains
 cell-specific densities (animals / hectare), or a constant. The number
 of individuals in each cell is either (i) Poisson-distributed with mean
 \eqn{DA} where \eqn{A} is the cell area (an attribute of the mask)
-(\code{Ndist = "poisson"} or (ii) multinomial with size \eqn{DA} and
+(\code{Ndist = "poisson"}) or (ii) multinomial with size \eqn{DA} and
 relative cell probabilities given by D (\code{Ndist =
 "fixed"}). \code{buffertype} and \code{buffer} are ignored, as the
 extent of the population is governed entirely by the mask in
@@ -137,6 +137,11 @@ from reading a shapefile with readShapePoly() from package `maptools'.}
 The \code{\link{subset}} method is called internally when \code{poly} is used;
 the \dots argument may be used to pass values for \code{keep.poly} and
 \code{poly.habitat}.
+
+Multi-session populations may be generated with \code{nsession > 1}, but
+documentation is incomplete. In the `no-turnover' case
+(\code{details$lambda not specified)} D may be a vector of length equal to
+\code{nsession}. Turnover is controlled by components of \code{details}.
 
 The random number seed is managed as in \code{simulate.lm}.
 

@@ -22,7 +22,7 @@ read.capthist(captfile, trapfile, detector = "multi", fmt = c("trapID","XY"),
     cutval = NULL, verify = TRUE, noncapt = "NONE", ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
-     sess = "1", ndec = 2, covariates = FALSE, ...)
+     sess = "1", ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
 
 }
 
@@ -49,8 +49,10 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{filestem}{ character value used to form names of output files }
   \item{sess}{ character session identifier }
   \item{ndec}{ number of digits after decimal point for x,y coordinates }
-  \item{covariates}{ logical or a character vector of covariates to export }
-
+  \item{covariates}{ logical or a character vector of covariates to
+    export }
+  \item{tonumeric}{ logical for whether factor and character covariates should be
+    converted to numeric values on output}
 }
 
 \details{

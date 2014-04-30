@@ -120,6 +120,8 @@ session, each component as above.
 If \code{keep.region = TRUE} then the mask object for the region is
 saved as the attribute `region' (see Examples).
 
+The area in hectares of the region is saved as attribute `regionarea'.
+
 }
 
 \note{

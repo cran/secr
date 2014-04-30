@@ -11,6 +11,7 @@
 ## 2012-04-10  IHP D may be covariate; more checks
 ## 2012-04-10  MRC
 ## 2013-11-23 IHP for Ndist fixed
+## 2014-04-18 session-specific density
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -59,7 +60,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             fr <- x-trunc(x)
             sample (c(trunc(x), trunc(x)+1), size=1, prob=c(1-fr, fr))
         }
-        session.popn <- function (s) {
+        session.popn <- function (s, D) {
             ## independent population
             sim.popn (D, core, buffer, model2D, buffertype, poly,
                 covariates, number.from, Ndist, nsession = 1, details, seed)
@@ -115,7 +116,15 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         turnoverpar <- replace (turnoverpar, names(details), details)
         if (is.null(details$lambda)) {
             ## independent
-            MSpopn <- lapply (1:nsession, session.popn)
+            ## MSpopn <- lapply (1:nsession, session.popn)
+            ## 2014-04-18
+            if (length(D) == 1) {
+                D <- rep(D, nsession)
+            }
+            else {
+                if (length(D) != nsession) stop ("length(D) should equal nsession")
+            }
+            MSpopn <- mapply (session.popn, 1:nsession, D, SIMPLIFY = FALSE)
         }
         else {
             ## projected

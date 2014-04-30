@@ -1,3 +1,23 @@
+Changes in version 2.8.2 (2014-04-30)
+
+New features or changed behaviour of old functions
+
+    o   write.captures() and write.capthist() acquire new argument
+    tonumeric to allow output of character-valued covariates without
+    conversion to numeric
+
+    o   region.N() saves attribute 'regionarea'
+
+    o   sim.popn() accepts a vector of densities D when nsession > 1
+
+    o   sim.capthist() new argument savepopn allows simulated population
+    to be saved as an attribute
+
+Bugs fixed
+    o   output from derived() misformatted when groups specified
+
+    o   plot.secr failed with fixed g0 or lambda when ylim not specified
+
 Changes in version 2.8.1 (2014-04-03)
 
 New features or changed behaviour of old functions

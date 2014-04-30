@@ -11,7 +11,8 @@
 \usage{
 
 write.captures(object, file = "", deblank = TRUE, header = TRUE,
-    append = FALSE, sess = "1", ndec = 2, covariates = FALSE,  ...)
+    append = FALSE, sess = "1", ndec = 2, covariates = FALSE, tonumeric
+    = TRUE, ...)
 
 write.traps(object, file = "", deblank = TRUE,  header = TRUE,
     ndec = 2, covariates = FALSE, ...)
@@ -25,7 +26,10 @@ write.traps(object, file = "", deblank = TRUE,  header = TRUE,
   \item{append}{ logical; if TRUE output is appended to an existing file }
   \item{sess}{ character session identifier }
   \item{ndec}{ number of digits after decimal point for x,y coordinates }
-  \item{covariates}{ logical or a character vector of covariates to export }
+  \item{covariates}{ logical or a character vector of covariates to
+    export }
+  \item{tonumeric}{ logical for whether factor and character covariates should be
+    converted to numeric values on output}
   \item{\dots}{ other arguments passed to \code{write.table} }
 }
 \details{

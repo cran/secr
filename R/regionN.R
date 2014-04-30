@@ -238,6 +238,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             temp <- add.cl (temp, alpha, loginterval, c(0, 0))
         temp$n <- rep(n, nrow(temp))
  #       temp$E.n <- rep(round(En,2), nrow(temp))
+        attr(temp, 'regionarea') <- nrow(region) * attr(region, 'area')
         if (keep.region)
             attr(temp, 'region') <- region
         temp

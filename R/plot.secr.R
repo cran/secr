@@ -11,6 +11,7 @@
 ## 2012-10-21 moved HN etc to utility.r
 ## 2013-04-20 new detection functions HHN, HHR, HEX, HAN, HCG
 ## 2013-04-24 uses getdfn from utility.r
+## 2014-04-25 ylim bug when g0 fixed
 ############################################################################################
 
 
@@ -176,7 +177,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             if (is.data.frame(temp)) maxg0 <- getmax(temp)
             else maxg0 <- max(sapply (temp, getmax))
 
-            if (is.na(maxg0)) maxg0 <- x$fixed[yname]
+            if (is.na(maxg0)) maxg0 <- x$fixed[[yname]]
             if (maxg0 > 0.75) maxg0 <- max(maxg0,1)
             ylim <- c(0, maxg0)
         }

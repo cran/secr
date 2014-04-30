@@ -16,7 +16,7 @@ sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = "poisson"), detectfn = 0, detectpar = list(),
     noccasions = 5, nsessions = 1, binomN = NULL, exactN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
-    maxperpoly = 100)
+    maxperpoly = 100, savepopn = FALSE)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
     nonID = TRUE)
 
@@ -39,7 +39,8 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   \item{seed}{an object specifying if and how the random number
   generator should be initialized (`seeded') }
   \item{maxperpoly}{ integer maximum number of detections of an individual
-  in one polygon or transect on any occasion }
+    in one polygon or transect on any occasion }
+  \item{savepopn}{ logical; if TRUE then the popn (input or simulated) is saved as an attribute}
   \item{\dots}{ arguments to pass to \code{sim.capthist} }
   \item{q}{ number of marking occasions }
   \item{pID}{ probability of individual identification for marked animals }
@@ -98,7 +99,7 @@ availability is not implemented for sampling lists of populations.
 beyond which detection probability is set to zero. By default this value
 is NULL (no specific limit).
 
-\code{detectpar} may also include a component `recaptfactor' for a
+\code{detectpar} may also include a component `recapfactor' for a
 general learned trap response. For `single' and `multi' detector types
 the probability of detection changes by this factor for all occasions
 after the occasion of first capture. Attempted use with other detector

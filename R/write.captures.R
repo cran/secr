@@ -9,7 +9,7 @@
 ############################################################################################
 
 write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
-    append = FALSE, sess = '1', ndec = 2, covariates = FALSE, ...)
+    append = FALSE, sess = '1', ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
 
 {
     if (!is(object, 'capthist'))
@@ -18,11 +18,12 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
     if (ms(object)) {
         write.captures (object[[1]], file = file, deblank = deblank,
             header = deparse(substitute(object), control=NULL), append = append,
-            sess = session(object)[1], ndec = ndec, covariates = covariates, ...)
+            sess = session(object)[1], ndec = ndec, covariates = covariates,
+                        tonumeric = tonumeric, ...)
         for (i in 2:length(object)) {
             write.captures (object[[i]], file = file, deblank = deblank,
                 header = FALSE, append = TRUE, sess = session(object)[i], ndec = ndec,
-                covariates = covariates, ...)
+                covariates = covariates, tonumeric = tonumeric, ...)
         }
     }
     else {
@@ -61,9 +62,15 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
             else
                 covlist <- names(covs)
             if (length(covlist)>0) {
-                for (i in 1:length(covlist))
-                    covs[,i] <- as.numeric(covs[,i])
-                temp <- cbind(temp, covs[ID, covlist, drop=FALSE])
+##                for (i in 1:length(covlist))
+##                covs[,i] <- as.numeric(covs[,i])
+##                temp <- cbind(temp, covs[ID, covlist, drop=FALSE])
+## 2014-04-05
+                if (tonumeric) {
+                    for (i in 1:length(covlist))
+                        covs[,i] <- as.numeric(covs[,i])
+                }
+                temp <- cbind(temp, covs[match(ID, rownames(object)), covlist, drop=FALSE])
             }
         }
 

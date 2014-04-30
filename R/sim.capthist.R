@@ -45,7 +45,8 @@ sim.capthist <- function (
     p.available = 1,
     renumber = TRUE,
     seed = NULL,
-    maxperpoly = 100
+    maxperpoly = 100,
+    savepopn = FALSE
     )
 
 #
@@ -80,6 +81,11 @@ sim.capthist <- function (
         if (poplist & (nsessions>1) & (length(popn) != nsessions))
             stop ("incompatible use of popn list and nsessions>1")
 
+        if (ms(traps) & (length(traps) != nsessions))
+            stop ("incompatible use of traps list and nsessions>1")
+        if (!ms(traps))
+            trps <- traps
+
         ## supplied with spatiotemporal population
         R <- ifelse (poplist, length(popn), nsessions)
         output <- vector(R, mode='list')
@@ -89,6 +95,7 @@ sim.capthist <- function (
         {
             popn <- replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
+            ## will fail with multiple traps
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
                 covariates = NULL, Ndist = popn$Ndist)
         }
@@ -126,8 +133,8 @@ sim.capthist <- function (
                     available <- runif(nrow(popn)) < p.vect
                 }
             }
-
-            output[[t]] <- sim.capthist(traps, temppop, detectfn, detectpar,
+            if (ms(traps)) trps <- traps[[t]]
+            output[[t]] <- sim.capthist(trps, temppop, detectfn, detectpar,
                 nocc[t], 1, binomN, exactN, 1, renumber, seed, maxperpoly)
             ## 'exactN' was missing from preceding call until 2014-02-18
             session( output[[t]] ) <- t   ## added 2011-09-09
@@ -723,6 +730,10 @@ sim.capthist <- function (
         attr(w, 'seed')      <- RNGstate      ## save random seed
         attr(w, 'detectpar') <- detectpar
         session(w)           <- '1'           ## dummy session values for now
+
+        ## optionally save population, whether simulated or input  2014-04-27
+        if (savepopn)
+            attr(w, 'popn') <- popn
 
         if (detector(traps) %in% c('cue','signal','signalnoise')) {
             if (temp$n>0)  {
