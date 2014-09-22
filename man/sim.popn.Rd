@@ -11,9 +11,10 @@ Simulate a Poisson process representing the locations of individual animals.
 \usage{
 
 sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
-  "IHP", "coastal", "hills"), buffertype = "rect", poly = NULL, covariates =
-  list(sex = c(M = 0.5, F = 0.5)), number.from = 1, Ndist = c("poisson",
-  "fixed", "specified"), nsession = 1, details = NULL, seed = NULL, ...)
+  "IHP", "coastal", "hills", "linear"), buffertype = "rect", poly =
+  NULL, covariates = list(sex = c(M = 0.5, F = 0.5)), number.from = 1,
+  Ndist = c("poisson", "fixed", "specified"), nsession = 1, details =
+  NULL, seed = NULL, ...)
 
 tile(popn, method = "reflect")
 
@@ -102,6 +103,13 @@ relative cell probabilities given by D (\code{Ndist =
 extent of the population is governed entirely by the mask in
 \code{core}.
 
+If \code{model2D = "linear"} then a linear population is simulated as
+for \code{model2D = "IHP"}, except that \code{core} should be a
+linearmask object from package \pkg{secrlinear}, and density (D) is
+expressed in animals per km. The documentation of \pkg{secrlinear}
+should be consulted for further detail (e.g. the wrapper function
+\code{sim.linearpopn}).
+
 If \code{model2D = "coastal"} then a form of inhomogeneous Poisson
 distribution is simulated in which the x- and y-coordinates are drawn from
 independent Beta distributions. Default parameters generate the
@@ -149,10 +157,14 @@ The random number seed is managed as in \code{simulate.lm}.
 
 \value{
 
-An object of class `popn', a data frame with columns `x' and `y'. Rows
+An object of class \code{c("popn", "data.frame")} a data frame with columns `x' and `y'. Rows
 correspond to individuals. Individual covariates (optional) are stored
 as a data frame attribute. The initial state of the R random number generator is
 stored in the `seed' attribute.
+
+If \code{model2D = "linear"} the output is of class \code{c("linearpopn",
+"popn", "data.frame")}, and the value of \code{core} is stored in the
+`mask' attribute.
 
 }
 

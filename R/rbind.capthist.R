@@ -153,7 +153,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         if (mergepoly) {
             srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
             tmp <- Polygons(srl,1)
-            require (maptools)
+            requireNamespace ('maptools', quietly = TRUE)
             tmp2 <- maptools::unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
             ## tmp2 <- unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
             trps <- as.data.frame(getcoord(tmp2)[[1]])

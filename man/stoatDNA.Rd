@@ -16,7 +16,7 @@ New Zealand. Individuals were identified from DNA in hair samples.
 
 }
 
-\usage{data(stoatDNA)}
+\usage{stoatDNA}
 
 \details{
 

@@ -132,9 +132,11 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
     else { ## type == 'real'
         getLP <- function (object1) {  ## predicted values of real parameters
             getfield <- function (x) {
-                 secr.lpredictor (newdata = newdata, model = object1$model[[x]],
+                 secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
                     indx = object1$parindx[[x]], beta = object1$fit$par,
-                    beta.vcv = object1$beta.vcv, field = x) }
+                    beta.vcv = object1$beta.vcv, field = x,
+                    smoothsetup = object1$smoothsetup[[x]])
+            }
             sapply (names(object1$model), getfield, simplify = FALSE)
         }
         predicted <- lapply (object, getLP)
@@ -188,7 +190,9 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
     else { ## type=='real'
         ## 2010 02 15, 2010 02 23
         for (m in 1: length(object))
-        if (object[[m]]$details$scalesigma | object[[m]]$details$scaleg0) {
+        if (object[[m]]$details$scalesigma |
+            object[[m]]$details$scaleg0 |
+            (object[[m]]$details$param > 1)) {
             stop ("'model.average' cannot handle scaled detection parameters")
         }
         for (i in 1:nr) {
@@ -286,10 +290,10 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     getLP <- function (object1) {  ## for predicted values of real parameters
         getfield <- function (x) {
-
-            secr.lpredictor (newdata = newdata, model = object1$model[[x]],
+            secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
                 indx = object1$parindx[[x]], beta = object1$fit$par,
-                beta.vcv = object1$beta.vcv, field = x)
+                beta.vcv = object1$beta.vcv, field = x,
+                smoothsetup = object1$smoothsetup[[x]])
         }
         sapply (names(object1$model), getfield, simplify = FALSE)
     }

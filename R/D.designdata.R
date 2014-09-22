@@ -6,6 +6,7 @@
 ## 2010 02 25 force levels=sessionlevels for dframe$session
 ## 2011 10 09 revised for multi-session mask covariates; needs testing
 ## 2011 11 08 revised meanSD, getcol, scale
+
 ###############################################################################
 ## NOTE does not standardize sessioncov, maskcov
 ###############################################################################

@@ -20,9 +20,16 @@
 ## 2014-03-12 sigmak parameterisation details$param = 4
 ## 2014-03-12 bufferbiascheck now in suggest.buffer
 ## 2014-03-24 allow combination esa, sigmak (param 6)
+## 2014-06-02 secr.design.MS argument ignoreusage
+## 2014-08-22 smoothers... badsmooth check
+## 2014-08-25 model validation in separate function valid.model (utility.r)
+## 2014-08-27 default model = NULL (model = list(D~1, g0~1, sigma~1)) REVERSED 2014-09-23
+## 2014-09-06 warning if use Euclidean distances with linearmask
+## 2014-09-23 directly replace g0 by lambda0 for detectfn 14:18
+
 ###############################################################################
 
-secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
+  secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     buffer = NULL, CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL,
     link = list(), fixed = list(), timecov = NULL, sessioncov = NULL, hcov = NULL,
     groups = NULL, dframe = NULL, details = list(), method = 'Newton-Raphson',
@@ -133,8 +140,8 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                            debug = FALSE,
                            intwidth2 = 0.8,
                            normalize = FALSE,
-                           usecov = NULL
-##                           , maxcallsize = 512
+                           usecov = NULL,
+                           userdist = NULL
                            )
 
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
@@ -173,7 +180,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     if (detector(traps(capthist)) %in% c(.localstuff$exclusivedetectors,
                                          'proximity','signal','signalnoise'))
         details$binomN <- 1;
-
 
     #################################################
     ## MS - indicator TRUE if multi-session (logical)
@@ -236,9 +242,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     else {
       if (MS & !ms(mask)) {
+          if (inherits(mask, 'linearmask'))
+              newclass <- c('list', 'linearmask', 'mask')
+          else
+              newclass <- c('list', 'mask')
           ## inefficiently replicate mask for each session!
           mask <- lapply(sessionlevels, function(x) mask)
-          class (mask) <- c('list', 'mask')
+          class (mask) <- newclass
           names(mask) <- sessionlevels
       }
     }
@@ -246,6 +256,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     nc <- ifelse (MS, sum(sapply(capthist, nrow)), nrow(capthist))
     if (nc < 1)
         warning (nc, " detection histories")
+
+    if (is.null(details$userdist) & inherits(mask, 'linearmask'))
+        warning ("using Euclidean distances with linear mask")
 
     #################################################
     ## orphan mark-resight code - not currently used
@@ -296,73 +309,13 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
-    if (sum(c('g0','a0','lambda0') %in% names(model)) > 1)
-        stop ("model should include only one of g0, a0, lambda0")
-
-    esa <- "esa" %in% names(model)
-    a0 <- "a0" %in% names(model)
-    sigmak <- "sigmak" %in% names(model)
-    if (esa & !sigmak) {
-        details$param <- 2
+    details$param <- new.param(details, model, CL)
+    ## 2014-09-23
+    if ((detectfn %in% 14:18) & ('g0' %in% names(model))) {
+        names(model)[names(model) == 'g0'] <- 'lambda0'
+        warning ("replacing g0 by lambda0 in model for detectfn ", detectfn )
     }
-    if (a0 & !sigmak) {
-        details$param <- 3
-    }
-    if (sigmak) {
-        if (esa) {
-            details$param <- 6
-        }
-        else {
-            if (CL)
-                stop ("sigmak parameterization requires full model, not CL, unless also 'esa'")
-            details$param <- ifelse(a0, 5, 4)
-        }
-    }
-    if (details$param > 0)
-        warning ("Using parameterization details$param = ", details$param)
-
-    ## modelled parameters
-    pnames <- switch (detectfn+1,
-        c('g0','sigma'),           # 0 halfnormal
-        c('g0','sigma','z'),       # 1 hazard rate
-        c('g0','sigma'),           # 2 exponential
-        c('g0','sigma','z'),       # 3
-        c('g0','sigma'),           # 4
-        c('g0','sigma','w'),       # 5
-        c('g0','sigma','w'),       # 6
-        c('g0','sigma','z'),       # 7
-        c('g0','sigma','z'),       # 8
-        c('b0','b1'),              # 9
-        c('beta0','beta1','sdS'),  # 10
-        c('beta0','beta1','sdS'),  # 11
-        c('beta0','beta1','sdS'),  # 12  cf parnames() in utility.R: muN, sdN?
-        c('beta0','beta1','sdS'),  # 13  cf parnames() in utility.R: muN, sdN?
-        c('lambda0','sigma'),      # 14 hazard halfnormal
-        c('lambda0','sigma','z'),  # 15 hazard hazard rate
-        c('lambda0','sigma'),      # 16 hazard exponential
-        c('lambda0','sigma','w'),  # 17
-        c('lambda0','sigma','z'))  # 18
-
-    if (details$param %in% c(2,6))
-        pnames[1] <- "esa"
-    if (details$param %in% c(3,5))
-        pnames[1] <- "a0"
-    if (details$param %in% 4:6) {
-        pnames[2] <- "sigmak"
-        pnames <- c(pnames, "c")
-    }
-
-    if (!CL) pnames <- c('D', pnames)
-    if (!is.null(q) & nonID) {
-	pnames <- c(pnames, 'pID')
-        if (model$pID != ~1)
-            stop ("'pID' must be constant in this implementation")
-    }
-    if (alltelem) {
-        rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
-        rnum[is.na(rnum)] <- 0
-        pnames <- pnames[-rnum]
-    }
+    pnames <- valid.pnames (details, model, CL, detectfn, alltelem, q, nonID)
     if (details$param %in% 4:6) {
         if (! ("c" %in% names(model))) {
             ## default to fixed c = 0
@@ -373,16 +326,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     fnames <- names(fixed)
     pnames <- pnames[!(pnames %in% fnames)]        ## drop fixed real parameters
 
-    ## this warning may be superfluous, and distracting
-    ## OK <- names(model) %in% pnames
-    ## if (any(!OK))
-    ##    warning ("parameters in model not consistent with detectfn : ",
-    ##             paste(names(model)[!OK], collapse = ', '))
-
     ## 2013-11-09 only now fillout model
     ## pmix, lambda0 added to defaultmodel 2013-04
-    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1, sigma=~1, sigmak=~1, z=~1,
-                         w=~1, c=~1, pID=~1, beta0=~1, beta1=~1, sdS=~1, b0=~1, b1=~1)
+    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1, sigma=~1, sigmak=~1,
+                         z=~1, w=~1, c=~1, pID=~1, noneuc=~1, beta0=~1, beta1=~1,
+                         sdS=~1, b0=~1, b1=~1)
                          ## pmix=~1) ## 2013-10-27
     model <- replace (defaultmodel, names(model), model)
 
@@ -425,6 +373,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
 
     model[!(names(model) %in% pnames)] <- NULL     ## select real parameters
+    valid.model(model, CL, detectfn, hcov, details$userdist, names(sessioncov))
     vars <-  unlist(lapply(model, all.vars))
 
     ############################################
@@ -460,10 +409,15 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     # Link functions (model-specific)
     ############################################
-    defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log', a0='log',
-                        sigma='log', sigmak='log', z='log', w='log', c='identity', pID='logit',
-                        beta0='identity', beta1='neglog', sdS='log', b0='log', b1='neglog',
-                        pmix='logit', cuerate='log', cut='identity')
+
+    defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log',
+                        a0='log', sigma='log', sigmak='log', z='log',
+                        w='log', c='identity', pID='logit',
+                        noneuc='identity', beta0='identity',
+                        beta1='neglog', sdS='log', b0='log',
+                        b1='neglog', pmix='logit', cuerate='log',
+                        cut='identity')
+
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
     if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
@@ -473,17 +427,18 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
     ##############################################
     # Prepare detection design matrices and lookup
     ##############################################
-
     memo ('Preparing detection design matrices', details$trace)
     design <- secr.design.MS (capthist, model, timecov, sessioncov, groups, hcov,
-                              dframe)
+                              dframe, ignoreusage = details$ignoreusage)
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, hcov,
-                               dframe, naive = T, bygroup = !CL)
+                               dframe, ignoreusage = details$ignoreusage, naive = T,
+                               bygroup = !CL)
 
     ############################################
     # Prepare density design matrix
     ############################################
     D.modelled <- !CL & is.null(fixed$D)
+    smoothsetup <- list(D = NULL)
     if (!D.modelled) {
        designD <- matrix(nrow = 0, ncol = 0)
        grouplevels <- 1    ## was NULL
@@ -503,8 +458,19 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
         else {
             memo ('Preparing density design matrix', details$trace)
+            if (!all (all.vars(model$D) %in%
+                      c('session', 'Session','g')) & details$param %in% c(4,5))
+                stop ("only session and group models allowed for density when details$param = ",
+                      details$param)
             temp <- D.designdata( mask, model$D, grouplevels, sessionlevels, sessioncov)
-            D.designmatrix <- model.matrix(model$D, temp)
+            ## 2014-08-19,22
+            ## D.designmatrix <- model.matrix(model$D, temp)
+            if (any(smooths(model$D)))
+                ## smoothsetup$D <- gamsetup(model$D, temp, knots = details$knots)
+                ## knots not working 2014-08-24
+                smoothsetup$D <- gamsetup(model$D, temp)
+            ## otherwise, smoothsetup$D remains NULL
+            D.designmatrix <- general.model.matrix(model$D, temp, smoothsetup$D)
             attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
             Dnames <- colnames(D.designmatrix)
             designD <- D.designmatrix
@@ -590,10 +556,11 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                 start3 <- autoini (capthist[[1]], mask[[1]],
                                    binomN = details$binomN,
                                    ignoreusage = details$ignoreusage)
-            else
+            else {
                 start3 <- autoini (capthist, mask,
                                    binomN = details$binomN,
                                    ignoreusage = details$ignoreusage)
+            }
 
             if (any(is.na(unlist(start3)))) {
                 warning ("'secr.fit' failed because initial values not found",
@@ -619,26 +586,23 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
         rpsv <- unlist(RPSV(capthist))[1]
         n <- ifelse (ms(capthist), nrow(capthist[[1]]), nrow(capthist))
         default <- list(
-            D     = ifelse (is.na(start3$D), 1, start3$D),
-            g0    = ifelse (is.na(start3$g0), 0.1, start3$g0),
+            D       = ifelse (is.na(start3$D), 1, start3$D),
+            g0      = ifelse (is.na(start3$g0), 0.1, start3$g0),
             lambda0 = -log(1-ifelse (is.na(start3$g0), 0.1, start3$g0)),
-            sigma = ifelse (is.na(start3$sigma), rpsv, start3$sigma),
-            z     = 5,
-            w     = 10,
-            pID   = 0.7,
-            beta0 = details$cutval + 30,
-            beta1 = -0.2,
-            sdS   = 2,
-            b0    = 2,      ## changed from 15 2010-11-01
-            b1    = -0.1,
-            pmix  = 0,      ## superceded below
-
-# esa   = ifelse (is.na(start3$g0), 10, start3$g0 * start3$sigma^2 *
-#     ndetector(traps(capthist))[1] / 2500),
-# replaced 2014-03-24
-            esa   = ifelse (is.na(start3$D), n / 5, n / start3$D),
-            a0    = ifelse (is.na(start3$g0), 0.1 * rpsv^2, start3$g0 *
-                start3$sigma^2) / 10000 * 2 * pi
+            sigma   = ifelse (is.na(start3$sigma), rpsv, start3$sigma),
+            z       = 5,
+            w       = 10,
+            pID     = 0.7,
+            noneuc  = 0,
+            beta0   = details$cutval + 30,
+            beta1   = -0.2,
+            sdS     = 2,
+            b0      = 2,      ## changed from 15 2010-11-01
+            b1      = -0.1,
+            pmix    = 0,      ## superceded below
+            esa     = ifelse (is.na(start3$D), n / 5, n / start3$D),
+            a0      = ifelse (is.na(start3$g0), 0.1 * rpsv^2, start3$g0 *
+                      start3$sigma^2) / 10000 * 2 * pi
         )
 
         ## moved from inside autoini block 2013-07-19
@@ -798,7 +762,6 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                      ncores     = ncores,
                      clust      = clust,
                      betaw      = betaw)    # for trace format
-
     ############################################
     ## calls for specific maximisation methods
     lcmethod <- tolower(method)
@@ -825,7 +788,9 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                       stepmax   = 10)
         args <- c(args, secrargs)
         args <- replace (args, names(list(...)), list(...))
+
         this.fit <- do.call (nlm, args)
+
         this.fit$par <- this.fit$estimate     # copy for uniformity
         this.fit$value <- this.fit$minimum    # copy for uniformity
         if (this.fit$code > 2)
@@ -904,9 +869,26 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
             D <- getD (designD, this.fit$par, mask, parindx, link, fixed,
                        grouplevels, sessionlevels)
             N <- t(apply(D, 2:3, sum, drop = FALSE))
-            cellarea <- if (ms(mask)) sapply(mask, attr, 'area')
-                        else cellarea <- attr(mask,'area')
-            N <- sweep(N, FUN = '*', MARGIN = 1, STATS = cellarea)
+
+            if (inherits(mask, 'linearmask')) {
+                if (ms(mask)) {
+                    scale <- sapply(mask, attr, 'spacing')
+                }
+                else {
+                    scale <- attr(mask, 'spacing')
+                }
+                scale <- scale / 1000   ## per km
+            }
+            else {
+                if (ms(mask)) {
+                    scale <- sapply(mask, attr, 'area')
+                }
+                else {
+                    scale <- attr(mask, 'area')
+                }
+            }
+            ## rows are sessions
+            N <- sweep(N, FUN = '*', MARGIN = 1, STATS = scale)
         }
     }
 
@@ -916,10 +898,10 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
 
     desc <- packageDescription("secr")  ## for version number
 
-    ## ad hoc censoring of evaluated calls from do.call 2014-02-10
-    ## wrong, and ugly...
-    ## if (object.size(cl) > details$maxcallsize)
-    ##    cl <- paste('secr.fit(',substring(as.character(cl)[2],1,details$maxcallsize),'...',sep='')
+    ## if density modelled then smoothsetup already contains D,
+    ## otherwise an empty list; now add detection parameters from
+    ## secr.design.MS
+    smoothsetup <- c(smoothsetup, design$smoothsetup)
 
     output <- list (call = cl,
                   capthist = capthist,
@@ -944,6 +926,7 @@ secr.fit <- function (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL,
                   realnames = realnames,
                   fit = this.fit,
                   beta.vcv = covar,
+                  smoothsetup = smoothsetup,
                   N = N,
                   version = desc$Version,
                   starttime = starttime,

@@ -1,3 +1,53 @@
+Changes in version 2.9.0 (2014-09-23)
+
+New features or changed behaviour of old functions
+    o   secr.design.MS() acquires 'ignoreusage' argument
+    o   split.capthist() acquires 'byoccasion' argument
+    o   fxi.secr() and related functions extended to IHP density models 
+    o   fxi.contour() acquires argument 'fill' for filling contours
+    o   new function fx.total() for aggregate 'posterior' distribution of activity
+        centres of detected and undetected animals
+    o   simulate.secr() acquires 'ncores' argument; now much faster in simple cases
+    o   simulate.secr() allows fixed parameters 
+    o   sim.capthist() acquires argument 'chulltol' for telemetry locations
+    o   addCovariates() acquires 'strict' argument to set return value to NA
+        for requested point(s) outside a mask spatial data source
+    o   new function secr.test() for Monte Carlo gof tests
+    o   print and plot methods for 'secrtest' objects from secr.test()
+    o   regression splines (smooth terms s(), te()) are allowed in formulae for secr.fit()
+    o   secr.fit() allows user-provided non-Euclidean distances (details$userdist)
+    o   sim.capthist() and pdot() acquire argument 'userdist' (see preceding)
+    o   sim.popn() model2D argument may take value "linear" for forthcoming package 
+        'secrlinear'
+    o   ARL(), MMDM(), dbar() and moves() acquire 'userdist' argument for use with 
+        non-Euclidean distances
+    o   plot.mask() upgraded (pretty breaks, legend, dots argument
+        passes to legend or new function striplegend(), not eqscplot, etc., 
+        lower bound included in 'breaks' )
+    o   new dataset OVpossumCH
+
+Bugs fixed
+    o   summary.capthist did not report losses for non-exclusive detectors (proximity, count etc.)
+    o   read.mask with covariate columns : spurious error message
+    o   secr.fit details$ignoreusage did not work properly in case that some usage values were zero
+    o   simulate.secr() did not work with 'hcov' or reparameterized models (details$param > 2)
+    o   secr.fit() sigmak parameterization did not work with finite mixtures (including hcov)
+    o   read.traps() failed for polygon detectors with non-binary usage data on a single occasion
+    o   fxi.secr() and fxi.contour() failed in extreme cases (very peaked distributions)
+    o   plot.Dsurface() ignored scale for multi-session plots
+    o   plot.secr() failed to provide limits for acoustic detection functions
+    o   predictDsurface() failed with groups
+
+Other
+    o   Documentation of randomHabitat corrected (drop argument)
+    o   Internal functions sim.detect(), getMeanSD(), maskarea(), and
+        masklength() now exported
+    o   Imports some functions from package mgcv
+    o   Package raster moved from Suggests to Imports
+    o   Minor tweaks to secr.fit, summary.mask, simulate.secr and autoini code for 
+        compatibility with secrlinear package (in prep.)
+
+
 Changes in version 2.8.2 (2014-04-30)
 
 New features or changed behaviour of old functions

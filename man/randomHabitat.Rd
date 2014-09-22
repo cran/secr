@@ -69,7 +69,7 @@ is added.
 
 \value{
 
-  An object of class `mask'. By default (\code{covariate = FALSE}) this
+  An object of class `mask'. By default (\code{drop = TRUE}) this
   has fewer rows (points) than the input mask.
 
 }

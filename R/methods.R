@@ -21,8 +21,7 @@
 ## 2010 10 15 make.mask poly clipping extended to all types
 ## 2010 10 19 version 1.5
 ## 2010-10-21 AIC.secrlist
-## 2010-10-22 predict.secrlist
-## 2010-10-24 multisession detectpar
+## 2010-10-22 predict.secrlistyes## 2010-10-24 multisession detectpar
 ## 2010-10-25 revision of all error and warning messages in R code
 ## 2010-11-04 logLik.secr
 ## 2011-01-04 G&R parameterisation
@@ -50,7 +49,7 @@
 ## 2012-09-14 split.traps now in its own file
 ## 2012-09-14 signalframe extract/replace function
 ## 2012-10-24 predict.secr drops unused columns of newdata from names of output components
-## 2012-10-25 plot.captihst checks for zero captures and proximity tracks
+## 2012-10-25 plot.capthist checks for zero captures and proximity tracks
 ## 2012-12-22 extended usage<-
 ## 2013-01-16 fixed rbind.traps for usage
 ## 2013-02-07 timevaryingcov<- bug fixed
@@ -65,6 +64,11 @@
 ## 2013-12-15 maskarea function for nrow(mask) * attr(mask,'area')
 ## 2014-02-08 trim.secr() added call to default vector of components dropped
 ## 2014-02-19 secrlist '[' method
+## 2014-05-31 summary.capthist counts losses when dim>2
+## 2014-05-31 read.mask spurious error msg with columns argument
+## 2014-08-19 predict.secr transferred to predict.secr.r
+## 2014-09-06 summary.mask slightly rearranged, and allows linearmask
+## 2014-09-14 plot.mask moved to plot.mask.r
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -2172,13 +2176,17 @@ summary.capthist <- function(object, terse = FALSE, ...) {
         if (nrow(object) > 0) {
             if (length(dim(object)) > 2) {
                 tempx <- apply( object[,,,drop=F], c(1,2), function(x) sum(abs(x))>0)
+                ## 2014-05-31
+                tempx3 <-  apply( object[,,,drop=F], c(1,2), function(x) any(x<0))
                 if (nocc>1) {  # distinction may not be needed...
                     counts [1,] <- apply(tempx, 2, function(x) sum(abs(x)>0) )
                     tempx2 <- apply(tempx, 1, function(x) cumsum(abs(x))>0)
                     counts [4,] <- apply(tempx2,1,sum)
                     counts [2,] <- c(counts[4,1],diff(counts[4,]))
                     counts [3,] <- tabulate(apply(tempx,1, function(x) sum(abs(x)>0)),nbins = nocc)
-                    counts [5,] <- apply(tempx,2, function(x) sum(x<0))
+                    ## replaced counts [5,] <- apply(tempx,2, function(x) sum(x<0))
+                    ## 2014-05-31
+                    counts [5,] <- apply(tempx3, 2, sum)
                 }
                 else {
                     counts [1,1] <- sum(abs(tempx)>0)
@@ -2342,6 +2350,7 @@ subset.mask <- function (x, subset, ...) {
     attr(temp,'type')        <- 'subset'
     attr(temp,'meanSD')      <- getMeanSD(temp)
     attr(temp,'area')        <- attr(x, 'area')
+    attr(temp,'vertices')    <- attr(x, 'vertices')
     attr(temp,'spacing')     <- spacing
     if (!is.null(covariates(x))) covariates(temp) <- covariates(x)[subset,,drop=F]
     xl <- range(temp$x) + spacing/2 * c(-1,1)
@@ -2349,7 +2358,7 @@ subset.mask <- function (x, subset, ...) {
     attr(temp,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
     if (!is.null(attr(temp,'OK')))
         attr(temp,'OK') <- attr(temp,'OK')[subset]
-    class(temp) <- c('mask', 'data.frame')
+    class(temp) <- class(x)
     temp
 }
 ############################################################################################
@@ -2441,7 +2450,9 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL,
     if (ncol(data) > 2) {
         df <- as.data.frame(data[,-ixy, drop = FALSE])
         if (!is.null(columns)) {
-            if (!all(columns %in% names(mask)))
+##            if (!all(columns %in% names(mask)))
+            ## bug fixed 2014-05-31
+            if (!all(columns %in% names(df)))
                 stop ("columns missing from input")
             df <- df[,columns, drop=FALSE]
         }
@@ -2471,69 +2482,6 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL,
 }
 ###############################################################################
 
-plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
-      axes = FALSE, dots = TRUE, col='grey', breaks = 12, meshcol = NA,
-      ppoly = TRUE, polycol='red', ...)
-{
-    if (ms(x)) {
-        ## 2013-02-12 pass all arguments
-        lapply (x, plot.mask, border = border, add = add, covariate = covariate,
-                axes = axes, dots = dots, col = col, breaks = breaks, meshcol =
-                meshcol, ppoly = ppoly, polycol = polycol, ...)
-    }
-    else {
-
-        buff <- c(-border,+border)
-        if (!add) {
-            eqscplot (x$x, x$y,
-            xlim=range(x$x)+buff, ylim=range(x$y)+buff,
-            xlab='', ylab='',
-            axes=axes, type='n', ...)
-        }
-
-        if (!is.null(attr(x,'polygon')) & ppoly) {
-            poly <- attr(x,'polygon')
-            if (class(poly) == "SpatialPolygonsDataFrame") {
-# plot(poly, col = polycol, add = TRUE)
-# poor control of colours
-                plot(poly, add = TRUE)
-            }
-            else
-                polygon (poly, col = polycol, density = 0)
-        }
-
-        if (is.null(covariate))
-            covfactor <- factor(1)
-        else {
-            if (is.factor(covariates(x)[,covariate]))
-                covfactor <- covariates(x)[,covariate]
-            else
-                covfactor <- cut ( covariates(x)[,covariate], breaks = breaks)
-        }
-        ncolour <- length(levels(covfactor))
-        if (length(col) < ncolour)
-            col <- heat.colors(ncolour)   # default set
-        cols <- col[as.numeric(covfactor)]
-
-        if (dots) {
-            points (x$x, x$y, col = cols, pch = 16, cex = 0.4)
-        }
-        else {
-            pixelsize <- attr(x,'spacing')
-            dx <- c(-0.5, -0.5, +0.5, +0.5) * pixelsize
-            dy <- c(-0.5, +0.5, +0.5, -0.5) * pixelsize
-            plotpixel <- function (xy) {
-                polygon (xy[1]+dx, xy[2]+dy, col=col[xy[3]],density=-1, border = meshcol)
-            }
-            apply(cbind(x,as.numeric(covfactor)),1,plotpixel)
-        }
-
-        if (!is.null(covariate))
-            invisible(levels(covfactor))
-    }
-}
-###############################################################################
-
 summary.mask <- function(object, ...) {
 
   if (ms(object)) {
@@ -2551,22 +2499,27 @@ summary.mask <- function(object, ...) {
       if (!is.null(covariates(object))) {
           sumcovar <- summary(covariates(object), ...)
       } else sumcovar <- NULL
-      masktype <- 'mask'
-      if (inherits(object,'Dsurface')) masktype <- 'Dsurface'
-      if (inherits(object,'Rsurface')) masktype <- 'Rsurface'
+      if (inherits(object, 'linearmask'))
+          maskclass <- 'linearmask'
+      else if (inherits(object,'Dsurface'))
+          maskclass <- 'Dsurface'
+      else if (inherits(object,'Rsurface'))
+          maskclass <- 'Rsurface'
+      else
+          maskclass <- 'mask'
 
+      ## rearranged 2014-09-06
       temp <- list (
-        detector = attr(object,'detector'),
-        type = attr(object,'type'),
+        maskclass = maskclass,
+        masktype = attr(object, 'type'),
         nmaskpoints = nrow(object),
         xrange = range(object$x),
         yrange = range(object$y),
-        meanSD = attr(object,'meanSD'),
-        spacing = attr(object,'spacing'),
-        cellarea = attr(object,'area'),
-        boundingbox = attr(object,'boundingbox'),
-        covar = sumcovar,
-        masktype = masktype
+        meanSD = attr(object, 'meanSD'),
+        spacing = attr(object, 'spacing'),
+        cellarea = attr(object, 'area'),
+        boundingbox = attr(object, 'boundingbox'),
+        covar = sumcovar
       )
       class(temp) <- 'summary.mask'
       temp
@@ -2580,12 +2533,16 @@ print.summary.mask <- function (x, ...) {
         lapply (x, print.summary.mask)
     }
     else {
-      cat ('Object class     ', x$masktype, '\n')
-      cat ('Mask type        ', x$type, '\n')
+      cat ('Object class     ', x$maskclass, '\n')
+      cat ('Mask type        ', x$masktype, '\n')
       cat ('Number of points ', x$nmaskpoints, '\n')
       cat ('Spacing m        ', x$spacing, '\n')
-      cat ('Cell area ha     ', x$cellarea, '\n')
-      cat ('Total area ha    ', x$cellarea * x$nmaskpoints, '\n')
+      if (is.null(x$cellarea))
+          cat ('Total length km  ', x$spacing * x$nmaskpoints / 1000, '\n')
+      else {
+          cat ('Cell area ha     ', x$cellarea, '\n')
+          cat ('Total area ha    ', x$cellarea * x$nmaskpoints, '\n')
+      }
       cat ('x-range m        ', x$xrange, '\n')
       cat ('y-range m        ', x$yrange, '\n')
       cat ('Bounding box     ','\n')
@@ -2608,209 +2565,6 @@ print.summary.mask <- function (x, ...) {
 
 trim.secr <- function (object, drop = c('call', 'mask','design','design0'), keep = NULL) {
     trim.default(object, drop = drop, keep = keep)
-}
-############################################################################################
-
-
-predict.secr <- function (object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-                          alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
-
-    if (is.null(object$fit)) {
-        warning ("empty (NULL) object")
-        return(NULL)
-    }
-    type <- match.arg(type)
-    if ((type == "link") & scaled)
-        stop ("scaling requires type = 'response'")
-
-    if (is.null(newdata)) newdata <- secr.make.newdata (object)
-
-    ## unmashing 2012-07-24
-    unmash <- object$details$unmash
-    if (object$CL | is.null(unmash)) unmash <- FALSE
-
-    parindices <- object$parindx
-    models <- object$model
-
-    ## drop unused columns 2012-10-24
-    vars <- unlist(lapply(models, all.vars))
-    ## cover case that h2,h3 not in model 2013-10-28
-    mixvar <- switch(object$details$nmix, character(0),'h2','h3')
-    usedvars <- c('session', 'g', vars, mixvar)
-    newdata <- newdata[,names(newdata) %in% usedvars, drop = FALSE]
-    if ('cuerate' %in% object$realnames) {
-        parindices$cuerate <- max(unlist(parindices)) + 1
-        models$cuerate <- ~1
-    }
-
-    if (object$detectfn %in% c(12,13)) {
-        ## experimental parameters not fitted
-        ## construct dummies
-        parindices$muN <- max(unlist(parindices)) + 1
-        parindices$sdN <- max(unlist(parindices)) + 1
-        models$muN <- ~1
-        models$sdN <- ~1
-        object$link$muN <- 'identity'
-        object$link$sdN <- 'identity'
-    }
-
-    ## allow for fixed beta parameters 2009 10 19, 2014-03-18
-    beta <- complete.beta(object)
-    beta.vcv <- complete.beta.vcv(object)
-
-    getfield <- function (x) {
-        if ((x == 'D') & userD(object)) {
-            ## user-supplied density function
-            ## return only intercept
-            lpred <- matrix(ncol = 2, nrow = nrow(newdata),
-               dimnames=list(NULL,c('estimate','se')))
-            D0 <- parindices[[x]][1]
-            lpred[,1] <- beta[D0]
-            lpred[,2] <- beta.vcv[D0,D0]^0.5
-            return(lpred)
-        }
-        else {
-            secr.lpredictor (newdata = newdata, model = models[[x]],
-                indx = parindices[[x]], beta = beta, field = x,
-                beta.vcv = beta.vcv)
-        }
-    }
-
-    predict <- sapply (object$realnames, getfield, simplify = FALSE)
-    z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
-    if (se.fit)  out <- list(nrow(newdata))
-    else {
-        out <- newdata
-        ## add columns for real parameter estimates
-        for (varname in object$realnames)
-            out[,varname] <- rep(NA,nrow(out))
-    }
-    if (!is.null(predict$pmix)) {
-        ## fixpmix in utility.R is shared with collate()
-        predict <- fixpmix(predict, nmix = object$details$nmix)
-    }
-    for (new in 1:nrow(newdata)) {
-        lpred  <- sapply (predict, function(x) x[new,'estimate'])
-        if (type == "response")
-            Xlpred <- Xuntransform(lpred, object$link, object$realnames)
-
-        if (ms(object)) {
-            if (!('session' %in% names(newdata))) {
-                n.mash <- NULL
-            }
-            else {
-                sess <- newdata[new, 'session']
-                n.mash <- attr (object$capthist[[sess]], 'n.mash')
-            }
-            n.clust <- length(n.mash)
-            if (new==1)
-                oldnclust <- n.clust
-            else if (n.clust != oldnclust)
-                warning ("number of mashed clusters varies between sessions")
-        }
-        else {
-            n.mash <- attr (object$capthist, 'n.mash')
-            n.clust <- length(n.mash)
-        }
-        if (unmash)
-            n.clust <- 1
-
-        #####################
-        ## 2010 02 14 rescale
-        if (object$details$scalesigma & scaled) {
-            Xlpred['sigma'] <- Xlpred['sigma'] / Xlpred['D']^0.5
-            lpred['sigma'] <- NA   ## disable further operations for SE
-        }
-        if (object$details$scaleg0 & scaled) {
-            Xlpred['g0'] <- Xlpred['g0'] / Xlpred['sigma']^2
-            lpred['g0'] <- NA   ## disable further operations for SE
-        }
-        #####################
-
-        if (se.fit) {
-            selpred <- sapply (predict,function(x) x[new,'se'])
-            if (type == "response") {
-                temp <- data.frame (
-                    row.names = object$realnames,
-                    link = unlist(object$link[object$realnames]),
-                    estimate = Xlpred,
-                    SE.estimate = se.Xuntransform (lpred, selpred, object$link, object$realnames),
-                    lcl = Xuntransform(lpred-z*selpred, object$link, object$realnames),
-                    ucl = Xuntransform(lpred+z*selpred, object$link, object$realnames)
-                )
-                ## truncate density at zero; adjust for mash(); adjust for telemetry
-                if ('D' %in% row.names(temp)) {
-                    temp['D', -1][temp['D',-1]<0] <- 0
-                    if (!is.null(n.mash)) {
-                        temp['D', -1] <- temp['D', -1] / n.clust
-                    }
-                }
-            }
-            else {
-                temp <- data.frame (
-                    row.names = object$realnames,
-                    link = unlist(object$link[object$realnames]),
-                    estimate = lpred,
-                    SE.estimate = selpred,
-                    lcl = lpred-z*selpred,
-                    ucl = lpred+z*selpred
-                )
-            }
-
-            # drop non-estimated rows
-            if (ms(object)) {
-                if ('session' %in% names(newdata))
-                    sess <- newdata[new, 'session']
-                else
-                    sess <- 1
-                det <- detector(traps(object$capthist)[[sess]])
-            }
-            else
-                det <- detector(traps(object$capthist))
-
-            ## purge irrelevant real parameters
-            if (det == 'telemetry') {
-                    rnum <- match(c('D','g0'), row.names(temp))
-                    rnum <- rnum[!is.na(rnum)]
-                    if (length(rnum)>0)
-                        temp <- temp[-rnum,]
-            }
-
-            if (nrow(newdata)==1) out <- temp
-            else {
-                out[[new]] <- temp
-                names(out)[new] <- paste (
-                        paste(names(newdata),'=', unlist(lapply(newdata[new,],as.character)),
-                        sep=' ',collapse=', '),
-                    sep=',')
-            }
-        }
-        else { # no SE; terse format
-            if (type == "link") {
-                out[new, (ncol(newdata)+1) : ncol(out)] <- lpred
-            }
-            else {
-                if ('D' %in% names(Xlpred)) {
-                    Xlpred['D'] <- ifelse (Xlpred['D']<0, 0, Xlpred['D'])
-                    if (!is.null(n.mash)) {
-                        Xlpred['D'] <- Xlpred['D'] / n.clust
-                    }
-                }
-                out[new, (ncol(newdata)+1) : ncol(out)] <- Xlpred
-            }
-        }
-    }
-    if (savenew) attr(out, 'newdata') <- newdata
-    out
-}
-############################################################################################
-
-############################################################################################
-## 2010-10-22
-
-predict.secrlist <- function (object, newdata = NULL, type = c("response","link"), se.fit = TRUE,
-                              alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
-    lapply(object, predict, newdata, type, se.fit, alpha, savenew, scaled, ...)
 }
 ############################################################################################
 
@@ -2998,8 +2752,13 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
         else if (x$details$binomN < 0) cat ('Negative binomial k = ', abs(x$details$binomN), '\n')
         else if (x$details$binomN > 1) cat('Binomial', x$details$binomN, '\n')
     }
-    if (!ms(x$capthist))
-    cat ('Mask area       : ', maskarea(x$mask), 'ha \n')
+
+    if (!ms(x$capthist)) {
+        if (length(maskarea(x$mask))==0)
+            cat ('Mask length     : ', masklength(x$mask), 'km \n')
+        else
+            cat ('Mask area       : ', maskarea(x$mask), 'ha \n')
+    }
 
     ####################
     ## Model description
@@ -3218,7 +2977,9 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
                 reali <- function (beta, rn) {
                     ## real from all beta pars eval at newdata[i,]
                     par.rn <- object$parindx[[rn]]
-                    mat <- model.matrix(object$model[[rn]], data=newdatai)
+                    ## 2014-08-19
+                    ## mat <- model.matrix(object$model[[rn]], data=newdatai)
+                    mat <- general.model.matrix(object$model[[rn]], data=newdatai)
                     lp <- mat %*% matrix(beta[par.rn], ncol = 1)
                     untransform (lp, object$link[[rn]])
                 }
@@ -3242,7 +3003,9 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
             vcvlist <- list()
             for (rn in realnames) {
                 par.rn <- object$parindx[[rn]]
-                mat <- model.matrix(object$model[[rn]], data=newdata)
+                ## 2014-08-19
+                ## mat <- model.matrix(object$model[[rn]], data=newdata)
+                mat <- general.model.matrix(object$model[[rn]], data = newdata)
                 lp <- mat %*% matrix(object$fit$par[par.rn], ncol = 1)
                 real <- untransform (lp, object$link[[rn]])
                 real <- as.vector(real)

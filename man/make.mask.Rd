@@ -104,7 +104,7 @@ with varying strip widths.
 
 }
 
-\seealso{ \code{\link{mask}}, \code{\link{subset.mask}},
+\seealso{ \code{\link{mask}}, \code{\link{read.mask}}, \code{\link{subset.mask}},
   \code{\link{pdot}}, \code{\link{buffer.contour}} }
 
 \examples{

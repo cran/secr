@@ -12,13 +12,15 @@ ESRI polygon shapefiles input using \pkg{maptools}.
 }
 
 \usage{
-addCovariates(object, spatialdata, columns = NULL)
+addCovariates(object, spatialdata, columns = NULL, strict = FALSE)
 }
 
 \arguments{
   \item{object}{mask or traps object}
   \item{spatialdata}{spatial data source (see Details)}
   \item{columns}{character vector naming columns to include (all by default)}
+  \item{strict}{logical; if TRUE a check is performed for points in \code{object} that
+lie outside \code{spatialdata} (mask data sources only)}
 }
 
 \details{
@@ -42,7 +44,8 @@ addCovariates(object, spatialdata, columns = NULL)
   If \code{spatialdata} is a \code{mask} or \code{traps} object then it
   is searched for the closest point to each point in \code{object}, and
   covariates are drawn from the corresponding rows in
-  \code{covariates(spatialdata)}.
+  \code{covariates(spatialdata)}. By default (\code{strict = FALSE}),
+  values are returned even when the points lie outside any cell of the mask.
   
 }
 

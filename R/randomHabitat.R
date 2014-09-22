@@ -4,7 +4,7 @@
 
 ## Murray Efford 2012-04-09,10,11,12;
 ## 2013-07-09 replaced call to obsolete raster function 'adjacency'
-
+## 2014-08-25 'raster' now in Imports, so do not 'require'
 ## Requires 'raster' and 'igraph0' packages:
 
 ## Robert J. Hijmans & Jacob van Etten (2011). raster: Geographic
@@ -43,8 +43,8 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         n <- nx * ny
 
         ## create rasterLayer
-        if (!require(raster))
-            stop ("unable to load raster package")
+##        if (!require(raster))
+##            stop ("unable to load raster package")
         layer <- raster(nrows = ny, ncols = nx, xmn = minx, xmx = maxx,
                                 ymn = miny, ymx = maxy)
 
@@ -67,9 +67,6 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         ## D. Filling in image
         cellsUnassigned <- (1:n)[is.na(values(clumped))]
         cellsAssigned <- (1:n)[!is.na(values(clumped))]
-
-# 2013-07-09 replace obsolete function from raster
-#        tempadj <- adjacency (clumped, cellsUnassigned, cellsAssigned, directions = 8)
         tempadj <- adjacent (clumped, cells = cellsUnassigned, target = cellsAssigned,
                              directions = 8)
         tempadj <- split(tempadj[,2], tempadj[,1])

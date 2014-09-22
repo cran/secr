@@ -254,7 +254,8 @@ if (inherits(object, 'secrlist')) {
                 telem <- telemetered(capthist)
                 nottelem <- split(!telem, grp)
                 NT <- tapply(telem, grp, sum)
-                individuals <- mapply ('[', individuals, nottelem, SIMPLIFY = FALSE)  ## drop telemetry animals
+                ## drop telemetry animals
+                individuals <- mapply ('[', individuals, nottelem, SIMPLIFY = FALSE)
             }
             else {
                 NT <- numeric(n)  ## zeros

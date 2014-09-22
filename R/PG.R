@@ -2,10 +2,11 @@
 ## package 'secr'
 ## PG.R
 ## 2013-11-23
+## 2014-08-25 do not require maptools
 ##############################################################################
 
 PG <- function (CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...) {
-    require(maptools)
+    ## 2014-08-25 require(maptools)
     if (is.null(poly)) {
         poly <- buffer.contour (traps(CH), plt = plt, ...)
         clean <- function(x) {

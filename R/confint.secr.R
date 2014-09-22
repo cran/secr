@@ -6,6 +6,7 @@
 ## 2011 09 28 field argument added to call to secr.lpredictor
 ## 2011 09 28 optimizer changed to optim from nlm
 ## 2011 10 21 not for user-defined density
+## 2014-08-22 modified to include smoothsetup argument for secr.lpredictor()
 ## could be sped up by adopting Venzon & Moolgavkar algorithm
 ## e.g. in Bhat package
 ###############################################################################
@@ -28,11 +29,9 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
     profileInterval <- function (parm, ...) {
 
         predicted <- function (beta) {
-            temp <- secr.lpredictor (newdata = newdata, model = object$model[[parm]],
-#                indx = object$parindx[[parm]], beta = beta)[1,'estimate']
-# 2011-09-28
-                indx = object$parindx[[parm]], beta = beta, field = parm)[1,'estimate']
-
+            temp <- secr.lpredictor (formula = object$model[[parm]], newdata = newdata,
+                indx = object$parindx[[parm]], beta = beta, field = parm,
+                smoothsetup = object$smoothsetup[[parm]])[1,'estimate']
             untransform(temp, object$link[[parm]])
         }
         #######################
@@ -159,7 +158,6 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             start <- estimate$beta
             se.start <- estimate$SE.beta
             pred <- predict(object)
-
         if (is.null(bounds)) {
             if (is.numeric(parm))  {
                 startlow <- getlimit(estimate$beta, -2 * estimate$SE.beta, c(1,2,4,8))
@@ -263,7 +261,9 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                 grouplevels  <- group.levels(object$capthist, object$groups)
                 temp <- D.designdata( object$mask, object$model$D, grouplevels,
                     sessionlevels, object$sessioncov)
-                D.designmatrix <- model.matrix(object$model$D, temp)
+                ## 2014-08-19
+                ## D.designmatrix <- model.matrix(object$model$D, temp)
+                D.designmatrix <- general.model.matrix(object$model$D, temp)
                 attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
             }
         }

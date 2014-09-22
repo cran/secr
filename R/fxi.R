@@ -1,22 +1,19 @@
+##############################################################################
+## package 'secr'
+## fxi.R
+## 2014-08-05 : use fxIHP instead of pwuniform
+## 2014-08-06 : vector i in fxi.secr, and list output
+## 2014-08-27 dist2 optional input to fxIHP set to -1
+## 2014-09-03 Ujjwal Kumar's problem: unnecessary minprob in C call
+## 2014-09-03 implemented userdist
+###############################################################################
+
 fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
 
-# Return scaled Pr(wi|X) for one nominated detection history,
+# Return scaled Pr(wi|X).pi(X) for one nominated detection history,
 # where X holds coordinates of points
 
-    X <- matrix(unlist(X), ncol = 2)
-    beta <- coef(object)$beta
-    details <- object$details
-    if (is.null(details$param)) details$param <- 0
-    realparval  <- makerealparameters (object$design, beta, object$parindx,
-                                       object$link, object$fixed)
-
-    #--------------------------------------------------------------------
-    D.modelled <- !object$CL & is.null(object$fixed$D)
-    if (D.modelled)
-        if (object$model$D != ~1)
-            stop ("fxi.secr requires uniform density")
-    #--------------------------------------------------------------------
-
+    ##--------------------------------------------------------------------
     ## in multi-session case must get session-specific data from lists
     if (ms(object)) {
         session.capthist <- object$capthist[[sessnum]]
@@ -29,17 +26,27 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         session.traps    <- traps(object$capthist)
         session.mask     <- object$mask
     }
+    ##--------------------------------------------------------------------
 
-    #--------------------------------------------------------------------
+    if (missing(X))
+        X <- as.matrix(session.mask)
+    else
+        X <- matrix(unlist(X), ncol = 2)
+    beta <- coef(object)$beta
+    details <- object$details
+    if (is.null(details$param)) details$param <- 0
+    Xrealparval  <- makerealparameters (object$design, beta, object$parindx,
+                                       object$link, object$fixed)
 
-#     2012-12-12 remove restriction
-#    used <- usage(session.traps)
-#    if (!is.null(used)) {
-#        if (sum (used) != (ndetector(session.traps) * ncol(used)))
-#            stop ("fxi.secr is not implemented for incomplete usage")
-#    }
+    ##--------------------------------------------------------------------
+    ## validity checks
 
-    xylist <- telemetryxy(session.capthist)   ## attr(session.capthist,'xylist')
+    if (!all(is.finite(Xrealparval))) {
+        cat ('beta vector :', beta, '\n')
+        stop ("invalid parameters in 'fxIHP'")
+    }
+
+    xylist <- telemetryxy(session.capthist)
     if (!is.null(xylist))
         stop ("fxi.secr is not implemented for telemetry models")
 
@@ -47,15 +54,59 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         stop ("no data for session ", sessnum)
 
     if (is.character(i))
-        i <- match(i, row.names(session.capthist))
-    if (is.na(i) | (i<1) | (i>nrow(session.capthist)))
+        i <- match(i, row.names(session.capthist))  ## convert to numeric index
+    if (any(is.na(i) | (i<1) | (i>nrow(session.capthist))))
         stop ("invalid i in fxi.secr")
 
-    nc   <- nrow(session.capthist)
-    s    <- ncol(session.capthist)
-    m    <- nrow(session.mask)
-    cell <- attr(session.mask,'area')
-    session.mask <- as.matrix(session.mask[,1:2])
+    if (details$scalesigma | details$scaleg0)
+        stop ("fxi.secr does not implement scaled sigma or g0")
+
+    if (object$detectfn == 11)
+        stop ("fxi.secr does not work with spherical spreading at present")
+
+    if (!is.null(object$groups))
+        stop("fxi.secr does not work with groups at present")
+
+    ##--------------------------------------------------------------------
+    ## get pdf of location, both pimask and piX
+    ## assume uniform for CL = TRUE, or if D homogeneous
+
+    if (is.null(object$model$D))
+        D.modelled <- FALSE
+    else {
+        if (!is.null(object$fixed$D))
+            D.modelled <- FALSE
+        else
+            D.modelled <- (object$model$D != ~1)
+    }
+    if (D.modelled) {
+        predD <- predictDsurface (object)
+        if (ms(object))
+            predD <- predD[[sessnum]]
+        D <- covariates(predD)$D.0  ## does not apply if groups
+        pimask <- D / sum(D)   ## vector of probability mass for each mask cell
+    }
+    else {
+        mm <- nrow(session.mask)
+        pimask <- rep(1, mm)  ## could be 1/mm, but as we normalise anyway...
+    }
+
+    ## fetch predicted density at each new point X
+    ## covariates(session.mask) <- data.frame(pi = pimask)
+    if (!is.null(covariates(session.mask)))
+        covariates(session.mask) <- cbind(data.frame(pi = pimask), covariates(session.mask))
+    else
+        covariates(session.mask) <- data.frame(pi = pimask)
+    ## does this work for linearmask?
+    tmpmask <- suppressWarnings(addCovariates(X, session.mask, strict = TRUE))
+    piX <- covariates(tmpmask)$pi
+    piX[is.na(piX)] <- 0
+
+    #--------------------------------------------------------------------
+
+    nc    <- nrow(session.capthist)
+    s     <- ncol(session.capthist)
+    m     <- nrow(session.mask)
 
     dettype <- detectorcode(session.traps)
 
@@ -76,30 +127,24 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
             logit = logit(session.signal),
             identity = session.signal
         )
-        if (object$detectfn == 11)
-            stop ("fxi.secr does not work with spherical spreading at present")
     }
     else
         session.signal <- 0
 
-        ## miscparm is used to package beta parameters that are not modelled
-        ## and hence do not have a beta index specified by parindx.
-        ## This includes the signal threshold and the mean and sd of noise.
-
+    ## miscparm is used to package beta parameters that are not modelled
+    ## and hence do not have a beta index specified by parindx.
+    ## This includes the signal threshold and the mean and sd of noise.
     miscparm <- numeric(4)
-    if (object$detectfn %in% c(12,13))   ## experimental signal-noise
-        miscparm[1:3] <- c(details$cutval,coef(object)[max(unlist(object$parindx))+1:2])   ## fudge: last 2
-    else if (object$detectfn %in% c(10,11))  ## Dawson&Efford 2009 models
+    if (object$detectfn %in% c(12,13))       ## experimental signal-noise
+        ## fudge: last 2
+        miscparm[1:3] <- c(details$cutval,coef(object)[max(unlist(object$parindx))+1:2])
+    else if (object$detectfn %in% c(10,11))  ## Dawson & Efford 2009 models
         miscparm[1] <- details$cutval
 
-#    if (detector(session.traps)=='cue') {
-#        miscparm <- exp(coef(object)['cuerate','beta'])
-#    }
-
-    if (dettype %in% c(3,6,13)) {    # polygonX, polygon, telemetry
+    if (dettype %in% c(3,6,13)) {            ## polygonX, polygon, telemetry
         k <- table(polyID(session.traps))
         K <- length(k)
-        k <- c(k,0)   ## zero terminate
+        k <- c(k,0)                          ## zero-terminated
         session.xy <- xy(session.capthist)
     }
     else {
@@ -119,185 +164,105 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     trps  <- unlist(session.traps, use.names=F)
     usge <- usage(session.traps)
     if (is.null(usge))
-        usge <- matrix(1, nrow=K, ncol = s)
+        usge <- matrix(1, nrow = K, ncol = s)
 
-    #------------------------------------------
-    # allow for scaling of detection parameters
+    indices <- object$design$PIA[sessnum,1:nc,1:s,1:K,]
 
-#    D.modelled <- FALSE   ## uniform
-#    Dtemp <- ifelse (D.modelled, object$D[1,1,sessnum], NA)
-#    Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
-
-    if (details$scalesigma) {
-        warning ("fxi untested with scalesigma")
-        if (ms(object))
-            cellarea <- sapply(object$mask, attr, "area")[sessnum]
-        else
-            cellarea <- attr(object$mask, "area")
-        ## assume uniform density across X...
-        groupnum <- group.factor(object$capthist, object$groups)[[sessnum]][i]
-        if (as.numeric(substring(secrdemo.0$version,1,3)) < 2.25)
-            stop("please fit model with version 2.3.0 or later")
-        Dtemp <- ifelse (D.modelled, object$N[1,groupnum,sessnum]*cellarea, NA)
+    if (is.null(details$userdist)) {
+        distmat  <- -1
+        distmatX <- -1
     }
+    else {
+        sessPIA <- object$design$PIA[sessnum,1,1,1,1]
+        distmat <- valid.userdist (details$userdist,
+                                   detector(session.traps),
+                                   xy1 = session.traps,
+                                   xy2 = session.mask,
+                                   geometry = session.mask,
+                                   sesspars = Xrealparval[sessPIA,])
+        ## But we also need distances to new points X...
+        distmatX <- valid.userdist (details$userdist,
+                                   detector(session.traps),
+                                   xy1 = session.traps,
+                                   xy2 = X,
+                                   geometry = session.mask,
+                                   sesspars = Xrealparval[sessPIA,])
+    }
+    fxone <- function (i) {
+        temp <- .C('fxIHP', PACKAGE = 'secr',
+                   as.integer(i),                 # number of detection history within capthist
+                   as.integer(nrow(X)),
+                   as.double(X),
+                   as.double(piX),
+                   as.integer(object$CL),         # 0 = full, 1 = CL
+                   as.integer(dettype),           # 0 = multicatch, 1 = proximity, etc
+                   as.integer(details$param),     # 0 = Borchers & Efford, 1 Gardner & Royle
+                   as.integer(session.capthist),
+                   as.double(unlist(session.xy)),
+                   as.double(session.signal),
+                   as.integer(grp),
+                   as.integer(nc),
+                   as.integer(s),
+                   as.integer(k),
+                   as.integer(m),
+                   as.integer(ngrp),
+                   as.integer(details$nmix),
+                   as.integer(getknownclass(session.capthist, details$nmix, object$hcov)),
+                   as.double(trps),
+                   as.double(distmat),            ## optional dist2 2014-08-27, 2014-09-03
+                   as.double(distmatX),           ## optional dist2 2014-08-27, 2014-09-03
+                   as.double(usge),
+                   as.double(unlist(session.mask)),
+                   as.double(pimask),             ## strictly needed here only if normal>0
+                   as.double(Xrealparval),
+                   as.integer(nrow(Xrealparval)), # number of rows in lookup table
+                   as.integer(indices),           # index of nc,S,K,mix to rows in Xrealparval
+                   as.double(miscparm),
+                   as.integer(normal),
+                   as.integer(object$detectfn),
+                   as.integer(binomN),
+                   ## as.double(details$minprob),
+                   as.double(0),                  ## bugfix 2014-09-03: do not need a floor here
+                   value=double(nrow(X)),
+                   resultcode=integer(1))
+        if (temp$resultcode != 0)
+            stop ("error in fxIHP, individual ", i)
+        temp$value
+    }
+    if (length(i) > 1)
+        lapply(i, fxone)
     else
-        Dtemp <- NA
-    Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
-
-    if (!all(is.finite(Xrealparval))) {
-        cat ('beta vector :', beta, '\n')
-        stop ("invalid parameters in 'pwuniform'")
-    }
-
-    sessg <- 1   ## max one group
-    indices <- object$design$PIA[sessg,1:nc,1:s,1:K,]
-
-# print(i)
-# print(nrow(X))
-# print(head(X))
-# print(object$CL)
-# print(dettype)
-# print(details$param)
-# print(head(session.capthist))
-# print(unlist(session.xy))
-# print(unlist(session.signal))
-# print(grp)
-# cat('nc',nc,'\n')
-# cat('s',s,'\n')
-# cat('k',k,'\n')
-# cat('m',m,'\n')
-# cat('ngrp',ngrp,'\n')
-# cat('details$nmix',details$nmix,'\n')
-# print(getknownclass(session.capthist, details$nmix, object$hcov))
-# print(head(trps))
-# print(head(usge))
-# print(nrow(session.mask))
-# print(head(session.mask))
-# print(Xrealparval)
-# print(nrow(Xrealparval))
-# print(table(indices))
-# print(dim(indices))
-# print(cell)
-# print(miscparm)
-# cat('normal',normal,'\n')
-# print(object$detectfn)
-# cat('details$binomN',details$binomN,'\n')
-# cat('details$minprob',details$minprob,'\n')
-# cat("finished\n\n")
-
-    temp <- .C('pwuniform', PACKAGE = 'secr',
-        as.integer(i),                 # number of detection history within capthist
-        as.integer(nrow(X)),
-        as.double(X),
-        as.integer(object$CL),         # 0 = full, 1 = CL
-        as.integer(dettype),           # 0 = multicatch, 1 = proximity, etc
-        as.integer(details$param),     # 0 = Borchers & Efford, 1 Gardner & Royle
-        as.integer(session.capthist),
-        as.double(unlist(session.xy)),
-        as.double(session.signal),
-        as.integer(grp),
-        as.integer(nc),
-        as.integer(s),
-        as.integer(k),
-        as.integer(m),
-        as.integer(ngrp),
-        as.integer(details$nmix),
-        as.integer(getknownclass(session.capthist, details$nmix, object$hcov)),
-        as.double(trps),
-        as.double(usge),
-        as.double(session.mask),
-        as.double(Xrealparval),
-        as.integer(nrow(Xrealparval)), # number of rows in lookup table
-        as.integer(indices),           # index of nc,S,K,mix to rows in Xrealparval
-        as.double(cell),
-        as.double(miscparm),
-        as.integer(normal),
-        as.integer(object$detectfn),
-        as.integer(binomN),
-        as.double(details$minprob),
-        value=double(nrow(X)),
-        resultcode=integer(1))
-
-    if (temp$resultcode != 0)
-        stop ("error in pwuniform")
-     ####################################################
-
-    temp$value
+        fxone(i)
 }
 ###############################################################################
 
-## 2012-11-01 NOT PUBLISHED
-
-fxisum.contour <- function (object, sessnum = 1, border = 100, nx =
-    64, include0 = FALSE, plt = TRUE, add = FALSE, ...) {
-
-    if (ms(object)) {
-        session.traps <- traps(object$capthist)[[sessnum]]
-        nc <- nrow(object$capthist[[sessnum]])
-        if (include0) {
-            dpar <- detectpar(object)
-            nocc <- ncol(object$capthist[[sessnum]])
-            D <- predict(object, newdata=data.frame(session=sessnum))['D','estimate']
-        }
-    }
-    else {
-        session.traps <- traps(object$capthist)
-        nc <- nrow(object$capthist)
-        if (include0) {
-            D <- predict(object)['D','estimate']
-            nocc <- ncol(object$capthist)
-            dpar <- detectpar(object)
-        }
-    }
-    tempmask <- make.mask (session.traps, border, nx = nx, type = 'traprect')
-    xlevels <- unique(tempmask$x)
-    ylevels <- unique(tempmask$y)
-    fxi <- function (ni) {
-        fxi.secr(object, i = ni, X = tempmask, sessnum = sessnum, normal = TRUE)
-    }
-    temp <- sapply(1:nc, fxi)
-    z <- apply(temp,1,sum)
-    A <- attr(tempmask, 'area')
-    z <- z * nc / sum(z) / A
-    if (include0) {
-        pd <- pdot(tempmask, session.traps, detectfn = object$detectfn,
-                   detectpar = dpar, noccasions = nocc, binomN = object$binomN)
-        pd <- (1-pd) * D
-        z <- z + pd
-    }
-    contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, ...)
-    if (plt)
-        invisible(z)
-    else
-        z
-}
-
 fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode =
-    FALSE, plotmode = FALSE, normal = TRUE, ...) {
+    FALSE, plotmode = FALSE, normal = TRUE, fill = NULL, ...) {
 
+    if (inherits(object$mask, 'linearmask'))
+        stop("contouring fxi is not appropriate for linear habitat")
     if (ms(object)) {
         session.traps <- traps(object$capthist)[[sessnum]]
     }
     else {
         session.traps <- traps(object$capthist)
     }
-
-
     tempmask <- make.mask (session.traps, border, nx = nx, type = 'traprect')
     xlevels <- unique(tempmask$x)
     ylevels <- unique(tempmask$y)
 
     fxi <- function (ni) {
-        z <- fxi.secr(object, i = ni, X = tempmask, normal = normal)
-
+        z <- allz[[ni]]
         if (is.null(levels)) {
             temp <- sort(z, decreasing = T)
-            levels <- approx (x = cumsum(temp)/sum(temp), y = temp, xout= p)$y
+            cump <- cumsum(temp) / sum(temp)
+            levels <- approx (x = cump, y = temp, xout = p)$y
             labels <- p
         }
         else
             labels <- levels
+
         templines <- contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels)
         ## extra effort to apply correct labels
         getlevels <- function(clines.i) sapply(clines.i, function(q) q$level)
@@ -313,13 +278,25 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
             cc <- templines[[wh]]
             cc <- data.frame(cc[c('x','y')])
             templines$mode <- data.frame(x=mean(cc$x), y=mean(cc$y))
+
             if (fitmode)
-                templines$mode <- fxi.mode(object, start=templines$mode, i = ni)
+                templines$mode <- fxi.mode(object, sessnum = sessnum,
+                                           start = templines$mode, i = ni)
             if (plt) {
                 labels <- labels[!is.na(levels)]
                 levels <- levels[!is.na(levels)]
+
                 contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
                          levels = levels, labels = labels, ...)
+
+                ## optional fillin
+                if (!is.null(fill)) {
+                    z[z < (0.999 * min(levels))] <- NA
+                    levels <- rev(c(1,levels,0))
+                    .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
+                                    col = fill)
+            }
+
                 if (plotmode) {
                     points(templines$mode, col = 'red', pch = 16)
                 }
@@ -328,8 +305,10 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         }
         templines
     }
-    #temp <- sapply(1:i, fxi)  ## fixed 2012-11-09
-    temp <- lapply(i, fxi)
+    allz <- fxi.secr(object, i = i, X = tempmask, normal = normal)
+    if (!is.list(allz))
+        allz <- list(allz)
+    temp <- lapply(1:length(allz), fxi)
 
     if (plt)
         invisible(temp)
@@ -362,3 +341,34 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
 }
 
 ###############################################################################
+
+## 2014-07-16
+
+## mask if specified should be for a single session
+## ... passes newdata df to predict.secr
+
+fx.total <- function (object, sessnum = 1, mask = NULL, ...) {
+    if (ms(object)) stop ("not for ms model")
+    n <- nrow(object$capthist)
+    if (is.null(mask))
+        mask <- if (ms(object)) object$mask[[sessnum]] else object$mask
+
+    ## sum of individual fxi
+    fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask, normal = TRUE)
+    fx <- do.call(cbind, fxi)
+    fxt <- apply(fx, 1, sum)
+    fxt <- fxt / getcellsize(mask)   ## length or area 2014-09-10
+
+    ## predicted uncaught animals
+    D <- predictDsurface(object, mask = mask)
+    if (ms(object)) D <- D[[sessnum]]
+    D <- covariates(D)$D.0
+    CH <- if (ms(object)) object$capthist[[sessnum]] else object$capthist
+    pd <- pdot(X = mask, traps = traps(CH), detectfn = object$detectfn,
+               detectpar = detectpar(object, ...), noccasions = ncol(CH))
+    nct <- D * (1 - pd)
+
+    covariates(mask) <- data.frame(D.fx = fxt, D.nc = nct, D.sum = fxt + nct)
+    class(mask) <- c('Dsurface', class(mask))
+    mask
+}

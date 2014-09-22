@@ -3,11 +3,15 @@
 ## addCovariates.R
 ## 2011-11-01
 ## 2013-01-19 handles missing values in character fields
+## 2014-08-05 strict argument
+## 2014-08-05 relax requirement for object to be traps or mask:
+## 2014-08-05 may now be any numeric vector that can be formed into a 2-column matrix
 ###############################################################################
 
-addCovariates <- function (object, spatialdata, columns = NULL) {
+addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) {
     if (!(inherits(object, 'mask') | inherits(object, 'traps')))
-        stop ("require mask or traps object")
+        ## stop ("require mask or traps object")
+        object <- matrix(unlist(object), ncol = 2)
     if (!ms(object) & ms(spatialdata))
         stop ("mismatch of single session object, multisession spatialdata")
 
@@ -40,7 +44,7 @@ addCovariates <- function (object, spatialdata, columns = NULL) {
 
         if (type == "shapefile") {
             polyfilename <- spatialdata  ## strip shp?
-            require(maptools)
+            requireNamespace('maptools', quietly=TRUE)
             spatialdata <- maptools::readShapePoly(polyfilename)
             ## spatialdata <- readShapePoly(polyfilename)
         }
@@ -55,7 +59,22 @@ addCovariates <- function (object, spatialdata, columns = NULL) {
                 stop ("spatialdata does not have covariates")
             index <- nearesttrap(object, spatialdata)
             df <- covariates(spatialdata)[index,, drop=FALSE]
+            ## new argument 2014-08-05
+            if (strict) {
+                incell <- function (xy, m, mask) {
+                    sp2 <- spacing(mask) / 2
+                    mxy <- mask[m,]
+                    ((xy[,1] + sp2) >= mxy[,1]) &
+                    ((xy[,1] - sp2) <= mxy[,1]) &
+                    ((xy[,2] + sp2) >= mxy[,2]) &
+                    ((xy[,2] - sp2) <= mxy[,2])
 
+                }
+                cellOK <- incell(object, index, spatialdata)
+                df[!cellOK,] <- NA
+                if (any(!cellOK))
+                    warning ("some requested points lie outside mask")
+            }
         }
 
         ## select requested columns

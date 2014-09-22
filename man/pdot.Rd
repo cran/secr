@@ -12,7 +12,8 @@ at given coordinates.
 
 \usage{
 pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
-    sigma = 25, z = 1), noccasions = NULL, binomN = NULL) 
+    sigma = 25, z = 1), noccasions = NULL, binomN = NULL,
+    userdist = NULL) 
 
 }
 
@@ -23,7 +24,8 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
   \item{detectpar}{ a list giving a value for each named parameter of detection function }
   \item{noccasions}{ number of sampling intervals (occasions) }
   \item{binomN}{ integer code for discrete distribution (see
-  \code{\link{secr.fit}}) }
+    \code{\link{secr.fit}}) }
+  \item{userdist}{user-defined distance function or matrix (see \link{details})}
 }
 \details{
 
@@ -43,6 +45,9 @@ included in \code{detectpar}, e.g., \code{detectpar = list(beta0 = 103, beta1
 
 The calculation is not valid for single-catch traps because
 \eqn{p.(\mathbf{X})}{p.(X)} is reduced by competition between animals.
+
+\code{userdist} cannot be set if `traps' is any of polygon, polygonX,
+transect or transectX.
 
 }
 

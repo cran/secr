@@ -18,7 +18,7 @@ Data from a multi-year mist-netting study of ovenbirds (\emph{Seiurus
 aurocapilla}) at a site in Maryland, USA.
 }
 
-\usage{data(ovenbird)}
+\usage{ovenbird}
 
 \details{
 

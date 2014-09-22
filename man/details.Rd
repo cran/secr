@@ -65,10 +65,10 @@ the detector type is `multi'. This parameterisation does not allow
 detector covariates.
 
 \code{details$param = 2} selects parameterisation in terms of
-(\eqn{esa(g_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2013).
+(\eqn{esa(g_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014).
 
 \code{details$param = 3} selects parameterisation in terms of
-(\eqn{a_0(lambda0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2013). This
+(\eqn{a_0(lambda0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014). This
 parameterization is used automatically if a0 appears in the model (e.g.,
 a0 ~ 1).
 
@@ -117,13 +117,25 @@ sums to 1.0 (cf Royle et al. 2013)
 normalization. NULL limits denominator for normalization to
 distinguishing habitat from non-habitat.
 
-%\code{details$maxcallsize} limit to size of recorded call (default 512 ch).
+\code{details$userdist} is either a function to compute non-Euclidean
+distances between detectors and mask points, or a pre-computed matrix of
+such distances. The first two arguments of the function should be
+2-column matrices of x-y coordinates (respectively \eqn{k} detectors and
+\eqn{m} mask points). The third argument, if present, defines a
+non-Euclidean habitat geometry (a linear geometry is described in
+documentation for the forthcoming package `secrlinear'). The fourth
+argument, if present, is a parameter of the distance algorithm. The
+matrix returned by the function must have exactly \eqn{k} rows and
+\eqn{m} columns. Full documentation will follow in a later release.
+
+**Do not use `userdist' for polygon or transect detectors**
+
 }
 
 \references{
 
-Efford, M. G. and Mowat, G. (2013) Compensatory heterogeneity in
-capture--recapture data.\emph{Ecology} In press.  
+Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
+capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  
 
 Gardner, B., Royle, J. A. and Wegan, M. T. (2009) Hierarchical models
 for estimating density from DNA mark-recapture studies. \emph{Ecology}

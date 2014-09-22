@@ -285,6 +285,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         transects <- c('transect','transectX')
         inputdetector <- detector(traps(object))
         ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
+
         nrw <- nrow(object)
         if (is.null(newoccasions)) {
             newoccasions <- split.by (1:ncol(object), by)
@@ -323,7 +324,6 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         }
         nnew <- length(newoccasions)
         newcols <- rep(1:nnew, sapply(newoccasions,length))
-
         newcols <- factor(newcols)
 
         ####################################

@@ -12,9 +12,8 @@
 ## 2013-04-20 new detection functions HHN, HHR, HEX, HAN, HCG
 ## 2013-04-24 uses getdfn from utility.r
 ## 2014-04-25 ylim bug when g0 fixed
+## 2014-09-18 limits = TRUE now works with acoustic dfn
 ############################################################################################
-
-
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
     sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
@@ -75,6 +74,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
 
                 grad <- matrix(nrow = length(xval), ncol = length(x$fit$par))  ## beta pars
                 if (is.null(newdata)) newdata <- secr.make.newdata (x)
+
                 lkdfn <- function (beta, r) {
                     ## real g() from all beta pars and model.matrix
                     parnamvec <- parnames(x$detectfn)
@@ -83,12 +83,14 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
 
                     for (rn in parnamvec) {
                          par.rn <- x$parindx[[rn]]
-                         mat <- model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
+                         ## 2014-08-19
+                         ## mat <- model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
+                         mat <- general.model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
                          lp <- mat %*% matrix(beta[par.rn], ncol = 1)
                          real[rn] <- untransform (lp, x$link[[rn]])
                     }
-                    ## dfn(real, r)   # on natural scale
-                    logit(dfn(r, real))
+                    ## bug fix 2014-09-18 : requires x$details$cutval
+                    logit(dfn(r, real, x$details$cutval))
                 }
 
                 for (i in 1:length(xval))

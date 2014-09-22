@@ -6,7 +6,9 @@
 
 \description{
 
-Compute distance from each of a set of points to the nearest detector in an array, or return the sequence number of the detector nearest each point.
+Compute Euclidean distance from each of a set of points to the nearest
+detector in an array, or return the sequence number of the detector
+nearest each point.
 
 }
 

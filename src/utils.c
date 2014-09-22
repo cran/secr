@@ -1,5 +1,7 @@
 #include "secr.h"
 
+/* 2014-08-27 mufn moved to detectfn.c */
+
 double minimumexp = -100;
 
 /*--------------------------------------------------------------------------*/
@@ -47,6 +49,43 @@ double d2 (
     );
 }
 /*--------------------------------------------------------------------------*/
+
+double d2L (
+    int k,
+    int m,
+    double dist2[],
+    int kk)
+/*
+   return squared distance between two points given by lookup (k,m) in dist2,
+   where dist2 has kk rows [cols not needed]
+*/
+{
+    return(
+	dist2[m * kk + k]
+    );
+}
+/*--------------------------------------------------------------------------*/
+
+void makedist2 (int kk, int mm, double traps[], double mask[], double dist2[]) {
+   int k, m;
+   /* fill array with squared Euclidean distances */
+   for (k=0; k<kk; k++)
+       for (m=0; m<mm; m++) 
+	   dist2[m * kk + k] = d2(k, m, traps, mask, kk, mm);
+
+}
+/*--------------------------------------------------------------------------*/
+
+void squaredist (int kk, int mm, double dist2[]) {
+   int k, m;
+   /* just square the inputs */
+       for (k=0; k<kk; k++)
+	   for (m=0; m<mm; m++) 
+	       dist2[m * kk + k] = dist2[m * kk + k] * dist2[m * kk + k];
+}
+
+/*--------------------------------------------------------------------------*/
+
 /* customised dpois */
 double gpois (int count, double lambda, int uselog)
 {
@@ -252,39 +291,6 @@ struct rpoint getxy(double l, double cumd[], struct rpoint line[],
     return(xy);
 }
 /*--------------------------------------------------------------------------*/
-
-double mufn (
-    int k,
-    int m,
-    double b0,
-    double b1,
-    double A1[],
-    double A2[],
-    int A1rows,
-    int A2rows,
-    int spherical)
-/*
-   Return predicted signal strength at m for source at point k,
-   given strength at source of b0 dB and attenuation of b1 dB/m.
-   Spherical spreading is included if spherical > 0
-   Coordinates of points are in A1 and A2 which have respectively
-   A1rows and A2rows
-*/
-{
-    double d2val;
-    d2val = d2(k,m, A1, A2, A1rows, A2rows);
-    if (spherical <= 0)
-	return (b0 + b1 * sqrt(d2val));
-    else {
-	if (d2val>1) {
-	    return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
-	}
-	else
-	    return (b0);
-    }
-
-}
-/*==============================================================================*/
 
 /* Calculate the length of intersection of a line segment and a circle
    Based on C code of Paul Bourke November 1992

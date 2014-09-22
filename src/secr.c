@@ -2,9 +2,9 @@
    External procedures for secr package
 
    can compile with gcc 4.6.3 :
-   gcc -Ic:/R/R-2.15.2/include -c secr.c -Wall -pedantic -std=gnu99
+   gcc -Ic:/R/R-3.1.0/include -c secr.c -Wall -pedantic -std=gnu99
 
-   [confirmed 2012-11-13 0640]
+   [confirmed 2014-08-27 1021]
 
 */
 /* 2011-04-05 allow 'partial likelihood' option in secrloglik */
@@ -40,7 +40,13 @@
 /* 2013-11-16 purged 'nested' cuerate code */
 /* 2013-11-23 pimask used for individual distribution of location if pimask[0] >-tol */
 /* 2013-12-01 like = 4 for CL concurrent telemetry; anyvarying funtion */
-/* 2014-04-03 normalization with getdenom not implemented because of memory issue see test.R, valgrind etc. */
+/* 2014-04-03 normalization with getdenom not implemented because of memory issue  */
+/*            see test.R, valgrind etc. */
+/* 2014-08-27 major rejig to use lookup distances (d2L) computed with makedist2 */
+/*            and saved in dist2. This is preliminary to user-provided distance matrix */
+/*            Thes functions do NOT use d2L and dist2 */
+/*            -- prwi fns for polygons and transects, and pdotpoly */
+/* 2014-09-10 fxIHP drastically redone - now much cleaner */
 /*
         *detect may take values -
         0  multi-catch traps
@@ -187,11 +193,26 @@ int nonzero (int detect, int w[], int nc, int ss, int kk)
     return(count);
 }
 
+void fixdist2(int detect, int kk, int mm, double traps[], double mask[], double dist2[]) {
+    if (dist2[0] < 0) {
+        if ((detect == 3) || (detect == 4) || (detect == 6) || (detect == 7)) {
+	    dist2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    dist2 = (double *) S_alloc(kk * mm, sizeof(double));
+	    makedist2 (kk, mm, traps, mask, dist2);
+	}
+    }
+    else {
+	squaredist(kk, mm, dist2);
+    }
+}
+
 double prwimulti
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < *nc)
@@ -235,7 +256,7 @@ double prwimultiGR
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 /*
     Probability of capture history n (0 <= n < *nc)
     given that animal's range centre is at m
@@ -286,7 +307,7 @@ double prwiprox
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -334,7 +355,7 @@ double prwicount
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -388,7 +409,7 @@ double prwisignal
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -433,8 +454,11 @@ double prwisignal
 			sig = signal[start+j];
 			if (sig >= 0) {
                             /* valid measurement of signal */
-			    mu = mufn (k, m, gsbval[c], gsbval[cc + c],
-				       traps, mask, kk, mm, spherical);
+			    /* mu = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical); */
+			    mu  = mufnL (k, m, gsbval[c], gsbval[cc + c], 
+					  dist2, kk, spherical);
+
 			    sdS = gsbval[cc * 2 + c];
 			    result *= dnorm((sig - mu), 0, sdS, 0);
 			}
@@ -459,7 +483,7 @@ double prwisignalnoise
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -528,8 +552,11 @@ start[w_isk] + nd is index to noise for w_isk
 
 			if (sig >= 0) {
                             /* valid measurement of signal */
-			    muS = mufn (k, m, gsbval[c], gsbval[cc + c],
-				       traps, mask, kk, mm, spherical);
+			    /* mu = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical); */
+			    muS  = mufnL (k, m, gsbval[c], gsbval[cc + c], 
+					  dist2, kk, spherical);
+
                             /* acknowledge noise component of observed signal: SLOW
                                muS = xi * log(pow(10, muS/10) + pow(10, muN/10));  */
 			    sdS = gsbval[cc * 2 + c];
@@ -604,7 +631,7 @@ double prwisignal2
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < nc)
@@ -652,8 +679,10 @@ double prwisignal2
 			sig = signal[start+j];
 			if (sig >= 0) {
                             /* valid measurement of signal */
-			    mu = mufn (k, m, gsbval[c], gsbval[cc + c],
-				       traps, mask, kk, mm, spherical);
+			    /* mu = mufn (k, m, gsbval[c], gsbval[cc + c],
+				       traps, mask, kk, mm, spherical); */
+			    mu  = mufnL (k, m, gsbval[c], gsbval[cc + c], 
+					  dist2, kk, spherical);
 			    sdS = gsbval[cc * 2 + c];
                             /* fixed mu2, s2 : ovenbird noise */
 			    f = d2lnorm(sig/xi, mu/xi, sdS/xi, detspec[1]/xi, detspec[2]/xi);
@@ -680,7 +709,7 @@ double prwitimes
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 /*
     Probability of capture history n (0 <= n < nc)
     given that animal's range centre is at m
@@ -752,7 +781,7 @@ double prwipolygon
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Likelihood component due to capture history n (0 <= n < nc)
@@ -827,7 +856,7 @@ double prwipolygonX
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Probability of capture history n (0 <= n < *nc)
@@ -887,7 +916,7 @@ double prwitransect
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
      int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
      int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-     double traps[], double Tsk[], double mask[], double minp)
+     double traps[], double dist2[], double Tsk[], double mask[], double minp)
 
 /*
     Likelihood component due to capture history n (0 <= n < nc)
@@ -959,7 +988,7 @@ double prwitransectX
    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[],
     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double Tsk[], double mask[], double minp)
+    double traps[], double dist2[], double Tsk[], double mask[], double minp)
 /*
     Probability of capture history n (0 <= n < *nc)
     given that animal's range centre is at m
@@ -1014,9 +1043,9 @@ double prwitransectX
 }
 /*=============================================================*/
 
-void pdotpoint (double *xy, int *nxy, double *traps, int *detect, 
-                double *Tsk, int *kk, int *fn, double *par, int *nocc, 
-                double *w2, int *binomN, double *value)
+void pdotpoint (double *xy, int *nxy, double *traps, double *dist2, 
+		int *detect, double *Tsk, int *kk, int *fn, double *par, 
+		int *nocc, double *w2, int *binomN, double *value)
 {
     int i,k,s;
     double dk2;
@@ -1028,6 +1057,21 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *detect,
     double p;
     double Tski = 1.0;
     cutval[0] = 0;
+
+    /*-----------------------------------------------------------*/
+    if (dist2[0] < 0) {
+        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+	    dist2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    dist2 = (double *) S_alloc(*kk * *nxy, sizeof(double));
+	    makedist2 (*kk, *nxy, traps, xy, dist2);
+	}
+    }
+    else {
+	squaredist(*kk, *nxy, dist2);
+    }
+    /*-----------------------------------------------------------*/
 
     if (*fn>18)
         if (*fn != 20) error("pdotpoint requires detectfn < 18");
@@ -1043,8 +1087,9 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *detect,
 	for (i=0; i<*nxy; i++) {
 	    tempval = 0;
 	    for (k=0; k<*kk; k++) {
-		dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
-		    (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]);
+               /* dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
+		  (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]); */
+		dk2 = d2L(k, i, dist2, *kk);
 		tempval += pfn(0, dk2, 1, sigma, z, cutval, *w2);
 	    }
 	    if (tempval>0)
@@ -1059,10 +1104,10 @@ void pdotpoint (double *xy, int *nxy, double *traps, int *detect,
 	    for (k=0; k<*kk; k++) {
 		Tski = Tsk[s * *kk + k];
 		if (Tski > 1e-10) {
-		    dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
-			(xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]);
+		    /* dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
+		       (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]); */
+		    dk2 = d2L(k, i, dist2, *kk);
 		    p = pfn(*fn, dk2, g0, sigma, z, cutval, *w2);
-
 		    if (*detect == 2) {    /* counts */
 			if (*binomN == 0)
 			    p = 1 - countp(0, 0, Tski * p);
@@ -1263,6 +1308,7 @@ void precompute(
     int nk,
     int cumk[],
     double traps[],
+    double dist2[],   /* added 2014-08-27 */
     double mask[],
     double gsbval[],
     double miscparm[],
@@ -1291,14 +1337,16 @@ void precompute(
 
     double par[4];   /* passing parameter values to integr fn  */
     double stdint = 1;
-    gfnptr gfn;
+/*    gfnptr gfn;*/
+    gfnLptr gfnL;
     double *ex; 
     /*
     double *scale;
     scale = (double *) S_alloc(1, sizeof(double));  
     */
 
-    gfn = getgfn(*fn);
+    /* gfn = getgfn(*fn); */
+    gfnL = getgfnL(*fn); 
 
     /* all these detectors are Bernoulli, or similar           */
     /* so we override binomN                                   */
@@ -1316,8 +1364,10 @@ void precompute(
 	    for (k=0; k<nk; k++) {
 		for (m=0; m<*mm; m++) {
 		    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = gfn(k, m, c, gsbval, *cc, traps, 
-				 mask, nk, *mm, miscparm);
+                    /* gk[gi] = gfn(k, m, c, gsbval, *cc, traps, 
+		       mask, nk, *mm, miscparm); */
+                    gk[gi] = gfnL(k, m, c, gsbval, *cc, dist2, 
+		       nk, miscparm);
                 }
             }
         }
@@ -1332,7 +1382,10 @@ void precompute(
 	    for (k=0; k<nk; k++) {
 		for (m=0; m<*mm; m++) {
                     gi = i3(c,k,m,*cc,nk);
-		    gk[gi] = gfn(k, m, c, gsbval, *cc, traps, mask, nk, *mm, miscparm);
+		    /* gk[gi] = gfn(k, m, c, gsbval, *cc, traps,
+                       mask, nk, *mm, miscparm); */
+                    gk[gi] = gfnL(k, m, c, gsbval, *cc, dist2, 
+		       nk, miscparm);
                 }
             }
         }
@@ -1702,6 +1755,7 @@ void integralprw1 (
     int    *nmix,      /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,     /* x,y locations of traps (first x, then y) */
+    double *dist2,     /* distances (optional: -1 if unused) */
     double *Tsk,       /* nk x s usage matrix */
     double *mask,      /* x,y points on mask (first x, then y) */
     int    *cc0,       /* number of g0/sigma/b combinations [naive animal] */
@@ -1769,8 +1823,17 @@ void integralprw1 (
     for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
     gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc0, ss, nk, 
 		   grp, PIA0, gsb0val, pmixg, pmixn);
+
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *mm, sizeof(double));
+	makedist2 (*kk, *mm, traps, mask, dist2);
+    }
+    else {
+	squaredist(*kk, *mm, dist2);
+    }
+
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
-	       traps, mask, gsb0val, miscparm, detspec, gk0); 
+	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
 
     for (n=0; n < nc1; n++) {            /* CH numbered 0 <= n < nc1 */
         if ((*ncol > 1) || (n == 0)) {   /* no need to repeat if constant */
@@ -1849,6 +1912,7 @@ void secrloglik (
     int    *nmix,        /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *dist2,       /* distances (optional: -1 if unused) */
     double *Tsk,         /* nk x s usage matrix */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
@@ -2036,10 +2100,25 @@ void secrloglik (
     /* 1 */
     if (timing) ticks = timestamp(ticks, &counter);
 
+    /*-----------------------------------------------------------*/
+    if (dist2[0] < 0) {
+        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+	    dist2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    dist2 = (double *) S_alloc(*kk * *mm, sizeof(double));
+	    makedist2 (*kk, *mm, traps, mask, dist2);
+	}
+    }
+    else {
+	squaredist(*kk, *mm, dist2);
+    }
+    /*-----------------------------------------------------------*/
+
     precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,    
-	       traps, mask, gsbval, miscparm, detspec, gk); 
+	       traps, dist2, mask, gsbval, miscparm, detspec, gk); 
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
-	       traps, mask, gsb0val, miscparm, detspec, gk0); 
+	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
 
     /* 2 */
     if (timing) ticks = timestamp(ticks, &counter);
@@ -2082,6 +2161,7 @@ void secrloglik (
 	
 	/* 3 */
 	if (timing) ticks = timestamp(ticks, &counter);
+
 	/* Loop over individuals... */
 	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
 	    a[n] = 0;
@@ -2118,9 +2198,10 @@ void secrloglik (
 			    kappa += f * pdt * pmixnx;
 			}
 			if (f > tol) {   /* default f = 1 */
+
 			    prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
 					  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-					  gfn, gsbval, traps, Tsk, mask, *minprob);
+					  gfn, gsbval, traps, dist2, Tsk, mask, *minprob);
 			    temp += prwi * f;
 			}
 		    }
@@ -2200,7 +2281,7 @@ void secrloglik (
 			if (f > tol) {   /* default f = 1 */
 			    prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
 					  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-					  gfn, gsbval, traps, Tsk, mask, *minprob);
+					  gfn, gsbval, traps, dist2, Tsk, mask, *minprob);
 			    temp += prwi * f;
 			}
 		    }
@@ -2216,7 +2297,7 @@ void secrloglik (
     /*-------------------------------------------------------------------------------------------*/
 
     else {  /* *like==0,2  Full or Partial likelihood */
-	
+
 	sumD = (double *) R_alloc(*gg, sizeof(double));
 	sumDp = (double *) R_alloc(*gg, sizeof(double));
 	for (g=0; g<*gg; g++) {
@@ -2276,9 +2357,11 @@ void secrloglik (
 				kappa += f * pdot[i3(g,m,x,*gg,*mm)] * pmixnx;
 			    }
 			    if (f > tol) {
+
 				prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
 					      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
-					      gfn, gsbval, traps, Tsk, mask, *minprob);
+					      gfn, gsbval, traps, dist2, Tsk, mask, *minprob);
+
 				tempp = f * prwi * pmixnx;	    
 				if (!usepimask) tempp *= Dmask[*mm * g + m];	    
 				temp += tempp;
@@ -2296,7 +2379,7 @@ void secrloglik (
 			if (f > tol) {
 			    prwi = prwfn (m, n, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, 
 					  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
-					  gfn, gsbval, traps, Tsk, mask, *minprob);		    
+					  gfn, gsbval, traps, dist2, Tsk, mask, *minprob);		    
 			    tempp = f * prwi;
 			    if (!usepimask) tempp *= Dmask[m];	    
 			    temp += tempp;
@@ -2650,14 +2733,26 @@ void makelookup (
 }
 /*==============================================================================*/
 
-/* code for fxi individual range centre pdf */
-void pwuniform (
-    int    *which,       /* which one: 0 <= which < *nc (0<=which<*gg for cues)*/
-    int    *xx,          /* number of points */
-    double *X,           /* points at which to evaluate Pr(wi||X) */
+/* 
+Code for pdf of one individual range centre, evaluated at an arbitrary set of points
+
+The individual is selected with the first argument 'which'; this must be in range 1-n,
+where n is the number of individuals used to fit the model.
+
+Allows non-uniform D
+Previously `pwuniform'
+
+2014-08-04
+*/
+
+void fxIHP (
+    int    *which,       /* which one: 1 <= which <= *nc */
+    int    *xx,          /* number of new points at which f(X_i) requested */
+    double *X,           /* new points at which f(X_i) requested */
+    double *piX,         /* pimask at each requested point X */
     int    *like,        /* likelihood 0 full, 1 conditional */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
-    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
+    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle almost OBSOLETE */
     int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
     double *xy,          /* xy coordinates of polygon records */
     double *signal,      /* signal strength vector, or times */
@@ -2670,14 +2765,16 @@ void pwuniform (
     int    *nmix,        /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *dist2,       /* distances (optional: -1 if unused) */
+    double *distX2,      /* distances to X points (optional: -1 if unused) */
     double *Tsk,         /* nk x s usage matrix */
     double *mask,        /* x,y points on mask (first x, then y) */
+    double *pimask,      /* individual probability density; used for normalisation */
 
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     int    *cc,          /* number of g0/sigma/b combinations  */
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
 
-    double *area,        /* area associated with each mask point (ha) */
     double *miscparm,    /* miscellaneous parameters (cutval, normalization, etc.) */
     int    *normal,      /* code 0 don't normalise, 1 normalise */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
@@ -2687,9 +2784,8 @@ void pwuniform (
     int    *resultcode   /* 0 if OK */
 )
 {
-    int    i,n,g,k,m,c,s,x;
+    int    i,m,x;
     int    *ng;       /* number per group */
-    int    gi;
     double *pmixg = NULL;
     double *pmixn = NULL;
     double temp;
@@ -2719,12 +2815,7 @@ void pwuniform (
     int nv; 
     int gpar = 2;    /* number of 'g' (detection) parameters */
 
-    int    next = 0;
-    int    c0 = 0;
-    double p;
-    double par[4];   /* passing parameter values to integr fn  */
-    double stdint = 1;
-    double *ex;
+    double scale = 1e6;
 
     /*===============================================================*/
 
@@ -2743,11 +2834,13 @@ void pwuniform (
         nc1 = *nc;
     /*---------------------------------------------------------*/
 
+    if (*gg > 1)
+	error("fxi does not allow for groups");
     ng = (int *) R_alloc(*gg, sizeof(int));
     fillng(*nc, *gg, grp, ng);                                    /* number per group */
 
-    nk = fillcumk(detect, kk, cumk);                            /* detections per polygon */
-    gfn = getgfn(*fn);                                          /* see utils.c */
+    nk = fillcumk(detect, kk, cumk);                              /* detections per polygon */
+    gfn = getgfn(*fn);                                            /* see utils.c */
     prwfn = getprwfn(*detect, *param);
 
     if ( (*detect == 3) || (*detect==4) ) 
@@ -2762,175 +2855,98 @@ void pwuniform (
     for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
     gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, grp, PIA, 
 		   gsbval, pmixg, pmixn);
-
     nv = nval(detect, nc1, cc, ss, nk);
-    detspec = (double *) R_alloc(nv, sizeof(double));
 
-    gk = (double *) S_alloc(*cc * nk * *mm, sizeof(double));    /* S_alloc sets to zero */
+    /*---------------------------------------------------------*/
+    /* distance options Sept 2014 */
+    /* distances to mask points */
+    if (dist2[0] < 0) {
+        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+	    dist2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    dist2 = (double *) S_alloc(*kk * *mm, sizeof(double));
+	    makedist2 (*kk, *mm, traps, mask, dist2);
+	}
+    }
+    else {
+	squaredist(*kk, *mm, dist2);
+    }
+    /* distances to novel points X */
+    if (distX2[0] < 0) {
+        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+	    distX2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    distX2 = (double *) S_alloc(*kk * *xx, sizeof(double));
+	    makedist2 (*kk, *xx, traps, X, distX2);
+	}
+    }
+    else {
+	squaredist(*kk, *xx, distX2);
+    }
+    /*---------------------------------------------------------*/
 
-    precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,  
-	       traps, mask, gsbval, miscparm, detspec, gk); 
-
-    if (*normal && ((*detect==0) || (*detect==3) || (*detect==4))) {
-        hc0 = (int *) R_alloc (*cc, sizeof(int));
-        hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
-	h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
-	geth (nc1, cc, nmix, nk, ss, mm, PIA, hc0, gk, Tsk, h, hindex);
-    } 
-
-    getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,     /* complete filling of detspec */
-		kk, mm, PIA, miscparm, start, detspec);
-
-    /*--------------------------------------------------------*/
-
-    if (*gg > 1)
-	error("fxi does not allow for groups");
-
+    /* optionally compute sumprwi, denominator used for normalisation */
+    /* as at 2014-09-10 this does not allow hcov */
     if (*normal > 0) {
+	gk = (double *) S_alloc(*cc * nk * *mm, sizeof(double)); /* S_alloc sets to zero */
+	detspec = (double *) R_alloc(nv, sizeof(double));
+	precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,  
+		   traps, dist2, mask, gsbval, miscparm, detspec, gk); 
+	/* space allocation and precomputation for exclusive detector types (traps) */
+	if ((*detect==0) || (*detect==3) || (*detect==4)) {
+	    hc0 = (int *) R_alloc (*cc, sizeof(int));
+	    hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
+	    h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
+	    geth (nc1, cc, nmix, nk, ss, mm, PIA, hc0, gk, Tsk, h, hindex);
+	} 
+	getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,  /* complete filling of detspec */
+		    kk, mm, PIA, miscparm, start, detspec);
+	
         sumprwi = 0;
-        for (x=0; x<*nmix; x++) {
+        for (x = 0; x < *nmix; x++) {
             temp = 0;
-            for (m=0; m<*mm; m++) {
-		prwi = prwfn (m, *which-1, 1, *ss, x, w, xy, signal, PIA, gk, *binomN, detspec,
-			      h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn, gsbval, traps, 
-                              Tsk, mask, *minprob);
-		temp += prwi;
+            for (m = 0; m < *mm; m++) {
+		prwi = prwfn (m, *which-1, 1, *ss, x, w, xy, signal, PIA, gk, *binomN,
+			      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn,
+			      gsbval, traps, dist2, Tsk, mask, *minprob);
+		temp += prwi * pimask[m];
             }
-            sumprwi += pmixg[x] * temp;
+            sumprwi += pmixg[x] * temp * scale;
         }    /* end of loop over mixtures */
-        if (sumprwi< fuzz)
-            error("zero prwi in external function pwuniform");
+        if (sumprwi < fuzz)
+            error("zero prwi in external function fxIHP");
     }
 
     /*---------------------------------------------------------*/
-    /* dynamically allocate memory                             */
+    /* dynamically allocate memory for requested X locations   */
     /* use R_alloc for robust exit on interrupt                */
-    /* S_alloc zeros as well 2011-11-15                        */
+    /* S_alloc zeros memoy as well 2011-11-15                  */
     /* h for total hazard added 2011-11-15                     */
 
     gkx = (double *) S_alloc(*cc * nk * *xx, sizeof(double));
     detspecx = (double *) R_alloc(nv, sizeof(double));
+
+    precompute(detect, fn, binomN, kk, xx, cc, nk, cumk,  
+	       traps, distX2, X, gsbval, miscparm, detspecx, gkx); 
+
+    /* space allocation and precomputation for exclusive detector types (traps) */
     if ((*detect==0) || (*detect==3) || (*detect==4)) {
         hc0x = (int *) R_alloc (*cc, sizeof(int));
         hindexx = (int *) S_alloc (nc1 * *ss, sizeof(int));
         hx = (double *) S_alloc (*cc * *xx, sizeof(double));
+	geth (nc1, cc, nmix, nk, ss, xx, PIA, hc0x, gkx, Tsk, hx, hindexx);
     }
     else {
         hc0x = (int *) R_alloc (1, sizeof(int));
         hindexx = (int *) S_alloc (1, sizeof(int));
-        hx = (double *) R_alloc (1, sizeof(double));
+        hx = (double *) S_alloc (1, sizeof(double));
     }
 
-    /* RECOMPUTE gk for requested X */
+    getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,     /* complete filling of detspecx */
+		kk, xx, PIA, miscparm, start, detspecx);
 
-    if ((*detect == 0) || (*detect == 1) || (*detect == 2) || (*detect == 5) ||
-             (*detect == 8) || (*detect == 9)) {
-        for (k=0; k < nk; k++) {
-            for (m=0; m<*xx; m++) {
-                for (c=0; c<*cc; c++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gkx[gi] = gfn(k, m, c, gsbval, *cc,
-                        traps, X, nk, *xx, miscparm);
-                }
-            }
-        }
-    }
-    else if ((*detect == 3) || (*detect == 6)) {
-	ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-        for (c=0; c<*cc; c++) {
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral(*fn, par);
-            detspecx[2+c] = stdint;               /* passed to prwipolygon */
-            for (k=0; k<nk; k++) {               /* over parts */
-                for (m=0; m<*xx; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gkx[gi] = par[0] * integral2D (*fn, m, 0, par, 1, traps, X,
-			   cumk[k], cumk[k+1]-1, cumk[nk], *xx, ex) / stdint;
-                }
-            }
-        }
-    }
-    else if ((*detect == 4) || (*detect == 7)) {
-	ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-        for (c=0; c<*cc; c++) {
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral1(*fn, par);
-            detspecx[2+c] = stdint;              /* passed to prwitransect */
-            for (k=0; k<nk; k++) {               /* over transects */
-                for (m=0; m<*xx; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gkx[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
-		       traps, X, cumk[k], cumk[k+1]-1, cumk[nk], *xx, ex) / stdint;
-                }
-            }
-        }
-    }
-
-    /* =====================*/
-    /* update detspec and h */
-    /* for requested X */
-
-    if ((*detect == 0) || (*detect == 3) || (*detect == 4)) {
-        for (i=0; i<*cc; i++) hc0x[i] = -1;
-        next = 0;        
-        for (n=0; n < nc1; n++) {
-            if (*like != 1) 
-                g = grp[n]-1;
-            else
-                g = n;
-            for (s=0; s < *ss; s++) {
-               c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;
-               if (hc0x[c0] < 0) {
-                    hc0x[c0] = next;
-                    next ++;
-                    for (m=0; m< *xx; m++) { 
-                        for (k=0; k < nk; k++) {
-                           p = 0;
-                           for (x = 0; x < *nmix; x++) {
-                               c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
-                               if (c >= 0) {
-                                   gi = i3(c,k,m,*cc,nk);
-                                   p += pmixg[*nmix * g + x] * gkx[gi];
-			       }
-                            }
-                            hx[hc0x[c0] * *xx + m] += hazard (p);
-                        }
-                    }
-		}    
-                hindexx[s*nc1 + n] = hc0x[c0];         
-            }
-        }
-    }
-
-    if ((*detect == 3) || (*detect == 4)) {
-        detspecx[0] = (double) nk;
-        detspecx[1] = (double) nd;
-        for (i=0; i< (*nc* *ss); i++)
-            detspecx[2+*cc+i] = (double) start[i];
-    }
-    else if ((*detect == 5) || (*detect==9)) {
-        for (i=0; i<3; i++) detspecx[i]= miscparm[i];
-        detspecx[3]= (*fn == 11) || (*fn == 12);     /* spherical */
-        for (i=0; i< (*nc* *ss * nk); i++)
-            detspecx[4+i] = (double) start[i];
-    }
-    else if ((*detect == 6) || (*detect == 7)) {
-        detspecx[0] = (double) nk;
-        detspecx[1] = (double) nd;
-        for (i=0; i< (*nc* *ss * nk); i++)
-            detspecx[2+*cc+i] = (double) start[i];
-    }
-    else if (*detect == 8) {
-        for (i=0; i< (*nc* *ss * nk); i++)
-            detspecx[i] = (double) start[i];
-    }
-
-    /* finish detspec */
-    /* ===============*/
 
     R_CheckUserInterrupt();
 
@@ -2938,14 +2954,17 @@ void pwuniform (
     for (i=0; i< *xx; i++) {
         temp = 0;
 	for (x=0; x<*nmix; x++) {
-	    temp += pmixg[x] * prwfn (i, *which-1, 1, *ss, x, w, xy, signal, PIA,
-				      gkx, *binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
-				      *ss, *xx, *nmix, gfn, gsbval, traps, Tsk, X, *minprob);
+	    temp += 
+		pmixg[x] * 
+		prwfn (i, *which-1, 1, *ss, x, w, xy, signal, PIA,
+		       gkx, *binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
+		       *ss, *xx, *nmix, gfn, gsbval, traps, distX2, Tsk, X, *minprob) *
+		piX[i] * scale;
 	}
         value[i] = temp / sumprwi;
     }
     
-    *resultcode = 0;   /* successful termination pwuniform */
+    *resultcode = 0;   /* successful termination fxIHP */
 }
 /*==============================================================================*/
 

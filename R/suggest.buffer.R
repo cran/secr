@@ -7,6 +7,7 @@
 ## 2013-04-23 hazard hazard rate
 ## 2014-02-13 removed gpclib
 ## 2014-03-12 bufferbiascheck() shifted from secr.fit
+## 2014-08-25 comment out lth which was unused and called undefined fn get.pts
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
@@ -61,15 +62,14 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
             invlogit(predict(pdotr.spline,r)$y) * l(r)
     }
 
-    lth <- function (x) {
-        hull <- get.pts(x)
-        sum(sapply(hull, function(xy) {
-            xy$x <- c(xy$x, xy$x[1])
-            xy$y <- c(xy$y, xy$y[1])
-            sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))
-        }))
-    }
-
+#    lth <- function (x) {
+#        hull <- get.pts(x)
+#        sum(sapply(hull, function(xy) {
+#            xy$x <- c(xy$x, xy$x[1])
+#            xy$y <- c(xy$y, xy$y[1])
+#            sum(sqrt(diff(xy$x)^2 + diff(xy$y)^2))
+#        }))
+#    }
 #    perimeterfn <- function (buffer, traps, ntheta = 60) {
 #        theta <- (2 * pi) * (0:ntheta)/ntheta
 #        pts <- data.frame(x = buffer * cos(theta), y = buffer * sin(theta))

@@ -16,10 +16,6 @@ from capture--recapture data:
 pooled over individuals (e.g. Efford 2004). \code{moves} returns the
 raw distances.
 
-\code{RPSV} (for `Root Pooled Spatial Variance') is a measure of the 2-D
-dispersion of the locations at which individual animals are detected,
-pooled over individuals.
-
 \code{MMDM} (for `Mean Maximum Distance Moved') is the average maximum
 distance between detections of each individual i.e. the observed range
 length averaged over individuals (Otis et al. 1978).
@@ -28,18 +24,24 @@ length averaged over individuals (Otis et al. 1978).
 exponential curve to the scatter of observed individual range length vs
 the number of detections of each individual (Jett and Nichols 1987: 889).
 
+\code{RPSV} (for `Root Pooled Spatial Variance') is a measure of the 2-D
+dispersion of the locations at which individual animals are detected,
+pooled over individuals.
+
 }
 
 \usage{
-dbar(capthist)
+dbar(capthist, userdist = NULL, ...)
+MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, ...)
+ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, ...)
+moves(capthist, userdist = NULL, ...)
 RPSV(capthist)
-MMDM(capthist, min.recapt = 1, full = FALSE)
-ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE)
-moves(capthist)
 }
 
 \arguments{
   \item{capthist}{ object of class \code{\link{capthist}} }
+  \item{userdist}{ function or matrix with user-defined distances}
+  \item{...}{other arguments passed to userdist function, if required}
   \item{min.recapt}{ integer minimum number of recaptures for a
   detection history to be used }
   \item{plt}{ logical; if TRUE observed range length is plotted against number
@@ -55,8 +57,8 @@ moves(capthist)
                               \sqrt{(x_{i,j}-x_{i,j+1})^2 + (y_{i,j}-y_{i,j+1})^2}}
                          {\sum\limits _{i=1}^{n} (n_i-1)}}{see pdf manual}
 
- \code{RPSV} is defined as
- \deqn{
+\code{RPSV} is defined as
+\deqn{
  RPSV = \sqrt{
     \frac {\sum\limits _{i=1}^{n} \sum\limits _{j=1}^{n_i} [
 	    (x_{i,j} - \overline x_i)^2 + (y_{i,j} - \overline y_i)^2
@@ -72,6 +74,10 @@ values for maximum likelihood estimation.
 
 \code{MMDM} and \code{ARL} discard data from detection histories
 containing fewer than \code{min.recapt}+1 detections.
+
+The \code{userdist} option is included for exotic non-Euclidean cases
+(see e.g. \code{secr.fit} \link{details}). RPSV is not defined for
+non-Euclidean distances.
 
 }
 

@@ -22,7 +22,7 @@ Data of V. H. Reid from live trapping of deermice (\emph{Peromyscus
 
 }
 
-\usage{data(deermouse)}
+\usage{deermouse}
 
 \details{
 

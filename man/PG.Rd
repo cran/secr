@@ -118,6 +118,7 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
         PG(CH = CH , poly = poly, plt = FALSE, ...)
     }
     set.seed(seed)
+    require(sp)
     if (is.null(poly)) {
         poly <- buffer.contour (traps(CH), ...)
         srl <- lapply(poly, function(x) Polygon(as.matrix(x)))
@@ -133,6 +134,7 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
 }
 
 mask <- make.mask (traps(CvilleBoth), buffer = 400, type = "trapbuffer")
+require(sp)
 pg <- randomPG (CvilleBoth, mask = mask, buffer = 100, convex = TRUE,
     nrepl = 20)
 apply(pg, 1, mean)

@@ -20,7 +20,7 @@ Data of H. N. Coulombe from live trapping of feral house mice (\emph{Mus
  musculus}) in a salt marsh, California, USA.
 }
 
-\usage{data(housemouse)}
+\usage{housemouse}
 
 \details{
 

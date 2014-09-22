@@ -8,14 +8,17 @@
 
 \description{
   Display contours of the probability density function for the estimated
-  location of one or more range centres (f(Xi|wi)), compute values for
-  particular points X, or compute mode of pdf.
+  location of one or more range centres, compute values for
+  particular points X, or compute mode of pdf. The pdf is given by
+  \eqn{f(X_j|\omega_i) = \mbox{Pr}(\omega_i|X_j)\pi(X_j)}{f(X_j|\omega_i) =
+  Pr(\omega_i|X)\pi(X_j)}, where \eqn{\pi(X)} is the probability density
+  of range centres across the mask (Borchers and Efford 2008).
 }
 
 \usage{
 fxi.contour (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE,
-    fitmode = FALSE, plotmode = FALSE, normal = TRUE, ...)
+    fitmode = FALSE, plotmode = FALSE, normal = TRUE, fill = NULL, ...)
 fxi.secr(object, i = 1, sessnum = 1, X, normal = TRUE)
 fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
 }
@@ -36,6 +39,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   \item{plotmode}{logical to plot mode of each pdf}
   \item{X}{2-column matrix of x- and y- coordinates}
   \item{normal}{ logical; should values of pdf be normalised?}
+  \item{fill}{ vector of colours to fill contours (optional)}
   \item{start}{ vector of x-y coordinates for maximization }
   \item{\dots}{additional arguments passed to \code{contour} or \code{nlm}}
 }
@@ -45,32 +49,37 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   \code{fxi.contour} computes contours of probability density for one
   or more detection histories. Increase \code{nx} for smoother
   contours. If \code{levels} is not set, contour levels are set
-  to approximate the confidence levels in n\code{p}.
+  to approximate the confidence levels in \code{p}.
   
-  \code{fxi.secr} computes the probability density for a single
-  detection history; \code{X} may contain coordinates for one or several
-  points; a dataframe or vector (x then y) will be coerced to a matrix.
+  \code{fxi.secr} computes the probability density for one or more
+  detection histories; \code{X} may contain coordinates for one or
+  several points; a dataframe or vector (x then y) will be coerced to a
+  matrix.
 
-  \code{fxi.mode} finds the maximum of the pdf for a single detection history
-  (i.e. \code{n} is of length 1). \code{fxi.mode} calls \code{\link[stats]{nlm}}.
+  \code{fxi.mode} attempts to find the x- and y-coordinates
+  corresponding to the maximum of the pdf for a single detection history
+  (i.e. \code{i} is of length 1). \code{fxi.mode} calls
+  \code{\link[stats]{nlm}}.
 
-  \code{fxi.contour} with \code{fitmode = TRUE} uses \code{fxi.mode} to
-  find the maximum of each pdf. Otherwise the reported mode is an
-  approximation (mean of coordinates of highest contour).
+  \code{fxi.contour} with \code{fitmode = TRUE} calls \code{fxi.mode}
+  for each individual. Otherwise, the reported mode is an approximation
+  (mean of coordinates of highest contour).
 
   If \code{i} is character it will be matched to row names of
   object$capthist (restricted to the relevant session in the case of a
   multi-session fit); otherwise it will be interpreted as a row number.
   
   Values of the pdf are optionally normalised by dividing by the
-  integral of Pr(wi|X) over the habitat mask in \code{object}.
+  integral of \eqn{\mbox{Pr}(\omega_i|X)\pi(X)}{Pr(\omega_i|X)\pi(X)}
+  over the habitat mask in \code{object}.
   
-  If \code{start} is not provided then the first detector site is used,
-  but this is not guaranteed to work.
+  If \code{start} is not provided to \code{fit.mode} then the first
+  detector site is used, but this is not guaranteed to work.
 
   The \dots argument gives additional control over a contour plot; for
   example, set \code{drawlabels = FALSE} to suppress contour labels.
 }
+
 \value{
   
 \code{fxi.contour} --
@@ -99,11 +108,24 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 }
 
 \seealso{
-\code{\link{pdot.contour}}, \code{\link[graphics]{contour}}
+\code{\link{pdot.contour}}, \code{\link[graphics]{contour}}, \code{\link{fx.total}}
 }
 
 \note{
-  These functions only work with homogeneous Poisson density models.
+
+  From \pkg{secr} 2.8.3, these functions work with both homogeneous
+  and inhomogeneous Poisson density models, and \code{fxi.secr} accepts
+  vector-valued \code{i}.
+
+  See \code{\link{fx.total}} for a surface summed across individuals.
+
+}
+
+\section{Warning}{
+
+  \code{fxi.mode} may fail to find the true mode unless a good starting
+  point is provided.
+
 }
 
 \examples{
@@ -116,8 +138,19 @@ fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
     plotmode = TRUE, drawlabels = FALSE)
 
 ## extract modes only
+## these are more reliable than those from fit.mode called directly as
+## they use a contour-based approximation for the starting point
 fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
 t(sapply(fxiout, "[[", "mode"))
+
+\dontrun{
+  ## using fill colours
+  ## lty = 0 suppresses contour lines
+  ## nx = 256 ensures smooth outline
+  plot(traps(captdata))
+  fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
+      = FALSE, nx = 256, fill = topo.colors(4), lty = 0)
+}
 
 }
 

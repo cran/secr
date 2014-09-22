@@ -3,6 +3,8 @@
 #
 ## define a local environment (in namespace?) for temporary variables e.g. iter
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
+###############################################################################
+
 ## 2012-04-13 pointsInPolygon extended to allow mask 'polygon'
 ## 2012-07-25 nclusters() added
 ## 2012-09-04 leadingzero moved here
@@ -29,6 +31,13 @@
 ## 2013-11-16 xy2CH telemetry; patched for covariates 2013-12-02
 ## 2013-11-20 getcoord from SpatialPolygons
 ## 2014-03-18 complete.beta functions for fixedbeta
+## 2014-08-19 moved secr.lpredictor from secrloglik.R
+## 2014-08-21 smooths function
+## 2014-08-29 masklength()
+## 2014-09-01 valid.userdist()
+## 2014-09-09 make.lookup uses values rounded to 10 dp
+## 2014-09-10 getnoneucnames()
+## 2014-09-10 getcellsize()
 ###############################################################################
 
 .localstuff <- new.env()
@@ -141,6 +150,144 @@ valid.detectpar <- function (detectpar, detectfn) {
         stop ("requires 'detectpar' ", paste(parnames(detectfn), collapse=','),
             " for ", detectionfunctionname(detectfn), " detectfn")
     detectpar[parnames(detectfn)]
+}
+
+valid.model <- function(model, CL, detectfn, hcov, userdist, sessioncovnames) {
+    ## 2014-08-25
+    if (any(sapply(model, badsmooths)))
+        warning("smooth term may be unsuitable for secr: does not specify k or fx where required")
+    if (is.function(userdist)) {
+        vars <- all.vars(model$noneuc)
+        if (!all(vars %in% c('session', 'Session', sessioncovnames)))
+        stop ("non-Euclidean distance parameter may vary only over sessions")
+        if (length(getnoneucnames(userdist)) > 1)
+            stop ("only one non-Euclidean distance parameter allowed in this version")
+    }
+}
+
+getnoneucnames <- function (userdist) {
+    ## return the names of any supplementary arguments of user-provided function
+    ## for non-euclidean distance computations
+    if (is.function(userdist)) {
+        noneucnames <- names(formals(userdist))[-(1:3)]
+        noneucnames[noneucnames != "..."]
+    }
+    else
+        character(0)
+}
+
+valid.pnames <- function (details, model, CL, detectfn, alltelem, q, nonID) {
+    ## modelled parameters
+    pnames <- switch (detectfn+1,
+        c('g0','sigma'),           # 0 halfnormal
+        c('g0','sigma','z'),       # 1 hazard rate
+        c('g0','sigma'),           # 2 exponential
+        c('g0','sigma','z'),       # 3
+        c('g0','sigma'),           # 4
+        c('g0','sigma','w'),       # 5
+        c('g0','sigma','w'),       # 6
+        c('g0','sigma','z'),       # 7
+        c('g0','sigma','z'),       # 8
+        c('b0','b1'),              # 9
+        c('beta0','beta1','sdS'),  # 10
+        c('beta0','beta1','sdS'),  # 11
+        c('beta0','beta1','sdS'),  # 12  cf parnames() in utility.R: muN, sdN?
+        c('beta0','beta1','sdS'),  # 13  cf parnames() in utility.R: muN, sdN?
+        c('lambda0','sigma'),      # 14 hazard halfnormal
+        c('lambda0','sigma','z'),  # 15 hazard hazard rate
+        c('lambda0','sigma'),      # 16 hazard exponential
+        c('lambda0','sigma','w'),  # 17
+        c('lambda0','sigma','z'))  # 18
+
+    if (details$param %in% c(2,6))
+        pnames[1] <- 'esa'
+    if (details$param %in% c(3,5))
+        pnames[1] <- 'a0'
+    if (details$param %in% 4:6) {
+        pnames[2] <- 'sigmak'
+        pnames <- c(pnames, 'c')
+    }
+    if (!CL) pnames <- c('D', pnames)
+    if (!is.null(q) & nonID) {
+	pnames <- c(pnames, 'pID')
+        if (model$pID != ~1)
+            stop ("'pID' must be constant in this implementation")
+    }
+    if (alltelem) {
+        rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
+        rnum[is.na(rnum)] <- 0
+        pnames <- pnames[-rnum]
+    }
+    if (is.function(details$userdist) &
+        (length(getnoneucnames(details$userdist)) == 1)) {
+        pnames <- c(pnames, 'noneuc')
+    }
+
+    OK <- names(model) %in% pnames
+    if (any(!OK))
+      stop ("parameters in model not consistent with detectfn etc. : ",
+          paste(names(model)[!OK], collapse = ', '))
+    pnames
+}
+#-------------------------------------------------------------------------------
+
+valid.userdist <- function (userdist, detector, xy1, xy2, geometry, sesspars) {
+    ## 2014-09-01, 2014-09-10
+    ## noneucpars is a named list of supplementary parameters for userdist
+    if (is.null(userdist)) {
+        nr1 <- nrow(xy1)
+        nr2 <- nrow(xy2)
+        xy1 <- as.matrix(xy1)
+        xy2 <- as.matrix(xy2)
+        ## default to Euclidean distance
+        result <- as.matrix(dist(rbind(xy1, xy2)))[1:nr1, (nr1+1):(nr1+nr2)]
+    }
+    else {
+        if (detector %in% .localstuff$polydetectors) {
+            stop ("userdist cannot be used with polygon detector types;")
+        }
+        if (is.function(userdist)) {
+            noneucind <- getnoneucnames(userdist)
+            noneucindpar <- noneucind[noneucind %in% names(sesspars)]
+            noneucindcov <- noneucind[noneucind %in% names(covariates(geometry))]
+            ## make a list
+            noneucpars <- c(sesspars[noneucindpar], covariates(geometry)[noneucindcov])
+            result <- do.call(userdist, c(list(xy1, xy2, geometry), noneucpars))
+        }
+        else {
+            result <- userdist
+        }
+        if (!all(dim(result) == c(nrow(xy1), nrow(xy2))))
+            stop ("invalid distance matrix dim = ", dim(result)[1], ',', dim(result)[2])
+    }
+    result
+}
+#-------------------------------------------------------------------------------
+
+new.param <- function (details, model, CL) {
+    esa <- 'esa' %in% names(model)
+    a0 <- 'a0' %in% names(model)
+    sigmak <- 'sigmak' %in% names(model)
+    newparam <- details$param
+    if (esa & !sigmak) {
+        newparam <- 2
+    }
+    if (a0 & !sigmak) {
+        newparam <- 3
+    }
+    if (sigmak) {
+        if (esa) {
+            newparam <- 6
+        }
+        else {
+            if (CL)
+                stop ("sigmak parameterization requires full model, not CL, unless also 'esa'")
+            newparam <- ifelse(a0, 5, 4)
+        }
+    }
+    if (newparam  != details$param)
+        warning ("Using parameterization details$param = ", newparam)
+    newparam
 }
 
 detectorcode <- function (object, MLonly = TRUE) {
@@ -327,8 +474,10 @@ fixpmix <- function(x, nmix) {
     ## (i.e. arbitrary combinations of predictors, including mixture
     ## class h2 or h3)
 
-    ## It is necessary that newdata include all levels of the mixture
-    ## class.
+    ####################################################
+    ## It is necessary that newdata include all levels
+    ## of the mixture class.
+    ####################################################
 
     ## used in collate and predict.secr
 
@@ -403,7 +552,7 @@ spatialscale <- function (object, detectfn, session = '') {
 
 pointsInPolygon <- function (xy, poly, logical = TRUE) {
     xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
-    if (inherits(poly, "SpatialPolygonsDataFrame")) {
+    if (inherits(poly, 'SpatialPolygonsDataFrame')) {
         xy <- SpatialPoints(xy)
         ## 2013-04-20 update for deprecation of 'overlay'
         ## OK <- overlay (xy, poly)
@@ -489,7 +638,7 @@ nclusters <- function (capthist) {
 ## moved here from make.grid 2012-09-04
 
 # leadingzero <- function (x) {
-#     formatC(x, width=max(nchar(x)), flag="0")  ## returns character value
+#     formatC(x, width=max(nchar(x)), flag='0')  ## returns character value
 # }
 
 ## clunky but effective re-write 2012-09-04
@@ -635,7 +784,7 @@ distancetotrap <- function (X, traps) {
     nxy <- nrow(X)
     ## 2011-10-14
     detecttype <- detector(traps)
-    detecttype <- ifelse (is.null(detecttype), "", detecttype)
+    detecttype <- ifelse (is.null(detecttype), '', detecttype)
     if (detecttype %in% .localstuff$polydetectors) {
         ## approximate only
         traps <- split(traps, polyID(traps))
@@ -662,7 +811,7 @@ distancetotrap <- function (X, traps) {
         warning("using only first polygon of SpatialPolygonsDataFrame")
     }
 
-    temp <- .C("nearest",  PACKAGE = 'secr',
+    temp <- .C('nearest',  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
         as.integer(nrow(trps)),
@@ -687,7 +836,7 @@ nearesttrap <- function (X, traps) {
         traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
         warning("using only first polygon of SpatialPolygonsDataFrame")
     }
-    temp <- .C("nearest",  PACKAGE = 'secr',
+    temp <- .C('nearest',  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
         as.integer(nrow(traps)),
@@ -769,6 +918,8 @@ mlogit.untransform <- function (beta, latentmodel) {
 clean.mlogit <- function(x) {
 ## bad line removed 2013-05-09
 ##    x <- x/sum(x)
+    ## 2014-08-19 for robustness...
+    if (is.na(x[2])) x[2] <- 1-x[1]
     x[1] <- NA   ## assumed reference class
     logit(mlogit.untransform(x))
 }
@@ -929,9 +1080,20 @@ make.lookup <- function (tempmat) {
     ## should add something to protect make.lookup from bad data...
     nrw <- nrow(tempmat)
     ncl <- ncol(tempmat)
+    nam <- colnames(tempmat)
 
+    df <- is.data.frame(tempmat)
+    if (df) {
+       lev <- lapply(tempmat, levels)
+       tempmat <- unlist(sapply(tempmat, as.numeric, simplify = FALSE))
+    }
+    dimnames(tempmat) <- NULL
     temp <- .C('makelookup', PACKAGE = 'secr',
-        as.double(tempmat),
+        ## as.double(tempmat),
+        ## 2014-09-09
+        ## compare values rounded to 10 dp
+        ## required because floating point orthogonal polynomials sometimes differ
+        as.double(round(tempmat, 10)),
         as.integer(nrw),
         as.integer(ncl),
         unique = integer(1),
@@ -943,8 +1105,14 @@ make.lookup <- function (tempmat) {
         stop ("error in external function 'makelookup'; ",
               "perhaps problem is too large")
     lookup <- matrix(temp$y[1:(ncl*temp$unique)], nrow = temp$unique, byrow = T)
-
-    colnames(lookup) <- colnames(tempmat)
+    colnames(lookup) <- nam
+    if (df) {
+        lookup <- as.data.frame(lookup)
+        ## restore factors
+        for (i in 1: length(lev))
+            if (!is.null(lev[[i]]))
+                lookup[,i] <- factor(lev[[i]][lookup[,i]], levels = lev[[i]])
+    }
     list (lookup=lookup, index=temp$index)
 }
 ###############################################################################
@@ -1063,14 +1231,28 @@ getcoord <- function(obj){
     lapply(Polygons@Polygons, coordinates)
 }
 
+
+###############################################################################
+## moved from mask.check.r 2014-08-28
+
+inflatechull <- function (poly, r, ntheta = 60) {
+    theta <- (2*pi) * (1:ntheta) / ntheta
+    ## add supernumerary vertices
+    temp  <- data.frame(x = apply(expand.grid(poly$x, r * cos(theta)),1,sum),
+                   y = apply(expand.grid(poly$y, r * sin(theta)),1,sum))
+    hull <- chull(temp)
+    temp[c(hull,hull[1]), ]
+}
+
 ###############################################################################
 ## used by sim.capthist to update telemetry boundary polygon 2013-11-21
-refreshMCP <- function (CH) {
+refreshMCP <- function (CH, tol) {
     if (detector(traps(CH)) %in% c('polygon','polygonX','telemetry'))
         allxy <- xy(CH)
     else
         stop ("requires polygon or telemetry detector type")
     trps <-  allxy[chull(allxy),]
+    trps <- inflatechull(trps, r = tol)   ## 2014-08-28
     class(trps) <- c("traps","data.frame")
     names(trps) <- c('x','y')
     detector(trps) <- detector(traps(CH))
@@ -1084,6 +1266,11 @@ refreshMCP <- function (CH) {
 maskarea <- function (mask, sess = 1) {
     if (!ms(mask)) nrow(mask) * attr(mask,'area')
     else nrow(mask[[sess]]) * attr(mask[[sess]],'area')
+}
+## 2014-08-29
+masklength <- function (mask, sess = 1) {
+    if (!ms(mask)) nrow(mask) * attr(mask,'spacing')/1000
+    else nrow(mask[[sess]]) * attr(mask[[sess]],'spacing')/1000
 }
 ###############################################################################
 
@@ -1099,6 +1286,7 @@ complete.beta <- function (object) {
     }
     beta
 }
+###############################################################################
 
 complete.beta.vcv <- function (object) {
     fb <- object$details$fixedbeta
@@ -1113,3 +1301,155 @@ complete.beta.vcv <- function (object) {
     beta.vcv
 }
 ###############################################################################
+
+smooths <- function (formula) {
+    ## which terms in formula are smooths?
+    ## returns logical vector
+    labels <- attr(terms(formula), "term.labels")
+    if (length(labels) > 0)
+        sapply(labels, function (x) any(sapply(c("s\\(", "te\\(", "poly\\("), grepl, x)))
+    else
+        logical(0)
+}
+############################################################################################
+
+polys <- function (formula) {
+    ## which terms in formula are orthogonal polynomials?
+    ## returns logical vector
+    labels <- attr(terms(formula), "term.labels")
+    if (length(labels) > 0)
+        sapply(labels, grepl, pattern = "poly\\(")
+    else
+        logical(0)
+}
+############################################################################################
+
+badsmooths <- function (formula) {
+    ## does smooth specification conform to secr requirements?
+    ## returns TRUE/FALSE
+    labels <- attr(terms(formula), "term.labels")
+    if (length(labels) > 0) {
+        smoothterms <- sapply(labels, function (x)
+                              any(sapply(c("s\\(", "te\\("), grepl, x)))
+        labels <- labels[smoothterms]
+        any(sapply(labels, function(x)
+               grepl("s\\(", x) & !grepl("k =", x))) |
+        any(sapply(labels, function(x)
+               grepl("te\\(", x) & (!grepl("fx = TRUE", x) | !grepl("k =", x))))
+    }
+    else
+        FALSE
+}
+############################################################################################
+
+gamsetup <- function(formula, data, ...) {
+    ## use 'session' column as dummy LHS so gam does not gag
+    ## (cf secrgam:::make.density.design.matrix)
+    ## session is always present in detection data, must be added for D
+    if (is.null(data$session)) data$session <- rep(1,nrow(data))
+    formula <- update.formula(formula, session ~ .)
+    setup <- gam(formula, data = data, fit = FALSE, ...)
+    colnames(setup$X) <- setup$term.names
+    setup
+}
+############################################################################################
+
+general.model.matrix <- function (formula, data, gamsmth = NULL, ...) {
+
+    ## A function to compute the design matrix for the model in
+    ## 'formula' given the data in 'data'. This is merely the result
+    ## of model.matrix() unless 'formula' includes smooth terms -- s()
+    ## or te() as described in mgcv ?formula.gam.
+
+    ## If smooth terms are present then the matrix may be based on a
+    ## previous gam setup (provided in the argument 'gamsmth') or
+    ## computed de novo with gam(..., fit = FALSE)
+
+    ## note 2014-08-24
+    ## orthogonal polynomials e.g. poly(x,2) are handled by model.matrix,
+    ## but the information needed for prediction at new data is not
+    ## saved by secr.fit, so predict.secr generally fails with message
+    ## "'degree' must be less than number of unique points"
+
+    ##  head(eval(parse(text = attr(terms(~ poly(x,y, degree=2)),
+    ##  'term.labels')[1]), env=possummask))
+
+    ## 2014-08-24, 2014-09-09
+
+    if (any(polys(formula)))
+        stop ("orthogonal polynomials are temporarily blocked")  ## 2014-09-12
+    if (any(smooths(formula))) {
+        if (is.null(gamsmth)) {
+            ## setup knots etc from scratch
+            gamsetup(formula, data, ...)$X
+        }
+        else {
+            ## fool predict.gam into generating the necessary
+            ## predictor matrix from previous setup
+            class (gamsmth) <- 'gam'
+            gamsmth$coefficients <- rep(NA, ncol(gamsmth$X))
+            mat <- mgcv::predict.gam(gamsmth, newdata = data, type = 'lpmatrix')
+            colnames(mat) <- colnames(gamsmth$X)
+            mat
+        }
+    }
+    else {
+        ## model.matrix(formula, data, ...)
+        model.matrix(formula, data)
+    }
+}
+###############################################################################
+
+secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
+                             smoothsetup = NULL) {
+    ## form linear predictor for a single 'real' parameter
+    ## smoothsetup should be provided whenever newdata differs from
+    ## data used to fit model and the model includes smooths from gam
+    vars <- all.vars(formula)
+    if (any(!(vars %in% names(newdata))))
+        stop ("one or more model covariates not found in 'newdata'")
+    newdata <- as.data.frame(newdata)
+    lpred <- matrix(ncol = 2, nrow = nrow(newdata), dimnames = list(NULL,c('estimate','se')))
+
+    ## 2014-08-19
+    ## mat <- model.matrix(model, data = newdata)
+    mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup)
+
+    ## drop pmix beta0 column from design matrix (always zero)
+    if (field=='pmix') {
+        mat <- mat[,-1,drop=FALSE]
+    }
+    lpred[,1] <- mat %*% beta[indx]
+
+    if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
+    else {
+        vcv <- beta.vcv[indx,indx, drop = FALSE]
+        nrw <- nrow(mat)
+        vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
+            mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
+        vcv <- matrix (vcv, nrow = nrw)
+        lpred[,2] <- diag(vcv)^0.5
+        temp <- cbind(newdata,lpred)
+        attr(temp, 'vcv') <- vcv
+        return(temp)
+    }
+}
+
+############################################################################################
+
+distance <- function (xy1, xy2) {
+    nr1 <- nrow(xy1)
+    nr2 <- nrow(xy2)
+    xy <- rbind(as.matrix(xy1), as.matrix(xy2))
+    as.matrix(dist(xy))[1 : nr1, (nr1+1) : (nr1+nr2)]
+}
+## tmp <- distance(traps(captdata), secrdemo.0$mask)
+############################################################################################
+
+getcellsize <- function (mask) {
+    if (inherits(mask, 'linearmask'))
+        attr(mask, 'spacing') / 1000  ## per km
+    else
+        attr(mask, 'area')            ## per ha
+}
+############################################################################################

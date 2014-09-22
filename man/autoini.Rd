@@ -92,6 +92,13 @@ usage is not specified it is taken to be 1.0.
   \item{ sigma }{Spatial scale of detection function (m) }
 }
 
+\note{
+  
+  \code{autoini} always uses the Euclidean distance between detectors and
+  mask points.
+  
+}
+
 \references{
 
 Efford, M. G., Dawson, D. K. and Robbins C. S. (2004) DENSITY: software for analysing capture--recapture data from passive detector arrays. \emph{Animal Biodiversity and Conservation} \bold{27},

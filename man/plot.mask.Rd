@@ -13,8 +13,8 @@
 
 \usage{
 \method{plot}{mask}(x, border = 20, add = FALSE, covariate = NULL, axes = FALSE,
-    dots = TRUE, col = "grey", breaks = 12, meshcol = NA, ppoly = TRUE,
-    polycol = "red", \dots)
+    dots = TRUE, col = "grey", breaks = 10, meshcol = NA, ppoly = TRUE,
+    polycol = "red", legend = TRUE, \dots)
 
 \method{plot}{Dsurface}(x, covariate = "D", group = NULL, plottype =
     "shaded", scale = 1, ...)
@@ -36,11 +36,12 @@ spotHeight (object, prefix = NULL, dec = 2, point = FALSE, text = TRUE,
   \item{axes}{ logical for plotting axes }
   \item{dots}{ logical for plotting mask points as dots, rather than as square pixels }
   \item{col}{ colour(s) to use for plotting }
-  \item{breaks}{ number of levels to use when cutting continuous covariate for plotting }
+  \item{breaks}{ an integer or a numeric vector -- see \code{\link{cut}} }
   \item{meshcol}{ colour for pixel borders (NA for none) }
   \item{ppoly}{ logical for whether the bounding polygon should be
-       plotted (if `poly' specified) }
-  \item{polycol}{ colour for outline of polygon (\code{ppoly} = TRUE) }     
+    plotted (if `poly' specified) }
+  \item{polycol}{ colour for outline of polygon (\code{ppoly} = TRUE) }
+  \item{legend}{ logical; if TRUE a legend is plotted }   
   \item{\dots}{ other arguments passed to \code{eqscplot} (in the case
   of \code{plot.mask}), \code{plot.mask} (in the case of
   \code{plot.Dsurface} and \code{plot.Rsurface}), and \code{points} or
@@ -49,7 +50,7 @@ spotHeight (object, prefix = NULL, dec = 2, point = FALSE, text = TRUE,
   \item{plottype}{ character string c("dots", "shaded", "contour",
     "persp") }
   \item{scale}{numeric multiplier for density or other numeric covariate
-     (see \code{\link{Dsurface}}}
+     (see \code{\link{Dsurface}})}
   \item{prefix}{character vector for name(s) of covariate(s) to retrieve}
   \item{dec}{ number of decimal places for rounding density }
   \item{point}{logical for whether to plot point}
@@ -70,7 +71,7 @@ take some experimentation to get what you want - see
 
 If using a covariate or Dsurface or Rsurface to colour dots or pixels, the
 \code{col} argument should be a colour vector of length equal to the
-number of levels (the default palette is \code{heat.colors}, and this
+number of levels (the default palette from 2.9.0 is \code{terrain.colors}, and this
 palette will also be used whenever there are too few levels in the
 palette provided; see Notes for more on palettes). Border lines around
 pixels are drawn in `meshcol'. Set this to NA to eliminate pixel
@@ -94,6 +95,10 @@ user clicks on the plot. Multiple values may be displayed (e.g.,
 \code{prefix = c("lcl","ucl")} if Dsurface includes confidence
 limits). Click outside the mask or hit the Esc key to
 end. \code{spotHeight} deals with one session at a time.
+
+Legend plotting is enabled only when a covariate is specified. It uses
+\code{\link{legend}} when \code{dots = TRUE} and
+\code{\link{strip.legend}} otherwise.
 
 }
 
@@ -119,18 +124,21 @@ end. \code{spotHeight} deals with one session at a time.
   \code{\link{rectangularMask}},
   \code{\link[graphics]{contour}}
   \code{\link[graphics]{persp}}
+  \code{\link{strip.legend}}
 }
 
 \note{
 
+  \code{plot.mask()} acquired the argument `legend' in version 2.9.0,
+  and other chages (e.g., \code{breaks = 10}) may alter the output.
+  
   Contouring requires a rectangular grid; if a Dsurface is not
 rectangular then plot.Dsurface with plottype = contour triggers a call to
 \code{\link{rectangularMask}}.
 
-The colour palettes \code{\link[grDevices]{topo.colors}},
-\code{\link[grDevices]{heat.colors}} and
-\code{\link[grDevices]{terrain.colors}} may be viewed with the
-\code{demo.pal} function in the Examples code on their help page.
+The colour palettes \code{topo.colors}, \code{heat.colors} and
+\code{terrain.colors} may be viewed with the \code{demo.pal} function in
+the Examples code of their help page \link[grDevices]{palettes}.
 
 The package \pkg{RColorBrewer} is a good source of palettes. Try
 \code{display.brewer.all()} and e.g., \code{col = brewer.pal(7, "YlGn")}.
@@ -170,13 +178,13 @@ mtext(side=3,line=-1, "g0 = 0.2, sigma = 20, nocc = 5")
 
 \dontrun{
 
-## possum density surface extrapolated across region
+## Waitarere possum density surface extrapolated across region
 
 regionmask <- make.mask(traps(possumCH), buffer = 1000, spacing = 10,
     poly = possumremovalarea)
 dts <- distancetotrap(regionmask, possumarea)
 covariates(regionmask) <- data.frame(d.to.shore = dts)
-shorePossums <- predictDsurface(possum.model.Dsh2, regionmask)
+shorePossums <- predictDsurface(possum.model.Ds, regionmask)
 
 ## plot as coloured pixels with white lines
 colourlev <- terrain.colors(7)

@@ -5,6 +5,12 @@
 
     2012-12-23 implemented variable effort EXCEPT polygon & transect detetcors
 
+    2014-08-08 minor edits; par3
+
+    2014-08-28 name change from simsecr to simdetect
+
+    2014-08-28 simdetect uses dist2 argument
+
 */
 
 #include "secr.h"
@@ -18,19 +24,18 @@ void getpar (int i, int s, int k, int xi, int N, int ss, int nk, int cc0, int cc
     int wxi;
     int c;
     wxi = i4(i,s,k,xi,N,ss,nk);
+    *z = 0;
     if (bswitch == 0) {
         c = gsb0[wxi]-1;
         *g0 = gsb0val[c];
         *sigma = gsb0val[cc0 + c];
-        if ((fn==1) || (fn == 5)  || (fn == 6)  || (fn == 7) || (fn == 8) )
-            *z = gsb0val[2* cc0 + c];
+        if (par3(fn)) *z = gsb0val[2* cc0 + c];
     }
     else {
         c = gsb1[wxi]-1;
         *g0 = gsb1val[c];
         *sigma = gsb1val[cc1 + c];
-        if ((fn==1) || (fn == 5) || (fn == 6)  || (fn == 7) || (fn == 8) ) 
-            *z = gsb1val[2* cc1 + c];
+        if (par3(fn)) *z = gsb1val[2* cc1 + c];
     }
 }
 /*==============================================================================*/
@@ -72,7 +77,7 @@ int bswitch (int btype, int N, int i, int k, int caughtbefore[])
 }
 /*==============================================================================*/
 
-void simsecr (
+void simdetect (
     int    *detect,     /* detector 0 multi, 1 proximity, 2 single, 3 count, 4 area ??? */
     double *gsb0val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     double *gsb1val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before] */
@@ -86,8 +91,10 @@ void simsecr (
     int    *ss,         /* number of occasions */
     int    *kk,         /* number of traps */
     int    *nmix,       /* number of classes */
+    int    *knownclass, /* known membership of 'latent' classes */
     double *animals,    /* x,y points of animal range centres (first x, then y) */
     double *traps,      /* x,y locations of traps (first x, then y) */
+    double *dist2,      /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *btype,      /* code for behavioural response 
                            0 none
@@ -214,6 +221,17 @@ void simsecr (
     for (i=0; i<*N; i++) x[i] = 0;
     pmix = (double *) R_alloc(*nmix, sizeof(double));
 
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+    /* ------------------------------------------------------ */
+
     if ((*detect < -1) || (*detect > 7)) return;
 
     if (*detect == -1) {                                   /* single-catch only */
@@ -281,25 +299,31 @@ void simsecr (
 
     GetRNGstate();
 
-    /* may be better to pass pmix */
     gpar = 2;
     if ((*fn == 1) || (*fn == 3) || (*fn == 5)|| (*fn == 6) || (*fn == 7) || (*fn == 8) ||
         (*fn == 10) || (*fn == 11)) gpar ++;
-    if (*nmix>1) gpar++;
 
+    /* ------------------------------------------------------------------------- */
+    /* mixture models */
+    /* may be better to pass pmix */
     if (*nmix>1) {
         if (*nmix>2)
             error("simsecr nmix>2 not implemented");
+        gpar++;   /* these models have one more detection parameter */
         for (i=0; i<*nmix; i++) {
             wxi = i4(0,0,0,i,*N,*ss,nk);
             c = gsb0[wxi] - 1;
             pmix[i] = gsb0val[*cc0 * (gpar-1) + c];    /* assuming 4-column gsb */
         }
         for (i=0; i<*N; i++) {
-            x[i] = rdiscrete(*nmix, pmix) - 1;
+	    if (knownclass[i] > 1) 
+		x[i] = knownclass[i] - 2;      /* knownclass=2 maps to x=0 etc. */
+	    else
+		x[i] = rdiscrete(*nmix, pmix) - 1;
         }
     }
 
+    /* ------------------------------------------------------------------------- */
     /* zero caught status */
     for (i=0; i<*N; i++) 
         caught[i] = 0;    
@@ -307,6 +331,7 @@ void simsecr (
         for (k=0; k < nk; k++)
             caughtbefore[k * (*N-1) + i] = 0;
 
+    /* ------------------------------------------------------------------------- */
     /* MAIN LOOP */
     for (s=0; s<*ss; s++) {
 
@@ -329,7 +354,8 @@ void simsecr (
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
-                        d2val = d2(i,k, animals, traps, *N, nk);
+			/* d2val = d2(i,k, animals, traps, *N, nk); */
+			d2val = d2L(k, i, dist2, nk);
                         p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);  /* effectively inf w2 */
 
 			if (fabs(Tski-1) > 1e-10) 
@@ -394,7 +420,8 @@ void simsecr (
 			getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 				bswitch (*btype, *N, i, k, caughtbefore), 
 				gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
-			d2val = d2(i,k, animals, traps, *N, nk);
+			/* d2val = d2(i,k, animals, traps, *N, nk); */
+			d2val = d2L(k, i, dist2, nk);
 			p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
 			h[k * *N + i] = - Tski * log(1 - p);
 			hsum[i] += h[k * *N + i];
@@ -431,7 +458,8 @@ void simsecr (
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 			    bswitch (*btype, *N, i, k, caughtbefore), 
                             gsb0, gsb0val, gsb1, gsb1val, &g0, &sigma, &z);
-                        d2val = d2(i,k, animals, traps, *N, nk);
+			/* d2val = d2(i,k, animals, traps, *N, nk); */
+			d2val = d2L(k, i, dist2, nk);
                         p = pfn(*fn, d2val, g0, sigma, z, miscparm, 1e20);
 
                         if (p < -0.1) { PutRNGstate(); return; }   /* error */
@@ -497,7 +525,6 @@ void simsecr (
                 par[2] = z;
                 
                 if (maybecaught) {
-/* 2011-05-10          gxy (&np, fn, par, &w, xy);   */
                     gxy (&np, fn, par, &ws, xy);                 /* simulate location */
                     xy[0] = xy[0] + animals[i];
                     xy[1] = xy[1] + animals[*N + i];
@@ -765,10 +792,17 @@ void simsecr (
                         /* sounds not recaptured */
                         getpar (i, s, k, x[i], *N, *ss, nk, *cc0, *cc1, *fn, 
 				0, gsb0, gsb0val, gsb0, gsb0val, &beta0, &beta1, &sdS);
+                        /*
                         if ((*fn == 10) || (*fn == 12))
 			    muS  = mufn (i, k, beta0, beta1, animals, traps, *N, nk, 0);
                         else
                             muS  = mufn (i, k, beta0, beta1, animals, traps, *N, nk, 1);
+                        */
+			if ((*fn == 10) || (*fn == 12))
+			    muS  = mufnL (k, i, beta0, beta1, dist2, nk, 0);
+			else
+			    muS  = mufnL (k, i, beta0, beta1, dist2, nk, 1);
+
 			signalvalue = norm_rand() * sdS + muS;
                         if ((*fn == 10) || (*fn == 11)) {
 			    if (signalvalue > cut) {

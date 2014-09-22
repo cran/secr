@@ -60,7 +60,8 @@ predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
 \examples{
 
 ## use canned possum model
-shorePossums <- predictDsurface(possum.model.Dsh2)
+shorePossums <- predictDsurface(possum.model.Ds)
+par(mar = c(1,1,1,6))
 plot(shorePossums, plottype = "shaded", polycol = "blue", border = 100)
 plot(traps(possumCH), detpar = list(col = "black"), add = TRUE)
 
@@ -74,7 +75,7 @@ regionmask <- make.mask(traps(possumCH), buffer = 1000, spacing = 10,
     poly = possumremovalarea)
 dts <- distancetotrap(regionmask, possumarea)
 covariates(regionmask) <- data.frame(d.to.shore = dts)
-regionPossums <- predictDsurface(possum.model.Dsh2, regionmask,
+regionPossums <- predictDsurface(possum.model.Ds, regionmask,
     se.D = TRUE, cl.D = TRUE)
 par(mfrow = c(1,2))
 plot(regionPossums, plottype = "shaded", mesh = NA, breaks = 20)
@@ -111,7 +112,7 @@ lines(trans3d (possumremovalarea$x, possumremovalarea$y,
 ## compare estimates of region N
 ## grid cell area is 0.01 ha
 sum(covariates(regionPossums)[,"D.0"]) * 0.01
-region.N(possum.model.Dsh2, regionmask)
+region.N(possum.model.Ds, regionmask)
 
 }
 

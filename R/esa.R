@@ -11,6 +11,8 @@
 ## 2012-11-13 updated for groups
 ## 2013-06-06 updated for fixed beta
 ## 2013-07-20 reparameterize esa,a0
+## 2014-08-27 dist2 optional input to integralprwi set to -1
+## 2014-09-08 esa adjusted for linearmask cell size
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -72,9 +74,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     }
 
     binomN <- object$details$binomN
-
     m      <- length(mask$x)            ## need session-specific mask...
-    cell   <- attr(mask,'area')
+    cell   <- getcellsize(mask)           ## length or area
 
     if (constant) {
         ## assume constant
@@ -121,16 +122,23 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                 object$parindx, object$link, object$fixed)  # naive
 
         }
-        Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
-        if (object$details$param == 2)
-            Xrealparval0 <- reparameterize.esa (Xrealparval0, mask, trps, object$detectfn, s)
-        if (object$details$param == 3)
-            Xrealparval0 <- reparameterize.a0 (Xrealparval0, object$detectfn)
-        ## inappropriate
-        if (object$details$param == 4) {
-            stop("param = 4 not available")
-            Xrealparval0 <- reparameterize.sigmak (Xrealparval0, NA)
-        }
+
+##        Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
+##        if (object$details$param == 2)
+##            Xrealparval0 <- reparameterize.esa (Xrealparval0, mask, trps, object$detectfn, s)
+##        if (object$details$param == 3)
+##            Xrealparval0 <- reparameterize.a0 (Xrealparval0, object$detectfn)
+##        ## inappropriate
+##        if (object$details$param == 4) {
+##            stop("param = 4 not available")
+##            Xrealparval0 <- reparameterize.sigmak (Xrealparval0, NA)
+##        }
+
+        ## D.modelled <- !object$CL & is.null(object$fixed$D)
+        ## Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
+        Dtemp <- NA
+        Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
+                                        mask, trps, Dtemp, s)
 
         ## force to binary 2012-12-17
         ## used <- usage(trps)
@@ -155,6 +163,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             normalize <- FALSE
         miscparm <- numeric(4)
         if ((object$detectfn %in% 14:18) & normalize) {
+            if (!is.null(object$details$userdist))
+                stop("normalization incompatible with userdist")
             miscparm <- c(1,0,1,0)
             if (!is.null(object$details$usecov)) {
                 miscparm[2] <- 1
@@ -175,26 +185,20 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             miscparm[1] <- object$details$cutval
         useD <- FALSE
 
-#        print(dettype)
-#        print(param)
-#        print(Xrealparval0)
-#        print(n)
-#        print(s)
-#        print(k)
-#        print(m)
-#        print(nmix)
-#        print(knownclass)
-#        print(summary(trps))
-#        print(usge)
-#        print(summary(mask))
-#        print(nrow(Xrealparval0))
-#        print(PIA)
-#        print(ncolPIA)
-#        print(cell)
-#        print(miscparm)
-#        print(object$detectfn)
-#        print(object$details$binomN)
-#        print(useD)
+        ##------------------------------------------
+        ## 2014-09-08
+        if (is.null(object$details$userdist))
+            distmat <- -1
+        else {
+            sessPIA <- PIA[sessnum]   ## expected to pick first appropriate to sessnum
+            distmat <- valid.userdist (object$details$userdist,
+                                       detector(trps),
+                                       xy1 = trps,
+                                       xy2 = mask,
+                                       geometry = mask,
+                                       sesspars = Xrealparval0[sessPIA,])
+        }
+        ##------------------------------------------
 
         ## protection added 2012-10-21
         if (dettype %in% c(13)) {
@@ -205,26 +209,27 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.integer(dettype),
                        as.integer(param),
                        as.double(Xrealparval0),
-#                       as.integer(rep(0,n)),                 # dummy groups 2012-11-13, 2013-04-16
-                       as.integer(rep(1,n)),      # dummy groups 2012-11-13; 2013-04-16 2013-06-24
+                       as.integer(rep(1,n)),           ## dummy groups 2012-11-13..2013-06-24
                        as.integer(n),
                        as.integer(s),
                        as.integer(k),
                        as.integer(m),
-                       as.integer(1),                  # dummy ngroups 2012-11-13
+                       as.integer(1),                  ## dummy ngroups 2012-11-13
                        as.integer(nmix),
-                       as.integer(knownclass),         # 2013-04-12
+                       as.integer(knownclass),         ## 2013-04-12
                        as.double(unlist(trps)),
+                       as.double(distmat),             ## optional dist2 2014-09-08
+
                        as.double(usge),
                        as.double(unlist(mask)),
-                       as.integer(nrow(Xrealparval0)), # rows in lookup
-                       as.integer(PIA),                # index of nc*,S,K to rows in realparval0
-                       as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n,
-                                                       # else ncolPIA = 1 or ngrp
-                       as.double(cell),
+                       as.integer(nrow(Xrealparval0)), ## rows in lookup
+                       as.integer(PIA),                ## index of nc*,S,K to rows in realparval0
+                       as.integer(ncolPIA),            ## ncol - if CL, ncolPIA = n,
+                                                       ## else ncolPIA = 1 or ngrp
+                       as.double(cell),                ## cell area (ha) or length (km)
                        as.double(miscparm),
                        as.integer(object$detectfn),
-                       as.integer(binomN),             # 2012-12-18
+                       as.integer(binomN),             ## 2012-12-18
                        as.integer(useD),
                        a=double(n),
                        resultcode=integer(1)

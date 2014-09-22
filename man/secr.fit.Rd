@@ -15,12 +15,14 @@ likelihood. Data must have been assembled as an object of class
 }
 
 \usage{
-secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
-    mask = NULL, buffer = NULL, CL = FALSE, detectfn = NULL,
-    binomN = NULL, start = NULL, link = list(), fixed = list(),
-    timecov = NULL, sessioncov = NULL, hcov = NULL, groups = NULL,
-    dframe = NULL, details = list(), method = "Newton-Raphson",
-    verify = TRUE, biasLimit = 0.01, trace = NULL, ncores = 1, ...)
+
+secr.fit (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL, buffer = NULL,
+    CL = FALSE, detectfn = NULL, binomN = NULL, start = NULL, link = list(),
+    fixed = list(), timecov = NULL, sessioncov = NULL, hcov = NULL,
+    groups = NULL, dframe = NULL, details = list(), method =
+    "Newton-Raphson", verify = TRUE, biasLimit = 0.01, trace = NULL,
+    ncores = 1, ...)
+
 }
 
 \arguments{
@@ -34,9 +36,11 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1),
   \link{detectfn}}
   \item{binomN}{ integer code for distribution of counts (see Details) }
   \item{start}{ vector of initial values for beta parameters, or \code{secr} object from which they may be derived }
-  \item{link}{ list with optional components `D', `g0', `sigma' and `z', each a character string in \{"log", "logit", "identity", "sin"\} for the link function of the relevant real parameter }
-  \item{fixed}{ list with optional components corresponding to each `real' parameter (e.g., `D', `g0', `sigma'), the scalar value to which parameter is to be fixed }
-  \item{model}{ list with optional components `D', `g0', `sigma' and `z', each symbolically defining a linear predictor for the relevant real parameter using \code{formula} notation }
+  \item{link}{ list with optional components corresponding to `real'
+  parameters (e.g., `D', `g0', `sigma'), each a character string in
+  \{"log", "logit", "identity", "sin"\} for the link function of one real parameter }
+  \item{fixed}{ list with optional components corresponding to real parameters giving the scalar value to which the parameter is to be fixed }
+  \item{model}{ list with optional components each symbolically defining a linear predictor for one real parameter using \code{formula} notation }
   \item{timecov}{ optional dataframe of values of time (occasion-specific) covariate(s). }
   \item{sessioncov}{ optional dataframe of values of session-specific covariate(s). }
   \item{hcov}{ character name of individual covariate for known
@@ -61,8 +65,11 @@ likelihood depends on the detector type ("multi", "proximity", "count",
 (Borchers and Efford 2008, Efford, Borchers and Byrom 2009, Efford,
 Dawson and Borchers 2009, Efford 2011). The `multi' form of the
 likelihood is also used, with a warning, when detector type = "single"
-(see Efford et al. 2009 for justification). The default \code{model} is
-null (constant density and detection probability). The set of variables
+(see Efford et al. 2009 for justification).
+
+The default \code{model} is null (\code{model = list(D~1, g0~1,
+sigma~1)} for \code{detectfn = 'HN'} and \code{CL = FALSE}), meaning
+constant density and detection probability). The set of variables
 available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
 others that appear in the \code{covariates} of the input data. See also
@@ -102,7 +109,7 @@ are of type `count', `polygon' or `transect':
 \item{binomN = 1} {binomial with size determined by \link{usage}}
 \item{binomN = 0} {Poisson}
 \item{binomN < 0} {negative binomial with size abs(binomN) -- see 
-  \code{\link[stats]{dnbinom}}}
+  \code{\link[stats]{NegBinomial}}}
 }
 
 The default with these detectors is to fit a Poisson distribution. The
@@ -127,6 +134,7 @@ telemetrysigma \tab use coordinate information from telemetry\cr
 telemetrybvn \tab use bivariate normal prior for centres of telemetered animals \cr
 normalize \tab rescale detection to individual range use \cr
 usecov \tab spatial covariate of use for normalization \cr
+userdist \tab user-provided distance function or matrix \cr
 %maxcallsize \tab limit to size of saved call \cr
 }
 
@@ -255,10 +263,17 @@ areas are in hectares (ha). The unit of density is animals per
 hectare. 1 ha = 10000 m^2 = 0.01 km^2. To convert density to animals /
 km^2, multiply by 100.
 
-\code{print}, \code{AIC}, \code{vcov}, and \code{predict} methods
-are provided. Take care with using AIC: not all models are comparable
-(see Notes section of \code{\link{AIC.secr}}) and large differences in
-AIC may relate to trivial differences in estimated density.
+When you display an `secr' object by typing its name at the command
+prompt, you implicitly call its `print' method \code{\link{print.secr}}, which
+in turn calls \code{\link{predict.secr}} to tabulate estimates of the `real'
+parameters. Confidence limits (lcl, ucl) are for a 100(1-alpha)\%
+interval, where alpha defaults to 0.05 (95\% interval); alpha may be
+varied in \code{print.secr} or \code{predict.secr}.
+
+\code{AIC}, \code{logLik} and \code{vcov} methods are also
+provided. Take care with using AIC: not all models are comparable (see
+Notes section of \code{\link{AIC.secr}}) and large differences in AIC
+may relate to trivial differences in estimated density.
 
 \code{derived} is used to compute the derived parameters `esa'
 (effective sampling area) and `D' (density) for models fitted by

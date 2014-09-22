@@ -12,6 +12,7 @@
 ## 2013 04 04 extend to k-specific g0
 ## 2013 05 10 extend to general learned response (recapfactor)
 ## 2013 06 28 explicit entry points to C code (not simfunctionname)
+## 2014-08-28 revamped for userdist and distmat (pre-computed distance matrix)
 ###############################################################################
 
 expand <- function (x, n, q = 0, default = 1) {
@@ -46,6 +47,8 @@ sim.capthist <- function (
     renumber = TRUE,
     seed = NULL,
     maxperpoly = 100,
+    chulltol = 0.001,
+    userdist = NULL,
     savepopn = FALSE
     )
 
@@ -339,6 +342,7 @@ sim.capthist <- function (
                 stop("learned response available only for 'single', 'multi' detectors")
         }
 
+        #-----------------------------------------------------------------------------#
         if (!inherits(popn,'popn')) # generate if not provided
         {
             popn <- replacedefaults(list(D = 5, buffer = 100,
@@ -346,9 +350,8 @@ sim.capthist <- function (
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
                 covariates = NULL, Ndist = popn$Ndist)
         }
+        #-----------------------------------------------------------------------------#
 
-        ################################
-        ################################
         if (detector(traps) == 'cue') {
             rowi <- 1:nrow(popn)
             ncue <- rpois(nrow(popn), detectpar$cuerate)
@@ -357,15 +360,30 @@ sim.capthist <- function (
             ncue <- ncue[OK]
             ind <- rep(group, ncue)
             N <- length(ind)
-            animals <- unlist(popn[ind,])
+            animals <- as.matrix(popn[ind,])
         }
         else {
             N <- nrow(popn)
-            animals <- unlist(popn)
+            animals <- as.matrix(popn)
         }
+
         k <- nrow(traps)
         simfunctionname <- paste('trapping', detector(traps), sep='')
-        ################################
+
+        ##-----------------------------------------------------------------
+        ## user-provided distances
+
+        if (is.null(userdist))
+            distmat <- -1
+        else {
+            distmat <- valid.userdist(userdist,
+                                  detector(traps),
+                                  xy1 = traps,
+                                  xy2 = animals,
+                                  geometry = attr(popn, 'mask'),
+                                  sesspars = detectpar)
+        }
+        #-----------------------------------------------------------------
 
         if (detector(traps) %in% c('single','multi')) {
             if (detector(traps) == 'single')
@@ -378,6 +396,7 @@ sim.capthist <- function (
                            as.integer(N),
                            as.double(animals),
                            as.double(unlist(traps)),
+                           as.double(distmat),
                            as.double(usge),
                            as.integer(detectfn),
                            as.double(truncate^2),
@@ -396,6 +415,7 @@ sim.capthist <- function (
                            as.integer(N),
                            as.double(animals),
                            as.double(unlist(traps)),
+                           as.double(distmat),
                            as.double(usge),
                            as.integer(detectfn),
                            as.double(truncate^2),
@@ -495,6 +515,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
+                as.double(distmat),
                 as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
@@ -526,6 +547,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
+                as.double(distmat),
                 as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
@@ -562,6 +584,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
+                as.double(distmat),
                 as.double(usge),
                 as.integer(detectfn),
                 n = integer(1),
@@ -591,6 +614,7 @@ sim.capthist <- function (
                 as.integer(N),
                 as.double(animals),
                 as.double(unlist(traps)),
+                as.double(distmat),
                 as.double(usge),
                 as.integer(detectfn),
                 as.double(truncate^2),
@@ -743,7 +767,8 @@ sim.capthist <- function (
             }
         }
         if (detector(traps) %in% 'telemetry')  ## 2013-11-21
-             w <- refreshMCP(w)
+            if (!is.na(chulltol))
+             if (chulltol >= 0) w <- refreshMCP(w, chulltol)
 
         if (renumber && (temp$n>0)) rownames(w) <- 1:temp$n
         else {

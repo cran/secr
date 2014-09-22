@@ -149,8 +149,8 @@ class membership.
 
 \section{Likelihood}{
   
-This is not the place for a full exposition of the likelihood. Please
-contact the author if you require this.
+The likelihood of the hybrid mixture model is detailed in an appendix of
+the vignette \url{../doc/secr-finitemixtures.pdf}.
 
 }
 
@@ -217,7 +217,7 @@ fit.CL.h2.50 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
 LR.test(fit.CL.h2, fit.CL.h2.50)
 
 ## did sexes show extra-compensatory variation in lambda0?
-## (Efford and Mowat ms)
+## (Efford and Mowat 2014)
 fit.CL.a0 <- secr.fit(morning, hcov = "sex", mask = mmask, trace = FALSE,
     CL = TRUE, model = list(a0 ~ 1, sigma ~ h2))
 LR.test(fit.CL.h2, fit.CL.a0)

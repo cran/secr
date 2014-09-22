@@ -1,8 +1,8 @@
 ############################################################################################
 ## package 'secr'
 ## sim.secr.R
-## Copyright (C) 2009, 2010 Murray Efford
-## last changed 2009 09 07; 2009 09 19 verify = FALSE; 2009 09 26 remove 'attach'
+## uses Dsurface.R, utility.R
+## Copyright (C) 2009, 2010, 2014 Murray Efford
 ## 2009 11 03 nullval
 ## 2010 02 05 removed 'spherical' argument (now detectfn 11)
 ## 2010 03 10 debugged simsecr in secr.c
@@ -11,9 +11,20 @@
 ## 2011 09 26 detector checks use .localstuff
 ## 2011 11 08 uses getDensityArray and predictDsurface
 ## 2011 11 28 new behavioural resposne models
+## 2014-08-01 ncores arg for simulate
+## 2014-08-01 sim.detect exported (but this may be unnecessary)
+## 2014-08-07 scalesigma and scaleg0 no longer supported in simulate.secr
+## 2014-08-08 simulate.secr uses hcov
+## 2014-08-07 sim.detect streamlined (about 20x faster in some cases)
+##            BUT relying on old code for groups and behavioural response
+##            fix requires investigation of C code simsecr
+## 2014-08-20 removed argument beta from sim.detect
+## 2014-08-28 C function simsecr renamed simdetect
+## 2014-09-07 simulate.secr modified for linearmask
 ############################################################################################
 
-simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1, ...)
+simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1,
+                           ncores = 1, ...)
 ## if CL, condition on n? what about distribution of covariates over n?
 ## locate according to IHP with lambda(X) controlled by f(X|covar), assuming homog Poisson
 ## i.e. use f(X|covar)/max(f(X|covar)) to reject until meet quota n?
@@ -26,7 +37,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 
 {
 
-##  check input
+    ##  check input
 
     if (any(c("bn", "bkn", "bkc", "Bkc") %in% tolower(object$vars)))
         stop ("simulate works only with binary behavioural responses")
@@ -35,9 +46,8 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
         stop ("requires 'secr' object")
     if (object$CL)
         stop ("not implemented for conditional likelihood")
-    if (!all(sapply(object$fixed, is.null)))
-        stop ("not implemented for fixed parameters")
 
+    ## density array dim(mask points, groups, sessions)
     Darray <- getDensityArray (predictDsurface(object))
 
     ## setup
@@ -48,6 +58,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
         ## individual covariates for foundation of g
         di <- disinteraction (object$capthist, object$groups)
     }
+
     sesscapt <- vector('list', nsim)
 
     ##################
@@ -66,20 +77,30 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
     ##################
 
     ## loop over replicates
-    for (i in 1:nsim) {
+    ## changed from simple for loop 2014-08-01
+    ## to enable multiple cores
+
+    runone <- function(i) {
+        ## argument i is unused dummy
         sesspopn <- list()
         for (sessnum in 1:nsession) {
             if (nsession==1) mask <- object$mask
             else mask <- object$mask[[sessnum]]
             popn <- list()
             for (g in 1:ngrp) {
-                if (object$model$D == ~1) {
-                    density <- Darray[1,g,sessnum]   ## homogeneous
-                    mod2D <- 'poisson'
+                if (inherits(mask, 'linearmask')) {
+                    density <- Darray[,g,sessnum]        ## vector
+                    mod2D <- 'linear'                    ## linear Poisson or IHP
                 }
                 else {
-                    density <- Darray[,g,sessnum]    ## inhomogeneous
-                    mod2D <- 'IHP'
+                    if (object$model$D == ~1) {
+                        density <- Darray[1,g,sessnum]   ## scalar
+                        mod2D <- 'poisson'               ## homogeneous
+                    }
+                    else {
+                        density <- Darray[,g,sessnum]    ## vector
+                        mod2D <- 'IHP'                   ## inhomogeneous
+                    }
                 }
                 if (chat > 1)
                     density <- density / chat
@@ -87,22 +108,61 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
                               binomial = 'fixed',
                               poisson = 'poisson',
                               'poisson')
+                ##-------------------------------------------------------------------
+                ## sim.popn arguments omitted:
+                ## buffer          redundant when mask specified
+                ## buffertype      ditto
+                ## poly            ditto
+                ## covariates      ignored for now...
+                ## number.from = 1 fine
+                ## nsession = 1    fine here within session loop as long
+                ##                 as there is no turnover model
+                ## details = NULL  not relevant (turnover and special model2D only)
+                ## seed = NULL     default mechanism -- needs attention 2014-09-07
                 popn[[g]] <- sim.popn (D = density, core = mask, model2D = mod2D, Ndist = ND)
 
-                ## following line replaces any previous individual covariates
-                ## ---groups only---
+                ## ------------------------------------------------------------------
+                ## Add any needed covariates, first generating a clean dataframe
+                if (is.null(object$groups) & is.null(object$hcov))
+                    covariates(popn[[g]]) <- NULL
+                else
+                    covariates(popn[[g]]) <- data.frame(row.names = row.names(popn[[g]]))
+
+                ## ---groups---
                 if (!is.null(object$groups)) {
-                    covariates(popn[[g]]) <- di[rep(g, nrow(popn[[g]])),]
+                    grpcov <- as.data.frame(di[rep(g, nrow(popn[[g]])),]) ## 2014-08-08
+                    names(grpcov) <- object$groups
+                    covariates(popn[[g]]) <- cbind(covariates(popn[[g]]),grpcov)
                 }
+                ## ---hcov---
+                ## sample with replacement from original hcov field 2014-08-08
+                if (!is.null(object$hcov)) {
+                    if (ms(object))
+                        oldhcov <- covariates(object$capthist[[sessnum]])[,object$hcov]
+                    else
+                        oldhcov <- covariates(object$capthist)[,object$hcov]
+                    covariates(popn[[g]])[object$hcov] <-
+                        sample(oldhcov, size = nrow(popn[[g]]), replace = TRUE)
+                }
+                ## ------------------------------------------------------------------
             }
             sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
         }
-        sesscapt[[i]] <- sim.detect(object, object$fit$par, sesspopn, maxperpoly)
-
-        ## experimental
-        if (chat>1)
-            sesscapt[[i]] <- replicate (sesscapt[[i]], chat)
+        sim.detect(object, sesspopn, maxperpoly)
     }
+    if (ncores > 1) {
+        clust <- makeCluster(ncores)
+        sesscapt <- parLapply(clust, 1:nsim, runone)
+        stopCluster(clust)
+    }
+    else {
+        sesscapt <- lapply(1:nsim, runone)
+    }
+
+    ## experimental
+    if (chat>1)
+        sesscapt <- lapply(sesscapt, replicate, chat)
+
     attr(sesscapt,'seed') <- RNGstate   ## save random seed
     class(sesscapt) <- c('list', 'secrdata')
     sesscapt
@@ -146,7 +206,8 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 
     if (is.null(data)) {
         memo ('sim.secr simulating detections...', tracelevel>0)
-        data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly)
+        data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly,
+                         ncores = ncores)
     }
     else {
         if (any(class(data) != c('list','secrdata')))
@@ -171,8 +232,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 
     if (ncores > 1) {
         memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
-        clusterEvalQ(clust, library(secr))
+        clust <- makeCluster(ncores)
         output <- parLapply(clust, data, fitmodel)
         stopCluster(clust)
     }
@@ -208,13 +268,13 @@ print.secrlist <- function(x,...) {
 }
 ############################################################################################
 
-sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRUE)
-## popnlist is always a list of popn objects
+sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
+## popnlist is always a list of popn objects, one per session
 {
-
     ## we use fake CH to extract parameter value dependent on prev capt
+    ## BUT this is slow and clunky...
     dummycapthist<- function (capthist, pop, fillvalue=1) {
-        if (inherits(capthist, 'list')) {
+        if (ms(capthist)) {
             output <- list()
             for (i in 1:nsession)
                 output[[i]] <- dummycapthist (capthist[[i]],
@@ -241,9 +301,24 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
         }
     }
 
-    if (is.null(object$details$ignoreusage)) object$details$ignoreusage <- FALSE  ## 2013-01-23
-    if (is.null(object$details$miscparm)) object$details$miscparm <- numeric(4)  ## 2013-01-23, 11-15
+    ## --------------------------------------------------------------------
+    ## Exclusions
+    ## see also below dettype %in% c(-1,0,1,2,5,6,7)
 
+    if (object$details$scalesigma | object$details$scaleg0) ## 2014-08-07
+        stop("scalesigma and scaleg0 no longer supported in simulate.secr")
+
+    if (!is.null(object$groups) & (object$details$param>1))
+        stop("simulation does not extend to groups when param>1")
+
+    if (object$details$telemetrysigma)
+        stop("telemetry models are not supported in simulate.secr")
+
+    if (!is.null(object$details$telemetrytype))
+        if (object$details$telemetrytype != 'none')
+            stop("telemetry models are not supported in simulate.secr")
+
+    ## --------------------------------------------------------------------
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)
     btype <- which (c("b", "bk", "k") %in% tolower(object$vars))
@@ -252,46 +327,116 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
     if (length(btype) == 0)
         btype <- 0
 
+    ## --------------------------------------------------------------------
     ## setup
-    MS <- inherits(object$capthist,'list')
+    if (is.null(object$details$ignoreusage))
+        object$details$ignoreusage <- FALSE
+    if (is.null(object$details$miscparm))
+        object$details$miscparm <- numeric(4)
     N <- sapply(popnlist, nrow)
+    nocc <- if(ms(object)) sapply(object$capthist, ncol) else ncol(object$capthist)
+    ndet <- if(ms(object)) sapply(traps(object$capthist), nrow) else nrow(traps(object$capthist))
     sessionlevels <- session(object$capthist)   ## was names(capthist) 2009 08 15
     nsession <- length(sessionlevels)
+    beta <- object$fit$par
+    userd <- is.null(object$details$userdist)
+    ##------------------------------------------
+    ## detection parameters for each session, animal, occasion, detector
+    ## realparval is lookup table of values,
+    ## design$PIA is index to lookup
 
-    ## design matrices etc.
-    dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 0)
-    design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
-        object$groups, object$hcov, object$dframe)
+    ## real parameter values for naive animals
+
+    ## new approach using existing design to save time in secr.design.MS
+    design0 <- object$design0
+    dim0 <- dim(design0$PIA)
+    design0$PIA <- array (0, dim = c(dim0[1], max(N), dim0[3:5]))
+    ## uniform over individuals
+    ## C code uses individual-specific PIA even in full-likelihood case
+    ## cf secr.fit which has one row per group
+    for (i in 1:nsession) {
+        if (is.null(object$groups)) {
+            ## all animals the same...
+            matchedgroup <- rep(1, N[i])
+        }
+        else {
+            ## group identities for simulated animals
+            ## can treat popn as capthist in group.factor if not ms(object)
+            newgroup <- group.factor (popnlist[[i]], object$groups)
+            ## here we assume original PIA is for a full-likelihood model with
+            ## one row per group
+            matchedgroup <- (1:nlevels(newgroup))[as.numeric(newgroup)]
+        }
+        design0$PIA[i,1:N[i],,,] <- object$design0$PIA[i,matchedgroup,,,]
+    }
     realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
-        object$fixed)  # naive
+        object$fixed)
 
-    ## allow for behavioural response
+    ## real parameter  values for 'caughtbefore'  animals or detectors
+    ## -- this  definition of  design1 differs  from that in secr.fit()
+    ## where  parameter  values  are  approppriate to  the  particular
+    ## (realised) detection histories
+
     if (btype > 0) {
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
-            object$groups, object$hcov, object$dframe)
+            object$groups, object$hcov, object$dframe, ignoreusage = object$details$ignoreusage)
         realparval1 <- makerealparameters (design1, beta, object$parindx, object$link,
             object$fixed)  # caught before
     }
-    else {   ## faster
+    else {   ## faster to just copy if no behavioural response
         design1 <- design0
         realparval1 <- realparval0
     }
+    ##------------------------------------------
 
     output <- list()
     for (sessnum in 1:nsession) {
         ## in multi-session case must get session-specific data from lists
-        if (MS) {
+        if (ms(object)) {
             s <- ncol(object$capthist[[sessnum]])
             session.traps    <- traps(object$capthist)[[sessnum]]
+            session.mask <- if (userd | (object$details$param %in% c(2,6)))
+                    object$mask[[sessnum]] else NULL
+            Dtemp <- if (object$details$param %in% c(4:6))
+                    predict(object)[[sessnum]]['D','estimate']
+                else NA
         }
         else {
             s <- ncol(object$capthist)
             session.traps    <- traps(object$capthist)
+            session.mask <- if (userd | (object$details$param %in% c(2,6)))
+                object$mask else NULL
+            Dtemp <- if (object$details$param %in% c(4:6)) predict(object)['D','estimate']
+                else NA
         }
 
+        ## function reparameterize is in secrloglik.R
+        Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
+                                        session.mask, session.traps, Dtemp, s)
+        Xrealparval1 <- reparameterize (realparval1, object$detectfn, object$details,
+                                        session.mask, session.traps, Dtemp, s)
+
+        ##------------------------------------------
+        session.animals <- popnlist[[sessnum]]
+        if (userd) {
+            ## pre-compute distances from detectors to animals
+            sessPIA <- object$design$PIA[sessnum,1,1,1,1]
+            distmat <- valid.userdist (object$details$userdist,
+                                       detector(session.traps),
+                                       xy1 = session.traps,
+                                       xy2 = session.animals,
+                                       geometry = session.mask,
+                                       sesspars = Xrealparval1[sessPIA,])
+        }
+        else {
+            distmat <- -1
+        }
+
+        ##------------------------------------------
+
         dettype <- detectorcode(session.traps, MLonly = FALSE)
-        if (dettype < -1)
+        if (! dettype %in% c(-1,0,1,2,5,6,7))
             stop ("detector type ",
                   detector(session.traps),
                   " not implemented")
@@ -312,26 +457,8 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             K <- k
         }
         trps  <- unlist(session.traps, use.names=F)
-        sessg <- min (sessnum, design1$R)
-        session.animals <- unlist(popnlist[[sessnum]])
+        sessg <- min (sessnum, design0$R)
 
-        #------------------------------------------
-        # allow for scaling of detection parameters
-        Xrealparval1  <- realparval1
-        Xrealparval0 <- realparval0
-        ## D assumed constant over mask, groups
-        sigmaindex <- 2
-        g0index <- 1
-        if (object$details$scalesigma) {   ## assuming previous check that scalesigma OK...
-            stop ("scaling of sigma by density not implemented for simulation")
-            ## 2011-11-11 where does D come from?
-            Xrealparval1[,sigmaindex] <- Xrealparval1[,sigmaindex] / D[1,1,sessnum]^0.5
-            Xrealparval0[,sigmaindex] <- Xrealparval0[,sigmaindex] / D[1,1,sessnum]^0.5
-        }
-        if (object$details$scaleg0)    {   ## assuming previous check that scaleg0 OK...
-            Xrealparval1[,g0index] <- Xrealparval1[,g0index] / Xrealparval1[,sigmaindex]^2
-            Xrealparval0[,g0index] <- Xrealparval0[,g0index] / Xrealparval0[,sigmaindex]^2
-        }
         #------------------------------------------
         ## simulate this session...
         usge <- usage(session.traps)
@@ -344,17 +471,20 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             maxdet <- NR * s
         }
         else {
-            # safety margin : average 10 detections per animal per detector per occasion
-            ## 2011-09-26 make this user argument
-            ## maxdet <- NR * s * K * 10
+            # safety margin : average detections per animal per detector per occasion
+            ## 2011-09-26 make this user argument maxperpoly
             maxdet <- NR * s * K * maxperpoly
         }
         if ((object$detectfn==12) || (object$detectfn==13)) {
             ## muN, sdN
             object$details$miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
         }
+        ## 2014-08-08
+        ## requires session.animals has covariate named 'hcov'
+        knownclass <- getknownclass(session.animals, object$details$nmix, object$hcov)
 
-        temp <- .C('simsecr', PACKAGE = 'secr',
+        ## name change from simsecr 2014-08-28
+        temp <- .C('simdetect', PACKAGE = 'secr',
             as.integer(dettype),
             as.double(Xrealparval0),
             as.double(Xrealparval1),
@@ -366,8 +496,10 @@ sim.detect <- function (object, beta, popnlist, maxperpoly = 100, renumber = TRU
             as.integer(s),
             as.integer(k),
             as.integer(object$details$nmix),
-            as.double(session.animals),
+            as.integer(knownclass),
+            as.double(unlist(session.animals)),
             as.double(trps),
+            as.double(distmat),
             as.double(usge),
             as.integer(btype),
             as.integer(Markov),

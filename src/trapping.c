@@ -29,6 +29,7 @@ void trappingsingle (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform */
     double *w2,        /* truncation radius */
@@ -62,6 +63,19 @@ void trappingsingle (
     *resultcode = 1;
     GetRNGstate();
     tran = (struct trap_animal *) R_alloc(*N * *kk, sizeof(struct trap_animal));
+
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+
+    /* ------------------------------------------------------ */
+
     for (i=0; i<*N; i++) caught[i] = 0;   /* has animal i been caught in session? */
     for (s=0; s<*ss; s++) {
         /* initialise day */
@@ -78,9 +92,8 @@ void trappingsingle (
 		/* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
-		    d2val = d2(i,k, animals, traps, *N, *kk);
-/*		    p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
-/*		    p = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2);  */
+		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
+		    d2val = d2L(k, i, dist2, *kk);
 		    gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
                     si = (caught[i]>0) * *ss + s;
 		    p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
@@ -148,6 +161,7 @@ void trappingmulti (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
@@ -175,15 +189,25 @@ void trappingmulti (
     GetRNGstate();
     h = (double *) R_alloc(*N * *kk, sizeof(double));
 
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+    /* ------------------------------------------------------ */
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             hsum[i] = 0;
             for (k=0; k<*kk; k++)
             {
-                d2val = d2(i,k, animals, traps, *N, *kk);
-                /* p = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
-                /* p = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2);  */
+		/* d2val = d2(i,k, animals, traps, *N, *kk); */
+		d2val = d2L(k, i, dist2, *kk);
 		gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
                 si = (caught[i]>0) * *ss + s;
 		p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
@@ -231,6 +255,7 @@ void trappingproximity (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
@@ -252,6 +277,19 @@ void trappingproximity (
     *resultcode = 1;
     nc = 0;
     GetRNGstate();
+
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+
+    /* ------------------------------------------------------ */
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
@@ -259,7 +297,8 @@ void trappingproximity (
                 /* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
                 if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
-                    d2val = d2(i,k, animals, traps, *N, *kk);
+		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
+		    d2val = d2L(k, i, dist2, *kk);
                     /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
 
@@ -298,6 +337,7 @@ void trappingcount (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
@@ -322,6 +362,18 @@ void trappingcount (
     nc = 0;
     GetRNGstate();
 
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+
+    /* ------------------------------------------------------ */
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
@@ -329,7 +381,8 @@ void trappingcount (
                 /* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
                 if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
-                    d2val = d2(i,k, animals, traps, *N, *kk);
+		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
+		    d2val = d2L(k, i, dist2, *kk);
                     /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (theta>0) {
@@ -629,14 +682,6 @@ void trappingtransect (
                                 xy = getxy (lx, cumd, line, sumk, n1);
                                 grx = gr (fn, par, xy, animal);
 
-/*
-			Rprintf("stdint %12.6f\n", stdint);
-			Rprintf("count %12d\n", count);
-			Rprintf("maxg %12.6f\n", maxg);
-			Rprintf("xy %12.6f, %12.6f\n", xy.x, xy.y);
-  			Rprintf("grx %12.6f\n", grx);
-*/
-
                                 /* rejection sampling */
                                 if (*fn == 4) {
                                     if (grx > 1e-10)
@@ -652,15 +697,7 @@ void trappingtransect (
                                 /* give up and accept anything!!!! */
 /* why why why? */
                                 if (l>1e6) {
-                        Rprintf ("trials exceeded 1e6 in trappingtransect\n"); 
-/*
-			Rprintf("stdint %12.6f\n", stdint);
-			Rprintf("count %12d\n", count);
-			Rprintf("maxg %12.6f\n", maxg);
-			Rprintf("xy %12.6f, %12.6f\n", xy.x, xy.y);
-  			Rprintf("grx %12.6f\n", grx);
-  			Rprintf("animal %12.6f, %12.6f\n", animal.x, animal.y);
-*/
+				    Rprintf ("trials exceeded 1e6 in trappingtransect\n"); 
                                     gotcha = 1;        
                                 }
                             }
@@ -1026,6 +1063,7 @@ void trappingsignal (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 10 = signal strength, 11 = signal strength with sph spread */
     int    *n,         /* number of individuals caught */
@@ -1066,6 +1104,18 @@ void trappingsignal (
         animalss[*N+i] = animals[*N+i];
     }
 
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+	makedist2 (*kk, *N, traps, animalss, dist2);
+    }
+    else {
+	squaredist (*kk, *N, dist2);
+    }
+
+    /* ------------------------------------------------------ */
+
     for (i=0; i<*N; i++) caught[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
@@ -1079,10 +1129,18 @@ void trappingsignal (
                 /* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
+
+                    /*
                     if ((*fn == 10) || (*fn == 12))
                         muS  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk, 0);
                     else
                         muS  = mufn (i, k, beta0[s], beta1[s], animalss, traps, *N, *kk, 1);
+                    */
+
+                    if ((*fn == 10) || (*fn == 12))
+                        muS  = mufnL (k, i, beta0[s], beta1[s], dist2, *kk, 0);
+                    else
+                        muS  = mufnL (k, i, beta0[s], beta1[s], dist2, *kk, 1);
                     signalvalue = norm_rand() * sdS[s] + muS;
                     if ((*fn == 12) || (*fn == 13)) {
 			noisevalue = norm_rand() * sdN[s] + muN[s];  
@@ -1246,6 +1304,7 @@ void trappingtimes (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
@@ -1282,7 +1341,9 @@ void trappingtimes (
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
                     timevalue = 0;
-                    d2val = d2(i,k, animals, traps, *N, *kk);
+		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
+		    d2val = d2L(k, i, dist2, *kk);
+
                     /* lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     lambda = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (lambda>0) {

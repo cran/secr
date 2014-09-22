@@ -19,7 +19,7 @@
 ###############################################################################
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                  noccasions = NULL, binomN = NULL) {
+                  noccasions = NULL, binomN = NULL, userdist = NULL) {
 
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
@@ -54,6 +54,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
 
     X <- matrix(unlist(X), ncol = 2)
     if (detector(traps) %in% c('polygon','polygonX','transect', 'transectX')) {
+        if (!is.null(userdist))
+            stop("userdist incompatible with polygon-like detectors")
         k <- table(polyID(traps))   ## also serves transectID
         K <- length(k)              ## number of polygons/transects
         k <-  c(k,0)                ## zero terminate
@@ -74,10 +76,23 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         temp$value
     }
     else {
+        #-------------------------------------------------------------
+        if (is.null(userdist))
+            distmat <- -1
+        else {
+            distmat <- valid.userdist(userdist,
+                                      detector(traps),
+                                      xy1 = traps,
+                                      xy2 = X,
+                                      geometry = X,
+                                      sesspars = detectpar)
+        }
+        #-------------------------------------------------------------
         temp <- .C('pdotpoint', PACKAGE = "secr",
             as.double(X),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
+            as.double(distmat),                 ## 2014-08-28, 2014-09-01
             as.integer(dettype),
             as.double(usge),
             as.integer(ndetector(traps)),

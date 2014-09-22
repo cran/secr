@@ -32,23 +32,15 @@ bisect <- function(f, a, b, tol = 1e-6) {
 
 mindistfromedge <- function (mask, traps, maxr=1e5, ntheta = 60, tol=0.0001) {
     ## compare convex hulls
+    ## rewritten 2014-08-28; uses inflatechull() in utility.R
     hull <- chull(traps)
     trapshull <- traps[c(hull,hull[1]),]    ## ensure closed
     hull <- chull(mask)
     maskhull <- mask[c(hull,hull[1]),]
-    theta <- (2*pi) * (1:ntheta) / ntheta
-    inflate <- function (poly, r) {
-        r <- r-tol
-        ## add vertices; assumes theta
-        temp  <- data.frame(x = apply(expand.grid(poly$x, r * cos(theta)),1,sum),
-                   y = apply(expand.grid(poly$y, r * sin(theta)),1,sum))
-        hull <- chull(temp)
-        temp <- temp[c(hull,hull[1]), ]
-    }
     fn <- function (x) {
-        all(pointsInPolygon (inflate(trapshull, x), maskhull))
+        all(pointsInPolygon (inflatechull(trapshull, x-tol, ntheta), maskhull))
     }
-    maskhull <- inflate(maskhull, attr(mask,'spacing')/2)
+    maskhull <- inflatechull(maskhull, attr(mask,'spacing')/2, ntheta)
     out <- bisect (fn,0,maxr,tol)
     round(out, round(abs(log10(tol))))
 }

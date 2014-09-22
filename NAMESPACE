@@ -7,8 +7,19 @@ importFrom(MASS, ginv)
 importFrom(MASS, eqscplot)
 importFrom(abind, abind)
 importFrom(nlme, fdHess)
-## importFrom(maptools, unionSpatialPolygons)
-## importFrom(maptools, readShapePoly)
+importFrom(mgcv, gam)
+importFrom(mgcv, s)
+importFrom(mgcv, te)
+importFrom(mgcv, formula.gam)
+importFrom(raster, raster)
+importFrom(raster, 'values<-')
+importFrom(raster, values)
+importFrom(raster, clump)
+importFrom(raster, adjacent)
+
+##importFrom(maptools, unionSpatialPolygons)
+##importFrom(maptools, readShapePoly)
+
 import(sp)
 import(parallel)
 
@@ -102,12 +113,14 @@ export (read.DA)
 export (write.DA)
 export (logmultinom)
 export (fxi.secr)
+export (fx.total)
 export (fxi.contour)
 export (fxi.mode)
 export (pointsInPolygon)
 export (predictDsurface)
 export (rectangularMask)
 export (spotHeight)
+export (strip.legend)
 export (randomHabitat)
 export (make.lookup)
 
@@ -147,6 +160,7 @@ S3method (tail, capthist)
 S3method (ms, default)
 S3method (ms, mask)
 S3method (ms, secr)
+S3method (ms, secrtest)
 
 S3method(detectpar, default)
 S3method(detectpar, secr)
@@ -230,6 +244,11 @@ export (secr.make.newdata)
 export (secr.design.MS)
 export (D.designdata)
 export (sim.secr)
+export (sim.detect)
+export (secr.test)
+export (getMeanSD)
+export (maskarea)
+export (masklength)
 
 ## export (telemetry.LT)
 ## export (telemetry.LC)
@@ -298,8 +317,12 @@ S3method(summary, Dsurface)
 S3method(plot, Rsurface)
 S3method(print, Rsurface)
 
+S3method(print, secrtest)
+S3method(plot, secrtest)
+
 useDynLib (
     secr,
+    fxIHP,
     pdotpoint,
     pdotpoly,
     integralprw1,
@@ -315,7 +338,7 @@ useDynLib (
     trappingtelemetry,
     trappingsignal,
     trappingtimes,
-    simsecr,
+    simdetect,
     naived,
     naivecap2,
     makelookup,

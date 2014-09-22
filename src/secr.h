@@ -41,14 +41,20 @@ typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, 
      double mask[], int kk, int mm, double miscparm []);
 */
 
+typedef double (*gfnLptr)(int, int, int, double[], int, double[], int, double[]);
+/*
+    (int k, int m, int c, int double gsbval[], int cc, double dist2[],
+     int kk, double miscparm []);
+*/
+
 typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
    double[], int, double[], double[], int[], int, int, int, int, int, int, gfnptr, double[],
-   double[], double [], double[], double);
+			   double[], double[], double [], double[], double);
 /*
     (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
      int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[], 
-     double traps[], double Tsk[], double mask[], double minp);
+     double traps[], double dist2[], double Tsk[], double mask[], double minp);
 */
 
 typedef double (*fnptr)(double[], double);
@@ -61,8 +67,9 @@ typedef double (*fnptr)(double[], double);
 /* secr.c */
 /*---------*/
 
-void pdotpoint (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *kk, 
-               int *fn, double *par, int *nocc, double *w2, int *binomN, double *value);
+void pdotpoint (double *xy, int *nxy, double *traps, double *dist2, int *detect, 
+		double *Tsk, int *kk, int *fn, double *par, int *nocc, double *w2, 
+                int *binomN, double *value);
 
 void pdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk, 
 	       int *kk, int *fn, double *par, int *nocc, int *binomN, double *value);
@@ -85,6 +92,7 @@ void integralprw1 (
     int    *nmix,      /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,     /* x,y locations of traps (first x, then y) */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* s x k matrix effort on occasion s at at detector k */
     double *mask,      /* x,y points on mask (first x, then y) */
     int    *cc0,       /* number of g0/sigma/b combinations [naive animal] */
@@ -125,6 +133,7 @@ void secrloglik (
     int    *nmix,        /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *dist2,       /* distances squared (optional: -1 if unused) */
     double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
@@ -161,6 +170,7 @@ void MRsecrloglik (
     int    *mm,          /* number of points on mask */
     int    *gg,          /* number of groups */
     double *traps,       /* x,y locations of traps (first x, then y) */
+    double *dist2,       /* distances squared (optional: -1 if unused) */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
@@ -235,13 +245,18 @@ void integral2Dtest
     double *mask, int *n1, int *n2, int *kk, int *mm, double *result);
 /*---------------------------------------------------------------------*/
 
-void pwuniform (
-    int    *which,       /* which one: 0 <= which < *nc */
-    int    *xx,          /* number of points */
-    double *X,           /* points at which to evaluate Pr(wi|X) */
+/* trial code for IHP f(X) */
+/* adds piX, pimask arguments */
+/* 2014-08-05 */
+
+void fxIHP (
+    int    *which,       /* which one: 1 <= which <= *nc */
+    int    *xx,          /* number of new points at which f(X_i) requested */
+    double *X,           /* new points at which f(X_i) requested */
+    double *piX,         /* pimask at each requested point X */
     int    *like,        /* likelihood 0 full, 1 conditional */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
-    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
+    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle OBSOLETE ?*/
     int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
     double *xy,          /* xy coordinates of polygon records */
     double *signal,      /* signal strength vector, or times */
@@ -254,17 +269,20 @@ void pwuniform (
     int    *nmix,        /* number of mixtures */
     int    *knownclass,  /* known membership of 'latent' classes */
     double *traps,       /* x,y locations of traps (first x, then y) */
-    double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
+    double *dist2,       /* distances to mask points (optional: -1 if unused) */
+    double *distX2,      /* distances to X points (optional: -1 if unused) */
+    double *Tsk,         /* nk x s usage matrix */
     double *mask,        /* x,y points on mask (first x, then y) */
+    double *pimask,      /* individual probability density; used for normalisation */
+
     double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
     int    *cc,          /* number of g0/sigma/b combinations  */
-    int    *gsb,         /* lookup which g0/sigma/b combination to use for given n, S, K */
-    double *area,        /* area associated with each mask point (ha) */
-    double *miscparm,    /* miscellaneous parameter */
+    int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+
+    double *miscparm,    /* miscellaneous parameters (cutval, normalization, etc.) */
     int    *normal,      /* code 0 don't normalise, 1 normalise */
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-/*    double *cut,       transformed signal strength threshold for detection */
     double *minprob,     /* minimum value of P(detection history) */
     double *value,       /* return values */
     int    *resultcode   /* 0 if OK */
@@ -274,7 +292,7 @@ void pwuniform (
 /* simsecr.c */
 /*-----------*/
 
-void simsecr (
+void simdetect (
     int    *detect,     /* detector 0 multi, 1 proximity */
     double *gsb0val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     double *gsb1val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before] */
@@ -286,8 +304,10 @@ void simsecr (
     int    *ss,         /* number of occasions */
     int    *kk,         /* number of traps */
     int    *nmix,       /* number of classes */
+    int    *knownclass, /* known membership of 'latent' classes */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,      /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *btype,      /* code for behavioural response 0 none 1 b 2 bk 3 k */
     int    *Markov,     /* code 0 if behavioural response is learned, 1 if Markov */
@@ -429,6 +449,7 @@ void trappingsignal (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,        /* code 10 = signal strength, 11 = signal strength with spherical spr */
     int    *n,         /* number of individuals caught */
@@ -449,6 +470,7 @@ void trappingtimes (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
@@ -469,6 +491,7 @@ void trappingproximity (
     int    *N,         /* number of animals */
     double *animals,   /* x,y points of animal range centres (first x, then y)  */
     double *traps,     /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,        /* truncation radius */
@@ -489,6 +512,7 @@ void trappingcount (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 11 = normal signal */
     double *w2,         /* truncation radius */
@@ -509,6 +533,7 @@ void trappingmulti (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
@@ -528,6 +553,7 @@ void trappingsingle (
     int    *N,          /* number of animals */
     double *animals,    /* x,y points of animal range centres (first x, then y)  */
     double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
@@ -579,6 +605,7 @@ void presenceloglik (
 
 gfnptr getgfn (int fn); 
 fnptr gethfn (int fn); 
+gfnLptr getgfnL (int fn); 
 
 /* detection functions used internally in C code */
 /* these exist in two forms 'g' and 'h' */
@@ -600,6 +627,8 @@ double hhr (double param [], double r);
 double hex (double param [], double r);
 double han (double param [], double r);
 double hcumg (double param [], double r);
+
+/*---------------------------------------------------------------*/
 
 double ghn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
@@ -665,6 +694,73 @@ double lcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 
+/*---------------------------------------------------------------*/
+/* distance lookup versions */
+double ghnL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double ghncL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double ghrL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gheL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gunL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double ghfL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double ganL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gclnL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gcnL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gcgL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double grsL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gsigbinL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gsigL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gsigsphL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gsigSNL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double gsigsphSNL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double lhnL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double lhrL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double lexL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double lanL 
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+double lcgL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+    int kk, double miscparm[]);
+/*---------------------------------------------------------------*/
+
 double pfn (
     int fn,
     double d2val,
@@ -673,6 +769,9 @@ double pfn (
     double z,
     double miscparm[],
     double w2);
+
+int par3 (
+    int fn);
 
 /*---------*/
 /* utils.c */
@@ -706,6 +805,26 @@ double d2 (
 
 /*--------------------------------------------------------------------------*/
 
+double d2L (
+    int k,
+    int m,
+    double dist2[],
+    int kk);
+
+/*--------------------------------------------------------------------------*/
+
+void makedist2 (
+    int kk, 
+    int mm, 
+    double traps[], 
+    double mask[], 
+    double dist2[]);
+
+void squaredist (
+    int kk, 
+    int mm, 
+    double dist2[]);
+
 /* customised dpois */
 double gpois (int count, double lambda, int uselog);
 /*--------------------------------------------------------------------------*/
@@ -735,6 +854,16 @@ double mufn (
     double A2[],
     int A1rows,
     int A2rows,
+    int spherical);
+/*---------------------------------------------------------------------*/
+
+double mufnL (
+    int k,
+    int m,
+    double b0,
+    double b1,
+    double dist2[],
+    int kk,
     int spherical);
 /*---------------------------------------------------------------------*/
 

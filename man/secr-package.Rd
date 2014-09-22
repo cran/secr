@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.8.2\cr
-Date: \tab 2014-04-30\cr
+Version: \tab 2.9.0\cr
+Date: \tab 2014-09-23\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -125,8 +125,8 @@ Efford, M. G. and Fewster, R. M. (2013) Estimating population
   size by spatially explicit capture--recapture. \emph{Oikos}
   \bold{122}, 918--928.
 
-Efford, M. G. and Mowat, G. (2014). Compensatory heterogeneity in
-spatially explicit capture--recapture data. \emph{Ecology} (in press).
+Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
+capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  
 
 Royle, J. A. and Gardner, B. (2011) Hierarchical spatial
 capture--recapture models for estimating density from trapping

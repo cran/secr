@@ -28,8 +28,10 @@
 ## 2013-07-19 param=3,5 a0 parameterisation in secrloglik
 ## 2013-11-18 telemetry substantially improved
 ## 2014-03-25 param=4,5,6 sigmak parameterisation in secrloglik
-###############################################################################
+## 2014-08-18 dropped 'c' column in reparameterize.sigmak
+## 2014-08-19 moved secr.lpredictor to utility.R
 
+###############################################################################
 
 disinteraction <- function (capthist, groups, sep='.') {
     ngv <- length(groups)
@@ -41,41 +43,6 @@ disinteraction <- function (capthist, groups, sep='.') {
     temp <- data.frame(temp)
     names(temp) <- groups
     temp
-}
-
-############################################################################################
-
-secr.lpredictor <- function (model, newdata, indx, beta, field, beta.vcv=NULL) {
-    vars <- all.vars(model)
-    if (any(!(vars %in% names(newdata))))
-        stop ("one or more model covariates not found in 'newdata'")
-    newdata <- as.data.frame(newdata)
-    lpred <- matrix(ncol = 2, nrow = nrow(newdata),dimnames=list(NULL,c('estimate','se')))
-    mat <- model.matrix(model, data = newdata)
-
-    ## drop pmix beta0 column from design matrix (always zero)
-    if (field=='pmix') {
-        mat <- mat[,-1,drop=FALSE]
-    }
-    lpred[,1] <- mat %*% beta[indx]
-
-    ## replaced for robustness 2013-06-06
-    ## if (is.null(beta.vcv)) return ( cbind(newdata,lpred) )
-    if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
-    else {
-        vcv <- beta.vcv[indx,indx, drop = FALSE]    ## OR maybe all betas?
-## bug fix 2013-04-14
-## nrw <- 1:nrow(mat)
-## vcv <- apply(expand.grid(nrw, nrw), 1, function(ij)
-        nrw <- nrow(mat)
-        vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
-            mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
-        vcv <- matrix (vcv, nrow = nrw)
-        lpred[,2] <- diag(vcv)^0.5
-        temp <- cbind(newdata,lpred)
-        attr(temp, 'vcv') <- vcv
-        return(temp)
-    }
 }
 
 ############################################################################################
@@ -139,6 +106,7 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
 ############################################################################################
 
 ## scale detection parameters as requested
+## superceded by other parameterizations
 
 scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
     realnames <- dimnames(realparval)[[2]]
@@ -176,6 +144,7 @@ reparameterize.sigmak <- function (realparval, D) {
         stop ("'param = 4:6 ' requires 'sigmak' in model")
     realparval[,sigmakindex] <- realparval[,sigmakindex] / D^0.5 + cval
     dimnames(realparval)[[2]][sigmakindex] <- 'sigma'
+    realparval <- realparval[, -cindex, drop = FALSE]   ## added 2014-08-18
     realparval
 }
 ###############################################################################
@@ -196,7 +165,7 @@ reparameterize.esa <- function (realparval, mask, traps, detectfn, nocc) {
         ## debug if (inherits(tmp, 'try-error')) print(c(fx(lower),fx(upper)))
         if (inherits(tmp, 'try-error')) 0.0001 else tmp$root
     }
-    cell <- attr(mask, 'area')
+    cell <- getcellsize(mask)
     realnames <- dimnames(realparval)[[2]]
     sigmaindex <- match('sigma', realnames)
     esaindex <- match('esa', realnames)
@@ -223,18 +192,39 @@ reparameterize.a0 <- function (realparval, detectfn) {
     if (!(detectfn %in% c(0:8, 14:18)))
         stop ('invalid combination of param = 3 or 5 and detectfn')
 
-##    matswitch <- is.matrix(realparval)
-##    if (matswitch)
-##        realparval <- data.frame(realparval)
-##    lambda0 <- realparval$a0 / 2 / pi / realparval$sigma^2 * 10000
-##    realparval$a0 <- if (detectfn %in% 0:8) 1-exp(-lambda0) else lambda0
-##    names(realparval)[names(realparval)=='a0'] <- if (detectfn<9) 'g0' else 'lambda0'
-##    if (matswitch) as.matrix(realparval) else realparval
-
     lambda0 <- realparval[,a0index] / 2 / pi / realparval[,sigmaindex]^2 * 10000
     realparval[,a0index] <- if (detectfn %in% 0:8) 1-exp(-lambda0) else lambda0
     dimnames(realparval)[[2]][a0index] <- if (detectfn<9) 'g0' else 'lambda0'
     realparval
+}
+###############################################################################
+
+reparameterize <- function (realparval, detectfn, details, mask, traps, D, s) {
+
+    ##----------------------------------------------
+    ## allow for scaling of detection in one session
+
+    ## D is scalar density or NA
+    ## s is number of occasions
+
+    ## use of scalesigma and scaleg0 is deprecated, but allowed 2014-08-09
+    Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, D)
+
+    if (details$param %in% 4:6) {
+        ## does not allow varying density surface
+        ## cf scaled.detection()
+
+        Xrealparval <- reparameterize.sigmak (Xrealparval, D)
+    }
+
+    if (details$param %in% c(2,6)) {
+        Xrealparval <- reparameterize.esa (Xrealparval, mask, traps, detectfn, s)
+    }
+    else if (details$param %in% c(3,5)) {
+        Xrealparval <- reparameterize.a0 (Xrealparval, detectfn)
+    }
+
+    Xrealparval
 }
 ###############################################################################
 
@@ -354,7 +344,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
         s    <- ncol(session.capthist)
         m    <- nrow(session.mask)
         sessg <- min (sessnum, design$R)
-        cell <- attr(session.mask,'area')
+
+##        space <- attr(session.mask, 'spacing')
+##        spacefactor <- attr(session.mask, 'spacingfactor')
+
         dettype <- detectorcode(session.traps)
 
         ## like == 0 is default; adjust if using conditional likelihood
@@ -379,6 +372,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
 
         ## 2013-11-10
         if ((detectfn %in% 14:18) & details$normalize) {
+            if (!is.null(details$userdist))
+                stop("normalization incompatible with userdist")
             miscparm[1] <- 1   ## normalize
             miscparm[3] <- 1   ## scale to mean denom 1.0 across mask
             if (!is.null(details$usecov)) {
@@ -395,8 +390,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 session.mask <- as.matrix(session.mask[,c(1:2,2)])
             }
         }
-        else
-            session.mask <- as.matrix(session.mask[,1:2])  ## ceases to be mask
+##        else
+##            session.mask <- as.matrix(session.mask[,1:2])  ## ceases to be mask
 
         ## knownclass is computed from current session.capthist, so doesn't need ID
         knownclass <- getknownclass(session.capthist, nmix, hcov)
@@ -527,12 +522,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 }
 
             trps <- unlist(session.traps, use.names=F)
+
             usge <- usage(session.traps)
             if (is.null(usge) | details$ignoreusage)
                 usge <- matrix(1, nrow = K, ncol = s)
-
-            #---------------------------------------------------
-            binomN <- details$binomN
             #---------------------------------------------------
 
             ## differentiate so density & g do not both need to use sessions
@@ -560,23 +553,14 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
 
             ##------------------------------------------
             ## allow for scaling of detection
-            Dtemp <- ifelse (D.modelled, D[1,1,sessnum], NA)
-            Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, Dtemp)
-            Xrealparval0 <- scaled.detection (realparval0, details$scalesigma, details$scaleg0, Dtemp)
-            if (details$param %in% 4:6) {
-                ## does not allow varying density surface
-                ## cf scaled.detection()
-                Xrealparval <- reparameterize.sigmak (Xrealparval, Dtemp)
-                Xrealparval0 <- reparameterize.sigmak (Xrealparval0, Dtemp)
-            }
-            if (details$param %in% c(2,6)) {
-                Xrealparval <- reparameterize.esa (Xrealparval,session.mask,session.traps,detectfn,s)
-                Xrealparval0 <- reparameterize.esa (Xrealparval0,session.mask,session.traps,detectfn,s)
-            }
-            else if (details$param %in% c(3,5)) {
-                Xrealparval <- reparameterize.a0 (Xrealparval, detectfn)
-                Xrealparval0 <- reparameterize.a0 (Xrealparval0, detectfn)
-            }
+
+            ## DOES NOT ALLOW FOR GROUP OR IHP VARIATION IN DENSITY
+            Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
+            Xrealparval <- reparameterize (realparval, detectfn, details,
+                                           session.mask, session.traps, Dtemp, s)
+            Xrealparval0 <- reparameterize (realparval0, detectfn, details,
+                                           session.mask, session.traps, Dtemp, s)
+
             ##-----------------------------------------
             ## check valid parameter values
             if (!all(is.finite(Xrealparval))) {
@@ -592,6 +576,30 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 return (1e10)
             }
 
+            ##--------------------------------------------------------------
+            ## 2014-08-27, 2014-09-01
+            ## Apply user-provided distance function or matrix
+            ## do not use if detector is one of
+            ## polygonX, polygon, transectX, transect, telemetry
+            ## The matrix distmat is passed to the C function secrloglik, etc.
+            if (is.null(details$userdist))
+                distmat <- -1
+            else {
+##                attr(session.mask, 'area') <- cell
+##                attr(session.mask, 'spacing') <- space
+##                attr(session.mask, 'spacingfactor') <- spacefactor
+                ## use first parameter set for this session, on assumption that
+                ## only session variation is allowed in noneuc
+
+                sessPIA <- design$PIA[sessg,1,1,1,1]
+                distmat <- valid.userdist (details$userdist,
+                                     detector(session.traps),
+                                     xy1 = session.traps,
+                                     xy2 = session.mask,
+                                     geometry = session.mask,
+                                     sesspars = Xrealparval[sessPIA,])
+            }
+
             ##------------------------------------------
             ## For conditional likelihood, supply a value for each
             ##  animal, not just groups
@@ -601,7 +609,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 tempPIA0 <- design0$PIA[sessg,ID,1:s,1:K, ]   ## CL
             else
                 tempPIA0 <- design0$PIA[sessg,1:ngroup,1:s,1:K, ]     ## drop=FALSE unnecessary?
-
             if (is.numeric(details$distribution)) {
                 if (details$distribution < nc)
                     stop ("superpopulation (details$distribution) ",
@@ -611,10 +618,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             else
                 distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
 
-                                        #-------------------------------------------
-                                        # debug
-                                        #-------------------------------------------
-                                        # if (details$debug) browser()
+            ##-------------------------------------------
+            ## debug
+            ##-------------------------------------------
+            if (details$debug) browser()
 
             ##-------------------------------------------
             ## experimental 'unmarked' detector type
@@ -713,8 +720,9 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                    as.integer(m),
                    as.integer(ngroup),
                    as.integer(nmix),
-                   as.integer(knownclass), ## 2013-04-12
+                   as.integer(knownclass),  ## 2013-04-12
                    as.double(trps),
+                   as.double(distmat),        ## 2014-08-27
                    as.double(usge),
                    as.double(unlist(session.mask)),
                    as.double(density),                    # density at each mask point x ngroup cols
@@ -725,10 +733,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                    as.integer(nrow(Xrealparval0)),            # ditto, naive
                    as.integer(design$PIA[sessg,ID,1:s,1:K,]), # index nc,S,K,mix to rows Xrealparval
                    as.integer(tempPIA0),                      # index ngroup,S,K,mix to rows Xrealparval0
-                   as.double(cell),                           # mask cell area
+                   as.double(getcellsize(session.mask)),      # mask cell area or length
                    as.double(miscparm),                       # miscellaneous parameter
                    as.integer(detectfn),
-                   as.integer(binomN),
+                   as.integer(details$binomN),                ## before 2.8.3 was assigned to local variable
                    as.double(details$minprob),
                    a = double(nc),
                    value = double(1),

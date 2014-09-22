@@ -104,11 +104,11 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
 
     if (fmt == 'trapID') {
         nvar <- 4
-        colcl <- c('character','character',NA,'character', rep(NA,nfield-nvar))
+        colcl <- c('character','character','character','character', rep(NA,nfield-nvar))
     }
     else {
         nvar <- 5
-        colcl <- c('character','character',NA,NA,NA, rep(NA,nfield-nvar))
+        colcl <- c('character','character','character',NA,NA, rep(NA,nfield-nvar))
     }
 
     defaultargs <- list(sep = '', comment.char = '#')
@@ -125,6 +125,13 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
     if (any(is.na(capt[,1:nvar])))
         stop ("missing values not allowed")
+
+    ## allow injections 2014-07-26
+    injected <- substring(capt$Occ,1,1) == '+'
+    inject.time <- ifelse(injected, as.numeric(capt$Occ), 0)
+## need to retrospectively zero this detection...
+## and perhaps set prior to NA?
+    capt$Occ <- as.numeric(capt$Occ)
 
     ## assumes file= is first argument of read.traps
     ## allows for multiple trap files
@@ -153,6 +160,17 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval,
         noncapt = noncapt)
+
+    ## temporary (?) way to attach injection times, not changng make.capthist
+    ## vector of occasion after inj at which first available for detection
+    ## may be all zero
+    ## consider NA instead of zero for non-injected animals
+    ## include in verify.capthist checks that
+    ## -- animal not detected before injected
+    ## -- length inject.time equals number of animals
+    ## -- animal not injected twice
+    ## 2014-07-27
+    attr(temp, 'inject.time') <- inject.time
 
     if (verify) verify(temp)
     temp

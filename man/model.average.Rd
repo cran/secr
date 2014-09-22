@@ -126,7 +126,7 @@ understanding AIC and BIC in model selection. \emph{Sociological Methods
 
 Turek, D. and Fletcher, D. (2012) Model-averaged Wald confidence
 intervals. \emph{Computational statistics and data analysis} \bold{56},
-2089--2815.
+2809--2815.
 
 }
 

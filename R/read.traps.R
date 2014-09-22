@@ -98,8 +98,6 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     if (!is.null(file)) {
         if (ncol(temp)>2) {
             if (ncol(temp)>3)
-# 2012-01-21
-#               temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse='')
                 temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse=' ')
             else
                 temp2 <- temp[,3]
@@ -141,7 +139,9 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 close(tempcon)
                 nocc <- ncol(usge)
                 if (detector %in% .localstuff$polydetectors) {
-                    usge <- usge[tempindex,]
+                    ## 2014-08-23 bug fix
+                    ## usge <- usge[tempindex,]
+                    usge <- usge[tempindex,,drop = FALSE]
                     dimnames(usge) <- list( tempID, 1:nocc)
                 }
                 else {

@@ -8,6 +8,7 @@
 ## requires nlme
 ## 2014-02-17 question settings in fdHess call : .relStep = 0.001, minAbsPar = 0.1
 ## 2014-02-17 these are now set explicitly as arguments of score.test
+## 2014-06-02 secr.design.MS argument ignoreusage = details$ignoreusage
 ############################################################################################
 ## source ('d:\\density secr 1.1\\secr\\R\\scoretest.R')
 ############################################################################################
@@ -33,13 +34,17 @@ prepare <- function (secr, newmodel) {
     if (is.null(sessionlevels)) sessionlevels <- '1'
     grouplevels  <- group.levels(capthist, groups)
 
-    design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe)
+    design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
+                              ignoreusage = details$ignoreusage)
     design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
-                               naive=T, bygroup=!CL)
+                               ignoreusage = details$ignoreusage,
+                               naive = T, bygroup = !CL)
     if (CL) D.designmatrix <- NULL
     else {
         temp <- D.designdata ( mask, newmodel$D, grouplevels, sessionlevels, sessioncov)
-        D.designmatrix <- model.matrix(newmodel$D, temp)
+        ## 2014-08-19
+        ## D.designmatrix <- model.matrix(newmodel$D, temp)
+        D.designmatrix <- general.model.matrix(newmodel$D, temp)
         attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
     }
 

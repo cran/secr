@@ -14,9 +14,11 @@
 ## 2012 12 14 computeD added but suppressed for now
 ## 2012 12 15 tol argument added
 ## 2012 12 24 binomN and adjust.g0 arguments added
+## 2014-08-27 dist2 optional input to integralprwi set to -1
+## 2014-08-29 linear adjustment (mask 'spacing') when no mask 'area'
 ############################################################################################
 
-naivesigma <- function (obsRPSV,trps,mask,wt,detectfn,z,tol=0.001) {
+naivesigma <- function (obsRPSV, trps, mask, wt, detectfn, z, tol = 0.001) {
     naiveRPSVcall <- function (sigma)
     {
         temp <- .C ("naiveRPSV", PACKAGE = 'secr',
@@ -101,14 +103,16 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           gs0[rep(t(usage(trps)==0), each = 2)] <- -1
       }
       #--------------------------------------------
-      area <- attr(mask,'area')  # area of single mask cell
+      area <- attr(mask, 'area')  # area of single mask cell
+      if (is.null(area))   ## 2014-08-29 linear
+          area <- attr(mask, 'spacing')/1000
       param <- 0    ## default Borchers & Efford parameterisation
       miscparm <- c(1,0,0,0)  ## dummy value
       temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
           as.integer(dettype),
           as.integer(param),
           as.double(g0sigma0),
-#          as.integer(rep(0,nc)),        # group number 2012-11-13; 2013-04-16
+#          as.integer(rep(0,nc)),       # group number 2012-11-13; 2013-04-16
           as.integer(rep(1,nc)),        # group number 2012-11-13; 2013-04-16 2013-06-24
           as.integer(nc),
           as.integer(s),
@@ -118,6 +122,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           as.integer(1),
           as.integer(rep(1,nc)),        # knownclass 2013-04-12, 2013-06-04
           as.double(unlist(trps)),
+          as.double(-1),                ## optional dist2 2014-08-27
           as.double(unlist(usge)),
           as.double(unlist(mask)),
           as.integer(nrow(g0sigma0)),   # rows in lookup

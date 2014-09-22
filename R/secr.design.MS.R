@@ -15,12 +15,14 @@
 ## 2013-03-11 check levels do not vary between sessions
 ## 2013-03-11 dropped models$phi <- NULL (not needed)
 ## 2014-01-25 code rearranged to allow null PIA
+## 2014-06-02 ignoreusage
+## 2014-08-21 adapted for smooth terms in models; save smoothsetup
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                             groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE,
                             bygroup = FALSE, keep.dframe = FALSE, full.dframe = FALSE,
-                            ...) {
+                            ignoreusage = FALSE, ...) {
 
 ## Generate design matrix, reduced parameter array, and parameter index array (PIA)
 ## for detection function parameters
@@ -42,7 +44,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ## if list, then require predictors to appear in all sessions
         ## uses insertdim from utility.R
         ## NOT to be used to add group variables
-        ## Does _not_ standardize numeric covariates:
+        ## Does NOT standardize numeric covariates:
         ##     if (!is.factor(vals)) vals <- scale(vals)
 
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
@@ -182,6 +184,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     nmix     <- get.nmix(models, capthist, hcov)
     trps    <- traps(capthist)                 # session-specific trap array
     used    <- usage(trps)                     # session-specific usage
+    ## 2014-06-02
+    if (ignoreusage) used <- NULL
     zcov    <- covariates(capthist)            # session-specific individual covariates
     trapcov <- covariates(trps)                # session-specific trap covariates
 
@@ -621,7 +625,11 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             list (model = NULL, index = rep(1,dframenrow))
         }
         else {
-            tempmat <- model.matrix(formula, dframe, ...)
+            ## 2014-08-19
+            ## tempmat <- model.matrix(formula, dframe, ...)
+            ## see utility.R for general.model.matrix
+            ## allows regression splines (mgcv)
+            tempmat <- general.model.matrix(formula, dframe, ...)
             ## drop pmix beta0 column from design matrix
             if (prefix=='pmix') {
                 tempmat <- tempmat[,-1,drop=FALSE]
@@ -637,14 +645,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     dframe[is.na(dframe)] <- 0
     # list with one component per real parameter
     # each of these is a list with components 'model' and 'index'
-
     designMatrices <- sapply (1:length(models), simplify=FALSE,
         function (x) make.designmatrix(models[[x]], names(models[x])))
     names(designMatrices) <- names(models)
 
     ## dim(indices) = c(R*n*S*K*nmix, npar)
     indices <- sapply (designMatrices, function(x) x$index)
-
     indices <- matrix(unlist(indices), ncol = npar)
 
     # retain just the 'model' components of 'designMatrices'
@@ -706,6 +712,19 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------
+    ## 2014-08-21
+
+    smoothsetup <- vector(length(parnames), mode = 'list')
+    names(smoothsetup) <- parnames
+    for (i in parnames) {
+        if (any(smooths(models[[i]]))) {
+            ## collapse data to unique rows
+            temp <- make.lookup (dframe)
+            smoothsetup[[i]] <- gamsetup(models[[i]], temp$lookup)
+        }
+    }
+
+    #--------------------------------------------------------------------
     if (keep.dframe) {
         ## 2013-03-11
         purge.dframe <- function (validdim) {
@@ -743,12 +762,15 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             names(inddf) <- c('animal','occasion','detector','mixture')
             dframe <- cbind(inddf,dframe)
         }
-        dframe <- dframe[,c(5,1:4,6:ncol(dframe))]
+        ## 2014-08-22
+        ## dframe <- dframe[,c(5,1:4,6:ncol(dframe))]
+        dframe[,1:5] <- dframe[,c(5,1:4)]
         list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
-             dframe = dframe, validdim = validdim)
+             dframe = dframe, validdim = validdim, smoothsetup = smoothsetup)
     }
     else
-        list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R)
+        list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
+             smoothsetup = smoothsetup)
 }
 ############################################################################################
 

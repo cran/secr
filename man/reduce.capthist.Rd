@@ -99,6 +99,9 @@ formed from occasions 1:5, 6:10, and 11:15. A warning is given when the
 number of old occasions is not a multiple of \code{by} as then the final
 new occasion will comprise fewer old occasions.
 
+\code{dropunused = TRUE} has the possibly unintended effect of dropping
+whole occasions on which there were no detections.
+
 A special use of the \code{by} argument is to combine all occasions into
 one for each session in a multi-session dataset. This is done by setting
 \code{by = "all"}.

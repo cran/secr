@@ -8,7 +8,7 @@
 \description{
 
   The coefficient of variation of effective sampling area predicts the
-  bias in estimated density (Efford and Mowat 2013). These functions
+  bias in estimated density (Efford and Mowat 2014). These functions
   assist its calculation from fitted finite mixture models.
   
 }
@@ -44,7 +44,7 @@ CVa(object, sessnum = 1, ...)
     
     \code{CVa0} computes CV(a0) where a0 is the single-detector sampling
     area defined as \eqn{a_0 = 2 \pi \lambda_0 \sigma^2}{a0 = 2 \pi
-    lambda0.sigma^2} (Efford and Mowat 2013); a0 is a convenient
+    lambda0.sigma^2} (Efford and Mowat 2014); a0 is a convenient
     surrogate for \emph{a}, the effective sampling area. CV(a0) uses
     either the fitted MLE of a0 (if the a0 parameterization has been
     used), or a0 computed from the estimates of lambda0 and sigma.
@@ -72,8 +72,8 @@ Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
-Efford, M. G. and Mowat, G. (2013) Compensatory heterogeneity in
-capture--recapture data.\emph{Ecology} In press.
+Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
+capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  
 
 }
 
@@ -85,7 +85,8 @@ capture--recapture data.\emph{Ecology} In press.
 
 \examples{
 
-CVa0(possum.model.h2 )
+## housemouse model
+CVa0(morning.h2 )
 
 }
 

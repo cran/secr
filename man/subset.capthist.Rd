@@ -13,7 +13,8 @@
     dropunused = TRUE, droplowsignals = TRUE, dropNAsignals = FALSE,
     cutabssignal = TRUE, renumber = FALSE, ...)
 
-\method{split}{capthist}(x, f, drop = FALSE, prefix = "S", bytrap = FALSE, ...)
+\method{split}{capthist}(x, f, drop = FALSE, prefix = "S", bytrap = FALSE, 
+ byoccasion = FALSE, ...)
 }
 \arguments{
   \item{x}{ object of class \code{capthist} }
@@ -39,6 +40,8 @@
   \item{prefix}{ a character prefix to be used for component names when
     values of f are numeric }
   \item{bytrap}{logical; if TRUE then each level of f identifies traps
+  to include }
+  \item{byoccasion}{logical; if TRUE then each level of f identifies occasions
   to include }
   \item{...}{ other arguments (not used currently) }
 }
@@ -117,6 +120,9 @@ ovenCH.males <- mapply(subset, ovenCH,
     MoreArgs = list(occasions = 1:5))
 class(ovenCH.males) <- class(ovenCH)
 summary(ovenCH.males)
+
+## Divide one session into two by occasion
+split(captdata, f = factor(c(1,1,2,2,2)), byoccasion = TRUE)
 
 }
 

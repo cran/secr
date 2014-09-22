@@ -13,7 +13,7 @@ Data from multiple searches for flat-tailed horned lizards
 
 }
 
-\usage{data(hornedlizard)}
+\usage{hornedlizard}
 
 \details{
 

@@ -23,7 +23,8 @@ predictD <- function (object, regionmask, group, session,
     if (ms(regionmask))
         regionmask <- regionmask[[session]]
 
-    group <- match (group, grouplevels)   ## numeric
+## line commented out 2014-09-20
+## group <- match (group, grouplevels)   ## numeric
 
     ## must use mean and SD for scaling from original mask(s)
     ## this is a list for ms masks
@@ -121,7 +122,9 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
-            mat <- model.matrix(object$model$D, data = newdata)
+            ## 2014-08-19,22
+            ## mat <- model.matrix(object$model$D, data = newdata)
+            mat <- general.model.matrix(object$model$D, data = newdata, object$smoothsetup$D)
             lpred <- mat %*% betaD
             temp <- untransform(lpred, object$link$D)
             temp <- pmax(temp, 0) / n.clust
@@ -225,7 +228,7 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
 plot.Dsurface <- function (x, covariate = 'D', group = NULL, plottype = 'shaded',
      scale = 1, ...) {
     if (ms(x)) {
-        breaklist <- lapply(x, plot, covariate, group, plottype, ...)
+        breaklist <- lapply(x, plot, covariate, group, plottype, scale, ...)
         invisible(breaklist)
     }
     else {
@@ -255,7 +258,10 @@ plot.Dsurface <- function (x, covariate = 'D', group = NULL, plottype = 'shaded'
         }
         else {
             class(x) <- c('mask','data.frame')
-            covlevels <- plot(x, covariate = covariate, dots = (plottype == 'dots'), ...)
+            ## use scale = 1 because already scaled by now
+           
+            covlevels <- plot(x, covariate = covariate, dots = (plottype == 'dots'),
+                              scale = 1, ...)
             if (!is.null(covlevels)) invisible(covlevels)
         }
     }

@@ -1,6 +1,7 @@
 \name{sim.secr}
 \alias{simulate.secr}
 \alias{sim.secr}
+\alias{sim.detect}
 \alias{simulate}
 
 \title{
@@ -18,29 +19,33 @@ simulated data.
 \usage{
 
 \method{simulate}{secr}(object, nsim = 1, seed = NULL, maxperpoly = 100,
-    chat = 1, ...)
+    chat = 1, ncores = 1, ...)
 
 sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
     deviance(x), df = df.residual(x)), seed = NULL, maxperpoly = 100,
     data = NULL, tracelevel = 1, hessian = c("none", "auto", "fdHess"),
     start = object$fit$par, ncores = 1)
 
+sim.detect(object, popnlist, maxperpoly = 100, renumber = TRUE)
+
 }
 
 \arguments{
-  \item{object}{an secr object}
-  \item{nsim}{number of replicates}
+  \item{object}{a fitted secr model}
+  \item{nsim}{integer number of replicates}
   \item{seed}{value for setting .Random.seed - either NULL or an integer}
   \item{maxperpoly}{ integer maximum number of detections of an individual
   in one polygon or transect on any occasion }
   \item{chat}{real value for overdispersion parameter}
+  \item{ncores}{integer number of cores available for parallel processing}
   \item{extractfn}{function to extract output values from fitted model}
   \item{data}{optional list of simulated data saved from previous call to \code{simulate.secr}}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
   \item{hessian}{character or logical controlling the computation of the Hessian matrix}
   \item{start}{vector of starting `beta' values for \code{secr.fit}}
-  \item{ncores}{integer number of cores available for parallel processing}
   \item{...}{other arguments (not used)}
+  \item{popnlist}{list of popn objects}
+  \item{renumber}{logical; if TRUE then }
 }
 
 \details{
@@ -57,10 +62,11 @@ detection model and detector (trap) array(s) in \code{object}.
 
 The random number seed is managed as in \code{simulate.lm}.
 
-\code{simulate.secr} does not yet work with models fitted using
-conditional likelihood (\code{object$CL = TRUE}).  Detector type is
-determined by \code{detector(traps(object$capthist))}, which should be one of
-"single", "multi", "proximity", "areasearch" or "count".
+Certain model types are not supported by \code{simulate.secr}. These
+include models fitted using conditional likelihood (\code{object$CL =
+TRUE}), telemetry models and exotic behavioural response models.
+
+Detector type is determined by \code{detector(traps(object$capthist))}.
 
 \code{sim.secr} is a wrapper function. If \code{data = NULL} (the
 default) then it calls \code{simulate.secr} to generate \code{nsim} new datasets. If
@@ -101,6 +107,9 @@ in the worker processes.
 model (i.e. one with constant parameters for density and detection), or
 from a time-varying model.
 
+\code{sim.detect} is a function used internally that will not usually be
+called directly.
+
 }
 \value{
 
@@ -123,10 +132,13 @@ equivalent.
 For either form of output from \code{sim.secr} the initial state of the
 random number generator is stored as the attribute `seed'.
 
+For \code{sim.detect} a list of `capthist' objects.
+
 }
 
 \seealso{
-\code{\link{sim.capthist}}, \code{\link{secr.fit}}, \code{\link[stats]{simulate}}
+\code{\link{sim.capthist}}, \code{\link{secr.fit}},
+\code{\link[stats]{simulate}}, \code{\link{secr.test}}
 }
 
 \note{
@@ -151,6 +163,8 @@ fitted parameter vector. Alternatives are NULL or \code{object$start}.
 simulate(secrdemo.0, nsim = 2)
 
 \dontrun{
+
+## The following has been superceded by secr.test()
 
 ## this would take a long time...
 ## adjust ncores for your machine (see ?Parallel)

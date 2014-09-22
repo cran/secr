@@ -38,13 +38,6 @@ The `scale' argument may be used to change the units of density from the default
 
 }
 
-\examples{
-
-shorePossums <- predictDsurface(possum.model.Dsh2)
-head(shorePossums)
-
-}
-
 \seealso{
   
 \code{\link{predictDsurface}}, \code{\link{plot.Dsurface}}

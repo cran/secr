@@ -9,7 +9,7 @@
 \usage{
 secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
     groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
-    keep.dframe = FALSE, full.dframe = FALSE, ...)
+    keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, ...)
 
 make.lookup (tempmat)
 }
@@ -33,6 +33,8 @@ make.lookup (tempmat)
     included in the output}
   \item{full.dframe}{logical; if FALSE then padding rows are purged from
     output dframe (ignored if \code{keep.dframe = FALSE})}
+  \item{ignoreusage}{logical; if TRUE any usage attribute of traps(capthist)
+  is ignored}
   \item{\dots}{ other arguments passed to the \R function
     \code{\link{model.matrix}} }
   \item{tempmat}{matrix for which row lookup required}

@@ -162,6 +162,14 @@ These quantities are related to CVn and CVa as follows:
 
 }
 
+\section{Warning}{
+%2014-06-08
+\code{derived()} may be applied to detection models fitted by maximizing the
+full likelihood (\code{CL = FALSE}). However, models using g (groups)
+will not be handled correctly.
+
+}
+
 \examples{
 
 \dontrun{

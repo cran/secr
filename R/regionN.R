@@ -13,7 +13,11 @@
 
 ## 2012-08-07 potentially extend to groups by looping over sessions _and_ groups
 ## 2014-03-19 pooled.RN
-
+## 2014-08-27 dist2 optional input to integralprwi set to -1
+## 2014-09-08 renamed cellarea to cell, inclusive of cell length for linearmask
+## 2014-09-08 renamed regionarea to regionsize
+## 2014-09-08 updated with reparameterize
+## 2014-09-08 prepared for secrlinear linearmask models, not activated
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -40,10 +44,10 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     betaRN <- function (beta, object, regionmask) {
         ## regionmask is a mask (no need for spacing)
         ## assume single session
-        ## n, cellarea, sessnum global
+        ## n, cell, sessnum global
         object$fit$par <- beta
         D <- predictD(object, regionmask, group, session)
-        n + sumDpdot (object, sessnum, regionmask, D, cellarea,
+        n + sumDpdot (object, sessnum, regionmask, D, cell,
                   constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
     }
     ###########################################################
@@ -93,14 +97,17 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     ####################################################################
     ## otherwise, this is a non-recursive call for one session...
     else {
-
         if (ms(object$mask))
             mask <- object$mask[[session]]
         else
             mask <- object$mask
+        masktype <- if (inherits(mask, "linearmask")) "linearmask" else "mask"
+
         ########################################################
         ## if necessary, convert vector region to raster
+
         if (inherits(region, 'mask')) {
+            ## includes linearmask
             if (ms(region))
                  regionmask <- region[[session]]
             else
@@ -111,22 +118,39 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 ## use mask spacing by default
                 spacing <- spacing(mask)
             }
-            if (inherits(region, 'SpatialPolygonsDataFrame')) {
+            if ((inherits(region, 'SpatialPolygonsDataFrame') & (masktype == "mask")) |
+                (inherits(region, 'SpatialLinesDataFrame') & (masktype == "linearmask"))
+                ) {
                 bbox <- bbox(region)
             }
             else {
                 bbox <- apply(region, 2, range)
             }
-            regionmask <- make.mask(bbox, poly = region, buffer = 0,
-                spacing = spacing, type = 'polygon',
-                check.poly = FALSE)
+            if (masktype == "mask") {
+                regionmask <- make.mask(bbox, poly = region, buffer = 0,
+                                        spacing = spacing, type = 'polygon',
+                                        check.poly = FALSE)
+            }
+            else {
+                ## dodge circular dependence and anticipate release of secrlinear
+                ## 2014-09-09
+                stop("construction of linear masks not yet supported in region.N")
+                ## if (!requireNamespace("secrlinear", quietly=TRUE))
+                ##     stop ("could not load secrlinear")
+                ## regionmask <- secrlinear::read.linearmask(data = region,
+                ##     spacing = spacing, spacingfactor = attr(mask, "spacingfactor"))
+            }
         }
 
         #######################################################
 
         ## region now inherits from mask, so has area attribute
-        cellarea <- attr(regionmask, 'area')
-        regionarea <- nrow(regionmask) * cellarea
+        if (inherits(regionmask, "linearmask"))
+            cell <- attr(regionmask, 'spacing') / 1000    ## km
+        else
+            cell <- attr(regionmask, 'area')              ## ha
+        regionsize <- nrow(regionmask) * cell
+
         if (ms(object)) {
             if (pooled.RN)
                 n <- sum(sapply(object$capthist, nrow))
@@ -145,9 +169,9 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 temp <- temp[[session]]
             D <- temp['D', 'estimate']
             seD <- temp['D', 'SE.estimate']
-            EN <- D * regionarea
+            EN <- D * regionsize
             if (!se.N) return (EN)    ## and stop here
-            seEN <- seD * regionarea
+            seEN <- seD * regionsize
         }
 
         #######################################################
@@ -162,13 +186,14 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                     predicted <- predicted[[1]]
                 D <- predicted['D','estimate']
                 seD <- predicted['D', 'SE.estimate']
-                EN <- D * regionarea
+
+                EN <- D * regionsize
                 if (!se.N) return (EN)    ## and stop here
-                seEN <- seD * regionarea
+                seEN <- seD * regionsize
             }
             else {
                 D <- predictD (object, regionmask, group, session)
-                EN <- sum(D) * cellarea
+                EN <- sum(D) * cell
                 if (!se.N) return (EN)    ## and stop here
                 indx <- object$parindx$D
 ## simple gradient failed in test 2011-10-20
@@ -196,7 +221,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             RN.method <- tolower(RN.method)
             if (RN.method == 'mspe') {
                 notdetected <- sumDpdot (object, sessnum, regionmask, D,
-                    cellarea, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
+                    cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 ## evaluate gradient of RN wrt betas at MLE
                 dNdbeta <- nlme::fdHess (object$fit$par, betaRN, object = object,
@@ -207,7 +232,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             }
             else if (RN.method == 'poisson') {
                 notdetected <- sumDpdot (object, sessnum, regionmask, D,
-                    cellarea, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
+                    cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 seRN <- (seEN^2 - EN)^0.5
             }
@@ -238,7 +263,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             temp <- add.cl (temp, alpha, loginterval, c(0, 0))
         temp$n <- rep(n, nrow(temp))
  #       temp$E.n <- rep(round(En,2), nrow(temp))
-        attr(temp, 'regionarea') <- nrow(region) * attr(region, 'area')
+        attr(temp, 'regionsize') <- nrow(region) * attr(region, 'area')
         if (keep.region)
             attr(temp, 'region') <- region
         temp
@@ -251,7 +276,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 
 ## modelled on esa.R
 
-sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
+sumDpdot <- function (object, sessnum = 1, mask, D, cell, constant = TRUE,
                       oneminus = FALSE, pooled = FALSE)
 
 # Return integral for given model and new mask, D
@@ -323,7 +348,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             real <- as.list(real)
             names(real) <- parnames(object$detectfn)
         }
-        a <- cellarea * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
+        a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
                              detectpar = real, noccasions = noccasions))
         return(a * D)
     }
@@ -347,14 +372,19 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
 
         realparval0 <- makerealparameters (object$design0, beta,
             object$parindx, object$link, object$fixed)  # naive
-        Xrealparval0 <- scaled.detection (realparval0, FALSE,
-            object$details$scaleg0, NA)
 
-##########################
-##########################
-## what about other param?
-##########################
-##########################
+        ## Xrealparval0 <- scaled.detection (realparval0, FALSE,
+        ##    object$details$scaleg0, NA)
+
+        ## 2014-09-08
+        if (!is.null(object$fixed$D))
+            Dtemp <- object$fixed$D
+        else if (object$CL)
+            Dtemp <- NA
+        else
+            Dtemp <- D[1]
+        Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
+                                        mask, trps, Dtemp, s)
 
         usge <- usage(trps)
         if (is.null(usge)) {
@@ -378,6 +408,21 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
         if (!(length(D) %in% c(1,nrow(mask))))
             stop ("D does not match mask in sumDpdot")
 
+        ##------------------------------------------
+        ## 2014-09-08
+        if (is.null(object$details$userdist))
+            distmat <- -1
+        else {
+            sessPIA <- PIA[1,1,1,1,1]
+            distmat <- valid.userdist (object$details$userdist,
+                                       detector(trps),
+                                       xy1 = trps,
+                                       xy2 = mask,
+                                       geometry = mask,
+                                       sesspars = Xrealparval0[sessPIA,])
+        }
+        ##------------------------------------------
+
         if (length(D) == 1) {
             useD <- FALSE
         }
@@ -386,46 +431,26 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
             useD <- TRUE
         }
 
-#        print(dettype)
-#        print(param)
-#        print(Xrealparval0)
-#        print(n)
-#        print(s)
-#        print(k)
-#        print(m)
-#        print(nmix)
-#        print(summary(trps))
-#        print(usge)
-#        print(summary(mask))
-#        print(nrow(Xrealparval0))
-#        print(PIA)
-#        print(ncolPIA)
-#        print(cellarea)
-#        print(miscparm)
-#        print(object$detectfn)
-#        print(object$details$binomN)
-#        print(useD)
-
         temp <- .C("integralprw1", PACKAGE = 'secr',
             as.integer(dettype),
             as.integer(param),
             as.double(Xrealparval0),
-#            as.integer(rep(0,n)),    # dummy groups 2012-11-13
-            as.integer(rep(1,n)),        # dummy groups 2012-11-13; 2013-06-24
+            as.integer(rep(1,n)),           ## dummy groups 2012-11-13; 2013-06-24
             as.integer(n),
             as.integer(s),
             as.integer(k),
             as.integer(m),
-            as.integer(1),          # dummy ngroups 2012-11-13
+            as.integer(1),                  ## dummy ngroups 2012-11-13
             as.integer(nmix),
             as.integer(knownclass),
             as.double(unlist(trps)),
+            as.double(distmat),             ## optional dist2 2014-09-08
             as.double(usge),
             as.double(as.numeric(unlist(mask))),
-            as.integer(nrow(Xrealparval0)), # rows in lookup
-            as.integer(PIA),                # index of nc*,S,K to rows in realparval0
-            as.integer(ncolPIA),            # ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
-            as.double(cellarea),
+            as.integer(nrow(Xrealparval0)), ## rows in lookup
+            as.integer(PIA),                ## index of nc*,S,K to rows in realparval0
+            as.integer(ncolPIA),            ## ncol - if CL, ncolPIA = n, else ncolPIA = 1 or ngrp
+            as.double(cell),
             as.double(miscparm),
             as.integer(object$detectfn),
             as.integer(binomN),
@@ -443,7 +468,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cellarea, constant = TRUE,
 
        if (oneminus) {
            sumD <- ifelse (length(D) == 1, D * nrow(mask), sum(D))
-           return(sumD * cellarea - temp$a)
+           return(sumD * cell - temp$a)
        }
        else
            return(temp$a)
@@ -496,8 +521,10 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
             mask <- object$mask[[session]]
         else
             mask <- object$mask
-
-        cellarea <- attr(mask, 'area')
+        if (inherits(mask, "linearmask"))
+            cell <- attr(mask, 'spacing') / 1000    ## km
+        else
+            cell <- attr(mask, 'area')              ## ha
         if (ms(object)) {
             n <- nrow(object$capthist[[session]])
             trps <- traps(object$capthist[[session]])
@@ -552,7 +579,7 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
             for (i in 1:nclust) {
                 if (splitmask) {
                     out[i] <- sumDpdot(object = object, sessnum = sessnum,
-                        mask=mask[[i]], D = D[[i]], cellarea = cellarea,
+                        mask=mask[[i]], D = D[[i]], cell = cell,
                         constant = FALSE, oneminus = FALSE)[1]
                 }
                 else {
@@ -563,14 +590,16 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                         traps(object$capthist) <- temptrap
 
                     out[i] <- sumDpdot(object = object, sessnum = sessnum,
-                        mask=mask, D = D, cellarea = cellarea,
+                        mask=mask, D = D, cell = cell,
                         constant = FALSE, oneminus = FALSE)[1]
                 }
             }
             out
         }
-        else sumDpdot (object, sessnum, mask, D, attr(mask,'area'),
+        else {
+            sumDpdot (object, sessnum, mask, D, cell,
              constant = FALSE, oneminus = FALSE)[1]
+        }
         #################################################################
     }
 }

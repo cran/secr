@@ -16,7 +16,7 @@ sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = "poisson"), detectfn = 0, detectpar = list(),
     noccasions = 5, nsessions = 1, binomN = NULL, exactN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
-    maxperpoly = 100, savepopn = FALSE)
+    maxperpoly = 100, chulltol = 0.001, userdist = NULL, savepopn = FALSE)
 sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
     nonID = TRUE)
 
@@ -40,6 +40,9 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   generator should be initialized (`seeded') }
   \item{maxperpoly}{ integer maximum number of detections of an individual
     in one polygon or transect on any occasion }
+  \item{chulltol}{numeric buffer (m) for polygon around telemetry
+    locations} 
+  \item{userdist}{user-defined distance function or matrix (see \link{details})}  
   \item{savepopn}{ logical; if TRUE then the popn (input or simulated) is saved as an attribute}
   \item{\dots}{ arguments to pass to \code{sim.capthist} }
   \item{q}{ number of marking occasions }
@@ -112,6 +115,15 @@ individual covariates will be passed on; the \code{covariates} attribute
 of the output is otherwise set to NULL.
 
 The random number seed is managed as in \code{\link[stats]{simulate}}.
+
+\code{chulltol} is used only when simulating telemetry locations. By
+default, a new 'traps' polygon is generated as the convex hull of the
+simulated locations, with a slight (1 mm) added buffer to ensure
+boundary points are within the polygon. Buffering is suppressed if
+\code{chulltol} is NA or negative.
+
+\code{userdist} cannot be set if `traps' is any of polygon, polygonX,
+transect or transectX.
 
 \code{sim.resight} generates mark-resight data for `q' marking occasions
 followed by `noccasions -- q' sighting occasions. \code{sim.capthist} is

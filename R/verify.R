@@ -1,8 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## verify.R
-## 2009 09 18, 2009 09 19, 2009 09 20 2009 10 02 2009 11 05
-## 2009 11 13
+## 2009 09 18, 2009 09 19, 2009 09 20, 2009 10 02, 2009 11 05, 2009 11 13
 ## 2010 05 02 removed erroneous ref to 'areabinary' detector
 ## 2011 02 15 validpoly
 ## 2011 03 19 adjustments to allow unmarked; need more complete check of unmarked
@@ -132,6 +131,7 @@ xyinpoly <- function (xy, trps) {
     ptinside <- function (i,k) {
         ## is point i inside poly k?
         polyxy <- as.matrix(lxy[[k]])
+        polyxy <- rbind(polyxy, polyxy[1,])   ## close 2014-08-28
         nr <- nrow(polyxy)
         temp <- .C('inside',  PACKAGE = 'secr',
             as.double (xy[i,]),
@@ -144,9 +144,14 @@ xyinpoly <- function (xy, trps) {
     }
     lxy <- split (trps, levels(polyID(trps)))
     firstinside <- function (i) {
-        for (k in 1:length(lxy))
-            if (ptinside(i,k)) return(k)
-        0
+        frstk <- 0
+        for (k in 1:length(lxy)) {
+            if (ptinside(i,k)) {
+                frstk <- k
+                break
+            }
+        }
+        frstk
     }
     sapply(1:nrow(xy), firstinside)
 }

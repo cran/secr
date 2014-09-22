@@ -26,8 +26,8 @@ pointsInPolygon(xy, poly, logical = TRUE)
 
 \details{
 
-  If \code{poly} is a SpatialPolygonsDataFrame object then the function
-\code{overlay} is used from \pkg{sp}. This allows multiple polygons and
+  If \code{poly} is a SpatialPolygonsDataFrame object then the method
+\code{over} is used from \pkg{sp}. This allows multiple polygons and
 polygons with holes.
 
   If \code{poly} is an secr `mask' object then \code{xy} is discretized
@@ -47,7 +47,7 @@ same as first).
 }
 
 \seealso{
-\code{\link[sp]{overlay}} 
+\code{\link[sp]{over}} 
 }
 
 \section{Warning}{If \code{poly} is a mask object then its cells must be

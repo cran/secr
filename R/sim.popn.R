@@ -12,6 +12,7 @@
 ## 2012-04-10  MRC
 ## 2013-11-23 IHP for Ndist fixed
 ## 2014-04-18 session-specific density
+## 2014-09-03 model2D = "linear" option, and some recoding of IHP
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -47,7 +48,7 @@ tile <- function (popn, method = "reflect") {
 }
 
 sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
-  "cluster", "IHP", "coastal", "hills"), buffertype = 'rect', poly = NULL,
+  "cluster", "IHP", "coastal", "hills", "linear"), buffertype = 'rect', poly = NULL,
   covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
   = c('poisson','fixed','specified'), nsession = 1, details = NULL, seed = NULL,
   ...)  {
@@ -155,15 +156,12 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         ##########################
 
-        if (model2D %in% c('IHP')) {
-
-            nr <- nrow(core)
-            if (!inherits(core, 'mask'))
-                stop ("for model2D = IHP, 'core' should be a habitat mask")
+        getnm <- function (scaleattribute = 'area', scale = 1) {
+            ## 2014-09-03 for "IHP" and "linear"
             if ((length(D) == 1) & (is.character(D)))
                 D <- covariates(core)[,D]
-            if ((length(D) == 1) & (is.numeric(D)))   ## was == 1
-                D <- rep(D, nr)
+            if ((length(D) == 1) & (is.numeric(D)))
+                D <- rep(D, nrow(core))
             if (any(is.na(D))) {
                 D[is.na(D)] <- 0
                 warning ("NA values of D set to zero")
@@ -172,29 +170,35 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 D <- pmax(0,D)
                 warning ("negative D set to zero")
             }
-            ## end of addition 2012-04-10
-
-## replaced 2013-11-23
-##            if (Ndist != 'poisson')
-##                stop ("IHP not implemented for fixed or specified N")
-##            nm <- rpois(nr, D * attr(core,'area'))   ## 'area' is cell area, D vector, 1 per cell
-##            N <- sum(nm)
-
-            D <- D * attr(core,'area') ## 'area' is cell area, D vector, 1 per cell
+            ## D vector, 1 per cell
+            D <- D * attr(core, scaleattribute) * scale
+            N <- sum(D)
             if (Ndist == 'poisson') {
-                nm <- rpois(nr, D)
-                N <- sum(nm)
+                N <- rpois(1,N)
             }
-            else {  ## fixed
-                N <- sum(D)
-                nm <- rmultinom (1, N, D)
-            }
+            rmultinom (1, N, D)
+        }
+        ##########################
 
+        if (model2D %in% c('IHP')) {
+            if (!inherits(core, 'mask'))
+                stop ("for model2D = IHP, 'core' should be a habitat mask")
+            nm <- getnm('area', 1)
             jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), ncol = 2)
-            animals <- core[rep(1:nr, nm),] + jitter
+            animals <- core[rep(1:nrow(core), nm),] + jitter
             animals <- as.data.frame(animals)
             xl <- range(animals[,1])
             yl <- range(animals[,2])
+        }
+        else  if (model2D == 'linear') {
+            if (!inherits(core, 'linearmask'))
+                stop ("for model2D = linear, 'core' should be a linear mask")
+            nm <- getnm('spacing', 0.001)
+            animals <- core[rep(1:nrow(core), nm),] * 1  ## * 1 to shed attributes...
+            animals <- as.data.frame(animals)
+            xl <- range(animals[,1])
+            yl <- range(animals[,2])
+
         }
         else {
             if (buffertype != 'rect')
@@ -204,10 +208,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             xl <- range(core$x) + buff
             yl <- range(core$y) + buff
             area <- diff(xl) * diff(yl) * 0.0001  # ha
-##            allowedNdist <- c('poisson','fixed','specified')
-##            if (!(Ndist %in% allowedNdist))
-##                stop ("'Ndist' should be one of ",
-##                      paste(sapply(allowedNdist, dQuote), collapse=","))
             N  <- switch (Ndist,
                 poisson = rpois(1, lambda=D[1] * area),
                 fixed = discreteN (1, D[1] * area),
@@ -288,7 +288,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         if (!is.null(covariates)) {
             tempcov <- list()
             for (i in 1:length(covariates)) {
-               covi <- sample (names(covariates[[i]]), replace=T, size=N,
+               covi <- sample (names(covariates[[i]]), replace = T, size= nrow(animals),
                                prob=covariates[[i]])
                temptxt <- paste ('tempcov$', names(covariates[i]), '<- covi',
                                sep = '')
@@ -298,16 +298,21 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         if (nrow(animals) > 0)   ## condition added 2011-03-27
             row.names (animals) <- number.from : (nrow(animals)+number.from-1)
-        class(animals) <- c('popn', 'data.frame')
-        #-------------------------
-        # restrict to a polygon
-        # added 2011-10-20
 
-        if (!is.null(poly)) {
-            animals <- subset(animals, poly = poly, ...)
+        if (model2D == 'linear') {
+            class(animals) <- c('linearpopn', 'popn', 'data.frame')
+            attr(animals, 'mask') <- core
         }
-        #-------------------------
-
+        else {
+            class(animals) <- c('popn', 'data.frame')
+            ##-------------------------
+            ## restrict to a polygon
+            ## added 2011-10-20
+            if (!is.null(poly)) {
+                animals <- subset(animals, poly = poly, ...)
+            }
+            ##-------------------------
+        }
         attr(animals, 'seed') <- RNGstate   ## save random seed
         attr(animals, 'Ndist') <- Ndist
         attr(animals, 'model2D') <- model2D

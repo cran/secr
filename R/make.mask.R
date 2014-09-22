@@ -7,6 +7,14 @@
 ## 2014-03-22 all polygon type with no 'traps'
 ###############################################################################
 
+getCentres <- function (xy) {
+    nrxy <- nrow(xy)
+    if (nrxy > 1)
+        (xy[-1,] + xy[-nrxy,]) / 2
+    else
+        xy
+}
+
 make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     type = c("traprect", "trapbuffer", "pdot", "polygon", "clusterrect",
     "clusterbuffer", "rectangular"), poly = NULL, poly.habitat = TRUE, keep.poly = TRUE,
@@ -18,8 +26,10 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     if (ms(traps)) {         ## a list of traps objects
         if (inherits(poly, 'list') & (!is.data.frame(poly)))
             stop ("lists of polygons not implemented in 'make.mask'")
+        ## 2014-09-20 now passes keep.poly and check.poly
         temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx, ny = ny,
-            type = type, poly = poly, poly.habitat = poly.habitat, pdotmin = pdotmin, ...)
+                        type = type, poly = poly, poly.habitat = poly.habitat, keep.poly = TRUE,
+                        check.poly = TRUE,  pdotmin = pdotmin, ...)
         class (temp) <- c('list', 'mask')
         temp
       }
