@@ -16,7 +16,7 @@
     dots = TRUE, col = "grey", breaks = 10, meshcol = NA, ppoly = TRUE,
     polycol = "red", legend = TRUE, \dots)
 
-\method{plot}{Dsurface}(x, covariate = "D", group = NULL, plottype =
+\method{plot}{Dsurface}(x, covariate, group = NULL, plottype =
     "shaded", scale = 1, ...)
 
 \method{plot}{Rsurface}(x, covariate = "Resource", plottype =
@@ -68,6 +68,8 @@ distinct types of plot (dots and shaded (coloured) pixels).
 perspective plots in addition to the options in \code{plot.mask}. It may
 take some experimentation to get what you want - see
 \code{\link[graphics]{contour}} and \code{\link[graphics]{persp}}.
+
+For plot.Dsurface the default value of `covariate' is `D' unless the Dsurface has a `parameter' attribute of `noneuc',
 
 If using a covariate or Dsurface or Rsurface to colour dots or pixels, the
 \code{col} argument should be a colour vector of length equal to the

@@ -46,8 +46,9 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
         ## assume single session
         ## n, cell, sessnum global
         object$fit$par <- beta
-        D <- predictD(object, regionmask, group, session)
-        n + sumDpdot (object, sessnum, regionmask, D, cell,
+        D <- predictD(object, regionmask, group, session, parameter = 'D')
+        noneuc <- predictD(object, regionmask, group, session, parameter = 'noneuc')
+        n + sumDpdot (object, sessnum, regionmask, D, noneuc, cell,
                   constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
     }
     ###########################################################
@@ -105,7 +106,6 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 
         ########################################################
         ## if necessary, convert vector region to raster
-
         if (inherits(region, 'mask')) {
             ## includes linearmask
             if (ms(region))
@@ -125,7 +125,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             }
             else {
                 bbox <- apply(region, 2, range)
-            }
+            }            
             if (masktype == "mask") {
                 regionmask <- make.mask(bbox, poly = region, buffer = 0,
                                         spacing = spacing, type = 'polygon',
@@ -192,7 +192,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 seEN <- seD * regionsize
             }
             else {
-                D <- predictD (object, regionmask, group, session)
+                D <- predictD (object, regionmask, group, session, parameter = 'D')
                 EN <- sum(D) * cell
                 if (!se.N) return (EN)    ## and stop here
                 indx <- object$parindx$D
@@ -217,10 +217,12 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             det <- detector(traps(object$capthist)[[session]])
         else
             det <- detector(traps(object$capthist))
+
         if (det %in% .localstuff$individualdetectors) {
+            noneuc <- predictD (object, regionmask, group, session, parameter = 'noneuc')
             RN.method <- tolower(RN.method)
             if (RN.method == 'mspe') {
-                notdetected <- sumDpdot (object, sessnum, regionmask, D,
+                notdetected <- sumDpdot (object, sessnum, regionmask, D, noneuc,
                     cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 ## evaluate gradient of RN wrt betas at MLE
@@ -231,7 +233,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 seRN <- (notdetected + pdotvar)^0.5
             }
             else if (RN.method == 'poisson') {
-                notdetected <- sumDpdot (object, sessnum, regionmask, D,
+                notdetected <- sumDpdot (object, sessnum, regionmask, D, noneuc,
                     cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
                 seRN <- (seEN^2 - EN)^0.5
@@ -263,7 +265,11 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             temp <- add.cl (temp, alpha, loginterval, c(0, 0))
         temp$n <- rep(n, nrow(temp))
  #       temp$E.n <- rep(round(En,2), nrow(temp))
-        attr(temp, 'regionsize') <- nrow(region) * attr(region, 'area')
+        ## 2014-11-12
+        if (inherits(region, 'linearmask'))
+            attr(temp, 'regionsize') <- masklength(region)
+        else
+            attr(temp, 'regionsize') <- maskarea(region) ## nrow(region) * attr(region, 'area')
         if (keep.region)
             attr(temp, 'region') <- region
         temp
@@ -276,7 +282,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 
 ## modelled on esa.R
 
-sumDpdot <- function (object, sessnum = 1, mask, D, cell, constant = TRUE,
+sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRUE,
                       oneminus = FALSE, pooled = FALSE)
 
 # Return integral for given model and new mask, D
@@ -343,6 +349,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cell, constant = TRUE,
         if (is.null(beta))
             real <- detectpar(object)
         else {
+
             real <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
             real <- as.list(real)
@@ -413,13 +420,20 @@ sumDpdot <- function (object, sessnum = 1, mask, D, cell, constant = TRUE,
         if (is.null(object$details$userdist))
             distmat <- -1
         else {
-            sessPIA <- PIA[1,1,1,1,1]
+
+            userdistnames <- getuserdistnames(object$details$userdist)
+            if (is.null(covariates(mask)))
+                covariates(mask) <- data.frame(row.names = 1:nrow(mask))
+            if ('noneuc' %in% userdistnames)
+                covariates(mask)$noneuc <- noneuc
+            if ('D' %in% userdistnames)
+                covariates(mask)$D <- D
+
             distmat <- valid.userdist (object$details$userdist,
                                        detector(trps),
                                        xy1 = trps,
                                        xy2 = mask,
-                                       geometry = mask,
-                                       sesspars = Xrealparval0[sessPIA,])
+                                       mask = mask)
         }
         ##------------------------------------------
 
@@ -534,6 +548,7 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
             trps <- traps(object$capthist)
         }
         sessnum <- match (session, session(object$capthist))
+
         #######################################################
         ## for conditional likelihood fit,
         if (object$CL) {
@@ -542,7 +557,6 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                 temp <- temp[[session]]
             D <- temp['D', 'estimate']
         }
-
         #######################################################
         ## for full likelihood fit...
         else {
@@ -553,15 +567,26 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                 predicted <- predict(object)
                 if (!is.data.frame(predicted))
                     predicted <- predicted[[1]]
-                D <- predicted['D','estimate']
+                D <- rep(predicted['D','estimate'], nrow(mask))
             }
             else {
-                D <- predictD (object, mask, group, session)
+                D <- predictD (object, mask, group, session, parameter = 'D')
             }
         }
-        #################################################################
-        if (length(D) == 1)
-            D <- rep(D, nrow(mask))
+        #######################################################
+
+        if (is.function(object$details$userdist)) {
+          if (object$model$noneuc == ~1) {
+            predicted <- predict(object)
+            if (!is.data.frame(predicted))
+              predicted <- predicted[[1]]
+            noneuc <- rep(predicted['noneuc','estimate'], nrow(mask))
+          }
+          else {
+            noneuc <- predictD (object, mask, group, session, parameter = 'noneuc')
+          }
+        }
+        else noneuc <- rep(NA, nrow(mask))
 
         #################################################################
         if (bycluster) {
@@ -575,11 +600,12 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                 cluster <- nearesttrap (mask, centres)
                 mask <- split (mask, cluster)
                 D <- split(D, cluster)
+                noneuc <- split(noneuc, cluster)
             }
             for (i in 1:nclust) {
                 if (splitmask) {
                     out[i] <- sumDpdot(object = object, sessnum = sessnum,
-                        mask=mask[[i]], D = D[[i]], cell = cell,
+                        mask=mask[[i]], D = D[[i]], noneuc = noneuc[[i]], cell = cell,
                         constant = FALSE, oneminus = FALSE)[1]
                 }
                 else {
@@ -590,14 +616,14 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
                         traps(object$capthist) <- temptrap
 
                     out[i] <- sumDpdot(object = object, sessnum = sessnum,
-                        mask=mask, D = D, cell = cell,
+                        mask=mask, D = D, noneuc = noneuc, cell = cell,
                         constant = FALSE, oneminus = FALSE)[1]
                 }
             }
             out
         }
         else {
-            sumDpdot (object, sessnum, mask, D, cell,
+            sumDpdot (object, sessnum, mask, D, noneuc, cell,
              constant = FALSE, oneminus = FALSE)[1]
         }
         #################################################################

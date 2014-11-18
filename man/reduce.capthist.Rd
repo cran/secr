@@ -87,7 +87,10 @@ collapsing multiple days use the first capture, if any, in each
 trap.
 
 Usage data in the \code{traps} attribute are also pooled if present;
-usage is summed over contributing occasions and detectors.
+usage is summed over contributing occasions and detectors. If there is
+no 'usage' attribute in the input, and \code{outputdetector} is one of
+'count', 'polygon', 'transect' and 'telemetry', a homogeneous (all-1's)
+'usage' attribute is first generated for the input.
 
 * i.e., in the case of a single capture, use that capture; in the case of
 multiple `competing' captures draw one at random.

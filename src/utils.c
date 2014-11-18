@@ -121,7 +121,9 @@ double gbinom(int count, int size, double p, int uselog)
 double gnbinom (int count, int size, double mu, int uselog)
 {
     /* prob = size / (size + mu) */
-    size = fabs(size);  /* in case negative 'binomN' passed */
+    /* changed 2014-09-23 */
+    /* size = fabs(size);   in case negative 'binomN' passed */
+    size = abs(size);  /* in case negative 'binomN' passed */
 
     if (count == 0) {  /* faster - added 2010-10-11*/
         if (uselog) return( log(size/(size+mu)) * log(size) );

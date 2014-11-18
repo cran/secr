@@ -143,10 +143,10 @@ setwd(system.file("extdata", package = "secr"))
 possumarea <- readShapePoly("possumarea")  ## possumarea.shp etc.
 possummask2 <- make.mask(traps(possumCH), spacing = 20,
     buffer = 250, type = "trapbuffer", poly = possumarea)
-oldpar <- par(mar = c(1,6,6,6), xpd = TRUE)
+par(mar = c(1,6,6,6), xpd = TRUE)
 plot (possummask2, ppoly = TRUE)
 plot(traps(possumCH), add = T)
-par(oldpar)
+par(mar = c(5,4,4,2) + 0.1, xpd = FALSE)
 
 ## if the polygon delineates non-habitat ...
 seaPossumMask <- make.mask(traps(possumCH), buffer = 1000, 

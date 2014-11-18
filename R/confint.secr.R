@@ -7,6 +7,7 @@
 ## 2011 09 28 optimizer changed to optim from nlm
 ## 2011 10 21 not for user-defined density
 ## 2014-08-22 modified to include smoothsetup argument for secr.lpredictor()
+## 2014-10-25 updated for NE
 ## could be sped up by adopting Venzon & Moolgavkar algorithm
 ## e.g. in Bhat package
 ###############################################################################
@@ -46,6 +47,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                     link       = object$link,
                     fixedpar   = object$fixed,
                     designD    = D.designmatrix,
+                    designNE   = NE.designmatrix,
                     design     = object$design,
                     design0    = object$design0,
                     capthist   = object$capthist,
@@ -62,19 +64,16 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             }
 
             ## maximize for fixed gamma (equivalent to fixed 'parm')
-# experimentally switch optimizer 2011-09-28
-#            lagrange.fit <- nlm (p = object$fit$par, f = lagrange, gamma = gamma, hessian = FALSE)
-#            .localstuff$beta <- lagrange.fit$estimate
             lagrange.fit <- optim (par = object$fit$par, fn = lagrange, gamma = gamma,
                                    hessian = FALSE)
             .localstuff$beta <- lagrange.fit$par
             lp <- - secr.loglikfn (
-#                beta       = lagrange.fit$estimate,
                 beta       = .localstuff$beta,
                 parindx    = object$parindx,
                 link       = object$link,
                 fixedpar   = object$fixed,
                 designD    = D.designmatrix,
+                designNE   = NE.designmatrix,
                 design     = object$design,
                 design0    = object$design0,
                 capthist   = object$capthist,
@@ -252,20 +251,16 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
 
             ## reconstruct density design matrix
             D.modelled <- !object$CL & is.null(object$fixed$D)
-            if (!D.modelled) {
-                D.designmatrix <- matrix(nrow = 0, ncol = 0)
-                attr(D.designmatrix, 'dimD') <- NA
-            }
-            else {
-                sessionlevels <- session(object$capthist)
-                grouplevels  <- group.levels(object$capthist, object$groups)
-                temp <- D.designdata( object$mask, object$model$D, grouplevels,
-                    sessionlevels, object$sessioncov)
-                ## 2014-08-19
-                ## D.designmatrix <- model.matrix(object$model$D, temp)
-                D.designmatrix <- general.model.matrix(object$model$D, temp)
-                attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
-            }
+            NE.modelled <- is.function(object$details$userdist) & is.null(object$fixed$noneuc)           
+            sessionlevels <- session(object$capthist)
+            grouplevels <- group.levels(object$capthist, object$groups)
+            smoothsetup <- object$smoothsetup
+            D.designmatrix <- designmatrix (D.modelled, object$mask, object$model$D,
+                                            grouplevels, sessionlevels, object$sessioncov,
+                                            smoothsetup$D)
+            NE.designmatrix <- designmatrix (NE.modelled, object$mask, object$model$noneuc,
+                                            grouplevels, sessionlevels, object$sessioncov,
+                                            smoothsetup$noneuc)        
         }
     }
     else {

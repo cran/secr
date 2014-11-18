@@ -20,6 +20,7 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
 
     ## individual fits must use ncores = 1
     if (ncores > 1) {
+
         arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
         clust <- makeCluster(ncores, methods = TRUE, outfile = logfile)
         clusterSetRNGStream(clust, seed)

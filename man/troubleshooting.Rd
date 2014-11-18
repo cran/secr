@@ -14,6 +14,12 @@ you.
 
 }
 
+\section{The log-likelihood values shown with trace = TRUE are all NA}{
+  Most likely you have infeasible starting values for the
+  parameters. try some alternatives, specifying them manually with the
+  \code{start} argument.
+}
+
 \section{secr.fit finishes, but some or all of the variances are missing}{
   
   This usually means the model did not fit and the estimates should not

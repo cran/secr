@@ -129,9 +129,9 @@ ovenCH <- make.capthist(temp, netsites0509, covnames=c("Sex"))
 
 }
 
-oldpar <- par(mfrow = c(1,5), mar = c(1,1,4,1))
+par(mfrow = c(1,5), mar = c(1,1,4,1))
 plot(ovenCH, tracks = TRUE, varycol = TRUE)
-par(oldpar)
+par(mfrow = c(1,1), mar = c(5,4,4,2) + 0.1)  ## defaults
 
 counts(ovenCH, "n")
 

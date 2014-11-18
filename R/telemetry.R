@@ -144,7 +144,8 @@ telemetry.LC <- function(CH, detectfn, detectpar, mask, bvn = TRUE) {
     loglik <- 0
     for (id in names(xylist)) {
         m <- nrow(pmask[[id]]$mask)
-        dtrap <- distances (traps, pmask[[id]]$mask)
+        ## dtrap <- distances (traps, pmask[[id]]$mask)
+        dtrap <- edist (traps, pmask[[id]]$mask)
         if (m==1) dtrap <- t(dtrap)  ## kludge to deal with vector
         gkm <- g(dtrap, unlist(detectpar), 0)   # 3rd arg is dummy for cutval
         prw <- matrix(1, nrow = K, ncol = m)

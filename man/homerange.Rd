@@ -26,45 +26,61 @@ the number of detections of each individual (Jett and Nichols 1987: 889).
 
 \code{RPSV} (for `Root Pooled Spatial Variance') is a measure of the 2-D
 dispersion of the locations at which individual animals are detected,
-pooled over individuals.
+pooled over individuals (cf Calhoun and Casby 1958, Slade and Swihart 1983).
 
 }
 
 \usage{
-dbar(capthist, userdist = NULL, ...)
-MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, ...)
-ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, ...)
-moves(capthist, userdist = NULL, ...)
-RPSV(capthist)
+dbar(capthist, userdist = NULL, mask = NULL)
+MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask = NULL)
+ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, mask = NULL)
+moves(capthist, userdist = NULL, mask = NULL)
+RPSV(capthist, CC = FALSE)
 }
 
 \arguments{
   \item{capthist}{ object of class \code{\link{capthist}} }
   \item{userdist}{ function or matrix with user-defined distances}
-  \item{...}{other arguments passed to userdist function, if required}
+  \item{mask}{ habitat mask passed to userdist function, if required}
   \item{min.recapt}{ integer minimum number of recaptures for a
   detection history to be used }
   \item{plt}{ logical; if TRUE observed range length is plotted against number
   of recaptures }
-  \item{full}{ logical; set to TRUE for detailed output }
+\item{full}{ logical; set to TRUE for detailed output }
+\item{CC}{ logical for whether to use Calhoun and Casby formula }
 }
 
 \details{
- \code{dbar} is defined as
+ \code{dbar} is defined as --
  \deqn{
 \overline{d}=\frac{\sum\limits _{i=1}^{n}
                           \sum\limits _{j=1}^{n_i - 1}
                               \sqrt{(x_{i,j}-x_{i,j+1})^2 + (y_{i,j}-y_{i,j+1})^2}}
                          {\sum\limits _{i=1}^{n} (n_i-1)}}{see pdf manual}
 
-\code{RPSV} is defined as
+When \code{CC = FALSE}, \code{RPSV} is defined as --
 \deqn{
  RPSV = \sqrt{
     \frac {\sum\limits _{i=1}^{n} \sum\limits _{j=1}^{n_i} [
 	    (x_{i,j} - \overline x_i)^2 + (y_{i,j} - \overline y_i)^2
 		]}{\sum\limits _{i=1}^{n} (n_i-1) - 1}}
-}{see pdf manual}
+	  }{see pdf manual}.
 
+Otherwise (\code{CC = TRUE}), \code{RPSV} uses the formula of Calhoun
+and Casby (1958) with a different denominator -- 	  
+\deqn{
+ s = \sqrt{
+    \frac {\sum\limits _{i=1}^{n} \sum\limits _{j=1}^{n_i} [
+	    (x_{i,j} - \overline x_i)^2 + (y_{i,j} - \overline y_i)^2
+		]}{2\sum\limits _{i=1}^{n} (n_i-1)}}
+	  }{see pdf manual}.
+
+	  The Calhoun and Casby formula (offered from 2.9.1) correctly estimates \eqn{\sigma}
+	  when trapping is on an infinite, fine grid, and is preferred
+	  for this reason. The original RPSV
+	  (\code{CC = FALSE}) is retained as the default for compatibility with
+	  previous versions of \pkg{secr}.
+	  
 \code{dbar} and \code{RPSV} have a specific role as proxies for
 detection scale in inverse-prediction estimation of density (Efford
 2004; see \code{\link{ip.secr}}).
@@ -94,6 +110,10 @@ each detection history.
 
 \references{
 
+Calhoun, J. B. and Casby, J. U. (1958) Calculation of home range and
+  density of small mammals. Public Health
+  Monograph. No. 55. U.S. Government Printing Office.
+  
 Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
 
@@ -104,6 +124,10 @@ and trapping web density estimators. \emph{Journal of Mammalogy}
 Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
   Statistical inference from capture data on closed animal
   populations. \emph{Wildlife Monographs} \bold{62}, 1--135.
+
+Slade, N. A. and Swihart, R. K. (1983) Home range indices for the hispid
+cotton rat (Sigmodon hispidus) in Northeastern Kansas. \emph{Journal of
+Mammalogy} \bold{64}, 580--590.
 
 }
 
@@ -134,6 +158,7 @@ attraction of animal to detector) or `detection at a distance'.
 \examples{
 dbar(captdata)
 RPSV(captdata)
+RPSV(captdata, CC = TRUE)
 }
 
 \keyword{ models }

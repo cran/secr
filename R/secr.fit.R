@@ -26,7 +26,9 @@
 ## 2014-08-27 default model = NULL (model = list(D~1, g0~1, sigma~1)) REVERSED 2014-09-23
 ## 2014-09-06 warning if use Euclidean distances with linearmask
 ## 2014-09-23 directly replace g0 by lambda0 for detectfn 14:18
-
+## 2014-10-13 designNE for non-Euclidean parameter
+## 2014-10-14 allow start to be incomplete list of real parameter values
+## 2014-10-16 rewrite of pnames and model section for clarity
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -305,17 +307,24 @@
     }
 
     #################################################
-    ## Use input formula to override defaults
+    ## standardize user model and parameterisation
+    #################################################
 
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
+    if (CL) model$D <- NULL
+    if (detector(traps(capthist)) %in% 'telemetry') model$g0 <- NULL
     details$param <- new.param(details, model, CL)
-    ## 2014-09-23
-    if ((detectfn %in% 14:18) & ('g0' %in% names(model))) {
-        names(model)[names(model) == 'g0'] <- 'lambda0'
-        warning ("replacing g0 by lambda0 in model for detectfn ", detectfn )
-    }
-    pnames <- valid.pnames (details, model, CL, detectfn, alltelem, q, nonID)
+    ## intercept and fix certain models with bad defaults
+    model <- updatemodel(model, detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
+    model <- updatemodel(model, detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
+    model <- updatemodel(model, detectfn, 14:18, 'g0', 'lambda0')
+
+    #################################################
+    ## which real parameters are fixed?
+    #################################################
+
+    ## c fixed by default in sigmak parameterisation
     if (details$param %in% 4:6) {
         if (! ("c" %in% names(model))) {
             ## default to fixed c = 0
@@ -324,19 +333,20 @@
         }
     }
     fnames <- names(fixed)
-    pnames <- pnames[!(pnames %in% fnames)]        ## drop fixed real parameters
 
-    ## 2013-11-09 only now fillout model
-    ## pmix, lambda0 added to defaultmodel 2013-04
-    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1, sigma=~1, sigmak=~1,
-                         z=~1, w=~1, c=~1, pID=~1, noneuc=~1, beta0=~1, beta1=~1,
-                         sdS=~1, b0=~1, b1=~1)
-                         ## pmix=~1) ## 2013-10-27
-    model <- replace (defaultmodel, names(model), model)
+    #################################################
+    ## build default model and update with user input
+    #################################################
 
-    ######################################################
-    # Finite mixtures - 2009 12 10, 2011 12 16, 2013 10 27
-    ######################################################
+    defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1,
+                          sigma=~1, sigmak=~1, z=~1, w=~1, c=~1,
+                          pID=~1, noneuc=~1, beta0=~1, beta1=~1,
+                          sdS=~1, b0=~1, b1=~1, pmix=~1)
+    defaultmodel <- replace (defaultmodel, names(model), model)
+
+    #################################################
+    # finite mixtures - 2009 12 10, ... 2014-10-16
+    #################################################
 
     nmix <- get.nmix(model, capthist, hcov)
     if (nmix > 3)
@@ -347,73 +357,95 @@
         stop ("pmix specified for invariant detection model")
 
     if ((nmix>1) & !('pmix' %in% fnames)) {
-        if (is.null(model$pmix))
-            model$pmix <- ~1
-        pmixvars <- all.vars(model$pmix)
-        if (!any (pmixvars %in% c('h2','h3'))) {
-            model$pmix <- if (nmix == 2)
-                update(model$pmix, ~. + h2)
-            else
-                update(model$pmix, ~. + h3)
-        }
-        else {
-            ## badvar <- pmixvars %in% c('t','T','b','B','bk')
-            badvar <- !(pmixvars %in% c('session','Session',sessioncov,'h2','h3'))
-            if (any(badvar))
-                stop ("formula for pmix may not include ", pmixvars[badvar])
-        }
-        pnames <- c(pnames, 'pmix')
+      if (is.null(model$pmix)) model$pmix <- ~1
+      pmixvars <- all.vars(model$pmix)
+      if (!any (pmixvars %in% c('h2','h3'))) ## add mixing h2 or h3
+      {
+        defaultmodel$pmix <- if (nmix == 2)
+          update(model$pmix, ~. + h2)
+        else
+          update(model$pmix, ~. + h3)
+      }
+      else {
+        defaultmodel$pmix <- model$pmix   ## use as-is
+        badvar <- !(pmixvars %in% c('session','Session',sessioncov,'h2','h3'))
+        if (any(badvar))
+          stop ("formula for pmix may not include ", pmixvars[badvar])
+      }
     }
-    else
-        model$pmix <- NULL
     details$nmix <- nmix
 
-    ############################################
-    ## Tidy up
-    ############################################
+    #################################################
+    ## parameter names
+    #################################################
 
-    model[!(names(model) %in% pnames)] <- NULL     ## select real parameters
+    pnames <- valid.pnames (details, CL, detectfn, alltelem, q, nonID, nmix)
+
+    #################################################
+    ## test for irrelevant parameters in user's model
+    #################################################
+
+    OK <- names(model) %in% pnames
+    if (any(!OK))
+      stop ("parameters in model not consistent with detectfn etc. : ",
+            paste(names(model)[!OK], collapse = ', '))
+    OK <- fnames %in% pnames
+    if (any(!OK))
+      stop ("attempt to fix parameters not in model : ",
+            paste(fnames[!OK], collapse = ', '))
+
+    #################################################
+    ## finalise model
+    #################################################
+
+    pnames <- pnames[!(pnames %in% fnames)]   ## drop fixed real parameters
+    model <- defaultmodel[pnames]             ## select real parameters
     valid.model(model, CL, detectfn, hcov, details$userdist, names(sessioncov))
     vars <-  unlist(lapply(model, all.vars))
 
-    ############################################
+    #################################################
     ## Specialisations
-    ############################################
+    #################################################
     if (CL & !(is.null(groups) | (detector(traps(capthist))=='cue'))) {
-        groups <- NULL
-        warning ("groups not valid with CL; groups ignored")
+      groups <- NULL
+      warning ("groups not valid with CL; groups ignored")
     }
     if (CL && var.in.model('g', model))
-        stop ("'g' is not a valid effect when 'CL = TRUE'")
+      stop ("'g' is not a valid effect when 'CL = TRUE'")
     if ((length(model) == 0) & !is.null(fixed))
-        stop ("all parameters fixed")     ## assume want only LL
+      stop ("all parameters fixed")     ## assume want only LL
     if (details$scalesigma) {
-        if (CL)
-            stop ("cannot use 'scalesigma' with 'CL'")
-        if (!is.null(fixed$D))
-            stop ("cannot use 'scalesigma' with fixed density")
-        if (!(model$D == formula(~1) |
+      warning ("scalesigma is deprecated and will soon be dropped from secr;',
+               ' use sigmak parameterization instead (param == 4)")
+      if (CL)
+        stop ("cannot use 'scalesigma' with 'CL'")
+      if (!is.null(fixed$D))
+        stop ("cannot use 'scalesigma' with fixed density")
+      if (!(model$D == formula(~1) |
               model$D == formula(~session)))
-            stop ("cannot use 'scalesigma' with inhomogenous density or groups")
-        if (!is.null(groups))
-            stop ("cannot use 'scalesigma' with groups")
+        stop ("cannot use 'scalesigma' with inhomogenous density or groups")
+      if (!is.null(groups))
+        stop ("cannot use 'scalesigma' with groups")
     }
     if (details$scaleg0) {
-        warning ("scaleg0 is deprecated and will soon be dropped from secr; use a0 parameterization instead (param == 3)")
-        if (!is.null(groups))
-            stop ('Cannot use scaleg0 with groups')
+      warning ("scaleg0 is deprecated and will soon be dropped from secr;',
+               ' use a0 parameterization instead (param == 3)")
+      if (!is.null(groups))
+        stop ('Cannot use scaleg0 with groups')
     }
-    if (details$scaleg0) {
-        warning ("scalesigma is deprecated and will soon be dropped from secr; use sigmak parameterization instead (param == 4")
-    }
-    ############################################
+    ## mark-resight
+    if ('pID' %in% names(model))
+      if (model$pID != ~1)
+        stop ("'pID' must be constant in this implementation")
+
+    #################################################
     # Link functions (model-specific)
-    ############################################
+    #################################################
 
     defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log',
                         a0='log', sigma='log', sigmak='log', z='log',
                         w='log', c='identity', pID='logit',
-                        noneuc='identity', beta0='identity',
+                        noneuc='log', beta0='identity',
                         beta1='neglog', sdS='log', b0='log',
                         b1='neglog', pmix='logit', cuerate='log',
                         cut='identity')
@@ -438,7 +470,7 @@
     # Prepare density design matrix
     ############################################
     D.modelled <- !CL & is.null(fixed$D)
-    smoothsetup <- list(D = NULL)
+    smoothsetup <- list(D = NULL, noneuc = NULL)
     if (!D.modelled) {
        designD <- matrix(nrow = 0, ncol = 0)
        grouplevels <- 1    ## was NULL
@@ -459,23 +491,47 @@
         else {
             memo ('Preparing density design matrix', details$trace)
             if (!all (all.vars(model$D) %in%
-                      c('session', 'Session','g')) & details$param %in% c(4,5))
+                      c('session', 'Session','g')) & details$param %in% c(4,5)) {
+                ## 2014-09-30, 2014-10-04
+                if (is.null(details$userdist))
                 stop ("only session and group models allowed for density when details$param = ",
                       details$param)
+            }
             temp <- D.designdata( mask, model$D, grouplevels, sessionlevels, sessioncov)
-            ## 2014-08-19,22
-            ## D.designmatrix <- model.matrix(model$D, temp)
             if (any(smooths(model$D)))
-                ## smoothsetup$D <- gamsetup(model$D, temp, knots = details$knots)
-                ## knots not working 2014-08-24
                 smoothsetup$D <- gamsetup(model$D, temp)
             ## otherwise, smoothsetup$D remains NULL
-            D.designmatrix <- general.model.matrix(model$D, temp, smoothsetup$D)
-            attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
-            Dnames <- colnames(D.designmatrix)
-            designD <- D.designmatrix
+            designD <- general.model.matrix(model$D, temp, smoothsetup$D)
+            attr(designD, 'dimD') <- attr(temp, 'dimD')
+
+            Dnames <- colnames(designD)
         }
         nDensityParameters <- length(Dnames)
+    }
+
+    ############################################
+    # Prepare non-Euclidean design matrix
+    ############################################
+    ## NE.modelled <- is.function(details$userdist)
+    NE.modelled <- ('noneuc' %in% getuserdistnames(details$userdist)) &
+        is.null(fixed$noneuc)
+    if (!NE.modelled) {
+       designNE <- matrix(nrow = 0, ncol = 0)
+       grouplevels <- 1    ## was NULL
+       attr(designNE, 'dimD') <- NA
+       nNEParameters <- integer(0)
+    }
+    else {
+        grouplevels  <- group.levels(capthist,groups)
+        memo ('Preparing non-Euclidean parameter design matrix', details$trace)
+        temp <- D.designdata( mask, model$noneuc, grouplevels, sessionlevels, sessioncov)
+        if (any(smooths(model$noneuc)))
+            smoothsetup$noneuc <- gamsetup(model$noneuc, temp)
+        ## otherwise, smoothsetup$NE remains NULL
+        designNE <- general.model.matrix(model$noneuc, temp, smoothsetup$noneuc)
+        attr(designNE, 'dimD') <- attr(temp, 'dimD')
+        NEnames <- colnames(designNE)
+        nNEParameters <- length(NEnames)
     }
 
     ############################################
@@ -486,11 +542,12 @@
     else {
         np <- c(detectpar = 0)
     }
-    np <- c(D = nDensityParameters, np)
+    np <- c(D = nDensityParameters, np, noneuc = nNEParameters)
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
     names(parindx) <- names(np)[np>0]
     if (!D.modelled) parindx$D <- NULL
+    if (!NE.modelled) parindx$noneuc <- NULL
 
     ############################################
     # Optionally start from previous fit
@@ -515,8 +572,8 @@
     ############################################
     .localstuff$iter <- 0
     if (details$LLonly) {
-      if (is.null(start))
-          stop ("must provide transformed parameter values in 'start'")
+      if (is.null(start) | is.list(start))
+          stop ("must provide vector of beta parameter values in 'start'")
       if (!is.null(q))
           stop ("not for mark-resight")
 
@@ -525,6 +582,7 @@
                        link       = link,
                        fixedpar   = fixed,
                        designD    = designD,
+                       designNE   = designNE,
                        design     = design,
                        design0    = design0,
                        capthist   = capthist,
@@ -544,8 +602,11 @@
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed)
+    # or a list (secr >= 2.9.1)
     ############################################
-    if (is.null(start)) {
+    ## 2014-10-14
+    ## if (is.null(start)) {
+    if (is.null(start) | is.list(start)) {
         start3 <- list(D = NA, g0 = NA, sigma = NA)
         ## not for signal attenuation
         if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
@@ -593,7 +654,7 @@
             z       = 5,
             w       = 10,
             pID     = 0.7,
-            noneuc  = 0,
+            noneuc  = 50,
             beta0   = details$cutval + 30,
             beta1   = -0.2,
             sdS     = 2,
@@ -654,17 +715,18 @@
             transform (default[[par]], link[[par]])
         }
 
+        ## 2014-10-14, 2014-11-12
+        if (is.list(start)) {
+            startnames <- names(start)
+            default <- replace(default, startnames, start)
+        }
+        else startnames <- NULL
+
         start <- rep(0, NP)
-        for ( i in 1:length(parindx) ) {
-            # print (getdefault (names(model)[i]))
+        for ( i in 1:length(parindx) )
             start[parindx[[i]][1]] <- getdefault (names(model)[i])
-        }
-        if ((details$nmix>1) & !('pmix' %in% fnames))
-            ## new starting values 2013-04-20
-#            start[parindx[['pmix']]] <- clean.mlogit((1:nmix)-0.5)[-1]
-        {
+        if ((details$nmix>1) & !('pmix' %in% fnames) & !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:nmix)-0.5)[2]
-        }
         if (detector(traps(capthist))=='cue')
             start <- c(start, log(3))    ## cuerate
         if (detectfn %in% c(12,13))
@@ -711,6 +773,7 @@
     names(betanames) <- NULL
     realnames <- names(model)
     if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    if (NE.modelled) betanames <- c(betanames, paste('noneuc', NEnames, sep='.'))
     betanames <- sub('..(Intercept))','',betanames)
 
     ############################################
@@ -753,6 +816,7 @@
                      CL         = CL,
                      detectfn   = detectfn,
                      designD    = designD,
+                     designNE   = designNE,
                      design     = design,
                      design0    = design0,
                      hcov       = hcov,
@@ -867,7 +931,7 @@
         ## predicted D across mask
         if (!CL) {
             D <- getD (designD, this.fit$par, mask, parindx, link, fixed,
-                       grouplevels, sessionlevels)
+                       grouplevels, sessionlevels, 'D')
             N <- t(apply(D, 2:3, sum, drop = FALSE))
 
             if (inherits(mask, 'linearmask')) {
@@ -898,7 +962,7 @@
 
     desc <- packageDescription("secr")  ## for version number
 
-    ## if density modelled then smoothsetup already contains D,
+    ## if density modelled then smoothsetup already contains D,noneuc
     ## otherwise an empty list; now add detection parameters from
     ## secr.design.MS
     smoothsetup <- c(smoothsetup, design$smoothsetup)

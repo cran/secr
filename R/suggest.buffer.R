@@ -85,8 +85,10 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
     if (!(detector(traps) %in% .localstuff$individualdetectors))
         stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
-        if (!is.null(usage(traps)))
+    if (!is.null(usage(traps))) {
+        if (any(usage(traps) != 1))
         warning ("bias.D() does not allow for variable effort (detector usage)")
+    }
 
     ntraps <- nrow(traps)
     trapspacing <- spacing(traps)

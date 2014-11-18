@@ -1,3 +1,41 @@
+Changes in version 2.9.1 (2014-11-19)
+
+New features or changed behaviour of old functions
+    o   'noneuc' parameter for user-defined non-Euclidean distances
+        is now a full real parameter that may be modelled like density
+    o   new methods of the generic function raster() from package 'raster'
+        convert mask and Dsurface objects to RasterLayer objects (first load 'raster'); 
+        for this, mask and Dsurface have become virtual S4 classes.
+    o   sim.popn acquires argument keep.mask to control saving of 'core'
+        when model2D IHP or linear
+    o   reduce.capthist(), if no usage matrix is present and the
+        outputdetector is of 'count', 'polygon', 'transect' or 'telemetry'
+        type, generates a usage matrix to record number of occasions pooled 
+    o   secr.fit() argument 'start' may be a list with values for some
+        or all real parameters
+    o   print method for secr objects acquires 'call' argument to
+        suppress printing of voluminous call component.
+    o   RPSV() optionally computes the statistic s of Calhoun and Casby (1958)
+
+Bugs fixed
+    o   region.N() did not work with user-supplied distance function
+    o   join() failed with simple list of single-session capthist
+    o   the default model argument in secr.fit did not work with some
+        model specifications
+    o   strip.legend() reset plot area (par)
+
+Other
+    o   new vignette 'secr-noneuclidean.pdf' and tidying of other documentation
+    o   trap.builder() and make.systematic() use of 'sp' input revised
+    o   internal function edist() exported (Euclidean distances)
+    o   print.secr() deriv argument also works when CL = FALSE
+    o   dbar(), ARL(), MMDM, moves() argument '...' becomes 'mask'
+    o   snip() retains row names and works with multiple transects    
+    o   region.N() correctly saves length of linearmask region
+
+Known bugs
+    o   mixture models fail when the first detector is not 'used' on the first occasion
+    
 Changes in version 2.9.0 (2014-09-23)
 
 New features or changed behaviour of old functions

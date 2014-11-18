@@ -126,7 +126,7 @@ derived(fit.tr, distribution = "binomial")
 derived(fit2, distribution = "binomial")
 
 # may also use CL = FALSE
-secr.fit(combinedCH, CL = FALSE, detectfn = "HHN")
+secr.fit(combinedCH, CL = FALSE, detectfn = "HHN", trace = FALSE)
 }
 
 }

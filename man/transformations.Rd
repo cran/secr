@@ -114,12 +114,12 @@ points (temp2, pch = 1)
 arrows (temp[,1], temp[,2], temp2[,1], temp2[,2], length = 0.1)	
 
 ## flip.traps
-oldpar <- par(mfrow=c(1,2), xpd = TRUE)
+par(mfrow = c(1,2), xpd = TRUE)
 traps1 <- make.grid(nx = 8, ny = 6, ID = "numxb")
 traps2 <- flip (traps1, lr = TRUE)
 plot(traps1, border = 5, label = TRUE, offset = 7, gridl = FALSE)
 plot(traps2, border = 5, label = TRUE, offset = 7, gridl = FALSE)
-par(oldpar)
+par(mfrow = c(1,1), xpd = FALSE)
 
 ## rotate.traps
 hollow1 <- make.grid(nx = 8, ny = 8, hollow = TRUE)

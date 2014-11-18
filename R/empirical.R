@@ -5,6 +5,7 @@
 ## 2011 05 10 - derived.systematic quarantined in 'under development' folder
 ## 2012 03 17 - derived.nj extended to single n
 ## 2012 12 24 - clust argument required in derived.external
+## 2014-10-17 revised to require spsurvey
 ############################################################################################
 
 ## source ('d:\\density secr 2.5\\secr\\r\\empirical.R')
@@ -17,10 +18,12 @@ localvar <- function (z, xy) {
     ## choice of output verified by comparing to
     ## sum ((nj - n/J)^2) * J / (J-1) for ovensong vector
     ## with vartype='SRS'
-    ## if (!require(spsurvey))
-    ##    stop ("package 'spsurvey' required for local variance")
-    temp1 <- spsurvey::total.est(z = z, wgt = rep(1,length(z)),
-        x = xy$x, y = xy$y)
+    if (require(spsurvey))
+        temp1 <- spsurvey::total.est(z = z, wgt = rep(1,length(z)),
+                                     x = xy$x, y = xy$y)
+    else
+        stop ("package 'spsurvey' required for local variance")
+
     temp1[1,4]^2
 }
 

@@ -73,8 +73,11 @@ cluster.centres (object)
   using the polygon.
 
   \code{region} and \code{exclude} may be a two-column matrix or
-  dataframe of x-y coordinates for the boundary, or a
-  SpatialPolygonsDataFrame object from \pkg{sp}.
+  dataframe of x-y coordinates for the boundary, or a SpatialPolygons or
+  SpatialPolygonsDataFrame object from \pkg{sp}. A SpatialPolygons
+  object is mostly sufficient, but a full SpatialPolygonsDataFrame
+  object is required for \code{region} when \code{method = "GRTS"} and
+  \code{frame = NULL}.
   
   \code{method} may be "SRS", "GRTS", "all" or "rank". "SRS" takes a simple
   random sample (without replacement in the case of a finite sampling
@@ -177,21 +180,26 @@ tempgrid <- trap.builder (n = 10, method = "SRS",
     y = c(0,0,1000,1000)), plt = TRUE)
 
 ## GRTS sample of mini-grids within a rectangle
+## GRTS requires package 'spsurvey' that may be unavailable
+##  on Mavericks
 ## edgemethod = "allinside" avoids truncation at edge
 minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
     detector = "proximity")
-tempgrid <- trap.builder (n = 20, cluster = minigrid,
+if (require(spsurvey)) {
+  tempgrid <- trap.builder (n = 20, cluster = minigrid,
     method = "GRTS", edgemethod = "allinside", region =
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
     plt = TRUE)
-
+}
 ## as before, but excluding detectors from a polygon
-tempgrid <- trap.builder (n = 40, cluster = minigrid,
+if (require(spsurvey)) {
+  tempgrid <- trap.builder (n = 40, cluster = minigrid,
     method = "GRTS", edgemethod = "allinside", region =
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
     exclude = cbind(x = c(3000,7000,7000,3000), y =
     c(2000,2000,4000,4000)), exclmethod = "alloutside",
     plt = TRUE)
+}
 
 ## one detector in each 100-m grid cell -
 ## a form of stratified simple random sample

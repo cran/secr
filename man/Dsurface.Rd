@@ -1,5 +1,6 @@
 \name{Dsurface}
 \alias{Dsurface}
+\alias{Dsurface-class}
 \alias{print.Dsurface}
 \alias{summary.Dsurface}
 
@@ -35,6 +36,8 @@ A Dsurface will usually have been constructed with \code{\link{predictDsurface}}
 The `scale' argument may be used to change the units of density from the default
 (animals / hectare) to animals / km^2 (scale = 100) or animals / 100km^2
 (scale = 10000).
+
+A virtual S4 class `Dsurface' is defined to allow the definition of a method for the generic function \code{raster} from the \pkg{raster} package.
 
 }
 

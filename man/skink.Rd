@@ -139,10 +139,10 @@ habclass <- factor (habclass, levels = c(1,2))
 covariates(LSmask) <- data.frame(habclass)
 
 ## plot mask with colour-coded covariate
-oldpar <- par(fg="white")  ## white pixel borders
+par(fg = "white")  ## white pixel borders
 plot (LSmask, covariate = "habclass", dots = FALSE, axes = FALSE,
-    col = c("yellow","green"), border = 0)
+    col = c("yellow", "green"), border = 0)
 plot(LStraps, add = TRUE, detpar = list(pch = 16))
-par(oldpar)
+par(fg = "black")    ## default
 }
 \keyword{datasets}

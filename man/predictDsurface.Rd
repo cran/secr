@@ -9,7 +9,7 @@ Predict density at each point on a raster mask from a fitted secr model.
 
 \usage{
 predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
-0.05)
+0.05, parameter = c('D', 'noneuc'))
 }
 
 \arguments{
@@ -18,6 +18,7 @@ predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
   \item{se.D}{ logical for whether to compute prediction SE}
   \item{cl.D}{ logical for whether to compute confidence limits}
   \item{alpha}{ alpha level for 100(1 -- alpha)\% confidence intervals }
+  \item{parameter}{ character for real parameter to predict}
 }
 
 \details{
@@ -64,7 +65,7 @@ shorePossums <- predictDsurface(possum.model.Ds)
 par(mar = c(1,1,1,6))
 plot(shorePossums, plottype = "shaded", polycol = "blue", border = 100)
 plot(traps(possumCH), detpar = list(col = "black"), add = TRUE)
-
+par(mar = c(5,4,4,2) + 0.1)  ## reset to default
 ## extract and summarise
 summary(covariates(shorePossums))
 
@@ -77,7 +78,7 @@ dts <- distancetotrap(regionmask, possumarea)
 covariates(regionmask) <- data.frame(d.to.shore = dts)
 regionPossums <- predictDsurface(possum.model.Ds, regionmask,
     se.D = TRUE, cl.D = TRUE)
-par(mfrow = c(1,2))
+par(mfrow = c(1,2), mar = c(1,1,1,6))
 plot(regionPossums, plottype = "shaded", mesh = NA, breaks = 20)
 plot(regionPossums, plottype = "contour", add = TRUE)
 plot(regionPossums, covariate = "SE", plottype = "shaded",
@@ -108,6 +109,8 @@ pm <- plot(regionPossums, plottype = "persp", box = FALSE, zlim =
     c(0,3), phi=30, d = 5, col = "green", shade = 0.75, border = NA)
 lines(trans3d (possumremovalarea$x, possumremovalarea$y,
      rep(1,nrow(possumremovalarea)), pmat = pm))
+
+par(mfrow = c(1,1), mar = c(5, 4, 4, 2) + 0.1)  ## reset to default
 
 ## compare estimates of region N
 ## grid cell area is 0.01 ha

@@ -40,7 +40,7 @@ The data are provided as a single-session \code{capthist} object. There
 are two individual covariates: sex (factor levels `f', `m') and age
 class (factor levels `j', `sa', `a'). The sex of two animals is not
 available (NA); it is necessary to drop these records for analyses
-using `sex'.
+using `sex' unless missing values are specifically allowed, as in \code{\link{hcov}}.
 
 The datasets were originally in the CAPTURE `xy complete' format which
 for each detection gives the `column' and `row' numbers of the trap

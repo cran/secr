@@ -123,19 +123,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
 
         }
 
-##        Xrealparval0 <- scaled.detection (realparval0, FALSE, object$details$scaleg0, NA)
-##        if (object$details$param == 2)
-##            Xrealparval0 <- reparameterize.esa (Xrealparval0, mask, trps, object$detectfn, s)
-##        if (object$details$param == 3)
-##            Xrealparval0 <- reparameterize.a0 (Xrealparval0, object$detectfn)
-##        ## inappropriate
-##        if (object$details$param == 4) {
-##            stop("param = 4 not available")
-##            Xrealparval0 <- reparameterize.sigmak (Xrealparval0, NA)
-##        }
-
-        ## D.modelled <- !object$CL & is.null(object$fixed$D)
-        ## Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
         Dtemp <- NA
         Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
                                         mask, trps, Dtemp, s)
@@ -186,17 +173,27 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         useD <- FALSE
 
         ##------------------------------------------
-        ## 2014-09-08
+        ## 2014-09-08, 2014-10-17
         if (is.null(object$details$userdist))
             distmat <- -1
         else {
-            sessPIA <- PIA[sessnum]   ## expected to pick first appropriate to sessnum
+
+            userdistnames <- getuserdistnames(object$details$userdist)
+            if (is.null(covariates(mask)))
+                covariates(mask) <- data.frame(row.names = 1:nrow(mask))
+            if ('noneuc' %in% userdistnames) {
+                covariates(mask)$noneuc <- predictD (object, mask,
+                                1, sessnum, parameter = 'noneuc')
+            }
+            if ('D' %in% userdistnames)
+                ## covariates(mask)$D <- D
+                stop ("userdist function requiring D not implemented for esa")
+
             distmat <- valid.userdist (object$details$userdist,
                                        detector(trps),
                                        xy1 = trps,
                                        xy2 = mask,
-                                       geometry = mask,
-                                       sesspars = Xrealparval0[sessPIA,])
+                                       mask = mask)
         }
         ##------------------------------------------
 

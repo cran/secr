@@ -272,7 +272,7 @@ base.plot <- function() {
         ylab = "", type = "n")
     polygon(testregion)
 }
-par(mfrow = c(1,3), xpd = T, xaxs = "i", yaxs = "i")
+par(mfrow = c(1,3), xpd = TRUE, xaxs = "i", yaxs = "i")
 base.plot()
 plot(popn2, add = TRUE, col = "blue")
 mtext(side=3, line=0.5, "Population", cex=0.8, col="black")
@@ -280,7 +280,7 @@ base.plot()
 plot (capt2a, add = TRUE,title = "Extensive survey")
 base.plot()
 plot(capt2, add = TRUE, title = "Intensive survey")
-
+par(mfrow = c(1,1), xpd = FALSE, xaxs = "r", yaxs = "r")  ## defaults
 }
 
 }

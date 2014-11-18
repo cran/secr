@@ -59,7 +59,7 @@ trapping grid as the shapefile `OVforest.shp' in the package `extdata'
 folder. This distinguishes two forest classes (`beech' and `non-beech'),
 and leaves out the shingle riverbed. The distinction between `beech' and
 `non-beech' is mapped only to a distance of about 120 m from the
-outermost traps. A text file 'leftbank.txt' in the same folder contains the x- and y- coordinates of the adjoining bank of the Orongorongo River. All coordinates relate to the old New Zealand Map Grid (NZMG), since replaced by the New Zealand Transverse Mercator grid ((NZTM2000).
+outermost traps. A text file 'leftbank.txt' in the same folder contains the x- and y- coordinates of the adjoining bank of the Orongorongo River. All coordinates relate to the old New Zealand Map Grid (NZMG), since replaced by the New Zealand Transverse Mercator grid (NZTM2000).
 
 The example code shows how to import the shapefile as a \pkg{sp}
 SpatialPolygonsDataFrame object and use it to construct a mask for

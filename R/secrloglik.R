@@ -30,6 +30,7 @@
 ## 2014-03-25 param=4,5,6 sigmak parameterisation in secrloglik
 ## 2014-08-18 dropped 'c' column in reparameterize.sigmak
 ## 2014-08-19 moved secr.lpredictor to utility.R
+## 2014-10-13 noneuc handled as mask-pixel-specific parameter
 
 ###############################################################################
 
@@ -77,6 +78,8 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
     nrealpar  <- length(design$designMatrices)
     parindx$D <- NULL ## detection parameters only
     link$D    <- NULL ## detection parameters only
+    parindx$noneuc <- NULL ## detection parameters only
+    link$noneuc    <- NULL ## detection parameters only
     detectionparameters <- names(link)
     OK <- names(fixed) %in% detectionparameters
     fixed.dp <- fixed[OK]
@@ -229,32 +232,39 @@ reparameterize <- function (realparval, detectfn, details, mask, traps, D, s) {
 ###############################################################################
 
 getD <- function (designD, beta, mask, parindx, link, fixed,
-                  grouplevels, sessionlevels) {
-    if (ms(mask))
-        nmask <- max(sapply(mask, nrow))
-    else
-        nmask <- nrow(mask)
-    ngroup <- length(grouplevels)
-    nsession <- length(sessionlevels)
-    D <- array(dim = c(nmask, ngroup, nsession))
-    dimnames(D) <- list(1:nrow(D), grouplevels, sessionlevels)
-    if (!is.null(fixed$D)) {
-        D[,,] <- fixed$D
-    }
-    else {
-        if (is.function(designD))
-            D[,,] <- designD(beta[parindx$D], mask, ngroup, nsession)
-        else {
-            D[,,] <- designD %*% beta[parindx$D]   # linear predictor
-            D[,,] <- untransform (D, link$D)
-        }
-        D[D<0] <- 0                            # silently truncate at zero
-    }
-    D
+                  grouplevels, sessionlevels, parameter = 'D') {
+  ## adapted 2014-10-13 to apply to either 'D' or 'noneuc'
+  if (!is.function(designD)) {
+      if (is.null(designD) | nrow(designD)==0) return(NULL)
+  }
+  if (ms(mask))
+      nmask <- max(sapply(mask, nrow))
+  else
+      nmask <- nrow(mask)
+  ngroup <- length(grouplevels)
+  nsession <- length(sessionlevels)
+  D <- array(dim = c(nmask, ngroup, nsession))
+  dimnames(D) <- list(1:nrow(D), grouplevels, sessionlevels)
+  if (!is.null(fixed[[parameter]])) {
+      D[,,] <- fixed[[parameter]]
+  }
+  else {
+      if (is.function(designD))
+          D[,,] <- designD(beta[parindx[[parameter]]], mask, ngroup, nsession)
+      else {
+          D[,,] <- designD %*% beta[parindx[[parameter]]]   # linear predictor
+          D[,,] <- untransform (D, link[[parameter]])
+      }
+      # silently truncate D at zero
+      # allow non-positive noneuc
+      if (parameter == 'D')
+          D[D<0] <- 0
+  }
+  D
 }
 ###############################################################################
 
-secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
+secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, design,
     design0, capthist, mask, detectfn, CL, hcov, groups, details, logmult, ncores,
     clust, dig = 3, betaw = 10, neglik = TRUE)
 
@@ -267,7 +277,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
 # details$trace=T sends a one-line report to the screen
 
 {
-    ## for models fitted with old versions we need to fillin these values
+    ## for models fitted with old versions we need to fill in these values
     if (is.null(details$minprob)) details$minprob <- 1e-50
     if (is.null(details$debug)) details$debug <- FALSE   ## 2012-10-28
     if (is.null(details$ignoreusage)) details$ignoreusage <- FALSE  ## 2013-01-23
@@ -295,8 +305,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
 
     #--------------------------------------------------------------------
     # Detection parameters
-    detparindx <- parindx[!(names(parindx) %in% c('D'))]
-    detlink <- link[!(names(link) %in% c('D'))]
+    detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
+    detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
 
@@ -304,11 +314,17 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
     # Density
     D.modelled <- !CL & is.null(fixedpar$D)
     if (!CL ) {
-        D <- getD (designD, beta, mask, parindx, link, fixedpar,
-                    levels(grp[[1]]), sessionlevels)
-        if (sum(D) <= 0)
-            warning ("invalid density <= 0")
+      D <- getD (designD, beta, mask, parindx, link, fixedpar,
+                 levels(grp[[1]]), sessionlevels, parameter = 'D')
+      if (sum(D) <= 0)
+        warning ("invalid density <= 0")
     }
+    #--------------------------------------------------------------------
+    # Non-Euclidean distance parameter
+    NE <- getD (designNE, beta, mask, parindx, link, fixedpar,
+                levels(grp[[1]]), sessionlevels, parameter = 'noneuc')
+    userdistnames <- getuserdistnames(details$userdist)
+
     #--------------------------------------------------------------------
 
     ###############################################################################################
@@ -390,8 +406,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                 session.mask <- as.matrix(session.mask[,c(1:2,2)])
             }
         }
-##        else
-##            session.mask <- as.matrix(session.mask[,1:2])  ## ceases to be mask
 
         ## knownclass is computed from current session.capthist, so doesn't need ID
         knownclass <- getknownclass(session.capthist, nmix, hcov)
@@ -447,25 +461,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                     ## build animal-specific model for probability density of centroid
                     pi.mask <- telemetry.LCmask(CT.capthist, session.mask,
                                                 bvn = details$telemetrybvn)
-## DEBUG
-##                    require(MASS)
-##                    covariates(session.mask) <- pi.mask
-##                    for (i in 1:5) {
-##                        plot(session.mask, covariate=i, dots=F);
-##                        plot(subset(CT.capthist,i), add=T)
-##                    }
-##                    stop()
-
                     LL.CT <- sessionLL(sessnum, CH = CT.capthist, ID = ID[telem], NT = 0,
                                          like = CL+3, pi.mask = pi.mask)
                 }
                 LL.CU + LL.CT + LL.TS
-
-## DEBUG
-##                cat ('ntelem ', ntelem, ' nrow(CU) ', nrow(CU.capthist), ' nrow(CT) ',
-##                     nrow(CT.capthist), ' LL.CU ', LL.CU, ' LL.CT ', LL.CT, ' LL.TS ',
-##                     LL.TS, ' total ', LL.CU+LL.CT+LL.TS, '\n')
-
             }
             else
             if (details$telemetrytype == 'dependent') {
@@ -549,13 +548,14 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
                     density <- density - NT / maskarea(mask, sessnum)
                 }
             }
-            ## if (details$debug) browser()
 
             ##------------------------------------------
             ## allow for scaling of detection
 
-            ## DOES NOT ALLOW FOR GROUP OR IHP VARIATION IN DENSITY
-            Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
+            ## DOES NOT ALLOW FOR GROUP VARIATION IN DENSITY
+            ## Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
+            ## 2014-09-30
+            Dtemp <- if (D.modelled) mean(D[,1,sessnum]) else NA
             Xrealparval <- reparameterize (realparval, detectfn, details,
                                            session.mask, session.traps, Dtemp, s)
             Xrealparval0 <- reparameterize (realparval0, detectfn, details,
@@ -585,19 +585,23 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             if (is.null(details$userdist))
                 distmat <- -1
             else {
-##                attr(session.mask, 'area') <- cell
-##                attr(session.mask, 'spacing') <- space
-##                attr(session.mask, 'spacingfactor') <- spacefactor
-                ## use first parameter set for this session, on assumption that
-                ## only session variation is allowed in noneuc
 
-                sessPIA <- design$PIA[sessg,1,1,1,1]
+                if (is.null(covariates(session.mask)))
+                    covariates(session.mask) <- data.frame(row.names = 1:m)
+                if ('noneuc' %in% userdistnames)
+                    covariates(session.mask)$noneuc <- NE[1:m,,min(dim(NE)[3],sessnum)]
+                if ('D' %in% userdistnames)
+                    covariates(session.mask)$D <- density
                 distmat <- valid.userdist (details$userdist,
-                                     detector(session.traps),
-                                     xy1 = session.traps,
-                                     xy2 = session.mask,
-                                     geometry = session.mask,
-                                     sesspars = Xrealparval[sessPIA,])
+                                           detector(session.traps),
+                                           xy1 = session.traps,
+                                           xy2 = session.mask,
+                                           mask = session.mask)
+                baddist <- (!is.finite(distmat)) | (distmat<0) | is.na(distmat)
+                if (any(baddist)) {
+                    warning ("replacing infinite, negative and NA userdist values with 1e10")
+                    distmat[baddist] <- 1e10
+                }
             }
 
             ##------------------------------------------
@@ -704,6 +708,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, design,
             ## typical call (not 'presence' or 'unmarked')
             ##--------------------------------------------
             else {
+if (usge[1]==0 & nmix>1)
+    stop ("mixture models fail when the first detector is not used on the first day")
                 temp <- .C('secrloglik', PACKAGE = 'secr',
                    as.integer(like),          # 0 = full, 1 = CL, 3 = concurrent, 4 = concurrent CL
                    as.integer(dettype),       # 0 = multicatch, 1 = proximity, etc

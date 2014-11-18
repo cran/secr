@@ -173,20 +173,17 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         distmatX <- -1
     }
     else {
-        sessPIA <- object$design$PIA[sessnum,1,1,1,1]
         distmat <- valid.userdist (details$userdist,
                                    detector(session.traps),
                                    xy1 = session.traps,
                                    xy2 = session.mask,
-                                   geometry = session.mask,
-                                   sesspars = Xrealparval[sessPIA,])
+                                   mask = session.mask)
         ## But we also need distances to new points X...
         distmatX <- valid.userdist (details$userdist,
                                    detector(session.traps),
                                    xy1 = session.traps,
                                    xy2 = X,
-                                   geometry = session.mask,
-                                   sesspars = Xrealparval[sessPIA,])
+                                   mask = session.mask)
     }
     fxone <- function (i) {
         temp <- .C('fxIHP', PACKAGE = 'secr',

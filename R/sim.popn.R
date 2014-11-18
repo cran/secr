@@ -51,7 +51,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
   "cluster", "IHP", "coastal", "hills", "linear"), buffertype = 'rect', poly = NULL,
   covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
   = c('poisson','fixed','specified'), nsession = 1, details = NULL, seed = NULL,
-  ...)  {
+  keep.mask = model2D %in% c('IHP','linear'), ...)  {
 
     model2D <- match.arg(model2D)
     Ndist <- match.arg(Ndist)
@@ -299,9 +299,12 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         if (nrow(animals) > 0)   ## condition added 2011-03-27
             row.names (animals) <- number.from : (nrow(animals)+number.from-1)
 
+        if (keep.mask) {
+            if (model2D %in% c('IHP','linear'))
+                attr(animals, 'mask') <- core
+        }
         if (model2D == 'linear') {
             class(animals) <- c('linearpopn', 'popn', 'data.frame')
-            attr(animals, 'mask') <- core
         }
         else {
             class(animals) <- c('popn', 'data.frame')

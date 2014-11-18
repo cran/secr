@@ -147,7 +147,7 @@ The area in hectares of the region is saved as attribute `regionarea'.
   sampling variance is the sampling variance of \eqn{E(N)} minus the
   estimate of \eqn{E(N)} (representing Poisson process variance). This
   has been found to give reliable confidence intervals in simulations
-  (Efford and Fewster 2012).
+  (Efford and Fewster 2013).
 
   If RN.method is neither `MSPE' nor `poisson' (ignoring case) then
   the estimate of expected \eqn{N} is also used for realised \eqn{N},

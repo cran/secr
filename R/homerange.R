@@ -6,9 +6,9 @@
 ## 2014-09-10 does NOT work when userdist fn requires mask covariates..
 ############################################################################################
 
-dbar <- function (capthist, userdist = NULL, ...) {
+dbar <- function (capthist, userdist = NULL, mask = NULL) {
     if (inherits (capthist, 'list')) {
-        lapply(capthist, dbar, userdist, ...)   ## recursive
+        lapply(capthist, dbar, userdist, mask)   ## recursive
     }
     else {
         ## 2014-09-01
@@ -23,7 +23,7 @@ dbar <- function (capthist, userdist = NULL, ...) {
 
         traps <- traps(capthist)
         ## 2014-09-01
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, ... )
+        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for dbar")
 
@@ -45,9 +45,9 @@ dbar <- function (capthist, userdist = NULL, ...) {
 }
 ############################################################################################
 
-moves <- function (capthist, userdist = NULL, ...) {
+moves <- function (capthist, userdist = NULL, mask = NULL) {
     if (inherits (capthist, 'list')) {
-        lapply(capthist, moves, userdist, ...)   ## recursive
+        lapply(capthist, moves, userdist, mask)   ## recursive
     }
     else {
         movex    <- function (x) {
@@ -59,7 +59,7 @@ moves <- function (capthist, userdist = NULL, ...) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
         traps <- traps(capthist)
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, ... )
+        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask)
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for moves")
         if (detector(traps) %in% .localstuff$polydetectors) {
@@ -75,9 +75,10 @@ moves <- function (capthist, userdist = NULL, ...) {
 ############################################################################################
 
 
-ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, ...) {
+ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL,
+                 mask = NULL) {
     if (inherits (capthist, 'list')) {
-        lapply(capthist, ARL, plt = plt, full = full, userdist = userdist, ...)   ## recursive
+        lapply(capthist, ARL, plt = plt, full = full, userdist = userdist, mask)   ## recursive
     }
     else {
         MMDMx <- function (cx) {
@@ -96,7 +97,7 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
         traps <- traps(capthist)
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for ARL")
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, ... )
+        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         prox  <- length(dim(capthist)) > 2
         if (detector(traps) %in% .localstuff$polydetectors) {
             lxy <- split (xy(capthist), animalID(capthist))
@@ -139,9 +140,9 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
 }
 ############################################################################################
 
-MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, ...) {
+MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask = NULL) {
     if (inherits (capthist, 'list')) {
-        lapply(capthist, MMDM, full = full, userdist = userdist, ...)   ## recursive
+        lapply(capthist, MMDM, full = full, userdist = userdist, mask = mask)   ## recursive
     }
     else {
         MMDMx <- function (cx) {
@@ -158,7 +159,7 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, ...) 
                 max(dist(cbind(xy$x, xy$y)))
         }
         traps <- traps(capthist)
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, ... )
+        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for MMDM")
         if (detector(traps) %in% .localstuff$polydetectors) {
@@ -193,10 +194,10 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, ...) 
 }
 ############################################################################################
 
-RPSV <- function (capthist)
+RPSV <- function (capthist, CC = FALSE)
 {
     if (inherits (capthist, 'list')) {
-        lapply(capthist, RPSV)   ## recursive
+        lapply(capthist, RPSV, CC)   ## recursive
     }
     else {
         RPSVx <- function (cx) {
@@ -225,13 +226,16 @@ RPSV <- function (capthist)
         }
         temp <- matrix(unlist(temp), nrow = 3)
         temp <- apply(temp,1,sum, na.rm=T)
-        temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
+        if (CC)
+            temp <- sqrt((temp[2]+temp[3]) / (2 * temp[1]))
+        else
+            temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
         attr(temp,'names') <- NULL
         temp
     }
 }
-############################################################################################
 
+############################################################################################
 ## source ('d:\\density secr 1.3\\secr\\r\\mmdm.R')
 ## data(Peromyscus)
 

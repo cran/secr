@@ -143,7 +143,7 @@ setwd(olddir)
 
 \dontrun{
 plot(tempcapt)
-secr.fit(tempcapt)
+secr.fit(tempcapt, trace = FALSE)
 ## etc.
 }
 }

@@ -27,10 +27,10 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
             df$signal <- signal(CH)
         df
     }
-
-    if (!ms(object) | !inherits(object, 'capthist'))
+    #    if (!ms(object) | !inherits(object, 'capthist'))   
+    if (!ms(object) | any(sapply(object, class) != 'capthist'))
         stop("requires multi-session capthist object or list of single-session capthist")
-
+    
     outputdetector <- detector(traps(object)[[1]])
     nsession <- length(object)
 

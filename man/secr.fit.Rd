@@ -83,7 +83,8 @@ mask of type "trapbuffer" will be constructed automatically using the
 specified buffer width in metres.
 
 \code{hcov} is used to define a hybrid mixture model, used especially to
-model sex differences (see \code{\link{hcov}}).
+model sex differences (see \code{\link{hcov}}). (Allows some animals to
+be of unknown class).
 
 The length of \code{timecov} should equal the number of sampling
 occasions (\code{ncol(capthist)}). Arguments \code{timecov},
@@ -222,6 +223,8 @@ components
   \code{optim}) }
 
   \item{beta.vcv }{variance-covariance matrix of beta parameters }  
+  
+  \item{smoothsetup}{list of objects specifying smooths in \pkg{mgcv}}
 
   \item{N }{ if CL = FALSE, array of predicted number in each group at
     in each session, summed across mask, dim(N) = c(ngroups, nsessions),
@@ -242,8 +245,8 @@ Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.
 
 Efford, M. G. (2011) Estimation of population density by spatially
-explicit capture--recapture with area or transect searches. Unpublished
-manuscript.
+explicit capture--recapture with area searches. \emph{Ecology}
+\bold{92}, 2202--2207.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture--recapture: likelihood-based methods. In:
@@ -294,7 +297,7 @@ or to infer N for a different region.
 
 Prior to version 2.3.2 the buffer bias check could be switched off by
 setting \code{verify = FALSE}. This is now done by setting
-\code{biasLimit = 0}.
+\code{biasLimit = 0} or \code{biasLimit = NA} .
 
 }
 
@@ -313,6 +316,7 @@ setting \code{verify = FALSE}. This is now done by setting
   \code{\link{region.N}},
   \link{Speed tips}
   \link{Troubleshooting}
+  \link{userdist}
   \code{\link{usage}},
   \code{\link{vcov.secr}},
   \code{\link{verify}},

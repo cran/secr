@@ -34,7 +34,7 @@
 ## 2014-08-19 moved secr.lpredictor from secrloglik.R
 ## 2014-08-21 smooths function
 ## 2014-08-29 masklength()
-## 2014-09-01 valid.userdist()
+## 2014-09-01 valid.userdist() revised 2014-10-13
 ## 2014-09-09 make.lookup uses values rounded to 10 dp
 ## 2014-09-10 getnoneucnames()
 ## 2014-09-10 getcellsize()
@@ -156,27 +156,23 @@ valid.model <- function(model, CL, detectfn, hcov, userdist, sessioncovnames) {
     ## 2014-08-25
     if (any(sapply(model, badsmooths)))
         warning("smooth term may be unsuitable for secr: does not specify k or fx where required")
-    if (is.function(userdist)) {
-        vars <- all.vars(model$noneuc)
-        if (!all(vars %in% c('session', 'Session', sessioncovnames)))
-        stop ("non-Euclidean distance parameter may vary only over sessions")
-        if (length(getnoneucnames(userdist)) > 1)
-            stop ("only one non-Euclidean distance parameter allowed in this version")
-    }
 }
 
-getnoneucnames <- function (userdist) {
+getuserdistnames <- function (userdist) {
     ## return the names of any supplementary arguments of user-provided function
     ## for non-euclidean distance computations
     if (is.function(userdist)) {
-        noneucnames <- names(formals(userdist))[-(1:3)]
-        noneucnames[noneucnames != "..."]
+        distnames <- try(userdist(), silent = TRUE)
+        if (!is.character(distnames))
+            stop("invalid userdist function - ",
+                 "should return parameter names when called with no arguments")
+        distnames
     }
     else
         character(0)
 }
 
-valid.pnames <- function (details, model, CL, detectfn, alltelem, q, nonID) {
+valid.pnames <- function (details, CL, detectfn, alltelem, q, nonID, nmix) {
     ## modelled parameters
     pnames <- switch (detectfn+1,
         c('g0','sigma'),           # 0 halfnormal
@@ -207,52 +203,39 @@ valid.pnames <- function (details, model, CL, detectfn, alltelem, q, nonID) {
         pnames[2] <- 'sigmak'
         pnames <- c(pnames, 'c')
     }
-    if (!CL) pnames <- c('D', pnames)
-    if (!is.null(q) & nonID) {
-	pnames <- c(pnames, 'pID')
-        if (model$pID != ~1)
-            stop ("'pID' must be constant in this implementation")
-    }
+    if (nmix>1)
+      pnames <- c(pnames, 'pmix')
+    if (!CL)
+      pnames <- c('D', pnames)
+    if ('noneuc' %in% getuserdistnames(details$userdist))
+      pnames <- c(pnames, 'noneuc')
+    if (!is.null(q) & nonID)
+      pnames <- c(pnames, 'pID')
     if (alltelem) {
         rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
         rnum[is.na(rnum)] <- 0
         pnames <- pnames[-rnum]
     }
-    if (is.function(details$userdist) &
-        (length(getnoneucnames(details$userdist)) == 1)) {
-        pnames <- c(pnames, 'noneuc')
-    }
-
-    OK <- names(model) %in% pnames
-    if (any(!OK))
-      stop ("parameters in model not consistent with detectfn etc. : ",
-          paste(names(model)[!OK], collapse = ', '))
     pnames
 }
 #-------------------------------------------------------------------------------
 
-valid.userdist <- function (userdist, detector, xy1, xy2, geometry, sesspars) {
-    ## 2014-09-01, 2014-09-10
-    ## noneucpars is a named list of supplementary parameters for userdist
+valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
+    ## 2014-09-01, 2014-09-10, 2014-10-13
     if (is.null(userdist)) {
-        nr1 <- nrow(xy1)
-        nr2 <- nrow(xy2)
-        xy1 <- as.matrix(xy1)
-        xy2 <- as.matrix(xy2)
         ## default to Euclidean distance
-        result <- as.matrix(dist(rbind(xy1, xy2)))[1:nr1, (nr1+1):(nr1+nr2)]
+        result <- edist(xy1, xy2)  ## as.matrix(dist(rbind(xy1, xy2)))[1:nr1, (nr1+1):(nr1+nr2)]
     }
     else {
         if (detector %in% .localstuff$polydetectors) {
             stop ("userdist cannot be used with polygon detector types;")
         }
         if (is.function(userdist)) {
-            noneucind <- getnoneucnames(userdist)
-            noneucindpar <- noneucind[noneucind %in% names(sesspars)]
-            noneucindcov <- noneucind[noneucind %in% names(covariates(geometry))]
-            ## make a list
-            noneucpars <- c(sesspars[noneucindpar], covariates(geometry)[noneucindcov])
-            result <- do.call(userdist, c(list(xy1, xy2, geometry), noneucpars))
+            OK <- getuserdistnames(userdist) %in% names(covariates(mask))
+            if ((length(OK)>0) & !all(OK))
+                stop ("covariates required by userdist function not in mask : ",
+                      paste(getuserdistnames(userdist)[!OK], collapse=','))
+            result <- do.call(userdist, c(list(xy1, xy2, mask)))
         }
         else {
             result <- userdist
@@ -1437,13 +1420,18 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
 
 ############################################################################################
 
-distance <- function (xy1, xy2) {
-    nr1 <- nrow(xy1)
-    nr2 <- nrow(xy2)
-    xy <- rbind(as.matrix(xy1), as.matrix(xy2))
-    as.matrix(dist(xy))[1 : nr1, (nr1+1) : (nr1+nr2)]
+## 2014-10-06
+edist <- function (xy1, xy2) {
+  nr <- nrow(xy1)
+  nc <- nrow(xy2)
+  x1 <- matrix(xy1[,1], nr, nc)
+  x2 <- matrix(xy2[,1], nr, nc, byrow=T)
+  y1 <- matrix(xy1[,2], nr, nc)
+  y2 <- matrix(xy2[,2], nr, nc, byrow=T)
+  sqrt((x1-x2)^2 + (y1-y2)^2)
 }
-## tmp <- distance(traps(captdata), secrdemo.0$mask)
+## tmp <- edist(traps(captdata), secrdemo.0$mask)
+
 ############################################################################################
 
 getcellsize <- function (mask) {
@@ -1453,3 +1441,18 @@ getcellsize <- function (mask) {
         attr(mask, 'area')            ## per ha
 }
 ############################################################################################
+
+## 2014-10-25
+## intercept and fix certain ,models with bad defaults
+updatemodel <- function (model, detectfn, detectfns, oldvar, newvar) {
+    if (detectfn %in% detectfns) {
+        for (i in 1:length(oldvar)) {
+            if (oldvar[i] %in% names(model)) {
+                names(model)[names(model) == oldvar[i]] <- newvar[i]
+                warning ("replacing ", oldvar[i], " by ", newvar[i], " in model for detectfn ", 
+                         detectfn)
+            }
+        }
+    }
+    model
+}

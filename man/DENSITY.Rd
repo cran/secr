@@ -9,7 +9,7 @@
 Data in the DENSITY formats for capture data and trap layouts may be
 imported as a \code{capthist} object for analysis in \pkg{secr}. Data in
 a \code{capthist} object may also be exported in these formats for use
-in DENSITY (Efford 2009). \code{read.capthist} inputs data from text
+in DENSITY (Efford 2012). \code{read.capthist} inputs data from text
 files and constructs a \code{capthist} object in one step using the
 functions \code{read.traps} and \code{make.capthist}.
 

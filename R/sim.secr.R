@@ -421,13 +421,11 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         session.animals <- popnlist[[sessnum]]
         if (userd) {
             ## pre-compute distances from detectors to animals
-            sessPIA <- object$design$PIA[sessnum,1,1,1,1]
             distmat <- valid.userdist (object$details$userdist,
                                        detector(session.traps),
                                        xy1 = session.traps,
                                        xy2 = session.animals,
-                                       geometry = session.mask,
-                                       sesspars = Xrealparval1[sessPIA,])
+                                       mask = session.mask)
         }
         else {
             distmat <- -1

@@ -6,6 +6,7 @@
 ## 2012-11-03 CLdensity and CLgradient moved from functions.R
 ## 2013-06-24 fixed bug in esa dummy grp (0 should be 1) that caused intermittent fault in derived
 ## 2014-04-05 fixed bug mapply SIMPLIFY = FALSE
+## 2014-10-28 adjust for linear mask
 ############################################################################################
 
 
@@ -167,9 +168,14 @@ if (inherits(object, 'secrlist')) {
         else {
 
             se.deriveD <- function (selection, selected.a, asess) {
+                A <-  if (inherits(mask, 'linearmask'))
+                    masklength(mask)
+                else
+                    ## maskarea(object$mask, asess)
+                    maskarea(mask)
                 s2 <- switch (tolower(object$details$distribution),
                    poisson  = sum (1/selected.a^2),
-                   binomial = sum (( 1 - selected.a / maskarea(object$mask, asess)) / selected.a^2))
+                   binomial = sum (( 1 - selected.a / A) / selected.a^2))
                 CLg  <- CLgradient (object, selection, asess, clust=clust)
                 varDn <- CLg %*% object$beta.vcv %*% CLg
                 list(SE=sqrt(s2 + varDn), s2=s2, varDn=varDn)
@@ -197,7 +203,10 @@ if (inherits(object, 'secrlist')) {
                     varcomp1[2] <- varDlist$s2
                     varcomp2[2] <- varDlist$varDn
                 }
-                A <- maskarea(mask)
+                A <-  if (inherits(mask, 'linearmask'))
+                    masklength(mask)
+                else
+                    maskarea(mask)
                 temp <- data.frame (
                                     row.names = c('esa','D'),
                                     estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below

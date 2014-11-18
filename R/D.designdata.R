@@ -6,9 +6,29 @@
 ## 2010 02 25 force levels=sessionlevels for dframe$session
 ## 2011 10 09 revised for multi-session mask covariates; needs testing
 ## 2011 11 08 revised meanSD, getcol, scale
-
+## 2014-10-25 designmatrix
 ###############################################################################
 ## NOTE does not standardize sessioncov, maskcov
+###############################################################################
+
+
+###############################################################################
+## used only for secondary setup (e.g. confint, score.test)
+
+designmatrix <- function (modelled, mask, model, grouplevels, sessionlevels, 
+                          sessioncov, smoothsetup) {
+    if (!modelled) {
+        designmatrix <- matrix(nrow = 0, ncol = 0)
+        attr(designmatrix, 'dimD') <- NA
+    }
+    else {
+        temp <- D.designdata( mask, model, grouplevels,
+                              sessionlevels, sessioncov)
+        designmatrix <- general.model.matrix(model, temp, smoothsetup)
+        attr(designmatrix, 'dimD') <- attr(temp, 'dimD')
+    }
+    designmatrix
+}
 ###############################################################################
 
 D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov = NULL,
@@ -190,4 +210,3 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
     dframe
 }
 ###############################################################################
-

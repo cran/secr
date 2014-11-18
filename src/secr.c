@@ -47,6 +47,8 @@
 /*            Thes functions do NOT use d2L and dist2 */
 /*            -- prwi fns for polygons and transects, and pdotpoly */
 /* 2014-09-10 fxIHP drastically redone - now much cleaner */
+/* 2014-10-04 geth drastic speed improvement for constant detector covariates WITHDRAWN */
+
 /*
         *detect may take values -
         0  multi-catch traps
@@ -156,7 +158,9 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
 }
 /*===============================================================*/
 
-int nonzero (int detect, int w[], int nc, int ss, int kk)
+/* changed 2014-09-23, but note this function is not used */
+/* int nonzero (int detect, int w[], int nc, int ss, int kk) */
+int nonzero (int detect, double w[], int nc, int ss, int kk)
 /*
     number of nonzero capture histories 
 */
@@ -335,8 +339,12 @@ double prwiprox
                 gi  = i3(c, k, m, cc, kk);
 		g1 = gk[gi];
 		Tski = Tsk[s * kk + k];
-		if (fabs(Tski-1) > 1e-10) /* not unity */
-		    g1 = 1 - pow(1 - g1, Tski);
+		if (fabs(Tski-1) > 1e-10) {      /* not unity */ 
+		    if (Tski < 1e-10)   /* 2014-11-10 */
+            g1 = 0;
+            else
+            g1 = 1 - pow(1 - g1, Tski);
+		}
 		if (count)                                      /* Bernoulli */
 		    result *= g1;
 		else 
@@ -347,6 +355,7 @@ double prwiprox
         if (result <= minp) {result = minp; break;}             /* truncate */
         if (dead==1) break;
     }
+    /* Rprintf("m=%5d, n=%5d, %10.5f\n", m, n, log(result)); */
     return (result);
 }
 /*=============================================================*/
@@ -1583,6 +1592,7 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
     /* and when detector covariates vary by time     */
     /* Modified for speed 2012-12-12 by excluding    */
     /* case that detectors are not used PIA < 0      */
+    
     for (n=0; n < nc1; n++) {
         for (s=0; s < *ss; s++) {
 	    PIAval0 = PIA[i4(n,s,0,0, nc1, *ss, nk)];
@@ -1602,6 +1612,30 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
 	if (fullns == 1) break;
     }
     
+    /* failed revision 2014-10-04 
+    if (*ss > 1) {
+	for (n=0; n < nc1; n++) {
+	    for (k=0; k<nk; k++) {
+		PIAval0 = PIA[i4(n,0,k,0, nc1, *ss, nk)];
+		for (s=1; s < *ss; s++) {
+		    PIAvalk = PIA[i4(n,s,k,0, nc1, *ss, nk)];
+		    if (PIAval0 < 0)
+			PIAval0 = PIAvalk;
+		    else if (PIAvalk>0) {
+			if (PIAval0 != PIAvalk) {
+			    fullns = 1;
+			    break;
+			} 
+		    }              
+		} 
+		if (fullns == 1) break;
+	    }
+	    if (fullns == 1) break;
+	}
+    }
+    */
+    /* Rprintf("fullns %5d \n", fullns); */
+
     for (i=0; i<*cc; i++) hc0[i] = -1;
     next = 0;        
     for (n=0; n < nc1; n++) {
@@ -2090,6 +2124,7 @@ void secrloglik (
     for (i=0; i < (nc1 * *nmix); i++) pmixn[i] = 1; /* default */
     gpar = getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, 
 		   grp, PIA, gsbval, pmixg, pmixn);
+    /* Rprintf("pmixg %6.4f, %6.4f\n", pmixg[0], pmixg[1]); */
 
     nv = nval(detect, nc1, cc, ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
@@ -2209,11 +2244,6 @@ void secrloglik (
 		    tempsum += pmixnx * temp;
 		}
 	    }    /* end of loop over mixture classes */
-/*
-	    Rprintf("a[n] %8.6f\n", a[n]);
-	    Rprintf("kappa %8.6f\n", kappa);
-	    Rprintf("tempsum %8.6f\n", tempsum);
-*/
 	    if (usepimask)
 		templog = log(tempsum/kappa);
 	    else
@@ -2224,8 +2254,8 @@ void secrloglik (
 	    *value += templog;
 	    R_CheckUserInterrupt();
 	}        /* end of loop over individuals */
-	
-	/* multinomial probability of known class membership (excludes coefficient) */
+
+        /* multinomial probability of known class membership (excludes coefficient) */
         /* ignored if telemetry */
 	if ((known>0) && (!usepimask)) {
 	    tempsum = 0;
@@ -2337,7 +2367,7 @@ void secrloglik (
 	    }
 	}
 	
-	/* 3 */
+	/* 4 */
 	if (timing) ticks = timestamp(ticks, &counter);
         
         *value = 0;
@@ -2395,7 +2425,7 @@ void secrloglik (
 		R_CheckUserInterrupt();
 	    }
 	
-	    /* 4 */
+	    /* 5 */
 	    if (timing) ticks = timestamp(ticks, &counter);
 	    
 	    if ((known>0) && (*nmix>1)) {

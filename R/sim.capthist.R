@@ -376,12 +376,16 @@ sim.capthist <- function (
         if (is.null(userdist))
             distmat <- -1
         else {
+            ## 2014-10-09
+            ## move towards IHP/k simulations
+            ## mask is NULL unless IHP or linear
+            mask <- attr(popn, 'mask')
+            ## ASSUME MASK HAS NONEUC REQUIREMENTS 2014-10-30
             distmat <- valid.userdist(userdist,
                                   detector(traps),
                                   xy1 = traps,
                                   xy2 = animals,
-                                  geometry = attr(popn, 'mask'),
-                                  sesspars = detectpar)
+                                  mask = mask)
         }
         #-----------------------------------------------------------------
 

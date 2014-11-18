@@ -50,9 +50,9 @@ tmp <- secr.test(ovenbird.model.1)
 tmp  ## terse print
 print(tmp, terse = FALSE)
 
-par(mfrow=c(1,5))
+par(mfrow = c(1,5))
 plot(tmp, main = '', xlim=c(0,1), breaks=seq(0,1,0.05))
-
+par(mfrow = c(1,1))    ## reset to default
 }
 
 }

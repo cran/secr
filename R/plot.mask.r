@@ -3,6 +3,7 @@
 ## plot.mask.R
 ## 2014-09-14 strip.legend() added
 ## 2014-09-20 strip.legend allows [,)
+## 2014-09-30 covrange allws NA
 
 ## suggest: optionally suppress legend text
 ## suggest: optionally use axis()
@@ -31,8 +32,8 @@ strip.legend <- function (xy, legend, col,
     rect (yx[2]-dx, yx[1]-dy, yx[2]+dx, yx[1]+dy, col = col, density=-1, border = tileborder)
   }
   legendtype <- match.arg(legendtype)
-  opar <- par(no.readonly = TRUE)
-  on.exit(par(opar))
+  oldxpd <- par()$xpd
+  on.exit(par(xpd = oldxpd))
   par(xpd = xpd)
   usr <- par()$usr
   mar <- par()$mar
@@ -66,11 +67,11 @@ strip.legend <- function (xy, legend, col,
   dx <- wx / 2
   dy <- wy / 2
   ## --------------------------------------
-  if (nchar(title) == 0) 
+  if (nchar(title) == 0)
     titleheight <- -wy/2
   else
     titleheight <- strheight(title, cex = text.cex)
-  
+
   if (is.character(xy)) {
     ## assume "topright" placement
     if (!(xy %in% c("topleft", "topright", "bottomleft", "bottomright",
@@ -143,14 +144,14 @@ strip.legend <- function (xy, legend, col,
   alt <- rep(c(TRUE,FALSE), length.out = length(legend))
   if (legendtype == 'other')
     text (rep(xy[1] + wx + textoffset, ncol), centres, legend,
-        adj = 0, cex = text.cex)      
+        adj = 0, cex = text.cex)
 else if (sum(strheight(legend, cex = text.cex)) < diff(range(centres))) {
       if (legendtype == 'breaks')
           text (rep(xy[1] + wx + textoffset, ncol+1), boundsy, legend,
                 adj = 0, cex = text.cex)
       else if (legendtype == 'intervals')
           text (rep(xy[1] + wx + textoffset, ncol), centres, legend,
-                adj = 0, cex = text.cex)      
+                adj = 0, cex = text.cex)
   }
   else if (sum(strheight(legend[alt], cex = text.cex)) < diff(range(centres))) {
       if (legendtype == 'breaks')
@@ -168,7 +169,7 @@ else if (sum(strheight(legend, cex = text.cex)) < diff(range(centres))) {
           text (rep(xy[1] + wx + textoffset, 2), centres[c(1,ncol)],
                 legend[c(1,ncol)], adj = 0, cex = text.cex)
   }
-  
+
   invisible(c(xy[1], xy[1]+wx, xy[2], xy[2] - ncol * wy))
 
 }
@@ -213,7 +214,8 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
             else {
               covvalue <- covariates(x)[,covariate]
               if (length(breaks) == 1) {
-                covrange <- range(covvalue)
+                ## covrange <- range(covvalue)
+                covrange <- range(covvalue, na.rm = TRUE)   ## na.rm 2014-09-30
                 rough <- seq(covrange[1], covrange[2], length.out = breaks+1)
                 breaks <- pretty(rough, n = breaks)
               }
@@ -251,7 +253,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         }
         if (legend & !is.null(covariate)) {
             legendtext <- levels(covfactor)[1:ncolour]
-            
+
             if (dots) {
                 args <- formals(legend)
                 newargs <- list(x = 'right', legend = rev(legendtext), pch = 16,
@@ -266,7 +268,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                                 legend = legendtext, tileborder = meshcol,
                                 title = covariate)
                 if (is.factor(covariates(x)[,covariate])) {
-                  newargs$legendtype <- 'other'            
+                  newargs$legendtype <- 'other'
                   newargs$height <- min(1, length(legendtext) * 0.06)
                 }
                 args <- replace(args, names(newargs), newargs)

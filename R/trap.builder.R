@@ -11,6 +11,7 @@
 ## 2012-09-17 mash moved to mash.r
 ## 2013-03-02 exclude, exclmethod arguments added
 ## 2013-04-20 replace deprecated overlay with over
+## 2014-10-25 revamp polygon requirement for grts
 ###############################################################################
 
 ## spsurvey uses sp
@@ -25,7 +26,14 @@ boundarytoSPDF <- function (boundary) {
     attr <- data.frame(a = 1, row.names = "s1")
     SpatialPolygonsDataFrame(SpP, attr)
 }
-
+boundarytoSP <- function (boundary) {
+    ## build sp SpatialPolygonsDataFrame object
+    ## input is 2-column matrix for a single polygon
+    ## requires package sp
+    Sr1 <- Polygon(boundary)
+    Srs1 <- Polygons(list(Sr1), "s1")
+    SpatialPolygons(list(Srs1))
+}
 ###############################################################################
 
 trap.builder <- function (n = 10, cluster, region = NULL, frame =
@@ -57,16 +65,14 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     allinside <- function (xy) {
         xy <- SpatialPoints(as.matrix(xy))
-        ## 2013-04-20
-        ## !any(is.na(overlay (xy, region)))
-        !any(is.na(over (xy, region)))
+        ## 2014-10-25 polygons() works with both SP and SPDF
+        !any(is.na(sp::over (xy, polygons(region))))
     }
 
     alloutside <- function (xy) {
         xy <- SpatialPoints(as.matrix(xy))
-        ## 2013-04-20
-        ## all(is.na(overlay (xy, exclude)))
-        all(is.na(over (xy, exclude)))
+        ## 2014-10-25 polygons() works with both SP and SPDF
+        all(is.na(sp::over (xy, polygons(exclude))))
     }
 
     position <- function (i, cluster) {
@@ -106,21 +112,30 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     if (is.null(region))
         edgemethod <- 'allowoverlap'
 
+    SP <- inherits(region, 'SpatialPolygons')
+    SPx <- inherits(exclude, 'SpatialPolygons')
+    
     if (is.null(frame)) {
         if (is.null(region)) {
             stop ("specify at least one of 'region' or 'frame'")
         }
-        SPDF <- inherits(region, 'SpatialPolygonsDataFrame')
-        SPDFx <- inherits(exclude, 'SpatialPolygonsDataFrame')
-        if (!SPDF) {
+            
+        if (SP) {
+            ## spsurvey requires SPDF
+            if ((method = 'GRTS') & (!inherits(region, 'SpatialPolygonsDataFrame'))) {
+                attr <- data.frame(a = 1, row.names = "s1")
+                region <- SpatialPolygonsDataFrame(region, attr)            
+            }
+        }
+        else {
             region <- matrix(unlist(region), ncol = 2)
             region <- rbind (region, region[1,])  # force closure of polygon
             region <- boundarytoSPDF(region)
         }
-        if (!SPDFx & !is.null(exclude)) {
+        if (!is.null(exclude) & !SPx) {
             exclude <- matrix(unlist(exclude), ncol = 2)
             exclude <- rbind (exclude, exclude[1,])  # force closure of polygon
-            exclude <- boundarytoSPDF(exclude)
+            exclude <- boundarytoSP(exclude)
         }
         if (plt & !add) {
             plot(region)
@@ -134,7 +149,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
                 plot(region)
             }
             else {
-                eqscplot (frame, axes = F, xlab = '', ylab = '', pch = 1, cex = 0.5)
+                MASS::eqscplot (frame, axes = F, xlab = '', ylab = '', pch = 1, cex = 0.5)
             }
             if (!is.null(exclude))
                 plot(exclude, col = 'lightgrey', add = T)
@@ -156,8 +171,8 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ####################################
     else if (method == 'GRTS') {
-        ## if (!require (spsurvey))
-        ##    stop ("package 'spsurvey' required for grts in trap.builder")
+        if (!require (spsurvey))
+            stop ("package 'spsurvey' required for grts in trap.builder")
         ## make a list in the format needed by grts()
         design <- list(None = list(panel = c(Panel1 = n),
             seltype = "Equal", over = ntrial))
@@ -246,16 +261,12 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     ## drop excluded sites, if requested
     if (edgemethod == 'clip') {
         xy <- SpatialPoints(as.matrix(traps))
-        ## 2013-04-20
-        ## OK <- overlay (xy, region)
-        OK <- over (xy, region)
+        OK <- sp::over (xy, polygons(region))
         traps <- subset(traps, subset = !is.na(OK))
     }
     if (!is.null(exclude) & (exclmethod == 'clip')) {
         xy <- SpatialPoints(as.matrix(traps))
-        ## 2013-04-20
-        ##  notOK <- overlay (xy, exclude)
-        notOK <- over (xy, exclude)
+        notOK <- sp::over (xy, polygons(exclude))
         traps <- subset(traps, subset = is.na(notOK))
     }
 
@@ -298,13 +309,16 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
 ## 'region' is a rectangular survey region
 ## ... arguments passed to trap.builder (rotate, detector)
 
-    SPDF <- inherits(region, "SpatialPolygonsDataFrame")
-    if (!SPDF) {
-        ## convert to SpatialPolygonsDataFrame
+    SP <- inherits(region, "SpatialPolygons")
+    if (SP) {
+        region <- polygons(region)
+    }
+    else{
+        ## convert to SpatialPolygons
         ## future: recognise & import shapefile
         region <- matrix(unlist(region), ncol = 2)
         region <- rbind (region, region[1,])  # force closure of polygon
-        region <- boundarytoSPDF(region)
+        region <- boundarytoSP(region)
     }
     wd <- diff(bbox(region)[1,])
     ht <- diff(bbox(region)[2,])
@@ -354,9 +368,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         x = seq(0, by = rx, len = nx) + origin[1],
         y = seq(0, by = ry, len = ny) + origin[2])
     centres <- SpatialPoints(as.matrix(centres))
-    ## 2013-04-20
-    ## OK <- !is.na(overlay (centres, region))
-    OK <- !is.na(over (centres, region))
+    OK <- !is.na(sp::over (centres, region))
     centres <- coordinates(centres[OK,])
     trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)

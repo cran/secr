@@ -16,6 +16,8 @@
 ## 2011 06 13 moved spatialscale to utility.R
 ## 2012 12 24 binomN = 'usage'
 ## 2014-03-26 pdot.contour and buffer.contour extended to multi-session traps
+## 2014-10-17 userdist fixes
+## 2014-11-17 more userdist fixes
 ###############################################################################
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
@@ -52,7 +54,9 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     dettype <- detectorcode(traps)
     binomN <- getbinomN (binomN, detector(traps))
 
-    X <- matrix(unlist(X), ncol = 2)
+    if (!inherits(X, 'mask')) {
+        X <- matrix(unlist(X), ncol = 2)
+    }
     if (detector(traps) %in% c('polygon','polygonX','transect', 'transectX')) {
         if (!is.null(userdist))
             stop("userdist incompatible with polygon-like detectors")
@@ -60,7 +64,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         K <- length(k)              ## number of polygons/transects
         k <-  c(k,0)                ## zero terminate
         temp <- .C('pdotpoly', PACKAGE = 'secr',
-            as.double(X),
+            as.double(unlist(X)),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
             as.integer(dettype),
@@ -84,12 +88,11 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
                                       detector(traps),
                                       xy1 = traps,
                                       xy2 = X,
-                                      geometry = X,
-                                      sesspars = detectpar)
+                                      mask = X)
         }
         #-------------------------------------------------------------
         temp <- .C('pdotpoint', PACKAGE = "secr",
-            as.double(X),
+            as.double(unlist(X)),
             as.integer(nrow(X)),
             as.double(unlist(traps)),
             as.double(distmat),                 ## 2014-08-28, 2014-09-01
@@ -238,7 +241,10 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
 
 pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                          noccasions = NULL, binomN = NULL, levels = seq(0.1, 0.9, 0.1),
+## noccasions = NULL, binomN = NULL, userdist = NULL,
+## no means of passing mask covariates...
+                            noccasions = NULL, binomN = NULL,
+                          levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, plt = TRUE, add = FALSE, ...) {
     if (ms(traps)) {
         if (length(noccasions) == 1)

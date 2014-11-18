@@ -225,7 +225,7 @@ LR.test(fit.CL.h2, fit.CL.a0)
 ## trend in ovenbird sex ratio, assuming sex-specific detection
 omask <- make.mask(traps(ovenCH), buffer = 300, nx = 32)
 fit.sextrend <- secr.fit(ovenCH, model = list(g0~h2, sigma~h2, pmix~Session),
-    hcov = "Sex", CL = TRUE, mask = omask)
+    hcov = "Sex", CL = TRUE, mask = omask, trace = FALSE)
 predict(fit.sextrend)[1:5]
 
 }

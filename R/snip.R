@@ -46,8 +46,11 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
         ## new transect number corresp each old vertex
         seg <- floor((d-from)/by)+1
         if (case == 3) seg <- seg + 1
-        rownames(df) <- paste(seg, sprintf("%04d",as.numeric(rownames(df))), sep='.')
-
+        # rownames(df) <- paste(seg, sprintf("%04d",as.numeric(rownames(df))), sep='.')
+        digits <- trunc(log10(nrow(df)) + 1)
+        fmt <- paste("%0", digits, "d", sep = "") 
+        rownames(df) <- paste(seg, sprintf(fmt,1:nrow(df)), sep='.')
+    
         ## proceed by defining intermediate points between new segments
         breaks <- seq(from,cumd,by)
         if (from == 0)
@@ -158,6 +161,7 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
                               length.out, keep.incomplete = keep.incomplete)
             newtrap <- xyontransect(xy(object), newtraps)
             newtrap <- factor(newtrap, levels = 1:length(levels(polyID(newtraps))))
+            old.row.names <- row.names(object)
             df <- data.frame(
                              trap = trap(object, names = F),
                              occ = occasion(object),
@@ -184,6 +188,7 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
 
             class(newobj) <- 'capthist'
             traps(newobj) <- newtraps
+            rownames(newobj) <- old.row.names
             if (detector(traps(object)) == 'transectX')
                 xy(newobj) <- xy(object)
             else {

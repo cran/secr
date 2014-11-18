@@ -306,7 +306,17 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         if ((!(inputdetector %in% transects)) && (outputdetector %in% transects))
                 stop ("cannot convert non-transect data to 'transect' data")
 
-        ####################################
+        ######################################
+        ## add usage to count pooled occasions
+        ## 2014-10-11
+        if (outputdetector %in% .localstuff$countdetectors) {
+            if (is.null(usage(traps(object)))) {
+                usage(traps(object)) <- matrix(1, nrow = ndetector(traps(object)),
+                                               ncol = ncol(object))
+            }
+        }
+
+        ######################################
         ## check newoccasions
         for (i in length(newoccasions):1) {
             occ <- newoccasions[[i]]

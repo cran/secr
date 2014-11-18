@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.9.0\cr
-Date: \tab 2014-09-23\cr
+Version: \tab 2.9.1\cr
+Date: \tab 2014-11-19\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -54,6 +54,7 @@ help index. Several vignettes complement the help pages:
   \url{../doc/secr-datainput.pdf} \tab data formats and input functions \cr
   \url{../doc/secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
   \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
+  \url{../doc/secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
   \url{../doc/secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
   \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
   \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
@@ -71,8 +72,9 @@ Density (see
 \href{http://www.otago.ac.nz/density/index.html}{www.otago.ac.nz/density}
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
-\href{http://www.phidot.org/forum/index.php}{www.phidot.org}.  Feedback on the
-software is also welcome, including suggestions for additional
+\href{http://www.phidot.org/forum/index.php}{www.phidot.org} and
+the Google group `secr'. Feedback
+on the software is also welcome, including suggestions for additional
 documentation or new features consistent with the overall design.
 
 }

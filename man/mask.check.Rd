@@ -205,7 +205,7 @@ mask.check (possum.model.0, spacings = c(20, 30), buffers =
 
 ## review fitted models
 load ("temp.RData")
-oldpar <- par(mfrow = c(2,2), mar = c(1,4,4,4), xpd = FALSE)
+par(mfrow = c(2,2), mar = c(1,4,4,4))
 for (i in 1:4) {
     plot(traps(mask.check.fit[[i]]$capthist), border = 300,
         gridlines = FALSE)
@@ -214,7 +214,7 @@ for (i in 1:4) {
     text ( 2698618, 6078427, names(mask.check.fit)[i])
     box()
 }
-par(oldpar)
+par(mfrow = c(1,1), mar = c(5,4,4,2) + 0.1)    ## defaults
 
 }
 

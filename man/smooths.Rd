@@ -67,7 +67,7 @@ See also the example in \url{../doc/secr-densitysurfaces.pdf}.
 
 \note{
 
-  Setting the intercept of a smooth to zero is not a canned option
+  Setting the intercept of a smooth to zero is not a canned option in
   \pkg{mgcv}, and is not offered in \pkg{secr}. It may be achieved by
   placing a knot at zero and hacking the matrix of basis functions to
   drop the corresponding column, plus some more jiggling
@@ -94,11 +94,12 @@ See also the example in \url{../doc/secr-densitysurfaces.pdf}.
 
 ## smooth density surface
 possum.model.sxy <- secr.fit(possumCH, mask = possummask,
-    model = D ~ s(x,y, k = 6, fx = TRUE))
+    model = D ~ s(x,y, k = 6, fx = TRUE)), trace = FALSE)
 fittedsurface <- predictDsurface(possum.model.sxy)
 par(mar = c(1,1,1,6))
 plot(fittedsurface)
 plot(fittedsurface, plottype = 'contour', add = TRUE)
+par(mar = c(5,4,4,2) + 0.1)  ## reset to default
 
 ## Now try smooth on g0
 
@@ -107,15 +108,16 @@ plot(fittedsurface, plottype = 'contour', add = TRUE)
 ## '2009')
 
 ovenbird.model.g0 <- secr.fit(ovenCH, mask = ovenmask,
-    model = g0 ~ session)
+    model = g0 ~ session, trace = FALSE)
 ovenbird.model.sg0 <- secr.fit(ovenCH, mask = ovenmask,
-    model = g0 ~ s(Session, k = 3, fx = TRUE))
+    model = g0 ~ s(Session, k = 3, fx = TRUE), trace = FALSE)
 
 AIC(ovenbird.model.g0, ovenbird.model.sg0)
 
 ## Or over occasions within a session...
 
-fit.sT3 <- secr.fit(captdata, model = g0 ~ s(T, k = 3, fx = TRUE))
+fit.sT3 <- secr.fit(captdata, model = g0 ~ s(T, k = 3, fx = TRUE),
+    trace = FALSE)
 pred <- predict(fit.sT3, newdata = data.frame(T = 0:4))
 
 plot(sapply(pred, '[', 'g0', 'estimate'))

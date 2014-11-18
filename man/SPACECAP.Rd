@@ -75,7 +75,7 @@ Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and Karanth,
 K. U. (2010) SPACECAP: A program to estimate animal abundance and
 density using Bayesian spatially explicit capture-recapture
 models. Version 1.0. Wildlife Conservation Society - India Program, Centre for
-Wildlife Studies, Bangalure, India.
+Wildlife Studies, Bangalore, India.
 
 }
 \note{
@@ -97,7 +97,7 @@ write.SPACECAP (demo, filestem = "demo")
 
 ## now read back the data just exported...
 temp <- read.SPACECAP ("demoAC.csv", "demoTD.csv")
-temp <- reduce(temp, output = "single")
+temp <- reduce(temp, output = "multi")
 summary (temp)
 summary (captdata)
 

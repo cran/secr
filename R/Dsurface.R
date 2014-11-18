@@ -4,14 +4,18 @@
 ## 2011-10-21, modified through 2011-11-10
 ## 2012-10-25 bug fixed in getDensityArray with multi-session mask
 ## 2014-03-18 fixedbeta allowed
+## 2014-10-13 predictD generalized for noneuc
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
-                      se.D = FALSE, cl.D = FALSE, alpha = 0.05) {
+                se.D = FALSE, cl.D = FALSE, alpha = 0.05, parameter = c('D','noneuc')) {
 
     ## For one session and group at a time
     ## not exported; used also by region.N()
-
+    parameter <- match.arg(parameter)
+    ## return all-1's if not relevant
+    if ((parameter == 'noneuc') & !('noneuc' %in% getuserdistnames(object$details$userdist)))
+      return(rep(1, nrow(regionmask)))
     sessionlevels <- session(object$capthist)
     grouplevels <- group.levels(object$capthist,object$groups)
     if (is.null(session))
@@ -50,7 +54,7 @@ predictD <- function (object, regionmask, group, session,
         n.clust <- 1
 
     ## no density model (conditional likelihood fit)
-    if (object$CL == TRUE) {    ## implies is.null(object$model$D)
+    if ((object$CL == TRUE) & (parameter == 'D')) {    ## implies is.null(object$model$D)
         temp <- derived(object, se.D = (se.D | cl.D)) ## inefficient as repeats for each sess
         if (!is.data.frame(temp))
             temp <- temp[[session]]
@@ -67,7 +71,7 @@ predictD <- function (object, regionmask, group, session,
     }
 
     ## user-defined density model
-    else if (userD(object)) {
+    else if (userD(object) & (parameter == 'D')) {
         designD <- object$details$userDfn
         if (!is.function(designD))
             stop ("details$userDfn must be a function")
@@ -78,12 +82,13 @@ predictD <- function (object, regionmask, group, session,
         ## getD is in functions.R
         ## does not use link$D when calling user function userDfn
         D <- getD (designD, object$fit$par, regionmask, object$parindx,
-                   object$link$D, object$fixed, grouplevels, sessionlevels)
+                   object$link$D, object$fixed, grouplevels, sessionlevels,
+                   'D')
         return(D[,group,session])
     }
     ## linear density model on link scale
     else {
-        newdata <- D.designdata (regionmask, object$model$D,
+        newdata <- D.designdata (regionmask, object$model[[parameter]],
              grouplevels, sessionlevels, sessioncov = object$sessioncov,
              meanSD = meanSD)
         dimD <- attr(newdata, "dimD")
@@ -110,23 +115,25 @@ predictD <- function (object, regionmask, group, session,
         beta.vcv <- complete.beta.vcv(object)
         #############################################
 
-        indx <- object$parindx$D
+        indx <- object$parindx[[parameter]]
         betaD <- beta[indx]
-        if (object$model$D == ~1) {
-            D <- untransform(betaD, object$link$D)
+    
+        if (object$model[[parameter]] == ~1) {
+            D <- untransform(betaD, object$link[[parameter]])
             D <- max(D,0) / n.clust
             return ( rep(D, nrow(regionmask) ))
         }
         else {
-            vars <- all.vars(object$model$D)
+            vars <- all.vars(object$model[[parameter]])
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
             ## 2014-08-19,22
             ## mat <- model.matrix(object$model$D, data = newdata)
-            mat <- general.model.matrix(object$model$D, data = newdata, object$smoothsetup$D)
+            mat <- general.model.matrix(object$model[[parameter]], data = newdata, 
+                                        object$smoothsetup[[parameter]])
             lpred <- mat %*% betaD
-            temp <- untransform(lpred, object$link$D)
+            temp <- untransform(lpred, object$link[[parameter]])
             temp <- pmax(temp, 0) / n.clust
 
             if (se.D | cl.D) {
@@ -134,13 +141,13 @@ predictD <- function (object, regionmask, group, session,
                 selpred <- sapply(1:nrow(mat), function(i)
                     mat[i,, drop=F] %*% vcv %*% t(mat[i,, drop=F]))^0.5
                 if (se.D) {
-                    attr(temp, 'SE') <- se.untransform (lpred, selpred, object$link$D) / n.clust
+                    attr(temp, 'SE') <- se.untransform (lpred, selpred, object$link[[parameter]]) / n.clust
                     attr(temp, 'SE')[temp<=0] <- NA
                 }
                 if (cl.D) {
                     z <- abs(qnorm(1-alpha/2))
-                    attr(temp, 'lcl') <- untransform (lpred - z * selpred, object$link$D) / n.clust
-                    attr(temp, 'ucl') <- untransform (lpred + z * selpred, object$link$D) / n.clust
+                    attr(temp, 'lcl') <- untransform (lpred - z * selpred, object$link[[parameter]]) / n.clust
+                    attr(temp, 'ucl') <- untransform (lpred + z * selpred, object$link[[parameter]]) / n.clust
                     attr(temp, 'lcl')[temp<=0] <- NA
                     attr(temp, 'ucl')[temp<=0] <- NA
                 }
@@ -176,7 +183,9 @@ rectangularMask <- function (mask) {
 }
 ############################################################################################
 
-predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha = 0.05) {
+predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha = 0.05,
+                             parameter = c('D','noneuc')) {
+    parameter <- match.arg(parameter)
     sessionlevels <- session(object$capthist)
     grouplevels <- group.levels(object$capthist, object$groups)
     if (is.null(mask))
@@ -189,8 +198,9 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
             sessmask <- mask
         D <- data.frame (seq = 1:nrow(sessmask))
         for (group in grouplevels) {
-            predicted <- predictD(object, sessmask, group, session, se.D, cl.D, alpha)
-            D[,paste('D',group,sep='.')] <- as.numeric(predicted)
+            predicted <- predictD(object, sessmask, group, session, se.D, cl.D, 
+                                  alpha, parameter)
+            D[,paste(parameter,group,sep='.')] <- as.numeric(predicted)
             if (se.D) {
                 D[,paste('SE',group,sep='.')] <- as.numeric(attr(predicted, 'SE'))
             }
@@ -221,11 +231,12 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
     }
     else
         class (mask) <- c('Dsurface', 'mask', 'data.frame')
+    attr (mask, 'parameter') <- parameter
     mask
 }
 ############################################################################################
 
-plot.Dsurface <- function (x, covariate = 'D', group = NULL, plottype = 'shaded',
+plot.Dsurface <- function (x, covariate, group = NULL, plottype = 'shaded',
      scale = 1, ...) {
     if (ms(x)) {
         breaklist <- lapply(x, plot, covariate, group, plottype, scale, ...)
@@ -234,9 +245,13 @@ plot.Dsurface <- function (x, covariate = 'D', group = NULL, plottype = 'shaded'
     else {
         if (is.null(group))
             group <- 0
+        if (missing(covariate)) {
+          covariate <- attr(x, 'parameter')
+          if (is.null(covariate)) covariate <- 'D'  ## for backwards compatibility
+        }
         if (length(covariate)>1)
             stop ("whoa... just one at a time")
-        if (covariate %in% c('D','SE','lcl','ucl')) {
+        if (covariate %in% c('D','noneuc','SE','lcl','ucl')) {
             covariate <- paste(covariate, group, sep='.')
         }
         if (!(covariate %in% names(covariates(x))))
@@ -270,7 +285,10 @@ plot.Dsurface <- function (x, covariate = 'D', group = NULL, plottype = 'shaded'
 
 Dsurface.as.data.frame <- function (x, scale = 1) {
     covnames <- names(covariates(x))
-    OK <- (substring(covnames,1,2) == 'D.') |
+    prefix <- attr(x, 'parameter')
+    if (is.null(prefix)) prefix <- 'D'    ## for backwards compatibility
+    prefix <- paste(prefix, '.', sep='')
+    OK <- (substring(covnames,1,2) == prefix) |
         (substring(covnames,1,3) == 'SE.') |
         (substring(covnames,1,4) %in% c('lcl.', 'ucl.'))
     covnames <- covnames[OK]
@@ -308,7 +326,10 @@ summary.Dsurface <- function (object, scale = 1, ...) {
     }
     else {
         covnames <- names(covariates(object))
-        covnames <- covnames[substring(covnames,1,8) == 'D.']
+        prefix <- attr(object, 'parameter')
+        if (is.null(prefix)) prefix <- 'D'    ## for backwards compatibility
+        prefix <- paste(prefix, '.', sep='')        
+        covnames <- covnames[substring(covnames,1,8) == prefix]
         densities <- covariates(object)[,covnames,drop=FALSE]
         densities <- densities * scale
         if (dim(densities)[2] > 1)
@@ -332,10 +353,13 @@ spotHeight <- function (object, prefix = NULL, dec = 2, point = FALSE, text = TR
     ## Esc or click outside to break
     decxy <- 0   ## decimal places for x-y coordinates
     if (is.null(prefix)) {
-        if (inherits(object,'Dsurface'))
-            prefix <- 'D.'
-        else
-            prefix <- ''
+      if (inherits(object,'Dsurface')) {
+        prefix <- attr(object, 'parameter')
+        if (is.null(prefix)) prefix <- 'D'    ## for backwards compatibility
+        prefix <- paste(prefix, '.', sep='')
+      }
+    else
+      prefix <- ''
     }
 
     # can only deal with one session

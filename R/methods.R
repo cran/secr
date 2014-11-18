@@ -571,8 +571,8 @@ detectionindex <- function (object) {
 
 polyarea <- function (xy, ha = TRUE) {
     if (inherits(xy, 'SpatialPolygons')) {
-        ## if (!require(rgeos))
-        ##    stop ("package rgeos is required for area of SpatialPolygons")
+        if (!require(rgeos))
+            stop ("package rgeos is required for area of SpatialPolygons")
         temparea <- rgeos::gArea(xy)
     }
     else {
@@ -2350,7 +2350,8 @@ subset.mask <- function (x, subset, ...) {
     attr(temp,'type')        <- 'subset'
     attr(temp,'meanSD')      <- getMeanSD(temp)
     attr(temp,'area')        <- attr(x, 'area')
-    attr(temp,'vertices')    <- attr(x, 'vertices')
+    attr(temp,'SLDF')    <- attr(x, 'SLDF')
+    attr(temp, 'graph')  <- attr(x, 'graph')
     attr(temp,'spacing')     <- spacing
     if (!is.null(covariates(x))) covariates(temp) <- covariates(x)[subset,,drop=F]
     xl <- range(temp$x) + spacing/2 * c(-1,1)
@@ -2673,17 +2674,12 @@ detectpar.secr <- function(object, ..., byclass = FALSE) {
 
 ############################################################################################
 
-print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
+print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = TRUE, ...) {
 
-    cat ('\n')
-
-    ## from 2.7.1 truncate large call
-    ## maxcallsize <- ifelse (is.null(x$details$maxcallsize), 512, x$details$maxcallsize)
-    ## if (object.size(x$call) > maxcallsize)
-    ##    cat(substring(x$call,1,60),'...\n')
-    ## else
-
-    print(x$call)
+    if (call) {
+        cat ('\n')
+        print(x$call)
+    }
 
     if (!is.null(x$version)) {
         cat ('secr ', x$version, ', ', x$starttime, '\n', sep='')
@@ -2841,12 +2837,12 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, ...) {
     }
 
     #################################
-    # Derived parameters (CL)
+    # Derived parameters
     #################################
-    if (x$CL & deriv) {
+    if (deriv) {
 
         cat ('\n')
-        cat ('Derived parameters (CL only)', '\n')
+        cat ('Derived parameters', '\n')
 
         temp <- derived(x, alpha=alpha, se.esa = TRUE)
         nd <- length(temp)

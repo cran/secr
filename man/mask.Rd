@@ -1,5 +1,6 @@
 \name{mask}
 \alias{mask}
+\alias{mask-class}
 
 \title{ Mask Object }
 
@@ -52,6 +53,9 @@ boundingbox \tab data frame of 4 rows, the vertices of the bounding box of all g
 Attributes other than \code{covariates} are generated automatically by
 \code{make.mask}. Type `user' refers to masks input from a text file
 with \code{read.mask}.
+
+A virtual S4 class `mask' is defined to allow the definition of a method
+for the generic function \code{raster} from the \pkg{raster} package.
 
 }
 

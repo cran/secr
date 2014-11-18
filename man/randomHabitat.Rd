@@ -131,9 +131,9 @@ pop <- sim.popn(10, mrcmask, model2D = "IHP")
 plot(pop, add = TRUE)
 
 ## plot intermediate steps A, C, D
-opar <- par(mfrow = c(1,3))
+par(mfrow = c(1,3))
 mrcmask <- randomHabitat(tempmask, p = 0.4, A = 0.4, plt = TRUE)
-par(opar)
+par(mfrow = c(1,1))    ## reset to default
 
 ## keep non-habitat cells
 mrcmask <- randomHabitat(tempmask, p = 0.4, A = 0.4, drop = FALSE)

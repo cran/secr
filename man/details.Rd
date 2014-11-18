@@ -1,5 +1,8 @@
 \name{details}
 \alias{details}
+\alias{fixedbeta}
+\alias{LLonly}
+\alias{param}
 
 \title{ Detail Specification for secr.fit }
 
@@ -121,12 +124,16 @@ distinguishing habitat from non-habitat.
 distances between detectors and mask points, or a pre-computed matrix of
 such distances. The first two arguments of the function should be
 2-column matrices of x-y coordinates (respectively \eqn{k} detectors and
-\eqn{m} mask points). The third argument, if present, defines a
-non-Euclidean habitat geometry (a linear geometry is described in
-documentation for the forthcoming package `secrlinear'). The fourth
-argument, if present, is a parameter of the distance algorithm. The
-matrix returned by the function must have exactly \eqn{k} rows and
-\eqn{m} columns. Full documentation will follow in a later release.
+\eqn{m} mask points). The third argument is a habitat mask that defines
+a non-Euclidean habitat geometry (a linear geometry is described in
+documentation for the forthcoming package `secrlinear'). The matrix
+returned by the function must have exactly \eqn{k} rows and \eqn{m}
+columns. When called with no arguments the function should return a
+character vector of names for the required covariates of `mask',
+possibly including the dynamically computed density `D` and a parameter
+`noneuc' that will be fitted. A slightly expanded account is at
+\link{userdist}, and full documentation is in the separate
+document \url{../doc/secr-noneuclidean.pdf}.
 
 **Do not use `userdist' for polygon or transect detectors**
 
@@ -148,7 +155,7 @@ capture--recapture. \emph{Methods in Ecology and Evolution} \bold{4}, 520--530.
 }
 
 \seealso{
-  \code{\link{secr.fit} }
+  \code{\link{secr.fit} }, \link{userdist}
 }
 
 \keyword{ models }

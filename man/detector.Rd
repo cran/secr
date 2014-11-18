@@ -53,7 +53,8 @@ detector type is used for acoustic data as described in
 \references{
 
 Efford, M. G. (2011) Estimation of population density by spatially
-explicit capture--recapture with area searches. \emph{Ecology} in press.
+explicit capture--recapture with area searches. \emph{Ecology}
+\bold{92}, 2202--2207.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009a) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

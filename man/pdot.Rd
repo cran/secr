@@ -25,7 +25,7 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
   \item{noccasions}{ number of sampling intervals (occasions) }
   \item{binomN}{ integer code for discrete distribution (see
     \code{\link{secr.fit}}) }
-  \item{userdist}{user-defined distance function or matrix (see \link{details})}
+  \item{userdist}{user-defined distance function or matrix (see \link{userdist})}
 }
 \details{
 
@@ -47,7 +47,9 @@ The calculation is not valid for single-catch traps because
 \eqn{p.(\mathbf{X})}{p.(X)} is reduced by competition between animals.
 
 \code{userdist} cannot be set if `traps' is any of polygon, polygonX,
-transect or transectX.
+transect or transectX. if \code{userdist} is a function requiring
+covariates or values of parameters `D' or `noneuc' then \code{X} must
+have a covariates attribute with the required columns.
 
 }
 

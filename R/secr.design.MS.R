@@ -146,6 +146,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------------
 
     models$D <- NULL                          # drop density model
+    models$noneuc <- NULL                     # drop non-Euclidean parameter model
     npar     <- length(models)                # real parameters
     grouplevels  <- group.levels(capthist,groups)
     ngrp    <- max(1,length(grouplevels))

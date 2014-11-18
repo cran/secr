@@ -100,7 +100,7 @@ closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07,
   
   If your data are from spatial sampling (e.g. grid trapping) it is
   recommended that you do \emph{not} use these methods to estimate
-  population size (see Efford submitted). Instead, fit a spatial model
+  population size (see Efford and Fewster 2013). Instead, fit a spatial model
   and estimate population size with \code{\link{region.N}}.
   
 }
@@ -121,8 +121,9 @@ Dorazio, R. M. and Royle, J. A. (2003) Mixture models for estimating the
 size of a closed population when capture rates vary among
 individuals. \emph{Biometrics} \bold{59}, 351--364.
 
-Efford, M. G. (submitted) Estimating population size by spatially
-explicit capture--recapture.
+Efford, M. G. and Fewster, R. M. (2013) Estimating population
+  size by spatially explicit capture--recapture. \emph{Oikos}
+  \bold{122}, 918--928.
 
 Hurvich, C. M. and Tsai, C. L. (1989) Regression and time series model
 selection in small samples. \emph{Biometrika} \bold{76}, 297--307.

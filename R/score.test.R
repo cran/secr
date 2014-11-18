@@ -29,6 +29,9 @@ prepare <- function (secr, newmodel) {
     detectfn <- secr$detectfn
     link     <- secr$link
     details  <- secr$details
+    fixed    <- secr$fixed
+    smoothsetup <- secr$smoothsetup
+    
 
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
@@ -39,29 +42,31 @@ prepare <- function (secr, newmodel) {
     design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
                                ignoreusage = details$ignoreusage,
                                naive = T, bygroup = !CL)
-    if (CL) D.designmatrix <- NULL
-    else {
-        temp <- D.designdata ( mask, newmodel$D, grouplevels, sessionlevels, sessioncov)
-        ## 2014-08-19
-        ## D.designmatrix <- model.matrix(newmodel$D, temp)
-        D.designmatrix <- general.model.matrix(newmodel$D, temp)
-        attr(D.designmatrix, 'dimD') <- attr(temp, 'dimD')
-    }
-
+    
+    D.modelled <- !CL & is.null(fixed$D)
+    NE.modelled <- is.function(details$userdist) & is.null(fixed$noneuc)           
+    sessionlevels <- session(capthist)
+    grouplevels  <- group.levels(capthist, groups)
+    D.designmatrix <- designmatrix (D.modelled, mask, newmodel$D,
+                            grouplevels, sessionlevels, sessioncov, smoothsetup$D)
+    NE.designmatrix <- designmatrix (NE.modelled, mask, newmodel$noneuc,
+                            grouplevels, sessionlevels, sessioncov, smoothsetup$noneuc)        
+            
     #############################
     # Parameter mapping (general)
     #############################
 
-    D.modelled <- !CL                                           ## & is.null(fixed$D)
     np <- sapply(design$designMatrices, ncol)
     if (D.modelled) np <-  c(D = ncol(D.designmatrix), np)
-
+    if (NE.modelled) np <-  c(np, noneuc = ncol(NE.designmatrix))
+    
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
-    names(parindx) <- names(np)
+    names(parindx) <- names(np)[np>0]
     if (!D.modelled) parindx$D <- NULL
-
-## DOES THIS DEAL WITH SESSION COVARIATES OF DENSITY? 2009 08 16
+    if (!NE.modelled) parindx$noneuc <- NULL
+    
+    ## DOES THIS DEAL WITH SESSION COVARIATES OF DENSITY? 2009 08 16
 
     ################
     # Variable names
@@ -69,9 +74,10 @@ prepare <- function (secr, newmodel) {
 
     betanames <- unlist(sapply(design$designMatrices, colnames))
     names(betanames) <- NULL
-    if (!CL) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
+    if (D.modelled) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
+    if (NE.modelled) betanames <- c(betanames, paste('noneuc', colnames(NE.designmatrix), sep='.'))
     betanames <- sub('..(Intercept))','',betanames)
-
+    
     if (detector(traps(capthist)) %in% .localstuff$simpledetectors)
         savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
     else
@@ -85,8 +91,8 @@ prepare <- function (secr, newmodel) {
        mask      = mask,
        CL        = CL,
        detectfn  = detectfn,
-
        D.design  = D.designmatrix,
+       NE.design = NE.designmatrix,
        design    = design,
        design0   = design0,
        hcov      = hcov,
@@ -164,6 +170,8 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         model <- stdform (model)
 
         model <- replace (secr$model, names(model), model)
+
+        ## OBSOLETE: 2014-10-25, BUT DOES IT NEED REPLACING?
         if (secr$CL) model$D <- NULL
         if (secr$detectfn!=1) model$z <- NULL
 
@@ -202,6 +210,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
                link     = design$link,
                fixedpar = list(),
                designD  = design$D.design,
+               designNE = design$NE.design, 
                design   = design$design,
                design0  = design$design0,
                capthist = design$capthist,
@@ -225,16 +234,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
                             .relStep = .relStep, minAbsPar = minAbsPar)
         u.star <- grad.Hess$gradient
         i.star <- -grad.Hess$Hessian
-
-## debug 2009 08 25
-## library(numDeriv)
-## u.star <- grad(func = loglikfn, x = beta1, method="Richardson", list(eps=1e-3, d=0.1,
-##      zero.tol=0.001, r=4, v=2), design = newsecr)
-## i.star <- -hessian(func = loglikfn, x = beta1, method="Richardson", list(eps=1e-3, d=0.1,
-##      zero.tol=0.001, r=4, v=2), design = newsecr)
-## print(grad.Hess$mean)
-## print (u.star)
-## print(i.star)
 
         score <- try (solve(i.star), silent = TRUE)
         if (inherits(score, "try-error")) {
@@ -328,9 +327,3 @@ score.table <- function (object, ..., sort = TRUE, dmax = 10) {
     output
 }
 ############################################################################################
-
-# print(score.test (secr0CL, list(g0=~b, sigma=~1)))
-# m1 <- list(D = ~1, g0 = ~b, sigma = ~1)
-# m2 <- list(D = ~1, g0 = ~1, sigma = ~b)
-############################################################################################
-

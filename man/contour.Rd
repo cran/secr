@@ -17,8 +17,8 @@ adds a conventional `boundary strip' to a detector (trap) array, where
 
 pdot.contour(traps, border = NULL, nx = 64, detectfn = 0,
     detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = NULL,
-    binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly = NULL, plt = TRUE,
-    add = FALSE, ...)
+    binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly =
+    NULL, plt = TRUE, add = FALSE, ...)
 
 buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
      plt = TRUE, add = FALSE, poly = NULL, ...)
@@ -35,7 +35,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
   function }
   \item{noccasions}{ number of sampling occasions}
   \item{binomN}{ integer code for discrete distribution (see
-  \code{\link{secr.fit}}) }
+    \code{\link{secr.fit}}) }
   \item{levels}{ vector of levels for p.(X)}
   \item{poly}{ matrix of two columns, the x and y
     coordinates of a bounding polygon (optional) }
@@ -146,14 +146,14 @@ sum (sapply(buff.concave2, polyarea))
 olddir <- setwd(system.file("extdata", package = "secr"))
 possumtraps <- traps(possumCH)
 possumarea <- read.table("possumarea.txt", header = TRUE)
-oldpar <- par(xpd = TRUE, mar = c(1,6,6,6))
+par(xpd = TRUE, mar = c(1,6,6,6))
 plot(possumtraps, border = 400, gridlines = FALSE)
 pdot.contour(possumtraps, detectfn = 0, nx = 256, detectpar =
     detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
     noccasions = 5, add = TRUE, poly = possumarea, col = "blue")
 lines(possumarea)
 setwd(olddir)
-par(oldpar)
+par(xpd = FALSE, mar = c(5,4,4,2) + 0.1)    ## reset to default
 
 }
 

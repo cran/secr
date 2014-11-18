@@ -38,9 +38,9 @@ ports, or the name of a file to create.
 
 The \code{proj} argument may be complex. For further information see the
 Examples, \url{http://www.remotesensing.org/geotiff/proj_list/} and the
-help for related package \pkg{rgdal}. If \code{proj} is an empty string
-then coordinates are assumed already to be latitudes (column 1) and
-longitudes (column 2).
+help for \code{project} in the related package \pkg{rgdal}. If
+\code{proj} is an empty string then coordinates are assumed already to
+be latitudes (column 1) and longitudes (column 2).
 
 Waypoint names are derived from the rownames of \code{xy}.
 
@@ -55,8 +55,7 @@ No value is returned. The effect is to upload waypoints to an attached
 
 \seealso{
 
-  \code{\link{make.systematic}}, \code{\link[maptools]{readGPS}},
-  \code{\link[rgdal]{project}}
+  \code{\link{make.systematic}}, \code{\link[maptools]{readGPS}}
  
 }
 

@@ -14,7 +14,7 @@ sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
   "IHP", "coastal", "hills", "linear"), buffertype = "rect", poly =
   NULL, covariates = list(sex = c(M = 0.5, F = 0.5)), number.from = 1,
   Ndist = c("poisson", "fixed", "specified"), nsession = 1, details =
-  NULL, seed = NULL, ...)
+  NULL, seed = NULL, keep.mask = model2D \%in\% c("IHP", "linear"), ...)
 
 tile(popn, method = "reflect")
 
@@ -35,8 +35,9 @@ tile(popn, method = "reflect")
   \item{details}{ optional list with additional parameters }
   \item{seed}{ value for setting .Random.seed - either NULL or an
     integer}
+  \item{keep.mask}{logical; if TRUE and model2D \%in\% c('IHP','linear')
+  then \code{core} is saved as the attribute "mask"}
   \item{...}{ arguments passed to subset if poly is not NULL}
-
   \item{popn}{ popn object }
   \item{method}{ character string "reflect" or "copy"}
 }
@@ -163,8 +164,10 @@ as a data frame attribute. The initial state of the R random number generator is
 stored in the `seed' attribute.
 
 If \code{model2D = "linear"} the output is of class \code{c("linearpopn",
-"popn", "data.frame")}, and the value of \code{core} is stored in the
-`mask' attribute.
+  "popn", "data.frame")}.
+
+If \code{model2D = "IHP"} or \code{model2D = "linear"} the value of
+\code{core} is stored in the `mask' attribute.
 
 }
 
@@ -199,7 +202,7 @@ covariates(temppop)$size <- rnorm (nrow(temppop), mean = 15, sd = 3)
 summary(covariates(temppop))
 
 ## Neyman-Scott cluster distribution
-oldpar <- par(xpd = TRUE, mfrow=c(2,3))
+par(xpd = TRUE, mfrow=c(2,3))
 for (h in c(5,15))
 for (m in c(1,4,16)) {
     temppop <- sim.popn (D = 10, expand.grid(x = c(0,100),
@@ -208,7 +211,7 @@ for (m in c(1,4,16)) {
     plot(temppop)
     text (50,230,paste(" mu =",m, "hsigma =",h))
 }
-par(oldpar)
+par(xpd = FALSE, mfrow=c(1,1))   ## defaults
 
 ## Inhomogeneous Poisson distribution
 xy <- secrdemo.0$mask$x + secrdemo.0$mask$y - 900
@@ -242,9 +245,12 @@ title("reflect")
 
 \dontrun{
 ## simulate from inhomogeneous fitted density model
+
 regionmask <- make.mask(traps(possumCH), type = "polygon",
     spacing = 20, poly = possumremovalarea)
-dsurf <- predictDsurface(possum.model.Dh2, regionmask)
+dts <- distancetotrap(regionmask, possumarea)
+covariates(regionmask) <- data.frame(d.to.shore = dts)
+dsurf <- predictDsurface(possum.model.Ds, regionmask)
 possD <- covariates(dsurf)$D.0
 posspop <- sim.popn(D = possD, core = dsurf, model = "IHP")
 plot(regionmask, dots = FALSE, ppoly = FALSE)
