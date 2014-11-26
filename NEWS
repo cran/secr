@@ -1,3 +1,11 @@
+Changes in version 2.9.2 (2014-11-21)
+
+New features or changed behaviour of old functions
+    o   none
+
+Bugs fixed
+    o   secr.fit failed with group ('g') models 
+
 Changes in version 2.9.1 (2014-11-19)
 
 New features or changed behaviour of old functions

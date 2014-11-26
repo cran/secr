@@ -517,14 +517,14 @@
         is.null(fixed$noneuc)
     if (!NE.modelled) {
        designNE <- matrix(nrow = 0, ncol = 0)
-       grouplevels <- 1    ## was NULL
+       grouplevelsNE <- 1    ## was NULL
        attr(designNE, 'dimD') <- NA
        nNEParameters <- integer(0)
     }
     else {
-        grouplevels  <- group.levels(capthist,groups)
+        grouplevelsNE  <- group.levels(capthist,groups)
         memo ('Preparing non-Euclidean parameter design matrix', details$trace)
-        temp <- D.designdata( mask, model$noneuc, grouplevels, sessionlevels, sessioncov)
+        temp <- D.designdata( mask, model$noneuc, grouplevelsNE, sessionlevels, sessioncov)
         if (any(smooths(model$noneuc)))
             smoothsetup$noneuc <- gamsetup(model$noneuc, temp)
         ## otherwise, smoothsetup$NE remains NULL

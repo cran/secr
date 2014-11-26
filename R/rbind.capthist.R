@@ -58,10 +58,17 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
 {
     dots <- match.call(expand.dots = FALSE)$...
     allargs <- list(...)
-    names(allargs) <- lapply(dots, as.character)
+    
+    ##############################################################
+    ## 2014-11-23
+    ## don't understand the purpose of this line, and it breaks secrdesign
+    ## temporarily(?) suppress
+    
+    ## names(allargs) <- lapply(dots, as.character)
+    ##############################################################
+
     if (length(dots)==1) object <- allargs[[1]]
     else object <- allargs
-
     newMCP <- TRUE ## option 2013-11-20
 
     ## Catch singleton - added 2011-09-12
@@ -169,6 +176,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         tempcov <- covariates(object)
         covnamelist <- lapply (tempcov, names)
         covnames <- Reduce(intersect, covnamelist)
+      
         if (length(covnames) > 0) {
             tempcov <- lapply(tempcov, function(x) x[,covnames, drop = FALSE])
             tempcov <- do.call (rbind, tempcov)

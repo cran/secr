@@ -1,6 +1,6 @@
-88260c66fb06d6497657895bc7be3259 *DESCRIPTION
+5e5dde1a8088c5ff0125c5350c709188 *DESCRIPTION
 cc8f00ee54c194490377fddb09a33d3a *NAMESPACE
-c724a75049bfc0b5a2b58e0fddb96a70 *NEWS
+88d81c9d629a75ab99349997594fe1af *NEWS
 4d43659a8aaf200f3135f872158f313e *R/CV.R
 e37e2153beeb117eeb9f1bb41d9633c0 *R/ClosedN.R
 86604019ebbf001f1e1440e068a9317d *R/D.designdata.R
@@ -46,13 +46,13 @@ e64b09e7aa2ff75a737d7f19476d8227 *R/plot.mask.r
 d91c9785a57eb396e225d3fc958299a0 *R/predict.secr.R
 7e01d2ef320257907ceec1c8ff3fdf5a *R/randomHabitat.R
 e5c3b3ff352084da05bc2d335f1e8955 *R/raster.R
-b0b8f3f86a4c1d6198ba2c51ef91b56c *R/rbind.capthist.R
+1d379889b8b7d27cf55338f4210b2685 *R/rbind.capthist.R
 62bdae6e75946612273fceb1ddc813bf *R/read.traps.R
 c9bdaee2ec40c507294a08b0a4458c07 *R/reduce.R
 0e6b161912b7e718053bcd86bdf038b5 *R/regionN.R
 d9ef50a04afd7d76279171fae0f0f194 *R/score.test.R
 defa9905bef4fa8ccd49428f55f2ca19 *R/secr.design.MS.R
-6860df4e4bbe13c3fb1f33ed8763472d *R/secr.fit.R
+55dd67166bad829a0f2d0937a9175dd6 *R/secr.fit.R
 b4c744b23dc8d3bc3c8b328424961b06 *R/secr.make.newdata.R
 89271bc7aaf4114b1e1e7a0345a5ec73 *R/secr.test.R
 f52536788397e86fe203c6451882f1c5 *R/secrloglik.R
@@ -197,7 +197,7 @@ b94b8a89ac2fb9d60d2e703bbe8ae86d *man/rectangularMask.Rd
 89c98f6876e14eb49167dfa7ec019a28 *man/reduce.capthist.Rd
 b42f83b110d87066e2b7bf10228ca6b6 *man/region.N.Rd
 a59fe566551cbb9dd891fb0c1b1bf476 *man/score.test.Rd
-e1ebd5dd59a334f2bda03c736c1fb03f *man/secr-package.Rd
+be648473cbcd487c9df7cd831fb87fc1 *man/secr-package.Rd
 c319e970d3594b3f84d3d2c88fff8e12 *man/secr.design.MS.Rd
 f909040a270fb29df09448325fd110d8 *man/secr.fit.Rd
 4f8ff2708e350489dcd399b72af1fb84 *man/secr.make.newdata.Rd
