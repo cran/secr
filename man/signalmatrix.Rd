@@ -28,8 +28,8 @@ signalmatrix(object, noise = FALSE, recodezero = FALSE,
 
 \details{
   
-This function extracts signal or noise data from a capthist object where
-is stored in the `signalframe' attribute. in a natural sound x microphone
+This function extracts signal or noise data from a capthist object, where
+it is stored in the `signalframe' attribute, as a more natural sound x microphone
 table. There is no equivalent replacement function.
 
 The \code{signalcovariates} argument may be used to specify additional

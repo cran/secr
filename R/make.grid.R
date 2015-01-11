@@ -120,7 +120,7 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
     ## defer implementation of sp objects for defining polygons
     ##    SPDF <- inherits(polylist, "SpatialPolygonsDataFrame")
     ##    if (SPDF ) {
-    ##        require(sp)
+    ##        requireNamespace('sp')
     ##        ...
     ##    }
 

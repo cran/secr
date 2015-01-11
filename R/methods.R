@@ -69,6 +69,7 @@
 ## 2014-08-19 predict.secr transferred to predict.secr.r
 ## 2014-09-06 summary.mask slightly rearranged, and allows linearmask
 ## 2014-09-14 plot.mask moved to plot.mask.r
+## 2014-12-24 print.summary.capthist allows for nonspatial capthist
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -571,7 +572,7 @@ detectionindex <- function (object) {
 
 polyarea <- function (xy, ha = TRUE) {
     if (inherits(xy, 'SpatialPolygons')) {
-        if (!require(rgeos))
+        if (!requireNamespace('rgeos', quietly = TRUE))
             stop ("package rgeos is required for area of SpatialPolygons")
         temparea <- rgeos::gArea(xy)
     }
@@ -2316,20 +2317,25 @@ counts <- function (CHlist, counts = 'M(t+1)') {
 
 print.summary.capthist <- function (x, ...) {
     cat ('Object class     ', 'capthist', '\n')
-    print(x$trapsum, terse=TRUE)
+    nonspatial <- is.null(x$trapsum)
+    if (!nonspatial)
+        print(x$trapsum, terse=TRUE)
     cat ('Counts by occasion \n')
     print(x$counts, ...)
     cat ('\n')
     if (x$zeros>0)
         cat (x$zeros, 'empty histories\n')
-    if (x$detector %in% c('signal', 'signalnoise')) {
-        cat ('Signal threshold ', x$cutval, '\n')
-        print (x$signalsummary)
-    }
-    if (!is.null(x$telemsummary)) {
-        cat (x$telemsummary[1], "telemetered animals,", x$telemsummary[2], "detected\n")
-        cat (paste(x$telemsummary[3:4], collapse="-"), "locations per animal, mean = ",
-             paste(round(x$telemsummary[5:6],2), collapse=", sd = "), "\n")
+
+    if (!nonspatial) {
+        if (x$detector %in% c('signal', 'signalnoise')) {
+            cat ('Signal threshold ', x$cutval, '\n')
+            print (x$signalsummary)
+        }
+        if (!is.null(x$telemsummary)) {
+            cat (x$telemsummary[1], "telemetered animals,", x$telemsummary[2], "detected\n")
+            cat (paste(x$telemsummary[3:4], collapse="-"), "locations per animal, mean = ",
+                 paste(round(x$telemsummary[5:6],2), collapse=", sd = "), "\n")
+        }
     }
 }
 ############################################################################################

@@ -43,7 +43,8 @@
   to include }
   \item{byoccasion}{logical; if TRUE then each level of f identifies occasions
   to include }
-  \item{...}{ other arguments (not used currently) }
+  \item{...}{ other arguments passed to subset.capthist (split.capthist)
+ or not used currently (subset.capthist) }
 }
 \details{
 

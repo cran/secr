@@ -31,6 +31,7 @@
 ## 2014-08-18 dropped 'c' column in reparameterize.sigmak
 ## 2014-08-19 moved secr.lpredictor to utility.R
 ## 2014-10-13 noneuc handled as mask-pixel-specific parameter
+## 2014-12-04 improved handling of nc = 0
 
 ###############################################################################
 
@@ -307,6 +308,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
     detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
+     
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
 
@@ -361,9 +363,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         m    <- nrow(session.mask)
         sessg <- min (sessnum, design$R)
 
-##        space <- attr(session.mask, 'spacing')
-##        spacefactor <- attr(session.mask, 'spacingfactor')
-
         dettype <- detectorcode(session.traps)
 
         ## like == 0 is default; adjust if using conditional likelihood
@@ -372,7 +371,10 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         ## ID is used to select a subset of rows (animals) in the parameter index array PIA
         ## and session.grp, to honour on-the-fly telemetry subsets
         if (is.null(ID))
-            ID <- 1:nc    ## vector to subset PIA for current animals
+            ## 2014-12-04 ID <- 1:nc    ## vector to subset PIA for current animals
+            ID <- 1 : (if(nc>0) nc else 1)    ## vector to subset PIA for current animals
+        grpID <- as.integer(session.grp[ID])
+        if (any(is.na(grpID))) grpID <- 1
 
         ## miscparm is used to package beta parameters that are not modelled
         ## and hence do not have a beta index specified by parindx.
@@ -708,8 +710,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             ## typical call (not 'presence' or 'unmarked')
             ##--------------------------------------------
             else {
-if (usge[1]==0 & nmix>1)
-    stop ("mixture models fail when the first detector is not used on the first day")
+                if (usge[1]==0 & nmix>1)
+                    stop ("mixture models fail when the first detector is not used on the first day")     
                 temp <- .C('secrloglik', PACKAGE = 'secr',
                    as.integer(like),          # 0 = full, 1 = CL, 3 = concurrent, 4 = concurrent CL
                    as.integer(dettype),       # 0 = multicatch, 1 = proximity, etc
@@ -718,7 +720,7 @@ if (usge[1]==0 & nmix>1)
                    as.integer(session.capthist),
                    as.double(unlist(session.xy)),  # polygon or transect detection locations
                    as.double(session.signal),
-                   as.integer(session.grp[ID]),
+                   as.integer(grpID),
                    as.integer(nc),
                    as.integer(s),
                    as.integer(k), # may be zero-terminated vector for parts of polygon

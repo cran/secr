@@ -8,6 +8,7 @@
 ## 2012 02 02 signal check applied at level of whole sound
 ## 2012-10-22 xylist checked
 ## 2013-05-09 tweak to avoid error in checkcovariatelevels when no covariates
+## 2015-01-06 stop if mixture of NULL and non-NULL covariates
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -228,7 +229,10 @@ verify.traps <- function (object, report = 2, ...) {
         anyerrors <- any(sapply(temp, function(x) x$errors))
 
         ## check covariate factor levels conform across sessions
+        
         if (!all(sapply(covariates(object), is.null))) {
+            if (any(sapply(covariates(object), is.null)))
+                stop ("mixture of NULL and non-NULL trap covariates in different sessions")
             trapcovariatelevelsOK <- checkcovariatelevels(covariates(object))
             if (!trapcovariatelevelsOK & report>0) {
                 warning ('Levels of factor trap covariate(s) differ between sessions')
@@ -374,6 +378,8 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         ## check covariate factor levels conform across sessions
         if (!all(sapply(covariates(object), is.null))) {
+            if (any(sapply(covariates(object), is.null)))
+                stop ("mixture of NULL and non-NULL individual covariates in different sessions")            
             covariatelevelsOK <- checkcovariatelevels(covariates(object))
             if (!covariatelevelsOK & report>0) {
                 warning ('Levels of factor covariate(s) differ between sessions')
@@ -384,7 +390,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         invisible(list(errors = anyerrors, bysession = temp))
     }
     else {
-
         ## preliminaries
         dim3 <- length(dim(object)) == 3
         count <- detector(traps(object)) %in% .localstuff$countdetectors

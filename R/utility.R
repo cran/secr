@@ -38,6 +38,7 @@
 ## 2014-09-09 make.lookup uses values rounded to 10 dp
 ## 2014-09-10 getnoneucnames()
 ## 2014-09-10 getcellsize()
+## 2014-12-04 group.levels error check now precedes attempt to extract by groups
 ###############################################################################
 
 .localstuff <- new.env()
@@ -539,7 +540,9 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         xy <- SpatialPoints(xy)
         ## 2013-04-20 update for deprecation of 'overlay'
         ## OK <- overlay (xy, poly)
-        OK <- over (xy, poly)
+        ## 2014-12-11
+        proj4string(poly) <- CRS()
+        OK <- sp::over (xy, poly)
         ## bug fix 2013-11-09
         if (!is.null(dim(OK)))
             OK <- OK[,1]
@@ -990,10 +993,14 @@ group.levels <- function (capthist, groups, sep='.') {
     else {
         if (is.null(groups)) 0
         else {
-            temp <- as.data.frame(covariates(capthist)[,groups])
-            if (ncol(temp) != length(groups))
+            ## 2014-12-04 error check precedes attempt to extract by groups
+            if (!all(groups %in% names(covariates(capthist))))
                 stop ("one or more grouping variables is missing ",
                       "from covariates(capthist)")
+            temp <- as.data.frame(covariates(capthist)[,groups])
+##            if (ncol(temp) != length(groups))
+##                stop ("one or more grouping variables is missing ",
+##                      "from covariates(capthist)")
             sort(levels(interaction(temp, drop=T, sep=sep)))  # omit null combinations, sort as with default of factor levels
         }
     }
@@ -1449,7 +1456,7 @@ updatemodel <- function (model, detectfn, detectfns, oldvar, newvar) {
         for (i in 1:length(oldvar)) {
             if (oldvar[i] %in% names(model)) {
                 names(model)[names(model) == oldvar[i]] <- newvar[i]
-                warning ("replacing ", oldvar[i], " by ", newvar[i], " in model for detectfn ", 
+                warning ("replacing ", oldvar[i], " by ", newvar[i], " in model for detectfn ",
                          detectfn)
             }
         }

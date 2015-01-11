@@ -13,6 +13,7 @@
 ## 2013-11-23 IHP for Ndist fixed
 ## 2014-04-18 session-specific density
 ## 2014-09-03 model2D = "linear" option, and some recoding of IHP
+## 2014-12-29 buffertypes concave, convex
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -48,13 +49,18 @@ tile <- function (popn, method = "reflect") {
 }
 
 sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
-  "cluster", "IHP", "coastal", "hills", "linear"), buffertype = 'rect', poly = NULL,
-  covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
-  = c('poisson','fixed','specified'), nsession = 1, details = NULL, seed = NULL,
-  keep.mask = model2D %in% c('IHP','linear'), ...)  {
+    "cluster", "IHP", "coastal", "hills", "linear"), buffertype =
+    c("rect", "concave", "convex"), poly = NULL,
+    covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
+    = c('poisson','fixed','specified'), nsession = 1, details = NULL, 
+    seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL, 
+    ...)  {
 
     model2D <- match.arg(model2D)
     Ndist <- match.arg(Ndist)
+    buffertype <- match.arg(buffertype)
+    if (buffertype %in% c('convex','concave') & (model2D != 'poisson'))
+        stop ("buffertype incompatible with model2D")
 
     if (nsession > 1) {
         discrete <- function(x) {
@@ -64,7 +70,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         session.popn <- function (s, D) {
             ## independent population
             sim.popn (D, core, buffer, model2D, buffertype, poly,
-                covariates, number.from, Ndist, nsession = 1, details, seed)
+                covariates, number.from, Ndist, nsession = 1, details, seed, 
+                keep.mask, Nbuffer)
         }
         turnover <- function (oldpopn) {
             ## project existing population
@@ -201,21 +208,77 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
 
         }
         else {
-            if (buffertype != 'rect')
-                stop ("'rect' is the only buffertype implemented")
+            ## 2014-12-29
+            
             # population in arena +/- buffer from traps
             buff <- c(-buffer,+buffer)
             xl <- range(core$x) + buff
             yl <- range(core$y) + buff
-            area <- diff(xl) * diff(yl) * 0.0001  # ha
-            N  <- switch (Ndist,
-                poisson = rpois(1, lambda=D[1] * area),
-                fixed = discreteN (1, D[1] * area),
-                specified = round(D[1]))
 
+            area <- diff(xl) * diff(yl) * 0.0001  # ha not sq metres
+            
+            if (Ndist == 'fixed') {
+                bufferpoly <- switch(buffertype,
+                                     convex = buffer.contour(core, buffer = buffer,
+                                                             convex = TRUE, plt = FALSE)[[1]],
+                                     concave = buffer.contour(core, buffer = buffer,
+                                                              convex = FALSE, plt = FALSE))
+                bufferarea <- switch (buffertype, 
+                                      rect = area,
+                                      convex = polyarea (bufferpoly),
+                                      concave = sum(sapply(bufferpoly, polyarea)))
+                if ((buffertype == 'concave') & (is.null(Nbuffer)))
+                    warning("automatic Nbuffer unreliable with concave buffer")
+            }
+            else bufferarea <- area
+                
+            
+            ## If target number not specified, get from density x area
+            if (is.null(Nbuffer)) {
+                N  <- switch (Ndist,
+                              poisson = rpois(1, lambda=D[1] * area),
+                              fixed = discreteN (1, D[1] * area),
+                              specified = round(D[1]))
+                Nbuffer  <- switch (Ndist,
+                                    poisson = rpois(1, lambda = D[1] * bufferarea),
+                                    fixed = discreteN (1, D[1] * bufferarea),
+                                    specified = round(D[1]))
+            }
+            else {
+                N <- Nbuffer
+            }
+            
+            if ((Ndist == 'fixed') & (buffertype %in% c('convex','concave'))) {
+                N <- N * area / bufferarea                
+            }
+       
             if (model2D=='poisson') {
-                animals <- data.frame (x = runif(N)*diff(xl)+xl[1], y =
-                    runif(N)*diff(yl)+yl[1])
+                animals <- data.frame (
+                    x = runif(N)*diff(xl)+xl[1], 
+                    y = runif(N)*diff(yl)+yl[1])
+                
+                ## 2014-12-29 allow buffering / poly
+                if ((buffertype %in% c('convex','concave')) & (Ndist == 'fixed')) {
+                    maxtries <- 10
+                    tries <- 1
+                    animals <- switch(buffertype, 
+                                      convex = animals[pointsInPolygon(animals, bufferpoly),],
+                                      concave = animals[distancetotrap(animals, core)<= buffer,])
+                    
+                    while ((nrow(animals) < Nbuffer) & (tries < maxtries)) {
+                        animals <- rbind(animals, data.frame (
+                            x = runif(N)*diff(xl)+xl[1], 
+                            y = runif(N)*diff(yl)+yl[1]))
+                        animals <- switch(buffertype, 
+                          convex = animals[pointsInPolygon(animals, bufferpoly),],
+                          concave = animals[distancetotrap(animals, core)<= buffer,])
+                        tries <- tries + 1
+                    }
+                    if (tries >= maxtries)
+                        warning("exceeded maxtries in sim.popn")
+                    animals <- animals[1:Nbuffer,]
+                    
+                }                
             }
             else if (model2D=='coastal') {
                 if (is.null(details$Beta))
@@ -311,6 +374,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ##-------------------------
             ## restrict to a polygon
             ## added 2011-10-20
+            ## NOTE 2014-12-29 this breaks Ndist = 'fixed'
             if (!is.null(poly)) {
                 animals <- subset(animals, poly = poly, ...)
             }
@@ -319,6 +383,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         attr(animals, 'seed') <- RNGstate   ## save random seed
         attr(animals, 'Ndist') <- Ndist
         attr(animals, 'model2D') <- model2D
+        attr(animals, 'buffertype') <- buffertype
         attr(animals, 'boundingbox') <- expand.grid (x=xl,y=yl)[c(1,3,4,2),]
         animals
     }

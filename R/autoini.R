@@ -149,7 +149,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (length(tol)==1) tol <- rep(tol,2)
 
     if (nrow(capthist)<5)
-        stop ("too few values in session 1 to determine start; set manually")
+        stop ("too few values for autoini")  ## message changed 2015-01-06
 
     ## added 2010-07-01
     if (is.character(detectfn))

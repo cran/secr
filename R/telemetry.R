@@ -127,7 +127,7 @@ telemetry.LC <- function(CH, detectfn, detectpar, mask, bvn = TRUE) {
                 close <- nearesttrap(matrix(0, ncol = 2, nrow = 1), tempmask)
             }
             tempmask <- tempmask[close,, drop = FALSE]
-            # require(mvtnorm)
+            # if (!requireNamespace(mvtnorm, quietly = TRUE)) stop()
             # dbvn <- apply(tempmask, 1, mvtnorm::dmvnorm, mean=c(0,0), sigma=vcv, log=FALSE)
             # mymvn is faster and produces identical result
             invS <- solve(vcv)
@@ -181,7 +181,7 @@ telemetry.LCmask <- function(CH, mask, bvn = TRUE) {
                     close <- nearesttrap(matrix(0, ncol = 2, nrow = 1), tempmask)
                 }
                 tempmask <- tempmask[close,, drop = FALSE]
-                # require(mvtnorm)
+                # if (!requireNamespace(mvtnorm, quietly = TRUE)) stop()
                 # dbvn <- apply(tempmask, 1, mvtnorm::dmvnorm, mean=c(0,0), sigma=vcv, log=FALSE)
                 # mymvn is faster and produces identical result
                 invS <- solve(vcv)

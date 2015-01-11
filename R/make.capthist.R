@@ -193,7 +193,8 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
 
         wout <- abind(wout, w, along=1)
         dimnames(wout)[[2]] <- 1:nocc
-
+        attr(wout,'covariates') <- data.frame() ## default 2015-01-06
+        
         if (nrow(wout) > 0) {
 
             dimnames(wout)[[1]] <- uniqueID
@@ -239,7 +240,6 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 }
                 attr(wout,'covariates') <- temp
             }
-            else attr(wout,'covariates') <- data.frame()
         }
         class (wout) <- 'capthist'
         traps(wout) <- traps

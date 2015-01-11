@@ -253,6 +253,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         }
         if (legend & !is.null(covariate)) {
             legendtext <- levels(covfactor)[1:ncolour]
+            
 
             if (dots) {
                 args <- formals(legend)

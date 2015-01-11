@@ -178,6 +178,7 @@ S3method(noise, capthist)
 
 S3method(clone, default)
 S3method(clone, popn)
+S3method(clone, capthist)
 
 export (covariates)
 export (timevaryingcov)

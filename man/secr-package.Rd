@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.9.2\cr
-Date: \tab 2014-11-19\cr
+Version: \tab 2.9.3\cr
+Date: \tab 2015-01-11\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -66,6 +66,16 @@ The datasets \link{possum}, \link{skink}, \link{ovenbird},
 \link{housemouse}, \link{deermouse}, \link{ovensong},
 \link{hornedlizard} and \link{stoatDNA} include examples of fitted
 models.
+
+Two add-on packages extend the capability of \pkg{secr} and are
+documented separately. \pkg{secrlinear} enables the estimation of linear
+density (e.g., animals per km) for populations in linear habitats such
+as stream networks
+(\href{http://cran.r-project.org/web/packages/secrlinear/vignettes/secrlinear-vignette.pdf}{secrlinear-vignette.pdf}). \pkg{secrdesign}
+enables the assessment of alternative study designs by Monte Carlo
+simulation; scenarios may differ in detector (trap) layout, sampling
+intensity, and other characteristics
+(\href{http://cran.r-project.org/web/packages/secrdesign/vignettes/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}).
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see

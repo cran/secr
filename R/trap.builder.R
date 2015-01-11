@@ -12,6 +12,8 @@
 ## 2013-03-02 exclude, exclmethod arguments added
 ## 2013-04-20 replace deprecated overlay with over
 ## 2014-10-25 revamp polygon requirement for grts
+## 2014-12-11 set proj4string to NA
+## 2014-12-11 method = "GRTS" changed to method == "GRTS" !
 ###############################################################################
 
 ## spsurvey uses sp
@@ -114,17 +116,19 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     SP <- inherits(region, 'SpatialPolygons')
     SPx <- inherits(exclude, 'SpatialPolygons')
-    
+
     if (is.null(frame)) {
         if (is.null(region)) {
             stop ("specify at least one of 'region' or 'frame'")
         }
-            
+
         if (SP) {
             ## spsurvey requires SPDF
-            if ((method = 'GRTS') & (!inherits(region, 'SpatialPolygonsDataFrame'))) {
+            if ((method == 'GRTS') & (!inherits(region, 'SpatialPolygonsDataFrame'))) {
+                ## 2014-12-11
+                proj4string(region) <- CRS()
                 attr <- data.frame(a = 1, row.names = "s1")
-                region <- SpatialPolygonsDataFrame(region, attr)            
+                region <- SpatialPolygonsDataFrame(region, attr)
             }
         }
         else {
@@ -132,7 +136,11 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             region <- rbind (region, region[1,])  # force closure of polygon
             region <- boundarytoSPDF(region)
         }
-        if (!is.null(exclude) & !SPx) {
+        if (SPx) {
+            ## 2014-12-11
+            proj4string(exclude) <- CRS()
+        }
+        else if (!is.null(exclude)) {
             exclude <- matrix(unlist(exclude), ncol = 2)
             exclude <- rbind (exclude, exclude[1,])  # force closure of polygon
             exclude <- boundarytoSP(exclude)
@@ -171,7 +179,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ####################################
     else if (method == 'GRTS') {
-        if (!require (spsurvey))
+        if (!requireNamespace ('spsurvey', quietly = TRUE))
             stop ("package 'spsurvey' required for grts in trap.builder")
         ## make a list in the format needed by grts()
         design <- list(None = list(panel = c(Panel1 = n),
@@ -312,6 +320,8 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     SP <- inherits(region, "SpatialPolygons")
     if (SP) {
         region <- polygons(region)
+        ## 2014-12-11
+        proj4string(region) <- CRS()
     }
     else{
         ## convert to SpatialPolygons

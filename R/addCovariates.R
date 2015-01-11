@@ -44,14 +44,16 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) 
 
         if (type == "shapefile") {
             polyfilename <- spatialdata  ## strip shp?
-            requireNamespace('maptools', quietly=TRUE)
+            if (!requireNamespace('maptools', quietly = TRUE))
+                stop("requires maptools")
             spatialdata <- maptools::readShapePoly(polyfilename)
-            ## spatialdata <- readShapePoly(polyfilename)
         }
         if (type %in% c("shapefile", "SPDF", "SGDF")) {
             xy <- matrix(unlist(object), ncol = 2)
             xy <- SpatialPoints(xy)
-            df <- over (xy, spatialdata)
+            ## 2014-12-11
+            proj4string(spatialdata) <- CRS()
+            df <- sp::over (xy, spatialdata)
         }
         else {
             ## nearest point algorithm

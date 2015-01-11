@@ -4,6 +4,7 @@
 ## pooled sessions named correctly
 ## verify option
 ## rbind.capthist merges polygons
+## 2015-01-11 tweak rownames in rbind.capthist (default component names)
 
 flatten <- function(x) {
 ## 7/6/2010, 12/9/2011
@@ -58,13 +59,21 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
 {
     dots <- match.call(expand.dots = FALSE)$...
     allargs <- list(...)
-    
+
     ##############################################################
     ## 2014-11-23
     ## don't understand the purpose of this line, and it breaks secrdesign
     ## temporarily(?) suppress
-    
     ## names(allargs) <- lapply(dots, as.character)
+
+    ## 2015-01-11
+    ## Aha! It provides input object names as base for rownames later in:
+    ## source <- rep(names(object), sapply(object, nrow))
+
+    inputnames <- lapply(dots, as.character)
+    if (any(is.na(inputnames) | duplicated(inputnames)))
+        inputnames <- as.character(1:length(allargs))
+    names(allargs) <- inputnames
     ##############################################################
 
     if (length(dots)==1) object <- allargs[[1]]
@@ -160,7 +169,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         if (mergepoly) {
             srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
             tmp <- Polygons(srl,1)
-            requireNamespace ('maptools', quietly = TRUE)
+            if (!requireNamespace ('maptools', quietly = TRUE))
+                stop("maptools required")
             tmp2 <- maptools::unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
             ## tmp2 <- unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
             trps <- as.data.frame(getcoord(tmp2)[[1]])
@@ -176,7 +186,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         tempcov <- covariates(object)
         covnamelist <- lapply (tempcov, names)
         covnames <- Reduce(intersect, covnamelist)
-      
+
         if (length(covnames) > 0) {
             tempcov <- lapply(tempcov, function(x) x[,covnames, drop = FALSE])
             tempcov <- do.call (rbind, tempcov)

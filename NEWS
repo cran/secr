@@ -1,4 +1,30 @@
-Changes in version 2.9.2 (2014-11-21)
+Changes in version 2.9.3 (2015-01-11)
+
+New features or changed behaviour of old functions
+    o   clone() has new method for capthist objects
+    o   sim.popn() new buffertype options 'convex' and 'concave'
+    o   sim.popn() acquires argument Nbuffer for user-specified N (model2D = 'poisson')
+    o   verify() flags mixture of NULL and non-NULL covariates across sessions
+
+Bugs fixed
+    o   RPSV crashed with zero detections, now returns NA
+    o   trap.builder and make.systematic failed when 'region' was sp object 
+        with non-missing proj4string
+    o   make.capthist() covariates of sessions with no detections defaulted to NULL 
+        instead of empty dataframe
+
+Other
+    o   more explicit error message when groups missing from individual covariates
+    o   more robust handling of sessions with no detections
+    o   fallback start value for sigma now 's' from Calhoun and Casby (1958)
+    o   minor revision of secr-overview.pdf
+    o   print.summary.capthist does not attempt to print trap summary for nonspatial capthist
+    o   secr.fit only calls autoini if needed
+    o   CITATION file uses package metadata
+    o   rbind.capthist() default animalID prefix when input names missing or duplicated
+    o   package code consistently uses requireNamespace instead of require
+
+Changes in version 2.9.2 (2014-11-23)
 
 New features or changed behaviour of old functions
     o   none

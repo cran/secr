@@ -213,6 +213,8 @@ RPSV <- function (capthist, CC = FALSE)
             n <- length(x)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
+        ## 2014-12-04
+        if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for RPSV")
@@ -223,7 +225,7 @@ RPSV <- function (capthist, CC = FALSE)
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
             temp <- lapply(w,RPSVx)
-        }
+        }       
         temp <- matrix(unlist(temp), nrow = 3)
         temp <- apply(temp,1,sum, na.rm=T)
         if (CC)

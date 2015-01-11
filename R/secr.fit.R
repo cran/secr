@@ -29,6 +29,8 @@
 ## 2014-10-13 designNE for non-Euclidean parameter
 ## 2014-10-14 allow start to be incomplete list of real parameter values
 ## 2014-10-16 rewrite of pnames and model section for clarity
+## 2014-12-04 tweak to avoid RPSV problem with zero captures
+## 2015-01-06 catch 'too few detections' before autoini
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -606,46 +608,48 @@
     ############################################
     ## 2014-10-14
     ## if (is.null(start)) {
+    ## 2015-01-06 only use autoini if required
     if (is.null(start) | is.list(start)) {
         start3 <- list(D = NA, g0 = NA, sigma = NA)
-        ## not for signal attenuation
-        if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
-            memo('Finding initial parameter values...', details$trace)
-            ## autoini uses default buffer dbar * 4
-            if (MS)
-                ## Using session 1, but this can be risky
-                start3 <- autoini (capthist[[1]], mask[[1]],
-                                   binomN = details$binomN,
-                                   ignoreusage = details$ignoreusage)
-            else {
-                start3 <- autoini (capthist, mask,
-                                   binomN = details$binomN,
-                                   ignoreusage = details$ignoreusage)
-            }
-
-            if (any(is.na(unlist(start3)))) {
-                warning ("'secr.fit' failed because initial values not found",
-                         " (data sparse?); specify transformed values in 'start'")
-                return (list(call = cl, fit = NULL))
-            }
-            if (details$unmash & !CL) {
-                nmash <- attr(capthist[[1]], 'n.mash')
-                if (!is.null(nmash)) {
-                    n.clust <- length(nmash)
-                    start3$D <- start3$D / n.clust
+        ch <- if (MS) capthist[[1]] else capthist            
+        msk <- if (MS) mask[[1]] else mask
+        requireautoini <- is.null(start) | !all(names(parindx) %in% names(start))
+        if (requireautoini) {
+            ## not for signal attenuation
+            if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
+                memo('Finding initial parameter values...', details$trace)
+                ## autoini uses default buffer dbar * 4
+                ## 2015-01-06
+                if (nrow(ch)<5)
+                    stop ("too few values in session 1 to determine start; set manually")
+                
+                start3 <- autoini (ch, msk, binomN = details$binomN,
+                                   ignoreusage = details$ignoreusage)        
+                
+                if (any(is.na(unlist(start3)))) {
+                    warning ("'secr.fit' failed because initial values not found",
+                             " (data sparse?); specify transformed values in 'start'")
+                    return (list(call = cl, fit = NULL))
                 }
+                if (details$unmash & !CL) {
+                    nmash <- attr(ch, 'n.mash')
+                    if (!is.null(nmash)) {
+                        n.clust <- length(nmash)
+                        start3$D <- start3$D / n.clust
+                    }
+                }
+                nms <- c('D', 'g0', 'sigma')
+                nms <- paste(nms, '=', round(unlist(start3),5))
+                memo(paste('Initial values ', paste(nms, collapse=', ')),
+                     details$trace)
             }
-            nms <- c('D', 'g0', 'sigma')
-            nms <- paste(nms, '=', round(unlist(start3),5))
-            memo(paste('Initial values ', paste(nms, collapse=', ')),
-                details$trace)
+            else warning ("using default starting values")
         }
-        else warning ("using default starting values")
-
         #--------------------------------------------------------------
         # assemble start vector
-        rpsv <- unlist(RPSV(capthist))[1]
-        n <- ifelse (ms(capthist), nrow(capthist[[1]]), nrow(capthist))
+        ## revised 2014-12-04 to avoid sessions with no detections
+        rpsv <- RPSV(ch, TRUE)
+        n <- nrow(ch)
         default <- list(
             D       = ifelse (is.na(start3$D), 1, start3$D),
             g0      = ifelse (is.na(start3$g0), 0.1, start3$g0),
@@ -740,7 +744,6 @@
         # start vector completed
         #--------------------------------------------------------------
     }
-
     ############################################
     ## ad hoc fix for experimental parameters
     ############################################
@@ -834,7 +837,7 @@
         lcmethod <- "optimise"
         signs <- c(-1,1) * sign(start)
         args <- list (f         = loglikefn,
-            interval  = start * (1 + details$intwidth2 * signs))
+                      interval  = start * (1 + details$intwidth2 * signs))
         args <- c(args, secrargs)
         args <- replace (args, names(list(...)), list(...))
         this.fit <- try(do.call (optimise, args))
@@ -845,7 +848,7 @@
         if (details$hessian != "none")
             details$hessian <- "fdHess"
     }
-    else if (lcmethod %in% c('newton-raphson')) {
+    else if (lcmethod %in% c('newton-raphson')) { 
         args <- list (p         = start,
                       f         = loglikefn,
                       hessian   = tolower(details$hessian)=='auto',

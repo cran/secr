@@ -18,7 +18,7 @@ localvar <- function (z, xy) {
     ## choice of output verified by comparing to
     ## sum ((nj - n/J)^2) * J / (J-1) for ovensong vector
     ## with vartype='SRS'
-    if (require(spsurvey))
+    if (requireNamespace('spsurvey', quietly = TRUE))
         temp1 <- spsurvey::total.est(z = z, wgt = rep(1,length(z)),
                                      x = xy$x, y = xy$y)
     else
