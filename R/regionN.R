@@ -125,7 +125,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             }
             else {
                 bbox <- apply(region, 2, range)
-            }            
+            }
             if (masktype == "mask") {
                 regionmask <- make.mask(bbox, poly = region, buffer = 0,
                                         spacing = spacing, type = 'polygon',
@@ -141,6 +141,11 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 ##     spacing = spacing, spacingfactor = attr(mask, "spacingfactor"))
             }
         }
+
+        ## 2015-01-16
+        if (is.matrix(object$details$userdist))
+            if (ncol(object$details$userdist) != nrow(regionmask))
+                stop("userdist matrix incompatible with region mask")
 
         #######################################################
 
@@ -428,6 +433,13 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
                 covariates(mask)$noneuc <- noneuc
             if ('D' %in% userdistnames)
                 covariates(mask)$D <- D
+
+            ## pass miscellaneous unmodelled parameter(s) 2015-02-21
+            nmiscparm <- length(object$details$miscparm)
+            if (nmiscparm > 0) {
+                miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
+                attr(mask, 'miscparm') <- coef(object)[miscindx, 1]
+            }
 
             distmat <- valid.userdist (object$details$userdist,
                                        detector(trps),

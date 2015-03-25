@@ -4,6 +4,7 @@
 ## 2014-09-14 strip.legend() added
 ## 2014-09-20 strip.legend allows [,)
 ## 2014-09-30 covrange allws NA
+## 2015-01-14 tweak to format legend text (breaks case)
 
 ## suggest: optionally suppress legend text
 ## suggest: optionally use axis()
@@ -50,7 +51,9 @@ strip.legend <- function (xy, legend, col,
       breaks <- sort(as.numeric(breaks)) * scale
 
   if (legendtype == 'breaks') {
-    legend <- as.character(breaks)
+    ## 2015-01-14
+    ## legend <- as.character(breaks)
+    legend <- format(breaks, trim = TRUE)
     ## legend <- sprintf(paste("%8.", dec, "f", sep=""), breaks)
     ## legend <- formatC( breaks, digits = 2, format = "g")
   }
@@ -145,7 +148,7 @@ strip.legend <- function (xy, legend, col,
   if (legendtype == 'other')
     text (rep(xy[1] + wx + textoffset, ncol), centres, legend,
         adj = 0, cex = text.cex)
-else if (sum(strheight(legend, cex = text.cex)) < diff(range(centres))) {
+  else if (sum(strheight(legend, cex = text.cex)) < diff(range(centres))) {
       if (legendtype == 'breaks')
           text (rep(xy[1] + wx + textoffset, ncol+1), boundsy, legend,
                 adj = 0, cex = text.cex)
@@ -253,17 +256,17 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         }
         if (legend & !is.null(covariate)) {
             legendtext <- levels(covfactor)[1:ncolour]
-            
-
             if (dots) {
                 args <- formals(legend)
                 newargs <- list(x = 'right', legend = rev(legendtext), pch = 16,
                        col = rev(col[1:ncolour]), title = covariate)
                 args <- replace(args, names(newargs), newargs)
-                args <- replace(args, names(dotsargs), dotsargs)
+                args <- replace(args, names(dotsargs), dotsargs)           
+                if ('xy' %in% names(allargs))
+                    args$x <- allargs$xy
                 do.call('legend', args)
             }
-            else {
+            else { 
                 args <- formals(strip.legend)
                 newargs <- list(xy = 'right', col = col[1:ncolour],
                                 legend = legendtext, tileborder = meshcol,

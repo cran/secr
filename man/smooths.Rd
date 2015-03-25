@@ -61,7 +61,7 @@
 %  than one predictor, but in this case the degree argument must be
 %  named (e.g., \code{poly(x, y, degree = 2)}).
 
-See also the example in \url{../doc/secr-densitysurfaces.pdf}.
+See also the example in \href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}.
 
 }
 
@@ -70,8 +70,7 @@ See also the example in \url{../doc/secr-densitysurfaces.pdf}.
   Setting the intercept of a smooth to zero is not a canned option in
   \pkg{mgcv}, and is not offered in \pkg{secr}. It may be achieved by
   placing a knot at zero and hacking the matrix of basis functions to
-  drop the corresponding column, plus some more jiggling
-  (\url{http://bit.ly/1rcIsQ6}).
+  drop the corresponding column, plus some more \href{http://bit.ly/1rcIsQ6}{jiggling}.
 
 }
 

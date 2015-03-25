@@ -308,7 +308,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
     detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
-     
+
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
 
@@ -379,14 +379,19 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         ## miscparm is used to package beta parameters that are not modelled
         ## and hence do not have a beta index specified by parindx.
         ## This includes the signal threshold and the mean and sd of noise.
+        
+        ## miscparm is passed to the C likelihood code, and also as mask attribute to userdistfn
 
-        miscparm <- numeric(4) ## increased from3 2013-11-15
-        if (detectfn %in% c(12,13))   ## experimental signal-noise
+        nmiscparm <- length(details$miscparm)
+        miscparm <- numeric(max(4, nmiscparm))  ## 2015-02-21 
+        if (detectfn %in% c(12,13))            ## experimental signal-noise
             miscparm[1:3] <- c(details$cutval, beta[max(unlist(parindx))+(1:2)])   ## fudge: last 2
-        else if (detectfn %in% c(10,11))  ## Dawson&Efford 2009 models
+        else if (detectfn %in% c(10,11))        ## Dawson & Efford 2009 models
             miscparm[1] <- details$cutval
-
-#        miscparm[4] <- NT   ## 2013-11-16 - the number of individuals known from telemetry
+        else if (nmiscparm > 0) 
+            miscparm[1:nmiscparm] <- beta[max(unlist(parindx)) + (1:nmiscparm)]
+        
+        #  miscparm[4] <- NT   ## 2013-11-16 - the number of individuals known from telemetry
 
         ## 2013-11-10
         if ((detectfn %in% 14:18) & details$normalize) {
@@ -594,6 +599,9 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                     covariates(session.mask)$noneuc <- NE[1:m,,min(dim(NE)[3],sessnum)]
                 if ('D' %in% userdistnames)
                     covariates(session.mask)$D <- density
+                ## pass miscellaneous unmodelled parameter(s)
+                if (nmiscparm > 0) 
+                    attr(session.mask, 'miscparm') <- miscparm
                 distmat <- valid.userdist (details$userdist,
                                            detector(session.traps),
                                            xy1 = session.traps,
@@ -711,7 +719,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             ##--------------------------------------------
             else {
                 if (usge[1]==0 & nmix>1)
-                    stop ("mixture models fail when the first detector is not used on the first day")     
+                    stop ("mixture models fail when the first detector is not used on the first day")
                 temp <- .C('secrloglik', PACKAGE = 'secr',
                    as.integer(like),          # 0 = full, 1 = CL, 3 = concurrent, 4 = concurrent CL
                    as.integer(dettype),       # 0 = multicatch, 1 = proximity, etc

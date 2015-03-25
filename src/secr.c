@@ -89,6 +89,7 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
     2012 12 17 Tsk
     2012 12 25 for x=0, dbinom(x, N, 1-(1-p)^Tsk) = dbinom(x, N * Tsk, p)
     2012 12 25 DOES NOT ALLOW binomN < 0
+    2015-03-18 used 'p0' as variable for Pr(not caught) instead of re-using g1
 */
 {
     int k,s,c;
@@ -134,22 +135,25 @@ double pndot (int m, int n, int s1, int s2, int x, int ncol, int PIA0[],
 		    if (fabs(Tski-1) > 1e-10) {                 /* effort <> 1.0 */
 			if ((detect < 8) & (detect != 5))  {
 			    if (binomN == 0)
-				g1 = exp(-Tski * g1);           /* Poisson */
+				p0 = exp(-Tski * g1);           /* Poisson */
 			    else
-				g1 = pow(1-g1, Tski * binomN);  /* Binomial */
+				p0 = pow(1-g1, Tski * binomN);  /* Binomial */
 			}
 			else error("no effort adjustment for detector type");
 		    }
 		    else {
 			if (binomN == 0)
-			    g1 = exp(-g1);              /* Poisson */
+			    p0 = exp(-g1);              /* Poisson */
 			else  if (binomN == 1)
-			    g1 = 1 - g1;                /* Bernoulli */
+			    p0 = 1 - g1;                /* Bernoulli */
 			else {
-			    g1 = pow(1-g1, binomN);     /* Binomial */
+			    p0 = pow(1-g1, binomN);     /* Binomial */
 			}
 		    }
-                    pp *= g1;
+                    pp *= p0;
+
+/* if (m == 447)  Rprintf("k %5d m %5d g1 %12.8f p0 %12.8f p %12.8f\n", k, m, g1, p0, pp); */
+                    
                 }
             }
         }
@@ -195,21 +199,6 @@ int nonzero (int detect, double w[], int nc, int ss, int kk)
 	count += caught;
     }
     return(count);
-}
-
-void fixdist2(int detect, int kk, int mm, double traps[], double mask[], double dist2[]) {
-    if (dist2[0] < 0) {
-        if ((detect == 3) || (detect == 4) || (detect == 6) || (detect == 7)) {
-	    dist2 = (double *) S_alloc(1, sizeof(double));
-	}
-	else {
-	    dist2 = (double *) S_alloc(kk * mm, sizeof(double));
-	    makedist2 (kk, mm, traps, mask, dist2);
-	}
-    }
-    else {
-	squaredist(kk, mm, dist2);
-    }
 }
 
 double prwimulti
@@ -2242,6 +2231,7 @@ void secrloglik (
 		    }
 		    a[n] += pmixnx * asum[x];
 		    tempsum += pmixnx * temp;
+		    /* Rprintf("%5d tempsum %12.8f a[n] %9.6f \n", n, tempsum, a[n]); */
 		}
 	    }    /* end of loop over mixture classes */
 	    if (usepimask)

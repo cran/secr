@@ -14,6 +14,8 @@
 ## 2014-04-18 session-specific density
 ## 2014-09-03 model2D = "linear" option, and some recoding of IHP
 ## 2014-12-29 buffertypes concave, convex
+## 2015-01-13 debugged non-rectangular buffers; see sim.popn.test.R in testing
+## 2015-02-18 multisession sim.popn updated for Nbuffer
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -31,7 +33,6 @@ toroidal.wrap <- function (pop) {
     pop$y <- ifelse (pop$y<ymin, ymax - remainder (ymin - pop$y, yrange), pop$y)
     pop
 }
-
 tile <- function (popn, method = "reflect") {
     bbox <- attr(popn, 'boundingbox')
     if (method== "reflect") {
@@ -52,8 +53,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     "cluster", "IHP", "coastal", "hills", "linear"), buffertype =
     c("rect", "concave", "convex"), poly = NULL,
     covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
-    = c('poisson','fixed','specified'), nsession = 1, details = NULL, 
-    seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL, 
+    = c('poisson','fixed','specified'), nsession = 1, details = NULL,
+    seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL,
     ...)  {
 
     model2D <- match.arg(model2D)
@@ -67,11 +68,14 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             fr <- x-trunc(x)
             sample (c(trunc(x), trunc(x)+1), size=1, prob=c(1-fr, fr))
         }
-        session.popn <- function (s, D) {
+        session.popn <- function (s, D, Nbuffer) {
             ## independent population
-            sim.popn (D, core, buffer, model2D, buffertype, poly,
-                covariates, number.from, Ndist, nsession = 1, details, seed, 
-                keep.mask, Nbuffer)
+            if (s > 1) seed <- NULL   ## 2015-02-18
+            if (!is.null(Nbuffer))
+                if (is.na(Nbuffer)) Nbuffer <- NULL
+            sim.popn (D[1], core, buffer, model2D, buffertype, poly,
+                covariates, number.from, Ndist, nsession = 1, details, seed,
+                keep.mask, Nbuffer[1])
         }
         turnover <- function (oldpopn) {
             ## project existing population
@@ -91,18 +95,19 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 survive <- sort(survive)   ## numeric indices
             }
             newpopn <- subset.popn(oldpopn, subset=survive)
-            if (turnoverpar$sigma.m > 0)
+            if (turnoverpar$sigma.m > 0) {
                 newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
-                    sd = turnoverpar$sigma.m)
-            if (turnoverpar$wrap)
-                newpopn <- toroidal.wrap(newpopn)
-
+                                                  sd = turnoverpar$sigma.m)
+                if (turnoverpar$wrap)
+                    newpopn <- toroidal.wrap(newpopn)
+            }
             gam <- turnoverpar$lambda - turnoverpar$phi
             if (gam<0)
                 stop ("invalid gamma in turnover")
             nrecruit <- switch (turnoverpar$recrmodel,
                 constantN = nrow(oldpopn) - nsurv,
                 discrete = discrete(gam * nrow(oldpopn)),
+                binomial = rbinom(1, nrow(oldpopn), gam),
                 poisson = rpois (1, gam * nrow(oldpopn)))
                 ## under Pradel model members of superpopulation have binomial
                 ## probability of entry at this point?
@@ -115,34 +120,47 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 ## danger: resets random seed
                 newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
             }
+            class(newpopn) <- class(MSpopn[[1]])
+            attr(newpopn, 'mask') <- attr(MSpopn[[1]], 'mask')
+            ## minor attributes are neglected... beware in future
             attr(newpopn, 'losses') <- nrow(oldpopn)-nsurv
             attr(newpopn, 'recruits') <- nrecruit
             newpopn
         }
-        turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 20, wrap = TRUE,
+        turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, wrap = TRUE,
                             survmodel = 'binomial', recrmodel = 'poisson')
         turnoverpar <- replace (turnoverpar, names(details), details)
         if (is.null(details$lambda)) {
             ## independent
             ## MSpopn <- lapply (1:nsession, session.popn)
-            ## 2014-04-18
-            if (length(D) == 1) {
+            ## 2014-04-18, 2015-02-18
+            if (missing(D))
+                D <- rep(NA, nsession)
+            else if (length(D) == 1) 
                 D <- rep(D, nsession)
-            }
-            else {
+            else 
                 if (length(D) != nsession) stop ("length(D) should equal nsession")
-            }
-            MSpopn <- mapply (session.popn, 1:nsession, D, SIMPLIFY = FALSE)
+            if (is.null(Nbuffer))
+                Nbuffer <- rep(NA, nsession)
+            else if (length(Nbuffer) == 1) 
+                Nbuffer <- rep(Nbuffer, nsession)
+            else 
+                if (length(Nbuffer) != nsession) stop ("length(Nbuffer) should equal nsession")
+            
+            MSpopn <- mapply (session.popn, 1:nsession, D, Nbuffer, SIMPLIFY = FALSE)
         }
         else {
             ## projected
             MSpopn <- vector(nsession, mode = 'list')
-            MSpopn[[1]] <- session.popn(1)
+            MSpopn[[1]] <- session.popn(1, D, Nbuffer)
             for (i in 2:nsession) {
                 MSpopn[[i]] <- turnover(MSpopn[[i-1]])
             }
         }
-        class(MSpopn) <- c('list','popn')
+        if (model2D == 'linear') 
+            class(MSpopn) <- c('list', 'linearpopn', 'popn')
+        else
+            class(MSpopn) <- c('list','popn')
         names(MSpopn) <- 1:nsession
         MSpopn
     }
@@ -208,35 +226,34 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
 
         }
         else {
-            ## 2014-12-29
-            
+            ## 2014-12-29, 2015-01-11
             # population in arena +/- buffer from traps
             buff <- c(-buffer,+buffer)
             xl <- range(core$x) + buff
             yl <- range(core$y) + buff
 
             area <- diff(xl) * diff(yl) * 0.0001  # ha not sq metres
+
+            bufferpoly <- switch(buffertype,
+                                 rect = NA,
+                                 convex = buffer.contour(core, buffer = buffer,
+                                                         convex = TRUE, plt = FALSE)[[1]],
+                                 concave = buffer.contour(core, buffer = buffer,
+                                                          convex = FALSE, plt = FALSE))
             
-            if (Ndist == 'fixed') {
-                bufferpoly <- switch(buffertype,
-                                     convex = buffer.contour(core, buffer = buffer,
-                                                             convex = TRUE, plt = FALSE)[[1]],
-                                     concave = buffer.contour(core, buffer = buffer,
-                                                              convex = FALSE, plt = FALSE))
-                bufferarea <- switch (buffertype, 
-                                      rect = area,
-                                      convex = polyarea (bufferpoly),
-                                      concave = sum(sapply(bufferpoly, polyarea)))
-                if ((buffertype == 'concave') & (is.null(Nbuffer)))
-                    warning("automatic Nbuffer unreliable with concave buffer")
-            }
-            else bufferarea <- area
-                
+            bufferarea <- switch (buffertype,
+                                  rect = area,
+                                  convex = polyarea (bufferpoly),
+                                  concave = sum(sapply(bufferpoly, polyarea)))
+                        
+            if ((buffertype == 'concave') & (is.null(Nbuffer)))
+                warning("automatic Nbuffer unreliable with concave buffer")
             
-            ## If target number not specified, get from density x area
+            ## If target number (Nbuffer) not specified, get from density x area
+            ## N is the number of centres to simulate in the unbuffered (rectangular) area
             if (is.null(Nbuffer)) {
                 N  <- switch (Ndist,
-                              poisson = rpois(1, lambda=D[1] * area),
+                              poisson = rpois(1, lambda = D[1] * area),
                               fixed = discreteN (1, D[1] * area),
                               specified = round(D[1]))
                 Nbuffer  <- switch (Ndist,
@@ -245,42 +262,53 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                     specified = round(D[1]))
             }
             else {
+                Nbuffer  <- switch (Ndist,
+                                    poisson = rpois(1, lambda = Nbuffer),
+                                    fixed = discreteN (1, Nbuffer),
+                                    specified = round(Nbuffer))
                 N <- Nbuffer
             }
-            
-            if ((Ndist == 'fixed') & (buffertype %in% c('convex','concave'))) {
-                N <- N * area / bufferarea                
-            }
-       
-            if (model2D=='poisson') {
+
+#             if (buffertype %in% c('convex','concave')) {
+#                 N <- N * area / bufferarea
+#             }
+
+            if (model2D == 'poisson') {
                 animals <- data.frame (
-                    x = runif(N)*diff(xl)+xl[1], 
+                    x = runif(N)*diff(xl)+xl[1],
                     y = runif(N)*diff(yl)+yl[1])
-                
-                ## 2014-12-29 allow buffering / poly
-                if ((buffertype %in% c('convex','concave')) & (Ndist == 'fixed')) {
-                    maxtries <- 10
-                    tries <- 1
-                    animals <- switch(buffertype, 
+
+                ## 2014-12-29, 2015-01-11, 2015-01-13 allow buffering / poly
+                if (buffertype %in% c('convex','concave')) {
+                    
+#                     if (Ndist == 'fixed') {
+                        maxtries <- 10
+                        tries <- 1
+                        animals <- switch(buffertype,
                                       convex = animals[pointsInPolygon(animals, bufferpoly),],
                                       concave = animals[distancetotrap(animals, core)<= buffer,])
-                    
-                    while ((nrow(animals) < Nbuffer) & (tries < maxtries)) {
-                        animals <- rbind(animals, data.frame (
-                            x = runif(N)*diff(xl)+xl[1], 
-                            y = runif(N)*diff(yl)+yl[1]))
-                        animals <- switch(buffertype, 
-                          convex = animals[pointsInPolygon(animals, bufferpoly),],
-                          concave = animals[distancetotrap(animals, core)<= buffer,])
-                        tries <- tries + 1
-                    }
-                    if (tries >= maxtries)
-                        warning("exceeded maxtries in sim.popn")
-                    animals <- animals[1:Nbuffer,]
-                    
-                }                
+                        ## repeat if not enough
+                        while ((nrow(animals) < Nbuffer) & (tries < maxtries)) {
+                            animals <- rbind(animals, data.frame (
+                                                                  x = runif(N)*diff(xl)+xl[1],
+                                                                  y = runif(N)*diff(yl)+yl[1]))
+                            animals <- switch(buffertype,
+                                        convex = animals[pointsInPolygon(animals, bufferpoly),],
+                                        concave = animals[distancetotrap(animals, core)<= buffer,])
+                            tries <- tries + 1
+                        }
+                        if (tries >= maxtries)
+                            warning("exceeded maxtries in sim.popn")
+                        animals <- animals[1:Nbuffer,]
+#                     }
+#                     else {
+#                         animals <- switch(buffertype,
+#                                       convex = animals[pointsInPolygon(animals, bufferpoly),],
+#                                       concave = animals[distancetotrap(animals, core)<= buffer,])
+#                     }
+                }
             }
-            else if (model2D=='coastal') {
+            else if (model2D == 'coastal') {
                 if (is.null(details$Beta))
                     details$Beta <- c(1,1.5,5,1)
                 a1 <- details$Beta[1]

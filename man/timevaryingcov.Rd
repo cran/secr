@@ -44,12 +44,12 @@ timevaryingcov(object) <- value
 \note{
 
 It is usually better to model varying effort directly, via the \link{usage}
-attribute (see  \url{../doc/secr-varyingeffort.pdf}).
+attribute (see \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf}).
 
 Models for data from detectors of type `multi', `polygonX' or `transectX' take much
 longer to fit when detector covariates of any sort are used.
 
-See \url{../doc/secr-varyingeffort.pdf} for input of detector covariates
+See \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} for input of detector covariates
 from a file.
 
 }

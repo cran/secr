@@ -3,6 +3,7 @@
 \alias{fixedbeta}
 \alias{LLonly}
 \alias{param}
+\alias{miscparm}
 
 \title{ Detail Specification for secr.fit }
 
@@ -57,6 +58,18 @@ is the `start' value.
 
 \code{details$LLonly} = TRUE causes the function to returns a single
 evaluation of the log likelihood at the `start' values.
+
+\code{details$miscparm} (default NULL) is an optional numeric vector of
+starting values for additional parameters used in a user-supplied
+distance function (see `userdist' below). If the vector has a names
+attribute then the names will be used for the corresponding coefficients
+(`beta' parameters) which will otherwise be named `miscparm1',
+miscparm2' etc. These parameters are constant across each model and do
+not appear in the model formula, but are estimated along with other
+coefficients when the likelihood is maximised. Any transformation (link
+function) etc. is handled by the user in the userdist function. The
+coefficients appear in the output from \code{\link{coef.secr}} and
+\code{\link{vcov.secr}}, but not \code{predict.secr}.
 
 \code{details$param} chooses between various parameterisations of the
 SECR model. The default \code{details$param = 0} is the formulation in
@@ -133,7 +146,7 @@ character vector of names for the required covariates of `mask',
 possibly including the dynamically computed density `D` and a parameter
 `noneuc' that will be fitted. A slightly expanded account is at
 \link{userdist}, and full documentation is in the separate
-document \url{../doc/secr-noneuclidean.pdf}.
+document \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}.
 
 **Do not use `userdist' for polygon or transect detectors**
 
@@ -156,6 +169,30 @@ capture--recapture. \emph{Methods in Ecology and Evolution} \bold{4}, 520--530.
 
 \seealso{
   \code{\link{secr.fit} }, \link{userdist}
+}
+
+\examples{
+\dontrun{
+## Demo of miscparm and userdist
+## We fix the usual 'sigma' parameter and estimate the same 
+## quantity as miscparm[1]. Differences in CI reflect the implied use 
+## of the identity link for miscparm[1]. 
+
+mydistfn3 <- function (xy1,xy2, mask) {
+    if (missing(xy1)) return(character(0))
+    xy1 <- as.matrix(xy1)
+    xy2 <- as.matrix(xy2)
+    miscparm <- attr(mask, 'miscparm')
+    distmat <- edist(xy1,xy2) / miscparm[1]
+    distmat
+}
+
+fit0 <- secr.fit (captdata)
+fit <- secr.fit (captdata, fixed = list(sigma=1), details = 
+    list(miscparm = c(sig = 20), userdist = mydistfn3))    
+predict(fit0)
+coef(fit)
+}
 }
 
 \keyword{ models }

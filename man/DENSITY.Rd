@@ -69,8 +69,8 @@ identifiers (labels) may be numeric or alphanumeric values. Values
 should be separated by blanks or tabs unless (i) the file name ends in
 `.csv' or (ii) \code{sep = ","} is passed in \dots, in which case commas
 are assumed. Blank lines and any text after `#' are ignored. For further
-details see \url{../doc/secr-datainput.pdf}, \code{\link{make.capthist}}
-and `Data formats' in the help for DENSITY.
+details see \href{../doc/secr-datainput.pdf}{secr-datainput.pdf},
+\code{\link{make.capthist}} and `Data formats' in the help for DENSITY.
 
 The \code{noccasions} argument is needed only if there were no
 detections on the final occasion; it may be a positive integer (constant
@@ -141,7 +141,7 @@ University of Otago, Dunedin, New Zealand
   DENSITY formats with minor variations. They may also be output with
   \code{write.capthist}, but a warning is given that DENSITY does not
   understand these data types. See \code{\link{detector}} and
-  \url{../doc/secr-datainput.pdf} for more.
+  \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} for more.
 
   The \dots argument is useful for some special cases. For example, if
   your input uses `;' instead of `#' for comments (`;' is also valid in

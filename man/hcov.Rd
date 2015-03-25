@@ -150,7 +150,7 @@ class membership.
 \section{Likelihood}{
   
 The likelihood of the hybrid mixture model is detailed in an appendix of
-the vignette \url{../doc/secr-finitemixtures.pdf}.
+the vignette \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf}.
 
 }
 

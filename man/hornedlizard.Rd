@@ -53,8 +53,9 @@ detector (the square plot). The data comprise a capture history matrix
 (the body of \code{hornedlizardCH}) and the x-y coordinates of each
 positive detection (stored as an attribute that may be displayed with
 the `xy' function); the `traps' attribute of \code{hornedlizardCH}
-contains the vertices of the plot. See \url{../doc/secr-datainput.pdf}
-for guidance on data input.
+contains the vertices of the plot. See
+\href{../doc/secr-datainput.pdf}{secr-datainput.pdf} for guidance on
+data input.
 
 Non-zero entries in a polygonX capture-history matrix indicate the
 number of the polygon containing the detection. In this case there was

@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.9.3\cr
-Date: \tab 2015-01-11\cr
+Version: \tab 2.9.4\cr
+Date: \tab 2015-03-24\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -50,17 +50,17 @@ A link at the bottom of each help page takes you to the
 help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
-  \url{../doc/secr-overview.pdf} \tab general introduction \cr
-  \url{../doc/secr-datainput.pdf} \tab data formats and input functions \cr
-  \url{../doc/secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
-  \url{../doc/secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
-  \url{../doc/secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
-  \url{../doc/secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
-  \url{../doc/secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
-  \url{../doc/secr-sound.pdf} \tab analysing data from microphone arrays\cr
-  \url{../doc/secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
+  \href{../doc/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
+  \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf}{secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf} \tab analysing data from microphone arrays\cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
 }
-The help pages are also available as \url{../doc/secr-manual.pdf}.
+The help pages are also available as  \href{../doc/secr-manual.pdf}{secr-manual.pdf}.
 
 The datasets \link{possum}, \link{skink}, \link{ovenbird},
 \link{housemouse}, \link{deermouse}, \link{ovensong},

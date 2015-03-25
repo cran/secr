@@ -2,10 +2,7 @@
 ## join returns single-session object from list of inputs
 
 # should new trap ID be numeric , character or factor???
-
-# library(secr)
-# source('d:\\density secr 2.3\\secr\\r\\utility.R')
-# source('d:\\density secr 2.3\\secr\\r\\join.R')
+# 2015-01-31 join() bug fix could fail with exclusivedetector types
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     onesession <- function (sess) {
@@ -72,7 +69,11 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         alivesign <- df$alive*2 - 1
         tempnew <- matrix(0, nrow = n, ncol = sum(nocc))
         dimnames(tempnew) <- list(unique(df$newID), 1:sum(nocc))
-        tempnew[cbind(df$newID, df$newocc)] <- as.numeric(df$newtrap) * alivesign
+        
+        ## bug fix 2015-01-31
+        ## tempnew[cbind(df$newID, df$newocc)] <- as.numeric(df$newtrap) * alivesign
+        trapindex <- match(df$newtrap, unique(df$newtrap))        
+        tempnew[cbind(df$newID, df$newocc)] <- trapindex * alivesign
     }
     else {
         df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))

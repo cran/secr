@@ -23,6 +23,7 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
 
         traps <- traps(capthist)
         ## 2014-09-01
+        ## NOT USING PARAMETERS noneuc ETC
         distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for dbar")
@@ -225,7 +226,7 @@ RPSV <- function (capthist, CC = FALSE)
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
             temp <- lapply(w,RPSVx)
-        }       
+        }
         temp <- matrix(unlist(temp), nrow = 3)
         temp <- apply(temp,1,sum, na.rm=T)
         if (CC)

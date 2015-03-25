@@ -12,7 +12,7 @@
 }
 
 \usage{
-fx.total(object, sessnum = 1, mask = NULL, ...)
+fx.total(object, sessnum = 1, mask = NULL, ncores = 1, ...)
 }
 
 \arguments{
@@ -24,7 +24,9 @@ fx.total(object, sessnum = 1, mask = NULL, ...)
   \item{mask}{ x- and y- coordinates of points at which density will be
     computed}
     
-    \item{\dots}{ other arguments passed to \code{detectpar} and thence
+  \item{ncores}{ integer number of cores to be used for parallel processing}
+    
+  \item{\dots}{ other arguments passed to \code{detectpar} and thence
     to \code{predict.secr}}
     
   }

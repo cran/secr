@@ -32,7 +32,7 @@ evening, for 5 days.
 
 The dataset was described by Otis et al. (1978) and distributed with
 their CAPTURE software (now available from
-\url{http://http://www.mbr-pwrc.usgs.gov/software.html}). Otis et
+\url{http://www.mbr-pwrc.usgs.gov/software.html}). Otis et
 al. (1978 p. 62, 68) cite Coulombe's unpublished 1965 master's thesis
 from the University of California, Los Angeles, California.
 

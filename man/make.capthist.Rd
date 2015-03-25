@@ -38,15 +38,16 @@ occasion. The capture data frame may be formed from a text file with
 \code{read.table}.
 
 Input formats are based on the Density software (Efford 2012; see also
-\url{../doc/secr-datainput.pdf}). If \code{fmt = "XY"} the required
-fields are (session, ID, occasion, x, y) in that order. If \code{fmt =
-"trapID"} the required fields are (session, ID, occasion, trap), where
-\code{trap} is the numeric index of the relevant detector in
-\code{traps}. \code{session} and \code{ID} may be character-, vector- or
-factor-valued; other required fields are numeric. Fields are matched by
-position (column number), \emph{not} by name. Columns after the required
-fields are interpreted as individual covariates that may be continuous
-(e.g., size) or categorical (e.g., age, sex).
+\href{../doc/secr-datainput.pdf}{secr-datainput.pdf}). If \code{fmt =
+"XY"} the required fields are (session, ID, occasion, x, y) in that
+order. If \code{fmt = "trapID"} the required fields are (session, ID,
+occasion, trap), where \code{trap} is the numeric index of the relevant
+detector in \code{traps}. \code{session} and \code{ID} may be
+character-, vector- or factor-valued; other required fields are
+numeric. Fields are matched by position (column number), \emph{not} by
+name. Columns after the required fields are interpreted as individual
+covariates that may be continuous (e.g., size) or categorical (e.g.,
+age, sex).
 
 If \code{captures} has data from multiple sessions then \code{traps} may
 be either a list of \code{traps} objects, one per session, or a single

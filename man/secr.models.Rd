@@ -28,9 +28,9 @@ function of location, can be estimated directly when the model is fitted
 by maximizing the conditional likelihood. D is then a derived
 parameter. `z' is a shape parameter used only when the detection
 function requires three parameters. Other real parameters are used for
-acoustic models (beta0, beta1; \url{../doc/secr-sound.pdf}) and for the
+acoustic models (beta0, beta1; \href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}) and for the
 mixture proportion (pmix) in finite mixture models
-(\url{../doc/secr-finitemixtures.pdf}).
+(\href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}).
 
 Each real parameter has a linear predictor of the form 
 

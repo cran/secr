@@ -19,8 +19,9 @@ The density model may take one of two forms: a user-provided \R function
 or a linear model on the link scale (see the \code{link} argument of
 \code{\link{secr.fit}}; the default link for density is
 `log'). User-provided functions are described in the accompanying
-vignette \url{../doc/secr-densitysurfaces.pdf}. Here we focus on linear
-models.
+vignette
+\href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}. Here
+we focus on linear models.
  
 The full design matrix for density (D) has one row for each point in the
 mask.  The design matrix has one column for the intercept (constant)
@@ -52,7 +53,7 @@ formula notation by appending terms to \eqn{\sim{~}}{\~}.
 
 Density surfaces resulting from the fitting of SECR models are
 manipulated in \pkg{secr} as objects of class `Dsurface'. See the
-vignette \url{../doc/secr-densitysurfaces.pdf} for details and examples,
+vignette \href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf} for details and examples,
 including functions for prediction and plotting.
 
 }

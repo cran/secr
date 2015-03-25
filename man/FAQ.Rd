@@ -45,7 +45,7 @@ Thirdly, you can display various \pkg{secr} documents listed in
 \code{\link{secr-package}}.
 
 Tip: to search all secr help pages open the pdf version of the manual in
-Acrobat Reader (\url{../doc/secr-manual.pdf}; see also ?secr) and use
+Acrobat Reader (\href{../doc/secr-manual.pdf}{secr-manual.pdf}; see also ?secr) and use
 <ctrl> F.
 
 There is a support forum at \url{http://www.phidot.org/forum} under
@@ -112,7 +112,7 @@ minprob), whereas Density has no explicit limit.
   Yes. See ?timevaryingcov. However, a more direct way to control for
   varying effort is provided - see the `\link{usage}' atribute, which
   now allows continuous measure of effort
-  (\url{../doc/secr-varyingeffort.pdf}). A tip: covariate models fit
+  (\href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf}). A tip: covariate models fit
   more quickly when the covariate takes only a few different values.
   
   }

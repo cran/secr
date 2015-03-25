@@ -1,3 +1,31 @@
+Changes in version 2.9.4 (2015-03-24)
+
+New features or changed behaviour of old functions
+    o   deleteMaskPoints() new function for editting masks
+    o   nedist() new function for non-Euclidean distances
+    o   parallel processing (ncores>1) enabled for fxi.contour(), fxi.secr(), fx.total()
+    o   fxi.mode() default 'start' argument is now weighted mean of all detections
+    o   fxi.contour() acquires argument 'SPDF' for output as SpatialPolygonsDataFrame
+    o   secr.fit() acquires details argument 'miscparm' (additional parameters for a 
+        user-supplied distance function).
+
+Bugs fixed
+    o   sim.popn() inconsistent behaviour of non-rectangular buffers
+    o   join() could fail with exclusivedetector types
+    o   fxi.contour() ignored sessnum argument
+    o   subset.popn() failed with NULL subset argument and multiple sessions
+
+Other
+    o   secr-overview and secr-datainput Rmarkdown source in vignettes folder
+    o   suggests package gdistance (for nedist)
+    o   strip.legend() tweaked legend format and xy argument
+    o   non-essential documentation is now served from the DENSITY website
+    o   region.N() check for incompatible userdist
+    o   rbind.capthist() names limited to 100 ch
+    o   predict.secr() explicit message if covariates missing from newdata
+    o   sim.popn() multi-session models with survival and recruitment now documented, and 
+        one default changed (details$sigma.m = 0).
+
 Changes in version 2.9.3 (2015-01-11)
 
 New features or changed behaviour of old functions

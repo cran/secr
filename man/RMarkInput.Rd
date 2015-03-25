@@ -113,7 +113,7 @@ ovenRD.model <- mark(data = ovenRD.data, model = "Robust",
     model.parameters = list(p = list(formula = ~1, share = TRUE),
     GammaDoublePrime = list(formula = ~1),
     GammaPrime = list(formula = ~1),
-    N = list(formula = ~1)))
+    N = list(formula = ~1)))   
 cleanup(ask = FALSE)
 }
 

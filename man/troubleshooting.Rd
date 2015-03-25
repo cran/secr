@@ -63,7 +63,7 @@ fixing the value of a difficult-to-estimate parameter (argument
 }
 
 See also the section `Potential problems' in
-\url{../doc/secr-densitysurfaces.pdf}.
+\href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}.
 
 }
 
@@ -118,10 +118,10 @@ See also the section `Potential problems' in
 
 }
 
-\section{Estimates from mixture models appear unstable}{
-  These models have known problems due to multimodality of the
-  likelihood. See \url{../doc/secr-finitemixtures.pdf}.
-}
+\section{Estimates from mixture models appear unstable}{ These models
+  have known problems due to multimodality of the likelihood. See
+  \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf}.
+  }
 
 \seealso{\code{\link{secr.fit}}, \code{\link[base]{Memory-limits}} }
 

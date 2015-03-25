@@ -13,10 +13,13 @@ they open up some intriguing possibilities for the advanced user. The
 key is to provide an appropriate value for the component `userdist' of
 the \code{details} argument of \code{\link{secr.fit}}.
   
-\code{details$userdist} is either a function to compute non-Euclidean
-distances between detectors and mask points, or a pre-computed matrix of
-such distances. Pre-computing assumes the matrix is fixed (not dependent
-on any estimated coefficients).
+\code{details$userdist} is either a function to compute distances
+between detectors and mask points, or a pre-computed matrix of such
+distances. Pre-computing assumes the matrix is static (i.e. fixed and
+not dependent on any estimated coefficients. The functions
+\code{\link{edist}} and \code{\link{nedist}} are useful for computing
+static matrices of Euclidean or non-Euclidean distances (the latter
+useful when there are barriers to movement).
 
 If \code{details$userdist} is a function then it should take the form
 
@@ -75,8 +78,9 @@ information needed by the algorithm.
 
 Full documentation of the \pkg{secr} capability for non-Euclidean
 distances is in the separate document
-\url{../doc/secr-noneuclidean.pdf}, which includes example code for the
-analysis of Sutherland et al. (2014).
+\href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf},
+which includes example code for the analysis of Sutherland et
+al. (2014).
 
 }
 
@@ -85,6 +89,8 @@ analysis of Sutherland et al. (2014).
 User-specified distances are compatible with some but not all features
 of \pkg{secr}. Functions with a `userdist' argument are certainly
 compatible, and others may be.
+
+With a static userdist, \code{region.N} will generally not calculate  population size for a region other than the original mask. If you want to supply a new mask in the `region' argument, replace x$details$userdist with a distance matrix appropriate to the new mask, where `x' is the name of the fitted model.
 
 User-specified distances cannot be used with polygon or transect
 detectors.
@@ -97,7 +103,7 @@ restricted to locations on the `mask' grid.
 }
 
 \seealso{
-  \code{\link{details}}, \code{\link{secr.fit}}
+  \code{\link{details}}, \code{\link{secr.fit}}, \code{\link{nedist}}
 }
 
 \references{

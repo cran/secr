@@ -5,6 +5,7 @@
 ## verify option
 ## rbind.capthist merges polygons
 ## 2015-01-11 tweak rownames in rbind.capthist (default component names)
+## 2015-01-23 replace long object names (>100ch)
 
 flatten <- function(x) {
 ## 7/6/2010, 12/9/2011
@@ -71,7 +72,8 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
     ## source <- rep(names(object), sapply(object, nrow))
 
     inputnames <- lapply(dots, as.character)
-    if (any(is.na(inputnames) | duplicated(inputnames)))
+    ## if (any(is.na(inputnames) | duplicated(inputnames)))
+    if (any(is.na(inputnames) | duplicated(inputnames) | (nchar(inputnames)>100)))
         inputnames <- as.character(1:length(allargs))
     names(allargs) <- inputnames
     ##############################################################

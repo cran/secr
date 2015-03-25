@@ -30,6 +30,9 @@ then all will complete in about the time required to run the longest.
   \code{\link{par.secr.fit}} \tab model \tab large \tab  \cr
   \code{\link{par.derived}} \tab fitted model \tab large \tab  \cr
   \code{\link{par.region.N}} \tab fitted model \tab large \tab  \cr
+  \code{\link{fxi.contour}} \tab individual \tab moderate-large \tab multiple individuals only \cr
+  \code{\link{fxi.secr}} \tab individual \tab moderate-large \tab multiple individuals only \cr
+  \code{\link{fx.total}} \tab individual \tab moderate-large \tab \cr
 }
 `Unit' refers to the unit of work sent to each worker process. As a guide, a `large' benefit means >60\% reduction in process time with
   4 CPUs.

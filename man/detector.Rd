@@ -34,11 +34,11 @@ Valid detector types are `single', `multi', `proximity', `count',
 `signal', `polygon', `transect', `polygonX', and `transectX'. The
 detector type is stored as an attribute of a \code{traps} object.
 Detector types are mostly described by Efford et al. (2009a,b; see also
-\url{../doc/secr-overview.pdf}). Polygon and transect detector types are
+\href{../doc/secr-overview.pdf}{secr-overview.pdf}). Polygon and transect detector types are
 for area and linear searches as described in
-\url{../doc/secr-polygondetectors.pdf} and Efford (2011). The `signal'
+\href{http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} and Efford (2011). The `signal'
 detector type is used for acoustic data as described in
-\url{../doc/secr-sound.pdf}.
+\href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}.
 
 }
 

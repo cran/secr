@@ -13,6 +13,7 @@
 ## 2013 05 10 extend to general learned response (recapfactor)
 ## 2013 06 28 explicit entry points to C code (not simfunctionname)
 ## 2014-08-28 revamped for userdist and distmat (pre-computed distance matrix)
+## 2015-02-23 warning when ms(popn) and renumber = TRUE
 ###############################################################################
 
 expand <- function (x, n, q = 0, default = 1) {
@@ -106,6 +107,8 @@ sim.capthist <- function (
             if (any(p.available != 1))
                 warning ("incomplete availability not implemented ",
                          "for population lists")
+            if(renumber)
+                warning ("typically use renumber = FALSE for multiple sessions")
         }
         else {
             if (!(length(p.available) %in% 1:2))

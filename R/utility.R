@@ -39,6 +39,7 @@
 ## 2014-09-10 getnoneucnames()
 ## 2014-09-10 getcellsize()
 ## 2014-12-04 group.levels error check now precedes attempt to extract by groups
+## 2015-01-29 improved error message in secr.lpredictor
 ###############################################################################
 
 .localstuff <- new.env()
@@ -231,7 +232,8 @@ valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
         if (detector %in% .localstuff$polydetectors) {
             stop ("userdist cannot be used with polygon detector types;")
         }
-        if (is.function(userdist)) {
+        if (is.function(userdist))
+        {
             OK <- getuserdistnames(userdist) %in% names(covariates(mask))
             if ((length(OK)>0) & !all(OK))
                 stop ("covariates required by userdist function not in mask : ",
@@ -243,6 +245,11 @@ valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
         }
         if (!all(dim(result) == c(nrow(xy1), nrow(xy2))))
             stop ("invalid distance matrix dim = ", dim(result)[1], ',', dim(result)[2])
+        baddist <- (!is.finite(result)) | (result<0) | is.na(result)
+        if (any(baddist)) {
+            warning ("replacing infinite, negative and NA userdist values with 1e10")
+            result[baddist] <- 1e10
+        }        
     }
     result
 }
@@ -1252,15 +1259,16 @@ refreshMCP <- function (CH, tol) {
 }
 ###############################################################################
 
+## 2015-01-14 sess -> sessnum
 ## moved from derivedMS 2013-12-15
-maskarea <- function (mask, sess = 1) {
+maskarea <- function (mask, sessnum = 1) {
     if (!ms(mask)) nrow(mask) * attr(mask,'area')
-    else nrow(mask[[sess]]) * attr(mask[[sess]],'area')
+    else nrow(mask[[sessnum]]) * attr(mask[[sessnum]],'area')
 }
 ## 2014-08-29
-masklength <- function (mask, sess = 1) {
+masklength <- function (mask, sessnum = 1) {
     if (!ms(mask)) nrow(mask) * attr(mask,'spacing')/1000
-    else nrow(mask[[sess]]) * attr(mask[[sess]],'spacing')/1000
+    else nrow(mask[[sessnum]]) * attr(mask[[sessnum]],'spacing')/1000
 }
 ###############################################################################
 
@@ -1396,8 +1404,15 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     ## smoothsetup should be provided whenever newdata differs from
     ## data used to fit model and the model includes smooths from gam
     vars <- all.vars(formula)
-    if (any(!(vars %in% names(newdata))))
-        stop ("one or more model covariates not found in 'newdata'")
+    ## improved message 2015-01-29
+    OK <- vars %in% names(newdata)
+    if (any(!OK)) {
+        missingvars <- paste(vars[!OK], collapse = ', ')
+        if (sum(!OK) == 1)
+            stop ("model covariate ", missingvars, " not found in 'newdata'")
+        else
+            stop ("model covariates ", missingvars, " not found in 'newdata'")
+    }
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata), dimnames = list(NULL,c('estimate','se')))
 
@@ -1437,15 +1452,42 @@ edist <- function (xy1, xy2) {
   y2 <- matrix(xy2[,2], nr, nc, byrow=T)
   sqrt((x1-x2)^2 + (y1-y2)^2)
 }
-## tmp <- edist(traps(captdata), secrdemo.0$mask)
+
+############################################################################################
+
+## 2015-01-14
+## least cost paths from mask including barriers to movement
+## use edist for equivalent Euclidean distances
+## requires raster package
+
+nedist <- function (xy1, xy2, mask, inf = Inf, ...) {
+    newargs <- list(...)
+    if (missing(mask)) mask <- xy2
+    noneuc <- covariates(mask)$noneuc
+    if (is.null(noneuc)) noneuc <- rep(1, nrow(mask))
+    defaultargs <- list(transitionFunction = mean, directions = 16)
+    args <- replace(defaultargs, names(newargs), newargs)
+    args$x <- raster(mask, values = noneuc)
+    if (requireNamespace('gdistance')) {    ## 2015-01-23
+        tr <- do.call(gdistance::transition, args)
+        tr <- gdistance::geoCorrection(tr, type = "c", multpl = FALSE)
+        out <- gdistance::costDistance(tr, as.matrix(xy1), as.matrix(xy2))
+    }
+    else stop ("package gdistance is required for nedist")
+    if (is.finite(inf)) out[!is.finite(out)] <- inf
+    out
+}
 
 ############################################################################################
 
 getcellsize <- function (mask) {
     if (inherits(mask, 'linearmask'))
-        attr(mask, 'spacing') / 1000  ## per km
+        cell <- attr(mask, 'spacing') / 1000  ## per km
     else
-        attr(mask, 'area')            ## per ha
+        cell <- attr(mask, 'area')            ## per ha
+    if (is.null(cell))
+        stop ("mask lacks valid cell size (area or spacing)")
+    cell
 }
 ############################################################################################
 
@@ -1463,3 +1505,79 @@ updatemodel <- function (model, detectfn, detectfns, oldvar, newvar) {
     }
     model
 }
+############################################################################################
+
+## Manually remove some mask points
+
+deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
+                              poly.habitat = FALSE, ...) {
+    ## interface does not work properly in RStudio
+
+    if (ms(mask)) {         ## a list of mask objects
+        if (inherits(poly, 'list') & (!is.data.frame(poly)))
+            stop ("lists of polygons not implemented in 'make.mask'")
+        temp <- lapply (mask, deleteMaskPoints, onebyone = onebyone, add = add,
+                        poly = poly, poly.habitat = poly.habitat, ...)
+        class (temp) <- c('list', 'mask')
+        temp
+    }
+    else {
+        plot(mask, add = add, ...)
+        if (!is.null(poly)) {
+            SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
+            if (!SPDF) {
+                poly <- matrix(unlist(poly), ncol = 2)
+                poly <- rbind (poly, poly[1,])  # force closure of poly
+            }
+            if (poly.habitat)
+                pointstodrop <- (1:nrow(mask))[!pointsInPolygon(mask, poly)]
+            else
+                pointstodrop <- (1:nrow(mask))[pointsInPolygon(mask, poly)]
+        }
+        else if (onebyone) {
+            cat ('Click to select points; right-click to stop\n')
+            flush.console()
+            xy <- locator(type = 'p', pch=1, col='red')
+            pointstodrop <- if (length(xy$x)==0)
+                numeric(0)
+            else
+                nearesttrap(xy, mask)
+        }
+        else {
+            cat ('Click to select polygon vertices; right-click to stop\n')
+            flush.console()
+            xy <- locator(type = 'l', col='red')
+            xy <- as.data.frame(xy)
+            xy <- rbind(xy, xy[1,])
+            if (poly.habitat)
+                pointstodrop <- (1:nrow(mask))[!pointsInPolygon(mask, xy)]
+            else
+                pointstodrop <- (1:nrow(mask))[pointsInPolygon(mask, xy)]
+        }
+        npts <- length(pointstodrop)
+        if (npts>0) {
+            points(mask[pointstodrop,], pch = 16, col = 'red')
+            if(.Platform$OS.type == "windows") {
+                pl <- if (npts>1) 's' else ''
+                msg <- paste ('Delete ', npts, ' red point',pl, '?', sep='')
+                response <-  winDialog(type = "okcancel", msg)
+            } else {
+                response <- 'OK'
+            }
+            if (response == 'OK') {
+                mask <- subset(mask, -pointstodrop)
+            if (npts==1)
+                message("1 point deleted")
+            else
+                message(npts, " points deleted")
+            }
+        else
+            message ("point(s) not deleted")
+        }
+        else
+            message ("no points to delete")
+        plot(mask, col='green')
+        mask
+    }
+}
+############################################################################################

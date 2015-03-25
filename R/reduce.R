@@ -350,6 +350,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         ####################################
         ## build dataframe of observations
+
         df <- data.frame(
             trap = trap(object, names = F),
             occ = occasion(object),
@@ -377,6 +378,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             dflist <- lapply(dflist, collapse)
             df <- do.call(rbind, dflist)
         }
+        
         if (outputdetector %in% c('single')) {
             occ.trap <- interaction(df$newocc,df$trap)
             dflist <- split(df, occ.trap)
@@ -428,7 +430,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         if (!is.null(covariates(object)))
              covariates(tempnew) <- covariates(object)[validrows,,drop=F]
-
+     
         detectorder <- order(df$trap, df$newocc,df$ID)  ## CHECK!
         if (outputdetector %in% c(polygons, transects, 'telemetry'))  ## telemetry added 2013-11-20
             xy(tempnew) <- df[detectorder,c('x','y'),drop=FALSE]

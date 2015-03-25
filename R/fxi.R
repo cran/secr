@@ -6,9 +6,11 @@
 ## 2014-08-27 dist2 optional input to fxIHP set to -1
 ## 2014-09-03 Ujjwal Kumar's problem: unnecessary minprob in C call
 ## 2014-09-03 implemented userdist
+## 2015-01-31 average all trap locations for default start in fxi.mode
+## 2015-02-19 sessnum bug in fxi.contour fixed
 ###############################################################################
 
-fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
+fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) {
 
 # Return scaled Pr(wi|X).pi(X) for one nominated detection history,
 # where X holds coordinates of points
@@ -134,6 +136,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
     ## miscparm is used to package beta parameters that are not modelled
     ## and hence do not have a beta index specified by parindx.
     ## This includes the signal threshold and the mean and sd of noise.
+
     miscparm <- numeric(4)
     if (object$detectfn %in% c(12,13))       ## experimental signal-noise
         ## fudge: last 2
@@ -173,6 +176,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
         distmatX <- -1
     }
     else {
+        ## DOES NOT ATTACH COVARIATES FOR noneuc? 2015-02-21
         distmat <- valid.userdist (details$userdist,
                                    detector(session.traps),
                                    xy1 = session.traps,
@@ -218,7 +222,6 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
                    as.integer(normal),
                    as.integer(object$detectfn),
                    as.integer(binomN),
-                   ## as.double(details$minprob),
                    as.double(0),                  ## bugfix 2014-09-03: do not need a floor here
                    value=double(nrow(X)),
                    resultcode=integer(1))
@@ -226,16 +229,45 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE) {
             stop ("error in fxIHP, individual ", i)
         temp$value
     }
-    if (length(i) > 1)
-        lapply(i, fxone)
-    else
-        fxone(i)
+
+    if ((ncores > 1) & (length(i) > 1)) {
+        clust <- makeCluster(ncores, methods = TRUE)
+        output <- parLapply(clust, i, fxone)
+        on.exit(stopCluster(clust))
+    }
+    else {
+        output <- if (length(i) > 1)
+            lapply(i, fxone)
+        else
+            fxone(i)  ## accepts unary operator '-' in fit.mode
+    }
+    output
 }
 ###############################################################################
 
+fxi2SPDF <- function (x, ID, levels) {
+    if (missing(ID))
+        ID <- 1:length(x)
+    if (missing(levels))
+        levels <- names(x[[1]])[names(x[[1]]) != 'mode']
+    getxy <- function(one)
+        lapply(one[levels], function (xx) Polygon(cbind(xx$x, xx$y)))
+    oneanimal <- function (x,id)
+        Polygons(x, id)
+    xy <- lapply(x[ID], getxy)
+    modes <- t(sapply(x[ID], '[[', 'mode') )
+    modes <- matrix(unlist(modes), ncol = 2)
+    listSrs <- mapply(oneanimal, xy, ID)
+    SpP <- SpatialPolygons(listSrs)
+    df <- data.frame(modex = modes[,1], modey = modes[,2], row.names = ID)
+    SpatialPolygonsDataFrame(SpP, df)
+}
+
+##    writeSpatialShape(SPDF, ...)
+
 fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode =
-    FALSE, plotmode = FALSE, normal = TRUE, fill = NULL, ...) {
+    FALSE, plotmode = FALSE, normal = TRUE, fill = NULL, SPDF = FALSE,  ncores = 1, ...) {
 
     if (inherits(object$mask, 'linearmask'))
         stop("contouring fxi is not appropriate for linear habitat")
@@ -292,7 +324,7 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
                     levels <- rev(c(1,levels,0))
                     .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
                                     col = fill)
-            }
+                }
 
                 if (plotmode) {
                     points(templines$mode, col = 'red', pch = 16)
@@ -302,10 +334,15 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
         }
         templines
     }
-    allz <- fxi.secr(object, i = i, X = tempmask, normal = normal)
+    ## sessnum included 2015-02-19 see Ben Augustine email
+    allz <- fxi.secr(object, i = i, sessnum = sessnum, X = tempmask, normal = normal,
+                     ncores = ncores)
     if (!is.list(allz))
         allz <- list(allz)
     temp <- lapply(1:length(allz), fxi)
+
+    if (SPDF)
+        temp <- fxi2SPDF(temp)
 
     if (plt)
         invisible(temp)
@@ -324,8 +361,11 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
     if (is.null(start)) {
         session.traps <- traps(session.capthist)
         animal <- animalID(session.capthist, names=F) == i
-        trp <- trap(session.capthist)[animal][1]
-        start <- unlist(traps(session.capthist)[trp,])
+
+        ## trp <- trap(session.capthist)[animal][1]
+        ## start <- unlist(traps(session.capthist)[trp,])
+        trp <- trap(session.capthist)[animal]
+        start <- sapply(traps(session.capthist)[trp,],mean)
     }
     if (is.character(i))
         i <- match(i, row.names(session.capthist))
@@ -344,14 +384,14 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
 ## mask if specified should be for a single session
 ## ... passes newdata df to predict.secr
 
-fx.total <- function (object, sessnum = 1, mask = NULL, ...) {
+fx.total <- function (object, sessnum = 1, mask = NULL, ncores = 1, ...) {
     if (ms(object)) stop ("not for ms model")
     n <- nrow(object$capthist)
     if (is.null(mask))
         mask <- if (ms(object)) object$mask[[sessnum]] else object$mask
 
     ## sum of individual fxi
-    fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask, normal = TRUE)
+    fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask, normal = TRUE, ncores = ncores)
     fx <- do.call(cbind, fxi)
     fxt <- apply(fx, 1, sum)
     fxt <- fxt / getcellsize(mask)   ## length or area 2014-09-10

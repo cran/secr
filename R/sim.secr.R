@@ -152,6 +152,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
     }
     if (ncores > 1) {
         clust <- makeCluster(ncores)
+        clusterSetRNGStream(clust, seed)                
         sesscapt <- parLapply(clust, 1:nsim, runone)
         stopCluster(clust)
     }
@@ -421,6 +422,12 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         session.animals <- popnlist[[sessnum]]
         if (userd) {
             ## pre-compute distances from detectors to animals
+            ## pass miscellaneous unmodelled parameter(s) 2015-02-21
+            nmiscparm <- length(object$details$miscparm)
+            if (nmiscparm > 0) {
+                miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
+                attr(session.mask, 'miscparm') <- coef(object)[miscindx, 1]
+            }
             distmat <- valid.userdist (object$details$userdist,
                                        detector(session.traps),
                                        xy1 = session.traps,

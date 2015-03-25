@@ -18,8 +18,9 @@
 \usage{
 fxi.contour (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE,
-    fitmode = FALSE, plotmode = FALSE, normal = TRUE, fill = NULL, ...)
-fxi.secr(object, i = 1, sessnum = 1, X, normal = TRUE)
+    fitmode = FALSE, plotmode = FALSE, normal = TRUE, fill = NULL,
+    SPDF = FALSE, ncores = 1, ...)
+fxi.secr(object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1)
 fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
 }
 
@@ -40,6 +41,8 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   \item{X}{2-column matrix of x- and y- coordinates}
   \item{normal}{ logical; should values of pdf be normalised?}
   \item{fill}{ vector of colours to fill contours (optional)}
+  \item{SPDF}{ logical; if TRUE the output is a SpatialPolygonsDataFrame}
+  \item{ncores}{ integer number of cores to be used for parallel processing}
   \item{start}{ vector of x-y coordinates for maximization }
   \item{\dots}{additional arguments passed to \code{contour} or \code{nlm}}
 }
@@ -73,8 +76,11 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   integral of \eqn{\mbox{Pr}(\omega_i|X)\pi(X)}{Pr(\omega_i|X)\pi(X)}
   over the habitat mask in \code{object}.
   
-  If \code{start} is not provided to \code{fit.mode} then the first
-  detector site is used, but this is not guaranteed to work.
+  If \code{ncores} and length(i) are both greater than 1 then multiple 
+  worker processes will be run in separate cores to speed up the calculations.
+  
+  If \code{start} is not provided to \code{fit.mode} then (from 2.9.4) the weighted mean of 
+  all detector sites is used (see Warning below).
 
   The \dots argument gives additional control over a contour plot; for
   example, set \code{drawlabels = FALSE} to suppress contour labels.
@@ -82,13 +88,20 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
 
 \value{
   
-\code{fxi.contour} --
+\code{fxi.contour} (SPDF = FALSE) --
   
 Coordinates of the plotted contours are returned as a list with one
 component per polygon. The list is returned invisibly if plt = TRUE.
 
 An additional component `mode' reports the x-y coordinates of the
 highest point of each pdf (see Details).
+
+\code{fxi.contour} (SPDF = TRUE) --
+  
+Contours are returned as a SpatialPolygonsDataFrame (see package
+\pkg{sp}) with one component per animal. The attributes dataframe has two columns, the x-
+and y-coordinates of the mode. The SpatialPolygonsDataFrame is returned
+invisibly if plt = TRUE.
 
 \code{fxi.secr} --
 
@@ -121,10 +134,19 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 }
 
-\section{Warning}{
+\section{Warnings}{
 
+  Use ncores > 1 only if there is adequate memory available for each
+  worker process. Otherwise processing will slow to a crawl. This is a
+  particular problem in \code{fxi.contour} with fitmode = TRUE. In
+  Windows, check memory usage under the Performace tab of the Task Manager
+  (Ctrl-Alt-Delete). If you abort a parallel job you may need to
+  manually delete the stranded Rscript processes in Task Manager.
+  
   \code{fxi.mode} may fail to find the true mode unless a good starting
-  point is provided.
+  point is provided. Note that the distribution may have multiple modes and 
+  only one is reported. The default value of \code{start} before \pkg{secr} 2.9.4 
+  was the first detected location of the animal. 
 
 }
 
@@ -150,6 +172,19 @@ t(sapply(fxiout, "[[", "mode"))
   plot(traps(captdata))
   fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
       = FALSE, nx = 256, fill = topo.colors(4), lty = 0)
+
+  ## output as SpatialPolygonsDataFrame
+  spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
+      nx = 256, SPDF = TRUE, fitmode = TRUE)
+
+  ## save as ESRI shapefile
+  library(maptools)
+  writeSpatialShape(spdf, fn = "test")
+
+  ## plot contours and modes
+  plot(spdf)
+  points(data.frame(spdf))
+
 }
 
 }

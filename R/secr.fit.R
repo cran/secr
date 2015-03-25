@@ -611,7 +611,7 @@
     ## 2015-01-06 only use autoini if required
     if (is.null(start) | is.list(start)) {
         start3 <- list(D = NA, g0 = NA, sigma = NA)
-        ch <- if (MS) capthist[[1]] else capthist            
+        ch <- if (MS) capthist[[1]] else capthist
         msk <- if (MS) mask[[1]] else mask
         requireautoini <- is.null(start) | !all(names(parindx) %in% names(start))
         if (requireautoini) {
@@ -622,10 +622,10 @@
                 ## 2015-01-06
                 if (nrow(ch)<5)
                     stop ("too few values in session 1 to determine start; set manually")
-                
+
                 start3 <- autoini (ch, msk, binomN = details$binomN,
-                                   ignoreusage = details$ignoreusage)        
-                
+                                   ignoreusage = details$ignoreusage)
+
                 if (any(is.na(unlist(start3)))) {
                     warning ("'secr.fit' failed because initial values not found",
                              " (data sparse?); specify transformed values in 'start'")
@@ -701,7 +701,7 @@
                 tempcapthist <- capthist
                 tempmask <- mask
             }
-            default$D <- 2 * nrow(tempcapthist) / (nrow(tempmask)*attr(tempmask,'area'))
+            default$D <- 2 * nrow(tempcapthist) / maskarea(tempmask)
             default$g0 <- sum(tempcapthist) / nrow(tempcapthist) / ncol(tempcapthist)
             default$lambda0 <- -log(1-default$g0)
             if (details$binomN > 1)
@@ -731,6 +731,7 @@
             start[parindx[[i]][1]] <- getdefault (names(model)[i])
         if ((details$nmix>1) & !('pmix' %in% fnames) & !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:nmix)-0.5)[2]
+
         if (detector(traps(capthist))=='cue')
             start <- c(start, log(3))    ## cuerate
         if (detectfn %in% c(12,13))
@@ -747,7 +748,12 @@
     ############################################
     ## ad hoc fix for experimental parameters
     ############################################
-    nmiscparm <- 0
+    if (is.null(details$miscparm))
+        nmiscparm <- 0
+    else {
+        nmiscparm <- length(details$miscparm)
+        start <- c(start, details$miscparm)
+    }
     if (detector(traps(capthist)) %in% c('cue'))
         nmiscparm <- 1
     if (detector(traps(capthist)) %in% c('signalnoise'))
@@ -783,14 +789,17 @@
     # Variable names (model-specific)
     ############################################
 
-    if (detector(traps(capthist))=='cue') {
-        betanames <- c(betanames, 'cuerate')
-        realnames <- c(realnames, 'cuerate')
-    }
     if (detectfn %in% c(12,13)) {
         betanames <- c(betanames, 'muN', 'sdN')
         realnames <- c(realnames, 'muN', 'sdN')
     }
+    else if (nmiscparm>0) {
+        miscnames <- names(details$miscparm)
+        if (is.null(miscnames)) 
+            miscnames <- paste('miscparm', 1:nmiscparm, sep='') 
+        betanames <- c(betanames, miscnames)
+    }
+    
     ## allow for fixed beta parameters
     if (!is.null(details$fixedbeta))
         betanames <- betanames[is.na(details$fixedbeta)]
@@ -848,7 +857,7 @@
         if (details$hessian != "none")
             details$hessian <- "fdHess"
     }
-    else if (lcmethod %in% c('newton-raphson')) { 
+    else if (lcmethod %in% c('newton-raphson')) {
         args <- list (p         = start,
                       f         = loglikefn,
                       hessian   = tolower(details$hessian)=='auto',

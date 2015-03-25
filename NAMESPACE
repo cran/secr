@@ -12,21 +12,22 @@ importFrom(mgcv, s)
 importFrom(mgcv, te)
 importFrom(mgcv, formula.gam)
 
-##importFrom(maptools, unionSpatialPolygons)
-##importFrom(maptools, readShapePoly)
+## removed these 2015-01-23
+## instead use requireNamespace for nedist()
+## importFrom(gdistance, transition)
+## importFrom(gdistance, geoCorrection)
+## importFrom(gdistance, costDistance)
 
 import(sp)
 import(parallel)
 importFrom("methods", Ops, Math)
 
-## 2014-10-05 speculative
 importFrom(raster, 'values<-')
 importFrom(raster, values)
 importFrom(raster, clump)
 importFrom(raster, adjacent)
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
-##exportClasses(RasterLayer, mask, Dsurface)
 exportClasses(mask, Dsurface)
 
 export (secr.fit)
@@ -257,6 +258,8 @@ export (getMeanSD)
 export (maskarea)
 export (masklength)
 export (edist)
+export (nedist)
+export (deleteMaskPoints)
 
 ## export (telemetry.LT)
 ## export (telemetry.LC)

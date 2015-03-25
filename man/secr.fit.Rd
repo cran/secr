@@ -75,7 +75,8 @@ constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
 others that appear in the \code{covariates} of the input data. See also
 \code{\link{usage}} for varying effort, \code{\link{timevaryingcov}} to
 construct other time-varying detector covariates, and \link{secr models}
-and \url{../doc/secr-overview.pdf} for more on defining models.
+and \href{../doc/secr-overview.pdf}{secr-overview.pdf} for more on
+defining models.
 
 \code{buffer} and \code{mask} are alternative ways to define the region
 of integration (see \link{mask}). If \code{mask} is not specified then a
@@ -127,6 +128,7 @@ hessian \tab variance method\cr
 ignoreusage \tab override usage in traps object of capthist\cr
 intwidth2 \tab controls optimise when only one parameter\cr
 LLonly \tab compute one likelihood for values in \code{start} \cr
+miscparm \tab starting values for extra parameters fitted via userdist function \cr
 param \tab optional parameterisation for multi-catch detectors\cr
 scaleg0 \tab structural relationshp between g0 and sigma\cr
 scalesigma \tab structural relationship between sigma and density\cr

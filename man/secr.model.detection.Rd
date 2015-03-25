@@ -106,7 +106,7 @@ categorical) may be included freely in the model.
 Individual heterogeneity (`h' in the notation of Otis et al. 1978) may
 modelled by treating any detection parameter as a 2-part or 3-part
 finite mixture e.g. g0 \eqn{\sim{~}}{~} h2. See
-\url{../doc/secr-finitemixtures.pdf}.
+\href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf}.
 
 Any other variable name appearing in a formula is assumed to refer to a
 user-defined predictor. These will be interpreted by searching for name

@@ -70,6 +70,7 @@
 ## 2014-09-06 summary.mask slightly rearranged, and allows linearmask
 ## 2014-09-14 plot.mask moved to plot.mask.r
 ## 2014-12-24 print.summary.capthist allows for nonspatial capthist
+## 2015-01-16 print.secr shows userdist type
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -1395,7 +1396,6 @@ plot.traps <- function(x,
             markused, markvarying, markvertices, labelclusters, ...)
     }
     else {
-
         buff <- c(-border,+border)
         offsety <- ifelse (length(offset)==2, offset[2], offset[1])
         dcol <- 'red'
@@ -1730,7 +1730,10 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
                 sset <- subset[[i]]
             else
                 sset <- subset
-            out[[i]] <- subset(x[[i]], subset[[i]], NULL, renumber, ...)
+            if (is.null(subset))  ## 2015-03-17
+                out[[i]] <- x[[i]]
+            else
+                out[[i]] <- subset(x[[i]], subset[[i]], NULL, renumber, ...)
         }
         class(out) <- c('list','popn')
         out
@@ -2792,6 +2795,15 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
     ## 2013-06-08
     if (!is.null(x$hcov))
         cat ('Mixture (hcov)  : ', x$hcov, '\n')
+    
+    ## 2015-01-16
+    if (!is.null(x$details$userdist)) {
+        if (is.matrix(x$details$userdist))
+            cat ('User distances  :  static (matrix)\n')
+        if (is.function(x$details$userdist))
+            cat ('User distances  :  dynamic (function)\n')
+    }
+
     cat ('Fixed (real)    : ', fixed.string(x$fixed), '\n')
     cat ('Detection fn    : ', detectionfunctionname(x$detectfn))
     if (!is.null(x$details$normalize))
