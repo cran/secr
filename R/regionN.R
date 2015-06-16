@@ -395,6 +395,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             Dtemp <- NA
         else
             Dtemp <- D[1]
+                
         Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
                                         mask, trps, Dtemp, s)
 

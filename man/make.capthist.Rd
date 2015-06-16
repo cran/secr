@@ -10,7 +10,7 @@
 \usage{
 make.capthist(captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE,
-    cutval = NULL, tol = 0.01, noncapt = "NONE", signalcovariates)
+    cutval = NULL, tol = 0.01, snapXY = FALSE, noncapt = "NONE", signalcovariates)
 }
 
 \arguments{
@@ -22,7 +22,9 @@ make.capthist(captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
   \item{bysession}{ logical, if true then ID are made unique by session }
   \item{sortrows}{ logical, if true then rows are sorted in ascending order of animalID }
   \item{cutval}{ numeric, threshold of signal strength for `signal' detector type }
-  \item{tol}{ numeric, tolerance in metres when assigning coordinates for `transect' detector type }
+  \item{tol}{ numeric, snap tolerance in metres}
+  \item{snapXY}{ logical; if TRUE then fmt = 'XY' uses nearest trap
+  within tol for non-polygon detectors }
   \item{noncapt}{ character value; animal ID used for `no captures' }
   \item{signalcovariates}{character vector of field names from
     `captures'}

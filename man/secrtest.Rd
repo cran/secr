@@ -47,14 +47,14 @@ that the x-axis is labelled correctly (See the Examples in help for
 
 \dontrun{
 tmp <- secr.test(ovenbird.model.1)
-tmp  ## terse print
-print(tmp, terse = FALSE)
-
-par(mfrow = c(1,5))
-plot(tmp, main = '', xlim=c(0,1), breaks=seq(0,1,0.05))
-par(mfrow = c(1,1))    ## reset to default
+if (inherits(tmp, 'secrtest')) {
+    tmp  ## terse print
+    print(tmp, terse = FALSE)
+    par(mfrow = c(1,5))
+    plot(tmp, main = '', xlim=c(0,1), breaks=seq(0,1,0.05))
+    par(mfrow = c(1,1))    ## reset to default
 }
-
+}
 }
 
 \seealso{

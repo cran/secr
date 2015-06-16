@@ -123,6 +123,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
 
         }
 
+        ## not compatible with sigmak parameterizations
         Dtemp <- NA
         Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
                                         mask, trps, Dtemp, s)

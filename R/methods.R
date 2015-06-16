@@ -71,6 +71,7 @@
 ## 2014-09-14 plot.mask moved to plot.mask.r
 ## 2014-12-24 print.summary.capthist allows for nonspatial capthist
 ## 2015-01-16 print.secr shows userdist type
+## 2015-03-31 parameter count allows for details$miscparm
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -2101,7 +2102,9 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
         }
         else
         if (detector(traps(x)) == 'presence') {
-            temp <- apply(apply(x>0, 2:3, sum) > 0,2,any)*1.0
+            ## temp <- apply(apply(x>0, 2:3, sum, drop = FALSE) > 0,2,any, drop = FALSE)*1.0
+            ## 2015-05-10 retain occasion-specific data
+            temp <- (apply(x>0, 2:3, sum, drop = FALSE) > 0)*1.0
             print.default(temp, ...)
             invisible (temp)
         }
@@ -2768,10 +2771,8 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
     ####################
     ## Model description
 
-    Npar <- max(unlist(x$parindx))
-    ## allow for fixed beta parameters 2009 10 19
-    if (!is.null(x$details$fixedbeta))
-        Npar <- Npar - sum(!is.na(x$details$fixedbeta))
+    ## 2015-03-31
+    Npar <- nparameters(x)   ## see utility.R
     AICval <- 2*(x$fit$value + Npar)
     n <- ifelse (ms(x$capthist), sum(sapply(x$capthist, nrow)), nrow(x$capthist))
     AICcval <- ifelse ((n - Npar - 1) > 0,
@@ -2795,7 +2796,7 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
     ## 2013-06-08
     if (!is.null(x$hcov))
         cat ('Mixture (hcov)  : ', x$hcov, '\n')
-    
+
     ## 2015-01-16
     if (!is.null(x$details$userdist)) {
         if (is.matrix(x$details$userdist))
@@ -2886,11 +2887,8 @@ oneline.secr <- function (secr) {
         ncapt <- sum( abs( secr$capthist)>0)
     }
 
-    Npar <- max(unlist(secr$parindx))
-    ## allow for fixed beta parameters 2009 10 19
-    if (!is.null(secr$details$fixedbeta))
-        Npar <- Npar - sum(!is.na(secr$details$fixedbeta))
-
+    ## 2015-03-31
+    Npar <- nparameters(secr)   ## see utility.R
     AICval <- 2*(secr$fit$value + Npar)
     AICcval <- ifelse ((n - Npar - 1)>0,
         2*(secr$fit$value + Npar) + 2 * Npar * (Npar+1) / (n - Npar - 1),

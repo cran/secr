@@ -2,6 +2,7 @@
 ## package 'secr'
 ## read.traps.R
 ## 2012-12-18 binary.usage
+## 2015-05-04 multi-file input
 ## Read detector locations from text file in DENSITY format
 ############################################################################################
 
@@ -34,6 +35,15 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         stop ("invalid detector type")
     if (is.null(file) & is.null(data))
         stop ("requires 'file' or 'data'")
+
+    if (length(file) > 1) {
+        out <- lapply(file, read.traps, detector = detector,
+                      covnames = covnames, binary.usage = binary.usage, ...)
+        class (out) <- c('list', 'traps')
+        out
+    }
+    else {
+
     ## file input
     if (!is.null(file)) {
         nfld <- count.fields (file, ...)
@@ -181,5 +191,6 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     attr(traps,'spacey') <- ifelse (length(uy)>1, min(dist(uy)), NA)
     spacing(traps) <- spacing(traps)   ## !!
     traps
+}
 }
 ############################################################################################

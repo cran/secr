@@ -19,7 +19,7 @@ functions \code{read.traps} and \code{make.capthist}.
 
 read.capthist(captfile, trapfile, detector = "multi", fmt = c("trapID","XY"),
     noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-    cutval = NULL, verify = TRUE, noncapt = "NONE", ...)
+    cutval = NULL, verify = TRUE, noncapt = "NONE", tol = 0.01, snapXY = FALSE, ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
      sess = "1", ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
@@ -43,6 +43,9 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{verify}{ logical if TRUE then the resulting capthist object is
   checked with \code{\link{verify}}}
   \item{noncapt}{ character value; animal ID used for `no captures' }
+  \item{tol}{ numeric, snap tolerance in metres}
+  \item{snapXY}{ logical; if TRUE then fmt = 'XY' uses nearest trap within tol }
+  
   \item{\dots}{ other arguments passed to \code{read.table},
     \code{write.table} and \code{count.fields} }
   \item{object}{ \code{capthist} object with the captures and trap locations to export }

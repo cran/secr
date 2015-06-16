@@ -121,6 +121,7 @@ supplied. \code{binomN} should be an integer unless negative.
 \code{details} is used for various specialized settings listed below. These are
 described separately - see \code{\link{details}}.
 \tabular{ll}{
+autoini \tab session to use for starting values (default 1) \cr
 centred \tab centre x-y coordinates\cr
 distribution \tab binomial vs Poisson N\cr
 fixedbeta \tab specify fixed beta parameter(s)\cr

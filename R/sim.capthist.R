@@ -14,14 +14,16 @@
 ## 2013 06 28 explicit entry points to C code (not simfunctionname)
 ## 2014-08-28 revamped for userdist and distmat (pre-computed distance matrix)
 ## 2015-02-23 warning when ms(popn) and renumber = TRUE
+## 2015-04-01 session-specific detection
+## 2015-04-13 sim.capthist passes nsessions to sim.popn
 ###############################################################################
 
-expand <- function (x, n, q = 0, default = 1) {
-    if (is.null(x)) rep(default, n)
+expands <- function (x, s, q = 0, default = 1) {
+    if (is.null(x)) rep(default, s)
     else {
-        y <- numeric(n)
+        y <- numeric(s)
         if ((length(x)==2) && (q>0))
-            y[] <- rep(x, c(q,n-q))
+            y[] <- rep(x, c(q,s-q))
         else
             y[] <- x
         y
@@ -85,13 +87,14 @@ sim.capthist <- function (
         if (poplist & (nsessions>1) & (length(popn) != nsessions))
             stop ("incompatible use of popn list and nsessions>1")
 
-        if (ms(traps) & (length(traps) != nsessions))
-            stop ("incompatible use of traps list and nsessions>1")
         if (!ms(traps))
             trps <- traps
 
         ## supplied with spatiotemporal population
         R <- ifelse (poplist, length(popn), nsessions)
+        if (ms(traps) & (length(traps) != R))
+            stop ("incompatible use of traps list and nsessions>1")
+
         output <- vector(R, mode='list')
         nocc <- numeric(R)
         nocc[] <- noccasions
@@ -101,9 +104,9 @@ sim.capthist <- function (
                 Ndist = 'poisson'), popn)
             ## will fail with multiple traps
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
-                covariates = NULL, Ndist = popn$Ndist)
+                covariates = NULL, Ndist = popn$Ndist, nsessions = nsessions)
         }
-        if (poplist) {
+        if (R > 1) {
             if (any(p.available != 1))
                 warning ("incomplete availability not implemented ",
                          "for population lists")
@@ -125,8 +128,21 @@ sim.capthist <- function (
             }
 
         }
+        #################################
+        ## session-specific detection 2015-04-01
+##        if (length(detectpar) == 0)
+##            stop ("must specify detectpar")
+        if (detectfn %in% c(0:7, 14:18)) {
+            df0name <- if (detectfn %in% (0:7)) 'g0' else 'lambda0'
+            dfzname <- if (detectfn %in% (5:6)) 'x' else 'z'
+            df0 <- expands(detectpar[[df0name]], R, default = NULL)
+            sigma <- expands(detectpar[['sigma']], R, default = NULL)
+            dfz <- expands(detectpar[[dfzname]], R, default = NULL)
+        }
+        #################################
+
         for (t in 1:R) {
-            if (poplist)
+            if (R > 1)
                 temppop <- popn[[t]]
             else {
                 temppop <- subset(popn, available)
@@ -140,6 +156,13 @@ sim.capthist <- function (
                 }
             }
             if (ms(traps)) trps <- traps[[t]]
+            ## session-specific detection parameters
+            if (detectfn %in% c(0:7, 14:18)) {
+                detectpar[[df0name]] <- df0[t]
+                detectpar[['sigma']] <- sigma[t]
+                detectpar[[dfzname]] <- dfz[t]
+            }
+
             output[[t]] <- sim.capthist(trps, temppop, detectfn, detectpar,
                 nocc[t], 1, binomN, exactN, 1, renumber, seed, maxperpoly)
             ## 'exactN' was missing from preceding call until 2014-02-18
@@ -274,10 +297,11 @@ sim.capthist <- function (
                 binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
             detectpar$binomN <- binomN
         }
+        
         detectpar <- replacedefaults(defaults, detectpar)
 
         if (detectfn %in% c(0:7, 14:18)) {
-            # g0    <- expand(detectpar$g0, noccasions)
+            # g0    <- expands(detectpar$g0, noccasions)
             # changed to matrix for s- and k-specific g0 2013-04-04
             if (detectfn %in% (0:7)) {
                 g0    <- expandsk(detectpar$g0, s = noccasions, k = ndetector(traps))
@@ -295,8 +319,8 @@ sim.capthist <- function (
                 df0 <- lambda0
             }
 
-            sigma <- expand(detectpar$sigma, noccasions)
-            z     <- expand(ifelse(detectfn %in% c(5,6),
+            sigma <- expands(detectpar$sigma, noccasions)
+            z     <- expands(ifelse(detectfn %in% c(5,6),
                 detectpar$w, detectpar$z), noccasions)
             validatepar(sigma, c(1e-10,Inf))
             validatepar(z, c(0,Inf))
@@ -307,11 +331,11 @@ sim.capthist <- function (
             tx <- detectpar$tx
             cutval <- detectpar$cutval
             sdM <- detectpar$sdM
-            beta0 <- expand(detectpar$beta0, noccasions)
-            beta1 <- expand(detectpar$beta1, noccasions)
-            sdS   <- expand(detectpar$sdS, noccasions)
-            muN   <- expand(detectpar$muN, noccasions)
-            sdN   <- expand(detectpar$sdN, noccasions)
+            beta0 <- expands(detectpar$beta0, noccasions)
+            beta1 <- expands(detectpar$beta1, noccasions)
+            sdS   <- expands(detectpar$sdS, noccasions)
+            muN   <- expands(detectpar$muN, noccasions)
+            sdN   <- expands(detectpar$sdN, noccasions)
             validatepar(beta0, c(-Inf,Inf))
             validatepar(beta1, c(-Inf,Inf))
             validatepar(sdS, c(0,Inf))
@@ -319,7 +343,7 @@ sim.capthist <- function (
         }
         else if (detectfn %in% c(9)) {
             df0 <- expandsk(detectpar$b0, s = noccasions, k = ndetector(traps))
-            sigma <- expand(detectpar$b1, noccasions)
+            sigma <- expands(detectpar$b1, noccasions)
             z <- 0
             cutval <- detectpar$cutval
         }
@@ -795,9 +819,9 @@ sim.resight <- function (traps, ..., q = 1, pID = 1, unmarked = TRUE,
     defaultpar <- list(noccasion = 5)
     dots <- list(...)
     dots <- replace (defaultpar, names(dots), dots)
-    dots$detectpar$g0 <- expand (dots$detectpar$g0, dots$noccasion, q)
-    dots$detectpar$sigma <- expand (dots$detectpar$sigma, dots$noccasion, q)
-    dots$detectpar$z <- expand (dots$detectpar$z, dots$noccasion, q)
+    dots$detectpar$g0 <- expands (dots$detectpar$g0, dots$noccasion, q)
+    dots$detectpar$sigma <- expands (dots$detectpar$sigma, dots$noccasion, q)
+    dots$detectpar$z <- expands (dots$detectpar$z, dots$noccasion, q)
 
     capthist <- do.call('sim.capthist', c(list(traps = traps), dots))
 

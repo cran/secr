@@ -9,6 +9,7 @@
 ## 2014-02-17 question settings in fdHess call : .relStep = 0.001, minAbsPar = 0.1
 ## 2014-02-17 these are now set explicitly as arguments of score.test
 ## 2014-06-02 secr.design.MS argument ignoreusage = details$ignoreusage
+## 2015-04-15 acknowledges 'fixed'
 ############################################################################################
 ## source ('d:\\density secr 1.1\\secr\\R\\scoretest.R')
 ############################################################################################
@@ -86,6 +87,7 @@ prepare <- function (secr, newmodel) {
     ################
     list (
        link      = link,
+       fixed     = fixed,       ## 2015-04-15
        parindx   = parindx,
        capthist  = capthist,
        mask      = mask,
@@ -105,41 +107,11 @@ prepare <- function (secr, newmodel) {
  }   # end of 'prepare'
 ############################################################################################
 
-mapbeta <- function (parindx0, parindx1, beta0, betaindex)
-
-## Extend beta vector from simple model (beta0) to a more complex (i.e. general)
-## model, inserting neutral values (zero) as required.
-## For each real parameter, a 1:1 match is assumed between
-## beta values until all beta values from the simpler model are
-## used up. THIS ASSUMPTION MAY NOT BE JUSTIFIED.
-## betaindex is a user-controlled alternative.
-
-{
-    ## list of zeroed vectors, one per real parameter
-    beta1 <- lapply(parindx1, function (x) {x[]<-0; x})
-
-    if (!is.null(betaindex)) {
-        beta1 <- unlist(beta1)
-        if (sum(betaindex>0) != length(beta0))
-            stop ("invalid 'betaindex'")
-        beta1[betaindex] <- beta0
-        beta1
-    }
-    else {
-        indx <- lapply(parindx0, function(x) x-x[1]+1)
-        for (j in 1:length(beta1))
-          beta1[[j]][indx[[j]]] <- beta0[parindx0[[j]]]
-        unlist(beta1)
-    }
-}
-############################################################################################
-
 score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
                         .relStep = 0.001, minAbsPar = 0.1) {
 
     if (!inherits(secr, 'secr'))
         stop ("only for 'secr' objects")
-
     models <- list(...)
     if (length(models)>1) { ##  ) {
         # apply to each component of 'model' list
@@ -208,7 +180,8 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
                beta     = beta,
                parindx  = design$parindx,
                link     = design$link,
-               fixedpar = list(),
+               ## fixedpar = list(), 2015-04-15
+               fixedpar = design$fixed,
                designD  = design$D.design,
                designNE = design$NE.design, 
                design   = design$design,

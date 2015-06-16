@@ -77,6 +77,14 @@ splits by row (animal) rather than by column (occasion).
 Occasions survive intact; to pool occasions use
 \code{\link{reduce.capthist}}.
 
+\code{join} was modified in version 2.9.5 to check whether the
+components of `object' all used the same detectors (`traps') (putting
+aside differences in usage). If the traps are identical and
+remove.dupl.sites = TRUE then the resulting `capthist' uses the common list of
+detectors, with a usage attribute formed by concatenating the usage
+columns of the input. This is faster than the previous filtering
+algorithm using `tol'; the older algorithm is still used if the traps differ. 
+
 }
 
 \seealso{

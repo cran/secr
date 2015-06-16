@@ -1,8 +1,8 @@
 usagePlot <- function(object, add = FALSE, occasion = NULL, col =
                        'black', fill = FALSE, scale = 2, metres = TRUE, rad = 5, ...) {
 
-    if (ms(traps))  {
-        lapply(traps, usagePlot, add = add, occasion = occasion, col = col,
+    if (ms(object))  {
+        lapply(object, usagePlot, add = add, occasion = occasion, col = col,
                fill = fill, scale = scale, metres = metres, rad = rad, ...)
     }
     else {

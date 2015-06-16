@@ -7,7 +7,7 @@
 
 \code{sim.popn} can simulate a multi-session population with known between-session survival, recruitment and movement probabilities. The parameter settings to achieve this are passed to \code{sim.popn} in its `details' argument. Components of `details' that are relevant to turnover are described below; see \code{\link{sim.popn}} for others.
 
-Multi-session populations are generated in \code{sim.popn} whenever its argument `nsession' is greater than 1. If \code{details$lambda} remains NULL (the default) then the population for each successive session is generated de novo from the given density model (model2D, D etc.). If a value is specified for \code{details$lambda} then only the first population is generated de novo; remaining populations are generated iteratively with probabilistic mortality, recruitment and movement as described here.
+Multi-session populations are generated in \code{sim.popn} whenever its argument `nsessions' is greater than 1. If \code{details$lambda} remains NULL (the default) then the population for each successive session is generated de novo from the given density model (model2D, D etc.). If a value is specified for \code{details$lambda} then only the first population is generated de novo; remaining populations are generated iteratively with probabilistic mortality, recruitment and movement as described here.
 
 }
 
@@ -62,15 +62,15 @@ par (mfrow = c(2,3), mar = c(1,1,1,1))
 
 ## birth and death only
 grid <- make.grid(nx = 7, ny = 4, detector = 'proximity', spacing = 10)
-pop <- sim.popn (Nbuffer = 100, core = grid, nsession = 6,    
+pop <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
     details = list(lambda = 0.8, phi = 0.6, sigma.m = 0))
 sapply(pop, nrow)  ## how many individuals?
 plot(pop)
 
 ## movement only
-pop2 <- sim.popn (Nbuffer = 100, core = grid, nsession = 6,    
+pop2 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
     details = list(lambda = 1, phi = 1, sigma.m = 10, wrap = TRUE))
-pop3 <- sim.popn (Nbuffer = 100, core = grid, nsession = 6,    
+pop3 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
     details = list(lambda = 1, phi = 1, sigma.m = 10, wrap = FALSE))
 sapply(pop2, nrow)  ## how many individuals?
 plot(pop2)

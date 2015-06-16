@@ -40,6 +40,8 @@
 ## 2014-09-10 getcellsize()
 ## 2014-12-04 group.levels error check now precedes attempt to extract by groups
 ## 2015-01-29 improved error message in secr.lpredictor
+## 2015-03-31 nparameters
+## 2015-04-03 mapbeta moved from score.test.R
 ###############################################################################
 
 .localstuff <- new.env()
@@ -249,7 +251,7 @@ valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
         if (any(baddist)) {
             warning ("replacing infinite, negative and NA userdist values with 1e10")
             result[baddist] <- 1e10
-        }        
+        }
     }
     result
 }
@@ -1578,6 +1580,45 @@ deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
             message ("no points to delete")
         plot(mask, col='green')
         mask
+    }
+}
+############################################################################################
+
+nparameters <- function (object) {
+    Npar <- max(unlist(object$parindx))
+    Npar <- Npar + length(object$details$miscparm)
+    ## allow for fixed beta parameters
+    if (!is.null(object$details$fixedbeta))
+        Npar <- Npar - sum(!is.na(object$details$fixedbeta))
+    Npar
+}
+############################################################################################
+
+mapbeta <- function (parindx0, parindx1, beta0, betaindex)
+    
+    ## Extend beta vector from simple model (beta0) to a more complex (i.e. general)
+    ## model, inserting neutral values (zero) as required.
+    ## For each real parameter, a 1:1 match is assumed between
+    ## beta values until all beta values from the simpler model are
+    ## used up. THIS ASSUMPTION MAY NOT BE JUSTIFIED.
+    ## betaindex is a user-controlled alternative.
+    
+{
+    ## list of zeroed vectors, one per real parameter
+    beta1 <- lapply(parindx1, function (x) {x[]<-0; x})
+    
+    if (!is.null(betaindex)) {
+        beta1 <- unlist(beta1)
+        if (sum(betaindex>0) != length(beta0))
+            stop ("invalid 'betaindex'")
+        beta1[betaindex] <- beta0
+        beta1
+    }
+    else {
+        indx <- lapply(parindx0, function(x) x-x[1]+1)
+        for (j in 1:length(beta1))
+            beta1[[j]][indx[[j]]] <- beta0[parindx0[[j]]]
+        unlist(beta1)
     }
 }
 ############################################################################################

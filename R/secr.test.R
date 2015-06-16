@@ -25,7 +25,7 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
         nstat <- length(observed)
         rown <- names(observed)
         if (is.null(rown)) {
-            rown <- paste('statistic',1:nstat,sep='')
+            rown <- paste('statistic', 1:nstat, sep = '')
             names(observed) <- rown
         }
         observedmat <- matrix(observed, nrow = nstat, ncol = 1, dimnames = list(rown,NULL))

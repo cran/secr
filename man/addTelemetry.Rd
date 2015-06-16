@@ -68,8 +68,7 @@ The `telemetry' detector type is like a `polygon' detector (detections
 have x-y coordinates). Although perimeter coordinates are required they
 are not at present used in analyses.
   
-Combining telemetry and detection data is new in \pkg{secr} 2.4.0, and
-not yet fully documented.
+Combining telemetry and detection data is not yet fully documented.
 
 }
 

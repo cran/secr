@@ -167,8 +167,9 @@ double countp (int count, int binomN, double lambda) {
 
     /* binomial */
     else
-        return ( gbinom (count, binomN, lambda, 0) );
-/*        return ( gbinom (count, binomN, lambda / binomN, 0) ); replaced 2012-12-23 */
+        return ( gbinom (count, binomN, lambda, 0) ); 
+    /* return ( pow(lambda, count) * pow(1-lambda, binomN-count) ); experiment 2015-05-24 */
+    /* return ( gbinom (count, binomN, lambda / binomN, 0) ); replaced 2012-12-23 */
 }
 /*--------------------------------------------------------------------------*/
 

@@ -187,7 +187,8 @@ void trappingmulti (
     cump[0] = 0;
     nc = 0;
     GetRNGstate();
-    h = (double *) R_alloc(*N * *kk, sizeof(double));
+/*    h = (double *) R_alloc(*N * *kk, sizeof(double)); */
+    h = (double *) S_alloc(*N * *kk, sizeof(double));   /* initialise to zero */
 
     /* ------------------------------------------------------ */
     /* pre-compute distances */

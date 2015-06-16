@@ -29,7 +29,7 @@
 #  * no loss of data
 #  # must choose among animals (more than one animal)
 #  & must choose among traps (animal caught more than once)
-#  @ reduce to binary presence
+#  @ reduce to binary 
 #  $ apply rule for combining signals or locations (first, last, random, min, max, mean)
 #  ~ form new point detectors from mean of vertices (assumes symmetry)
 #  NA not feasible

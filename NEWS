@@ -1,3 +1,36 @@
+Changes in version 2.9.5 (2015-06-14)
+
+New features or changed behaviour of old functions
+    o   secr.fit() 'miscparm' now compatible with previous-fit 'start' 
+        and method = 'none'
+    o   secr.fit() may select session on which to base starting values with details 
+        argument 'autoini'
+    o   sim.capthist() allows varying detection by session (nsessions>1) and 
+        passes 'nsessions' to sim.popn()
+    o   make.capthist() new argument 'snapXY'
+    o   read.traps() accepts vector of file names
+    o   secr.fit() sigmak parameterization extended to linear masks
+    o   pdot.contour() and buffer.contour() acquire 'fill' argument
+
+Bugs fixed
+    o   AIC did not count parameters estimated via 'miscparm' 
+    o   usagePlot() failed with multisession input
+    o   sim.capthist() failed with detector type 'multi' when usage was zero for some 
+        detectors
+    o   secr.fit() default telemetrytype was 'none' rather than 'concurrent' as in
+        documentation
+    o   raster method for mask and Dsurface objects failed unpredictably
+    o   ip.secr() aborted when #attempts = maxtries rather than #attempts > maxtries
+    o   sim.popn() failed in getnm with multi-session model2D = 'linear'
+
+Other
+    o   sim.popn() argument nsession renamed nsessions for consistency
+    o   join() simplified when detectors are the same in all sessions
+    o   score.test() allows fixed real parameters
+    o   raster S4 method for mask and Dsurface objects documented
+    o   secr.fit() default value of details$minprob changed to 1e-200 (more stable estimates)
+
+
 Changes in version 2.9.4 (2015-03-24)
 
 New features or changed behaviour of old functions

@@ -152,7 +152,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
     }
     if (ncores > 1) {
         clust <- makeCluster(ncores)
-        clusterSetRNGStream(clust, seed)                
+        clusterSetRNGStream(clust, seed)
         sesscapt <- parLapply(clust, 1:nsim, runone)
         stopCluster(clust)
     }
@@ -182,14 +182,14 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 ## set hessian='auto' if extractfn requires variance-covariance matrix
 
     hessian <- match.arg(hessian)
-    cl   <- match.call(expand.dots = TRUE)
+    cl <- match.call(expand.dots = TRUE)
     cl <- paste(names(cl)[-1],cl[-1], sep=' = ', collapse=', ' )
     cl <- paste('sim.secr(', cl, ')')
 
     if (is.null(extractfn)) extractfn <- trim
     test <- extractfn(object)
 
-   if (is.numeric(test)) {
+    if (is.numeric(test)) {
         n.extract <- length(test)
         if (n.extract<=0)
             stop ("invalid 'extractfn'")

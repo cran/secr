@@ -18,6 +18,7 @@
 ## 2014-03-26 pdot.contour and buffer.contour extended to multi-session traps
 ## 2014-10-17 userdist fixes
 ## 2014-11-17 more userdist fixes
+## 2015-05-15 fill argument for contours
 ###############################################################################
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
@@ -245,7 +246,7 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
 ## no means of passing mask covariates...
                             noccasions = NULL, binomN = NULL,
                           levels = seq(0.1, 0.9, 0.1),
-                          poly = NULL, plt = TRUE, add = FALSE, ...) {
+                          poly = NULL, plt = TRUE, add = FALSE, fill = NULL, ...) {
     if (ms(traps)) {
         if (length(noccasions) == 1)
             noccasions <- rep(noccasions,length(traps))
@@ -272,6 +273,17 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
         }
         if (plt) {
             contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, levels = levels, ...)
+            
+            
+            ## optional fillin 2015-05-15
+            if (!is.null(fill)) {
+                z[z < (0.999 * min(levels))] <- NA
+                levels <- c(0,levels,1)
+                .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
+                                col = fill)
+            }
+            
+            
             invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels))
         }
         else
@@ -281,7 +293,7 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
 ############################################################################################
 
 buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
-                            plt = TRUE, add = FALSE, poly = NULL, ...) {
+                            plt = TRUE, add = FALSE, poly = NULL, fill = NULL, ...) {
     oneconvexbuffer <- function (buffer) {
         temp  <- data.frame(x = apply(expand.grid(traps$x, buffer * cos(theta)),1,sum),
                        y = apply(expand.grid(traps$y, buffer * sin(theta)),1,sum))
@@ -329,6 +341,12 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
             if (plt) {
                 contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
                          drawlabels = FALSE, levels = buffer,...)
+                if (!is.null(fill)) {
+                    z[z < (0.999 * min(levels))] <- NA
+                    levels <- c(0,levels,1)
+                    .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
+                                    col = fill)
+                }
                 invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx),
                                        levels = buffer))
             }

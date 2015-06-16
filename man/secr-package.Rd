@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.9.4\cr
-Date: \tab 2015-03-24\cr
+Version: \tab 2.9.5\cr
+Date: \tab 2015-06-14\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -138,7 +138,10 @@ Efford, M. G. and Fewster, R. M. (2013) Estimating population
   \bold{122}, 918--928.
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
-capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  
+capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.
+
+Royle, J. A., Chandler, R. B., Sollmann, R. and Gardner, B. (2014)
+\emph{Spatial capture--recapture.} Academic Press.
 
 Royle, J. A. and Gardner, B. (2011) Hierarchical spatial
 capture--recapture models for estimating density from trapping

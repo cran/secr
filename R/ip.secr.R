@@ -8,6 +8,7 @@
 ## 2012-11-02 ncores
 ## 2012-11-02 proctime[3]
 ## 2012-12-30 usage OK
+## 2015-05-17 tweaked failure condition 
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
@@ -68,8 +69,8 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         detectpar <- as.list(parval[-1])
         names(detectpar) <- pnames[-1]
         detectpar[['g0']] <- invodds(detectpar[['g0']])
-
         attempts <- 0
+        allOK <- FALSE
         repeat {
             if (is.null(mask))
                 popn <- sim.popn (D = D, core = core, model2D='poisson', ...)
@@ -77,22 +78,27 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
                 popn <- sim.popn (D = D, core = mask, model2D='IHP', ...)
             simcapthist <- sim.capthist(traps, popn, detectfn, detectpar,
                                         noccasions)
-            if (nrow(simcapthist)==0)
+            if (nrow(simcapthist)==0) {
                 warning ("ip.secr: no captures in simulation", call. = FALSE)
+            }
             else
                 if ((sum(abs(simcapthist)>0) - nrow(simcapthist)) < 1)
                 warning ("ip.secr: no re-captures in simulation", call. = FALSE)
             predicted <- try (predictorfn (simcapthist, predictortype), silent = TRUE)
-            if (inherits(predicted, 'try-error'))
+            if (inherits(predicted, 'try-error')) {
                 predicted <- NA
+            }
             attempts <- attempts+1
-            if ((attempts >= maxtries) |
-                (!any(is.na(predicted)) & all(is.finite(predicted))))
+            ## exit loop if exceeded maxtries or all OK
+            allOK <- !any(is.na(predicted)) & all(is.finite(predicted))
+            if ((attempts >= maxtries) | allOK)
                 break
         }
-        if (attempts >= maxtries)
+        if (!allOK) {
+            ## 2015-05-17 replaced with allOK if (attempts >= maxtries) {
             stop ("ip.secr: no successful simulation after ", maxtries,
                   " attempts", call. = FALSE)
+        }
         if (attempts > 1)
             warning ("ip.secr: simulation repeated", call. = FALSE)
         predicted
@@ -125,7 +131,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     par <- start
     names(par) <- pnames
     par['g0'] <- odds(par['g0'])
-
+    
     for (m in 1:maxbox) {
         cat('\nFitting box', m, '...   (g0 on odds scale) \n')
         names(par) <- pnames

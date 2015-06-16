@@ -31,6 +31,9 @@
 ## 2014-10-16 rewrite of pnames and model section for clarity
 ## 2014-12-04 tweak to avoid RPSV problem with zero captures
 ## 2015-01-06 catch 'too few detections' before autoini
+## 2015-04-01 details$autoini
+## 2015-04-12 default telemetrytype 'concurrent' was overwritten 'none'
+## 2015-05-24 default details$minprob changed to 1e-200
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -133,7 +136,8 @@
                            centred = FALSE,
                            binomN = 1,
                            cutval = 0,
-                           minprob = 1e-50,
+                           ## 2015-05-24 minprob = 1e-50,
+                           minprob = 1e-200,
                            tx = 'identity',
                            param = 0,
                            unmash = FALSE,
@@ -145,7 +149,8 @@
                            intwidth2 = 0.8,
                            normalize = FALSE,
                            usecov = NULL,
-                           userdist = NULL
+                           userdist = NULL,
+                           autoini = 1
                            )
 
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
@@ -156,8 +161,13 @@
         defaultdetails$cutval <- attr(capthist[[1]],'cutval')
     if (is.logical(details$hessian))
         details$hessian <- ifelse(details$hessian, 'auto', 'none')
-    details$telemetrytype <- match.arg(details$telemetrytype, c('none', 'independent',
-        'dependent', 'concurrent'))
+## details$telemetrytype <- match.arg(details$telemetrytype, c('none', 'independent',
+##                           'dependent', 'concurrent'))
+## 2015-04-12, 2015-06-14
+    details$telemetrytype <- match.arg(details$telemetrytype,
+        c('concurrent', 'none', 'independent', 'dependent'))
+    if (is.null(attr(capthist,'xylist')))
+         details$telemetrytype <- 'none'
     if (details$telemetrytype == 'independent')
         details$telemetrysigma <- TRUE
     details <- replace (defaultdetails, names(details), details)
@@ -557,7 +567,16 @@
 
     if (inherits(start, 'secr')) {
         ## use 'mapbeta' from score.test.R
-        start <- mapbeta(start$parindx, parindx, coef(start)$beta, NULL)
+        oldbeta <- coef(start)$beta
+        names(oldbeta) <- start$betanames
+        oldnam <- start$betanames
+        start <- mapbeta(start$parindx, parindx, oldbeta, NULL)
+        if (!is.null(details$miscparm)) {
+            nb <- length(start)
+            start <- c(start, details$miscparm)
+            oldnam <- oldnam[oldnam %in% names(details$miscparm)]
+            start[oldnam] <- oldbeta[oldnam]
+        }
     }
 
     ############################################
@@ -611,8 +630,9 @@
     ## 2015-01-06 only use autoini if required
     if (is.null(start) | is.list(start)) {
         start3 <- list(D = NA, g0 = NA, sigma = NA)
-        ch <- if (MS) capthist[[1]] else capthist
-        msk <- if (MS) mask[[1]] else mask
+        ch <- if (MS) capthist[[details$autoini]] else capthist
+        msk <- if (MS) mask[[details$autoini]] else mask
+
         requireautoini <- is.null(start) | !all(names(parindx) %in% names(start))
         if (requireautoini) {
             ## not for signal attenuation
@@ -648,7 +668,9 @@
         #--------------------------------------------------------------
         # assemble start vector
         ## revised 2014-12-04 to avoid sessions with no detections
-        rpsv <- RPSV(ch, TRUE)
+        rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
+        if (inherits(rpsv, 'try-error'))
+            rpsv <- NA
         n <- nrow(ch)
         default <- list(
             D       = ifelse (is.na(start3$D), 1, start3$D),
@@ -693,27 +715,42 @@
             default$z <- 1    ## cumulative gamma
         }
         if (anypoly | anytrans) {
-            if (MS) {
-                tempcapthist <- capthist[[1]]
-                tempmask <- mask[[1]]
-            }
-            else {
-                tempcapthist <- capthist
-                tempmask <- mask
-            }
-            default$D <- 2 * nrow(tempcapthist) / maskarea(tempmask)
-            default$g0 <- sum(tempcapthist) / nrow(tempcapthist) / ncol(tempcapthist)
+#             if (MS) {
+#                 tempcapthist <- capthist[[1]]
+#                 tempmask <- mask[[1]]
+#             }
+#             else {
+#                 tempcapthist <- capthist
+#                 tempmask <- mask
+#             }
+#             default$D <- 2 * nrow(tempcapthist) / maskarea(tempmask)
+#             default$g0 <- sum(tempcapthist) / nrow(tempcapthist) / ncol(tempcapthist)
+#             default$lambda0 <- -log(1-default$g0)
+#             if (details$binomN > 1)
+#                 default$g0 <- default$g0 / details$binomN
+#             if ((details$binomN == 1) & (detector(traps(capthist)) %in%
+#                                              c('polygon','transect'))) {
+#                 ## assume using usage for binomN
+#                 usge <- usage(traps(capthist))
+#                 default$g0 <- default$g0 / mean(usge[usge>0])
+#             }
+#             default$sigma <- RPSV(tempcapthist)
+
+            ## 2015-05-10 streamlined
+            default$D <- 2 * nrow(ch) / maskarea(msk)
+            default$g0 <- sum(ch) / nrow(ch) / ncol(ch)
             default$lambda0 <- -log(1-default$g0)
             if (details$binomN > 1)
                 default$g0 <- default$g0 / details$binomN
-            if ((details$binomN == 1) & (detector(traps(capthist)) %in%
-                 c('polygon','transect'))) {
+            if ((details$binomN == 1) & (detector(traps(ch)) %in%
+                                             c('polygon','transect'))) {
                 ## assume using usage for binomN
-                usge <- usage(traps(capthist))
+                usge <- usage(traps(ch))
                 default$g0 <- default$g0 / mean(usge[usge>0])
             }
-            default$sigma <- RPSV(tempcapthist)
+            default$sigma <- rpsv
         }
+
         if (is.na(default$sigma)) default$sigma <- 20
         getdefault <- function (par) {
             transform (default[[par]], link[[par]])
@@ -752,7 +789,8 @@
         nmiscparm <- 0
     else {
         nmiscparm <- length(details$miscparm)
-        start <- c(start, details$miscparm)
+        if (length(start) < max(unlist(parindx)) + nmiscparm )
+            start <- c(start, details$miscparm)
     }
     if (detector(traps(capthist)) %in% c('cue'))
         nmiscparm <- 1
@@ -795,11 +833,11 @@
     }
     else if (nmiscparm>0) {
         miscnames <- names(details$miscparm)
-        if (is.null(miscnames)) 
-            miscnames <- paste('miscparm', 1:nmiscparm, sep='') 
+        if (is.null(miscnames))
+            miscnames <- paste('miscparm', 1:nmiscparm, sep='')
         betanames <- c(betanames, miscnames)
     }
-    
+
     ## allow for fixed beta parameters
     if (!is.null(details$fixedbeta))
         betanames <- betanames[is.na(details$fixedbeta)]

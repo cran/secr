@@ -29,6 +29,7 @@ importFrom(raster, adjacent)
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
 exportClasses(mask, Dsurface)
+exportMethods(raster)
 
 export (secr.fit)
 export (par.secr.fit)

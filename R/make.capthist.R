@@ -10,7 +10,8 @@
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
-    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01,
+    covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01, 
+    snapXY = FALSE,
     noncapt = 'NONE', signalcovariates = NULL)
 
 # captures is a dataframe with the structure:
@@ -66,7 +67,8 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 bysession = FALSE,         ## 2010 04 01
                 sortrows = sortrows,
                 cutval = cutval,
-                tol = tol)
+                tol = tol,
+                snapXY = snapXY)
 
         }
         names(capthist) <- levels(session)
@@ -100,8 +102,17 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 }
             }
             else {
-                trapID    <- interaction(traps$x, traps$y)
-                captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
+                ## modified 2015-04-12 to snap to site
+                if (snapXY) {
+                    dtrap <- distancetotrap(captures[,4:5], traps)
+                    if (any(dtrap>tol))
+                        stop("capture XY greater than distance tol from nearest trap")
+                    captTrap <- nearesttrap(captures[,4:5], traps)                      
+                }
+                else {
+                    trapID    <- interaction(traps$x, traps$y)
+                    captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
+                }
                 if (any(is.na(captTrap)))
                     stop ("failed to match some capture locations ",
                           "to detector sites")

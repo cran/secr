@@ -32,6 +32,7 @@
 ## 2014-08-19 moved secr.lpredictor to utility.R
 ## 2014-10-13 noneuc handled as mask-pixel-specific parameter
 ## 2014-12-04 improved handling of nc = 0
+## 2014-05-04 reparameterize handles linear mask
 
 ###############################################################################
 
@@ -134,7 +135,7 @@ scaled.detection <- function (realparval, scalesigma, scaleg0, D) {
 
 ###############################################################################
 
-reparameterize.sigmak <- function (realparval, D) {
+reparameterize.sigmak <- function (realparval, D, linear) {
     ## D,sigmak parameterisation 2014-03-12
     ## vector D must match rows in realparval
     realnames <- dimnames(realparval)[[2]]
@@ -146,7 +147,10 @@ reparameterize.sigmak <- function (realparval, D) {
         cval <- realparval[,cindex]
     if (!('sigmak' %in% realnames))
         stop ("'param = 4:6 ' requires 'sigmak' in model")
-    realparval[,sigmakindex] <- realparval[,sigmakindex] / D^0.5 + cval
+    if (linear)
+        realparval[,sigmakindex] <- realparval[,sigmakindex] / D + cval
+    else
+        realparval[,sigmakindex] <- realparval[,sigmakindex] / D^0.5 + cval
     dimnames(realparval)[[2]][sigmakindex] <- 'sigma'
     realparval <- realparval[, -cindex, drop = FALSE]   ## added 2014-08-18
     realparval
@@ -170,6 +174,8 @@ reparameterize.esa <- function (realparval, mask, traps, detectfn, nocc) {
         if (inherits(tmp, 'try-error')) 0.0001 else tmp$root
     }
     cell <- getcellsize(mask)
+    if (inherits(mask, 'linearmask'))
+        stop ('esa parameterization not available for linear masks')
     realnames <- dimnames(realparval)[[2]]
     sigmaindex <- match('sigma', realnames)
     esaindex <- match('esa', realnames)
@@ -185,18 +191,20 @@ reparameterize.esa <- function (realparval, mask, traps, detectfn, nocc) {
 }
 ###############################################################################
 
-reparameterize.a0 <- function (realparval, detectfn) {
+reparameterize.a0 <- function (realparval, detectfn, linear) {
     ## a0, sigma parameterisation 2013-07-19
     realnames <- dimnames(realparval)[[2]]
     sigmaindex <- match('sigma', realnames)
     a0index <- match('a0', realnames)
-
     if (! all (c('a0','sigma') %in% realnames))
         stop ("'param = 3 or 5 ' requires both 'a0' and 'sigma' in model")
     if (!(detectfn %in% c(0:8, 14:18)))
         stop ('invalid combination of param = 3 or 5 and detectfn')
 
-    lambda0 <- realparval[,a0index] / 2 / pi / realparval[,sigmaindex]^2 * 10000
+    if (linear) 
+        lambda0 <- realparval[,a0index] / realparval[,sigmaindex] * 1000
+    else
+        lambda0 <- realparval[,a0index] / 2 / pi / realparval[,sigmaindex]^2 * 10000
     realparval[,a0index] <- if (detectfn %in% 0:8) 1-exp(-lambda0) else lambda0
     dimnames(realparval)[[2]][a0index] <- if (detectfn<9) 'g0' else 'lambda0'
     realparval
@@ -214,18 +222,18 @@ reparameterize <- function (realparval, detectfn, details, mask, traps, D, s) {
     ## use of scalesigma and scaleg0 is deprecated, but allowed 2014-08-09
     Xrealparval <- scaled.detection (realparval, details$scalesigma, details$scaleg0, D)
 
+    linear <- inherits(mask, 'linearmask')
     if (details$param %in% 4:6) {
         ## does not allow varying density surface
         ## cf scaled.detection()
-
-        Xrealparval <- reparameterize.sigmak (Xrealparval, D)
+        Xrealparval <- reparameterize.sigmak (Xrealparval, D, linear)
     }
 
     if (details$param %in% c(2,6)) {
         Xrealparval <- reparameterize.esa (Xrealparval, mask, traps, detectfn, s)
     }
     else if (details$param %in% c(3,5)) {
-        Xrealparval <- reparameterize.a0 (Xrealparval, detectfn)
+        Xrealparval <- reparameterize.a0 (Xrealparval, detectfn, linear)
     }
 
     Xrealparval
@@ -308,7 +316,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
     detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
-
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
 
@@ -390,7 +397,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             miscparm[1] <- details$cutval
         else if (nmiscparm > 0) 
             miscparm[1:nmiscparm] <- beta[max(unlist(parindx)) + (1:nmiscparm)]
-        
+
         #  miscparm[4] <- NT   ## 2013-11-16 - the number of individuals known from telemetry
 
         ## 2013-11-10
@@ -563,6 +570,23 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             ## Dtemp <- if (D.modelled) D[1,1,sessnum] else NA
             ## 2014-09-30
             Dtemp <- if (D.modelled) mean(D[,1,sessnum]) else NA
+            
+            ## more thoughts 2015-05-05
+            ## could generalize by 
+            ## -- making Dtemp a vector of length equal rows in realparval
+            ## -- matching either 
+            ##      first group (as before)
+            ##      sum of all groups
+            ##      own group [PROBLEM: locating group of each realparval row]
+            ## in all cases density is the mean over mask points
+            
+            ## CHECK use of Dtemp in
+            ##  regionN.R 
+            ##  sim.secr.R
+            
+            ## PERHAPS for consistency make a function to construct Dtemp vector
+            ## given mask, model, group matching rule (first, sum, own)
+                        
             Xrealparval <- reparameterize (realparval, detectfn, details,
                                            session.mask, session.traps, Dtemp, s)
             Xrealparval0 <- reparameterize (realparval0, detectfn, details,
@@ -602,6 +626,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                 ## pass miscellaneous unmodelled parameter(s)
                 if (nmiscparm > 0) 
                     attr(session.mask, 'miscparm') <- miscparm
+      
                 distmat <- valid.userdist (details$userdist,
                                            detector(session.traps),
                                            xy1 = session.traps,
@@ -684,7 +709,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                 if ((.localstuff$iter < 1) & (details$presence %in% c('simple','pairwise')) &
                     !(detectfn %in% c(1,4,7,8)))
                     warning ("simple presence requires detectfn for which",
-                             " sigma = radius (1,4,7,8)", .call = FALSE)
+                             " sigma = radius (4 or possibly 1,7,8)")
                 type <- switch (details$presence, simple = 0, integrated = 1, pairwise = 2, 3)
 
                 temp <- .C('presenceloglik', PACKAGE = 'secr',
@@ -720,6 +745,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             else {
                 if (usge[1]==0 & nmix>1)
                     stop ("mixture models fail when the first detector is not used on the first day")
+           
                 temp <- .C('secrloglik', PACKAGE = 'secr',
                    as.integer(like),          # 0 = full, 1 = CL, 3 = concurrent, 4 = concurrent CL
                    as.integer(dettype),       # 0 = multicatch, 1 = proximity, etc

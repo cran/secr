@@ -5,32 +5,45 @@
 # 2015-01-31 join() bug fix could fail with exclusivedetector types
 # 2015-04-05 previous bug fix failed...
 
-# 2015-04-13
-
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
-
-    ####################################################################
     onesession <- function (sess) {
+        ## previous is cumulative number of preceding occasions
         CH <- object[[sess]]
+        previous <- before[sess]
         newID <- animalID(CH)
-        newocc <- occasion(CH) + before[sess]
+        occ <- occasion(CH)
+        newocc <- occ + previous
         newtrap <- trap(CH)
         df <- data.frame(newID = newID, newocc = newocc, newtrap = newtrap,
-                         alive = alive(CH), sess = rep(sess, length(newID)),
+                         alive = alive(CH), sess = rep(sess, length(occ)),
                          stringsAsFactors = FALSE)
         if (!is.null(xy(CH))) {
             df$x <- xy(CH)$x
             df$y <- xy(CH)$y
         }
-        if (!is.null(signal(CH)))  {
+        if (!is.null(signal(CH)))
             df$signal <- signal(CH)
-        }        
         df
     }
-    ####################################################################
+    #    if (!ms(object) | !inherits(object, 'capthist'))   
+    if (!ms(object) | any(sapply(object, class) != 'capthist'))
+        stop("requires multi-session capthist object or list of single-session capthist")
     
-    condition.usage <- function (trp, i) {
-        us <- matrix(0, nrow=nrow(trp), ncol=nnewocc)
+    outputdetector <- detector(traps(object)[[1]])
+    nsession <- length(object)
+
+    nocc <- sapply(object, ncol)
+    names(nocc) <- NULL
+    before <- c(0, cumsum(nocc)[-nsession])
+    df <- vector(mode= 'list', length = nsession)
+    for (sess in 1:nsession) {
+        df[[sess]] <- onesession (sess)
+    }
+    df <- do.call(rbind, df)
+
+    n <- length(unique(df$newID))
+    condition.usage <- function (trp, i, nocc) {
+        us <- matrix(0, nrow=nrow(trp), ncol=sum(nocc))
         s1 <- c(1, cumsum(nocc)+1)[i]
         s2 <- cumsum(nocc)[i]
         if (is.null(usage(trp)))
@@ -40,42 +53,18 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         usage(trp) <- us
         trp
     }
-    ####################################################################
-    
-    if (!ms(object) | any(sapply(object, class) != 'capthist'))
-        stop("requires multi-session capthist object or list of single-session capthist")
-    
-    outputdetector <- detector(traps(object)[[1]])
-    nsession <- length(object)
-    nocc <- sapply(object, ncol)
-    names(nocc) <- NULL
-    nnewocc <- sum(nocc)
-    ## cumulative number of preceding occasions
-    before <- c(0, cumsum(nocc)[-nsession])
-    df <- lapply(1:nsession, onesession)
-    df <- do.call(rbind, df)
-    n <- length(unique(df$newID))
 
     ## resolve traps
-    ## first check whether all the same (except usage)
-    temptrp <- lapply(traps(object), function(x) {usage(x) <- NULL; x})
-    sametrp <- all(sapply(temptrp[-1], identical, temptrp[[1]]))
-    if (sametrp & remove.dupl.sites) {
-        newtraps <- temptrp[[1]]
-        class(newtraps) <- c("traps", "data.frame")
-        if (length(usage(traps(object))) > 0)
-            usage(newtraps) <- do.call(cbind, usage(traps(object)))
-        ## df$newtrap unchanged
-    }
-    else {    
-        temptrp <- mapply(condition.usage, traps(object), 1:nsession)    
-        newtraps <- do.call(rbind, c(temptrp, renumber = FALSE))        
-        class(newtraps) <- c("traps", "data.frame")
-        df$newtrap <- paste(df$newtrap,df$sess, sep=".")
-    }
-    
+    temptrp <- traps(object)
+    for (i in 1:length(temptrp))
+        temptrp[[i]] <- condition.usage(temptrp[[i]], i, nocc)
+
+    alltemptrp <- do.call(rbind, c(temptrp, renumber = FALSE))
+    newtraps <- alltemptrp
+    df$newtrap <- paste(df$newtrap,df$sess, sep=".")
+
     # ensure retain all occasions
-    df$newocc <- factor(df$newocc, levels = 1:nnewocc)
+    df$newocc <- factor(df$newocc, levels = 1:sum(nocc))
 
     if (outputdetector %in% .localstuff$exclusivedetectors) {
         alivesign <- df$alive*2 - 1
@@ -107,19 +96,17 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
     if (!is.null(df$signal))
         signal(tempnew) <- df[neworder,'signal']
-    
+
     if (!is.null(covariates(object))) {
         tempcov <- do.call(rbind, covariates(object))
-        if (!is.null(tempcov)) {
-            IDcov <- unlist(lapply(object,rownames))
-            ## use first match
-            tempcov <- tempcov[match(rownames(tempnew), IDcov),,drop = FALSE]
-            rownames(tempcov) <- rownames(tempnew)
-            covariates(tempnew) <- tempcov
-        }
+        IDcov <- unlist(lapply(object,rownames))
+        ## use first match
+        tempcov <- tempcov[match(rownames(tempnew), IDcov),,drop = FALSE]
+        rownames(tempcov) <- rownames(tempnew)
+        covariates(tempnew) <- tempcov
     }
 
-    if (remove.dupl.sites & !sametrp)
+    if (remove.dupl.sites)
         tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
     attr(tempnew, 'interval') <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
 

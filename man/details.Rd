@@ -16,6 +16,9 @@ to simplify the documentation. They are described here.
 
 \section{Detail components}{
 
+\code{details$autoini} specifies the session from which to compute starting 
+values (multi-session data only; default 1)
+
 \code{details$centred} = TRUE causes coordinates of both traps and mask
 to be centred on the centroid of the traps, computed separately for each
 session in the case of multi-session data. This may be necessary to

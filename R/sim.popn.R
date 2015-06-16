@@ -53,7 +53,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     "cluster", "IHP", "coastal", "hills", "linear"), buffertype =
     c("rect", "concave", "convex"), poly = NULL,
     covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
-    = c('poisson','fixed','specified'), nsession = 1, details = NULL,
+    = c('poisson','fixed','specified'), nsessions = 1, details = NULL,
     seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL,
     ...)  {
 
@@ -63,7 +63,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     if (buffertype %in% c('convex','concave') & (model2D != 'poisson'))
         stop ("buffertype incompatible with model2D")
 
-    if (nsession > 1) {
+    if (nsessions > 1) {
         discrete <- function(x) {
             fr <- x-trunc(x)
             sample (c(trunc(x), trunc(x)+1), size=1, prob=c(1-fr, fr))
@@ -74,7 +74,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             if (!is.null(Nbuffer))
                 if (is.na(Nbuffer)) Nbuffer <- NULL
             sim.popn (D[1], core, buffer, model2D, buffertype, poly,
-                covariates, number.from, Ndist, nsession = 1, details, seed,
+                covariates, number.from, Ndist, nsessions = 1, details, seed,
                 keep.mask, Nbuffer[1])
         }
         turnover <- function (oldpopn) {
@@ -113,11 +113,17 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 ## probability of entry at this point?
                 ## cf Schwarz & Arnason betas
             if (nrecruit>0) {
-                recruits <- sim.popn(D = nrecruit, core = core, buffer = buffer,
-                    model2D = model2D, buffertype = buffertype, poly = poly,
-                    covariates = covariates, number.from = newstart,
-                    Ndist = 'specified', nsession = 1, details = details)
-                ## danger: resets random seed
+#               recruits <- sim.popn(D = nrecruit, core = core, buffer = buffer,
+#                                    model2D = model2D, buffertype = buffertype, poly = poly,
+#                                    covariates = covariates, number.from = newstart,
+#                                    Ndist = 'specified', nsessions = 1, details = details)
+              ## 2015-04-06 using Nbuffer
+              recruits <- sim.popn(D = D, core = core, buffer = buffer,
+                                   model2D = model2D, buffertype = buffertype, poly = poly,
+                                   covariates = covariates, number.from = newstart,
+                                   Ndist = 'specified', Nbuffer = nrecruit,
+                                   nsessions = 1, details = details)
+              ## danger: resets random seed
                 newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
             }
             class(newpopn) <- class(MSpopn[[1]])
@@ -132,36 +138,37 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         turnoverpar <- replace (turnoverpar, names(details), details)
         if (is.null(details$lambda)) {
             ## independent
-            ## MSpopn <- lapply (1:nsession, session.popn)
+            ## MSpopn <- lapply (1:nsessions, session.popn)
             ## 2014-04-18, 2015-02-18
             if (missing(D))
-                D <- rep(NA, nsession)
-            else if (length(D) == 1) 
-                D <- rep(D, nsession)
-            else 
-                if (length(D) != nsession) stop ("length(D) should equal nsession")
+                D <- rep(NA, nsessions)
+            else if (length(D) == 1)
+                D <- rep(D, nsessions)
+            else
+                if (length(D) != nsessions) stop ("length(D) should equal nsessions")
             if (is.null(Nbuffer))
-                Nbuffer <- rep(NA, nsession)
-            else if (length(Nbuffer) == 1) 
-                Nbuffer <- rep(Nbuffer, nsession)
-            else 
-                if (length(Nbuffer) != nsession) stop ("length(Nbuffer) should equal nsession")
-            
-            MSpopn <- mapply (session.popn, 1:nsession, D, Nbuffer, SIMPLIFY = FALSE)
+                Nbuffer <- rep(NA, nsessions)
+            else if (length(Nbuffer) == 1)
+                Nbuffer <- rep(Nbuffer, nsessions)
+            else
+                if (length(Nbuffer) != nsessions) stop ("length(Nbuffer) should equal nsessions")
+
+            MSpopn <- mapply (session.popn, 1:nsessions, D, Nbuffer, SIMPLIFY = FALSE)
         }
         else {
             ## projected
-            MSpopn <- vector(nsession, mode = 'list')
+            MSpopn <- vector(nsessions, mode = 'list')
             MSpopn[[1]] <- session.popn(1, D, Nbuffer)
-            for (i in 2:nsession) {
+
+            for (i in 2:nsessions) {
                 MSpopn[[i]] <- turnover(MSpopn[[i-1]])
             }
         }
-        if (model2D == 'linear') 
+        if (model2D == 'linear')
             class(MSpopn) <- c('list', 'linearpopn', 'popn')
         else
             class(MSpopn) <- c('list','popn')
-        names(MSpopn) <- 1:nsession
+        names(MSpopn) <- 1:nsessions
         MSpopn
     }
     else {
@@ -181,7 +188,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         ##########################
 
-        getnm <- function (scaleattribute = 'area', scale = 1) {
+        getnm <- function (scaleattribute = 'area', scale = 1, D) {
             ## 2014-09-03 for "IHP" and "linear"
             if ((length(D) == 1) & (is.character(D)))
                 D <- covariates(core)[,D]
@@ -197,7 +204,13 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
             ## D vector, 1 per cell
             D <- D * attr(core, scaleattribute) * scale
-            N <- sum(D)
+            ## 2015-04-06 using Nbuffer
+            if (!is.null(Nbuffer)) {  ## includes Ndist == 'specified'
+              N <- round(Nbuffer)
+            }
+            else {
+              N <- sum(D)
+            }
             if (Ndist == 'poisson') {
                 N <- rpois(1,N)
             }
@@ -208,7 +221,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         if (model2D %in% c('IHP')) {
             if (!inherits(core, 'mask'))
                 stop ("for model2D = IHP, 'core' should be a habitat mask")
-            nm <- getnm('area', 1)
+            nm <- getnm('area', 1, D)
             jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), ncol = 2)
             animals <- core[rep(1:nrow(core), nm),] + jitter
             animals <- as.data.frame(animals)
@@ -218,7 +231,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         else  if (model2D == 'linear') {
             if (!inherits(core, 'linearmask'))
                 stop ("for model2D = linear, 'core' should be a linear mask")
-            nm <- getnm('spacing', 0.001)
+            nm <- getnm('spacing', 0.001, D)
             animals <- core[rep(1:nrow(core), nm),] * 1  ## * 1 to shed attributes...
             animals <- as.data.frame(animals)
             xl <- range(animals[,1])
@@ -240,15 +253,15 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                                          convex = TRUE, plt = FALSE)[[1]],
                                  concave = buffer.contour(core, buffer = buffer,
                                                           convex = FALSE, plt = FALSE))
-            
+
             bufferarea <- switch (buffertype,
                                   rect = area,
                                   convex = polyarea (bufferpoly),
                                   concave = sum(sapply(bufferpoly, polyarea)))
-                        
+
             if ((buffertype == 'concave') & (is.null(Nbuffer)))
                 warning("automatic Nbuffer unreliable with concave buffer")
-            
+
             ## If target number (Nbuffer) not specified, get from density x area
             ## N is the number of centres to simulate in the unbuffered (rectangular) area
             if (is.null(Nbuffer)) {
@@ -280,7 +293,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
 
                 ## 2014-12-29, 2015-01-11, 2015-01-13 allow buffering / poly
                 if (buffertype %in% c('convex','concave')) {
-                    
+
 #                     if (Ndist == 'fixed') {
                         maxtries <- 10
                         tries <- 1

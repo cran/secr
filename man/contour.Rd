@@ -18,10 +18,10 @@ adds a conventional `boundary strip' to a detector (trap) array, where
 pdot.contour(traps, border = NULL, nx = 64, detectfn = 0,
     detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = NULL,
     binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly =
-    NULL, plt = TRUE, add = FALSE, ...)
+    NULL, plt = TRUE, add = FALSE, fill = NULL, ...)
 
 buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
-     plt = TRUE, add = FALSE, poly = NULL, ...)
+     plt = TRUE, add = FALSE, poly = NULL, fill = NULL, ...)
 
 }
 
@@ -41,6 +41,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
     coordinates of a bounding polygon (optional) }
   \item{plt}{ logical to plot contours }
   \item{add}{ logical to add contour(s) to an existing plot }
+  \item{fill}{ vector of colours to fill contours (optional)}
   \item{\dots}{ other arguments to pass to \code{contour} }
   \item{buffer}{ vector of buffer widths }
   \item{convex}{ logical, if TRUE the plotted contour(s) will be convex }

@@ -80,7 +80,7 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 
 read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trapID','XY'),
                           noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-                          cutval = NULL, verify = TRUE, noncapt = 'NONE', ...) {
+                          cutval = NULL, verify = TRUE, noncapt = 'NONE', tol = 0.01, snapXY = FALSE, ...) {
 
     fmt <- match.arg(fmt)
     dots <- match.call(expand.dots = FALSE)$...
@@ -159,7 +159,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
 
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval,
-        noncapt = noncapt)
+        noncapt = noncapt, tol = tol, snapXY = snapXY)
 
     ## temporary (?) way to attach injection times, not changng make.capthist
     ## vector of occasion after inj at which first available for detection
