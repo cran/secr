@@ -103,6 +103,7 @@ reduce.traps <- function (object, newtraps = NULL, span = NULL, rename = FALSE, 
         newxy <- as.data.frame(newxy)
         class (newxy)   <- c('traps', 'data.frame')
         detector(newxy) <- detector(object)
+        markocc(newxy) <- markocc(object)
 
         if (!is.null(usage(object))) {
             usagelist <- split(as.data.frame(usage(object)), splitfactor)

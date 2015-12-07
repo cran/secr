@@ -1,12 +1,13 @@
 \name{usage}
 \alias{usage}
-\alias{effort}
 \alias{usage<-}
+\alias{effort}
 
 \title{ Detector Usage }
 
 \description{
-  Extract or replace usage information of a \code{traps} object.
+  Extract or replace usage (effort) information of a \code{traps} object
+  (optional).
 }
 
 \usage{
@@ -15,8 +16,7 @@ usage(object) <- value
 }
 \arguments{
   \item{object}{ \code{traps} object }
-  \item{value}{ numeric matrix of detectors x occasions, or a vector
-    (see Details). }
+  \item{value}{ numeric matrix of detectors x occasions }
   \item{\dots}{ other arguments (not used) }
 }
 \details{
@@ -32,7 +32,7 @@ usage(object) <- value
   (\href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf};
   Efford et al. 2013).
   
-  For replacement, various forms are possible for \code{value}:
+  For replacement of usage, various forms are possible for \code{value}:
 
   - a matrix in which the number of rows of \code{value} exactly
   matches the number of traps \emph{K} in \code{object}
@@ -69,7 +69,15 @@ Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in
   
 }
 
-\seealso{ \code{\link{traps}}, \code{\link{usagePlot}} }
+\seealso{
+  
+  \code{\link{traps}},
+  \code{\link{usagePlot}},
+  \code{\link{read.capthist}},
+  \code{\link{addSightings}}
+}
+
+\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
 
 \examples{
 demo.traps <- make.grid(nx = 6, ny = 8)

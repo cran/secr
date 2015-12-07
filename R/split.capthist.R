@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## split.capthist.R
-## last changed 2009 06 11 2009 07 10 2009 10 05 2012 07 26 2012 09 04
+## last changed 2009 06 11 2009 07 10 2009 10 05 2012 07 26 2012 09 04 2015-10-11
 ############################################################################################
 
 # split.capthist <- function (x, f, drop = FALSE, prefix='S', bytrap = FALSE, ...) {
@@ -62,8 +62,10 @@ split.capthist <- function (x, f, drop = FALSE, prefix='S', bytrap = FALSE,
   options(warn=0)
 
   if (bytrap) {
-      if (length(f)!=nrow(traps(x)))
-          stop ("length of f should match number of traps")
+      ## 2015-10-11
+      ## if (length(f)!= nrow(traps(x)))
+      if (length(f)!= ndetector(traps(x)))
+          stop ("length of f should match number of detectors")
   }
   else if (byoccasion) {
       if (length(f)!=ncol(x))

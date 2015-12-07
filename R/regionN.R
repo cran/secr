@@ -18,6 +18,8 @@
 ## 2014-09-08 renamed regionarea to regionsize
 ## 2014-09-08 updated with reparameterize
 ## 2014-09-08 prepared for secrlinear linearmask models, not activated
+## 2015-10-04 markocc argument for integralprw1
+## 2015-11-19 dropped param argument for integralprw1
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -327,11 +329,10 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
     knownclass <- getknownclass(capthists, nmix, object$hcov)
 
     ##############################################
-    ## adapt for marking occasions only 2009 10 24
-    ## hangover from esa... leave for now
-    q <- attr(capthists, 'q')
-    if (!is.null(q))
-        if (q<s) s <- q
+    ## marking occasions 2015-10-04
+    markocc <- markocc(traps(capthists))
+    if (is.null(markocc))
+        markocc <- rep(1,s)
     ##############################################
 
     if (dettype %in% c(3,6)) {
@@ -385,9 +386,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
         realparval0 <- makerealparameters (object$design0, beta,
             object$parindx, object$link, object$fixed)  # naive
 
-        ## Xrealparval0 <- scaled.detection (realparval0, FALSE,
-        ##    object$details$scaleg0, NA)
-
         ## 2014-09-08
         if (!is.null(object$fixed$D))
             Dtemp <- object$fixed$D
@@ -411,9 +409,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
         PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
         ncolPIA <- n
 
-        param <- object$details$param
-        if (is.null(param))
-            param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
         miscparm <- numeric(4)
         miscparm[1] <- object$details$cutval
 
@@ -460,7 +455,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
 
         temp <- .C("integralprw1", PACKAGE = 'secr',
             as.integer(dettype),
-            as.integer(param),
             as.double(Xrealparval0),
             as.integer(rep(1,n)),           ## dummy groups 2012-11-13; 2013-06-24
             as.integer(n),
@@ -473,6 +467,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             as.double(unlist(trps)),
             as.double(distmat),             ## optional dist2 2014-09-08
             as.double(usge),
+            as.integer(markocc),            ## 2015-10-04
             as.double(as.numeric(unlist(mask))),
             as.integer(nrow(Xrealparval0)), ## rows in lookup
             as.integer(PIA),                ## index of nc*,S,K to rows in realparval0

@@ -1,5 +1,5 @@
 /* constants */
-
+  
 #define fuzz 1e-200
 #define huge 1e10
 #define maxnpoly 1000   
@@ -47,14 +47,16 @@ typedef double (*gfnLptr)(int, int, int, double[], int, double[], int, double[])
      int kk, double miscparm []);
 */
 
-typedef double (*prwfnptr)(int, int, int, int, int, int[], double[], double[], int[],
+typedef double (*prwfnptr)(int, int, int, int[], double[], double[], int[],
    double[], int, double[], double[], int[], int, int, int, int, int, int, gfnptr, double[],
-			   double[], double[], double [], double[], double);
+			   double[], double[], double [], double[], double, double[]);
 /*
-    (int m, int n, int s1, int s2, int x, int w[], double xy[], double signal[], int gsb[],
+    (int m, int n, int x, int w[], double xy[], double signal[], int gsb[],
      double gk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
      int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[], 
-     double traps[], double dist2[], double Tsk[], double mask[], double minp);
+     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[]);
+ 
+     Dropped s1,s2 2015-10-04
 */
 
 typedef double (*fnptr)(double[], double);
@@ -81,7 +83,6 @@ void pdottransect (double *xy, int *nxy, double *traps, int *detect, double *Tsk
 
 void integralprw1 (
     int    *detect,    /* detector 0 multi, 1 proximity etc. */
-    int    *param,     /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
     double *gsb0val,   /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] !!!!!*/
     int    *nc,        /* number of individuals */
@@ -94,13 +95,14 @@ void integralprw1 (
     double *traps,     /* x,y locations of traps (first x, then y) */
     double *dist2,     /* distances squared (optional: -1 if unused) */
     double *Tsk,       /* s x k matrix effort on occasion s at at detector k */
+    int    *markocc,   /* which are marking occasions? */
     double *mask,      /* x,y points on mask (first x, then y) */
     int    *cc0,       /* number of g0/sigma/b combinations [naive animal] */
     int    *PIA0,      /* lookup which g0/sigma/b combination to use for given n, S, K
                           [naive animal] */
     int    *ncol,      /* number of columns in PIA0; added 2009 06 25 */
     double *area,      /* area associated with each mask point (ha) */
-    double *miscparm,  /* miscellaneous parameters (cuerate etc) */
+    double *miscparm,  /* miscellaneous parameters */
     int    *fn,        /* codes
                           0 = halfnormal,
                           1 = hazard rate,
@@ -116,76 +118,46 @@ void integralprw1 (
 
 /*---------------------------------------------------------------------*/
 
-void secrloglik (
-    int    *like,        /* likelihood 0 full, 1 conditional */
-    int    *detect,      /* detector 0 multi, 1 proximity etc. */
-    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle */
-    int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
-    int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
-    double *xy,          /* xy coordinates of polygon records */
-    double *signal,      /* signal strength vector, or times */
-    int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
-    int    *nc,          /* number of capture histories */
-    int    *ss,          /* number of occasions */
-    int    *kk,          /* number of traps */
-    int    *mm,          /* number of points on mask */
-    int    *gg,          /* number of groups */
-    int    *nmix,        /* number of mixtures */
-    int    *knownclass,  /* known membership of 'latent' classes */
-    double *traps,       /* x,y locations of traps (first x, then y) */
-    double *dist2,       /* distances squared (optional: -1 if unused) */
-    double *Tsk,         /* s x k matrix effort on occasion s at at detector k */
-    double *mask,        /* x,y points on mask (first x, then y) */
-    double *Dmask,       /* density at each point on mask, possibly x group */
-    double *pimask,      /* individual probability density */
-    double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
-    double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    int    *cc,          /* number of g0/sigma/b combinations  */
-    int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-    int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
-    int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
-    double *area,        /* area associated with each mask point (ha) */
-    double *miscparm,    /* miscellaneous parameters */
-    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
-    int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-/*    double *cut,       transformed signal strength threshold for detection */
-    double *minprob,     /* minimum value of P(detection history) */
-    double *a,           /* a(theta) */
-    double *value,       /* return value integral */
-    int    *resultcode   /* 0 if OK */
-    );
-/*---------------------------------------------------------------------*/
 
-void MRsecrloglik (
-    int    *detect,      /* detector 0 multi, 1 proximity */
-    int    *distrib,     /* distribution 0 Poisson, 1 binomial */
-    int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
-    int    *Tu,          /* unmarked counts s = qq+1 ... ss, dim=c(*kk, *ss, *gg) */
-    int    *Tm,          /* marked not ID counts s = qq+1 ... ss, dim=c(*kk, *ss, *gg) */
-    int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
-    int    *nc,          /* number of capture histories */
-    int    *ss,          /* total number of occasions */
-    int    *qq,          /* number of marking occasions */
-    int    *kk,          /* number of traps */
-    int    *mm,          /* number of points on mask */
-    int    *gg,          /* number of groups */
-    double *traps,       /* x,y locations of traps (first x, then y) */
-    double *dist2,       /* distances squared (optional: -1 if unused) */
-    double *mask,        /* x,y points on mask (first x, then y) */
-    double *Dmask,       /* density at each point on mask, possibly x group */
-    double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
-    double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-    int    *cc,          /* number of g0/sigma/b combinations  */
-    int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-    int    *gsb,         /* lookup which g0/sigma/b to use for given n, S, K */
-    int    *gsb0,        /* lookup which g0/sigma/b to use for given g, S, K [naive animal] */
-    double *pID,         /* Parameter value - probability marked animal identified on resighting */
-    double *area,        /* area associated with each mask point (ha) */
-    int    *fn,          /* code 0 = halfnormal, 1 = hazard rate, 2 = exponential etc. */
-    int    *binomN,      /*  */
-    double *minprob,     /* minimum value of P(detection history) */
-    double *value,       /* return value integral of pr(w0) */
-    int    *resultcode   /* 0 if OK */
+void secrloglik (
+        int    *like,        /* likelihood 0 full, 1 conditional */
+int    *detect,      /* detector 0 multi, 1 proximity etc. */
+int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
+int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
+double *xy,          /* xy coordinates of polygon records */
+double *signal,      /* signal strength vector, or times */
+int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
+int    *nc,          /* number of capture histories */
+int    *ss,          /* number of occasions */
+int    *kk,          /* number of traps */
+int    *mm,          /* number of points on mask */
+int    *gg,          /* number of groups */
+int    *nmix,        /* number of mixtures */
+int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
+double *traps,       /* x,y locations of traps (first x, then y) */
+double *dist2,       /* distances (optional: -1 if unused) */
+double *Tsk,         /* nk x s usage matrix */
+int    *markocc,     /* which are marking occasions? */
+int    *Tu,          /* detector x occasion matrices of no. sightings Tu */
+int    *Tm,          /* detector x occasion matrices of no. sightings Tm */
+double *chat,        /* sighting overdispersion */
+double *mask,        /* x,y points on mask (first x, then y) */
+double *Dmask,       /* density at each point on mask, possibly x group */
+double *pimask,      /* individual probability density; used if pimask[0] >= -tol (>=0) */
+double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
+double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
+int    *cc,          /* number of g0/sigma/b combinations  */
+int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
+int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
+double *area,        /* area associated with each mask point (ha) */
+double *miscparm,    /* miscellaneous parameters (cutval, normalization, NT etc.) */
+int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
+double *minprob,     /* minimum value of P(detection history) */
+double *a,           /* a(theta) */
+double *value,       /* return value integral */
+int    *resultcode   /* 0 if OK */
 );
 /*---------------------------------------------------------------------*/
 
@@ -256,7 +228,6 @@ void fxIHP (
     double *piX,         /* pimask at each requested point X */
     int    *like,        /* likelihood 0 full, 1 conditional */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
-    int    *param,       /* parameterisation 0 Borchers & Efford 1 Gardner & Royle OBSOLETE ?*/
     int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
     double *xy,          /* xy coordinates of polygon records */
     double *signal,      /* signal strength vector, or times */
@@ -272,6 +243,9 @@ void fxIHP (
     double *dist2,       /* distances to mask points (optional: -1 if unused) */
     double *distX2,      /* distances to X points (optional: -1 if unused) */
     double *Tsk,         /* nk x s usage matrix */
+    int    *markocc,     /* which are marking occasions? */
+    int    *Tu,          /* detector x occasion matrices of no. sightings Tu */
+    int    *Tm,          /* detector x occasion matrices of no. sightings Tm */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *pimask,      /* individual probability density; used for normalisation */
 
@@ -838,7 +812,7 @@ double gnbinom (int count, int size, double mu, int uselog);
 /*--------------------------------------------------------------------------*/
 
 /* binomial density allowing non-integer (floating point) size */
-double gbinomFP (int count, double size, double p, int uselog);
+// double gbinomFP (int count, double size, double p, int uselog);
 /*--------------------------------------------------------------------------*/
 
 /* probability of count with distribution specified by binomN */
@@ -980,6 +954,73 @@ double integral1D
 /* for polygon detectors */
 double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[],
 		    double mask[], int n1, int n2, int kk, int mm, double ex[]);
-
 /*---------------------------------------------------------------------*/
 
+void getpdots (int m, int n, int markocc[], int x, int ncol,
+             int PIA0[], double gk0[], int detect, int binomN, double Tsk[], int ss,
+             int kk, int cc0, int nmix, double gsb0val[], double pdots[]);
+/*---------------------------------------------------------------------*/
+
+int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
+		  int cc0, int nmix, double pmix[], int mm, double D[], double pi[], 
+		  double area, double pID[], int markocc[], double pdots[], 
+		  int ncol, int PIA0[], double gk0[], double Tsk[], double a0[],
+                  double chat[], double *Tulik, double *Tmlik);
+/*---------------------------------------------------------------------*/
+
+void chat (
+int    *like,        /* likelihood 0 full, 1 conditional etc. */
+int    *detect,      /* detector 0 multi, 1 proximity etc. */
+int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
+int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
+int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
+int    *nc,          /* number of capture histories */
+int    *ss,          /* number of occasions */
+int    *kk,          /* number of traps */
+int    *mm,          /* number of points on mask */
+int    *gg,          /* number of groups */
+int    *nmix,        /* number of mixtures */
+int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
+double *traps,       /* x,y locations of traps (first x, then y) */
+double *dist2,       /* distances (optional: -1 if unused) */
+double *Tsk,         /* nk x s usage matrix */
+int    *markocc,     /* which are marking occasions? */
+double *pimask,      /* pdf of marked animals like=5,6 */
+double *mask,        /* x,y points on mask (first x, then y) */
+double *Dmask,       /* density at each point on mask, possibly x group */
+double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
+int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
+int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
+double *area,        /* area associated with each mask point (ha) */
+double *miscparm,    /* miscellaneous parameters (cutval, normalization, NT etc.) */
+int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
+int    *nsim,        /* number of replicate simulations for chat */
+double *chat,        /* return vector chat(Tu), chat(Tm) */
+int    *resultcode
+);
+/*---------------------------------------------------------------------*/
+
+int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
+		   int cc0, int nmix, double pmix[], int mm, double D[], double pi[],
+		   double area, double pID[], int markocc[], 
+		   int ncol, int PIA0[], double gk0[], double Tsk[], 
+		  double a0[], int distrib, int nsim, double pdots[], double chat[]);
+/*---------------------------------------------------------------------*/
+
+int markresightini (
+    int    ss,          /* number of occasions */
+    int    nmix,        /* number of mixtures */
+    int    markocc[],   /* which are marking occasions? */
+    int    nk,          /* number of traps */
+    int    ncol,        /* number of columns in PIA */
+    int    PIA[],
+    int    cc,
+    double gsbval[],
+    double pID[],       /* UPDATED */
+    int    gpar         /* version returned*/
+    );
+/*---------------------------------------------------------------------*/
+
+int discreteN (double N);
+/*---------------------------------------------------------------------*/

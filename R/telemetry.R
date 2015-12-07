@@ -55,6 +55,7 @@ telemetry.LT <- function(CH, detectfn, realparval, PIA,
 
         realparval[pind,'pmix', drop = FALSE]
     }
+
     detectfn <- valid.detectfn(detectfn, 14:18)
     dfn <- getdfn (detectfn)
     Nrealparval <- t(apply(realparval, 1, normalize))  ## adjust lambda0, complete pars
@@ -73,7 +74,7 @@ telemetry.LT <- function(CH, detectfn, realparval, PIA,
         rep(knownclass, n) else rep(knownclass, ni)
 
     L <- sapply(1:nmix, Lx)                         ## for each class, Pr(obs)
-                                                    ## n x nmix matrix
+                                                 ## n x nmix matrix
     if (nmix>1) {
         pmix <- sapply(1:nmix, px)                  ## should be n x nmix matrix
         pmix[df$knownclass > 1,] <- 0
@@ -229,6 +230,12 @@ addTelemetry <- function (detectionCH, telemetryCH) {
         traps(zerohist) <- traps(detectionCH)
         covariates(zerohist) <- covariates(telemetryCH)[!OK,,drop = FALSE]
                                         # combine with true histories
+        if (ncol(covariates(zerohist)) == 0) covariates(zerohist) <- NULL
+        if (is.null(covariates(zerohist))) {
+            if (!is.null(covariates(detectionCH)))
+            warning ("no covariates in telemetryCH so discarding covariates of detectionCH")
+            covariates(detectionCH) <- NULL
+        }
         CH <- rbind.capthist(detectionCH, zerohist, renumber = FALSE, verify=FALSE)
     }
     else {

@@ -38,6 +38,13 @@ closure.test <- function (object, SB = FALSE, min.expected = 2) {
 
         ## single session
         nocc <- ncol(object)
+        
+        ## 2015-10-14
+        if (nocc < 3) {
+            cstat <- NA
+            warning ("too few occasions for Otis et al. closure test")
+        }
+     
         cts <- as.matrix(summary(object)$counts)
         di <- apply(object, 2, function(x) sum(x<0))
         if (sum(di[-nocc])>0)

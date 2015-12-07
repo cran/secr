@@ -96,6 +96,12 @@ usage is not specified it is taken to be 1.0.
   
   \code{autoini} always uses the Euclidean distance between detectors and
   mask points.
+
+  You may get this message from secr.fit: ``'autoini' failed to find g0;
+  setting initial g0 = 0.1''. If the fitted model looks OK (reasonable
+  estimates, non-missing SE) there is no reason to worry about the
+  starting values. If you get this message and model fitting fails then
+  supply your own values in the start argument of secr.fit.
   
 }
 

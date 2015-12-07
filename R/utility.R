@@ -1,9 +1,6 @@
-###############################################################################
-# Global variables in namespace
-#
-## define a local environment (in namespace?) for temporary variables e.g. iter
-## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
-###############################################################################
+#######################################################################################
+## utility.R
+#######################################################################################
 
 ## 2012-04-13 pointsInPolygon extended to allow mask 'polygon'
 ## 2012-07-25 nclusters() added
@@ -42,24 +39,31 @@
 ## 2015-01-29 improved error message in secr.lpredictor
 ## 2015-03-31 nparameters
 ## 2015-04-03 mapbeta moved from score.test.R
-###############################################################################
+## 2015-11-02 xyinpoly moved from verify.R
+## 2015-11-17 improved robustness of mapbeta when real parameter missing from new model 
+#######################################################################################
+
+# Global variables in namespace
+#
+## define a local environment (in namespace?) for temporary variables e.g. iter
+## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
 .localstuff$validdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
-                                'cue', 'unmarked','presence','telemetry')
+                                'unmarked','presence','telemetry')
 .localstuff$simpledetectors <- c('single','multi','proximity','count')
 .localstuff$individualdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
-                                     'cue','telemetry')
+                                     'telemetry')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
-    'signal', 'signalnoise', 'cue', 'unmarked','presence')
+    'signal', 'signalnoise', 'unmarked','presence')
 .localstuff$polydetectors <- c('polygon','transect','polygonX','transectX','telemetry')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
 ## 'signal' is not a count detector 2011-02-01
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked','telemetry')
 .localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
-                             'transect','times','cue','unmarked','presence','telemetry')
+                             'transect','times','unmarked','presence','telemetry')
 .localstuff$iter <- 0
 .localstuff$detectionfunctions <-
         c('halfnormal',
@@ -176,7 +180,7 @@ getuserdistnames <- function (userdist) {
         character(0)
 }
 
-valid.pnames <- function (details, CL, detectfn, alltelem, q, nonID, nmix) {
+valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
     ## modelled parameters
     pnames <- switch (detectfn+1,
         c('g0','sigma'),           # 0 halfnormal
@@ -207,19 +211,19 @@ valid.pnames <- function (details, CL, detectfn, alltelem, q, nonID, nmix) {
         pnames[2] <- 'sigmak'
         pnames <- c(pnames, 'c')
     }
-    if (nmix>1)
-      pnames <- c(pnames, 'pmix')
     if (!CL)
       pnames <- c('D', pnames)
     if ('noneuc' %in% getuserdistnames(details$userdist))
       pnames <- c(pnames, 'noneuc')
-    if (!is.null(q) & nonID)
+    if (sighting)
       pnames <- c(pnames, 'pID')
     if (alltelem) {
         rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
         rnum[is.na(rnum)] <- 0
         pnames <- pnames[-rnum]
     }
+    if (nmix>1)
+        pnames <- c(pnames, 'pmix')
     pnames
 }
 #-------------------------------------------------------------------------------
@@ -296,7 +300,7 @@ detectorcode <- function (object, MLonly = TRUE) {
         polygon = 6,
         transect = 7,
         times = 8,
-        cue = 9,
+        ## cue = 9, defunct 2015-10-01 secr 2.10.0
         unmarked = 10,
         presence = 11,
         signalnoise = 12,
@@ -472,10 +476,12 @@ fixpmix <- function(x, nmix) {
     ## of the mixture class.
     ####################################################
 
-    ## used in collate and predict.secr
-
     ## 2013-10-29
     ## assuming mixture is always last dimension...
+
+    ## previously used in collate, model.average and predict.secr
+    ## 2015-09-30 incorporated in secr.lpredictor
+
     temp <- matrix(x$pmix[,'estimate'], ncol = nmix)
     if (nmix==2) temp[,x$pmix[,'h2']] <- x$pmix[,'estimate']
     if (nmix==3) temp[,x$pmix[,'h3']] <- x$pmix[,'estimate']
@@ -561,8 +567,8 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         if (ms(poly))
             stop ("multi-session masks not supported")
         sp <- spacing(poly)
-        minx <- min(poly$x)
-        miny <- min(poly$y)
+        minx <- min(poly$x, na.rm = TRUE)
+        miny <- min(poly$y, na.rm = TRUE)
         mask <- sweep(poly, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
         mask <- round(mask/sp) + 1
         xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
@@ -570,9 +576,10 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         ## 2013-03-06 tweak
         ## xy[xy<0] <- NA
         xy[xy<=0] <- NA
-        xy[,1][xy[,1]>max(mask$x)] <- NA
-        xy[,2][xy[,2]>max(mask$y)] <- NA
-        maskmatrix <- matrix(0, ncol = max(mask$y), nrow = max(mask$x))
+        xy[,1][xy[,1]>max(mask$x, na.rm = TRUE)] <- NA
+        xy[,2][xy[,2]>max(mask$y, na.rm = TRUE)] <- NA
+
+        maskmatrix <- matrix(0, ncol = max(mask$y, na.rm = TRUE), nrow = max(mask$x, na.rm = TRUE))
         maskmatrix[as.matrix(mask)] <- 1:nrow(mask)
         inside <- maskmatrix[as.matrix(xy)]
         inside[is.na(inside)] <- 0
@@ -776,6 +783,7 @@ distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
     X <- matrix(unlist(X), ncol = 2)
+
     nxy <- nrow(X)
     ## 2011-10-14
     detecttype <- detector(traps)
@@ -799,7 +807,8 @@ distancetotrap <- function (X, traps) {
         trps <- matrix(unlist(trps), ncol = 2)
     }
     else
-        trps <- traps
+        ## 2015-10-18 added protection
+        trps <- matrix(unlist(traps), ncol = 2)
 
     if (inherits(trps, 'SpatialPolygonsDataFrame')) {
         trps <- coordinates(trps@polygons[[1]]@Polygons[[1]])
@@ -1420,13 +1429,37 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
 
     ## 2014-08-19
     ## mat <- model.matrix(model, data = newdata)
+
     mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup)
+    if (nrow(mat) < nrow(newdata))
+        warning ("missing values in predictors?")
 
     ## drop pmix beta0 column from design matrix (always zero)
+    nmix <- 1
     if (field=='pmix') {
         mat <- mat[,-1,drop=FALSE]
+        if ('h2' %in% names(newdata)) nmix <- 2
+        if ('h3' %in% names(newdata)) nmix <- 3
     }
     lpred[,1] <- mat %*% beta[indx]
+
+    ## 2015-09-30 new code for pmix based on old fixpmix function in utility.R
+    ## deals with mlogit link always used by pmix
+    if ((nmix > 1) & (field == 'pmix')) {
+        temp <- matrix(lpred[,1], ncol = nmix)
+        if (nmix==2) temp[,newdata[,'h2']] <- lpred[,1]
+        if (nmix==3) temp[,newdata[,'h3']] <- lpred[,1]
+        temp2 <- apply(temp, 1, clean.mlogit)
+        lpred[,1] <- as.numeric(t(temp2))
+        if (nmix==2) {
+            h2.1 <- as.numeric(newdata$h2)==1
+            h2.2 <- as.numeric(newdata$h2)==2
+            lpred[h2.1,2] <- lpred[h2.2,2]
+        }
+        else
+            lpred[,2] <- rep(NA, nrow(lpred))   ## don't know how
+    }
+    ## 2015-09-30 end of new code
 
     if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
     else {
@@ -1435,6 +1468,13 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
         vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
             mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
         vcv <- matrix (vcv, nrow = nrw)
+        ## 2015-09-30
+        if (field=='pmix') {
+            if (nmix==2)
+                vcv[h2.1,h2.1] <- vcv[h2.2,h2.2]
+            else
+                vcv[,] <- NA
+        }
         lpred[,2] <- diag(vcv)^0.5
         temp <- cbind(newdata,lpred)
         attr(temp, 'vcv') <- vcv
@@ -1562,7 +1602,7 @@ deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
             if(.Platform$OS.type == "windows") {
                 pl <- if (npts>1) 's' else ''
                 msg <- paste ('Delete ', npts, ' red point',pl, '?', sep='')
-                response <-  winDialog(type = "okcancel", msg)
+                response <-  utils::winDialog(type = "okcancel", msg)
             } else {
                 response <- 'OK'
             }
@@ -1595,18 +1635,18 @@ nparameters <- function (object) {
 ############################################################################################
 
 mapbeta <- function (parindx0, parindx1, beta0, betaindex)
-    
+
     ## Extend beta vector from simple model (beta0) to a more complex (i.e. general)
     ## model, inserting neutral values (zero) as required.
     ## For each real parameter, a 1:1 match is assumed between
     ## beta values until all beta values from the simpler model are
     ## used up. THIS ASSUMPTION MAY NOT BE JUSTIFIED.
     ## betaindex is a user-controlled alternative.
-    
+
 {
     ## list of zeroed vectors, one per real parameter
     beta1 <- lapply(parindx1, function (x) {x[]<-0; x})
-    
+
     if (!is.null(betaindex)) {
         beta1 <- unlist(beta1)
         if (sum(betaindex>0) != length(beta0))
@@ -1615,10 +1655,106 @@ mapbeta <- function (parindx0, parindx1, beta0, betaindex)
         beta1
     }
     else {
+        ## indx is within-parameter rather than absolute index
+        ## for each _original_ real parameter
         indx <- lapply(parindx0, function(x) x-x[1]+1)
-        for (j in 1:length(beta1))
-            beta1[[j]][indx[[j]]] <- beta0[parindx0[[j]]]
+        ## for (j in 1:length(beta1))
+        ## improved replace by name2015-11-17
+        for (j in names(beta1)) {
+            if (j %in% names(beta0))
+                beta1[[j]][indx[[j]]] <- beta0[parindx0[[j]]]
+        }
         unlist(beta1)
     }
 }
+############################################################################################
+
+xyinpoly <- function (xy, trps) {
+    ptinside <- function (i,k) {
+        ## is point i inside poly k?
+        polyxy <- as.matrix(lxy[[k]])
+        polyxy <- rbind(polyxy, polyxy[1,])   ## close 2014-08-28
+        nr <- nrow(polyxy)
+        temp <- .C('inside',  PACKAGE = 'secr',
+                   as.double (xy[i,]),
+                   as.integer (0),
+                   as.integer (nr-1),
+                   as.integer (nr),
+                   as.double (polyxy),
+                   result = integer(1))
+        as.logical(temp$result)
+    }
+    lxy <- split (trps, levels(polyID(trps)))
+    firstinside <- function (i) {
+        frstk <- 0
+        for (k in 1:length(lxy)) {
+            if (ptinside(i,k)) {
+                frstk <- k
+                break
+            }
+        }
+        frstk
+    }
+    sapply(1:nrow(xy), firstinside)
+}
+############################################################################################
+##
+## settings for mark-resight
+markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
+    markocc <- markocc(traps(capthist))
+    s <- ncol(capthist)
+    m <- nrow(mask)
+    if (is.null(markocc)) {
+        markocc <- rep(1, s)
+        Tu <- c(-1,0)
+        Tm <- c(-1,0)
+        allsighting <- FALSE
+    }
+    else {
+        allsighting <- !any(markocc>0)
+
+        Tu <- if (CL) NULL else Tu(capthist)
+        Tm <- Tm(capthist)
+        if (!is.null(fixed$pID)) {
+            if (fixed$pID == 1) Tm <- NULL
+        }
+        if (!any(markocc==0))
+            Tm <- NULL
+        ## second element is number of values; '1' indicates summed counts
+        Tu <- if (is.null(Tu)) c(-1,0) else c(length(unlist(Tu)), Tu)
+        Tm <- if (is.null(Tm)) c(-1,0) else c(length(unlist(Tm)), Tm)
+    }
+    if (!is.null(chat)) {
+        if (is.matrix(chat))
+            chat <- chat[sessnum,]
+        else {
+            chat <- unlist(chat)
+            if (length(chat)==1) {
+                chat <- c(chat,1)
+                warning("assuming chat 1.0 for Tm")
+            }
+        }
+    }
+    else
+        chat <- c(1,1)
+
+
+    pi.mask <- -1      ## signals pimask not used
+    if (allsighting) {
+        ## pi.mask is Pr(marked animal is from pixel m)
+        ## i.e. pdf(x) * area
+        pi.mask <- rep(1/nrow(mask), nrow(mask))
+        if (!is.null(maskcov <- covariates(mask))) {
+            if ('marking' %in% names (maskcov)) {
+                if (any(is.na(maskcov$marking)) | any (maskcov$marking<0))
+                    stop ("invalid marking covariate in mask")
+                pi.mask <- maskcov$marking / sum (maskcov$marking)
+            }
+        }
+    }
+
+    list(markocc = markocc, Tu = Tu, Tm = Tm, allsighting = allsighting, chat = chat,
+         pi.mask = pi.mask)
+}
+
 ############################################################################################

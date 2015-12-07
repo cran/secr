@@ -22,7 +22,7 @@
   to construct regression spline basis functions from mask x- and
   y-coordinates, and possibly additional mask covariates, and to pass
   these as covariates to \pkg{secr}. The idea of using \pkg{mgcv} to
-  construct the basis functions is applied within \pkg{secr} 2.9.
+  construct the basis functions is applied within \pkg{secr} from version 2.9.
 
   Smooth semi-parametric responses are also useful for modelling
   variation in detection parameters such as g0 and sigma over time, or

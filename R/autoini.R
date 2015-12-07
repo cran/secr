@@ -16,6 +16,8 @@
 ## 2012 12 24 binomN and adjust.g0 arguments added
 ## 2014-08-27 dist2 optional input to integralprwi set to -1
 ## 2014-08-29 linear adjustment (mask 'spacing') when no mask 'area'
+## 2015-10-04 markocc argument for integralprw1
+## 2015-11-24 fixed markocc-related bug and use RPSV CC = TRUE
 ############################################################################################
 
 naivesigma <- function (obsRPSV, trps, mask, wt, detectfn, z, tol = 0.001) {
@@ -106,14 +108,11 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
       area <- attr(mask, 'area')  # area of single mask cell
       if (is.null(area))   ## 2014-08-29 linear
           area <- attr(mask, 'spacing')/1000
-      param <- 0    ## default Borchers & Efford parameterisation
       miscparm <- c(1,0,0,0)  ## dummy value
       temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
           as.integer(dettype),
-          as.integer(param),
           as.double(g0sigma0),
-#          as.integer(rep(0,nc)),       # group number 2012-11-13; 2013-04-16
-          as.integer(rep(1,nc)),        # group number 2012-11-13; 2013-04-16 2013-06-24
+          as.integer(rep(1,nc)),        # group number 2013-06-24
           as.integer(nc),
           as.integer(s),
           as.integer(k),
@@ -124,6 +123,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           as.double(unlist(trps)),
           as.double(-1),                ## optional dist2 2014-08-27
           as.double(unlist(usge)),
+          as.integer(markocc),          # 2015-10-04
           as.double(unlist(mask)),
           as.integer(nrow(g0sigma0)),   # rows in lookup
           as.integer(gs0),              # index of nc+1,S,K to rows in g0sigma0
@@ -164,14 +164,18 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         ## assuming k = nk i.e. not polygon or transect detector
         usge <- matrix(1, nrow = nrow(trps), ncol = ncol(capthist))
     dettype <- detectorcode(trps)
+    n       <- nrow(capthist)    # number of individuals
+    s       <- ncol(capthist)    # number of occasions
+    k       <- nrow(trps)
+    markocc <- markocc(traps(capthist))
+    if (is.null(markocc)) 
+        markocc <- rep(1,s)     ## assume all occasions were simple marking occasions
+    allsighting <- !any(markocc>0)
 
     if (!(dettype %in% c(-1:5,8)))
         list(D=NA, g0=NA, sigma=NA)
     else {
         prox     <- detector(trps) %in% c('proximity', 'count','signal','times')
-        n        <- nrow(capthist)    # number of individuals
-        s        <- ncol(capthist)    # number of occasions
-        k        <- nrow(trps)
         ## wt is the number of opportunities for capture given binary usage
         wt <- apply(usge>0, 1, sum)
 
@@ -186,7 +190,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         else
             cpa     <- sum(abs(capthist)>0)/n    # captures per animal
 
-        obsRPSV <- RPSV(capthist)
+        obsRPSV <- RPSV(capthist, CC = TRUE)
 
         if (is.na(obsRPSV) | (obsRPSV<1e-10)) {    ## try db
             db <- dbar(capthist)
@@ -206,8 +210,10 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
                 tempsigma <- uniroot (naivedcall, lower = db/10, upper = db*10, tol=tol[2])$root
         }
         else {
-            tempsigma <- naivesigma(obsRPSV = obsRPSV, trps = trps, mask = mask, wt = wt,
-                                    detectfn=detectfn, z=1, tol = tol[2])
+            ## 2015-11-24 simpler to use RPSV
+            ## tempsigma <- naivesigma(obsRPSV = obsRPSV, trps = trps, mask = mask, wt = wt,
+            ## detectfn=detectfn, z=1, tol = tol[2])
+            tempsigma <- obsRPSV
         }
         if (is.null(usage(trps))) wt <- rep(s,k)
         low <- naivecap2(0.001, sigma=tempsigma, cap=cpa)
@@ -226,8 +232,12 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
                  f.lower = low, f.upper = upp, tol=tol[1],
                  sigma=tempsigma, cap=cpa)$root
         if (computeD) {
-            esa <- naiveesa (tempg0, tempsigma)
-            tempD <-  n / esa * thin
+            if (allsighting)  ## includes all-zero rows
+                tempD <- n / maskarea(mask)
+            else {
+                esa <- naiveesa (tempg0, tempsigma)
+                tempD <-  n / esa * thin
+            }
         }
         else tempD <- NA
 

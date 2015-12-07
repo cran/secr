@@ -25,7 +25,7 @@
 ## 2010-10-25 revision of all error and warning messages in R code
 ## 2010-11-04 logLik.secr
 ## 2011-01-04 G&R parameterisation
-## 2011-01-12 cue detector
+## 2011-01-12 cue detector  -- removed 2015-10-01
 ## 2011-02-01 remove binomN from traps object attribute list
 ## 2011-02-07 major revisions for polygonX, transectX
 ## 2011-03-18 unmarked detector
@@ -72,11 +72,17 @@
 ## 2014-12-24 print.summary.capthist allows for nonspatial capthist
 ## 2015-01-16 print.secr shows userdist type
 ## 2015-03-31 parameter count allows for details$miscparm
+## 2015-09-02 change alongtransect to fix occsim: remove 'S' prefix
+## 2015-10-02 summary.capthist reports sightings
+## 2015-10-10 subset.capthist updated for mark-resight data
 ###############################################################################
 
 # Generic methods for extracting attributes etc
 
 usage      <- function (object, ...) UseMethod("usage")
+markocc    <- function (object, ...) UseMethod("markocc")
+Tu         <- function (object, ...) UseMethod("Tu")
+Tm         <- function (object, ...) UseMethod("Tm")
 clusterID  <- function (object, ...) UseMethod("clusterID")
 clustertrap <- function (object, ...) UseMethod("clustertrap")
 covariates <- function (object, ...) UseMethod("covariates")
@@ -112,6 +118,30 @@ usage.default <- function (object, ...)       {
     if (ms(object)) lapply(object, usage.default, ...)
     else attr(object,'usage')
 }
+
+markocc.default <- function (object, ...)       {
+    if (ms(object)) lapply(object, markocc.default, ...)
+    else attr(object,'markocc')
+}
+
+Tu.default <- function (object, ...)       {
+    if (ms(object)) lapply(object, Tu.default, ...)
+    else attr(object,'Tu')
+}
+
+Tm.default <- function (object, ...)       {
+    if (ms(object)) lapply(object, Tm.default, ...)
+    else attr(object,'Tm')
+}
+
+sighting <- function(object) {
+    markocc <- markocc(object)
+    if (is.null(markocc)) 
+        FALSE
+    else 
+        any(markocc < 1) 
+}
+    
 
 clusterID.default <- function (object, ...)       {
     if (ms(object)) lapply(object, clusterID.default, ...)
@@ -295,6 +325,7 @@ telemetered <- function (object) {
 alongtransect <- function (object, tol = 0.01) {
     ptalongtransect <- function (i) {
         ## where is point i on its transect k?
+
         k <- trans[i]
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
@@ -316,10 +347,18 @@ alongtransect <- function (object, tol = 0.01) {
     }
     else {
         trps <- traps(object)
+        
         if (detector(trps) %in% c('transectX', 'transect')) {
-            trans <- trap(object, names = TRUE)
+            
+#             trans <- trap(object, names = TRUE)
+#             xyi <- xy(object)
+#             ## 2015-09-02 change to fix occsim: remove 'S' prefix
+#             lxy <- split (trps, levels(transectID(trps)), prefix = "")
+            
+            trans <- trap(object, names = FALSE)
             xyi <- xy(object)
-            lxy <- split (trps, levels(transectID(trps)))
+            lxy <- split (trps, transectID(trps))
+
             sapply(1:nrow(xyi), ptalongtransect)
         }
         else
@@ -356,7 +395,7 @@ clustertrap <- function (object) {
 }
 
 signal.default <- function(object, ...) {
-    stop ("only for capthist and cuelist data")
+    stop ("only for capthist data")
 }
 
 signal.capthist <- function (object, ...) {
@@ -364,7 +403,7 @@ signal.capthist <- function (object, ...) {
         lapply(object, signal)
     }
     else {
-        if (detector(traps(object)) %in% c('cue','signal','signalnoise')) {
+        if (detector(traps(object)) %in% c('signal','signalnoise')) {
             attr(object, 'signalframe')$signal
         }
         else
@@ -373,7 +412,7 @@ signal.capthist <- function (object, ...) {
 }
 
 noise.default <- function(object, ...) {
-    stop ("only for capthist and cuelist data")
+    stop ("only for capthist data")
 }
 
 noise.capthist <- function (object, ...) {
@@ -397,7 +436,7 @@ signalframe <- function (object) {
         lapply(object, signalframe)
     }
     else {
-        if (detector(traps(object)) %in% c('cue','signal','signalnoise')) {
+        if (detector(traps(object)) %in% c('signal','signalnoise')) {
             attr(object, 'signalframe')
         }
         else
@@ -466,7 +505,9 @@ occasion <- function (object) {
             apo <- aperm(object,c(2,1,3))
             temp <- matrix(apo, nrow = dim(apo)[1])
             temp <- array(row(temp), dim = dim(apo))
-            rep(aperm(temp,c(2,1,3)), abs(object))
+            ## rep(aperm(temp,c(2,1,3)), abs(object)) 
+            ## 2015-11-03 avoid array when empty
+            as.numeric(rep(aperm(temp,c(2,1,3)), abs(object)))
         }
     }
 }
@@ -506,7 +547,12 @@ trap <- function (object, names = TRUE) {
             temp <- matrix(apo, nrow = dim(apo)[1])
             temp <- array(row(temp), dim = dim(apo))
             k <- aperm(temp,c(2,3,1))
-            rep(values[k], abs(object))
+            ## rep(values[k], abs(object))
+            ## 2015-11-03
+            if (names) 
+                as.character(rep(values[k], abs(object)))
+            else
+                as.numeric(rep(values[k], abs(object)))
         }
     }
 }
@@ -590,8 +636,8 @@ polyarea <- function (xy, ha = TRUE) {
 }
 
 searcharea <- function (object)    {
-## use search cell area if attribute present 2009 11 08
-## searchcell, or spacex.spacey, or spacing^2, or 1
+## discontinued use of searchcell attribute 2015-10-19
+## uses spacex.spacey, or spacing^2, or 1
 ## requires traps object
     if (ms(object)) {
         ## 2011-06-24
@@ -603,17 +649,13 @@ searcharea <- function (object)    {
             sapply(split(object, levels(polyID(object))), polyarea)
         }
         else {
-            sc <- attr(object,'searchcell')
-            if (is.null(sc)) {
-                spx <- attr(object,'spacex')
-                spy <- attr(object,'spacey')
-                if (is.null(spx) | is.null(spy))
-                    sp2 <- attr(object,'spacing')^2
-                else
-                    sp2 <- spx * spy
-                ifelse (is.null(sp2), 1, sp2 / 10000)
-            }
-            else sc
+            spx <- attr(object,'spacex')
+            spy <- attr(object,'spacey')
+            if (is.null(spx) | is.null(spy))
+                sp2 <- attr(object,'spacing')^2
+            else
+                sp2 <- spx * spy
+            ifelse (is.null(sp2), 1, sp2 / 10000)
         }
     }
 }
@@ -729,10 +771,10 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 # Generic methods for replacing values
 
 'usage<-' <- function (object, value) {
-
-## extended 2012-12-22
-## bug : loses session names when called as usage(traps(ovenCH)) <- c(1,10)
-
+    
+    ## extended 2012-12-22
+    ## bug : loses session names when called as usage(traps(ovenCH)) <- c(1,10)
+    
     if (ms(object)) {
         ## replicate across sessions as required
         if (!is.list(value)) {
@@ -780,8 +822,103 @@ flip.default <- function (object, lr=F, tb=F, ...) {
                 ## assume value is scalar
                 value <- matrix(value, nrow = ndetector(object), ncol = noccasions)
             }
+            if (!is.null(markocc(object))) {
+                if (ncol(value) != length(markocc(object)))
+                    stop ("replacement value not compatible with existing markocc attribute")
+            }
         }
         structure (object, usage = value)
+    }
+}
+
+'markocc<-' <- function (object, value) {
+    
+    if (ms(object)) {
+        ## replicate across sessions as required
+        if (!is.list(value)) {
+            valuelist <- vector(mode='list', length=length(object))
+            for (i in 1:length(valuelist)) valuelist[[i]] <- value
+        }
+        else
+            valuelist <- value
+        temp <- mapply('markocc<-', object, valuelist, SIMPLIFY = FALSE)
+        class(temp) <- c('list','traps')
+        temp
+    }
+    else {
+        if (!inherits(object, 'traps'))
+            stop("markocc attribute can only be assigned for traps objects")
+        if (!is.null(value)) {
+            if (!is.null(usage(object))) {
+                if (length(value) != ncol(usage(object)))
+                    stop ("markocc not compatible with existing usage attribute")
+            }
+            if (!all(value %in% c(-1,0,1)))
+                stop ("markocc values must be -1, 0 or 1")
+        }
+        structure (object, markocc = value)
+    }
+}
+
+'Tu<-' <- function (object, value) {
+    
+    if (ms(object)) {
+        if (!is.list(value)) {
+            stop("replacement of Tu for multisession object requires a list")
+        }
+        else {
+            temp <- mapply('markocc<-', object, value, SIMPLIFY = FALSE)
+            class(temp) <- class(object)
+            temp
+        }
+    }
+    else {
+        if (!is.null(value)) {
+            if (is.null(markocc <- markocc(traps(object)))) 
+                stop("cannot assign Tu for capthist in which traps has no markocc attribute")
+            if (length(value)>1) {
+                if (length(dims <- dim(value)) != 2)
+                    stop ("require either total count or traps x occasions matrix")
+                if (dims[1] != ndetector(traps(object)))
+                    stop ("Tu not compatible with traps attribute")
+                if (dims[2] != length(markocc))
+                    stop ("Tu not compatible with markocc attribute")
+            }
+            if (any(value<0))
+                stop ("sighting counts cannot be negative")
+        }
+        structure (object, Tu = value)
+    }
+}
+
+'Tm<-' <- function (object, value) {
+    
+    if (ms(object)) {
+        if (!is.list(value)) {
+            stop("replacement of Tm for multisession object requires a list")
+        }
+        else {
+            temp <- mapply('markocc<-', object, value, SIMPLIFY = FALSE)
+            class(temp) <- class(object)
+            temp
+        }
+    }
+    else {
+        if (!is.null(value)) {
+            if (is.null(markocc <- markocc(traps(object)))) 
+                stop("cannot assign Tm for capthist in which traps has no markocc attribute")
+            if (length(value)>1) {
+                if (length(dims <- dim(value)) != 2)
+                    stop ("require either total count or traps x occasions matrix")
+                if (dims[1] != ndetector(traps(object)))
+                    stop ("Tm not compatible with traps attribute")
+                if (dims[2] != length(markocc))
+                    stop ("Tm not compatible with markocc attribute")
+            }
+            if (any(value<0))
+                stop ("sighting counts cannot be negative")
+        }
+        structure (object, Tm = value)
     }
 }
 
@@ -1210,6 +1347,11 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
                 occasions <- 1:ncol(usage(x))
             usage(temp) <- usage(x)[subset,occasions,drop=F]
         }
+        if (!is.null(markocc(x))) {
+            if (is.null(occasions))
+                occasions <- 1:length(markocc(x))
+            markocc(temp) <- markocc(x)[occasions]
+        }
         if (!is.null(covariates(x)))
             covariates(temp) <- covariates(x)[subset,,drop=F]
 
@@ -1245,12 +1387,20 @@ rbind.traps <- function (..., renumber = TRUE, addusage ) {
         result
     }
 
-    if (length(allargs) <= 1)
-        stop ("requires more than one traps object")
-    tvc <- sapply (allargs, check)
-    if (any(tvc))
-        warning("time-varying covariates differ; using first")
-    temp <- rbind.data.frame(...)
+    if (length(allargs) <= 1) {
+        if (length(allargs)==1 & ms(allargs[[1]])) {
+            allargs <- allargs[[1]]
+            temp <- do.call(rbind.data.frame, allargs)
+        }
+        else
+            stop ("requires more than one traps object")
+    }
+    else {
+        tvc <- sapply (allargs, check)
+        if (any(tvc))
+            warning("time-varying covariates differ; using first")
+        temp <- rbind.data.frame(...)
+    }
     class(temp) <- c('traps', 'data.frame')
 
     ## 2010 07 05
@@ -1331,6 +1481,21 @@ rbind.traps <- function (..., renumber = TRUE, addusage ) {
         nt <- sapply(allargs, nrow)
         tempusage <- mapply(makeusage, nt, addusage)
         usage(temp) <- do.call(rbind, tempusage)
+    }
+
+    tempmarkocc <- lapply(allargs, markocc)
+    mo <- !sapply(tempmarkocc, is.null)
+    if (any(mo)) {
+        if (!all(mo))
+            warning ("using first non-null markocc")
+        wmo <- which(mo)
+        mo1 <- tempmarkocc[[wmo[1]]]
+        if (length(wmo) > 1) {
+            for (i in 2:length(wmo))
+                if (any(tempmarkocc[[i]] != mo1))
+                    stop ("conflicting markocc")
+        }
+        markocc(temp) <- mo1
     }
 
     tn <- sapply(allargs, row.names, simplify=F)
@@ -1414,6 +1579,7 @@ plot.traps <- function(x,
             varying <- rep(FALSE, nrow(x))
         }
         initialpar <- par(detpar)
+        on.exit(par(initialpar))
 
         if (!add) {
             par(bg=bg)
@@ -1486,7 +1652,7 @@ plot.traps <- function(x,
                 cl1 <- clustertrap(x) == 1
                 text (x$x[cl1]+offset[1], x$y[cl1]+offsety, clusterID(x)[cl1])
             }
-            par(initialpar)   # restore
+            #par(initialpar)   # restore
         }
         invisible()
     }
@@ -1558,6 +1724,7 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
           area  = area,
           totallength = totallength,
           usage = sumusage,
+          markocc = markocc(object),
           rangeusage = rangeusage,
           covar = sumcovar,
           tvc = tvc
@@ -1593,8 +1760,14 @@ print.summary.traps <- function (x, terse = FALSE, ...) {
     cat ('x-range          ', x$xrange, 'm \n')
     cat ('y-range          ', x$yrange, 'm \n')
     if (!is.null(x$rangeusage)) {
-        cat ('Usage range by occasion\n')
+        cat ('\n Usage range by occasion\n')
         print(x$rangeusage, ...)
+    }
+    if (!is.null(x$markocc)) {
+        cat ('\nMarking occasions\n')
+        mo <- matrix(as.numeric(x$markocc), byrow=T, nrow = 1, 
+                     dimnames = list('',1:length(x$markocc)))
+        print(mo, ...)
     }
     if (!terse) {
         if (!is.null(x$covar)) {
@@ -1808,6 +1981,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         return(temp)
     }
     else {
+    
         detector <- detector(traps(x))
         dim3 <- length(dim(x)) == 3
         nk <- ndetector (traps(x))
@@ -1838,7 +2012,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
 
         #####################################
         ## signaldf is used later...
-        if (detector %in% c('cue','signal','signalnoise')) {
+        if (detector %in% c('signal','signalnoise')) {
             signaldf <- data.frame(trap = trap(x, names = F),
                                    occ = occasion(x),
                                    ID = animalID(x, names = F),
@@ -1847,7 +2021,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
 
         #####################################
         ## apply signal threshold if relevant
-        if (detector %in% c('cue','signal','signalnoise')) {
+        if (detector %in% c('signal','signalnoise')) {
             if (is.null(cutval)) cutval <- attr(x, 'cutval')
             if (cutval < attr(x, 'cutval'))
                 stop ("cannot decrease 'cutval'")
@@ -1923,7 +2097,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ## drop null occasions
         OK2 <- rep(T,nocc)
         if (nrow(temp)>0)
-        if ((!(detector %in% c('cue','signal','signalnoise'))) &&
+        if ((!(detector %in% c('signal','signalnoise'))) &&
             any( apply(abs(temp),2,sum) ==0)) {
             if (dropnullocc) {
                 OK2 <- apply(abs(temp),2,sum) > 0
@@ -1951,6 +2125,30 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         attr(temp, 'centres') <- attr(x, 'centres')
 
         ###################################
+        ## mark-resight 2015-10-10,12
+        if (!is.null(markocc(traps(x)))) {
+            markocc(traps(temp)) <- markocc(traps(x))[occasions]
+            if (!is.null(Tu(x))) {
+                if (is.matrix(Tu(x))) {
+                    Tu(temp) <- Tu(x)[traps, occasions, drop = FALSE]
+                }
+                else {
+                    Tu(temp) <- Tu(x)
+                    warning ('sightings not separated by occasion; all included')
+                }
+            }
+            if (!is.null(Tm(x))) {
+                if (is.matrix(Tm(x))) {
+                    Tm(temp) <- Tm(x)[traps, occasions, drop = FALSE]
+                }
+                else {
+                    Tm(temp) <- Tm(x)
+                    warning ('nonID sightings not separated by occasion; all included')
+                }
+            }
+        }
+        
+        ###################################
         ## 2012-10-20 for telemetry
         xylist <- telemetryxy(x)   ## attr(x, 'xylist')
         if (!is.null(xylist)) {
@@ -1961,7 +2159,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ###################################
         ## subset signal of signal capthist
         ## revised 2012-07-28
-        if (detector %in% c('cue','signal','signalnoise')) {
+        if (detector %in% c('signal','signalnoise')) {
             if (nrow(x)>0) {
                 if (!droplowsignals) {
                     if (any(x<=0))
@@ -2068,7 +2266,7 @@ sort.capthist <- function (x, decreasing = FALSE, by = '', byrowname = TRUE, ...
             rownames(temp) <- newrownames
             covariates(x) <- temp
         }
-
+        
         detectionorder <- tempx[tempx!=0]
         ## signal
         sf <- attr(x, 'signalframe')
@@ -2079,6 +2277,55 @@ sort.capthist <- function (x, decreasing = FALSE, by = '', byrowname = TRUE, ...
             xy(x) <- xy(x)[detectionorder,,drop=FALSE]
         ## return
         x
+    }
+}
+
+sort.mask <- function (x, decreasing = FALSE, by = '', byrowname = TRUE, ...) {
+    if (ms(x)) {
+        oldclass <- class(x)
+        if (inherits(by, 'list'))
+            temp <- mapply(sort, x, by, MoreArgs = list(decreasing = decreasing, ...), simplify = FALSE)  ## need to evaluate ...!!!
+        else
+            temp <- lapply(x, sort, decreasing = decreasing, by = by, ...)
+        class (temp) <- oldclass
+        temp
+    }
+    else {
+        if (is.character(by)) {
+            if (by == '') {
+                by <- vector(mode='list')   ## zero-length
+            }
+            else {
+                if (!all(by %in% names(covariates(x))))
+                    stop ("unrecognised sort field(s)")
+                by <- as.list(covariates(x)[,by, drop=FALSE])
+            }
+        }
+        else {
+            by <- as.list(data.frame(by))
+        }
+        if (byrowname) by$rownames <- row.names(x)
+        by$decreasing <- decreasing
+        roworder <- do.call(order, by)
+        newrownames <- rownames(x)[roworder]
+        temp <- x[roworder,]
+        rownames(temp) <- newrownames
+        ## covariates
+        if (!is.null(covariates(x))) {
+            tempcov <-covariates(x)[roworder,,drop=F]
+            rownames(tempcov) <- newrownames
+            covariates(temp) <- tempcov
+        }
+        
+        attr(temp,'type')    <- 'sort'
+        attr(temp,'meanSD')  <- attr(x,'meanSD')
+        attr(temp,'area')    <- attr(x, 'area')
+        attr(temp,'SLDF')    <- attr(x, 'SLDF')
+        attr(temp, 'graph')  <- attr(x, 'graph')
+        attr(temp,'spacing') <- attr(x, 'spacing')
+        attr(temp,'boundingbox') <- attr(x,'boundingbox')
+        class(temp) <- class(x)
+        temp
     }
 }
 
@@ -2110,7 +2357,7 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
         }
         else
         if (condense & (detector(traps(x)) %in% c('proximity', 'count',
-                                                  'cue','signal','signalnoise'))) {
+                                                  'signal','signalnoise'))) {
             temp <- apply(x, 3, function(y) y[apply(abs(y),1,sum)>0,, drop=F])
             trapnames <- rownames(traps(x))
             traps <- trapnames[rep(1:length(temp), sapply(temp, nrow))]
@@ -2177,8 +2424,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
 
         # ni, ui, fi, M, losses etc.
         nocc <- ncol(object)
-        counts <- matrix(nrow = 8, ncol = nocc)
-        counts[,] <- 0
+        counts <- matrix(0, nrow = 8, ncol = nocc)
         signalsummary <- NULL
         if (nrow(object) > 0) {
             if (length(dim(object)) > 2) {
@@ -2202,7 +2448,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                     counts [4,1] <- counts [1,1]
                     counts [5,1] <- sum(tempx<0)
                 }
-                if (detector %in% c('proximity','signal','signalnoise','cue'))
+                if (detector %in% c('proximity','signal','signalnoise'))
                    counts [6,] <- apply(object[,,, drop=F], 2, function(x) sum(abs(x)>0))
                 ## abs (x) added following 2 statements 2011-02-09
                 if (detector %in% .localstuff$countdetectors) #c('count', 'polygon','transect','unmarked','presence'))
@@ -2249,6 +2495,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
         counts$Total[4] <- counts[4, nocc]
         PSV <-  NULL
         dbar <- NULL
+
         if (is.null(traps)) {
             trapsum <- NULL
             signalsummary <- NULL
@@ -2281,6 +2528,32 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                               max=max(ntelem), mean=mean(ntelem), sd = sd(ntelem))
         }
 
+        ## resightings
+        markocc <- markocc(traps(object))
+        sighting <- sighting(traps(object))
+        if (sighting) {
+            sightings <- matrix(0, nrow = 4, ncol = nocc+1, 
+                                dimnames = list(c('ID','Not ID','Unmarked','Total'), c(1:nocc, 'Total')))
+            Tm <- Tm(object)
+            Tu <- Tu(object)
+            sightings[1, c(markocc < 1, FALSE)] <- unlist(counts[6,c(markocc < 1, FALSE)])
+            if (!is.null(Tm)) {
+                if (length(Tm)==1)
+                    sightings[2, 1] <- Tm
+                else
+                    sightings[2, 1:nocc] <- apply(Tm,2,sum)
+            }
+            if (!is.null(Tu)) {
+                if (is.matrix(Tu))
+                    sightings[3, 1:nocc] <- apply(Tu,2,sum)
+                else
+                    sightings[3, 1] <- Tu
+            }                            
+            sightings[4, 1:nocc] <- apply(sightings[1:3, 1:nocc, drop = FALSE], 2, sum)
+            sightings[, nocc + 1] <- apply(sightings, 1, sum)
+        }
+        else sightings <- NULL
+        
         temp <- list (
             detector = detector,
             ndetector = nd,
@@ -2291,7 +2564,8 @@ summary.capthist <- function(object, terse = FALSE, ...) {
             RPSV = PSV,
             cutval = cutval,        # signal, signalnoise only
             signalsummary = signalsummary,
-            telemsummary = telemsummary
+            telemsummary = telemsummary,
+            sightings = sightings
         )
         class(temp) <- 'summary.capthist'
         temp
@@ -2326,11 +2600,12 @@ print.summary.capthist <- function (x, ...) {
     nonspatial <- is.null(x$trapsum)
     if (!nonspatial)
         print(x$trapsum, terse=TRUE)
-    cat ('Counts by occasion \n')
+    
+    cat ('\nCounts by occasion \n')
     print(x$counts, ...)
-    cat ('\n')
+    
     if (x$zeros>0)
-        cat (x$zeros, 'empty histories\n')
+        cat ('\nEmpty histories : ', x$zeros, '\n')
 
     if (!nonspatial) {
         if (x$detector %in% c('signal', 'signalnoise')) {
@@ -2343,6 +2618,12 @@ print.summary.capthist <- function (x, ...) {
                  paste(round(x$telemsummary[5:6],2), collapse=", sd = "), "\n")
         }
     }
+    if (!is.null(x$sightings)) {
+        cat ('\nSightings by occasion \n')
+        print(x$sightings, ...)
+        cat ('\n')
+    }
+    
 }
 ############################################################################################
 
@@ -2371,6 +2652,11 @@ subset.mask <- function (x, subset, ...) {
     attr(temp,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
     if (!is.null(attr(temp,'OK')))
         attr(temp,'OK') <- attr(temp,'OK')[subset]
+    ## 2015-10-18
+    ## markingpoints identifies a cutoff: the first mp rows are used (for marking)
+    ## this must be reset in a subset operation
+    if (!is.null(attr(x,'markingpoints')))
+        attr(temp,'markingpoints') <- sum(rep(1,nrow(x))[subset] <= attr(x,'markingpoints'))
     class(temp) <- class(x)
     temp
 }
@@ -2627,7 +2913,7 @@ coef.secr <- function (object, alpha=0.05, ...) {
 ############################################################################################
 
 detectpar.default <- function(object, ...) {
-    stop ("only for secr and cuesecr models")
+    stop ("only for secr models")
 }
 ## byclass option 2013-11-09
 detectpar.secr <- function(object, ..., byclass = FALSE) {
@@ -2703,13 +2989,14 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
 
     print(summary(traps(x$capthist)), terse=TRUE)
 
-
+    cat ('\n')
+    
     ###################
     ## Data description
 
     if (ms(x$capthist)) {
         print (summary(x$capthist, terse = TRUE))
-        q <- sapply(x$capthist, function(y) attr(y,'q'))
+        Tu <- sapply(x$capthist, function(y) attr(y,'Tu'))
         det <- detector(traps(x$capthist)[[1]])
         xyl <- NULL
     }
@@ -2721,8 +3008,9 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
         else
             ncapt <- sum(abs(x$capthist)>0)
 
-        q <- attr(x$capthist, 'q')
-
+        Tu <- Tu(x$capthist)
+        Tm <- Tm(x$capthist)
+        
         if ('g' %in% x$vars) {
             Groups  <- table(group.factor(x$capthist, x$groups))
             temp <- paste (names(Groups), Groups, collapse=', ', sep='=')
@@ -2732,12 +3020,11 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
 
         cat ('N animals       : ', n, temp, '\n')
         cat ('N detections    : ', ncapt, '\n')
-        if (!is.null(q)) {
-            cat ('N marking  occn : ', q, '\n')
-            cat ('N sighting occn : ', ncol(x$capthist)-q, '\n')
-        }
-        else
-            cat ('N occasions     : ', ncol(x$capthist), '\n')
+        if (!is.null(Tu)) 
+            cat ('N unmarked sght : ', sum(unlist(Tu)), '\n')
+        if (!is.null(Tm)) 
+            cat ('N nonID sghting : ', sum(unlist(Tm)), '\n')
+        cat ('N occasions     : ', ncol(x$capthist), '\n')
 
         xyl <- telemetryxy(x$capthist)
         if (!is.null(xyl)) {
@@ -3014,6 +3301,9 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
                                                             collapse=','))
             vcvlist <- list()
             for (rn in realnames) {
+                ## temporary fix 2015-09-30
+                if (rn == 'pmix')
+                    stop("vcov does not work at present when realname == 'pmix'")
                 par.rn <- object$parindx[[rn]]
                 ## 2014-08-19
                 ## mat <- model.matrix(object$model[[rn]], data=newdata)

@@ -93,7 +93,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
 
         #######################
         ## cases 2,3 - fix beta
-
+        
         profileLL3 <- function (x, parm) {
             ## fix required beta parameter to x and evaluate discrepancy
             fb <- object$details$fixedbeta
@@ -103,8 +103,11 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             fit <- secr.fit (capthist = object$capthist, mask = object$mask,
                 buffer = object$buffer, CL = object$CL, detectfn = object$detectfn,
                 start = object$fit$par, binomN= details$binomN,
-                link = object$link, fixedpar = object$fixed,  model = object$model,
-                timecov = object$timecov, sessioncov = object$sessioncov,
+## link = object$link, fixedpar = object$fixed,  model = object$model,
+## timecov = object$timecov, sessioncov = object$sessioncov,
+## 2015-12-05
+                link = object$link, fixed = object$fixed, model = object$model,
+                timecov = object$timecov, sessioncov = object$sessioncov, hcov = object$hcov,
                 groups = object$groups, dframe = object$dframe,
                 details = details, verify = FALSE, ...)$fit
             - fit$value - targetLL
@@ -243,7 +246,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             if (is.null(newdata))
                 newdata <- secr.make.newdata (object)[1,, drop = FALSE]  ## default base levels
             if (detector(traps(object$capthist)) %in% c('polygon','polygonX',
-                   'transect','transectX','signal','cue','unmarked','presence'))
+                   'transect','transectX','signal','unmarked','presence'))
                 logmult <- 0
             else
                 logmult <- logmultinom(object$capthist, group.factor(object$capthist,

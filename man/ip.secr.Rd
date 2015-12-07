@@ -18,10 +18,10 @@ are covariates).
 
 \usage{
 
-ip.secr (capthist, predictorfn = pfn, predictortype = "null",
-    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1,
-    centre = 3,  min.nsim = 10, max.nsim = 2000, CVmax = 0.002,
-    var.nsim = 1000, maxbox = 5, maxtries = 2, ncores = 1, ...)
+ip.secr (capthist, predictorfn = pfn, predictortype = "null", detectfn = 0,
+    mask = NULL, start = NULL, boxsize = 0.2, boxsize2 = boxsize, centre = 3,  
+    min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000, maxbox = 5, 
+    maxtries = 2, ncores = 1, seed = NULL, trace = TRUE, ...)
 
 pfn(capthist, N.estimator = c("n", "null","zippin","jackknife") )
 
@@ -35,6 +35,7 @@ pfn(capthist, N.estimator = c("n", "null","zippin","jackknife") )
   \item{mask}{ optional habitat mask to limit simulated population }
   \item{start}{vector of np initial parameter values (density, g0 and sigma)}
   \item{boxsize}{ scalar or vector of length np for size of design as fraction of central parameter value}
+  \item{boxsize2}{ as for \code{boxsize}; used from second box onwards}
   \item{centre}{ number of centre points in simulation design}
   \item{min.nsim}{ minimum number of simulations per point }
   \item{max.nsim}{ maximum number of simulations per point }
@@ -43,6 +44,8 @@ pfn(capthist, N.estimator = c("n", "null","zippin","jackknife") )
   \item{maxbox}{ maximum number of attempts to `frame' solution }
   \item{maxtries}{ maximum number of attempts at each simulation }
   \item{ncores}{integer number of cores available for parallel processing}  
+  \item{seed}{integer random number seed, or NULL}
+  \item{trace}{logical, set FALSE to suppress progress reports}
   \item{\dots}{ further arguments passed to sim.popn }
   \item{N.estimator}{ character value indicating population estimator to use }
 }

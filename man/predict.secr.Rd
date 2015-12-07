@@ -12,10 +12,10 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 
 \usage{
 \method{predict}{secr}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-    alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
+    alpha = 0.05, savenew = FALSE, \dots)
 
 \method{predict}{secrlist}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-    alpha = 0.05, savenew = FALSE, scaled = FALSE, \dots)
+    alpha = 0.05, savenew = FALSE, \dots)
 
 \method{detectpar}{secr}(object, \dots, byclass = FALSE) 
 
@@ -30,7 +30,6 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
   \item{savenew}{ logical for whether newdata should be saved }
-  \item{scaled}{ logical for scaling of sigma and g0 (see Details) }
   \item{\dots}{ other arguments }
   \item{byclass}{ logical; if TRUE values are returned for each latent
   class in a mixture model, or class in a hybrid mixture (hcov) model}
@@ -51,11 +50,6 @@ numeric covariates are set to zero and factor covariates to their base
 Standard errors for parameters on the response (real) scale are by the
 delta method (Lebreton et al. 1992), and confidence intervals are
 backtransformed from the link scale.
-
-The argument \code{scaled} applies only to the detection parameters g0
-and sigma, and only to models fitted with \code{scalesigma} or
-\code{scaleg0} switched on. If \code{scaled} is TRUE then each estimate is multiplied by
-its scale factor (1/D^0.5 and 1/sigma^2 respectively).
 
 The value of \code{newdata} is optionally saved as an attribute.
 
@@ -102,6 +96,8 @@ session).
   points from a model with spatial variation. This deals automatically
   with scaling of x- and y-coordinates, and is much is faster than
   predict.secr. The resulting Dsurface object has its own plot method.
+  
+  The argument `scaled' was removed from both predict methods in version 2.10 as the scaleg0 and scalesigma features had been superceded by other parameterisations.
   
 }
 

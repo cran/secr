@@ -25,6 +25,16 @@ session in the case of multi-session data. This may be necessary to
 overcome numerical problems when x- or y-coordinates are large
 numbers. The default is not to centre coordinates.
 
+\code{details$chat} optionally specifies the overdispersion 
+of unmarked sightings Tu and unidentified marked sightings Tm. It is used only 
+for mark-resight models, and is usually computed within \code{secr.fit} 
+(\code{details$nsim > 0}), but may be provided by the user. For a single session `chat` is a vector of length 2; for multiple sessions it is a 2-column matrix. 
+
+\code{details$chatonly} = TRUE used with \code{details$nsim > 0} causes the 
+overdispersion statistics for sighting counts Tu and Tm to be estimated and 
+returned as a vector or 2-column matrix (multi-session models), with no further
+model fitting.
+
 \code{details$distribution} specifies the distribution of the number of
 individuals detected \eqn{n}; this may be conditional on the number in the
 masked area ("binomial") or unconditional ("poisson").
@@ -59,6 +69,10 @@ searched by optimise() for the maximum likelihood when there is a single
 parameter. Default 0.8 sets the search interval to \eqn{(0.2s, 1.8s)} where \eqn{s}
 is the `start' value.
 
+\code{details$knownmarks} = FALSE causes secr.fit to fit a zero-truncated 
+sightings-only model that implicitly estimates the number of marked individuals,
+rather than inferring it from the number of rows in the capthist object.
+
 \code{details$LLonly} = TRUE causes the function to returns a single
 evaluation of the log likelihood at the `start' values.
 
@@ -74,14 +88,17 @@ function) etc. is handled by the user in the userdist function. The
 coefficients appear in the output from \code{\link{coef.secr}} and
 \code{\link{vcov.secr}}, but not \code{predict.secr}.
 
+\code{details$nsim} specifies the number of replicate simulations to 
+perform to estimate the overdispersion statistics for the sighting counts 
+Tu and Tm. See also \code{details$chat} and \code{details$chatonly}.
+
 \code{details$param} chooses between various parameterisations of the
 SECR model. The default \code{details$param = 0} is the formulation in
 Borchers and Efford (2008) and later papers.
 
-\code{details$param = 1} selects the Gardner & Royle parameterisation of
+\code{details$param = 1} was once used to select the Gardner & Royle parameterisation of
 the detection model (\emph{p0}, \eqn{\sigma}; Gardner et al. 2009) when
-the detector type is `multi'. This parameterisation does not allow
-detector covariates.
+the detector type is `multi'. This parameterisation was discontinued in 2.10.0.
 
 \code{details$param = 2} selects parameterisation in terms of
 (\eqn{esa(g_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014).
@@ -100,14 +117,6 @@ sigmak ~ 1)
 
 \code{details$param = 5} combines parameterisations (3) and (4) (first
 compute sigma from D, then compute lambda0 from sigma).
-
-\code{details$scaleg0} = TRUE causes g0 to be scaled by
-\eqn{\mathrm{sigma}^{-2}}{sigma^-2}. Deprecated from 2.6.2: use a0
-parameterisation instead.
-
-\code{details$scalesigma} = TRUE causes sigma to be scaled by
-\eqn{\mathrm{D}^{-0.5}}{1/sqrt(D)}. Deprecated from 2.7.1: use sigmak
-parameterisation instead.
 
 \code{details$telemetrytype} determines how telemetry data in the
 attribute `xylist' are treated. `none' causes the xylist data to be

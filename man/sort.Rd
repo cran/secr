@@ -1,15 +1,20 @@
 \name{sort.capthist}
 \alias{sort.capthist}
+\alias{sort.mask}
 
 \title{
-Sort Rows of capthist Object
+Sort Rows of capthist or mask Object
 }
 \description{
 Rows are sorted by fields in covariates or by a provided sort key of
 length equal to the number of rows.
 }
 \usage{
+
 \method{sort}{capthist}(x, decreasing = FALSE, by = "",
+    byrowname = TRUE,...)
+
+\method{sort}{mask}(x, decreasing = FALSE, by = "",
     byrowname = TRUE,...)
 }
 
@@ -30,9 +35,11 @@ is suitable as the number of rows varies between sessions.
 If requested, rows are sorted by rowname within \code{by}. The effect of
 the defaultsis to sort by rowname.
 
+The attribute markingpoints of a mask object is removed if present, as it is no longer meaningful.
+
 }
 \value{
-\code{capthist} object with sorted rows; any relevant attributes are
+\code{capthist} or \code{mask} object with sorted rows; any relevant attributes are
   also sorted (covariates, signal, xy)}
 
 \seealso{

@@ -136,7 +136,7 @@ unless a new type is specified with the argument
 \seealso{
   
   \code{\link{capthist}}, \code{\link{subset.capthist}},
-  \code{\link{hclust}}, \code{\link{cutree}}
+  \code{\link{discretize}}, \code{\link{hclust}}, \code{\link{cutree}}
   
 }
 
@@ -156,7 +156,10 @@ unless a new type is specified with the argument
   there is no guarantee that clusters will be equal in size. You should
   inspect the results of reduce.traps especially when using \code{span}.
 
-  reduce.traps is not implemented for polygons or transects.
+  \code{reduce.traps} is not implemented for polygons or transects.
+
+  The function \code{\link{discretize}} converts polygon data to
+  point-detector (multi, proximity or count) data.
   
 }
 

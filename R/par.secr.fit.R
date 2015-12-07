@@ -20,13 +20,12 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
 
     ## individual fits must use ncores = 1
     if (ncores > 1) {
-
         arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
-        clust <- makeCluster(ncores, methods = TRUE, outfile = logfile)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
         clusterSetRNGStream(clust, seed)
         clusterExport(clust, c(data, 'secr.fit'), environment())
         output <- parLapply(clust, arglist, do.call, what = 'secr.fit')
-        on.exit(stopCluster(clust))
+        stopCluster(clust)
     }
     else {
         set.seed (seed)
@@ -46,9 +45,9 @@ par.derived <- function (secrlist, ncores = 1, ...) {
     if (!inherits(secrlist, 'secrlist'))
         stop("requires secrlist input")
     if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = TRUE)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         output <- parLapply(clust, secrlist, derived, ...)
-        on.exit(stopCluster(clust))
+        stopCluster(clust)
     }
     else {
         output <- lapply(secrlist, derived, ...)
@@ -62,9 +61,9 @@ par.region.N <- function (secrlist, ncores = 1, ...) {
     if (!inherits(secrlist, 'secrlist'))
         stop("requires secrlist input")
     if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = TRUE)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         output <- parLapply(clust, secrlist, region.N, ...)
-        on.exit(stopCluster(clust))
+        stopCluster(clust)
     }
     else {
         output <- lapply(secrlist, region.N, ...)

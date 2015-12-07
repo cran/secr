@@ -175,12 +175,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
             defaultlink <- list(D='log', g0='logit', lambda0='log', sigma='log', z='log',
                 w='log', pID='logit', beta0='identity', beta1='neglog',
                 sdS='log', b0='log', b1='neglog', pmix='logit')
-            anycount <- detector(trps) %in% .localstuff$countdetectors
-            if (is.null(newcall$details$scaleg0))
-                scaledg0 <- FALSE
-            else
-                scaledg0 <- newcall$details$scaleg0
-            if (anycount | scaledg0) defaultlink$g0 <- 'log'
+            if (detector(trps) %in% .localstuff$countdetectors) defaultlink$g0 <- 'log'
             newcall$link <- defaultlink
             if (is.null(realpar))
                 stop ("'LLonly' requires either 'realpar' or fitted model")
@@ -240,10 +235,8 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 }
             }
             ij.df <- expand.grid (i=spacings, j=buffers)
-            clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
-            temp <- clusterEvalQ(clust, library(secr))
-            clusterExport(clust, c("newcall", "trps", "spacing", "poly",
-                                   "tracelevel", "LLonly"), environment())
+            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+            clusterEvalQ(clust, requireNamespace('secr'))
             output <- parRapply(clust, ij.df, sfit)
             stopCluster(clust)
 

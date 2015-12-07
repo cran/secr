@@ -8,14 +8,11 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
   if (!inherits(x, 'traps'))
       stop ("argument to split.traps should have class 'traps'")
   if (ms(x))
-      stop ("'split.traps' not suitable for multi-session traps")
+      stop ("'split.traps' is not suitable for multi-session traps")
 
   options(warn=-1)
   f <- factor(f)
 
-  ## changed 2011-04-13
-  ##  if (any(is.na(as.numeric(levels(f))))) {
-  ## changed back 2012-09-14
   if (any(!is.na(as.numeric(levels(f))))) {
       f <- factor(paste (prefix,f,sep=''))
       sp <- paste(prefix, levels(polyID(x)), sep='')
@@ -50,12 +47,9 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
   else {
 
       if (detector(x) %in% .localstuff$polydetectors) {
-#          if (length(f) > length(levels(polyID(x))))
-# 2012-12-11
           if (length(unique(f)) > length(levels(polyID(x))))
               warning ("split factor does not match traps object")
       }
-
       out <- list()
       for (i in levels(f)) {
           if (detector(x) %in% .localstuff$polydetectors) {
@@ -65,8 +59,6 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
               temp <- subset (x, subset = (f == i), ...)
           if (!drop | (nrow(temp)>0))
               out[[i]] <- temp
-
-          ## 2012-08-07
           if (detector(x) %in% .localstuff$pointdetectors) {
               spacing(out[[i]]) <- spacing(out[[i]], recalculate = TRUE)
           }

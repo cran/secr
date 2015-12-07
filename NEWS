@@ -1,3 +1,68 @@
+Changes in version 2.10.0 (2015-12-07)
+
+New features or changed behaviour of old functions
+    o   implemented mark-resight models, with many flow-on changes -
+    o   sim.resight allows interspersed marking and resighting occasions
+    o   new 'markocc' attribute of traps objects to code marking and resighting occasions
+    o   summary.capthist, subset.capthist, verify.capthist and plot.capthist 
+        extended for mark-resight data
+    o   secr.fit() etc. auto predictor 'ts' marking vs sighting occasions
+    o   read.traps() and read.capthist() acquire argument 'markocc'
+    o   addSightings() new function to extend capthist object
+    o   make.capthist() input of all-zero detection histories for mark-resight
+    o   sort method defined for mask objects
+    o   fx.total enabled for a specified session from multi-session model fits
+    o   discretize() new function converts polygon capthist data
+    o   pmixProfileLL() new function for checking finite mixture models (adapted 
+        from secr-finitemixtures.pdf)
+
+Bugs fixed
+    o   alongtransect failed
+    o   traps<- method for multisession capthist misassigned class
+    o   model.average() did not work for parameter 'pmix'
+    o   finite mixtures (h2) conflicted with 3-parameter detection functions
+    o   secr.fit() failed when all detection parameters fixed and order of list 
+        differed from default, and with fixed D
+    o   join() failed with some inputs
+    o   plot.traps() did not restore graphic options
+    o   fx.secr() and fx.total() crashed R for detector type 'multi' and varying usage
+    o   fx.secr() and fx.total() mask problem with multi-session density surface models
+    o   confint.secr() failed with hcov or fixed real parameter
+
+Other
+    o   explicitly import functions from stats, utils etc.
+    o   deprecated features 'scaleg0' and 'scalesigma' finally removed, hence
+    o   collate(), predict.secr() and predict.secrlist() lose 'scaled' argument
+    o   removed all references to undocumented 'cue' detector type
+    o   secr.fit() with polygon detector: improved default starting value
+    o   split.capthist() bytrap selects whole polygons
+    o   improved error messages from verify.traps
+    o   check number of occasions in closure.test(!SB)
+    o   removed unused traps attribute 'searchcell'
+    o   secr.fit() method = 'none' now drops 'maximizing likelihood' message 
+    o   sim.capthist() multi-session code substantially revised
+    o   more consistent use of clusters (do not export objects from namespace)
+    o   mapbeta() (used when 'start' argument of secr.fit is a model) now usually 
+        works for non-nested models (real parameters differ between new and old models) 
+    o   removed disused option for Gardner & Royle parameterisation param = 1
+    o   ip.secr() improvements for greater robustness and control (boxsize1, boxsize2,
+        seed, trace arguments)
+    o   revamped timings in ?Parallel
+    o   rbind.traps() tweaked to allow a single multi-session object as input
+
+Changes in version 2.9.6 (2015-09-30) Not released on CRAN
+
+New features or changed behaviour of old functions
+    o   fx.total enabled for a specified session from multi-session model fits
+
+Bugs fixed
+    o   alongtransect failed
+    o   traps<- method for multisession capthist misassigned class
+    o   model.average() did not work for parameter 'pmix'
+
+Other
+    o   explicitly import functions from stats, utils etc.
+
 Changes in version 2.9.5 (2015-06-14)
 
 New features or changed behaviour of old functions

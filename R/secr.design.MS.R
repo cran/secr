@@ -2,7 +2,7 @@
 ## package 'secr'
 ## secr.design.MS.R
 ## 2009 08 20 disable bk, Bk
-## 2009 10 08 sighting
+## 2009 10 08 sighting # disabled 2015-10-08
 ## 2009 12 10 mixtures
 ## 2009 12 13 mixtures pmix ~ h2
 ## 2011 11 24 re-enable bk, Bk models
@@ -17,6 +17,7 @@
 ## 2014-01-25 code rearranged to allow null PIA
 ## 2014-06-02 ignoreusage
 ## 2014-08-21 adapted for smooth terms in models; save smoothsetup
+## 2015-10-08 added ts for marking and sighting occasions
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
@@ -217,9 +218,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
     dims <- c(R,n,S,K,nmix)    # 'virtual' dimensions
     dframenrow <- prod(dims)   # number of rows
-    autovars <- c('session','Session','g','t','T',
+    autovars <- c('session','Session','g','t','T', 'ts',
                   'b','bn','B','bk','bkn','Bk', 'k', 'K', 'bkc', 'Bkc',
-                  'kcov','tcov', 'sighting', 'h2', 'h3')
+                  'kcov','tcov', 'h2', 'h3')
     #--------------------------------------------------------------------------
     # user-specified dframe
     # 2011-11-27
@@ -259,7 +260,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------------
-    ## t, T, tcov
+    ## t, T, tcov, ts
 
     if ('t' %in% vars) {
         dframe$t <- factor( insertdim (1:S, 3, dims) )
@@ -267,7 +268,14 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     if ('T' %in% vars) {
         dframe$T <- insertdim (0:(S-1), c(3,1), dims)
     }
-
+    if ('ts' %in% vars) {
+        markocc <- markocc(traps(capthist))
+        sighting <- length(unique(markocc)) > 1
+        if (!sighting)
+            stop ("ts is appropriate only for mark-resight data")
+        ts <- factor(c('marking','sighting'))[2 - (markocc>0)]   ## markocc 0 vs markocc 1
+        dframe$ts <- insertdim (ts, c(3,1), dims)
+    }
     if ('tcov' %in% vars) {
         if (is.null(timecov))
             stop ("requires valid time covariate 'timecov'")
@@ -568,12 +576,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     #--------------------------------------------------------------------------
     ## 2009 10 07 mark-resight
-    q <- attr(capthist, 'q')
-    if (any((q > 0) & (q < S))) {
-        ## marking  on occasions 1:q, sighting on occasions (q+1):S
-        ## following line must be revised for vector q (varying by session)
-        dframe$sighting <- factor( insertdim (rep(0:1, c(q, S-q)), 3, dims) )
-    }
+#     q <- attr(capthist, 'q')
+#     if (any((q > 0) & (q < S))) {
+#         ## marking  on occasions 1:q, sighting on occasions (q+1):S
+#         ## following line must be revised for vector q (varying by session)
+#         dframe$sighting <- factor( insertdim (rep(0:1, c(q, S-q)), 3, dims) )
+#     }
     #--------------------------------------------------------------------------
 
     ## all autovars should have now been dealt with

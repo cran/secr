@@ -3,6 +3,8 @@
 ## read.traps.R
 ## 2012-12-18 binary.usage
 ## 2015-05-04 multi-file input
+## 2015-10-12 markocc
+
 ## Read detector locations from text file in DENSITY format
 ############################################################################################
 
@@ -17,7 +19,7 @@ renamepolyrows <- function (tr) {
 }
 
 read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames = NULL,
-                        binary.usage = TRUE,  ...)
+                        binary.usage = TRUE, markocc = NULL, ...)
 ## possibly add sortrows argument, but risk breaking covariates, polygon etc.
 {
 
@@ -37,13 +39,19 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         stop ("requires 'file' or 'data'")
 
     if (length(file) > 1) {
-        out <- lapply(file, read.traps, detector = detector,
-                      covnames = covnames, binary.usage = binary.usage, ...)
+        if (is.null(markocc))
+            out <- mapply(read.traps, file=file, MoreArgs = list(detector = detector,
+                       covnames = covnames, binary.usage = binary.usage, ...), SIMPLIFY = FALSE)
+        else {
+            if (!inherits(markocc, 'list'))
+                markocc <- list(markocc)
+            out <- mapply(read.traps, file=file, markocc = markocc, MoreArgs = list(detector = detector,
+                       covnames = covnames, binary.usage = binary.usage, ...), SIMPLIFY = FALSE)
+        }
         class (out) <- c('list', 'traps')
         out
     }
     else {
-
     ## file input
     if (!is.null(file)) {
         nfld <- count.fields (file, ...)
@@ -190,6 +198,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     attr(traps,'spacex') <- ifelse (length(ux)>1, min(dist(ux)), NA)
     attr(traps,'spacey') <- ifelse (length(uy)>1, min(dist(uy)), NA)
     spacing(traps) <- spacing(traps)   ## !!
+    markocc(traps) <- markocc
     traps
 }
 }

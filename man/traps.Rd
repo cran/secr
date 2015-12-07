@@ -44,8 +44,9 @@ Other possible attributes of a \code{traps} object are:
  \code{\link{clustertrap}} \tab sequence number of each trap within its cluster  \cr  
  \code{\link{usage}} \tab a traps x occasions matrix of effort (may be binary 
  0/1)\cr
- 
- \code{newtrap} \tab vector recording aggregation of detectors by
+ \code{\link{markocc}} \tab integer vector distinguishing marking occasions (1) from 
+  sighting occasions (0) \cr
+  \code{newtrap} \tab vector recording aggregation of detectors by
  \code{\link{reduce.traps}}\cr
 
    }

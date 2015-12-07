@@ -8,6 +8,7 @@
 ## 2010 06 21 'x2', 'y2', 'xy'
 ## 2010 08 28 fix bug with T
 ## 2011 11 28 user dframe factors now covered
+## 2015-10-08 'ts'
 ## Create (neutral) design data suitable for 'predict'
 ############################################################################################
 
@@ -92,6 +93,7 @@ secr.make.newdata <- function (object) {
         if (v=='y2') newdata$y2 <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'y']
         if (v=='xy') newdata$xy <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
         if (v=='t') newdata$t <- rep(factor(1, levels=1:nocc), nr)   ## mod 2009 09 03
+        if (v=='ts') newdata$ts <- rep(factor('marking', levels=c('marking','sighting')), nr)   ## 2015-10-08
         if (v=='T') newdata$T <- rep(0, nr)   ## 2010 08 28
         if (v=='b') newdata$b <- rep(factor(0, levels=c(0,1)),nr)    # naive
         if (v=='B') newdata$B <- rep(factor(0, levels=c(0,1)),nr)    # naive
@@ -124,7 +126,7 @@ secr.make.newdata <- function (object) {
 
     ## all autovars should now have been dealt with
     vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session',
-        't','T','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')]
+        't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')]
 
     findvars.MS (sessioncov, vars, 1, TRUE)
     findvars.MS (timecov, vars, 1, FALSE)

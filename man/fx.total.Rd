@@ -88,11 +88,18 @@ a habitat mask where the main or only contribution is from D.nc.
 \dontrun{
 
 tmp <- fx.total(secrdemo.0)
+
+## to plot we must name one of the covariates:
+## the Dsurface default 'D.0' causes an error 
+
 plot(tmp, covariate = 'D.sum', col = terrain.colors(16),
    plottype = 'shaded')
 plot(tmp, covariate = 'D.sum', col = 'white', add = TRUE,
    plottype = 'contour')
 spotHeight(tmp, prefix = 'D.sum')
+
+fxsurface <- fx.total(ovenbird.model.D, sessnum = 3)
+plot(fxsurface, covariate = 'D.sum')
 
 }
 

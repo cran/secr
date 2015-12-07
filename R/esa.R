@@ -13,6 +13,8 @@
 ## 2013-07-20 reparameterize esa,a0
 ## 2014-08-27 dist2 optional input to integralprwi set to -1
 ## 2014-09-08 esa adjusted for linearmask cell size
+## 2015-10-04 markocc argument for integralprw1
+## 2015-11-19 dropped param
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -49,16 +51,19 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     if (is.null(noccasions)) {
         noccasions <- s
     }
+    markocc <- markocc(traps(capthists))
+    if (is.null(markocc))
+        markocc <- rep(1,s)  ## simple marking
+    allsighting <- !any(markocc>0)
+    if (allsighting) {
+        ## drop all zero histories, consider sighting as if marking
+        # capthists <- subset(capthists, apply(capthists!=0,1,sum)>0)
+        warning("use of allsighting here untested")
+        ## markocc[] <- 1
+    }
 
     nmix    <- getnmix (object$details)
     knownclass <- getknownclass(capthists, nmix, object$hcov)
-
-    ##############################################
-    ## adapt for marking occasions only 2009 10 24
-    q <- attr(capthists, 'q')
-    if (!is.null(q))
-        if (q<s) s <- q
-    ##############################################
 
     if (dettype %in% c(3,6)) {
         k <- c(table(polyID(trps)),0)
@@ -142,10 +147,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
         ncolPIA <- n
 
-        param <- object$details$param
-        if (is.null(param))
-            param <- 0    ## default Borchers & Efford (vs Gardner & Royle)
-
         normalize <- object$details$normalize
         if (is.null(normalize))
             normalize <- FALSE
@@ -212,7 +213,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         else {
             temp <- .C("integralprw1", PACKAGE = 'secr',
                        as.integer(dettype),
-                       as.integer(param),
                        as.double(Xrealparval0),
                        as.integer(rep(1,n)),           ## dummy groups 2012-11-13..2013-06-24
                        as.integer(n),
@@ -226,6 +226,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.double(distmat),             ## optional dist2 2014-09-08
 
                        as.double(usge),
+                       as.integer(markocc),
                        as.double(unlist(mask)),
                        as.integer(nrow(Xrealparval0)), ## rows in lookup
                        as.integer(PIA),                ## index of nc*,S,K to rows in realparval0

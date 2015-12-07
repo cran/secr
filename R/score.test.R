@@ -117,9 +117,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         # apply to each component of 'model' list
 
         if (ncores > 1) {
-            clust <- makeCluster(ncores)
-            clusterEvalQ(clust, library(secr))
-            clusterExport(clust, c("trace","prepare","mapbeta"), environment())
+            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
             score.list <- parLapply (clust, models, score.test, secr = secr,
                                   betaindex = betaindex, ncores = ncores)
             stopCluster(clust)

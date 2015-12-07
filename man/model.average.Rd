@@ -18,7 +18,7 @@ model.average(..., realnames = NULL, betanames = NULL, newdata = NULL,
     criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"))
 
 collate (..., realnames = NULL, betanames = NULL, newdata = NULL, 
-    scaled = FALSE, alpha = 0.05, perm = 1:4, fields = 1:4)
+    alpha = 0.05, perm = 1:4, fields = 1:4)
 
 }
 
@@ -27,7 +27,6 @@ collate (..., realnames = NULL, betanames = NULL, newdata = NULL,
   \item{realnames}{ character vector of real parameter names }
   \item{betanames}{ character vector of beta parameter names }
   \item{newdata}{ optional dataframe of values at which to evaluate models }
-  \item{scaled}{ logical for scaling of sigma and g0 (see Details) }
   \item{alpha}{ alpha level for confidence intervals }
   \item{dmax}{ numeric, the maximum AIC or AICc difference for inclusion in confidence set }
   \item{covar}{ logical, if TRUE then return variance-covariance matrix }
@@ -83,12 +82,6 @@ samples. \code{CImethod} does not affect the reported standard errors.
 \code{collate} extracts parameter estimates from a set of fitted secr
 model objects. \code{fields} may be used to select a subset of summary
 fields ("estimate","SE.estimate","lcl","ucl") by name or number. 
-
-The argument \code{scaled} applies only to the detection parameters g0
-and sigma, and only to models fitted with \code{scalesigma} or
-\code{scaleg0} switched on (see secr.fit argument {details}). If
-\code{scaled} is TRUE then each estimate is multiplied by its scale
-factor (1/D^0.5 and 1/sigma^2 respectively).
 
 }
 

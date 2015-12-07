@@ -106,11 +106,11 @@ Legend plotting is enabled only when a covariate is specified. It uses
 
 \value{
 
-  If \code{covariate} is specified and \code{plottype = shaded} then
+  If \code{covariate} is specified and \code{plottype = "shaded"} then
   \code{plot.mask} invisibly returns a character vector of the intervals
   defined by `breaks' (useful for plotting a legend).
 
-  If `plottype = persp' then \code{plot.mask} invisibly returns a the
+  If \code{plottype = "persp"} then \code{plot.mask} invisibly returns a the
   perspective matrix that may be used to add to the plot with
   \code{\link[grDevices]{trans3d}}.
   
@@ -135,7 +135,7 @@ Legend plotting is enabled only when a covariate is specified. It uses
   and other chages (e.g., \code{breaks = 10}) may alter the output.
   
   Contouring requires a rectangular grid; if a Dsurface is not
-rectangular then plot.Dsurface with plottype = contour triggers a call to
+rectangular then plot.Dsurface with \code{plottype = "contour"} triggers a call to
 \code{\link{rectangularMask}}.
 
 The colour palettes \code{topo.colors}, \code{heat.colors} and

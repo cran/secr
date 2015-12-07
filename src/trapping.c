@@ -226,17 +226,17 @@ void trappingmulti (
 
             if (Random() < (1-exp(-hsum[i])))
             {
-               if (caught[i]==0)           /* first capture of this animal */
-               {
-                   nc++;
-                   caught[i] = nc;
-                   for (j=0; j<*ss; j++)
-                       value[*ss * (nc-1) + j] = 0;
-               }
-               runif = Random();
-               k = 0;
-               while ((runif > cump[k]) && (k<*kk)) k++;  /* pick a trap */
-               value[*ss * (caught[i]-1) + s] = k;
+		if (caught[i]==0)           /* first capture of this animal */
+		{
+		    nc++;
+		    caught[i] = nc;
+		    for (j=0; j<*ss; j++)
+			value[*ss * (nc-1) + j] = 0;
+		}
+		runif = Random();
+		k = 0;
+		while ((runif > cump[k]) && (k<*kk)) k++;  /* pick a trap */
+		value[*ss * (caught[i]-1) + s] = k;
             }
         }
     }

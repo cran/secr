@@ -75,9 +75,8 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
         flush.console()
 
         if (ncores > 1) {
-            clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
-            clusterEvalQ(clust, library(secr))
-            clusterExport(clust, c("object", "details"), environment())
+            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+            clusterEvalQ(clust, requireNamespace('secr'))
             temp <- parRapply (clust, grid, LL)
             stopCluster(clust)
         }

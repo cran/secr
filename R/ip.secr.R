@@ -8,18 +8,19 @@
 ## 2012-11-02 ncores
 ## 2012-11-02 proctime[3]
 ## 2012-12-30 usage OK
-## 2015-05-17 tweaked failure condition 
+## 2015-05-17 tweaked failure condition
+## 2015-11-24 replaced argument boxsize with boxsize1, boxsize2
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
-    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.1, centre = 3,
+    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.2, boxsize2 = boxsize, centre = 3,
     min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
-    maxbox = 5, maxtries = 2, ncores = 1, ...) {
+    maxbox = 5, maxtries = 2, ncores = 1, seed = NULL, trace = TRUE, ...) {
 
     ## ... passed to sim.popn e.g. buffer = 100, Ndist = 'fixed'
     ## boxsize may be vector of length np
     ## pfn defined below
-
+    if (maxbox<2) stop("ip.secr maxbox >= 2")
     if (is.list(capthist))
         stop ("'ip.secr' not implemented for multi-session 'capthist'")
     ptm  <- proc.time()
@@ -40,10 +41,14 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     np <- length(pnames)
     traps <- traps(capthist)
     noccasions <- ncol(capthist)
-
-    if (length(boxsize)==1) boxsize <- rep(boxsize, np)
-    else if (length(boxsize) != np)
+    if (length(boxsize)==1) boxsize1 <- rep(boxsize, np)
+    else if (length(boxsize1) != np)
         stop ("invalid boxsize vector")
+    else boxsize1 <- boxsize
+    if (length(boxsize2)==1) boxsize2 <- rep(boxsize2, np)
+    else if (length(boxsize2) != np)
+        stop ("invalid boxsize vector")
+
     if (is.null(mask))
         core <- expand.grid(x = range(traps$x), y = range(traps$y))
     else
@@ -51,8 +56,9 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
     ## added 2012-11-02
     if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = TRUE, useXDR = FALSE)
-        clusterEvalQ(clust, library(secr))
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+        clusterSetRNGStream(clust, seed)
+        clusterEvalQ(clust, requireNamespace('secr'))
         clusterExport(clust, c("capthist", "predictorfn", "predictortype",
                                "maxtries", "negloglikM0", "negloglikMb",
                                "jack.est", "M0", "Mb", "Mh", "traps", "pnames",
@@ -60,8 +66,10 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
                                "RPSV", "pfn"),
                       environment())
     }
-    else
+    else {
         clust <- NULL
+        set.seed(seed)
+    }
 
     # to simulate one realization
     simfn <- function (parval, ...) {
@@ -89,6 +97,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
                 predicted <- NA
             }
             attempts <- attempts+1
+
             ## exit loop if exceeded maxtries or all OK
             allOK <- !any(is.na(predicted)) & all(is.finite(predicted))
             if ((attempts >= maxtries) | allOK)
@@ -115,10 +124,12 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
              paste(pnames, collapse=" "))
 
     if (is.null(start)) {
-        cat('\nFinding starting values ...\n')
-        flush.console()
-         if (is.null(mask)) {
-            automask <- make.mask(traps, buffer=3*RPSV(capthist))
+        if (trace) {
+            cat('\nFinding starting values ...\n')
+            flush.console()
+        }
+        if (is.null(mask)) {
+            automask <- make.mask(traps, buffer=3*RPSV(capthist, CC = TRUE))
             start <- unlist(autoini(capthist, automask))
         }
         else
@@ -131,18 +142,26 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     par <- start
     names(par) <- pnames
     par['g0'] <- odds(par['g0'])
-    
+
+    ####################################################################
+    ## keep trying until within box or exceeds maxbox
+
     for (m in 1:maxbox) {
-        cat('\nFitting box', m, '...   (g0 on odds scale) \n')
+        if (trace) {
+            cat('\nFitting box', m, '...   (g0 on odds scale) \n')
+        }
         names(par) <- pnames
+        boxsize <- if (m == 1) boxsize1 else boxsize2
         vertices <- sweep (1 + outer(c(-1,1), boxsize), MARGIN = 2,
                            FUN = '*', STATS = par)
         vertices <- data.frame(vertices)
         names(vertices) <- pnames
         rownames(vertices) <- c('min','max')
-        print(vertices)
-        cat('\n')
-        flush.console()
+        if (trace) {
+            print(vertices)
+            cat('\n')
+            flush.console()
+        }
         design <- as.matrix(expand.grid (as.list(vertices)))
         centrepoints <- matrix(par, nrow = centre, ncol = np, byrow=T)
         design <- rbind(design, centrepoints)
@@ -186,18 +205,24 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             B <- solve(t(B))  ## invert
             lambda <- coef(sim.lm)[1,]   ## intercepts
             par <- as.numeric(B %*% matrix((y - lambda), ncol = 1))
-            if (all(sapply(1:np, within))) break
+            ## 2015-11-24, 2015-12-02 if (all(sapply(1:np, within))) break
+            ## only break on second or later box if differ boxsize
+            if (all(sapply(1:np, within)) & (all(boxsize == boxsize2) | (m>1))) break
         }
     }
+
     if (!all(sapply(1:np, within)))
         warning ("solution not found after ", maxbox, " attempts")
+    ####################################################################
 
     names(par) <- pnames
 
     if (var.nsim>1) {
-        cat('Simulating for variance ...\n')
-        flush.console()
-        cat('\n')
+        if (trace) {
+            cat('Simulating for variance ...\n')
+            flush.console()
+            cat('\n')
+        }
         vardesign <- matrix(par, nrow = var.nsim, ncol = np, byrow = T)
         colnames(vardesign) <- pnames
 

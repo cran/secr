@@ -1,5 +1,5 @@
 ---
-title: '**secr** 2.9 - spatially explicit capture--recapture in R'
+title: '**secr** 2.10 - spatially explicit capture--recapture in R'
 author: "Murray Efford"
 date: "`r Sys.Date()`"
 output: 
@@ -15,7 +15,7 @@ vignette: >
 
 \vspace{12pt}
 
-This document provides an overview of **secr** 2.9, an R package for spatially explicit capture--recapture analysis (SECR).  It includes some background on SECR, an outline of the package, and a more detailed description of how models are implemented.  See [Appendix 1](#appendix1) for a glimpse of **secr** in action (this is a good place to start if you are new to **secr**).  For details of how to use **secr** see the help pages and vignettes. 
+This document provides an overview of **secr** 2.10, an R package for spatially explicit capture--recapture analysis (SECR).  It includes some background on SECR, an outline of the package, and a more detailed description of how models are implemented.  See [Appendix 1](#appendix1) for a glimpse of **secr** in action (this is a good place to start if you are new to **secr**).  For details of how to use **secr** see the help pages and vignettes. 
 
 Two add-on packages extend the capability of **secr** and are documented separately. **secrlinear** enables the estimation of linear density (e.g., animals per km) for populations in linear habitats such as stream networks ([secrlinear-vignette.pdf][]). **secrdesign** enables the assessment of alternative study designs by  Monte Carlo simulation; scenarios may differ in detector (trap) layout, sampling intensity, and other characteristics ([secrdesign-vignette.pdf][]).
 
@@ -82,7 +82,7 @@ library(secr)
 options(digits=6, width=85)
 ```
 
-```{r, fig.height=3, fig.width=3}
+```{r, fig.height=3, fig.width=3, cache = TRUE}
 par(mfrow=c(1,1), pty='s', mar=c(2,2,2,2), cex=1.2)
 plot(sim.popn(D=5, core=make.grid(), buffer=150), cex=1)
 plot(make.grid(),add=T, detpar=list(col = "red", pch = 3, cex = 1.2))
@@ -272,11 +272,11 @@ The consolidated help pages are also distributed as the file [secr-manual.pdf]. 
 RShowDoc ("secr-manual", package = "secr")
 ```
 
-Other documentation, in the form of pdf vignettes built with **knitr**,  will be added from time to time. The 'User guides...' link in the package help index lists available files. The vignettes in Table 4 are included in **secr** 2.9 or may be found on the Density website.
+Other documentation, in the form of pdf vignettes built with **knitr**,  will be added from time to time. The 'User guides...' link in the package help index lists available files. The vignettes in Table 4 are included in **secr** 2.10 or may be found on the Density website.
 
 \pagebreak
 
-**Table 4.** Vignettes for **secr** 2.9.
+**Table 4.** Vignettes for **secr** 2.10.
 
 | Vignette | Topic |
 |----------|----------|
@@ -284,6 +284,7 @@ Other documentation, in the form of pdf vignettes built with **knitr**,  will be
 | [secr-datainput.pdf] | data formats and input functions |
 | [secr-densitysurfaces.pdf] | modelling density surfaces |
 | [secr-finitemixtures.pdf] | mixture models for individual heterogeneity |
+| [secr-markresight.pdf] | mark--resight models (experimental in 2.10)|
 | [secr-noneuclidean.pdf] | non-Euclidean distance models |
 | [secr-parameterisations.pdf] | alternative parameterisations of detection|
 | [secr-polygondetectors.pdf] | using polygon and transect detector types |
@@ -303,7 +304,7 @@ By default, the parameters of SECR models are assumed to be constant. We specify
 Models are defined symbolically in **secr** using R formula notation. A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and
 **secr** uses that term because it will be familiar to biologists.
 
-Three real parameters are commonly modelled in **secr** 2.9; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derived.cluster` etc.). 
+Three real parameters are commonly modelled in **secr** 2.10; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derived.cluster` etc.). 
 
 Here is a simple example of the model argument in use (see also [Appendix 1](#appendix1))
 ```{r, eval=FALSE}
@@ -338,6 +339,7 @@ Effects on parameters of detection probability are specified via R formulae. The
 | session | session factor | one level for each session |
 | Session | session trend | linear trend on link scale |
 | h2 | 2-class mixture | finite mixture model with 2 latent classes |
+| ts | marking vs sighting | two levels (marking and sighting occasions) |
 
 Any name in a formula that is not a variable in Table 5 is assumed to refer to a user-supplied covariate. `secr.fit` looks for user-supplied covariates in data frames embedded in the 'capthist' argument, or supplied in the 'timecov' and 'sessioncov' arguments, or named with the 'timevaryingcov' attribute of a traps object, using the first match (Table 6).
 
@@ -476,6 +478,10 @@ interchangeably for variation in the duration of exposure and similar known effe
 
 See the separate document [secr-varyingeffort.pdf] and Efford et al. (2013) for more.
 
+###Mark--resight
+
+Mark--resight data include sampling occasions on which previously marked animals were recorded, but new animals were not distinguished from each other. \textbf{secr} 2.10.0 introduces a suite of spatial models for these data, as documented in [secr-markresight.pdf]; they may change in later versions. Two general classes of spatial mark--resight model are included: those in which the marking process is modelled (we consider these 'true' mark--resight models), and those in which the process is not modelled and pre-marked animals are assumed to follow some distribution (e.g., uniform across a known area) ('sighting-only models'). Mark--resight models in \textbf{secr} 2.10 discard some spatial information in the unmarked sightings -- information that is used in the models of Chandler and Royle (2013) and Sollmann et al. (2013). This results in some (probably small) loss of precision, and requires an adjustment for overdispersion to ensure confidence intervals have good coverage properties. The vignette [secr-markresight.pdf] should be consulted.
+
 ###Detector clusters
 
 For surveying large areas it is efficient to use groups of detectors: within a group the detectors are close enough that animals may be re-detected at multiple points, while groups of detectors may be distributed across a region according to a probability design to sample possible spatial variation in density. **secr** allows for detector groups with the 'cluster' data structure. This is an attribute of a traps object that records which detectors belong to which cluster[^clusters].
@@ -524,6 +530,8 @@ Borchers, D. L., Buckland, S. T. and Zucchini, W. (2002)
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum likelihood methods for capture--recapture studies. *Biometrics* **64**, 377--385.
 
+Chandler, R. B. and Royle, J. A. (2013) Spatially explicit models for inference about density in unmarked or partially marked populations. *Annals of Applied Statistics* **7**, 936--954.
+
 Cooch, E. and White, G. (eds) (2014) *Program MARK: A Gentle Introduction*. 13th edition. Available online at http://www.phidot.org/software/mark/docs/book/.
 
 Efford, M. G. (2004) Density estimation in live-trapping studies. *Oikos* **106**, 598--610.
@@ -568,6 +576,8 @@ Royle, J. A. and Young, K. V. (2008) A hierarchical model for spatial capture--r
 Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and Karanth, K. U. (2010) *SPACECAP: A program to estimate animal abundance and density using Bayesian spatially explicit
     capture-recapture models. Version 1.0.* Wildlife Conservation Society - India Program, Centre for Wildlife Studies, Bangalore, India.
 
+Sollmann, R., Gardner, B., Parsons, A. W., Stocking, J. J., McClintock, B. T., Simons, T. R., Pollock, K. H. and O'Connell, A. F. (2013) A spatial mark--resight model augmented with telemetry data. *Ecology* **94**, 553--559.     
+
 Stanley, T. R. and Burnham, K. P. (1999) A closure test for time-specific capture--recapture data. *Environmental and Ecological Statistics* **6**, 197--209.
 
 \pagebreak
@@ -577,19 +587,22 @@ Stanley, T. R. and Burnham, K. P. (1999) A closure test for time-specific captur
 A simple analysis might look like this. We start by loading the package, setting the working folder, and constructing an object 'myCH' that contains both the captures and the trap locations. The file capt.txt from DENSITY uses an old data format 'XY' in which each detection has x-y coordinates that must be matched to x-y coordinates in trap.txt. The more usual format is `trapID', which matches the detector identifier.
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=TRUE}
 options(digits = 6, width = 85)       
+library(secr)                                               # load package                             
+myCH <- read.capthist('capt.txt','trap.txt', fmt = 'XY')    # import data using XY format
 ```
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 library(secr)                                               # load package                             
-setwd(system.file('extdata', package='secr'))               # set working folder
+oldwd <- setwd(system.file('extdata', package = 'secr'))    # change working folder
 myCH <- read.capthist('capt.txt','trap.txt', fmt = 'XY')    # import data using XY format
+setwd(oldwd)                                                # reset working folder
 ```
 
 Next we fit two simple models and compare them with AIC. We set `trace = FALSE` to reduce the volume of output. The warning reminds us to check the buffer width, which we do later.
 
-```{r, eval=TRUE}
+```{r, eval=TRUE, cache = TRUE}
 secr0 <- secr.fit(myCH, model = g0~1, buffer = 100, trace = FALSE)  # null model
 secrb <- secr.fit(myCH, model = g0~b, buffer = 100, trace = FALSE)  # trap response model
 AIC (secr0, secrb)                                                  # compare
@@ -602,17 +615,17 @@ rely on the null model for estimation. Before displaying the estimates
 we check that the likelihood is stable as we vary the mask buffer
 width (rows) and spacing (columns)
 
-```{r, eval=TRUE}
+```{r, eval=TRUE, cache = TRUE}
 mask.check (secr0)
 ```
 
 It seems we would have been better to use a slightly wider buffer, so we repeat the fit and display the results:
-```{r, eval=TRUE}
+```{r, eval=TRUE, cache = TRUE}
 secr.fit(myCH, model = g0~1, buffer = 150, trace = FALSE)
 ```
 
 The density estimate is 5.475 / ha (95\% confidence interval 4.35--6.90 / ha). We can compare these estimates to those from the initial fit with a narrower buffer; estimated density differs only in the third decimal place:
-```{r, eval=TRUE}
+```{r, eval=TRUE, cache = TRUE}
 predict(secr0)
 ```
 
@@ -624,7 +637,7 @@ predict(secr0)
 
 &#9702; incomplete or inferior implementation.
 
-| Feature | DENSITY 5.0 | **secr** 2.9 |
+| Feature | DENSITY 5.0 | **secr** 2.10 |
 |---------|-------------|--------------|
 | **General**                                 | | | |
 | Graphical interface                         | &#8226; | &#9702; |
@@ -672,6 +685,7 @@ predict(secr0)
 | Combined telemetry-detection models         |         | &#8226; |
 | Regression splines                          |         | &#8226; |
 | Non-Euclidean distance                      |         | &#8226; |
+| Mark--resight                               |         | &#8226; |
 | **Detector types** | | | |
 | Single-catch trap^a^                         | &#9702; | &#9702; |
 | Multi-catch trap                            | &#8226; | &#8226; |
@@ -712,7 +726,7 @@ b. Not recommended because of heavy tail
 
 ##Appendix 3. Core functions of **secr** {#appendix3}
 
-These are the core functions of **secr** 2.9 -- the ones that you are most likely to use. S3 methods are marked with an asterisk.
+These are the core functions of **secr** 2.10 -- the ones that you are most likely to use. S3 methods are marked with an asterisk.
 
 | Function | Purpose |
 |----------|-------------|
@@ -749,6 +763,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |  <a name="manipulate"></a>  **Manipulate data objects** |  |
 | `addCovariates`	| add spatial covariates to 'traps' or 'mask' |
 | `deleteMaskPoints`	| edit 'mask' |
+| `discretize`	| rasterize area-search capthist data |
 | `head`*       	| first rows of 'capthist', 'traps' or 'mask' |
 | `join`          | combine sessions of multi-session 'capthist' object |
 | `make.grid`	| construct detector array |
@@ -774,16 +789,20 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |	`clustertrap`    | detector number within cluster |
 |	`covariates`*	| detector-level covariates |
 |	`detector`*	| detector type ('multi', 'proximity' etc.) |
+|	`markocc`	| vector distinguishing marking and sighting occasions |
 |	`polyID`*        | polygon or transect identifier |
 |	`timevaryingcov`	| name time-varying covariate(s) |
 |	`usage`*	        | occasion- and detector-specific effort | 
 | <a name="capthist"></a> **Attributes of capthist object** | |
+| `addSightings`	| add sighting data to a 'proximity', 'count' or 'polygon' object |
 | `addTelemetry`	| add telemetry data to a 'proximity' or 'count' object |
 |	`covariates`*	| individual-level covariates, including grouping factors |
 |	`session`*	| session identifier(s) |
 |	`signalmatrix`  	| sound x microphone table |
 |	`telemetryxy` 	| coordinates of telemetry fixes |
+|	`Tm`        	| counts of marked animals that were not identified |
 |	`traps`*	| embedded traps object(s) |
+|	`Tu`        	| counts of unmarked animals |
 | <a name="detections"></a> **Data for each detection** | | 
 | `alive`	        | TRUE/FALSE |
 | `animalID`	| individual ID |
@@ -860,6 +879,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |    `nedist`        | Non-Euclidean distance |
 |	`pdot`		| location-specific net probability of detection |
 | `PG`             | proportion of telemetry fixes in given polygons |
+| `pmixProfileLL`  | profile likelihood as function of mixing proportion |
 |	`RPSV`		| `root pooled spatial variance', a simple measure of home-range size |
 
 \pagebreak
@@ -959,6 +979,7 @@ The programming gets even more complex. Analyses may combine data from several i
 [secr-polygondetectors.pdf]: http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
 [secr-sound.pdf]: http://www.otago.ac.nz/density/pdfs/secr-sound.pdf
 [secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
+[secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
 
 [secrdesign-vignette.pdf]: http://cran.r-project.org/web/packages/secrdesign/vignettes/secrdesign-vignette.pdf
 [secrlinear-vignette.pdf]: http://cran.r-project.org/web/packages/secrlinear/vignettes/secrlinear-vignette.pdf

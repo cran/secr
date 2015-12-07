@@ -1,8 +1,18 @@
-importFrom(stats, simulate)
-importFrom(utils, head)
-importFrom(utils, tail)
-importFrom(utils, packageDescription)
-importFrom(utils, packageVersion)
+importFrom(graphics, ".filled.contour", "abline", "contour", "hist", "lines", "locator",
+           "mtext", "par", "persp", "points", "polygon", "rect", "segments", "strheight",
+           "strwidth", "symbols", "text")
+importFrom(grDevices, "chull", "contourLines", "grey", "palette", "terrain.colors",
+           "topo.colors")
+importFrom(methods, "is", "Ops", "Math")
+importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
+           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", "integrate",
+           "lm", "logLik", "model.matrix", "nlm", "nls", "optim", "optimise", "optimize",
+           "pchisq", "pgamma", "plnorm", "pnorm", "predict", "qchisq", "qnorm", "rbeta",
+           "rbinom", "rmultinom", "rnbinom", "rnorm", "rpois", "runif", "sd", "simulate",
+           "smooth.spline", "terms", "uniroot", "update", "update.formula", "var", "vcov")
+importFrom(utils, "count.fields", "flush.console", "getS3method", "head", "packageDescription",
+           "packageVersion", "read.csv", "read.table", "tail", "write.table")
+
 importFrom(MASS, ginv)
 importFrom(MASS, eqscplot)
 importFrom(abind, abind)
@@ -20,7 +30,6 @@ importFrom(mgcv, formula.gam)
 
 import(sp)
 import(parallel)
-importFrom("methods", Ops, Math)
 
 importFrom(raster, 'values<-')
 importFrom(raster, values)
@@ -62,6 +71,7 @@ export (tile)
 export (make.capthist)
 export (sim.capthist)
 export (sim.resight)
+export (addSightings)
 export (read.mask)
 export (addCovariates)
 export (make.mask)
@@ -185,6 +195,10 @@ S3method(clone, capthist)
 export (covariates)
 export (timevaryingcov)
 export (usage)
+export (markocc)
+export (Tu)
+export (Tm)
+export (sighting)
 export (usagePlot)
 export (detector)
 export (clusterID)
@@ -202,6 +216,7 @@ export (telemetered)
 export (PG)
 export (alongtransect)
 export (snip)
+export (discretize)
 export (signalframe)
 export (signalmatrix)
 export (noise)
@@ -220,6 +235,9 @@ export (session)
 S3method(covariates,default)
 S3method(timevaryingcov,default)
 S3method(usage,default)
+S3method(markocc,default)
+S3method(Tu,default)
+S3method(Tm,default)
 S3method(clusterID,default)
 S3method(clustertrap,default)
 S3method(detector,default)
@@ -230,6 +248,9 @@ S3method(session, default)
 export ('covariates<-')
 export ('timevaryingcov<-')
 export ('usage<-')
+export ('markocc<-')
+export ('Tu<-')
+export ('Tm<-')
 export ('detector<-')
 export ('clusterID<-')
 export ('clustertrap<-')
@@ -261,6 +282,7 @@ export (masklength)
 export (edist)
 export (nedist)
 export (deleteMaskPoints)
+export (pmixProfileLL)
 
 ## export (telemetry.LT)
 ## export (telemetry.LC)
@@ -301,6 +323,7 @@ S3method(summary, mask)
 S3method(print, summary.mask)
 S3method(spacing, mask)
 S3method(shift, mask)
+S3method(sort, mask)
 
 S3method(print, secr)
 S3method(plot, secr)
@@ -335,6 +358,7 @@ S3method(plot, secrtest)
 useDynLib (
     secr,
     fxIHP,
+    chat,
     pdotpoint,
     pdotpoly,
     integralprw1,

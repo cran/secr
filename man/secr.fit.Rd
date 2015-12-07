@@ -95,11 +95,14 @@ g0="logit", sigma="log")}.
 
 If \code{start} is missing then \code{\link{autoini}} is used for D, g0
 and sigma, and other beta parameters are set initially to arbitrary
-values, mostly zero. \code{start} may be a previously fitted nested
-model. In this case, a vector of starting beta values is constructed
-from the nested model and additional betas are set to zero. Mapping of
+values, mostly zero. \code{start} may be a previously fitted model. In
+this case, a vector of starting beta values is constructed from the old
+(usually nested) model and additional betas are set to zero. Mapping of
 parameters follows the default in \code{\link{score.test}}, but user
-intervention is not allowed.
+intervention is not allowed. From 2.10.0 the new and old models need not
+share all the same `real' parameters, but any new real parameters, such
+as `pmix' for finite mixture models, receive a starting value of 0 on
+the link scale (remembering e.g., invlogit(0) = 0.5 for parameter `pmix').
 
 \code{binomN} (previously a component of \code{details}) determines the
 distribution that is fitted for the number of detections of an individual
@@ -123,16 +126,18 @@ described separately - see \code{\link{details}}.
 \tabular{ll}{
 autoini \tab session to use for starting values (default 1) \cr
 centred \tab centre x-y coordinates\cr
+chat \tab overdispersion of sighting counts Tu, Tm \cr
+chatonly \tab compute overdispersion for Tu and Tm, then exit \cr
 distribution \tab binomial vs Poisson N\cr
 fixedbeta \tab specify fixed beta parameter(s)\cr
 hessian \tab variance method\cr
 ignoreusage \tab override usage in traps object of capthist\cr
 intwidth2 \tab controls optimise when only one parameter\cr
+knownmarks \tab known or unknown number of marked animals in sighting-only model \cr
 LLonly \tab compute one likelihood for values in \code{start} \cr
 miscparm \tab starting values for extra parameters fitted via userdist function \cr
-param \tab optional parameterisation for multi-catch detectors\cr
-scaleg0 \tab structural relationshp between g0 and sigma\cr
-scalesigma \tab structural relationship between sigma and density\cr
+nsim \tab number of simulations to compute overdispersion \cr
+param \tab optional parameterisation code\cr
 telemetrytype \tab treat telemetry data as independent, dependent or concurrent\cr
 telemetrysigma \tab use coordinate information from telemetry\cr
 telemetrybvn \tab use bivariate normal prior for centres of telemetered animals \cr
@@ -141,6 +146,11 @@ usecov \tab spatial covariate of use for normalization \cr
 userdist \tab user-provided distance function or matrix \cr
 %maxcallsize \tab limit to size of saved call \cr
 }
+
+A mark-resight model is fitted if the \code{\link{markocc}} attribute of the capthist 
+`traps' object includes sighting occasions. See the vignette 
+\href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
+for a full account.
 
 If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is
 used to maximize the log likelihood (minimize the negative log
@@ -325,6 +335,8 @@ setting \code{verify = FALSE}. This is now done by setting
   \code{\link{verify}},
 
 }
+
+\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
 
 \examples{
 

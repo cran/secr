@@ -13,7 +13,6 @@
 ## 2011 11 28 new behavioural resposne models
 ## 2014-08-01 ncores arg for simulate
 ## 2014-08-01 sim.detect exported (but this may be unnecessary)
-## 2014-08-07 scalesigma and scaleg0 no longer supported in simulate.secr
 ## 2014-08-08 simulate.secr uses hcov
 ## 2014-08-07 sim.detect streamlined (about 20x faster in some cases)
 ##            BUT relying on old code for groups and behavioural response
@@ -151,7 +150,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
         sim.detect(object, sesspopn, maxperpoly)
     }
     if (ncores > 1) {
-        clust <- makeCluster(ncores)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         clusterSetRNGStream(clust, seed)
         sesscapt <- parLapply(clust, 1:nsim, runone)
         stopCluster(clust)
@@ -207,8 +206,9 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 
     if (is.null(data)) {
         memo ('sim.secr simulating detections...', tracelevel>0)
+        ## use multiple cores only for model fitting 2015-12-02
         data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly,
-                         ncores = ncores)
+                         ncores = 1)
     }
     else {
         if (any(class(data) != c('list','secrdata')))
@@ -233,7 +233,8 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 
     if (ncores > 1) {
         memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
-        clust <- makeCluster(ncores)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+        clusterEvalQ(clust, requireNamespace('secr'))
         output <- parLapply(clust, data, fitmodel)
         stopCluster(clust)
     }
@@ -305,9 +306,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     ## --------------------------------------------------------------------
     ## Exclusions
     ## see also below dettype %in% c(-1,0,1,2,5,6,7)
-
-    if (object$details$scalesigma | object$details$scaleg0) ## 2014-08-07
-        stop("scalesigma and scaleg0 no longer supported in simulate.secr")
 
     if (!is.null(object$groups) & (object$details$param>1))
         stop("simulation does not extend to groups when param>1")

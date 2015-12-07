@@ -6,6 +6,8 @@
 ## 2011-11-05 covar = TRUE bugfix
 ## 2013-06-10 criterion
 ## 2013-06-10 MATA
+## 2015-09-30 added annotations
+## 2015-09-30 fixpmix now done in secr.lpredictor
 ############################################################################################
 
 MATA <- function (wt, est, se, alpha) {
@@ -26,17 +28,19 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
     ########
     ## SETUP
 
-    ## 2013-04-20, 2013-10-29
-
+    ## match character arguments
     CImethod <- match.arg(CImethod)
     criterion <- match.arg(criterion)
     average <- match.arg(average)
 
+    ## coerce input models to secrlist
     object <- secrlist(...)
     if (!is.null(names(object)))
         modelnames <- names(object)
     else
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
+    
+    ## checks
     if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
         stop ("require fitted 'secr' objects")
     if ( length(object) < 2 )
@@ -44,6 +48,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
     if (!is.list(object) | !inherits(object[[1]], 'secr'))
         stop ("object must be secr or list of secr")
 
+    ## preliminaries
     type <- 'real'                     ## default
     parnames <- object[[1]]$realnames  ## default
     links <- object[[1]]$link
@@ -54,9 +59,9 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
         average <- 'beta'   ## override
         parnames <- betanames
     }
-
     np <- length(parnames)
     nsecr <- length(object)
+    
     ## rudimentary checks for compatible models
     if (nsecr > 1) {
         objnames <- function(i) switch (type, real=object[[i]]$realnames, beta=object[[i]]$betanames)
@@ -66,6 +71,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
                   "or models incompatible")
     }
 
+    ## NEWDATA construct if not provided
     if (is.null(newdata)) {
         #############################################################
         ## form unified 'newdata' containing all necessary predictors
@@ -102,15 +108,16 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
             }
         }
     }
+    
     nr <- nrow(newdata)
     rownames <- apply(newdata, 1, function(x) paste(names(newdata), '=', x, sep='', collapse=','))
 
-    ## WEIGHTS
+    ## VECTOR OF MODEL WEIGHTS
 
     AICdf <- AIC(object, sort = FALSE, dmax = dmax, criterion = criterion)
     wt <- unlist(AICdf[,paste(criterion, 'wt', sep = '')])
 
-    ## AVERAGE
+    ## AVERAGE MODELS
 
     if (type == 'beta') {
         nr   <- 1
@@ -140,6 +147,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
             sapply (names(object1$model), getfield, simplify = FALSE)
         }
         predicted <- lapply (object, getLP)
+
         ests <- lapply (predicted, function(x) lapply(x[parnames], function(y) y[, 'estimate'] ))
         estse <- lapply (predicted, function(x) lapply(x[parnames], function(y) y[, 'se'] ))
         if (average == 'real') {
@@ -152,12 +160,10 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
         else {
             vcvs <- lapply (predicted, function(x) lapply(x[parnames], function(y) attr(y, 'vcv')))
         }
-
         ests <- array(unlist(ests), dim=c(nr, np, nsecr))
         estse <- array(unlist(estse), dim=c(nr, np, nsecr))
         wtd <- sweep(ests, MARGIN = 3, STATS = wt, FUN = '*')
         wtd <- apply(wtd, 1:2, sum)
-
         ## variance from Burnham & Anderson 2004 eq (4)
         vcv1 <- array(unlist(vcvs), dim=c(nr, nr, np, nsecr))  ## between rows of newdata
         betak <- sweep(ests, MARGIN = 1:2, STATS = wtd, FUN='-')
@@ -188,12 +194,10 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
             parnames)
     }
     else { ## type=='real'
-        ## 2010 02 15, 2010 02 23
+        ## 2010 02 15, 2010 02 23, 2015-09-30
         for (m in 1: length(object))
-        if (object[[m]]$details$scalesigma |
-            object[[m]]$details$scaleg0 |
-            (object[[m]]$details$param > 1)) {
-            stop ("'model.average' cannot handle scaled detection parameters")
+        if (object[[m]]$details$param > 1) {
+            stop ("'model.average' cannot handle nonstandard parameterisations")
         }
         for (i in 1:nr) {
             if (average == 'real') {
@@ -246,7 +250,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
 ############################################################################################
 
 collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
-    scaled = FALSE, alpha = 0.05, perm = 1:4, fields = 1:4) {
+    alpha = 0.05, perm = 1:4, fields = 1:4) {
 
 
     ## 2013-04-20
@@ -343,12 +347,6 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     if (type == 'real') {
         predict <- lapply (object, getLP)
-        nmix <- object[[1]]$details$nmix   ## assume constant over models...
-        if (nmix > 1) {
-            ## for each fitted model...
-            ## code in fixpmix (see utility.R) shared with predict.secr
-            predict <- lapply(predict, fixpmix, nmix = nmix)
-        }
         stripped <- lapply(predict, function(x) lapply(x[parnames], function(y) y[, c('estimate','se')] ))
         stripped <- array(unlist(stripped), dim=c(nr, 2, np, nsecr))
     }
@@ -365,23 +363,6 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
             for (m in 1:nsecr) {
                 ## changed object[[1]]$link to object[[m]]$link following lines 2010 02 14 - seems right
                 output[i,1,,m] <- Xuntransform(stripped[i,1,,m, drop=FALSE], object[[m]]$link, parnames)
-
-                #####################
-                ## 2010 02 14 rescale
-                if (object[[m]]$details$scalesigma & scaled) {
-                    sigmaindex <- match('sigma',parnames)
-                    Dindex <- match('D',parnames)
-                    output[i,1,sigmaindex,m] <- output[i,1,sigmaindex,m] / output[i,1,Dindex,m]^0.5
-                    stripped[i,2,sigmaindex,m] <- NA   ## disable further operations for SE
-                }
-                if (object[[m]]$details$scaleg0 & scaled) {
-                    g0index <- match('g0',parnames)
-                    sigmaindex <- match('sigma',parnames)
-                    output[i,1,g0index,m] <- output[i,1,g0index,m] / output[i,1,sigmaindex,m]^2
-                    stripped[i,2,g0index,m] <- NA   ## disable further operations for SE
-                }
-                #####################
-
                 output[i,2,,m] <- se.Xuntransform(stripped[i,1,,m, drop=FALSE], stripped[i,2,,m, drop=FALSE], object[[m]]$link, parnames)
                 output[i,3,,m] <- Xuntransform(stripped[i,1,,m, drop=FALSE]-z*stripped[i,2,,m, drop=FALSE], object[[m]]$link, parnames)
                 output[i,4,,m] <- Xuntransform(stripped[i,1,,m, drop=FALSE]+z*stripped[i,2,,m, drop=FALSE], object[[m]]$link, parnames)

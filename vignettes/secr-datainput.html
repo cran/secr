@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title></title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+<!-- Styles for R syntax highlighter -->
+<style type="text/css">
+   pre .operator,
+   pre .paren {
+     color: rgb(104, 118, 135)
+   }
+
+   pre .literal {
+     color: #990073
+   }
+
+   pre .number {
+     color: #099;
+   }
+
+   pre .comment {
+     color: #998;
+     font-style: italic
+   }
+
+   pre .keyword {
+     color: #900;
+     font-weight: bold
+   }
+
+   pre .identifier {
+     color: rgb(0, 0, 0);
+   }
+
+   pre .string {
+     color: #d14;
+   }
+</style>
+
+<!-- R syntax highlighter -->
+<script type="text/javascript">
+var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/</gm,"&lt;")}function f(r,q,p){return RegExp(q,"m"+(r.cI?"i":"")+(p?"g":""))}function b(r){for(var p=0;p<r.childNodes.length;p++){var q=r.childNodes[p];if(q.nodeName=="CODE"){return q}if(!(q.nodeType==3&&q.nodeValue.match(/\s+/))){break}}}function h(t,s){var p="";for(var r=0;r<t.childNodes.length;r++){if(t.childNodes[r].nodeType==3){var q=t.childNodes[r].nodeValue;if(s){q=q.replace(/\n/g,"")}p+=q}else{if(t.childNodes[r].nodeName=="BR"){p+="\n"}else{p+=h(t.childNodes[r])}}}if(/MSIE [678]/.test(navigator.userAgent)){p=p.replace(/\r/g,"\n")}return p}function a(s){var r=s.className.split(/\s+/);r=r.concat(s.parentNode.className.split(/\s+/));for(var q=0;q<r.length;q++){var p=r[q].replace(/^language-/,"");if(e[p]){return p}}}function c(q){var p=[];(function(s,t){for(var r=0;r<s.childNodes.length;r++){if(s.childNodes[r].nodeType==3){t+=s.childNodes[r].nodeValue.length}else{if(s.childNodes[r].nodeName=="BR"){t+=1}else{if(s.childNodes[r].nodeType==1){p.push({event:"start",offset:t,node:s.childNodes[r]});t=arguments.callee(s.childNodes[r],t);p.push({event:"stop",offset:t,node:s.childNodes[r]})}}}}return t})(q,0);return p}function k(y,w,x){var q=0;var z="";var s=[];function u(){if(y.length&&w.length){if(y[0].offset!=w[0].offset){return(y[0].offset<w[0].offset)?y:w}else{return w[0].event=="start"?y:w}}else{return y.length?y:w}}function t(D){var A="<"+D.nodeName.toLowerCase();for(var B=0;B<D.attributes.length;B++){var C=D.attributes[B];A+=" "+C.nodeName.toLowerCase();if(C.value!==undefined&&C.value!==false&&C.value!==null){A+='="'+m(C.value)+'"'}}return A+">"}while(y.length||w.length){var v=u().splice(0,1)[0];z+=m(x.substr(q,v.offset-q));q=v.offset;if(v.event=="start"){z+=t(v.node);s.push(v.node)}else{if(v.event=="stop"){var p,r=s.length;do{r--;p=s[r];z+=("</"+p.nodeName.toLowerCase()+">")}while(p!=v.node);s.splice(r,1);while(r<s.length){z+=t(s[r]);r++}}}}return z+m(x.substr(q))}function j(){function q(x,y,v){if(x.compiled){return}var u;var s=[];if(x.k){x.lR=f(y,x.l||hljs.IR,true);for(var w in x.k){if(!x.k.hasOwnProperty(w)){continue}if(x.k[w] instanceof Object){u=x.k[w]}else{u=x.k;w="keyword"}for(var r in u){if(!u.hasOwnProperty(r)){continue}x.k[r]=[w,u[r]];s.push(r)}}}if(!v){if(x.bWK){x.b="\\b("+s.join("|")+")\\s"}x.bR=f(y,x.b?x.b:"\\B|\\b");if(!x.e&&!x.eW){x.e="\\B|\\b"}if(x.e){x.eR=f(y,x.e)}}if(x.i){x.iR=f(y,x.i)}if(x.r===undefined){x.r=1}if(!x.c){x.c=[]}x.compiled=true;for(var t=0;t<x.c.length;t++){if(x.c[t]=="self"){x.c[t]=x}q(x.c[t],y,false)}if(x.starts){q(x.starts,y,false)}}for(var p in e){if(!e.hasOwnProperty(p)){continue}q(e[p].dM,e[p],true)}}function d(B,C){if(!j.called){j();j.called=true}function q(r,M){for(var L=0;L<M.c.length;L++){if((M.c[L].bR.exec(r)||[null])[0]==r){return M.c[L]}}}function v(L,r){if(D[L].e&&D[L].eR.test(r)){return 1}if(D[L].eW){var M=v(L-1,r);return M?M+1:0}return 0}function w(r,L){return L.i&&L.iR.test(r)}function K(N,O){var M=[];for(var L=0;L<N.c.length;L++){M.push(N.c[L].b)}var r=D.length-1;do{if(D[r].e){M.push(D[r].e)}r--}while(D[r+1].eW);if(N.i){M.push(N.i)}return f(O,M.join("|"),true)}function p(M,L){var N=D[D.length-1];if(!N.t){N.t=K(N,E)}N.t.lastIndex=L;var r=N.t.exec(M);return r?[M.substr(L,r.index-L),r[0],false]:[M.substr(L),"",true]}function z(N,r){var L=E.cI?r[0].toLowerCase():r[0];var M=N.k[L];if(M&&M instanceof Array){return M}return false}function F(L,P){L=m(L);if(!P.k){return L}var r="";var O=0;P.lR.lastIndex=0;var M=P.lR.exec(L);while(M){r+=L.substr(O,M.index-O);var N=z(P,M);if(N){x+=N[1];r+='<span class="'+N[0]+'">'+M[0]+"</span>"}else{r+=M[0]}O=P.lR.lastIndex;M=P.lR.exec(L)}return r+L.substr(O,L.length-O)}function J(L,M){if(M.sL&&e[M.sL]){var r=d(M.sL,L);x+=r.keyword_count;return r.value}else{return F(L,M)}}function I(M,r){var L=M.cN?'<span class="'+M.cN+'">':"";if(M.rB){y+=L;M.buffer=""}else{if(M.eB){y+=m(r)+L;M.buffer=""}else{y+=L;M.buffer=r}}D.push(M);A+=M.r}function G(N,M,Q){var R=D[D.length-1];if(Q){y+=J(R.buffer+N,R);return false}var P=q(M,R);if(P){y+=J(R.buffer+N,R);I(P,M);return P.rB}var L=v(D.length-1,M);if(L){var O=R.cN?"</span>":"";if(R.rE){y+=J(R.buffer+N,R)+O}else{if(R.eE){y+=J(R.buffer+N,R)+O+m(M)}else{y+=J(R.buffer+N+M,R)+O}}while(L>1){O=D[D.length-2].cN?"</span>":"";y+=O;L--;D.length--}var r=D[D.length-1];D.length--;D[D.length-1].buffer="";if(r.starts){I(r.starts,"")}return R.rE}if(w(M,R)){throw"Illegal"}}var E=e[B];var D=[E.dM];var A=0;var x=0;var y="";try{var s,u=0;E.dM.buffer="";do{s=p(C,u);var t=G(s[0],s[1],s[2]);u+=s[0].length;if(!t){u+=s[1].length}}while(!s[2]);if(D.length>1){throw"Illegal"}return{r:A,keyword_count:x,value:y}}catch(H){if(H=="Illegal"){return{r:0,keyword_count:0,value:m(C)}}else{throw H}}}function g(t){var p={keyword_count:0,r:0,value:m(t)};var r=p;for(var q in e){if(!e.hasOwnProperty(q)){continue}var s=d(q,t);s.language=q;if(s.keyword_count+s.r>r.keyword_count+r.r){r=s}if(s.keyword_count+s.r>p.keyword_count+p.r){r=p;p=s}}if(r.language){p.second_best=r}return p}function i(r,q,p){if(q){r=r.replace(/^((<[^>]+>|\t)+)/gm,function(t,w,v,u){return w.replace(/\t/g,q)})}if(p){r=r.replace(/\n/g,"<br>")}return r}function n(t,w,r){var x=h(t,r);var v=a(t);var y,s;if(v){y=d(v,x)}else{return}var q=c(t);if(q.length){s=document.createElement("pre");s.innerHTML=y.value;y.value=k(q,c(s),x)}y.value=i(y.value,w,r);var u=t.className;if(!u.match("(\\s|^)(language-)?"+v+"(\\s|$)")){u=u?(u+" "+v):v}if(/MSIE [678]/.test(navigator.userAgent)&&t.tagName=="CODE"&&t.parentNode.tagName=="PRE"){s=t.parentNode;var p=document.createElement("div");p.innerHTML="<pre><code>"+y.value+"</code></pre>";t=p.firstChild.firstChild;p.firstChild.cN=s.cN;s.parentNode.replaceChild(p.firstChild,s)}else{t.innerHTML=y.value}t.className=u;t.result={language:v,kw:y.keyword_count,re:y.r};if(y.second_best){t.second_best={language:y.second_best.language,kw:y.second_best.keyword_count,re:y.second_best.r}}}function o(){if(o.called){return}o.called=true;var r=document.getElementsByTagName("pre");for(var p=0;p<r.length;p++){var q=b(r[p]);if(q){n(q,hljs.tabReplace)}}}function l(){if(window.addEventListener){window.addEventListener("DOMContentLoaded",o,false);window.addEventListener("load",o,false)}else{if(window.attachEvent){window.attachEvent("onload",o)}else{window.onload=o}}}var e={};this.LANGUAGES=e;this.highlight=d;this.highlightAuto=g;this.fixMarkup=i;this.highlightBlock=n;this.initHighlighting=o;this.initHighlightingOnLoad=l;this.IR="[a-zA-Z][a-zA-Z0-9_]*";this.UIR="[a-zA-Z_][a-zA-Z0-9_]*";this.NR="\\b\\d+(\\.\\d+)?";this.CNR="\\b(0[xX][a-fA-F0-9]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)";this.BNR="\\b(0b[01]+)";this.RSR="!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|\\.|-|-=|/|/=|:|;|<|<<|<<=|<=|=|==|===|>|>=|>>|>>=|>>>|>>>=|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~";this.ER="(?![\\s\\S])";this.BE={b:"\\\\.",r:0};this.ASM={cN:"string",b:"'",e:"'",i:"\\n",c:[this.BE],r:0};this.QSM={cN:"string",b:'"',e:'"',i:"\\n",c:[this.BE],r:0};this.CLCM={cN:"comment",b:"//",e:"$"};this.CBLCLM={cN:"comment",b:"/\\*",e:"\\*/"};this.HCM={cN:"comment",b:"#",e:"$"};this.NM={cN:"number",b:this.NR,r:0};this.CNM={cN:"number",b:this.CNR,r:0};this.BNM={cN:"number",b:this.BNR,r:0};this.inherit=function(r,s){var p={};for(var q in r){p[q]=r[q]}if(s){for(var q in s){p[q]=s[q]}}return p}}();hljs.LANGUAGES.cpp=function(){var a={keyword:{"false":1,"int":1,"float":1,"while":1,"private":1,"char":1,"catch":1,"export":1,virtual:1,operator:2,sizeof:2,dynamic_cast:2,typedef:2,const_cast:2,"const":1,struct:1,"for":1,static_cast:2,union:1,namespace:1,unsigned:1,"long":1,"throw":1,"volatile":2,"static":1,"protected":1,bool:1,template:1,mutable:1,"if":1,"public":1,friend:2,"do":1,"return":1,"goto":1,auto:1,"void":2,"enum":1,"else":1,"break":1,"new":1,extern:1,using:1,"true":1,"class":1,asm:1,"case":1,typeid:1,"short":1,reinterpret_cast:2,"default":1,"double":1,register:1,explicit:1,signed:1,typename:1,"try":1,"this":1,"switch":1,"continue":1,wchar_t:1,inline:1,"delete":1,alignof:1,char16_t:1,char32_t:1,constexpr:1,decltype:1,noexcept:1,nullptr:1,static_assert:1,thread_local:1,restrict:1,_Bool:1,complex:1},built_in:{std:1,string:1,cin:1,cout:1,cerr:1,clog:1,stringstream:1,istringstream:1,ostringstream:1,auto_ptr:1,deque:1,list:1,queue:1,stack:1,vector:1,map:1,set:1,bitset:1,multiset:1,multimap:1,unordered_set:1,unordered_map:1,unordered_multiset:1,unordered_multimap:1,array:1,shared_ptr:1}};return{dM:{k:a,i:"</",c:[hljs.CLCM,hljs.CBLCLM,hljs.QSM,{cN:"string",b:"'\\\\?.",e:"'",i:"."},{cN:"number",b:"\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)"},hljs.CNM,{cN:"preprocessor",b:"#",e:"$"},{cN:"stl_container",b:"\\b(deque|list|queue|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array)\\s*<",e:">",k:a,r:10,c:["self"]}]}}}();hljs.LANGUAGES.r={dM:{c:[hljs.HCM,{cN:"number",b:"\\b0[xX][0-9a-fA-F]+[Li]?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+(?:[eE][+\\-]?\\d*)?L\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+\\.(?!\\d)(?:i\\b)?",e:hljs.IMMEDIATE_RE,r:1},{cN:"number",b:"\\b\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\.\\d+(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"keyword",b:"(?:tryCatch|library|setGeneric|setGroupGeneric)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\.",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\d+(?![\\w.])",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\b(?:function)",e:hljs.IMMEDIATE_RE,r:2},{cN:"keyword",b:"(?:if|in|break|next|repeat|else|for|return|switch|while|try|stop|warning|require|attach|detach|source|setMethod|setClass)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"literal",b:"(?:NA|NA_integer_|NA_real_|NA_character_|NA_complex_)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"literal",b:"(?:NULL|TRUE|FALSE|T|F|Inf|NaN)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"identifier",b:"[a-zA-Z.][a-zA-Z0-9._]*\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"<\\-(?!\\s*\\d)",e:hljs.IMMEDIATE_RE,r:2},{cN:"operator",b:"\\->|<\\-",e:hljs.IMMEDIATE_RE,r:1},{cN:"operator",b:"%%|~",e:hljs.IMMEDIATE_RE},{cN:"operator",b:">=|<=|==|!=|\\|\\||&&|=|\\+|\\-|\\*|/|\\^|>|<|!|&|\\||\\$|:",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"%",e:"%",i:"\\n",r:1},{cN:"identifier",b:"`",e:"`",r:0},{cN:"string",b:'"',e:'"',c:[hljs.BE],r:0},{cN:"string",b:"'",e:"'",c:[hljs.BE],r:0},{cN:"paren",b:"[[({\\])}]",e:hljs.IMMEDIATE_RE,r:0}]}};
+hljs.initHighlightingOnLoad();
+</script>
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<p><br>
+\vspace{8pt}</p>
+
+<p>Data for analysis in <strong>secr</strong> must be prepared as an R object of
+class &#39;capthist&#39;. This object includes both the detector layout and the
+capture data. The structure of a capthist object is complex and
+depends on the detector type. Functions <code>make.capthist</code> or
+<code>read.capthist</code> are used to construct a capthist object from
+data already in R or from text files. This vignette describes data
+input directly from text files with <code>read.capthist</code>, which will
+be adequate for most analyses.</p>
+
+<p>###Introduction</p>
+
+<p>The text file formats used by <code>read.capthist</code> are shared with
+program DENSITY (Efford 2012). Two types of file are needed, one for
+capture data and one for detector (trap) layouts. We use the jargon
+terms &#39;detector&#39;, &#39;identifier&#39;, &#39;covariate&#39;, &#39;session&#39; and &#39;occasion&#39;;
+if you are not familiar with these as used in <strong>secr</strong> then
+consult the <a href="#glossary">Glossary</a>.</p>
+
+<p>###Text formats - general</p>
+
+<p>Input files should be prepared with a text editor, not a word
+processing program. Values are usually separated by blanks or tabs,
+but commas may also be used. Input files with extension &#39;.csv&#39; are
+recognised automatically as comma-delimited. This makes it feasible to
+prepare input files with spreadsheet software. Care should be taken to
+prefix header information with the comment character (default #).</p>
+
+<p>Identifiers may be numeric values or alphanumeric values with no
+included spaces, tabs or commas. The underscore character should not
+be used in detector (trap) identifiers. Leading zeros in identifier
+fields will be taken literally (&#39;01&#39; is read as &#39;01&#39;, not &#39;1&#39;), and it
+is essential to be consistent between the capture data file and the
+detector layout file when using &#39;trapID&#39; format.</p>
+
+<p>###Capture data format</p>
+
+<p>Capture data are read from a single text file with one detection
+record per line. Each detection record starts with a session
+identifier, an animal identifier, an occasion number, and the location
+of the detection. Location is usually given in &#39;trapID&#39; format as a
+detector (trap) identifier that matches a detector in the trap layout
+file (below)[<sup>footnote1]</sup></p>
+
+<p>[<sup>footnote1]:</sup> The older, but still supported, &#39;XY&#39; format uses
+  the actual x- and y-coordinates of the detection, but this is risky
+  as coordinates must exactly match those in the trap layout file.</p>
+
+<p>Here is a simple example - the capture data for the &#39;stoatCH&#39; dataset:</p>
+
+<pre><code># Session ID Occasion Detector
+MatakitakiStoats 2 1 A12
+MatakitakiStoats 2 2 A12
+MatakitakiStoats 9 2 A4
+MatakitakiStoats 1 1 A9
+... 22 lines omitted ...
+MatakitakiStoats 7 6 G7
+MatakitakiStoats 20 7 G8
+MatakitakiStoats 17 4 G9
+MatakitakiStoats 19 6 G9
+</code></pre>
+
+<p>The first line is ignored and is not needed. There is a single session
+&#39;MatakitakiStoats&#39;. Individuals are numbered 1 to 20 (these
+identifiers could also have been alphanumeric). Detector identifiers
+&#39;A12&#39;, &#39;B5&#39; etc. match the detector layout file as we shall see
+next. Animal 2 was detected at detector &#39;A12&#39; on both day 1 and day
+2. The order of records does not matter.</p>
+
+<p>A study may include multiple sessions. All detections are placed in
+one file and sessions are distinguished by the identifier in the first
+column.</p>
+
+<p>Animals sometimes die on capture or are removed during a session. Mark
+these detections with a minus sign before the occasion number.</p>
+
+<p>Further columns may be added for individual covariates such as length
+or sex. Categorical covariates such as sex may use alphanumeric codes
+(e.g., &#39;F&#39;, &#39;M&#39;; quotes not needed). Individual covariates are assumed
+to be permanent, at least within a session, and only the first
+non-missing value is used for each individual. Missing values on a
+particular occasion may be indicated with &#39;NA&#39;. If a covariate is coded &#39;NA&#39; on all occasions that an animal is detected then the overall status of the animal is &#39;NA&#39;. Covariates with missing values like this may be used in hybrid mixture models (hcov), but not in other analyses. </p>
+
+<p>For multi-session data it is necessary that the levels of a factor
+covariate are the same in each session, whether or not all levels are
+used. This may require the levels in the final capthist object to be
+set manually.</p>
+
+<p>###Detector layout format</p>
+
+<p>The basic format for a detector (trap) layout file simply gives the x-
+and y-coordinates for each detector, one per line:</p>
+
+<pre><code># Detector X Y
+ A1   -1500   -1500
+ A2   -1500   -1250
+ A3   -1500   -1000
+ A4   -1500    -750
+... 86 lines omitted ...
+G10    1500     750
+G11    1500    1000
+G12    1500    1250
+G13    1500    1500
+</code></pre>
+
+<p>This format may optionally be extended to identify occasions when
+particular detectors were not operated. A string of ones and zeros is
+added to each line, indicating the occasions when each detector was
+used or not used. The number of &#39;usage&#39; codes should equal the number of
+occasions. Codes may be separated by white space (blanks, tabs, or
+commas). This is a fictitious example of a 7-day study in which
+detector A1 was not operated on day 1 or day 2 and detector A4 was not
+operated on day 6 or day 7:</p>
+
+<pre><code># Detector X Y Usage
+ A1   -1500   -1500   0011111
+ A2   -1500   -1250   1111111
+ A3   -1500   -1000   1111111
+ A4   -1500    -750   1111100
+ etc.
+</code></pre>
+
+<p>Usage is not restricted to binary values. Numeric values
+ for detector-specific effort on each occasion are added to each
+ line. The number of values should equal the number of occasions, as
+ for binary usage. Values must be separated by white space; for input
+ with <code>read.traps</code> or <code>read.capthist</code>, set
+<code>binary.usage = FALSE</code>. This is a fictitious example:</p>
+
+<pre><code># Detector X Y Effort
+ A1   -1500   -1500   0 0 3.2 5
+ A2   -1500   -1250   2 2 2 2
+ A3   -1500   -1000   2 2 4 4
+ A4   -1500    -750   1 1 2 3
+ etc.
+</code></pre>
+
+<p>Detector A2 was operated for the same duration on each occasion;
+ usage of other detectors varied and A1 was not operated at all on the
+ first two occasions. See <a href="http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf">secr-varyingeffort.pdf</a> for more.</p>
+
+<p>The format also allows one or more detector-level covariates to be coded
+at the end of each line, separated by one forward slash &#39;/&#39;:</p>
+
+<pre><code># Detector X Y Covariates
+ A1   -1500   -1500   /0.5 2 
+ A2   -1500   -1250   /0.5 2 
+ A3   -1500   -1000   /2   2 
+ A4   -1500    -750   /2   3 
+ etc.
+</code></pre>
+
+<p>In this example the vectors of values (0.5, 0.5, 2, 2, &hellip;) and (2,
+ 2, 2, 3, &hellip;) will be saved by default as a variables &#39;V1&#39; and &#39;V2&#39; in the
+ covariates dataframe of the traps object. The names may be changed
+ later. Alternatively, the argument &#39;trapcovnames&#39; may
+ be set in <code>read.capthist</code> (see below).</p>
+
+<p>If your detector covariate varies over time (i.e., between occasions),
+ after the slash (/) you should add at least one column for each
+ occasion. Later use <code>timevaryingcov</code> in secr.fit&#39; to identify a set of
+\(s\) covariate columns associated with occasions 1:\(s\) and
+ to give the set of columns a name that may be used in model formulae.</p>
+
+<p>###Using read.capthist</p>
+
+<p>Having described the file formats, we now demonstrate the use of
+<code>read.capthist</code> to import data to a &#39;capthist&#39;
+object. The argument list of <code>read.capthist</code> is</p>
+
+<pre><code class="r">read.capthist(captfile, trapfile, detector = &quot;multi&quot;, fmt = c(&quot;trapID&quot;, &quot;XY&quot;), 
+    noccasions = NULL, covnames = NULL, trapcovnames = NULL, cutval = NULL, 
+    verify = TRUE, noncapt = &quot;NONE&quot;, ...)
+</code></pre>
+
+<p>Our stoat example is very simple: apart from specifying the input file names we only need to alter the detector type (see <code>?detector</code>). The number of occasions (7) will be determined automatically from the input and there are no individual covariates to be named. The data are in the folder &#39;extdata&#39; of the
+package installation, so we set the working directory to there.</p>
+
+<pre><code class="r">library(secr)
+setwd (system.file(&#39;extdata&#39;, package = &#39;secr&#39;))
+stoatCH &lt;- read.capthist(&#39;stoatcapt.txt&#39;, &#39;stoattrap.txt&#39;,
+    detector = &#39;proximity&#39;)
+</code></pre>
+
+<pre><code>## No errors found :-)
+</code></pre>
+
+<pre><code class="r">summary(stoatCH)
+</code></pre>
+
+<pre><code>## Object class      capthist 
+## Detector type     proximity 
+## Detector number   94 
+## Average spacing   250 m 
+## x-range           -1500 1500 m 
+## y-range           -1500 1500 m 
+## 
+## Counts by occasion 
+##                    1  2  3  4  5  6  7 Total
+## n                  3  4  8  3  3  7  2    30
+## u                  3  3  8  2  0  3  1    20
+## f                 12  6  2  0  0  0  0    20
+## M(t+1)             3  6 14 16 16 19 20    20
+## losses             0  0  0  0  0  0  0     0
+## detections         3  4  8  3  3  7  2    30
+## detectors visited  3  4  8  3  3  7  2    30
+## detectors used    94 94 94 94 94 94 94   658
+</code></pre>
+
+<p>These results match those from loading the &#39;stoatCH&#39; dataset provided with <strong>secr</strong> (not shown). The message &#39;No errors found&#39; is from <code>verify</code> which can be switched off (<code>verify = FALSE</code> in the call to <code>read.capthist</code>). The labels &#39;n&#39;, &#39;u&#39;, &#39;f&#39;, and &#39;M(t+1)&#39; refer to summary counts from Otis et al. (1978); for a legend see <code>?summary.capthist</code>.</p>
+
+<p>Under the default settings of <code>read.capthist</code>:</p>
+
+<ul>
+<li>values should be separated by blanks or tabs.</li>
+<li>blank lines are ignored</li>
+<li>any text on a line after the comment character &#39;#&#39; is ignored</li>
+</ul>
+
+<p>The defaults may be changed with settings that are passed by
+<code>read.capthist</code> to <code>read.table</code>, specifically</p>
+
+<ul>
+<li><code>sep = &#39;,&#39;</code> for comma-delimited data</li>
+<li><code>comment.char = &#39;;&#39;</code> to change the comment character</li>
+</ul>
+
+<p>If the study includes multiple sessions and the detector layout or usage varies between sessions then it is necessary to provide session-specific detector layout files. This is done by giving &#39;trapfile&#39; as a vector of names, one per session (repetition allowed; all &#39;.csv&#39; or all not &#39;.csv&#39;). Sessions are sorted numerically if all session identifiers are numeric, otherwise alphanumerically. Care is needed to match the order of layout files to the session order: always confirm the result matches your intention by reviewing the summary.</p>
+
+<p>###Other detector types</p>
+
+<p>####Count detectors</p>
+
+<p>The &#39;proximity&#39; detector type allows at most one detection of each
+individual at a particular detector on any occasion. Detectors that
+allow repeat detections are called &#39;count&#39; detectors in <strong>secr</strong>. [In
+fact, proximity detectors are a special case of count detectors in
+which the count always has a Bernoulli distribution]. Count data can
+result from devices such as automatic cameras, or from collapsing data
+collected over many occasions (Efford et al. 2009).</p>
+
+<p>Count data are input by repeating each line in the capture data the required number of times. [Yes, it would have been more elegant to code the frequency, but this detector type was an afterthought.] See
+<code>?make.capthist</code> for an example that automatically replicates rows of a capture dataframe according to a frequency vector f (f could be a column in the capture dataframe).</p>
+
+<p>####Signal detectors</p>
+
+<p>Signal strength detectors are described in the document <a href="see%20also%20Efford%20et%20al.%202009">secr-sound.pdf</a>. Here we just note that signal strength data may be input with <code>read.capthist</code> using a minor
+extension of the DENSITY format: the signal strength for each detection is appended as the fifth (&#39;fmt = trapID&#39;) or sixth (&#39;fmt = XY&#39;) value in each row of the capture data file. There will usually be
+only one sampling &#39;occasion&#39; as sounds are ephemeral. The threshold below which signals were classified as &#39;not detected&#39; must be provided in the &#39;cutval&#39; argument. Detections with signal strength coded as less than &#39;cutval&#39; are discarded.</p>
+
+<pre><code class="r">write.capthist(signalCH, &#39;temp&#39;)  ## export data for demo
+tempCH &lt;- read.capthist(&#39;tempcapt.txt&#39;, &#39;temptrap.txt&#39;, detector = &#39;signal&#39;, cutval = 52.5)
+</code></pre>
+
+<pre><code>## No errors found :-)
+</code></pre>
+
+<p>####Polygon, transect and telemetry detectors</p>
+
+<p>&#39;Detectors&#39; are usually modelled as if they exist at a point, and each row
+of the &#39;trapfile&#39; for <code>read.capthist</code> gives the x-y coordinates
+for one detector, as we have seen. However, sometimes detections are
+made across an area , as when an area is searched for faecal samples
+that are subsequently identified to individual by microsatellite DNA
+analysis. Then the observations comprise both detection or
+nondetection of each individual on each occasion, and the precise x-y
+coordinates at which each cue (e.g., faecal deposit) was
+found.</p>
+
+<p>The &#39;polygon&#39; detector type handles this sort of data. The area searched is assumed to comprise one or more polygons. To simplify the analysis some constraints are imposed on the shape of polygons: they should be convex, at least in an east-west direction (i.e. any transect parallel to the y-axis should cross the boundary at no more than 2 points) and cannot contain &#39;holes&#39;.  See <a href="http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf">secr-polygondetectors.pdf</a> for more.</p>
+
+<p>Despite the considerable differences between &#39;polygon&#39; and other
+detectors, input is pretty much as we have already described. Use
+<code>read.capthist</code> with the &#39;XY&#39; format:</p>
+
+<pre><code class="r">read.capthist(&quot;captXY.txt&quot;, &quot;perimeter.txt&quot;, fmt = &#39;XY&#39;, detector = &quot;polygon&quot;)
+</code></pre>
+
+<p>The detector file (in this case &#39;perimeter.txt&#39;) has three columns as
+usual, but rows correspond to vertices of the polygon(s) bounding the
+search area. The first column is used as a factor to distinguish the
+polygons (&#39;polyID&#39;).</p>
+
+<pre><code># polyID X Y
+1 576407 13915205
+1 576978 13915122
+1 576866 13914572
+1 576256 13914661
+2 575500 13915038
+2 575857 13915210
+2 576093 13914833
+2 575905 13914438
+2 575509 13914588
+</code></pre>
+
+<p>If the input polygons are not closed (as here) then the first vertex
+of each is repeated in the resulting &#39;traps&#39; object to ensure closure.</p>
+
+<p>The fourth and fifth columns of the capture file (in this case
+&#39;captXY.txt&#39;) give the x- and y- coordinates of each detection. These
+are matched automatically to the polygons defined in the detector
+file. Detections with x-y coordinates outside any polygon are rejected.</p>
+
+<p>Polygons may also be input with <code>read.traps</code>. Here is an example in
+which the preceding polygons are used to simulate some detections (we
+assume the polygon data have been copied to the clipboard):</p>
+
+<pre><code class="r">temppoly &lt;- read.traps(file = &#39;clipboard&#39;, detector = &#39;polygon&#39;)
+tempcapt &lt;- sim.capthist(temppoly, popn = list(D = 1, buffer = 1000), detectpar = 
+                           list(g0 = 0.5, sigma = 250))
+plot(tempcapt, label = TRUE, tracks = TRUE, title = &#39;Simulated detections within polygons&#39;)
+</code></pre>
+
+<p>\setkeys{Gin}{height=80mm, keepaspectratio=TRUE}</p>
+
+<p><img src="data:image/png;base64,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" alt="polygon simulations"/></p>
+
+<p>See <a href="http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf">secr-polygondetectors.pdf</a> for more on polygon and
+transect detectors. </p>
+
+<p>The &#39;telemetry&#39; detector type is used to input animal locations from radiotelemetry. For input it works much the same as a polygon detector; while a perimeter is required, it is not used in analysis and therefore may be as crude as you like.</p>
+
+<p>Usage and covariates apply to the polygon or transect as a whole rather than to each vertex. Usage codes and covariates are appended to the end of the line, just as for point detectors (traps etc.). The usage
+and covariates for each polygon or transect are taken from its first vertex. Although the end-of-line strings of other vertices are not used, they cannot be blank and should use the same spacing as the
+first vertex.</p>
+
+<p>Here is a polygon file that defines both usage and a categorical covariate. It would also work to repeat the usage and covariate for each vertex - this is just a little more readable.</p>
+
+<pre><code># polyID X Y usage / habitat 
+1 576407 13915205 11000 / A
+1 576978 13915122 - / - 
+1 576866 13914572 - / - 
+1 576256 13914661 - / - 
+2 575500 13915038 00111 / B
+2 575857 13915210 - / - 
+2 576093 13914833 - / - 
+2 575905 13914438 - / - 
+2 575509 13914588 - / - 
+</code></pre>
+
+<p>Detections along a transect have a similar structure to detections within a polygon, and input follows the same format. Locations are input as x-y coordinates for the position on the transect line from which each detection was made, not as distances along the transect.</p>
+
+<p>###Mark&ndash;resight</p>
+
+<p>Spatial mark&ndash;resight data combine detection histories of marked animals, input as described above, and counts of sighted but unmarked or unidentified animals. The latter are input separately as described in <a href="http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf">secr-markresight.pdf</a>, using the <code>addSightings</code> function. Sighting-only data may include all-zero detection histories of previously marked animals known to be alive but not seen; these are coded with occasion 0 (zero).</p>
+
+<p>###Troubleshooting</p>
+
+<p>A message like</p>
+
+<p><code>Error in scan(file, what, nmax, sep, dec, quote, skip, nlines,
+    na.strings,  :  line 1 did not have 6 elements</code></p>
+
+<p>indicates unequal line lengths in one of the input files, possibly
+just one or two stray lines with an extra value. You can use
+<code>count.fields(&#39;filename.txt&#39;)</code> to track them down, replacing
+&#39;filename.txt&#39; with your own filename.</p>
+
+<p>###Further notes</p>
+
+<p>&#39;Filters&#39; are used in DENSITY to select and reconfigure data. Their
+function is taken over in <strong>secr</strong> by the methods <code>subset</code>
+and <code>reduce</code> for capthist objects.</p>
+
+<p><code>subset.capthist</code> allows the user to select a subset of
+individuals, occasions, detectors or sessions from a capthist
+object. For example:</p>
+
+<pre><code class="r">summary(subset(stoatCH, traps = 1:47, occasions = 1:5))
+</code></pre>
+
+<pre><code>## Warning in subset.capthist(stoatCH, traps = 1:47, occasions = 1:5): no detections on occasion(s) 5
+</code></pre>
+
+<pre><code>## Object class      capthist 
+## Detector type     proximity 
+## Detector number   47 
+## Average spacing   250 m 
+## x-range           -1500 0 m 
+## y-range           -1500 1500 m 
+## 
+## Counts by occasion 
+##                    1  2  3  4  5 Total
+## n                  2  4  1  1  0     8
+## u                  2  3  1  0  0     6
+## f                  4  2  0  0  0     6
+## M(t+1)             2  5  6  6  6     6
+## losses             0  0  0  0  0     0
+## detections         2  4  1  1  0     8
+## detectors visited  2  4  1  1  0     8
+## detectors used    47 47 47 47 47   235
+</code></pre>
+
+<p><code>reduce.capthist</code> allows occasions to be combined (or dropped),
+and certain changes of detector type. For example, &#39;count&#39; data may be
+collapsed to binary &#39;proximity&#39; data, or &#39;signal&#39; data converted to
+&#39;proximity&#39; data.</p>
+
+<p><code>addCovariates</code> is used to add spatial covariate information
+to a traps (detector) or mask object from another spatial data source.</p>
+
+<p>\vspace{12pt}</p>
+
+<p>An alternative function for text file input is
+<code>read.SPACECAP</code>. This uses the formats described in the help
+for the R package SPACECAP (Singh et al. 2010).</p>
+
+<p>The function <code>read.DA</code> is used to create a capthist
+object from polygon detection data in an R list, structured as input
+for the Bayesian analysis of Royle and Young (2008), using data
+augmentation.</p>
+
+<p>###References</p>
+
+<p>Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
+likelihood methods for capture&ndash;recapture studies. <em>Biometrics</em> <strong>64</strong>,
+377&ndash;385.</p>
+
+<p>Efford, M. G. (2012) <em>DENSITY 5.0: software for spatially
+    explicit capture&ndash;recapture</em>.  University of Otago, Dunedin, New
+  Zealand <a href="http://www.otago.ac.nz/density">http://www.otago.ac.nz/density</a>.</p>
+
+<p>Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
+density estimated from locations of individuals on a passive detector
+array. <em>Ecology</em> <strong>90</strong>, 2676&ndash;2682.</p>
+
+<p>Miller, C. R., Joyce, P. and Waits, L. P. (2005) A new method
+  for estimating the size of small populations from genetic
+  mark&ndash;recapture data. <em>Molecular Ecology</em> <strong>14</strong>,
+  1991&ndash;2005.</p>
+
+<p>Otis, D. L., Burnham, K. P., White, G. C. and Anderson,
+  D. R. (1978) Statistical inference from capture data on closed
+  animal populations. <em>Wildlife Monographs</em> <strong>62</strong>.</p>
+
+<p>Pollock, K. H. (1982) A capture-recapture design robust to
+  unequal probability of capture. <em>Journal of Wildlife
+    Management</em> <strong>46</strong>, 752&ndash;757.</p>
+
+<p>Royle, J. A. and Young, K. V. (2008) A hierarchical model for
+  spatial capture&ndash;recapture data. <em>Ecology</em> <strong>89</strong>,
+  2281&ndash;2289.</p>
+
+<p>Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and
+  Karanth, K. U. (2010) <em>SPACECAP: A program to estimate animal
+    abundance and density using Bayesian spatially explicit
+    capture-recapture models. Version 1.0.</em> Wildlife Conservation
+  Society - India Program, Centre for Wildlife Studies, Bangalure,
+  India.</p>
+
+<p>###Appendix: Glossary  {#glossary}</p>
+
+<p>#####Covariate
+Auxiliary data used in a model of detection probability. Covariates may be associated with detectors, individuals, sessions or occasions. Spatial covariates of density are a separate matter &ndash; see <code>?mask</code>. Individual covariates[<sup>footnote]</sup> are stored in a dataframe (one row per animal) that is an attribute of a capthist object. Detector covariates are stored in a dataframe (one row per detector) that is an attribute of a traps object (remembering that a capthist object always includes a traps object). Session and occasion (=time) covariates are not stored with the data; they are provided as the arguments &#39;sessioncov&#39; and &#39;timecov&#39; of function <code>secr.fit</code>.</p>
+
+<p>[<sup>footnote]:Individual</sup> covariates may be used directly only when a model is fitted by maximizing the conditional likelihood, but they are used to define groups for the full likelihood case.</p>
+
+<p>#####Detector 
+A device used to detect the presence of an animal. Often used interchangeably with &#39;trap&#39; but it is helpful to distinguish true traps, which always detain the animal until it is released, from other detectors such as hair snags and cameras that leave the animal free to roam. A detector in SECR has a known physical location, usually a point defined by its x-y coordinates.</p>
+
+<p>#####Identifier 
+Label used to distinguish detectors, animals or sessions.</p>
+
+<p>#####Occasion
+In conventional capture&ndash;recapture, &#39;occasion&#39; refers to a discrete sampling event (e.g., Otis et al. (1978) and program CAPTURE). A typical &#39;occasion&#39; is a daily trap visit, but the time
+  interval represented by an &#39;occasion&#39; varies widely between studies. Although trapped samples accumulate over an interval (e.g., the preceding day), for analysis they are treated as instantaneous. Occasions are numbered 1, 2, 3, etc. Closed population analyses usually require two or more occasions (see
+  Miller et al. 2005 for an exception).</p>
+
+<p>SECR follows conventional capture&ndash;recapture in assuming discrete sampling events (occasions). However, SECR takes a closer interest in the sampling process, and each discrete sample is modelled as the outcome of processes operating through the interval between trap visits. In particular, a model of competing risks in continuous time is used for the probability of capture in multi-catch traps (Borchers &amp; Efford 2008).</p>
+
+<p>Proximity and count detectors allow multiple occurrences of an animal to be recorded in each sampling interval. Analysis is then possible with data from a single occasion. For consistency we retain the term &#39;occasion&#39;, although such a sample is clearly not instantaneous.</p>
+
+<p>#####SECR
+Spatially explicit capture&ndash;recapture, an inclusive term
+  for capture&ndash;recapture methods that model detection probability as
+  function of distance from unobserved &#39;home-range&#39; centres (e.g.,
+  Borchers and Efford 2008). <strong>secr</strong> refers to the R package.</p>
+
+<p>#####Session<br/>
+  A session is a set of occasions over which a population is
+  considered closed to gains and losses. Each &#39;primary session&#39; in the
+  &#39;robust&#39; design of Pollock (1982) is treated as a session in
+  <strong>secr</strong>. <strong>secr</strong> also uses &#39;session&#39; for independent
+  subsets of the capture data distinguished by characteristics other
+  than sampling time. For example, two grids trapped simultaneously
+  could be analysed as distinct &#39;sessions&#39; if they were far enough
+  apart that there was little chance of the same animal being caught
+  on both grids. Equally, males and females could be treated as
+  &#39;sessions&#39;. For many purposes, &#39;sessions&#39; are functionally equivalent
+  to &#39;groups&#39;; sessions are (almost) set in concrete when the data are
+  entered whereas groups may be defined on the fly (see
+  <code>?secr.fit</code>).</p>
+
+</body>
+
+</html>

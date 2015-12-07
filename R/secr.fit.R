@@ -34,6 +34,8 @@
 ## 2015-04-01 details$autoini
 ## 2015-04-12 default telemetrytype 'concurrent' was overwritten 'none'
 ## 2015-05-24 default details$minprob changed to 1e-200
+## 2015-10-09 reinstated pID and mark-sight
+## 2015-10-11 adjusted default start values polygon detectors
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -90,21 +92,12 @@
 
     if (!inherits(capthist, 'capthist'))
         stop ("requires 'capthist' object")
-    if ((detector(traps(capthist))=='cue') & (is.null(groups) | !CL))
-        stop ("cue detector requires CL = TRUE and groups")
-
-    if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
-        clusterEvalQ(clust, library(secr))
-    }
-    else
-        clust <- NULL
 
     #################################################
     ## Default detection function
 
     if (is.null(detectfn)) {
-        if (detector(traps(capthist)) %in% c('cue', 'signal')) {
+        if (detector(traps(capthist)) %in% c('signal')) {
             detectfn <- 10
             warning ("detectfn not specified; using signal strength (10)")
         }
@@ -128,8 +121,6 @@
     ## Use input 'details' to override various defaults
 
     defaultdetails <- list(distribution = 'poisson',
-                           scalesigma = FALSE,
-                           scaleg0 = FALSE,
                            hessian = 'auto',
                            trace = TRUE,
                            LLonly = FALSE,
@@ -150,7 +141,11 @@
                            normalize = FALSE,
                            usecov = NULL,
                            userdist = NULL,
-                           autoini = 1
+                           autoini = 1,
+                           knownmarks = TRUE,
+                           nsim = 0,
+                           chatonly = FALSE,
+                           chat = NULL
                            )
 
     if (detector(traps(capthist)) %in% .localstuff$countdetectors)
@@ -275,19 +270,25 @@
         warning ("using Euclidean distances with linear mask")
 
     #################################################
-    ## orphan mark-resight code - not currently used
+    ## mark-resight
 
     if (MS) {
-        q  <- attr(capthist[[1]],'q')
-        Tm <- attr(capthist[[1]],'Tm')
+        sighting <- sighting(traps(capthist[[1]]))
+        Tu <- Tu(capthist[[1]])
+        Tm <- Tm(capthist[[1]])
     }
     else {
-        q <- attr(capthist,'q')
-        Tm <- attr(capthist,'Tm')
+        sighting <- sighting(traps(capthist))
+        Tu <- Tu(capthist)
+        Tm <- Tm(capthist)
     }
-    nonID <- !is.null(Tm)   ## were marked animals recorded if unidentified?
-    if (!is.null(q) & CL)
-        stop ("mark-resight incompatible with CL")
+    if (('pID' %in% names(fixed)) & !is.null(Tm)){
+        if ((fixed$pID == 1) & (sum(Tm)>0))
+        warning ("mark-resight nonID sightings ignored when fixed$pID = 1")
+    }
+    if (sighting & CL & !is.null(Tu)) {
+        warning ("mark-resight unmarked (but not nonID) sightings ignored when CL = TRUE")
+    }
 
     #################################################
     ## optional centring of traps and mask 2010 04 27
@@ -352,8 +353,8 @@
 
     defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1,
                           sigma=~1, sigmak=~1, z=~1, w=~1, c=~1,
-                          pID=~1, noneuc=~1, beta0=~1, beta1=~1,
-                          sdS=~1, b0=~1, b1=~1, pmix=~1)
+                          noneuc=~1, beta0=~1, beta1=~1,
+                          sdS=~1, b0=~1, b1=~1, pID=~1, pmix=~1)
     defaultmodel <- replace (defaultmodel, names(model), model)
 
     #################################################
@@ -391,7 +392,7 @@
     ## parameter names
     #################################################
 
-    pnames <- valid.pnames (details, CL, detectfn, alltelem, q, nonID, nmix)
+    pnames <- valid.pnames (details, CL, detectfn, alltelem, sighting, nmix)
 
     #################################################
     ## test for irrelevant parameters in user's model
@@ -418,7 +419,7 @@
     #################################################
     ## Specialisations
     #################################################
-    if (CL & !(is.null(groups) | (detector(traps(capthist))=='cue'))) {
+    if (CL & !is.null(groups)) {
       groups <- NULL
       warning ("groups not valid with CL; groups ignored")
     }
@@ -426,46 +427,29 @@
       stop ("'g' is not a valid effect when 'CL = TRUE'")
     if ((length(model) == 0) & !is.null(fixed))
       stop ("all parameters fixed")     ## assume want only LL
-    if (details$scalesigma) {
-      warning ("scalesigma is deprecated and will soon be dropped from secr;',
-               ' use sigmak parameterization instead (param == 4)")
-      if (CL)
-        stop ("cannot use 'scalesigma' with 'CL'")
-      if (!is.null(fixed$D))
-        stop ("cannot use 'scalesigma' with fixed density")
-      if (!(model$D == formula(~1) |
-              model$D == formula(~session)))
-        stop ("cannot use 'scalesigma' with inhomogenous density or groups")
-      if (!is.null(groups))
-        stop ("cannot use 'scalesigma' with groups")
-    }
-    if (details$scaleg0) {
-      warning ("scaleg0 is deprecated and will soon be dropped from secr;',
-               ' use a0 parameterization instead (param == 3)")
-      if (!is.null(groups))
-        stop ('Cannot use scaleg0 with groups')
-    }
-    ## mark-resight
-    if ('pID' %in% names(model))
-      if (model$pID != ~1)
-        stop ("'pID' must be constant in this implementation")
 
+    ## mark-resight
+    if ('pID' %in% names(model)) {
+        pIDvars <- all.vars(model[['pID']])
+        if (!all(pIDvars %in% c('session','Session',
+                            names(sessioncov),
+                            names(covariates(traps)))
+                 ))
+            warning ("predictors in model for pID may be invalid")
+    }
     #################################################
     # Link functions (model-specific)
     #################################################
 
     defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log',
                         a0='log', sigma='log', sigmak='log', z='log',
-                        w='log', c='identity', pID='logit',
-                        noneuc='log', beta0='identity',
-                        beta1='neglog', sdS='log', b0='log',
-                        b1='neglog', pmix='logit', cuerate='log',
-                        cut='identity')
+                        w='log', c='identity', noneuc='log',
+                        beta0='identity', beta1='neglog', sdS='log',
+                        b0='log', b1='neglog',  pID='logit',
+                        pmix='logit', cut='identity')
 
     if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
-    if (details$scaleg0) link$g0 <- 'log'  ## Force log link in this case as no longer 0-1
-    if (!(detector(traps(capthist))=='cue')) link$cuerate <- NULL
     link[!(names(link) %in% c(fnames,pnames))] <- NULL
 
     ##############################################
@@ -568,14 +552,18 @@
     if (inherits(start, 'secr')) {
         ## use 'mapbeta' from score.test.R
         oldbeta <- coef(start)$beta
-        names(oldbeta) <- start$betanames
-        oldnam <- start$betanames
-        start <- mapbeta(start$parindx, parindx, oldbeta, NULL)
-        if (!is.null(details$miscparm)) {
-            nb <- length(start)
-            start <- c(start, details$miscparm)
-            oldnam <- oldnam[oldnam %in% names(details$miscparm)]
-            start[oldnam] <- oldbeta[oldnam]
+        if (details$nsim > 0)
+            start <- oldbeta    ## chat simulations
+        else {
+            names(oldbeta) <- start$betanames
+            oldnam <- start$betanames
+            start <- mapbeta(start$parindx, parindx, oldbeta, NULL)
+            if (!is.null(details$miscparm)) {
+                nb <- length(start)
+                start <- c(start, details$miscparm)
+                oldnam <- oldnam[oldnam %in% names(details$miscparm)]
+                start[oldnam] <- oldbeta[oldnam]
+            }
         }
     }
 
@@ -584,42 +572,88 @@
     # do it once, not each evaluation
     ############################################
     if (ncores > 1) {
-        clusterExport(clust, c("capthist", "mask", "groups",
-            "design","design0", "detectfn"), envir = environment())
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+        ## clusterEvalQ(clust, requireNamespace('secr'))
+         clusterExport(clust, c("capthist", "mask", "groups",
+             "design","design0", "detectfn"), envir = environment())
     }
+    else
+        clust <- NULL
 
     ############################################
     # Single evaluation option
     ############################################
     .localstuff$iter <- 0
     if (details$LLonly) {
-      if (is.null(start) | is.list(start))
-          stop ("must provide vector of beta parameter values in 'start'")
-      if (!is.null(q))
-          stop ("not for mark-resight")
+        if (is.null(start) | is.list(start))
+            stop ("must provide vector of beta parameter values in 'start'")
+        LL <- - secr.loglikfn (beta = start,
+                               parindx    = parindx,
+                               link       = link,
+                               fixedpar   = fixed,
+                               designD    = designD,
+                               designNE   = designNE,
+                               design     = design,
+                               design0    = design0,
+                               capthist   = capthist,
+                               mask       = mask,
+                               detectfn   = detectfn,
+                               CL         = CL,
+                               hcov       = hcov,
+                               groups     = groups,
+                               details    = details,
+                               logmult    = TRUE,     ## add if possible
+                               ncores     = ncores,
+                               clust      = clust
+        )
 
-      LL <- - secr.loglikfn (beta = start,
-                       parindx    = parindx,
-                       link       = link,
-                       fixedpar   = fixed,
-                       designD    = designD,
-                       designNE   = designNE,
-                       design     = design,
-                       design0    = design0,
-                       capthist   = capthist,
-                       mask       = mask,
-                       detectfn   = detectfn,
-                       CL         = CL,
-                       hcov       = hcov,
-                       groups     = groups,
-                       details    = details,
-                       logmult    = TRUE,     ## add if possible
-                       ncores     = ncores,
-                       clust      = clust
-                       )
-
-      return(c(logLik=LL))
+        return(c(logLik=LL))
     }
+    ############################################
+
+    ## estimate overdispersion by simulation
+    ## if (nsim > 0) and details$chatonly then exit, returning only chat
+    if (is.null(details$chat))
+        details$chat <- matrix(1, nrow = length(sessionlevels), ncol = 2)
+    else
+        details$chat <- rep(details$chat,2)[1:2]  ## duplicate scalar
+    if (details$nsim > 0) {
+        TuTm <- function(x) !(is.null(Tu(x)) & is.null(Tm(x)))
+        anysightings <- if (MS)
+            any (sapply(capthist, TuTm))
+        else TuTm(capthist)
+        if (anysightings) {
+            memo('Simulating sightings to estimate overdispersion...', details$trace)
+
+            chat <- secr.loglikfn (beta       = start,
+                                   parindx    = parindx,
+                                   link       = link,
+                                   fixedpar   = fixed,
+                                   designD    = designD,
+                                   designNE   = designNE,
+                                   design     = design,
+                                   design0    = design0,
+                                   capthist   = capthist,
+                                   mask       = mask,
+                                   detectfn   = detectfn,
+                                   CL         = CL,
+                                   hcov       = hcov,
+                                   groups     = groups,
+                                   details    = details,
+                                   logmult    = FALSE,
+                                   ncores     = ncores,
+                                   clust      = clust
+            )
+            if (details$chatonly)
+                return(chat)   ## and no more!
+            else {
+                details$chat <- chat
+                details$nsim <- 0
+                ## and proceed to call secr.loglikfn again
+            }
+        }
+    }
+
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed)
@@ -642,7 +676,6 @@
                 ## 2015-01-06
                 if (nrow(ch)<5)
                     stop ("too few values in session 1 to determine start; set manually")
-
                 start3 <- autoini (ch, msk, binomN = details$binomN,
                                    ignoreusage = details$ignoreusage)
 
@@ -672,6 +705,7 @@
         if (inherits(rpsv, 'try-error'))
             rpsv <- NA
         n <- nrow(ch)
+
         default <- list(
             D       = ifelse (is.na(start3$D), 1, start3$D),
             g0      = ifelse (is.na(start3$g0), 0.1, start3$g0),
@@ -692,13 +726,6 @@
                       start3$sigma^2) / 10000 * 2 * pi
         )
 
-        ## moved from inside autoini block 2013-07-19
-        if (details$scaleg0 & anycount)
-            stop ("'scaleg0' not compatible with count detectors")
-        ## next two stmts must be this order (g0 then sigma)
-        if (details$scaleg0) default$g0 <- default$g0 * default$sigma^2
-        if (details$scaleg0) default$lambda0 <- default$lambda0 * default$sigma^2
-        if (details$scalesigma) default$sigma <- default$sigma * default$D^0.5
         if (details$param %in% 4:6) {
             default$sigmak <- default$sigma * default$D^0.5
             default$c <- 0 ## but problems if take log(c)
@@ -715,31 +742,14 @@
             default$z <- 1    ## cumulative gamma
         }
         if (anypoly | anytrans) {
-#             if (MS) {
-#                 tempcapthist <- capthist[[1]]
-#                 tempmask <- mask[[1]]
-#             }
-#             else {
-#                 tempcapthist <- capthist
-#                 tempmask <- mask
-#             }
-#             default$D <- 2 * nrow(tempcapthist) / maskarea(tempmask)
-#             default$g0 <- sum(tempcapthist) / nrow(tempcapthist) / ncol(tempcapthist)
-#             default$lambda0 <- -log(1-default$g0)
-#             if (details$binomN > 1)
-#                 default$g0 <- default$g0 / details$binomN
-#             if ((details$binomN == 1) & (detector(traps(capthist)) %in%
-#                                              c('polygon','transect'))) {
-#                 ## assume using usage for binomN
-#                 usge <- usage(traps(capthist))
-#                 default$g0 <- default$g0 / mean(usge[usge>0])
-#             }
-#             default$sigma <- RPSV(tempcapthist)
 
             ## 2015-05-10 streamlined
             default$D <- 2 * nrow(ch) / maskarea(msk)
-            default$g0 <- sum(ch) / nrow(ch) / ncol(ch)
-            default$lambda0 <- -log(1-default$g0)
+
+            ## 2015-10-11 better lambda0 -> g0 than vv...
+            default$lambda0 <- sum(ch) / nrow(ch) / ncol(ch)
+            default$g0 <- 1 - exp(-default$lambda)
+
             if (details$binomN > 1)
                 default$g0 <- default$g0 / details$binomN
             if ((details$binomN == 1) & (detector(traps(ch)) %in%
@@ -769,15 +779,13 @@
         if ((details$nmix>1) & !('pmix' %in% fnames) & !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:nmix)-0.5)[2]
 
-        if (detector(traps(capthist))=='cue')
-            start <- c(start, log(3))    ## cuerate
         if (detectfn %in% c(12,13))
             start <- c(start, 46,3)    ## muN, sdN
 
         # D/ngrp when figure out where to calculate this
 
-        ## if (!(is.null(q) | !nonID) & is.null(fixed$pID))
-        ##     start[parindx$pID[1]] <- getdefault('pID')
+        if (sighting & is.null(fixed$pID))
+             start[parindx$pID[1]] <- getdefault('pID')
 
         # start vector completed
         #--------------------------------------------------------------
@@ -792,8 +800,6 @@
         if (length(start) < max(unlist(parindx)) + nmiscparm )
             start <- c(start, details$miscparm)
     }
-    if (detector(traps(capthist)) %in% c('cue'))
-        nmiscparm <- 1
     if (detector(traps(capthist)) %in% c('signalnoise'))
         nmiscparm <- 2
 
@@ -847,14 +853,13 @@
     # Maximize likelihood
     ############################################
 
-    memo('Maximizing likelihood...', details$trace)
-    if (details$trace)
-        cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
-
+    lcmethod <- tolower(method)
+    if (lcmethod != 'none') {
+        memo('Maximizing likelihood...', details$trace)
+        if (details$trace)
+            cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
+    }
     loglikefn <- secr.loglikfn
-    if (!is.null(q))
-        stop ("mark-resight option not operative")
-        ## loglikefn <- MRsecr.loglikfn
 
     ## arguments always passed to loglikefn
     secrargs <- list(
@@ -878,7 +883,6 @@
                      betaw      = betaw)    # for trace format
     ############################################
     ## calls for specific maximisation methods
-    lcmethod <- tolower(method)
     ## 2013-04-21
     if (NP == 1) {
         lcmethod <- "optimise"
@@ -896,6 +900,7 @@
             details$hessian <- "fdHess"
     }
     else if (lcmethod %in% c('newton-raphson')) {
+
         args <- list (p         = start,
                       f         = loglikefn,
                       hessian   = tolower(details$hessian)=='auto',
@@ -933,8 +938,6 @@
             do.call(secr.loglikfn, c(list(beta=beta), secrargs))
         }
         grad.Hess <- nlme::fdHess(start, fun = loglikfn, .relStep = 0.001, minAbsPar=0.1)
-#        this.fit <- list (value = 0, par = start,
-        # let's keep the loglik 2014-01-25
         this.fit <- list (value = loglikfn(start), par = start,
                           gradient = grad.Hess$gradient,
                           hessian = grad.Hess$Hessian)

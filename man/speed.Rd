@@ -148,16 +148,16 @@ Averaging}. Cambridge: Cambridge University Press.
 system.time(fit1 <- secr.fit(ovenCH, buffer = 300, model = list(D ~
     session, g0 ~ session, sigma ~ session)))
 ##   user  system elapsed 
-## 2875.06   62.59 2977.26 
+## 2470.99   20.62 2502.11 
 
 system.time(fit2 <- lapply (ovenCH, secr.fit, buffer = 300))
 ##   user  system elapsed 
-##  75.61    1.95   77.65 
+##   66.05    0.19   66.34 
 
 ## ratio of density estimates
 collate(fit1)[,1,1,"D"] / sapply(fit2, function(x) predict(x)["D","estimate"])
 ## session=2005 session=2006 session=2007 session=2008 session=2009 
-##    1.0000066    1.0000692    1.0000001    0.9999543    0.9999285 
+##    1.0000198    1.0000603    0.9999761    0.9999737    0.9999539 
 
 }
 

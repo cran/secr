@@ -4,18 +4,17 @@
 #############################################################################
 
 ## 2014-08-19 moved from methods.R
+## 2015-09-30 fixpmix now done in secr.lpredictor
 
 ############################################################################################
 predict.secr <- function (object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-                          alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
+                          alpha = 0.05, savenew = FALSE, ...) {
 
     if (is.null(object$fit)) {
         warning ("empty (NULL) object")
         return(NULL)
     }
     type <- match.arg(type)
-    if ((type == "link") & scaled)
-        stop ("scaling requires type = 'response'")
 
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
 
@@ -37,10 +36,6 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
     mixvar <- switch(object$details$nmix, character(0),'h2','h3')
     usedvars <- c('session', 'g', vars, mixvar)
     newdata <- newdata[,names(newdata) %in% usedvars, drop = FALSE]
-    if ('cuerate' %in% object$realnames) {
-        parindices$cuerate <- max(unlist(parindices)) + 1
-        models$cuerate <- ~1
-    }
 
     if (object$detectfn %in% c(12,13)) {
         ## experimental parameters not fitted
@@ -80,6 +75,7 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
         }
     }
     predict <- sapply (object$realnames, getfield, simplify = FALSE)
+  
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     if (se.fit)  out <- list(nrow(newdata))
     else {
@@ -88,10 +84,7 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
         for (varname in object$realnames)
             out[,varname] <- rep(NA,nrow(out))
     }
-    if (!is.null(predict$pmix)) {
-        ## fixpmix in utility.R is shared with collate()
-        predict <- fixpmix(predict, nmix = object$details$nmix)
-    }
+    
     for (new in 1:nrow(newdata)) {
         lpred  <- sapply (predict, function(x) x[new,'estimate'])
         if (type == "response")
@@ -117,18 +110,6 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
         }
         if (unmash)
             n.clust <- 1
-
-        #####################
-        ## 2010 02 14 rescale
-        if (object$details$scalesigma & scaled) {
-            Xlpred['sigma'] <- Xlpred['sigma'] / Xlpred['D']^0.5
-            lpred['sigma'] <- NA   ## disable further operations for SE
-        }
-        if (object$details$scaleg0 & scaled) {
-            Xlpred['g0'] <- Xlpred['g0'] / Xlpred['sigma']^2
-            lpred['g0'] <- NA   ## disable further operations for SE
-        }
-        #####################
 
         if (se.fit) {
             selpred <- sapply (predict,function(x) x[new,'se'])
@@ -209,7 +190,7 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
 ############################################################################################
 
 predict.secrlist <- function (object, newdata = NULL, type = c("response","link"), se.fit = TRUE,
-                              alpha = 0.05, savenew = FALSE, scaled = FALSE, ...) {
-    lapply(object, predict, newdata, type, se.fit, alpha, savenew, scaled, ...)
+                              alpha = 0.05, savenew = FALSE, ...) {
+    lapply(object, predict, newdata, type, se.fit, alpha, savenew, ...)
 }
 ############################################################################################

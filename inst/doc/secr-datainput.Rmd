@@ -337,6 +337,10 @@ Here is a polygon file that defines both usage and a categorical covariate. It w
 
 Detections along a transect have a similar structure to detections within a polygon, and input follows the same format. Locations are input as x-y coordinates for the position on the transect line from which each detection was made, not as distances along the transect.
 
+###Mark--resight
+
+Spatial mark--resight data combine detection histories of marked animals, input as described above, and counts of sighted but unmarked or unidentified animals. The latter are input separately as described in [secr-markresight.pdf], using the `addSightings` function. Sighting-only data may include all-zero detection histories of previously marked animals known to be alive but not seen; these are coded with occasion 0 (zero).
+
 ###Troubleshooting
 
 A message like
@@ -420,8 +424,6 @@ Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and
   Society - India Program, Centre for Wildlife Studies, Bangalure,
   India.
 
-\pagebreak
-
 ###Appendix: Glossary  {#glossary}
 
 #####Covariate
@@ -467,5 +469,6 @@ Spatially explicit capture--recapture, an inclusive term
 
 [secr-polygondetectors.pdf]: http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
 [secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
+[secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
 [secr-sound.pdf]: http://www.otago.ac.nz/density/pdfs/secr-sound.pdf
 [simpolyfigure]: simpoly.png

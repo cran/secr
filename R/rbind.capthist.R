@@ -147,17 +147,21 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
     ## optional renumbering
 
         check <- function (x) {
-          if (!is(x,'capthist'))
-              stop ("all arguments must be 'capthist' objects")
-          if (is.null(covariates(x)) != is.null(covariates(object[[1]]) ))
-              stop ("covariates must be provided for all or none")
-          if (any(dim(x)[-1] != dim(object[[1]])[-1]))
-                  stop ("varying numbers of occasions and/or detectors ",
+            if (!is(x,'capthist'))
+                stop ("all arguments must be 'capthist' objects")
+            if (is.null(covariates(x)) != is.null(covariates(object[[1]]) ))
+                stop ("covariates must be provided for all or none")
+            if (is.null(Tu(x)) != is.null(Tu(object[[1]])))
+                stop ("unmarked sightings Tu must be provided for all or none")
+            if (is.null(Tm(x)) != is.null(Tm(object[[1]])))
+                stop ("nonID sightings Tu must be provided for all or none")
+            if (any(dim(x)[-1] != dim(object[[1]])[-1]))
+                stop ("varying numbers of occasions and/or detectors ",
                       "in rbind.capthist", call. = FALSE)
-          notPoolPoly <- !(detector(traps(object[[1]])) %in% c('polygon','polygonX', 'telemetry'))
-          if (!identical(traps(x), traps(object[[1]])) & notPoolPoly)
-              stop ("cannot pool capthist with different",
-                  " detector arrays in rbind.capthist", call. = FALSE)
+            notPoolPoly <- !(detector(traps(object[[1]])) %in% c('polygon','polygonX', 'telemetry'))
+            if (!identical(traps(x), traps(object[[1]])) & notPoolPoly)
+                stop ("cannot pool capthist with different",
+                      " detector arrays in rbind.capthist", call. = FALSE)
         }
 
         ## 2011-09-12 reinstated this check
@@ -169,6 +173,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         trps <- traps(object[[1]])
         mergepoly <- detector(trps) %in% c('polygon','telemetry')
         if (mergepoly) {
+        
             srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
             tmp <- Polygons(srl,1)
             if (!requireNamespace ('maptools', quietly = TRUE))
@@ -197,10 +202,20 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         else
             covariates(temp) <- NULL
 
+        ##################################################
+        ## sightings
+        ## either all-scalar or all-matrix
+        if (!is.null(Tu(object[[1]])))
+            Tu(temp) <- sum(Tu(object))
+        if (!is.null(Tm(object[[1]])))
+            Tm(temp) <- sum(Tm(object))
+        
+        ##################################################
         ## polygon or transect coordinates xy
         tempxy <-  lapply(object, xy)
         xy(temp) <- do.call(rbind, tempxy)
 
+        ##################################################
         ## signal
         tempsig <- lapply(object, signalframe)
         signalframe(temp) <- do.call(rbind, tempsig)

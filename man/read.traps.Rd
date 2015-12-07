@@ -8,7 +8,7 @@
 
 \usage{
 read.traps(file = NULL, data = NULL, detector = "multi", covnames =
-NULL, binary.usage = TRUE, ...)
+NULL, binary.usage = TRUE, markocc = NULL, ...)
 }
 
 \arguments{
@@ -19,6 +19,8 @@ NULL, binary.usage = TRUE, ...)
     fields }
   \item{binary.usage}{logical; if FALSE will read usage fields as
   continuous effort}
+  \item{markocc}{integer vector distinguishing marking occasions (1) from 
+      sighting occasions (0)}
   \item{\dots}{ other arguments to pass to \code{read.table} }
 }
 

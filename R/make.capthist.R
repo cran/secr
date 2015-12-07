@@ -7,12 +7,12 @@
 ## 2012-02-12 finished tidy up related to signalframe
 ## 2012-10-19 telemetry detector type
 ## 2013-10-29 noccasions derived from usage
+## 2015-11-03 Improved handling of 'noncapt' with 'validcapt' - no need for dummy trapID etc
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01, 
-    snapXY = FALSE,
-    noncapt = 'NONE', signalcovariates = NULL)
+    snapXY = FALSE, noncapt = 'NONE', signalcovariates = NULL)
 
 # captures is a dataframe with the structure:
 # fmt = 'trapID'
@@ -36,7 +36,6 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
     fmt <- match.arg(fmt)
     session <- captures[,1]
     sessionlevels <- unique(session)  ## retains order
-
     ## session <- factor(session) ## 2010 04 01 automatically sorts levels
     ## use numeric sort if appropriate 2010 05 02
     if (suppressWarnings( all(!is.na(as.numeric(sessionlevels)))))
@@ -50,10 +49,12 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         nsession <- length(capturelist)
         traplist <- inherits(traps, 'list')
         occvector <- length(noccasions)>1
+
         if (traplist & (length(traps) != nsession))
             stop ("multi-session 'traps' list does not match 'captures'")
         if (occvector & (length(noccasions) != nsession))
             stop ("requires one element in 'noccasions' for each session")
+
         capthist <- vector('list', nsession)
         for (i in 1:nsession) {
             if (traplist)  trps <- traps[[i]] else trps <- traps
@@ -69,7 +70,6 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 cutval = cutval,
                 tol = tol,
                 snapXY = snapXY)
-
         }
         names(capthist) <- levels(session)
         class(capthist) <- c('list','capthist')
@@ -78,54 +78,61 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
 
     else ## single-session call
     {
-        if (!(fmt %in% c('trapID','XY')))
-            stop ("capture format not recognised")
-        if (fmt!='trapID') {
-            if (ncol(captures)<5)
-                stop ("too few columns in capture matrix")
-            if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
-                captTrap <- xyinpoly(captures[,4:5], traps)
-                if (any(captTrap==0)) {
-                    captures <- captures[captTrap>0,]  ## first! 2010-11-17
-                    captTrap <- captTrap[captTrap>0]
-                    warning ("detections with coordinates outside ",
-                             "polygon(s) were dropped")
+        uniqueID <- unique(captures[,2])
+        ## condition inserted 2015-11-03 to avoid need to specify valid trap for noncapt
+        validcapt <- uniqueID != noncapt
+        if (all(validcapt)) {
+            if (!(fmt %in% c('trapID','XY')))
+                stop ("capture format not recognised")
+            if (fmt!='trapID') {
+                if (ncol(captures)<5)
+                    stop ("too few columns in capture matrix")
+                if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
+                    captTrap <- xyinpoly(captures[,4:5], traps)
+                    if (any(captTrap==0)) {
+                        captures <- captures[captTrap>0,]  ## first! 2010-11-17
+                        captTrap <- captTrap[captTrap>0]
+                        warning ("detections with coordinates outside ",
+                                 "polygon(s) were dropped")
+                    }
                 }
-            }
-            else if (detector(traps) %in% c('transect','transectX')) {
-                captTrap <- xyontransect(captures[,4:5], traps, tol)
-                if (any(captTrap==0)) {
-                    captTrap <- captTrap[captTrap>0]
-                    captures <- captures[captTrap>0,]
-                    warning ("detections with coordinates not on ",
-                             "any transect were dropped")
+                else if (detector(traps) %in% c('transect','transectX')) {
+                    captTrap <- xyontransect(captures[,4:5], traps, tol)
+                    if (any(captTrap==0)) {
+                        captTrap <- captTrap[captTrap>0]
+                        captures <- captures[captTrap>0,]
+                        warning ("detections with coordinates not on ",
+                                 "any transect were dropped")
+                    }
+                }
+                else {
+                    ## modified 2015-04-12 to snap to site
+                    if (snapXY) {
+                        dtrap <- distancetotrap(captures[,4:5], traps)
+                        if (any(dtrap>tol))
+                            stop("capture XY greater than distance tol from nearest trap")
+                        captTrap <- nearesttrap(captures[,4:5], traps)                      
+                    }
+                    else {
+                        trapID    <- interaction(traps$x, traps$y)
+                        captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
+                    }
+                    if (any(is.na(captTrap)))
+                        stop ("failed to match some capture locations ",
+                              "to detector sites")
                 }
             }
             else {
-                ## modified 2015-04-12 to snap to site
-                if (snapXY) {
-                    dtrap <- distancetotrap(captures[,4:5], traps)
-                    if (any(dtrap>tol))
-                        stop("capture XY greater than distance tol from nearest trap")
-                    captTrap <- nearesttrap(captures[,4:5], traps)                      
-                }
-                else {
-                    trapID    <- interaction(traps$x, traps$y)
-                    captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
-                }
+                if (detector(traps) %in% .localstuff$polydetectors)
+                    stop ("use fmt XY to input detections from polygons or transects")
+                captTrap <- match(captures[,4], row.names(traps))
                 if (any(is.na(captTrap)))
                     stop ("failed to match some capture locations ",
                           "to detector sites")
             }
-        }
-        else {
-            if (detector(traps) %in% .localstuff$polydetectors)
-                stop ("use fmt XY to input detections from polygons or transects")
-            captTrap <- match(captures[,4], row.names(traps))
-            if (any(is.na(captTrap)))
-                stop ("failed to match some capture locations ",
-                      "to detector sites")
-        }
+        }  ## end of condition for noncapt 2015-11-03
+        else captTrap <- numeric(0)
+
         if (!is.null(usage(traps))) {   ## 2013-10-29
             nocc <- ncol(usage(traps))
             if (nocc <  max(abs(captures[,3])))
@@ -136,13 +143,11 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         nocc <- ifelse (is.null(noccasions), nocc, noccasions)
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
-        if (is.null(cutval) && detector(traps)  %in% c('cue','signal','signalnoise'))
+        if (is.null(cutval) && detector(traps)  %in% c('signal','signalnoise'))
             stop ("missing 'cutval' (signal threshold) for signal data")
 
         wout <- NULL
         ID   <- NULL
-
-        uniqueID <- unique(captures[,2])
 
         ## optional row sort 2009 09 26, tweaked 2010 05 01
         if (sortrows) {
@@ -153,17 +158,17 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             uniqueID <- uniqueID[rowOrder]
         }
 
-        captID <- as.numeric(factor(captures[,2], levels=uniqueID))
+        captID <- as.numeric(factor(captures[validcapt,2], levels=uniqueID))
         nID    <- length(uniqueID)
-        detectionOrder <- order(captTrap, abs(captures[,3]), captID)
+        detectionOrder <- order(captTrap, abs(captures[validcapt,3]), captID)
 
         dim3 <- detector(traps) %in% .localstuff$detectors3D
         if (dim3) {
             w <- array (0, dim=c(nID, nocc, ndetector(traps)))
             ## 2011-03-19, 2011-03-27
             ## drop rows if dummy input row indicates no captures
-            if (any(uniqueID == noncapt)) {
-                if (any(uniqueID != noncapt))
+            if (any(!validcapt)) {
+                if (any(validcapt))
                     stop ("cannot combine data and noncapt")
                 w <- w[FALSE, , , drop = FALSE]
                 dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
@@ -171,6 +176,10 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             else {
                 dimnames(w) <- list(1:nID, 1:nocc, 1:ndetector(traps))
                 temp <- table (captID, abs(captures[,3]), captTrap)
+                if ('0' == dimnames(temp)[[2]][1]) {
+                    ## drop zero occasion but retain animals for mark-resight
+                    temp <- temp[,-1,]
+                }
                 d <- dimnames(temp)
                 d <- lapply(d, as.numeric)
                 w[d[[1]], d[[2]], d[[3]]] <- temp
@@ -186,8 +195,8 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             w     <- matrix(0, nrow = nID, ncol = nocc)
             ## 2011-03-19, 2011-03-27
             ## drop rows if dummy input row indicates no captures
-            if (any(uniqueID == noncapt)) {
-                if (any(uniqueID != noncapt))
+            if (any(!validcapt)) {
+                if (any(validcapt))
                     stop ("cannot combine data and noncapt")
                 w <- w[FALSE, , drop = FALSE]
             }

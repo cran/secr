@@ -148,9 +148,10 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             if (poly.habitat) {
                 inpoly <- pointsInPolygon(mask, poly)
                 mask <- mask[inpoly,]
-                if (check.poly)
+                if (check.poly) {
                     if (any (!pointsInPolygon(traps, poly)))
-                    warning ("some traps are outside habitat polygon")
+                    warning ("some traps are not inside habitat polygon")
+                }
             }
             else {
                 mask <- mask[!pointsInPolygon(mask, poly),]

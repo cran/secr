@@ -11,7 +11,7 @@
 ##            to be passed through to read.traps
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
-
+ 
 write.capthist <- function (object, filestem = deparse(substitute(object)),
    sess = '1', ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
 
@@ -78,9 +78,27 @@ write.capthist <- function (object, filestem = deparse(substitute(object)),
 }
 ############################################################################################
 
+## 2015-10-02
+## form joint trap layout for marking and sighting data
+MRtraps <- function (marktraps, sighttraps, qvec) {
+    qvec <- qvec>0
+    alltraps <- rbind(marktraps, sighttraps,renumber = FALSE)
+    rown <- c( rownames(marktraps), rownames(sighttraps))
+    if (any(duplicated(rown)))
+        rown <- c(paste('M', rownames(marktraps), sep='.'), 
+                                paste('R', rownames(sighttraps), sep='.'))
+    rownames(alltraps) <- rown
+    tmat <- matrix(0, nrow = nrow(alltraps), ncol = length(qvec))
+    tmat[1:nrow(marktraps), qvec] <- 1
+    tmat[(nrow(marktraps)+1) : nrow(alltraps), !qvec] <- 1
+    usage(alltraps) <- tmat
+    alltraps
+}
+    
 read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trapID','XY'),
                           noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-                          cutval = NULL, verify = TRUE, noncapt = 'NONE', tol = 0.01, snapXY = FALSE, ...) {
+                          cutval = NULL, verify = TRUE, noncapt = 'NONE', tol = 0.01, 
+                          snapXY = FALSE, markocc = NULL, ...) {
 
     fmt <- match.arg(fmt)
     dots <- match.call(expand.dots = FALSE)$...
@@ -138,7 +156,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     defaultdots <- list(sep = '', comment.char = '#')
     if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
     dots <- replacedefaults (defaultdots, list(...))
-    readtraps <- function (x) {
+    readtraps <- function (x, mo) {
         if (detector == 'telemetry') {
             buffer <- c(-10,10)
             trps <- expand.grid(x = range(capt$X)+buffer,
@@ -149,12 +167,22 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
             attr(trps, 'detector') <- 'telemetry'
             trps
         }
-        else
-        do.call ('read.traps', c(list(file = x), detector = detector,
-                                 list(covnames = trapcovnames), dots) )
+        else {
+            
+            do.call ('read.traps', c(list(file = x), detector = detector,
+                                 list(covnames = trapcovnames), 
+                                 list(markocc = mo), dots) )
+        }
     }
-
-    trps <- sapply(trapfile, readtraps, simplify = FALSE)
+   
+    ## use mapply to carry session-varying markocc?
+    molist <- inherits(markocc, 'list')
+    if (molist) {
+        trps <- mapply(readtraps, trapfile, markocc, SIMPLIFY = FALSE)
+    }
+    else
+        trps <- sapply(trapfile, readtraps, mo = markocc, simplify = FALSE)
+    
     if (length(trps)==1) trps <- trps[[1]]
 
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,

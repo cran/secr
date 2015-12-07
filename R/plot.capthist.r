@@ -2,6 +2,7 @@
 ## package 'secr'
 ## plot.capthist.R
 ## 2013-11-20
+## 2015-10-11 type = 'sightings'
 ##############################################################################
 
 plot.capthist <- function(x, rad = 5,
@@ -12,13 +13,12 @@ plot.capthist <- function(x, rad = 5,
    lab1cap = FALSE, laboffset = 4,
    ncap = FALSE,
    splitocc = NULL, col2 = 'green',
-   type = c("petal", "n.per.detector", "n.per.cluster"),
+   type = c("petal", "n.per.detector", "n.per.cluster", "sightings"),
    cappar = list(cex=1.3, pch=16, col='blue'),
    trkpar = list(col='blue', lwd=1),
    labpar = list(cex=0.7, col='black'),
    ...)
 
-    # reorganised 2010-03-30, 2011-05-09
     # see also version in d:\single sample with stems=F, mst=F 2009 02 22
 
 {
@@ -95,7 +95,7 @@ plot.capthist <- function(x, rad = 5,
         }
         labcapt <- function (n) {
             if ( detectr %in% c('proximity', 'count', 'polygonX',
-                'transectX', 'cue', 'signal', 'signalnoise', 'polygon',
+                'transectX', 'signal', 'signalnoise', 'polygon',
                 'transect', 'unmarked', 'presence') ) {
                 warning ("labels not implemented for this detector type")
             }
@@ -119,7 +119,6 @@ plot.capthist <- function(x, rad = 5,
                       row.names(x)[n])
         }
         ncapt <- function (x) {
-            ## if (detectr %in% c('proximity', 'count','cue')) {
             if (detectr %in% .localstuff$detectors3D){
                temp <- t(apply (abs(x),c(2,3),sum)) # capts/trap/day)
             }
@@ -159,7 +158,37 @@ plot.capthist <- function(x, rad = 5,
             par(cappar)
             points (traps[df$trap,'x']+dx, traps[df$trap,'y']-dy, col = greycol)
         }
-
+        plotsightings <- function (x) {
+            ## plot sightings; assumes proximity or count detectors
+            Tu <- Tu(x)
+            Tu0 <- Tu
+            marking <- Tu
+            if (is.null(Tu)) stop ("sightings type requires sighting data")
+            markocc <- markocc(traps(x))
+            Tu0[Tu!=0] <- NA
+            Tu0[,markocc>0] <- NA
+            Tu[Tu==0] <- NA
+            marking[,markocc<1] <- NA
+            dx  <- rep((cos((1:nocc) * 2 * pi / nocc) * rad), each = nrow(Tu))
+            dy  <- rep((sin((1:nocc) * 2 * pi / nocc) * rad), each = nrow(Tu))
+            par(cappar)
+            dx0 <- dx; dx0[is.na(Tu0)] <- NA
+            
+            if (detector(traps(x)) %in% c('polygon')) {
+                centres <- split(traps(x), polyID(traps(x)))
+                ## assume each polygon closed, so first vertex redundant
+                centres <- lapply(centres, function(xy) apply(xy[-1,,drop=FALSE], 2, mean))
+                trapxy <- data.frame(do.call(rbind,centres))
+                names(trapxy) <- c('x','y')
+            }
+            else trapxy <- traps(x)
+            text (rep(trapxy$x, nocc) + dx, rep(trapxy$y, nocc) - dy, Tu, cex = 0.7)
+            points (rep(trapxy$x, nocc) + dx0, rep(trapxy$y, nocc) - dy, pch = 1, cex = 0.7)
+            ## marking occasions shown as dot
+            dx[is.na(marking)] <- NA
+            points (rep(trapxy$x, nocc) + dx, rep(trapxy$y, nocc) - dy, pch=16, cex=0.4)
+        }
+        
         ###########
         ## MAINLINE
 
@@ -173,6 +202,8 @@ plot.capthist <- function(x, rad = 5,
 
         if (type == 'petal')
             cappar <- replacedefaults (list(cex=1.3, pch=16, col='blue'), cappar)
+        if (type == 'sightings')
+            cappar <- replacedefaults (list(cex=1, pch=16, col='blue'), cappar)
         if (type %in% c('n.per.cluster','n.per.detector'))
             cappar <- replacedefaults (list(cex = 3, pch = 21), cappar)
 
@@ -200,7 +231,7 @@ plot.capthist <- function(x, rad = 5,
             }
             if ((nocc == 1) & ! (detectr %in% c('signal','signalnoise'))) rad <- 0
 
-            if ( detectr %in% c('proximity', 'count', 'cue', 'unmarked', 'presence') )
+            if ( detectr %in% c('proximity', 'count', 'unmarked', 'presence') )
             {
                 ## detector number
                 w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
@@ -295,12 +326,25 @@ plot.capthist <- function(x, rad = 5,
                 stringsAsFactors = FALSE
             )
         }
+        else if (type == 'sightings') {
+            plotsightings(x)
+        }
         else
             if (type != 'null') stop ("type not recognised")
-
+        
 
         ####################################################
         ## Titles
+
+        nd <- if(detectr %in% .localstuff$exclusivedetectors) 
+            sum(abs(x)>0) else sum(abs(x))
+        if (type == 'sightings') {
+            markocc <- markocc(traps(x))
+            Tu <- Tu(x)
+            nd <- sum(Tu)
+            nocc <- sum(markocc<1)
+        }
+        
         if (is.logical(title)) {
             txt <- ifelse (is.null(session(x)), paste(deparse(substitute(x)),
                        collapse=''), session(x))
@@ -311,22 +355,19 @@ plot.capthist <- function(x, rad = 5,
             mtext(side=3,line=1.2, text = title, cex=0.7)
         }
         if (is.logical(subtitle)) {
-            if(detectr %in% .localstuff$exclusivedetectors) nd <- sum(abs(x)>0)
-            else nd <- sum(abs(x))
-            if (subtitle) {
-                if (detectr == 'cue')
-                    subtitle <- paste(
-                        nocc, 'occasion,' ,
-                        nd, 'detections,',
-                        nanimal, 'cues',
-                        length(levels(covariates(x)$animal)), 'animals')
+
+            subtitle <- if (subtitle) {
+                if (type == 'sightings') {
+                    if (any(markocc<0))
+                        paste(nocc, 'sighting occasions,', nd, 'sightings of marked and unmarked animals')
+                    else
+                        paste(nocc, 'sighting occasions,', nd, 'sightings of unmarked animals')
+                }
                 else
-                    subtitle <- paste(
-                        nocc, 'occasions,' ,
-                        nd, 'detections,',
-                        nanimal, 'animals')
+                    paste(nocc, 'occasions,', nd, 'detections,',
+                          nanimal, 'animals')
             }
-            else subtitle <- ''
+                else ''
         }
         if (subtitle != '') {
             par(col='black')
@@ -338,7 +379,7 @@ plot.capthist <- function(x, rad = 5,
         if (type %in% c('n.per.detector','n.per.cluster'))
             invisible(output)
         else
-            invisible(sum(abs(x)>0))
+            invisible(nd)
     }
 }
 ############################################################################################

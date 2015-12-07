@@ -135,11 +135,11 @@ double gnbinom (int count, int size, double mu, int uselog)
 /*--------------------------------------------------------------------------*/
 
 /* binomial density allowing non-integer (floating point) size */
-double gbinomFP (int count, double size, double p, int uselog)
-{
-    return ( lgamma(size+1) - lgamma(size-count+1) - lgamma(count+1) +
-             count * log(p) + (size - count) * log (1-p) );
-}
+// double gbinomFP (int count, double size, double p, int uselog)
+// {
+    // return ( lgamma(size+1) - lgamma(size-count+1) - lgamma(count+1) +
+             // count * log(p) + (size - count) * log (1-p) );
+//}
 /*--------------------------------------------------------------------------*/
 
 /* probability of count with distribution specified by binomN */

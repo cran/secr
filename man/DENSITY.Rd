@@ -19,7 +19,8 @@ functions \code{read.traps} and \code{make.capthist}.
 
 read.capthist(captfile, trapfile, detector = "multi", fmt = c("trapID","XY"),
     noccasions = NULL, covnames = NULL, trapcovnames = NULL,
-    cutval = NULL, verify = TRUE, noncapt = "NONE", tol = 0.01, snapXY = FALSE, ...)
+    cutval = NULL, verify = TRUE, noncapt = "NONE", tol = 0.01, snapXY = FALSE, 
+    markocc = NULL, ...)
 
 write.capthist(object, filestem = deparse(substitute(object)),
      sess = "1", ndec = 2, covariates = FALSE, tonumeric = TRUE, ...)
@@ -45,7 +46,9 @@ write.capthist(object, filestem = deparse(substitute(object)),
   \item{noncapt}{ character value; animal ID used for `no captures' }
   \item{tol}{ numeric, snap tolerance in metres}
   \item{snapXY}{ logical; if TRUE then fmt = 'XY' uses nearest trap within tol }
-  
+  \item{markocc}{integer vector distinguishing marking occasions (1) from 
+  sighting occasions (0)}
+
   \item{\dots}{ other arguments passed to \code{read.table},
     \code{write.table} and \code{count.fields} }
   \item{object}{ \code{capthist} object with the captures and trap locations to export }
@@ -92,6 +95,11 @@ Additional data may be coded as for DENSITY. Specifically,
 \code{captfile} may include extra columns of individual covariates, and
 \code{trapfile} may code varying usage of each detector over occasions
 and detector covariates.
+
+\code{markocc} is needed only if sightings of unmarked animals are potentially 
+recorded on some occasions. If the data span multiple sessions with differing
+combinations of marking and sighting occasions then \code{markocc} may be a 
+list with one vector per session.
 
 \code{write.capthist}
 

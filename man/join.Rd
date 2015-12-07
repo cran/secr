@@ -59,7 +59,7 @@ valid `interval' attribute, as in the output from \code{join}.
 }
 \value{
 
-For \code{join}, A single-session capthist object. The attribute `interval' records the
+For \code{join}, a single-session capthist object. The vector attribute `interval' records the
 distinction between occasions that are adjacent in the input (interval =
 0) and those that are in consecutive sessions (interval = 1); `interval'
 has length one less than the number of occasions.

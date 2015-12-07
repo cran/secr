@@ -299,7 +299,7 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
     validbiasLimit <- validbiasLimit & (biasLimit>0)
     if ((output$fit$value < 1e9) &
         (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
-        !(detector(traps(capthist)) %in% c('cue','unmarked','presence')) &
+        !(detector(traps(capthist)) %in% c('unmarked','presence')) &
         is.null(telemetryxy(capthist)) &
         validbiasLimit) {
         if (ms(capthist)) {

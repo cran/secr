@@ -15,7 +15,7 @@
     icolours = NULL, randcol = FALSE, 
     lab1cap = FALSE, laboffset = 4, ncap = FALSE, 
     splitocc = NULL, col2 = "green",
-    type = c("petal", "n.per.detector", "n.per.cluster"),
+    type = c("petal", "n.per.detector", "n.per.cluster", "sightings"),
     cappar = list(cex = 1.3, pch = 16, col = "blue"), 
     trkpar = list(col = "blue", lwd = 1), 
     labpar = list(cex = 0.7, col = "black"), ...)
@@ -58,7 +58,8 @@ By default, a `petal' plot is generated in the style of Density (Efford 2012)
 using \code{eqscplot} from the MASS library. If \code{type =
 "n.per.detector"} or \code{type = "n.per.cluster"} the result is a
 colour-coded plot of the number of individuals at each unit, pooled over
-occasions.
+occasions. If \code{type = "sightings"} the sightings of unmarked animals are 
+displayed on a petal-like plot (requires mark-resight data).
 
 If \code{title} = FALSE no title is displayed; if \code{title} = TRUE,
 the session identifer is used for the title.
@@ -96,6 +97,7 @@ first convert the xylist attribute to a full telemetry capthist object
 \value{
   
   For \code{type = "petal"}, the number of detections in \code{x}.
+  For \code{type = "sightings"}, the number of sightings of unmarked animals in \code{x}.
   For \code{type = "n.per.detector"} or \code{type = "n.per.cluster"}, a
   dataframe with data for a legend (see Examples).
 

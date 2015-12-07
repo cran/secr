@@ -3,6 +3,7 @@
 ## make.grid.R
 ## make.grid, make.poly, make.transect, make.circle
 ## 2011 10 10 transferred from methods.R
+## 2015-10-19 removed searchcell attribute
 ###############################################################################
 
 make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detector='multi',
@@ -94,7 +95,6 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detec
     attr(grid, 'spacex')      <- spacex
     attr(grid, 'spacey')      <- spacey
     attr(grid, 'spacing')     <- spacing(grid)  ## reset if NULL
-    attr(grid, 'searchcell')  <- spacex * spacey / 10000
     attr(grid, 'usage')       <- NULL
     attr(grid, 'cluster')     <- NULL
     attr(grid, 'clustertrap') <- NULL

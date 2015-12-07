@@ -77,7 +77,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 covariates, number.from, Ndist, nsessions = 1, details, seed,
                 keep.mask, Nbuffer[1])
         }
-        turnover <- function (oldpopn) {
+        turnover <- function (oldpopn, t) {
             ## project existing population
             ## assume normal movement kernel
             ## assume lambda lacks process variance
@@ -86,22 +86,22 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             newstart <- max(as.numeric(rownames(oldpopn))) + 1
             if (turnoverpar$survmodel=='binomial') {
                 survive <- sample (c(FALSE, TRUE), nrow(oldpopn), replace = TRUE,
-                    c(1-turnoverpar$phi,turnoverpar$phi))
+                    c(1-turnoverpar$phi[t],turnoverpar$phi[t]))
                 nsurv <- sum(survive)
             }
             else {   ## assume 'discrete'
-                nsurv <- discrete (turnoverpar$phi * nrow(oldpopn))
+                nsurv <- discrete (turnoverpar$phi[t] * nrow(oldpopn))
                 survive <- sample (nrow(oldpopn), replace = FALSE, size = nsurv)
                 survive <- sort(survive)   ## numeric indices
             }
             newpopn <- subset.popn(oldpopn, subset=survive)
-            if (turnoverpar$sigma.m > 0) {
+            if (turnoverpar$sigma.m[t] > 0) {
                 newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
-                                                  sd = turnoverpar$sigma.m)
+                                                  sd = turnoverpar$sigma.m[t])
                 if (turnoverpar$wrap)
                     newpopn <- toroidal.wrap(newpopn)
             }
-            gam <- turnoverpar$lambda - turnoverpar$phi
+            gam <- turnoverpar$lambda[t] - turnoverpar$phi[t]
             if (gam<0)
                 stop ("invalid gamma in turnover")
             nrecruit <- switch (turnoverpar$recrmodel,
@@ -135,7 +135,14 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, wrap = TRUE,
                             survmodel = 'binomial', recrmodel = 'poisson')
+        expands <- function (param, s) {
+            if (!is.null(param)) {
+                param <- rep(param,s)[1:s]
+            }
+            param
+        }
         turnoverpar <- replace (turnoverpar, names(details), details)
+        
         if (is.null(details$lambda)) {
             ## independent
             ## MSpopn <- lapply (1:nsessions, session.popn)
@@ -159,9 +166,11 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ## projected
             MSpopn <- vector(nsessions, mode = 'list')
             MSpopn[[1]] <- session.popn(1, D, Nbuffer)
-
+            turnoverpar$lambda  <- expands(turnoverpar$lambda, nsessions)
+            turnoverpar$phi     <- expands(turnoverpar$phi, nsessions)
+            turnoverpar$sigma.m <- expands(turnoverpar$sigma.m, nsessions)
             for (i in 2:nsessions) {
-                MSpopn[[i]] <- turnover(MSpopn[[i-1]])
+                MSpopn[[i]] <- turnover(MSpopn[[i-1]], i-1)
             }
         }
         if (model2D == 'linear')

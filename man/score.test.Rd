@@ -97,8 +97,6 @@ from them, are approximations that may differ considerably from AIC
 values obtained by fitting and comparing the respective models. Use of
 the observed information matrix may not be optimal.
 
-\code{score.test} cannot be used to compare models that differ in the arguments \code{scalesigma} or \code{scaleg0}.
-
 }
 
 \references{ 

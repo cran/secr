@@ -16,16 +16,15 @@
 ## 2015-02-23 warning when ms(popn) and renumber = TRUE
 ## 2015-04-01 session-specific detection
 ## 2015-04-13 sim.capthist passes nsessions to sim.popn
+## 2015-11-02 sim.resight, expands re-written
 ###############################################################################
 
-expands <- function (x, s, q = 0, default = 1) {
-    if (is.null(x)) rep(default, s)
+expands <- function (x, s, default = 1) {
+    if (is.null(x))
+        rep(default, s)
     else {
         y <- numeric(s)
-        if ((length(x)==2) && (q>0))
-            y[] <- rep(x, c(q,s-q))
-        else
-            y[] <- x
+        y[] <- x
         y
     }
 }
@@ -82,31 +81,48 @@ sim.capthist <- function (
 
 {
     poplist <- inherits(popn,'popn') & inherits(popn,'list')
+    ##------------------------------------------------------------------------
+    ## multi-session loop
     if (poplist | (nsessions > 1)) {
 
         if (poplist & (nsessions>1) & (length(popn) != nsessions))
             stop ("incompatible use of popn list and nsessions>1")
 
-        if (!ms(traps))
-            trps <- traps
-
-        ## supplied with spatiotemporal population
-        R <- ifelse (poplist, length(popn), nsessions)
-        if (ms(traps) & (length(traps) != R))
+        nsessions <- ifelse (poplist, length(popn), nsessions)
+        if (ms(traps) & (length(traps) != nsessions))
             stop ("incompatible use of traps list and nsessions>1")
 
-        output <- vector(R, mode='list')
-        nocc <- numeric(R)
+        output <- vector(nsessions, mode='list')
+        nocc <- numeric(nsessions)
         nocc[] <- noccasions
-        if (!inherits(popn,'popn')) # generate if not provided
-        {
+
+        ##################
+        ## set random seed
+        ## copied from simulate.lm
+        if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+            runif(1)
+        if (is.null(seed))
+            RNGstate <- get(".Random.seed", envir = .GlobalEnv)
+        else {
+            R.seed <- get(".Random.seed", envir = .GlobalEnv)
+            set.seed(seed)
+            RNGstate <- structure(seed, kind = as.list(RNGkind()))
+            on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
+        }
+        #####################################################################
+        ## generate population list if not provided
+        if (!inherits(popn,'popn')) {
             popn <- replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
             ## will fail with multiple traps
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
                 covariates = NULL, Ndist = popn$Ndist, nsessions = nsessions)
+            poplist <- TRUE
         }
-        if (R > 1) {
+
+        #####################################################################
+        ## availability preliminaries
+        if (poplist) {
             if (any(p.available != 1))
                 warning ("incomplete availability not implemented ",
                          "for population lists")
@@ -126,26 +142,28 @@ sim.capthist <- function (
                 equilibrium.p <- (p.available[2] / (1-p.available[1]+p.available[2]))
                 available <- runif(nrow(popn)) < equilibrium.p
             }
-
         }
-        #################################
+
+        #####################################################################
         ## session-specific detection 2015-04-01
-##        if (length(detectpar) == 0)
-##            stop ("must specify detectpar")
         if (detectfn %in% c(0:7, 14:18)) {
             df0name <- if (detectfn %in% (0:7)) 'g0' else 'lambda0'
             dfzname <- if (detectfn %in% (5:6)) 'x' else 'z'
-            df0 <- expands(detectpar[[df0name]], R, default = NULL)
-            sigma <- expands(detectpar[['sigma']], R, default = NULL)
-            dfz <- expands(detectpar[[dfzname]], R, default = NULL)
+            df0 <- expands(detectpar[[df0name]], nsessions, default = NULL)
+            sigma <- expands(detectpar[['sigma']], nsessions, default = NULL)
+            dfz <- expands(detectpar[[dfzname]], nsessions, default = NULL)
         }
-        #################################
 
-        for (t in 1:R) {
-            if (R > 1)
+        ########################################################################
+        ## loop over sessions
+        for (t in 1:nsessions) {
+            ## if (R > 1)  ## modified 2015-10-29
+
+            if (poplist)
                 temppop <- popn[[t]]
             else {
                 temppop <- subset(popn, available)
+                ##-------------------------------------------------------------
                 ## update availability in preparation for next session
                 if (availability == 'random') {
                     available <- runif(nrow(popn)) < p.available
@@ -154,8 +172,12 @@ sim.capthist <- function (
                     p.vect <- ifelse(available, p.available[1], p.available[2])
                     available <- runif(nrow(popn)) < p.vect
                 }
+                #--------------------------------------------------------------
             }
-            if (ms(traps)) trps <- traps[[t]]
+
+            ## select session-specific traps if necessary
+            trps <- if (ms(traps)) traps[[t]] else traps
+
             ## session-specific detection parameters
             if (detectfn %in% c(0:7, 14:18)) {
                 detectpar[[df0name]] <- df0[t]
@@ -163,16 +185,21 @@ sim.capthist <- function (
                 detectpar[[dfzname]] <- dfz[t]
             }
 
+            ## recursive call for each session
+            ## we have set the seed above
             output[[t]] <- sim.capthist(trps, temppop, detectfn, detectpar,
-                nocc[t], 1, binomN, exactN, 1, renumber, seed, maxperpoly)
-            ## 'exactN' was missing from preceding call until 2014-02-18
-            session( output[[t]] ) <- t   ## added 2011-09-09
+                noccasions = nocc[t], nsessions = 1,
+                binomN = binomN, exactN = exactN, p.available = 1,
+                renumber = renumber, seed = NULL, maxperpoly)
 
+            session( output[[t]] ) <- t   ## added 2011-09-09
         }
+        ########################################################################
+
         class(output) <- c('list','capthist')
-        names(output) <- 1:R
+        names(output) <- 1:nsessions
         output
-    }
+    }   ## end of multi-session
 
     else {
 
@@ -226,7 +253,7 @@ sim.capthist <- function (
         ## added 2010-07-01
         if (is.character(detectfn))
             detectfn <- detectionfunctionnumber(detectfn)
-        if (detector(traps) %in% c('cue','signal')) {
+        if (detector(traps) %in% c('signal')) {
             if (!(detectfn %in% c(10,11))) {
                 warning ("forcing detection function = 10 for signal detectors")
                 detectfn <- 10
@@ -291,13 +318,12 @@ sim.capthist <- function (
         defaults$binomN <- 0
         if (detector(traps) == 'proximity') defaults$binomN <- 1
         if (detector(traps) %in% c('signal','signalnoise')) defaults$binomN <- 1
-        if (detector(traps) == 'cue') defaults$cuerate <- 3
         if (!is.null(binomN)) {
             if ((detector(traps) == 'count') & (tolower(binomN) == 'usage'))
                 binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
             detectpar$binomN <- binomN
         }
-        
+
         detectpar <- replacedefaults(defaults, detectpar)
 
         if (detectfn %in% c(0:7, 14:18)) {
@@ -379,21 +405,8 @@ sim.capthist <- function (
         }
         #-----------------------------------------------------------------------------#
 
-        if (detector(traps) == 'cue') {
-            rowi <- 1:nrow(popn)
-            ncue <- rpois(nrow(popn), detectpar$cuerate)
-            OK <- ncue>0
-            group <- rowi[OK]   ## drop zeros
-            ncue <- ncue[OK]
-            ind <- rep(group, ncue)
-            N <- length(ind)
-            animals <- as.matrix(popn[ind,])
-        }
-        else {
-            N <- nrow(popn)
-            animals <- as.matrix(popn)
-        }
-
+        N <- nrow(popn)
+        animals <- as.matrix(popn)
         k <- nrow(traps)
         simfunctionname <- paste('trapping', detector(traps), sep='')
 
@@ -537,6 +550,7 @@ sim.capthist <- function (
         else
         if (detector(traps) %in% c('proximity', 'presence','unmarked')) {
             binomN <- 1
+
             temp <- .C("trappingproximity", PACKAGE = 'secr',
                 as.double(df0),
                 as.double(sigma),
@@ -599,7 +613,7 @@ sim.capthist <- function (
         }
         else
 
-        if (detector(traps) %in% c('cue','signal','signalnoise')) {
+        if (detector(traps) %in% c('signal','signalnoise')) {
             if (detectpar$binomN != 1)
                 stop ("binomN != 1 not yet implemented for signal detectors")
             temp <- .C("trappingsignal", PACKAGE = 'secr',
@@ -774,10 +788,6 @@ sim.capthist <- function (
         if (!is.null(covariates(popn))) {
             covariates(w) <- covariates(popn)[as.logical(temp$caught),, drop=F]
         }
-        if (detector(traps)=='cue') {
-            group <- ind[as.logical(temp$caught)]
-            covariates(w) <- data.frame(animal = factor(group))   ## overrides
-        }
 
         class(w)             <- 'capthist'    ## NOT data.frame
         traps(w)             <- traps
@@ -790,7 +800,7 @@ sim.capthist <- function (
         if (savepopn)
             attr(w, 'popn') <- popn
 
-        if (detector(traps) %in% c('cue','signal','signalnoise')) {
+        if (detector(traps) %in% c('signal','signalnoise')) {
             if (temp$n>0)  {
                 signal(w) <- temp$signal[1:sum(w)]
                 if (detector(traps) %in% c('signalnoise'))
@@ -813,65 +823,192 @@ sim.capthist <- function (
 }
 ############################################################################################
 
-sim.resight <- function (traps, ..., q = 1, pID = 1, unmarked = TRUE,
-    nonID = TRUE) {
+## 2015-10-02 sim.resight substantially revised
+## 2015-10-02 markocc (previously q) may be vector (0/1/2) length noccasions
+##            0 = resighting, 1 = marking, 2 = marking and resighting
+## pmark is probability an individual is marked, across the entire population, if all occasions
+## are sighting occasions
 
-    defaultpar <- list(noccasion = 5)
+## ad hoc function for including pre-marked animals never sighted
+addZeroCH <- function (CH, nzero) {
+    if (nzero == 0)
+        return(CH)
+    else {
+
+        nc <- nrow(CH)
+        chdim <- dim(CH)
+        chdim[1] <- nzero
+        extra <- array(0, dim=chdim)
+        dimnames(extra) <- c(list(paste('Z', 1:nzero, sep='')), dimnames(CH)[2:3])
+        CH2 <- abind(CH, extra, along = 1)
+        class(CH2) <- 'capthist'
+        traps(CH2) <- traps(CH)
+        xy(CH2) <- xy(CH)  ## order is not affected by adding zero histories
+        ## ... and other essential attributes?
+        CH2
+    }
+}
+
+sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisson'), ...,
+                         pID = 1, unmarked = TRUE, nonID = TRUE, unsighted = TRUE,
+                         pmark = 0.5, Nmark = NULL, markingmask = NULL) {
+
+    ############################################################################
+    ## checks
+    if (!(detector(traps) %in% c('proximity', 'count', 'polygon', 'transect')))
+        stop ("only for binary or count proximity detectors or polygon or transect searches")
+
+    if (is.null(markocc(traps))) {
+        warning ("using default markocc 1 0 0 0 0")
+        markocc <- c(1,0,0,0,0)
+    }
+    else
+        markocc <- markocc(traps)
+    markocc(traps) <- markocc
+    allsighting <- !any(markocc>0)
+
+    ############################################################################
+    ## make complete, identified capthist including all detections
+    ## marking and sighting
+
     dots <- list(...)
-    dots <- replace (defaultpar, names(dots), dots)
-    dots$detectpar$g0 <- expands (dots$detectpar$g0, dots$noccasion, q)
-    dots$detectpar$sigma <- expands (dots$detectpar$sigma, dots$noccasion, q)
-    dots$detectpar$z <- expands (dots$detectpar$z, dots$noccasion, q)
+    dots$traps <- traps
+    if (!is.null(dots$seed)) {
+        set.seed(dots$seed)
+        dots$seed <- NULL
+    }
+    dots$noccasions <- length(markocc)  ## override noccasions
 
-    capthist <- do.call('sim.capthist', c(list(traps = traps), dots))
+    if (!inherits(popn,'popn'))         ## generate popn if not provided
+    {
+        popn <- replacedefaults(list(D = 5, buffer = 100,
+                                     Ndist = 'poisson'), popn)
+        popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
+                          covariates = NULL, Ndist = popn$Ndist)
+    }
+    #---------------------------------------------------------------------------
+    if (allsighting) {
+        gotten <- rep(TRUE, nrow(popn))
+
+        ## circumscribe marked animals
+        if (!is.null(markingmask)) {
+            gotten <- pointsInPolygon(popn, markingmask)
+            if (!is.null(covariates(markingmask)))
+                if ('marking' %in% names(covariates(markingmask)))
+                    warning("uniform distribution over marking mask;",
+                            " covariate 'marking' ignored")
+        }
+
+        if (!is.null(Nmark)) {
+            if (Nmark > sum(gotten)) {
+                warning("Nmark exceeds population size, marking all")
+            }
+            else {
+                gottenN <- sample.int(sum(gotten), size = Nmark, replace = FALSE)
+                gotten[gotten] <- (1:sum(gotten)) %in% gottenN
+            }
+        }
+        else {
+            gotten <- gotten & (runif(length(gotten)) < pmark)
+        }
+        popnM <- subset(popn, gotten)     ## inside A0 and marked
+        popnU <- subset(popn, !gotten)    ## outside A0 or not marked
+        dots$popn <- popnM
+    }
+    else
+        dots$popn <- popn
+    #---------------------------------------------------------------------------
+
+    capthist <- do.call('sim.capthist', dots)
+
+    ############################################################################
 
     ## transform simulated capthist object into resighting data
-    S <- ncol(capthist)
-    K <- nrow(traps(capthist))
+    S <- length(markocc)
+    K <- ndetector(traps)
 
-    if (S <= q)
-        stop ("no sighting intervals")
-    if (!(detector(traps(capthist)) %in% c('proximity')))
-        stop ("only for proximity detectors")
-
-    ## sighting only unmarked animals
-    marked <- apply(capthist[,1:q,,drop = FALSE], 1, sum) > 0
-    ## always get warning about no detections on first occasion
-    suppressWarnings(R <- subset(capthist, subset=!marked, dropnullocc=F))
-    tempM <- subset(capthist, subset=marked, dropnullocc=F)
-    nM <- nrow(tempM)
-    ID <- abind(tempM[,1:q, , drop=F],
-        array(runif(nrow(tempM)*(S-q)*K) < pID, dim=c(nM,S-q,K)), along=2)
-    ## marking and sighting, marked animals
-    M <- ifelse(ID, tempM,0)    ## ID
-    U <- ifelse(!ID, tempM,0)   ## notID
-    dimnames(M)[[2]] <- 1:S
-    countfn <- function(x) {
-        x <- x * col(x)   ## x 0/1
-        tabulate(x[x>0], nbins = K)
+    session <- rep(1,sum(abs(capthist)))
+    df <- data.frame(session, animalID=animalID(capthist), occasion=occasion(capthist),
+                     trapID = trap(capthist), stringsAsFactors = FALSE)
+    if (detector(traps) %in% c('polygon', 'transect')) {
+        df <- cbind(df[,-4], xy(capthist))
+        df$trapID <- xyinpoly(df[,4:5], traps(capthist))
     }
+
+    if (nrow(df) == 0) {
+        dfID <- data.frame (session=1, animalID="NONE", occasion = 1, trapID=1)
+        dfnonID <- dfID[-1,]
+    }
+    else {
+        # data frame of detections on marking occasions
+        dfmarking <- df[markocc[df$occasion]>0,,drop=FALSE]
+        # when was each animal first marked?
+        df$markingoccasion <- dfmarking$occasion[match(df$animalID, dfmarking$animalID)]
+        df$markingoccasion[is.na(df$markingoccasion)] <- S+1    ## never marked
+        if (allsighting) df$markingoccasion <- rep(0, nrow(df)) ## all marked
+        # separate data frames for detections of marked and unmarked animals
+        dfmarked <- df[df$occasion >= df$markingoccasion,, drop = FALSE]
+        dfunmarked <- df[df$occasion < df$markingoccasion,, drop = FALSE]
+        # which of the marked detections were identified?
+        dfmarked$ID <- (dfmarked$occasion == dfmarked$markingoccasion) |
+            (runif(nrow(dfmarked)) < pID)
+        # separate data frames for detections of ID and nonID marked animals
+        dfnonID <- dfmarked[!dfmarked$ID, , drop = FALSE]
+        dfID    <- dfmarked[dfmarked$ID, , drop = FALSE]
+    }
+
+    if (detector(traps) %in% c('polygon', 'transect')) {
+        CH <- make.capthist(dfID[,1:5, drop=FALSE], traps, fmt = 'XY', noccasions = S)
+    }
+    else {
+        CH <- make.capthist(dfID[,1:4, drop=FALSE], traps, fmt = 'trapID', noccasions = S)
+    }
+
+    if (allsighting & unsighted) {
+        nzero <- nrow(popnM) - nrow(CH)
+        CH <- addZeroCH(CH, nzero)
+    }
+## so are nonID being counted twice? - in dfnonID/Tm and here?
+    ############################################################################
+
+    if (detector(traps(capthist)) %in% c('polygon', 'transect'))
+        trapnames <- levels(polyID(traps(capthist)))
+    else
+        trapnames <- row.names(traps(capthist))
+
+    ##------------------------------------------------------------------------------
 
     if (unmarked) {
-        Tu <- apply(R, 2, countfn)  ## not marked
-        row.names(Tu) <- row.names(traps(capthist))
+
+        countfn <- function(x) {
+            x <- x * col(x)   ## x 0/1
+            tabulate(x[x>0], nbins = K)
+        }
+
+        if (allsighting) {
+            ## apply same sampling to unmarked fraction of population
+            dots$popn <- popnU
+            capthistU <- do.call('sim.capthist', dots)
+            Tu <- as.matrix(table(factor(trap(capthistU), levels = trapnames),
+                                  factor(occasion(capthistU), levels = 1:S)))
+        }
+        else {
+            Tu <- as.matrix(table(factor(dfunmarked$trapID, levels = trapnames),
+                                  factor(dfunmarked$occasion, levels = 1:S)))
+        }
+        Tu[,markocc>0] <- 0  ## just in case...
+        Tu(CH) <- Tu
     }
-    else Tu <- NULL
+    ##------------------------------------------------------------------------------
 
     if (nonID) {
-        Tm <- apply(U, 2, countfn)  ## notID, marked
-        dimnames(Tm) <- dimnames(Tu)
+        attr(CH, 'Tm') <- as.matrix(table(factor(dfnonID$trapID, levels = trapnames),
+                                          factor(dfnonID$occasion, levels = 1:S)))
     }
-    else Tm <- NULL
+    ##------------------------------------------------------------------------------
 
-    class(M) <- 'capthist'
-    session(M) <- session(capthist)
-    traps(M) <- traps(capthist)
-
-    attr(M, 'Tu') <- Tu
-    attr(M, 'Tm') <- Tm
-    attr(M, 'q') <- q
-
-    M
+    attr(CH, 'popn') <- attr(capthist, 'popn')   ## NULL unless savepopn = TRUE
+    CH
 }
 ############################################################################################
 

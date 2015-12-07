@@ -17,15 +17,16 @@ sim.capthist(traps, popn = list(D = 5, buffer = 100,
     noccasions = 5, nsessions = 1, binomN = NULL, exactN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
     maxperpoly = 100, chulltol = 0.001, userdist = NULL, savepopn = FALSE)
-sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
-    nonID = TRUE)
+sim.resight(traps, popn = list(D = 5, buffer = 100, Ndist = "poisson"), ...,
+    pID = 1, unmarked = TRUE, nonID = TRUE, unsighted = TRUE, pmark = 0.5, 
+    Nmark = NULL, markingmask = NULL)
 
 }
 
 \arguments{
   \item{traps}{ \code{traps} object with the locations and other attributes of detectors }
   \item{popn}{ locations of individuals in the population to be sampled, either as
- a \code{\link{popn}} object or a list with named components `D' (density) and `buffer' }
+ a \code{\link{popn}} object (see \code{\link{sim.popn}}) or a list with the named components. }
   \item{detectfn}{integer code or character string for shape of
   detection function 0 = halfnormal etc. -- see \link{detectfn}}
   \item{detectpar}{ list of values for named parameters of detection function }
@@ -45,10 +46,13 @@ sim.resight(traps, ..., q = 1, pID = 1, unmarked = TRUE,
   \item{userdist}{user-defined distance function or matrix (see \link{details})}  
   \item{savepopn}{ logical; if TRUE then the popn (input or simulated) is saved as an attribute}
   \item{\dots}{ arguments to pass to \code{sim.capthist} }
-  \item{q}{ number of marking occasions }
   \item{pID}{ probability of individual identification for marked animals }
-  \item{unmarked}{ logical, if true unmarked individuals are not recorded during `sighting' }
-  \item{nonID}{ logical, if true then unidentified marked individuals are not recorded during `sighting' }
+  \item{unmarked}{ logical, if TRUE unmarked individuals are not recorded during `sighting' }
+  \item{nonID}{ logical, if TRUE then unidentified marked individuals are not recorded during `sighting' }
+  \item{unsighted}{ logical, if TRUE and sighting only then capthist includes all-zero histories }
+  \item{pmark}{ numeric probability that an individual is `pre-marked' (see Details)}
+  \item{Nmark}{ number of individuals to be `pre-marked' (see Details)}
+  \item{markingmask}{ \code{mask} object}
 
 }
 \details{
@@ -125,13 +129,19 @@ boundary points are within the polygon. Buffering is suppressed if
 \code{userdist} cannot be set if `traps' is any of polygon, polygonX,
 transect or transectX.
 
-\code{sim.resight} generates mark-resight data for `q' marking occasions
-followed by `noccasions -- q' sighting occasions. \code{sim.capthist} is
-first called with the arguments `traps' and \dots. The detector type
-must be `proximity'. The `usage' attribute of \code{traps} is ignored at
-present, so the same detectors are operated on all occasions.  Any
-detection-parameter vector of length 2 in \dots is interpreted as
-providing differing constant values for the marking and sighting phases.
+\code{sim.resight} generates mark-resight data. The `markocc' attribute 
+of `traps' indicates the occasions which are for sighting-only (0) or 
+marking and recapture (1). The number 
+of occasions is determined by \code{markocc}. \code{sim.capthist} is first 
+called with the arguments `traps' and \dots. The detector type of `traps' 
+must be `proximity' or `count'. At present the detector type is assumed to 
+be the same for marking and sighting occasions. If \dots includes a non-null `seed' the 
+random seed is reset in \code{sim.resight} and not passed to 
+\code{sim.capthist}.
+
+A special case arises when all occasions are sighting-only. Then it is assumed that individuals in the population are marked prior to the start of sampling with a known spatial distribution (i.e. marking then does not follow a spatial detection model). By default, animals are marked with the probability \code{pmark}. If \code{Nmark} is specified then a sample of size \code{Nmark} will be selected for marking, overriding \code{pmark}.
+
+The marked population may be restricted to a subset of the space spanned by \code{popn} by specifying \code{markingmask}, which may have a further covariate `marking' to vary the intensity of marking.
 
 }
 \value{
@@ -148,8 +158,9 @@ The initial state of the R random number generator is stored in the
 `seed' attribute.
 
 For \code{sim.resight}, an object of class \code{capthist}, always a
-3-dimensional array, with additional attributes Tu and Tm containing
-counts of `unmarked' and `marked, not identified' sightings.
+3-dimensional array, with additional attributes markocc (marking occasions), 
+Tu (sightings of unmarked animals) and Tm (sightings of marked but not 
+identified animals).
 
 }
 
@@ -174,6 +185,8 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 }
 
+\section{Warning}{\code{sim.resight} allows interspersed marking and sighting occasions, but data with interspersed occasions cannot yet be analysed with \code{\link{secr.fit}}}
+
 \note{
 
 External code is called to speed the simulations. The present version
@@ -196,12 +209,16 @@ a fitted model with \code{sim.secr}.
 \code{maxperpoly} limits the size of the array allocated for
 detections in C code; an error results if the is number is exceeded.
 
+Prior to 2.10.0 \code{sim.resight} interpreted length-2 vectors of detection parameters as referring to marking and sighting occasions; this feature has been discontinued.
+
 }
 
 \seealso{
     \code{\link{sim.popn}}, \code{\link{capthist}}, \code{\link{traps}},
     \code{\link{popn}}, \code{\link{Detection functions}}, \code{\link[stats]{simulate}}
 }
+
+\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
 
 \examples{
 ## simple example
@@ -213,8 +230,14 @@ sim.capthist (temptrap, detectpar = list(g0 = 0.2, sigma = 20))
 ## detection per individual per occasion
 temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector =
     "proximity")
-summary(sim.capthist (temptrap, detectpar =
-    list(g0 = 0.2, sigma = 20)))
+summary(sim.capthist (temptrap, detectpar = list(g0 = 0.2, 
+    sigma = 20)))
+
+## marking on occasions 1, 3 only
+## see Warning
+markocc(temptrap) <- c(1,0,1,0,0)
+summary(sim.resight (temptrap, detectpar = list(g0 = 0.2, 
+    sigma = 20)))
 
 ## multiple sessions
 grid4 <- make.grid(nx = 2, ny = 2)

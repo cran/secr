@@ -31,12 +31,15 @@ Ancillary data are retained as attributes of a \code{capthist} object as follows
 \item{cutval}{ -- threshold of signal strength for detection (`signal' only)}
 \item{signalframe}{ -- signal strength values etc., one row per detection (`signal' only)}
 \item{detectedXY}{ -- dataframe of coordinates for location within
-  polygon (`polygon' only)}
+  polygon (`polygon'-like detectors only)}
 \item{xylist}{ -- coordinates of telemetered animals}
+\item{Tu}{ -- detectors x occasions matrix of sightings of unmarked animals}
+\item{Tm}{ -- detectors x occasions matrix of sightings of marked but unidentified animals }
 }
 
-The parts of a capthist object can be assembled with the function
-\code{make.capthist}.  Use \code{sim.capthist} for Monte Carlo simulation
+\code{read.capthist} is adequate for most data input. Alternatively, the parts of a 
+capthist object can be assembled with the function \code{make.capthist}.  
+Use \code{sim.capthist} for Monte Carlo simulation
 (simple models only). Methods are provided to display and manipulate
 \code{capthist} objects (print, summary, plot, rbind, subset, reduce)
 and to extract and replace attributes (covariates, traps, xy).

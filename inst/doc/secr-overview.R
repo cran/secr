@@ -4,7 +4,7 @@ library(secr)
 ## ---- echo=FALSE, eval=TRUE--------------------------------------------------------
 options(digits=6, width=85)
 
-## ---- fig.height=3, fig.width=3----------------------------------------------------
+## ---- fig.height=3, fig.width=3, cache = TRUE--------------------------------------
 par(mfrow=c(1,1), pty='s', mar=c(2,2,2,2), cex=1.2)
 plot(sim.popn(D=5, core=make.grid(), buffer=150), cex=1)
 plot(make.grid(),add=T, detpar=list(col = "red", pch = 3, cex = 1.2))
@@ -33,25 +33,28 @@ plot(make.grid(),add=T, detpar=list(col = "red", pch = 3, cex = 1.2))
 ## ---- eval=FALSE-------------------------------------------------------------------
 #  secr.fit(captdata, model = g0~t)
 
-## ---- echo=FALSE-------------------------------------------------------------------
+## ---- echo=FALSE, eval=TRUE--------------------------------------------------------
 options(digits = 6, width = 85)       
-
-## ---- eval=TRUE--------------------------------------------------------------------
 library(secr)                                               # load package                             
-setwd(system.file('extdata', package='secr'))               # set working folder
 myCH <- read.capthist('capt.txt','trap.txt', fmt = 'XY')    # import data using XY format
 
-## ---- eval=TRUE--------------------------------------------------------------------
+## ---- eval=FALSE-------------------------------------------------------------------
+#  library(secr)                                               # load package
+#  oldwd <- setwd(system.file('extdata', package = 'secr'))    # change working folder
+#  myCH <- read.capthist('capt.txt','trap.txt', fmt = 'XY')    # import data using XY format
+#  setwd(oldwd)                                                # reset working folder
+
+## ---- eval=TRUE, cache = TRUE------------------------------------------------------
 secr0 <- secr.fit(myCH, model = g0~1, buffer = 100, trace = FALSE)  # null model
 secrb <- secr.fit(myCH, model = g0~b, buffer = 100, trace = FALSE)  # trap response model
 AIC (secr0, secrb)                                                  # compare
 
-## ---- eval=TRUE--------------------------------------------------------------------
+## ---- eval=TRUE, cache = TRUE------------------------------------------------------
 mask.check (secr0)
 
-## ---- eval=TRUE--------------------------------------------------------------------
+## ---- eval=TRUE, cache = TRUE------------------------------------------------------
 secr.fit(myCH, model = g0~1, buffer = 150, trace = FALSE)
 
-## ---- eval=TRUE--------------------------------------------------------------------
+## ---- eval=TRUE, cache = TRUE------------------------------------------------------
 predict(secr0)
 

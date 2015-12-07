@@ -45,7 +45,7 @@ matrices, one for each `real' parameter.
 \seealso{ \code{\link{vcov}}, \code{\link{secr.fit}}, \code{\link{print.secr}} }
 
 \examples{
-## previosuly fitted secr model
+## previously fitted secr model
 vcov(secrdemo.0)
 }
 

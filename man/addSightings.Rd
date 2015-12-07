@@ -1,0 +1,88 @@
+\name{addSightings}
+\alias{addSightings}
+
+\title{Mark-resight Data}
+
+\description{
+  
+  Add sighting data on unmarked individuals and/or unidentified marked
+  individuals to an existing capthist object. 
+  
+}
+
+\usage{
+
+addSightings(capthist, unmarked = NULL, nonID = NULL, verify = TRUE, ...)
+
+}
+
+\arguments{
+  \item{capthist}{secr capthist object}
+  
+  \item{unmarked}{matrix or list of matrices of sightings of unmarked animals, or file name (see Details)}
+  
+  \item{nonID}{matrix or list of matrices of unidentified sightings of marked animals, or file name (see Details)}
+  
+  \item{verify}{ logical; if TRUE then the resulting capthist object is
+  checked with \code{\link{verify}}}
+
+  \item{\dots}{other arguments passed to \code{\link{read.table}} }
+
+}
+
+\details{
+
+The capthist object for mark-resight analysis comprises distinct marking and sighting occasions, defined in the markocc attribute of \code{traps(capthist)}. Add this attribute to \code{traps(capthist)} with \code{\link{markocc}} before using 'addSightings'. See also \code{\link{read.traps}} and \code{\link{read.capthist}}.
+
+Mark-resight data may be binary (detector type `proximity') or counts (detector types `count', 'polygon' or 'transect'). The detector type is an attribute of \code{traps(capthist)}. Values in \code{unmarked} and \code{nonID} should be whole numbers, and may be greater than 1 even for binary proximity detectors because multiple animals may be detected simultaneously at one place.
+
+Arguments \code{unmarked} and \code{nonID} provide data for attributes
+`Tu' and `Tm' respectively. They may take several forms
+
+\itemize{
+  \item a single integer, the sum of all counts*
+  \item a matrix of the count on each occasion at each detector (dimensions K x S, where K is the number of detectors and S is the total number of occasions). Columns corresponding to marking occasions should be all-zero.
+  \item for multi-session data, a list with components as above
+  \item a character value with the name of a text file containing the data; the file will be read with \code{\link{read.table}}. The \dots argument allows some control over how the file is read. The data format comprises at least S+1 columns. The first is a session identifier used to split the file when the data span multiple sessions; it should be constant for a single-session capthist. The remaining S columns contain the counts for occasions 1:S, one row per detector. Further columns may be present; they are ignored at present.    
+}
+
+* although this is convenient, the full matrix of counts provides more flexibility (e.g., when you wish to subset by occasion), and enables modelling of variation across detectors and occasions.
+
+}
+\value{
+
+  A capthist object with the same structure as the input, but with new sighting-related attributes Tu (sightings of unmarked animals) and/or Tm (unidentified sightings of marked animals). Input values, including NULL, overwrite existing values.
+
+}
+
+\seealso{
+    
+  \code{\link{markocc}}, 
+  \code{\link{read.capthist}}, 
+  \code{\link{read.traps}}, 
+  \code{\link{sim.resight}},
+  \code{\link{Tm}},
+  \code{\link{Tu}},
+  \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
+  
+}
+
+\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
+
+\examples{
+
+\dontrun{
+
+## suppose CH is a capthist object with detector type proximity,
+## attribute 'markocc' is defined for traps(CH), and 
+## unmarkedsightings.txt is a text file with a
+## compatible K x S array of non-negative integer values.
+
+Tu <- read.table('unmarkedsightings.txt')
+CH2 <- addSightings(CH, unmarked = Tu)
+
+}
+
+}
+
+\keyword{ manip }

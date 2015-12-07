@@ -34,6 +34,8 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
   inputs differ in the number of `usage' columns (occasions), the
   smaller matrices are padded with `zero' columns to the maximum number
   of columns in any input.
+  
+  \dots may be a single multi-session traps object (from 2.10.0).
 
 }
 

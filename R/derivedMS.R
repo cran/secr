@@ -129,7 +129,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
 ## groups within sessions
 ## groups to be found in covariates(object$capthist) cf
 
-if (inherits(object, 'secrlist')) {
+    if (inherits(object, 'secrlist')) {
         lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
                loginterval, distribution)
     }
@@ -150,8 +150,8 @@ if (inherits(object, 'secrlist')) {
             sessnames <- session(object$capthist)
             jj <- match (sessnames, session(object$capthist))
             if (ncores > 1) {
-                clust <- makeCluster(ncores, methods = FALSE, useXDR = FALSE)
-                clusterEvalQ(clust, library(secr))
+                clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+                clusterEvalQ(clust, requireNamespace('secr'))
                 output <- parLapply(clust, jj, derived, object = object, groups = groups,
                     alpha = alpha, se.esa = se.esa, se.D = se.D, loginterval = loginterval,
                     distribution = distribution, ncores = 1)
@@ -232,7 +232,8 @@ if (inherits(object, 'secrlist')) {
             ## mainline
 
             if (ncores > 1) {
-                clust <- makeCluster(ncores, methods=FALSE, useXDR=FALSE)
+                clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+                clusterEvalQ(clust, requireNamespace('secr'))
             }
             else {
                 clust <- NULL

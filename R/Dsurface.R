@@ -191,6 +191,15 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
     if (is.null(mask))
         mask <- object$mask
     densitylist <- vector('list')
+    
+    ## 2015-12-04 to fix bug found by Rahel Sollmann
+    if (ms(mask)) {
+        if (is.null(names(mask)))
+            names(mask) <- sessionlevels
+        if (any(names(mask) != sessionlevels))
+            stop("names(object$mask) conflicts with session(object$capthist)")
+    }
+    
     for (session in sessionlevels) {
         if (ms(mask))
             sessmask <- mask[[session]]

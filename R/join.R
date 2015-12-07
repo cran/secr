@@ -1,34 +1,45 @@
 ## 2011-12-01, 2011-12-07, 2012-06-08, 2012-11-04
 ## join returns single-session object from list of inputs
 
-# should new trap ID be numeric , character or factor???
-# 2015-01-31 join() bug fix could fail with exclusivedetector types
-# 2015-04-05 previous bug fix failed...
-
-# 2015-04-13
+## should new trap ID be numeric , character or factor???
+## 2015-01-31 join() bug fix could fail with exclusivedetector types
+## 2015-04-05 previous bug fix failed...
+## 2015-04-13
+## 2015-10-29 extended to deal with Tu, Tm and all-zero histories
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
     ####################################################################
     onesession <- function (sess) {
+        ## form CH as a dataframe
         CH <- object[[sess]]
         newID <- animalID(CH)
         newocc <- occasion(CH) + before[sess]
         newtrap <- trap(CH)
+
         df <- data.frame(newID = newID, newocc = newocc, newtrap = newtrap,
                          alive = alive(CH), sess = rep(sess, length(newID)),
                          stringsAsFactors = FALSE)
+
+        allzero <- rownames(CH)[apply(CH,1,sum)==0]
+        naz <- length(allzero)
+        if (naz > 0) {
+            df0 <- expand.grid(newID = allzero, newocc = NA, newtrap = newtrap[1],
+                               alive = TRUE, sess = sess, stringsAsFactors = FALSE)
+            df <- rbind(df,df0)
+        }
         if (!is.null(xy(CH))) {
-            df$x <- xy(CH)$x
-            df$y <- xy(CH)$y
+            df$x <- c(xy(CH)$x, rep(NA, naz))
+            df$y <- c(xy(CH)$y, rep(NA, naz))
         }
         if (!is.null(signal(CH)))  {
-            df$signal <- signal(CH)
-        }        
+            df$signal <- c(signal(CH), rep(NA, naz))
+        }
+
         df
     }
     ####################################################################
-    
+
     condition.usage <- function (trp, i) {
         us <- matrix(0, nrow=nrow(trp), ncol=nnewocc)
         s1 <- c(1, cumsum(nocc)+1)[i]
@@ -41,10 +52,28 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         trp
     }
     ####################################################################
-    
+    ## preparing for merge when traps vary... 2015-10-29
+    condition.sightings <- function (CH, i, type = 'Tu') {
+        T <- attr(CH, type)
+        if (!is.null(T)) {
+            if (is.matrix(T)) {
+                Tnew <- matrix(0, nrow=nrow(traps(CH)), ncol=nnewocc)
+                s1 <- c(1, cumsum(nocc)+1)[i]
+                s2 <- cumsum(nocc)[i]
+                Tnew[,s1:s2] <- T
+                attr(CH, type) <- Tnew
+            }
+        }
+        CH
+    }
+    ####################################################################
+
+    ## mainline
+
     if (!ms(object) | any(sapply(object, class) != 'capthist'))
-        stop("requires multi-session capthist object or list of single-session capthist")
-    
+        stop("requires multi-session capthist object or list of ",
+             "single-session capthist")
+
     outputdetector <- detector(traps(object)[[1]])
     nsession <- length(object)
     nocc <- sapply(object, ncol)
@@ -52,62 +81,107 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     nnewocc <- sum(nocc)
     ## cumulative number of preceding occasions
     before <- c(0, cumsum(nocc)[-nsession])
+
+    ##------------------------------------------------------------------
+    ## combine capthist as one long dataframe
     df <- lapply(1:nsession, onesession)
     df <- do.call(rbind, df)
     n <- length(unique(df$newID))
 
+    ##------------------------------------------------------------------
     ## resolve traps
     ## first check whether all the same (except usage)
     temptrp <- lapply(traps(object), function(x) {usage(x) <- NULL; x})
     sametrp <- all(sapply(temptrp[-1], identical, temptrp[[1]]))
+
     if (sametrp & remove.dupl.sites) {
         newtraps <- temptrp[[1]]
         class(newtraps) <- c("traps", "data.frame")
         if (length(usage(traps(object))) > 0)
             usage(newtraps) <- do.call(cbind, usage(traps(object)))
         ## df$newtrap unchanged
+
     }
-    else {    
-        temptrp <- mapply(condition.usage, traps(object), 1:nsession)    
-        newtraps <- do.call(rbind, c(temptrp, renumber = FALSE))        
+    else {
+        temptrp <- mapply(condition.usage, traps(object), 1:nsession)
+        newtraps <- do.call(rbind, c(temptrp, renumber = FALSE))
         class(newtraps) <- c("traps", "data.frame")
         df$newtrap <- paste(df$newtrap,df$sess, sep=".")
     }
-    
-    # ensure retain all occasions
+
+    ##------------------------------------------------------------------
+    ## ensure retain all occasions
     df$newocc <- factor(df$newocc, levels = 1:nnewocc)
 
+    ##------------------------------------------------------------------
+    ## construct new capthist matrix or array from positive detections
     if (outputdetector %in% .localstuff$exclusivedetectors) {
         alivesign <- df$alive*2 - 1
         tempnew <- matrix(0, nrow = n, ncol = sum(nocc))
         dimnames(tempnew) <- list(unique(df$newID), 1:sum(nocc))
-        
-        ## bug fix 2015-01-31
-        ## tempnew[cbind(df$newID, df$newocc)] <- as.numeric(df$newtrap) * alivesign
+
         ## bug fix 2015-04-05
-        ## trapindex <- match(df$newtrap, unique(df$newtrap))    
+        ## trapindex <- match(df$newtrap, unique(df$newtrap))
         trapindex <- match(df$newtrap, rownames(newtraps))
         tempnew[cbind(df$newID, df$newocc)] <- trapindex * alivesign
     }
     else {
-        df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
-        tempnew <- table(df$newID, df$newocc, df$newtrap)
+        if (outputdetector %in% .localstuff$polydetectors)
+            df$newtrap <- factor(df$newtrap)
+        else
+            df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
+        tempnew <- table(df$newID, df$newocc, df$newtrap, useNA = "no")
         alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
         alivesign[is.na(alivesign)] <- TRUE
         alivesign <- alivesign * 2 - 1
         tempnew <- tempnew * alivesign
     }
+
+    ##------------------------------------------------------------------
+    ## pile on the attributes...
     class(tempnew) <- 'capthist'
     traps(tempnew) <- newtraps
     session(tempnew) <- 1
     neworder <- order (df$newocc, df$newID, df$newtrap)
 
-    if (!is.null(df$x))
-        xy(tempnew) <- df[neworder,c('x','y'), drop = FALSE]
-
-    if (!is.null(df$signal))
-        signal(tempnew) <- df[neworder,'signal']
+    ##------------------------------------------------------------------
+    ## concatenate marking-and-resighting-occasion vectors
+    tempmarkocc <- unlist(markocc(traps(object)))
+    if (!is.null(tempmarkocc)) {
+        names(tempmarkocc) <- NULL
+        markocc(traps(tempnew)) <- tempmarkocc
+    }
     
+    ##------------------------------------------------------------------
+    ## unmarked and nonID sightings
+    ## not yet implemented for varying traps
+    if (sametrp & remove.dupl.sites) {
+        ## retain unmarked sightings and nonID sightings if present
+        ## ignore if NULL
+        Tu <- Tu(object)
+        if (!is.null(Tu[[1]])) {
+            if (!all(sapply(Tu, is.matrix)))
+                Tu(tempnew) <- do.call(sum, Tu)
+            else
+                Tu(tempnew) <- do.call(cbind, Tu)
+        }
+
+        Tm <- Tm(object)
+        if (!is.null(Tm[[1]])) {
+            if (!all(sapply(Tm, is.matrix)))
+                Tm(tempnew) <- do.call(sum, Tm)
+            else
+                Tm(tempnew) <- do.call(cbind, Tm)
+        }
+    }
+    else {
+        ## Tu, Tm not ready yet
+        if (!is.null(Tu(object[[1]])) | !is.null(Tm(object[[1]])))
+            stop ("join does not yet merge sighting matrices when traps vary")
+    }
+
+    ##------------------------------------------------------------------
+    ## covariates, xy, signal attributes
     if (!is.null(covariates(object))) {
         tempcov <- do.call(rbind, covariates(object))
         if (!is.null(tempcov)) {
@@ -119,9 +193,24 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         }
     }
 
+    ##------------------------------------------------------------------
+    ## negotiate problem that all-zero histories have no xy, signal
+    tempdf <- df[neworder,, drop = FALSE]
+    if (!is.null(df$x)) {
+        xy(tempnew) <- tempdf[!is.na(tempdf$newocc), c('x','y')]
+    }
+    if (!is.null(df$signal))
+        signal(tempnew) <- tempdf[!is.na(tempdf$newocc),'signal']
+
+    ##------------------------------------------------------------------
+    ## purge duplicate sites, if requested
     if (remove.dupl.sites & !sametrp)
         tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
+
+    ## remember previous structure, for MARK-style robust design
     attr(tempnew, 'interval') <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
+
+    ##------------------------------------------------------------------
 
     tempnew
 

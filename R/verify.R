@@ -9,6 +9,9 @@
 ## 2012-10-22 xylist checked
 ## 2013-05-09 tweak to avoid error in checkcovariatelevels when no covariates
 ## 2015-01-06 stop if mixture of NULL and non-NULL covariates
+## 2015-10-03 resight data
+## 2015-10-12 verify.traps error messages
+## 2015-11-02 xyinpoly moved to utility.R
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -17,6 +20,9 @@ verify.default <- function (object, report, ...) {
   cat ('no verify method for objects of class', class(object), '\n')
 }
 ############################################################################################
+
+## from is.integer help page
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
 overlapcells <- function (xy) {
     vertexinside <- function (a,b) {
@@ -128,36 +134,6 @@ validpoly <- function (xy, polyID, nx = 500) {
 }
 ############################################################################################
 
-xyinpoly <- function (xy, trps) {
-    ptinside <- function (i,k) {
-        ## is point i inside poly k?
-        polyxy <- as.matrix(lxy[[k]])
-        polyxy <- rbind(polyxy, polyxy[1,])   ## close 2014-08-28
-        nr <- nrow(polyxy)
-        temp <- .C('inside',  PACKAGE = 'secr',
-            as.double (xy[i,]),
-            as.integer (0),
-            as.integer (nr-1),
-            as.integer (nr),
-            as.double (polyxy),
-            result = integer(1))
-        as.logical(temp$result)
-    }
-    lxy <- split (trps, levels(polyID(trps)))
-    firstinside <- function (i) {
-        frstk <- 0
-        for (k in 1:length(lxy)) {
-            if (ptinside(i,k)) {
-                frstk <- k
-                break
-            }
-        }
-        frstk
-    }
-    sapply(1:nrow(xy), firstinside)
-}
-############################################################################################
-
 xyontransect <- function (xy, trps, tol=0.01) {
     ptontransect <- function (i,k) {
         ## is point i on transect k?
@@ -252,6 +228,8 @@ verify.traps <- function (object, report = 2, ...) {
 
         usagedetectorsOK <- TRUE
         usagenonzeroOK <- TRUE
+        markoccOK <- TRUE
+        markoccOK2 <- TRUE
         areaOK <- TRUE
         polyIDOK <- TRUE
         polyconvexOK <- TRUE
@@ -280,8 +258,14 @@ verify.traps <- function (object, report = 2, ...) {
         else usagecount <- rep(NA, ncol(object))
 
         ## 5
+        if (sighting(object)) {
+            if (!is.null(usage(object))) 
+                markoccOK <- length(markocc(object)) == ncol(usage(object))
+            markoccOK2 <- all(markocc(object) %in% c(-1,0,1))
+        }
+        
+        ## 6
         if (area) {
-            ## must have searchcell
             areaOK <- !is.na(searcharea(object))
             areaOK <- areaOK & !overlapcells(object)
         }
@@ -290,13 +274,13 @@ verify.traps <- function (object, report = 2, ...) {
             areaOK <- !overlappoly (object, levels(polyID(object)))
         }
 
-        ## 6
+        ## 7
         if (poly | telem) {
             polyIDOK <- (length(polyID(object)) == nrow(object)) &
                 is.factor(polyID(object))
         }
 
-        ## 7
+        ## 8
         if (poly) {
             polyconvexOK <- validpoly (object, polyID(object))
         }
@@ -311,17 +295,26 @@ verify.traps <- function (object, report = 2, ...) {
                 }
                 if (!trapcovariatesOK) {
                     cat ('Wrong number of rows in dataframe of detector covariates\n')
-                    cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
-                    cat ('covariates(traps(capthist)) :', nrow(covariates(traps(object))), 'detectors\n')
+                    cat ('traps :', ndetector(object), 'detectors\n')
+                    cat ('covariates :', nrow(covariates(object)), 'detectors\n')
                 }
                 if (!usagedetectorsOK) {
                     cat ('Conflicting number of detectors in usage matrix\n')
-                    cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
-                    cat ('usage(traps(capthist)) :', nrow(usage(traps(object))), 'detectors\n')
+                    cat ('traps :', ndetector(object), 'detectors\n')
+                    cat ('usage(traps) :', nrow(usage(object)), 'detectors\n')
                 }
                 if (!usagenonzeroOK) {
                     cat ("Occasions when no detectors 'used'\n")
                     cat ((1:length(usagecount))[usagecount==0], '\n')
+                }
+                if (!markoccOK) {
+                    cat ("Conflicting number of occasions in markocc and usage \n")
+                    cat ('markocc : ', length(markocc(object)), 'occasions \n')
+                    cat ('usage : ', ncol(usage(object)), 'occasions \n')
+                }
+                if (!markoccOK2) {
+                    cat ("Values in markocc should be -1,0 or 1 \n")
+                    cat ('markocc(object) \n')
                 }
                 if (!areaOK) {
                     cat ("Search areas overlap, or no search area specified \n")
@@ -342,6 +335,7 @@ verify.traps <- function (object, report = 2, ...) {
             trapcovariatesOK = trapcovariatesOK,
             usagedetectorsOK = usagedetectorsOK,
             usagenonzeroOK = usagenonzeroOK,
+            markoccOK == markoccOK,
             areaOK = areaOK,
             polyIDOK = polyIDOK,
             polyconvexOK = polyconvexOK,
@@ -368,8 +362,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 ## -- Number of rows in dataframe of individual covariates differs from capthist
 ## -- Number of occasions in usage matrix differs from capthist
 ## -- Detections at unused detectors
-
-
+    
+## -- resighting attributes Tu, Tm compatible if present
+## -- no resightings on marking occasions, or new animals on resighting occasions
+    
     if (!inherits(object, 'capthist'))
         stop ("object must be of class 'capthist'")
     if (inherits(object, 'list')) {
@@ -401,6 +397,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         telem <- detector(traps(object)) %in% c('telemetry')
         transect <- detector(traps(object)) %in% c('transect', 'transectX')
         unmarked <- detector(traps(object)) %in% c('unmarked')
+        markocc <- markocc(traps(object))
+        sighting <- sighting(traps(object))
+        allsighting <- if (sighting) !any(markocc>0) else FALSE
 
         NAOK <- TRUE
         deadOK <- TRUE
@@ -421,7 +420,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         IDOK <- TRUE
         rownamesOK <- TRUE
         xylistOK <- TRUE
-
+        sightingsOK <- TRUE
+        sightingusageOK <- TRUE        
+        MOK <- TRUE
+        ROK <- TRUE
+        
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
                 (nrow(covariates(object)) == 0 ))
@@ -594,19 +597,67 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## 2012-10-22
         if (nrow(object)>0) {
             zeros <- apply(abs(object)>0,1,sum)==0
-            # pc <- detector(traps(object)) %in% c('proximity','count')
-            xyl <- telemetryxy(object)
-            if (!is.null(xyl) | any(zeros)) {
-                xylistOK <- all(names(xyl) %in% row.names(object))
-                if (!all(row.names(object)[zeros] %in% names(xyl)))
-                    xylistOK <- FALSE
+            if (!allsighting) {
+                xyl <- telemetryxy(object)
+                if (!is.null(xyl) | any(zeros)) {
+                    xylistOK <- all(names(xyl) %in% row.names(object))
+                    if (!all(row.names(object)[zeros] %in% names(xyl)))
+                        xylistOK <- FALSE
+                }
+            }
+        }
+        
+        ## 17
+        ## 2015-10-03
+        ## -- resighting attributes Tu, Tm compatible if present
+        ## -- no resightings on marking occasions, or new animals on resighting occasions
+        
+        if (sighting) {
+
+            Tu <- Tu(object)
+            Tm <- Tm(object)
+            nocc <- ncol(object)
+            K <- ndetector(traps(object))
+            r <- numeric(nocc)
+            usge <- usage(traps(object))
+            if (is.null(usge)) usge <- 1
+            if (length(markocc) != nocc) sightingsOK <- FALSE
+            ## allow scalar summed sighting counts 2015-10-31
+            if (!is.null(Tu)) {
+                if (length(Tu) > 1) {  
+                    if (any((Tu>0) & (usge==0))) sightingusageOK <- FALSE
+                    if (ncol(Tu) != nocc) sightingsOK <- FALSE
+                    if (nrow(Tu) != K) sightingsOK <- FALSE
+                    r <- r + apply(Tu,2,sum)
+                }
+                if (any(Tu<0)) sightingsOK <- FALSE
+                if (!all(is.wholenumber(Tu))) sightingsOK <- FALSE
+            }
+            if (!is.null(Tm)) {
+                if (length(Tm) > 1) {
+                    if (any((Tu>0) & (usge==0))) sightingusageOK <- FALSE
+                    if (nrow(Tm) != K) sightingsOK <- FALSE
+                    if (ncol(Tm) != nocc) sightingsOK <- FALSE
+                    r <- r + apply(Tm,2,sum)
+                }
+                if (any(Tm<0)) sightingsOK <- FALSE
+                if (!all(is.wholenumber(Tm))) sightingsOK <- FALSE
+            }
+            if (sightingsOK) {
+                if (length(Tu)>1) {
+                    u <- unlist(counts(object, 'u'))[1:nocc]
+                    if ( any((u > 0) & (markocc<1) & !allsighting) ) MOK <- FALSE
+                }
+                if (length(Tm)>1)
+                    if ( any((r > 0) & (markocc>0))) ROK <- FALSE
             }
         }
 
         errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,
             deadOK, singleOK, binaryOK, countOK, cutvalOK, signalOK,
             detectornumberOK, covariatesOK, usageoccasionsOK, usageOK,
-            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK, xylistOK))
+            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK, xylistOK,
+            sightingsOK, sightingusageOK, MOK, ROK))
 
         if (report > 0) {
             if (errors) {
@@ -712,6 +763,33 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
                 if (!xylistOK) {
                     cat ("Telemetry data (xylist) do not match capture histories\n")
+                }
+                if (!sightingsOK) {
+                    cat("Incompatible dimensions of sighting attributes markocc, Tu or Tm\n")
+                }
+                if (!sightingusageOK) {
+                    cat("Sightings at unused detectors\n")
+                    Tu <- Tu(object)
+                    Tm <- Tm(object)
+                    bad <- (Tu>0) & (usage(traps(object))==0) & (length(Tu)>1)
+                    if (sum(bad)>0) {
+                        cat("Tu\n")
+                        print(cbind(Detector = row(bad)[bad], Occasion = col(bad)[bad]))
+                    }
+                    bad <- (Tm>0) & (usage(traps(object))==0) & (length(Tm)>1)
+                    if (sum(bad)>0) {
+                        cat("Tm\n")
+                        print(cbind(Detector = row(bad)[bad], Occasion = col(bad)[bad]))
+                    }
+                }
+                if (!MOK) {
+                    cat("New individual(s) on sighting-only occasion\n")
+                    occ <- split(occasion(object), animalID(object, names=TRUE))
+                    firstocc <- sapply(occ, '[', 1)
+                    print(firstocc[firstocc %in% (1:ncol(object))[markocc(traps(object))<1]])
+                }
+                if (!ROK) {
+                    cat("Sighting(s) on marking-only occasion\n")
                 }
             }
 

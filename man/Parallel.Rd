@@ -33,6 +33,7 @@ then all will complete in about the time required to run the longest.
   \code{\link{fxi.contour}} \tab individual \tab moderate-large \tab multiple individuals only \cr
   \code{\link{fxi.secr}} \tab individual \tab moderate-large \tab multiple individuals only \cr
   \code{\link{fx.total}} \tab individual \tab moderate-large \tab \cr
+  \code{\link{pmixProfileLL}} \tab level of pmix \tab large \tab \cr
 }
 `Unit' refers to the unit of work sent to each worker process. As a guide, a `large' benefit means >60\% reduction in process time with
   4 CPUs.
@@ -64,11 +65,9 @@ In \code{secr.fit} the output component `proctime' misrepresents the
 elapsed processing time when multiple cores are used.
 
 Worker processes are created in \code{secr.fit} with \code{makeCluster}
-and the options \code{methods = FALSE}, \code{useXDR = FALSE}. This has been
-tested only on Windows systems.
-
-The code used internally by \pkg{secr} is quite simple and could be
-adapted as a wrapper for user-defined simulations. See Examples.
+and the options \code{methods = FALSE}, \code{useXDR = .Platform$endian=='big'} (consistently from 2.10.0).
+\code{methods = TRUE} is required for S4 methods, but as these are not used directly 
+in \pkg{secr} it seems worth saving the time needed to load \pkg{methods}. \code{useXDR = FALSE} saves time ``where large amounts of data are to be transferred and all the nodes are little-endian'', which applies on Windows systems and some linux systems. Please report any issues.
 
 }
 
@@ -76,79 +75,98 @@ adapted as a wrapper for user-defined simulations. See Examples.
 
 \dontrun{
 
-# R version 2.15.2 (2012-10-26)
+sessionInfo()
+# R version 3.2.0 (2015-04-16)
 # Platform: x86_64-w64-mingw32/x64 (64-bit)
-# quad-core i7 CPU
+# Running under: Windows 7 x64 (build 7601) Service Pack 1
+# quad-core i7 CPU, 16 Gb RAM
+# ...
 
-library(parallel)
-detectCores()
-# [1] 8
+## almost no benefit with secr.fit
 
-# ovenCH is a 5-session dataset
-# multiple cores help a little here
+for (i in 1:5) 
+    print(system.time(secr.fit(ovenCH, buffer = 400, trace = FALSE, ncores = i)))
 
-system.time(f5 <- secr.fit(ovenCH, buffer = 400, trace = FALSE, ncores = 1))
 #   user  system elapsed 
-#  61.21    0.95   62.28 
-system.time(f5 <- secr.fit(ovenCH, buffer = 400, trace = FALSE, ncores = 5))
+#  52.26    0.76   53.02 
 #   user  system elapsed 
-#   8.51    8.66   35.81 
+#   3.38    2.77   48.36 
+#   user  system elapsed 
+#   5.69    5.36   47.18 
+#   user  system elapsed 
+#   6.50    6.90   54.51 
+#   user  system elapsed 
+#   7.74    8.25   50.23 
 
-# however, there is substantial benefit when simulating
+## better for simulation, up to a point
+ 
+for (i in 1:8)
+    print(system.time(sim.secr(secrdemo.0, nsim = 20, tracelevel = 0, ncores = i)))
 
-system.time(s1 <- sim.secr(secrdemo.0, nsim = 20))
 #   user  system elapsed 
-# 789.90    4.41  795.07 
-system.time(s4 <- sim.secr(secrdemo.0, nsim = 20, ncores = 4))
+# 262.93    3.74  266.71 
 #   user  system elapsed 
-#  26.91    0.34  276.15 
+#   0.68    0.02  139.61 
+#   user  system elapsed 
+#   0.69    0.01  110.05 
+#   user  system elapsed 
+#   0.70    0.00   84.24 
+#   user  system elapsed 
+#   0.70    0.02   69.45 
+#   user  system elapsed 
+#   0.67    0.06   75.67 
+#   user  system elapsed 
+#   0.75    0.00   70.00 
+#   user  system elapsed 
+#   0.73    0.05   75.71 
+ 
+for (i in 1:8) 
+    print(system.time(ip.secr (captdata, trace = FALSE, ncores = i)))
 
-system.time(ip.secr (captdata, ncores = 1))
 #   user  system elapsed 
-# 149.93    0.01  150.72 
-system.time(ip.secr (captdata, ncores = 6))
-#  user  system elapsed 
-#   0.47    0.19   41.06 
-
-system.time(score.test (secrdemo.0, g0 ~ b, g0~t, g0 ~ bk, ncores = 1))
+# 132.59    0.00  132.58 
 #   user  system elapsed 
-# 130.73    0.45  131.34 
-system.time(score.test (secrdemo.0, g0 ~ b, g0~t, g0 ~ bk, ncores = 4))
+#   0.25    0.05   71.08 
 #   user  system elapsed 
-#   0.04    0.01  109.69
-
-system.time(derived(ovenbird.model.D, ncores=1))
+#   0.20    0.04   50.76 
 #   user  system elapsed 
-#   7.99    0.02    8.00 
-system.time(derived(ovenbird.model.D, ncores=5))
+#   0.32    0.07   42.13 
 #   user  system elapsed 
-#   0.05    0.04    4.06 
-
-system.time( LLsurface.secr(secrdemo.0, ncores=1))
+#   0.26    0.09   41.74 
 #   user  system elapsed 
-#  40.97    0.64   41.66 
-system.time( LLsurface.secr(secrdemo.0, ncores=4))
+#   0.39    0.08   39.01 
 #   user  system elapsed 
-#   0.05    0.06   13.82 
-system.time( LLsurface.secr(secrdemo.0, ncores=8))
+#   0.25    0.09   36.52 
 #   user  system elapsed 
-#   0.03    0.11   11.14 
-
-## the code used in LLsurface.secr() looks like this
-
-if (ncores > 1) {
-    require(parallel)
-    clust <- makeCluster(ncores)
-    # load 'secr' in each worker process
-    clusterEvalQ(clust, library(secr))
-    # send data to each worker process from master process
-    clusterExport(clust, c("object", "details"), environment())
-    # run function LL for each row of matrix 'grid'
-    # LL accepts one argument, a vector of parameter values
-    # (can also use parLapply, parSapply etc.)
-    temp <- parRapply (clust, grid, LL)
-    stopCluster(clust)
-}
+#   0.46    0.08   35.91 
+ 
+for (i in 1:8)
+    print(system.time(LLsurface.secr(secrdemo.0, ncores = i)))
+    
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#  48.00    0.40   48.41 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.00    0.03   27.94 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.00    0.03   20.60 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.03    0.02   17.63 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.01    0.05   16.41 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.02    0.04   16.10 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.05    0.03   16.03 
+#Evaluating log likelihood across grid of 121 points...
+#   user  system elapsed 
+#   0.02    0.07   15.99 
 
 }
 

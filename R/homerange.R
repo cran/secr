@@ -27,13 +27,17 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
         distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for dbar")
-
+        
         if (detector(traps) %in% .localstuff$polydetectors) {
-            lxy <- split (xy(capthist), animalID(capthist))
-            d <- try(lapply(lxy,dbarxy), silent = TRUE)
-            if (inherits(d, 'try-error'))
-                d <- NA
-            mean(unlist(d), na.rm=T)
+            if (is.null(xy(capthist)))
+                temp <- NA
+            else {
+                lxy <- split (xy(capthist), animalID(capthist))
+                d <- try(lapply(lxy,dbarxy), silent = TRUE)
+                if (inherits(d, 'try-error'))
+                    d <- NA
+                mean(unlist(d), na.rm=T)
+            }
         }
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
@@ -64,8 +68,12 @@ moves <- function (capthist, userdist = NULL, mask = NULL) {
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for moves")
         if (detector(traps) %in% .localstuff$polydetectors) {
-            lxy <- split (xy(capthist), animalID(capthist))
-            lapply (lxy, movexy)
+            if (is.null(xy(capthist)))
+                NA
+            else {
+                lxy <- split (xy(capthist), animalID(capthist))
+                lapply (lxy, movexy)
+            }
         }
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
@@ -101,9 +109,13 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
         distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
         prox  <- length(dim(capthist)) > 2
         if (detector(traps) %in% .localstuff$polydetectors) {
-            lxy <- split (xy(capthist), animalID(capthist))
-            maxd <- unlist(lapply (lxy, MMDMxy))
-            n <- unlist(lapply (lxy, nrow))
+            if (is.null(xy(capthist)))
+                stop("no xy coordinates")
+            else {
+                lxy <- split (xy(capthist), animalID(capthist))
+                maxd <- unlist(lapply (lxy, MMDMxy))
+                n <- unlist(lapply (lxy, nrow))
+            }
         }
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))
@@ -164,9 +176,13 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask 
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for MMDM")
         if (detector(traps) %in% .localstuff$polydetectors) {
-            lxy <- split (xy(capthist), animalID(capthist))
-            maxd <- unlist(lapply (lxy, MMDMxy))
-            n <- unlist(lapply (lxy, nrow))
+            if (is.null(xy(capthist)))
+                stop ("no xy coordinates")
+            else {
+                lxy <- split (xy(capthist), animalID(capthist))
+                maxd <- unlist(lapply (lxy, MMDMxy))
+                n <- unlist(lapply (lxy, nrow))
+            }
         }
         else {
             ## streamlined 2010 03 30
@@ -220,8 +236,13 @@ RPSV <- function (capthist, CC = FALSE)
         if (!(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require individual detector type for RPSV")
         if (detector(traps) %in% .localstuff$polydetectors) {
-            lxy <- split ( xy(capthist), animalID(capthist))
-            temp <- lapply (lxy, RPSVxy)
+  
+            if (is.null(xy(capthist)))
+                temp <- NA
+            else {
+                lxy <- split ( xy(capthist), animalID(capthist))
+                temp <- lapply (lxy, RPSVxy)
+            }
         }
         else {
             w <- split(trap(capthist, names=F), animalID(capthist))

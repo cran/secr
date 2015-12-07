@@ -40,7 +40,6 @@ make.tri <- function (nx=10, ny=12, spacing = 20, detector='multi', originxy=c(0
     attr(grid, 'spacex')     <- NULL
     attr(grid, 'spacey')     <- NULL
     attr(grid, 'spacing')    <- spacing
-    attr(grid, 'searchcell') <- NULL
     attr(grid, 'usage')      <- NULL
     attr(grid, 'covariates') <- NULL
     grid
@@ -61,7 +60,6 @@ make.hex <- function (nx=10, ny=12, spacing = 20, detector='multi',
     attr(grid, 'spacex')     <- NULL
     attr(grid, 'spacey')     <- NULL
     attr(grid, 'spacing')    <- spacing
-    attr(grid, 'searchcell') <- NULL
     attr(grid, 'usage')      <- NULL
     attr(grid, 'covariates') <- NULL
     grid
