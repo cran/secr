@@ -1,6 +1,7 @@
 #include "secr.h"
 
 /* 2014-08-27 mufn moved to detectfn.c */
+/* 2015-12-21 hazard moved from secr.c */
 
 double minimumexp = -100;
 
@@ -186,7 +187,8 @@ void gxy (int *n, int *fn, double *par, double *w, double *xy) {
     fnptr fnp = hn;
     int i = 0;
     int j;
-    fnp = gethfn(*fn);
+    // fnp = gethfn(*fn);
+    fnp = getzfn(*fn);  // 2016-01-02
     for (i=0; i< *n; i++) {
         theta = unif_rand() * 2 * M_PI;
         for (j=0; j<maxj; j++) {
@@ -625,7 +627,7 @@ double rcount (int binomN, double lambda, double Tsk) {
     }
 
     else { 
-        if (fabs(Tsk-1) > 1e-10)               /* not 1.0 */
+        if (fabs(Tsk-1) > 1e-10)             
 	    lambda = 1 - pow(1-lambda, Tsk);   /* 2012-12-18 */
 
 	/* Bernoulli */
@@ -638,7 +640,6 @@ double rcount (int binomN, double lambda, double Tsk) {
 
 	/* binomial */
 	else
-/*	    return ( rbinom(binomN, lambda / binomN) ); changed 2012-12-23 */
 	    return ( rbinom(binomN, lambda) );
     }
 }
@@ -858,3 +859,42 @@ void alongtransect (
     }
 }
 /*----------------------------------------------------------------*/
+
+double hazard (double pp) {
+    if (pp > (1-fuzz))  /* pp close to 1.0 - approx limit */
+        pp = huge;      /* g0 very large (effecti inf hazard) */
+    else {
+        if (pp <= 0) 
+            pp = 0;
+        else 
+            pp = -log(1-pp);
+    }
+    return(pp);
+}
+/*=============================================================*/
+
+/*
+        *detect may take values -
+        0  multi-catch traps
+        1  binary proximity detectors
+        2  count  proximity detectors
+        3  exclusive polygon detector
+        4  exclusive transect detector
+        5  signal detector
+        6  polygon detector
+        7  transect detector
+        8  times  (undocumented)
+        9  cue    (undocumented) -- removed in secr 2.10.0
+	12 signalnoise
+*/
+
+int cleanbinomN(int binomN, int detect) {
+    /* all these detectors are Bernoulli, or similar           */
+    /* so we override binomN                                   */
+    if ((detect==0) || (detect==1) || (detect==3) || 
+        (detect==4) || (detect==5) || (detect==12)) {
+        binomN = 1;
+    }
+    return(binomN);
+}
+/*=============================================================*/

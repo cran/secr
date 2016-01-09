@@ -88,7 +88,10 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 if (ncol(captures)<5)
                     stop ("too few columns in capture matrix")
                 if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
-                    captTrap <- xyinpoly(captures[,4:5], traps)
+                    if (nrow(captures)==0)  ## 2016-01-02
+                        captTrap <- numeric(0)
+                    else
+                        captTrap <- xyinpoly(captures[,4:5], traps)
                     if (any(captTrap==0)) {
                         captures <- captures[captTrap>0,]  ## first! 2010-11-17
                         captTrap <- captTrap[captTrap>0]
@@ -97,7 +100,10 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     }
                 }
                 else if (detector(traps) %in% c('transect','transectX')) {
-                    captTrap <- xyontransect(captures[,4:5], traps, tol)
+                    if (nrow(captures)==0)
+                        captTrap <- numeric(0)
+                    else
+                        captTrap <- xyontransect(captures[,4:5], traps, tol)
                     if (any(captTrap==0)) {
                         captTrap <- captTrap[captTrap>0]
                         captures <- captures[captTrap>0,]
@@ -174,20 +180,23 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
             }
             else {
-                dimnames(w) <- list(1:nID, 1:nocc, 1:ndetector(traps))
-                temp <- table (captID, abs(captures[,3]), captTrap)
-                if ('0' == dimnames(temp)[[2]][1]) {
-                    ## drop zero occasion but retain animals for mark-resight
-                    temp <- temp[,-1,]
+                dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
+                if (nID>0) {
+                    dimnames(w)[[1]] <- 1:nID   ## 2016-01-02
+                    temp <- table (captID, abs(captures[,3]), captTrap)
+                    if ('0' == dimnames(temp)[[2]][1]) {
+                        ## drop zero occasion but retain animals for mark-resight
+                        temp <- temp[,-1,]
+                    }
+                    d <- dimnames(temp)
+                    d <- lapply(d, as.numeric)
+                    w[d[[1]], d[[2]], d[[3]]] <- temp
+                    
+                    ## fix to retain deads 2010-08-06
+                    dead <- captures[,3]<0
+                    deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
+                    w[deadindices] <- w[deadindices] * -1
                 }
-                d <- dimnames(temp)
-                d <- lapply(d, as.numeric)
-                w[d[[1]], d[[2]], d[[3]]] <- temp
-
-                ## fix to retain deads 2010-08-06
-                dead <- captures[,3]<0
-                deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
-                w[deadindices] <- w[deadindices] * -1
                 #################################
             }
         }

@@ -572,6 +572,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
             inpoly <- xyinpoly(xy(object), traps(object))
+
             inpoly <- inpoly == trap(object, names = F)
             xyinpolyOK <- all(inpoly)
         }

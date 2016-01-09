@@ -198,6 +198,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         ##########################
 
         getnm <- function (scaleattribute = 'area', scale = 1, D) {
+            
             ## 2014-09-03 for "IHP" and "linear"
             if ((length(D) == 1) & (is.character(D)))
                 D <- covariates(core)[,D]

@@ -833,7 +833,9 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                            value = double(1),
                            resultcode = integer(1))
             }
-            LL <- ifelse (temp$resultcode == 0, LL + temp$value, NA)
+          
+            LL <- if ((temp$resultcode != 0) | (temp$value < -1e9)) NA else LL + temp$value
+            if (details$debug & temp$resultcode != 0) browser()
 
             ####################################################
             ## unclear whether this is correct wrt groups

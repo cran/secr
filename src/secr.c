@@ -55,7 +55,8 @@
 /* 2015-10-22 like = 5,6 for sighting-only */
 /* 2015-11-19 dropped param = 1 GR */
 /* 2015-11-20 fixed bug in fxIHP that crashed R when detector type='multi' and usage varied */
-
+/* 2015-12-21 temporary fix prwicount */
+/* 2016-01-08 correct overflow and make memrequest in secrloglik more specific */
 /*
         *detect may take values -
         0  multi-catch traps
@@ -118,22 +119,31 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
 		    g1 = gk0[gi];
 		    Tski = Tsk[s * nk + k];
 		    /* expect binomN = 1 if not count detector */
-		    if (fabs(Tski-1) > 1e-10) {                 /* effort <> 1.0 */
+		    if (fabs(Tski-1) > 1e-10) {                  /* effort <> 1.0 */
 			if ((detect < 8) & (detect != 5))  {
-			    if (binomN == 0)
-				p0 = exp(-Tski * g1);           /* Poisson */
+			    /* 2015-12-21, 2015-12-29 */
+			    if (binomN == 0) {
+				if (detect == 2)
+				   p0 = exp(-Tski * hazard(g1)); /* Poisson count detector */
+				else
+				   p0 = exp(-Tski * g1);         /* Poisson polygon */
+			    }
 			    else
-				p0 = pow(1-g1, Tski * binomN);  /* Binomial */
+				p0 = pow(1-g1, Tski * binomN);   /* Binomial and Bernoulli */
 			}
 			else error("no effort adjustment for detector type");
 		    }
 		    else {
-			if (binomN == 0)
-			    p0 = exp(-g1);              /* Poisson */
+			if (binomN == 0) {
+			    if (detect == 2)
+				p0 = exp(-hazard(g1));       /* Poisson count detector */
+			    else
+				p0 = exp(-g1);               /* Poisson polygon */
+			}
 			else  if (binomN == 1)
-			    p0 = 1 - g1;                /* Bernoulli */
+			    p0 = 1 - g1;                         /* Bernoulli */
 			else {
-			    p0 = pow(1-g1, binomN);     /* Binomial */
+			    p0 = pow(1-g1, binomN);              /* Binomial */
 			}
 		    }
 		    pp *= p0;
@@ -142,6 +152,7 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
 	    }
 	}
     }
+    /* Rprintf("pp in pndot %12.6f\n", pp); */
     return (1 - pp);    
 }
 /*===============================================================*/
@@ -216,7 +227,7 @@ double prwimulti
 	    Tski = Tsk[s * kk + k-1];
             c = PIA[i4(n, s, k-1, x, nc, ss, kk)] - 1;
             gi = i3(c, k-1, m, cc, kk);
-            pks = -Tski * log (1 - gk[gi]);
+            pks = Tski * hazard(gk[gi]);
             pks *= (1-expmin(-htemp)) / htemp;
         }
         else  {
@@ -316,7 +327,7 @@ double prwicount
 		g1 = gk[gi] * pID[s + ss*x];
 		Tski = Tsk[s * kk + k];
 		if (binomN == 0) {                      /* Poisson */
-		    result *= dpois(count, Tski * g1, 0); 
+		    result *= dpois(count, Tski * hazard(g1), 0); 
 		}
 		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
 		    result *= countp (count, round(Tski), g1);
@@ -746,11 +757,10 @@ double prwipolygon
             c = PIA[wxi] - 1;
             if (c >= 0) {                          /* skip if this polygon not used */
                 gi  = i3(c,k,m,cc,kk);
-		/* g1 = gk[gi]; */
 		g1 = gk[gi] * pID[s + ss*x];   /* 2015-11-01 */
 		Tski = Tsk[s * kk + k];
 		if (binomN == 0) {                      /* Poisson */
-		    result *= dpois (count, Tski * g1, 0);
+		    result *= dpois (count, Tski * g1, 0);   /* already cum hazard */
 		}
 		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
 		    result *= countp (count, round(Tski), g1);
@@ -778,7 +788,10 @@ double prwipolygon
         }
         if (dead==1) break;
     }
-    /* Rprintf("prwipolygon %12.9f\n", result); */
+/*
+    if (n==5 || n == 15 || n == 25 || n == 35)
+       Rprintf("prwipolygon n %4d  m %4d %14.11f\n", n, m, result); 
+*/
     return (result);
 }
 /*=============================================================*/
@@ -880,8 +893,8 @@ double prwitransect
 		Tski = Tsk[s * kk + k];
                 gi  = i3(c,k,m,cc,kk);
                 g1 = gk[gi];
-		if (binomN == 0) {                      /* Poisson */
-		    result *= countp (count, 0, Tski * g1);
+		if (binomN == 0) {                      /* Poisson; already cum hazard */
+		    result *= countp (count, 0, Tski * g1); 
 		}
 		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
 		    result *= countp (count, round(Tski), g1);
@@ -951,7 +964,7 @@ double prwitransectX
 	    Tski = Tsk[s * kk + k-1];
             c = PIA[i4(n, s, k-1, x, nc, ss, kk)] - 1;
             gi = i3(c, k-1, m, cc, kk);
-            pks = -Tski * log (1 - gk[gi]);
+            pks = Tski * hazard(gk[gi]);
             pks *= (1-expmin(-htemp)) / htemp;
         }
         /* PR | not detected */
@@ -1016,8 +1029,6 @@ void pdotpoint (double *xy, int *nxy, double *traps, double *dist2,
 	for (i=0; i<*nxy; i++) {
 	    tempval = 0;
 	    for (k=0; k<*kk; k++) {
-               /* dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
-		  (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]); */
 		dk2 = d2L(k, i, dist2, *kk);
 		tempval += pfn(0, dk2, 1, sigma, z, cutval, *w2);
 	    }
@@ -1033,13 +1044,12 @@ void pdotpoint (double *xy, int *nxy, double *traps, double *dist2,
 	    for (k=0; k<*kk; k++) {
 		Tski = Tsk[s * *kk + k];
 		if (Tski > 1e-10) {
-		    /* dk2 = (xy[i]-traps[k]) * (xy[i]-traps[k]) +
-		       (xy[i + *nxy]-traps[k+ *kk]) * (xy[i + *nxy]-traps[k+ *kk]); */
 		    dk2 = d2L(k, i, dist2, *kk);
 		    p = pfn(*fn, dk2, g0, sigma, z, cutval, *w2);
 		    if (*detect == 2) {    /* counts */
 			if (*binomN == 0)
-			    p = 1 - countp(0, 0, Tski * p);
+                            /* 2015-12-22  */
+			    p = 1 - countp(0, 0, Tski * hazard(p));
 			else if (*binomN == 1)
 			    p = 1 - countp(0, round(Tski), p);
 			else {
@@ -1110,19 +1120,6 @@ void pdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, in
 	}
 	value[i] = 1 - tempval;
     }
-}
-/*=============================================================*/
-
-double hazard (double pp) {
-    if (pp > (1-fuzz))  /* pp close to 1.0 - approx limit */
-        pp = huge;      /* g0 very large (effecti inf hazard) */
-    else {
-        if (pp <= 0) 
-            pp = 0;
-        else 
-            pp = -log(1-pp);
-    }
-    return(pp);
 }
 /*=============================================================*/
 
@@ -1249,32 +1246,8 @@ void precompute(
     double *ex; 
     gfnL = getgfnL(*fn); 
 
-    /* all these detectors are Bernoulli, or similar           */
-    /* so we override binomN                                   */
-    if ((*detect==0) || (*detect==1) || (*detect==3) || 
-        (*detect==4) || (*detect==5) || (*detect==12)) {
-        *binomN = 1;
-    }
-
-    if (*detect == 0) {
-	for (c=0; c<*cc; c++) {
-	    /*---------------------------------------------------------*/
-	    /* normalization NOT implemented 2013-11-10 */
-	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
-	    /*---------------------------------------------------------*/
-	    for (k=0; k<nk; k++) {
-		for (m=0; m<*mm; m++) {
-		    gi = i3(c,k,m,*cc,nk);
-                    /* gk[gi] = gfn(k, m, c, gsbval, *cc, traps, 
-		       mask, nk, *mm, miscparm); */
-                    gk[gi] = gfnL(k, m, c, gsbval, *cc, dist2, 
-		       nk, miscparm);
-                }
-            }
-        }
-    }
-    else if ((*detect == 1) || (*detect == 2) || (*detect==5) || (*detect==8)
-	     || (*detect==9) || (*detect==12)) {
+    if ((*detect == 0) || (*detect == 1) || (*detect == 2) || (*detect == 5) || 
+             (*detect == 8) || (*detect == 9) || (*detect == 12)) {
 	for (c=0; c<*cc; c++) {
 	    /*---------------------------------------------------------*/
 	    /* normalization NOT implemented 2013-11-10 */
@@ -1283,8 +1256,6 @@ void precompute(
 	    for (k=0; k<nk; k++) {
 		for (m=0; m<*mm; m++) {
                     gi = i3(c,k,m,*cc,nk);
-		    /* gk[gi] = gfn(k, m, c, gsbval, *cc, traps,
-                       mask, nk, *mm, miscparm); */
                     gk[gi] = gfnL(k, m, c, gsbval, *cc, dist2, 
 		       nk, miscparm);
                 }
@@ -1306,9 +1277,9 @@ void precompute(
             for (k=0; k<nk; k++) {               /* over parts */
                 for (m=0; m<*mm; m++) {
                     gi = i3(c, k, m, *cc, nk);
-			gk[gi] = par[0] * integral2D (*fn, m, 0, par,
-                            1, traps, mask, cumk[k], cumk[k+1]-1, cumk[nk],
-						      *mm, ex) / stdint;
+		    gk[gi] = par[0] * integral2D (*fn, m, 0, par,
+			  1, traps, mask, cumk[k], cumk[k+1]-1, cumk[nk],
+			  *mm, ex) / stdint;
                 }
             }
         }
@@ -1328,9 +1299,9 @@ void precompute(
             for (k=0; k<nk; k++) {               /* over transects */
                 for (m=0; m<*mm; m++) {
                     gi = i3(c,k,m,*cc,nk);
-			gk[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
-    		          traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm, ex) /
-                            stdint;
+		    gk[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
+    		        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm, ex) /
+			stdint;
                 }
             }
         }
@@ -1708,13 +1679,14 @@ int filla0 (int like, int n, int markocc[], int ncol, int PIA0[],
 		/* adjust both integral and pi to size of pixel */
 		a0[x] += pimask[m] * pdt * area * mm;  
 	    }
-	    if (a0[x] <= 0) {
+	    if (a0[x] < 0) {    // changed from <= 2015-12-31
 		// Rprintf("bad a0 in filla0\n");
 		return(6);
 	    }
 	}
 	else a0[x] = 1; 
     }
+    /* resultcode 5,6 if bad */
     return(0);   // successful completion
 }
 /*==============================================================================*/
@@ -1818,6 +1790,8 @@ void integralprw1 (
     else {
 	squaredist(*kk, *mm, dist2);
     }
+
+    *binomN = cleanbinomN(*binomN, *detect);       /* default 1 */
 
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
 	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
@@ -1975,6 +1949,7 @@ void secrloglik (
 
     /* miscellaneous */
     double temp, tempsum, tempp, templog, prwi;
+    size_t memrequest;   // "size_t is defined in stddef.h which the header defining R_alloc..."
 
     /* group arrays */
     int    *ng;       /* number per group */
@@ -1989,7 +1964,7 @@ void secrloglik (
     /* numbers of individuals and detectors */
     int    nc1;
     int    cumk[maxnpoly];
-    int    nk = 0;
+    unsigned long nk = 0;
 
     /* number of 'g' (detection) parameters */
     int ncol;
@@ -2143,8 +2118,18 @@ void secrloglik (
     nv = nval(detect, nc1, cc, ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
 
-    gk = (double *) S_alloc(*cc * nk * *mm, sizeof(double));    /* S_alloc sets to zero */
-    gk0 = (double *) S_alloc(*cc0 * nk * *mm, sizeof(double));
+    memrequest =  *cc;
+    memrequest *= *mm;
+    memrequest *= nk;
+    // Rprintf("OK 2 cc %6d nk %6d mm %6d cc.nk.mm %lu \n", *cc, nk, *mm, memrequest);
+    gk = (double *) R_alloc(memrequest, sizeof(double)); 
+    for (i=0; i<memrequest; i++) gk[i] = 0;
+
+    memrequest = *cc0;
+    memrequest *= *mm;
+    memrequest *= nk;
+    gk0 = (double *) R_alloc(memrequest, sizeof(double));
+    for (i=0; i<memrequest; i++) gk0[i] = 0;
 
     /* 1 */
     if (timing) ticks = timestamp(ticks, &counter);
@@ -2162,8 +2147,11 @@ void secrloglik (
     else {
 	squaredist(*kk, *mm, dist2);
     }
-    /*-----------------------------------------------------------*/
+    /*----------------------------------------------------------*/
 
+    *binomN = cleanbinomN(*binomN, *detect);       /* default 1 */
+
+    /*----------------------------------------------------------*/
     precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,    
 	       traps, dist2, mask, gsbval, miscparm, detspec, gk); 
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
@@ -2306,14 +2294,16 @@ void secrloglik (
 	/* array pdots previously filled by function getpdots */
 	if (Tm[0] >= 0) {
 	    *resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0, 
-			 *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc, 
-			 pdots, ncol, PIA0, gk0, Tsk, asum, chat, &Tulik, &Tmlik);
+	       *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc, 
+	       pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, 
+	       asum, chat, &Tulik, &Tmlik);
 	    /* Rprintf("Tulik %12.8f Tmlik %12.8f \n", Tulik, Tmlik);  */
 	    if (*resultcode>0) return;
 	    *value += Tulik + Tmlik;  
 	}
 	
-    }
+    } /* end (*like == 1) */
+
     /*-------------------------------------------------------------------------------------------*/
 
     else if ((*like==3) || (*like==4))    /* Concurrent telemetry, full or CL */
@@ -2371,7 +2361,7 @@ void secrloglik (
 	    *value += templog;
 	}        /* end of loop over individuals */
 
-    }
+    }   /* end (*like == 3) || (*like == 4) */
     /*-------------------------------------------------------------------------------------------*/
     else if ((*like == 0) || (*like == 2)) {  /* Full or Partial likelihood */
 
@@ -2529,12 +2519,13 @@ void secrloglik (
 		if (*gg > 1) error("mark-resight does not allow groups");
 		*resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0,
 			     *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc,
-			     pdots, ncol, PIA0, gk0, Tsk, asum, chat, &Tulik, &Tmlik);
+			   pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, asum, 
+					   chat, &Tulik, &Tmlik);
 		if (*resultcode>0) return;
 		*value += Tulik + Tmlik;  
 	    }
 	}
-    }
+    }   /* end (*like == 0) || (*like == 2) */
     /*----------------------------------------------------------------------------------------*/
     else if ((*like == 5) || (*like == 6)) /* All-sighting conditional likelihood  2015-10-15 */
     {
@@ -2548,7 +2539,7 @@ void secrloglik (
 	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, *detect, *binomN, Tsk, 
 			      *ss, nk, *mm, *cc0, *nmix, gsb0val, allsighting, pimask, 
 			      *area, a0);
-	if (*resultcode>0) return;   // abort this likelihood evaluation
+	if (*resultcode>0) return;   // abort this likelihood evaluation with resultcode 5 or 6
 
 	/* Loop over individuals... */
 	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
@@ -2564,7 +2555,7 @@ void secrloglik (
 				      gfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
 			if (*like == 5)
 			    temp += numerator;
-			else
+			else if (a0[x]>0)
 			    temp += numerator / a0[x];  
 		    }
 		}
@@ -2584,15 +2575,21 @@ void secrloglik (
 	if ((Tu[0]>=0) || (Tm[0]>=0)) {
 	    *resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0, 
 			 *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc, 
-			 pdots, ncol, PIA0, gk0, Tsk, a0, chat, &Tulik, &Tmlik);
+		       pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, a0, chat, &Tulik, &Tmlik);
 	    if (*resultcode>0) return;
 
 	    // Rprintf("LL %12.8f  Tulik %12.8f Tmlik %12.8f \n", *value,  Tulik, Tmlik); 
 	    *value += Tulik + Tmlik;  
 	}	
-    }
+    } /* end (*like == 5) || (*like == 6) */
 
-    *resultcode = 0;   /* successful termination secrloglik */
+    if (!R_FINITE(*value)) {
+	*resultcode = 9;
+	*value = -1e10;
+    }
+    else {
+	*resultcode = 0;   /* successful termination secrloglik */
+    }
 }
 
 /*==============================================================================*/
@@ -2830,10 +2827,12 @@ void makelookup (
     int k;
     int dupl = 0;
     double *ytemp;
-
+    size_t memrequest;  // "size_t is defined in stddef.h which the header defining R_alloc..."
     *resultcode = 1;
 
-    ytemp = (double *) R_alloc(*nrow * *ncol, sizeof (double));
+    memrequest = *nrow;
+    memrequest *= *ncol;
+    ytemp = (double *) R_alloc(memrequest, sizeof (double));
 
     /*
         avoid sort for now as it's complex to keep order of first occurrence, not needed
@@ -2915,7 +2914,7 @@ void fxIHP (
     int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
     double *miscparm,    /* miscellaneous parameters (cutval, normalization, etc.) */
     int    *normal,      /* code 0 don't normalise, 1 normalise */
-    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard rate, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
     double *minprob,     /* minimum value of P(detection history) */
     double *value,       /* return values */
@@ -3040,6 +3039,10 @@ void fxIHP (
     }
     /*---------------------------------------------------------*/
 
+    *binomN = cleanbinomN(*binomN, *detect);
+
+    /*---------------------------------------------------------*/
+
     /* optionally compute sumprwi, denominator used for normalisation */
     /* as at 2014-09-10 this does not allow hcov */
     if (*normal > 0) {
@@ -3122,7 +3125,7 @@ void fxIHP (
 }
 /*==============================================================================*/
 
-void chat (
+void chat(
     int    *like,        /* likelihood 0 full, 1 conditional etc. */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
     int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
@@ -3243,6 +3246,10 @@ void chat (
 	squaredist(*kk, *mm, dist2);
     }
     /*-----------------------------------------------------------*/
+
+    *binomN = cleanbinomN(*binomN, *detect);
+
+    /*---------------------------------------------------------*/
 
     precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
 	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 

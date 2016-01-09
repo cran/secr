@@ -15,6 +15,7 @@ trappingtelemetry
 trappingtimes
 
 2013-04-04 extended to allow k-specific g0
+2015-12-21 bug fix in trapping count for Poisson
 
 */
 
@@ -387,10 +388,15 @@ void trappingcount (
                     /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (theta>0) {
-			if (*binomN == 1)
+			if (*binomN == 1) {
 			    count = rcount (round(Tski), theta, 1);
-			else
-			    count = rcount (*binomN, theta, Tski);
+			}
+			else {
+                /* 2015-12-21 bug fix */
+                if (*binomN == 0)   
+                    theta = hazard(theta);
+                count = rcount (*binomN, theta, Tski);
+			}
                         if (count>0)
                         {
                              /* first capture of this animal */
@@ -1342,10 +1348,7 @@ void trappingtimes (
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
                     timevalue = 0;
-		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
 		    d2val = d2L(k, i, dist2, *kk);
-
-                    /* lambda = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     lambda = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (lambda>0) {
                         while (timevalue < 1) {

@@ -4,7 +4,7 @@
 #define huge 1e10
 #define maxnpoly 1000   
 #define maxnmix 2    
-#define maxvertices 200    
+#define maxvertices 400    
 
 /* source to include */
 #include <math.h>
@@ -579,6 +579,7 @@ void presenceloglik (
 
 gfnptr getgfn (int fn); 
 fnptr gethfn (int fn); 
+fnptr getzfn (int fn);
 gfnLptr getgfnL (int fn); 
 
 /* detection functions used internally in C code */
@@ -601,6 +602,12 @@ double hhr (double param [], double r);
 double hex (double param [], double r);
 double han (double param [], double r);
 double hcumg (double param [], double r);
+
+double zhn (double param [], double r);
+double zhr (double param [], double r);
+double zex (double param [], double r);
+double zan (double param [], double r);
+double zcumg (double param [], double r);
 
 /*---------------------------------------------------------------*/
 
@@ -964,8 +971,8 @@ void getpdots (int m, int n, int markocc[], int x, int ncol,
 int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 		  int cc0, int nmix, double pmix[], int mm, double D[], double pi[], 
 		  double area, double pID[], int markocc[], double pdots[], 
-		  int ncol, int PIA0[], double gk0[], double Tsk[], double a0[],
-                  double chat[], double *Tulik, double *Tmlik);
+		 int ncol, int PIA0[], double gk0[], int binomN, int detect, 
+                 double Tsk[], double a0[], double chat[], double *Tulik, double *Tmlik);
 /*---------------------------------------------------------------------*/
 
 void chat (
@@ -1024,3 +1031,7 @@ int markresightini (
 
 int discreteN (double N);
 /*---------------------------------------------------------------------*/
+
+double hazard (double pp);
+
+int cleanbinomN(int binomN, int detect);

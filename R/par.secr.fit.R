@@ -37,7 +37,10 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
         format(Sys.time(), "%H:%M:%S %d %b %Y"),
         sep=''), trace)
 
-    secrlist(output)
+    if (inherits(output[[1]], 'secr')) 
+        secrlist(output)
+    else 
+        output
 }
 
 par.derived <- function (secrlist, ncores = 1, ...) {

@@ -20,6 +20,7 @@
 ## 2014-08-20 removed argument beta from sim.detect
 ## 2014-08-28 C function simsecr renamed simdetect
 ## 2014-09-07 simulate.secr modified for linearmask
+## 2016-01-09 use .localstuff$iter2 instead of global variable i
 ############################################################################################
 
 simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1,
@@ -198,7 +199,8 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
     tracelevel <- as.integer(tracelevel)
     details$trace <- tracelevel > 1
     min.detections <- 1
-    i <- 0
+    ## i <- 0
+    .localstuff$iter2 <- 0    ## 2016-01-09
 
     if (detector(traps(object$capthist)) == 'single') {
         memo ('multi-catch likelihood used for single-catch traps', tracelevel>0)
@@ -215,8 +217,10 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
             stop("invalid data")
     }
     fitmodel <- function (sc) {
-        i <<- i+1
-        memo (paste('sim.secr fitting replicate',i,'...'), tracelevel>0)
+        ## i <<- i+1
+        .localstuff$iter2 <- .localstuff$iter2 + 1   ## 2016-01-09
+        if (tracelevel>0)
+            memo (paste('sim.secr fitting replicate', .localstuff$iter2, '...'), TRUE)
         nc <-  sum(counts(sc)$'M(t+1)'[,'Total'])
         if (nc >= min.detections) {
             tempfit <- suppressWarnings( secr.fit(sc, model = object$model, mask = object$mask,
@@ -233,6 +237,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
 
     if (ncores > 1) {
         memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
+        tracelevel <- 0  ## do not attempt to display
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         clusterEvalQ(clust, requireNamespace('secr'))
         output <- parLapply(clust, data, fitmodel)

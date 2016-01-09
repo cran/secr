@@ -26,7 +26,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
 }
 
 \arguments{
-  \item{traps}{ \code{traps} object }
+  \item{traps}{ \code{traps} object (or mask for \code{buffer.contour}) }
   \item{border}{ width of blank margin around the outermost detectors }
   \item{nx}{ dimension of interpolation grid in x-direction }
   \item{detectfn}{ integer code or character string for shape of

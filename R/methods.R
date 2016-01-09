@@ -1458,7 +1458,9 @@ rbind.traps <- function (..., renumber = TRUE, addusage ) {
                     x <- cbind(x, matrix(0, nrow = nr, ncol = nocc-ncol(x)))
                 }
             }
-            dimnames(x)[[2]] <- 1:ncol(x)
+            ## 2016-01-07 temporary fix
+            ## dimnames(x)[[2]] <- 1:ncol(x)
+            dimnames(x) <- list(NULL, 1:ncol(x))
             x
         }
         for (i in 1: length(tempusage)) {
@@ -1616,8 +1618,15 @@ plot.traps <- function(x,
                     lapply(templist, plotvertices)
                 }
                 if (label) for (k in 1:length(templist)) {
-                    xbar <- mean(range(templist[[k]]$x))
-                    ybar <- mean(range(templist[[k]]$y))
+                    if (detector(x) %in% c('polygon','polygonX')) {
+                        msk <- suppressWarnings(make.mask(templist[[k]], buffer = 0, poly = templist[[k]], nx = 32))
+                        xbar <- mean(msk$x)
+                        ybar <- mean(msk$y)
+                    }
+                    else {
+                        xbar <- mean(range(templist[[k]]$x))
+                        ybar <- mean(range(templist[[k]]$y))
+                    }
                     text (xbar+offset[1], ybar+offsety, names(templist)[k])
                 }
             }
@@ -1835,6 +1844,7 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
 }
 
 ###############################################################################
+## 2015-12-18 deparse.level added
 
 rbind.popn <- function (..., renumber = TRUE) {
 ## combine 2 or more popn objects
@@ -1842,7 +1852,11 @@ rbind.popn <- function (..., renumber = TRUE) {
 
     dots <- match.call(expand.dots = FALSE)$...
     allargs <- list(...)
-
+    
+    ## ad hoc fix for occasional inclusion of deparse.level 2015-12-18
+    if (length(dots)>length(allargs))
+        dots <- dots[-1]
+    
     names(allargs) <- lapply(dots, as.character)
 
     if ((length(dots)==1) & (!inherits(allargs[[1]],'popn'))) allargs <- allargs[[1]]
@@ -2532,10 +2546,12 @@ summary.capthist <- function(object, terse = FALSE, ...) {
         markocc <- markocc(traps(object))
         sighting <- sighting(traps(object))
         if (sighting) {
-            sightings <- matrix(0, nrow = 4, ncol = nocc+1, 
-                                dimnames = list(c('ID','Not ID','Unmarked','Total'), c(1:nocc, 'Total')))
+            sightings <- matrix(0, nrow = 5, ncol = nocc+1, 
+                                dimnames = list(c('ID','Not ID','Unmarked',
+                                    'Unresolved','Total'), c(1:nocc, 'Total')))
             Tm <- Tm(object)
             Tu <- Tu(object)
+            unresolved <- markocc == -1
             sightings[1, c(markocc < 1, FALSE)] <- unlist(counts[6,c(markocc < 1, FALSE)])
             if (!is.null(Tm)) {
                 if (length(Tm)==1)
@@ -2548,8 +2564,14 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                     sightings[3, 1:nocc] <- apply(Tu,2,sum)
                 else
                     sightings[3, 1] <- Tu
-            }                            
-            sightings[4, 1:nocc] <- apply(sightings[1:3, 1:nocc, drop = FALSE], 2, sum)
+            }                      
+            ## 2015-12-15 unresolved = combined 
+            if (sum(unresolved)>0){
+                sightings[4, unresolved] <- sightings[3,unresolved]    
+                sightings[3, unresolved] <- 0    
+            }
+            sightings[5, 1:nocc] <- apply(sightings[1:4, 1:nocc, drop = FALSE], 2, sum)
+                
             sightings[, nocc + 1] <- apply(sightings, 1, sum)
         }
         else sightings <- NULL
@@ -3010,6 +3032,8 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
 
         Tu <- Tu(x$capthist)
         Tm <- Tm(x$capthist)
+        unresolvedocc <- markocc(traps(x$capthist)) == -1
+        unmarkedocc <- markocc(traps(x$capthist)) == 0
         
         if ('g' %in% x$vars) {
             Groups  <- table(group.factor(x$capthist, x$groups))
@@ -3020,8 +3044,9 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
 
         cat ('N animals       : ', n, temp, '\n')
         cat ('N detections    : ', ncapt, '\n')
-        if (!is.null(Tu)) 
+        if (!is.null(Tu)) {
             cat ('N unmarked sght : ', sum(unlist(Tu)), '\n')
+        }    
         if (!is.null(Tm)) 
             cat ('N nonID sghting : ', sum(unlist(Tm)), '\n')
         cat ('N occasions     : ', ncol(x$capthist), '\n')

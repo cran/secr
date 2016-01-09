@@ -5,6 +5,7 @@
 ## 2010 10 15, 2010-10-17, 2010-10-18, 2010-10-20, 2010-10-31, 2011-06-17
 ## 2012-11-02 ncores
 ## 2013-05-03 extended default link for lambda0
+## 2015-12-08 uses coefficients of fitted model
 ###############################################################################
 
 bisect <- function(f, a, b, tol = 1e-6) {
@@ -177,14 +178,18 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 sdS='log', b0='log', b1='neglog', pmix='logit')
             if (detector(trps) %in% .localstuff$countdetectors) defaultlink$g0 <- 'log'
             newcall$link <- defaultlink
-            if (is.null(realpar))
-                stop ("'LLonly' requires either 'realpar' or fitted model")
-
-            ## what if have betas from fitted model?
-            startbeta <- Xtransform(unlist(realpar), defaultlink,
-                names(realpar))
+            
+            ## use betas from fitted model 2015-12-08
+            if (inherits(object, 'secr')) {
+                startbeta <- coef(object)$beta
+            }
+            else {
+                if (is.null(realpar))
+                    stop ("'LLonly' requires either 'realpar' or fitted model")
+                startbeta <- Xtransform(unlist(realpar), defaultlink, names(realpar))
+            }
             newcall <- replace(newcall, 'start', list(start=startbeta))
-
+            
             if (is.null(newcall$details)) {
                 newcall$details <- list(LLonly = TRUE)
             }
@@ -256,6 +261,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                                      poly = poly)
                     ## quote passes name... avoids bulky call
                     newcall <- replace(newcall, 'mask', list(quote(msk)))
+           
                     if (tracelevel<2) old <- options(warn=-1)
                     if (LLonly) {
                         mask.check.output[i,j] <- do.call(secr.fit, newcall)

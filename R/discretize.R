@@ -1,13 +1,15 @@
 
 ## 2015-11-26 adapted to also handle traps objects
 ## 2015-12-06 added transect functionality
+## 2016-01-07 cell.overlap, type
 
 discretize <- function (object, spacing = 5, outputdetector = c('proximity','count','multi'),
-                        tol = 0.001, ...) {
+                        tol = 0.001, cell.overlap = FALSE, type = c('centre','any','all'), ...) {
     ## convert capthist data from polygon detectors to point detector
     outputdetector <- match.arg(outputdetector)
+    type <- match.arg(type)
     if (ms(object)) {
-        CHlist <- lapply(object, discretize, spacing, outputdetector, tol, ...)
+        CHlist <- lapply(object, discretize, spacing, outputdetector, tol, cell.overlap, type, ...)
         class(CHlist) <- class(object)
         CHlist
     }
@@ -20,13 +22,46 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
             my <- min(trapsCH[,2]); dy <- my - trunc(my/spacing)*spacing
             trps$x <- trps$x - dx
             trps$y <- trps$y - dy
-            poly <- inflate(trapsCH, 1+tol)  ## inflate is fn in utility.r
-            trps <- subset(trps, pointsInPolygon(trps,poly))
+            if (type == 'centre') {
+                poly <- inflate(trapsCH, 1+tol)  ## inflate is fn in utility.r
+                OK <- pointsInPolygon(trps,poly)
+            }
+            else {
+                poly <- inflate(trapsCH, 1+tol)  ## inflate is fn in utility.r
+                cell <- matrix(c(-1,-1,1,1,-1,-1,1,1,-1,-1), ncol = 2) * spacing/2
+                trpsc <- rbind(sweep(trps, STATS=c(-1,-1)*spacing/2, MARGIN=2, FUN='+'),
+                               sweep(trps, STATS=c(-1,1)*spacing/2,  MARGIN=2, FUN='+'),
+                               sweep(trps, STATS=c(1,1)*spacing/2,   MARGIN=2, FUN='+'),
+                               sweep(trps, STATS=c(1,-1)*spacing/2,  MARGIN=2, FUN='+')
+                               )
+                fn <- get(type)  ## 'all' and 'any' are function names
+                OK <- apply(matrix(pointsInPolygon(trpsc,poly), ncol = 4), 1, fn)
+            }
+            trps <- subset(trps, OK)
             temptraps <- read.traps(data = trps, detector = outputdetector, spacing = spacing)
             rownames(temptraps) <- 1:nrow(temptraps)
-            if (!is.null(usage(trapsCH)))
+            if (cell.overlap) {
+                ## cell overlap with polygon
+                spp <- SpatialPolygons(list(Polygons(list(Polygon(as.matrix(trapsCH))), ID=1)))
+                cell <- matrix(c(-1,-1,1,1,-1,-1,1,1,-1,-1), ncol = 2) * spacing/2
+                onecell <- function(xy) {
+                    cell <- sweep(cell, STATS = xy, FUN = '+', MARGIN = 2)
+                    cell <- SpatialPolygons(list(Polygons(list(Polygon(cell)), ID=1)))
+                    if (!requireNamespace('rgeos', quietly = TRUE))
+                        stop ("package rgeos is required for area of overlap")
+                    rgeos::gArea(rgeos::gIntersection(cell,spp))
+                }
+                overlap <- apply(trps,1,onecell)/spacing^2
+            }
+            else overlap <- rep(1, nrow(trps))
+
+            if (!is.null(usage(trapsCH))) {
                 usage(temptraps) <- matrix (usage(trapsCH), byrow = TRUE,
-                                            nrow = nrow(trps), ncol = ncol(object))
+                                            nrow = nrow(trps), ncol = ncol(object)) * overlap
+            }
+            else {
+                usage(temptraps) <- matrix (overlap, nrow = nrow(trps), ncol = ncol(object))
+            }
             if (!is.null(covariates(trapsCH))) {
                 covdf <- as.data.frame(covariates(trapsCH)[rep(1,nrow(temptraps)),])
                 rownames(covdf) <- rownames(temptraps)
@@ -104,7 +139,9 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
                 session(tempnew) <- session(object)
                 attr(tempnew, 'n.mash') <- attr(object, 'n.mash')
                 attr(tempnew, 'centres') <- attr(object, 'centres')
-                covariates(tempnew) <- covariates(object)
+                if (!is.null(covariates(object)))
+                    if (nrow(covariates(object)) == nrow(tempnew))
+                        covariates(tempnew) <- covariates(object)
                 traps(tempnew) <- trps
 
                 ## unmarked/nonID sightings cannot be differentiated by detector: save total

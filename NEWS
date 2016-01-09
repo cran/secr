@@ -1,3 +1,29 @@
+Changes in version 2.10.2 (2016-01-08)
+
+New features or changed behaviour of old functions
+    o   sim.resight() extended for unresolved (marked+unmarked) sightings (markocc -1)
+    o   sim.resight() saved popn has covariate 'marked' for allsighting case
+    o   secr.fit() fits mark-resight models with unresolved sightings
+    o   par.secr.fit() may also be used with LLonly = TRUE and chatonly = TRUE
+    o   discretize() has new options (remember cell overlap, criteria for inclusion)
+    o   secr.fit() results for count and polygon detectors may differ from previous,
+        especially with detectfn 14--18 which now match the published models more closely.
+
+Bugs fixed
+    o   join() problem with remove.dupl.sites = FALSE
+    o   secr.fit() possible bug in default initial g0 for polygon-type detectors
+    o   rbind.popn() could fail when called inside a function
+    o   make.capthist() failed with zero animals and polygon detectors
+    o   excessive memory demand (still a problem) led to phoney error message (134217728 Tb)
+
+Other
+    o   explicitly requires R >= 3.2.0
+    o   mask.check() with LLonly now works when model non-null
+    o   buffer.contour() accepts mask argument
+    o   improved placement of polygon labels in plot.traps()
+    o   maximum number polygon vertices increased to 400
+    o   c-hat of sighting counts Tu, Tm set to 1.0 if less than 1, with a warning
+
 Changes in version 2.10.0 (2015-12-07)
 
 New features or changed behaviour of old functions

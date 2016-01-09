@@ -1,4 +1,4 @@
-/* Functions related to sighting likelihood October 2015 */
+/* Functions related to sighting likelihood October-December 2015 */
 
 /*
    can compile with gcc 4.6.3 :
@@ -83,34 +83,35 @@ void getpdots (int m, int n, int markocc[], int x, int ncol,
 			/* expect binomN = 1 if not count detector */
 			if (fabs(Tski-1) > 1e-10) {                 /* effort <> 1.0 */
 			    if ((detect < 8) & (detect != 5))  {
-				if (binomN == 0)
-				    p0 = exp(-Tski * g1);           /* Poisson */
+				if (binomN == 0) {
+				    if (detect == 2)
+					p0 = exp(-Tski * hazard(g1));  /* Poisson count detector  */
+				    else
+					p0 = exp(-Tski * g1);          /* Poisson polygon */
+				}
 				else
-				    p0 = pow(1-g1, Tski * binomN);  /* Binomial */
+				    p0 = pow(1-g1, Tski * binomN);     /* Binomial */
 			    }
 			    else error("no effort adjustment for detector type");
 			}
 			else {
-			    if (binomN == 0)
-				p0 = exp(-g1);              /* Poisson */
+			    if (binomN == 0) {
+				if (detect == 2)
+				    p0 = exp(-hazard(g1));         /* Poisson count detector  */
+				else
+				    p0 = exp(-g1);                 /* Poisson polygon */
+			    }
 			    else  if (binomN == 1)
-				p0 = 1 - g1;                /* Bernoulli */
+				p0 = 1 - g1;                           /* Bernoulli */
 			    else {
-				p0 = pow(1-g1, binomN);     /* Binomial */
+				p0 = pow(1-g1, binomN);                /* Binomial */
 			    }
 			}
 			pp *= p0;
 		    }	
 		}
 	    }
-	    if (markocc[s] < 0)
-                /* sighting occasions on which marked animals not distinguished */
-		pdots[i3(s, x, m, ss, nmix)] = 0; 
-	    else
-                /* all other occasions */
-		pdots[i3(s, x, m, ss, nmix)] = (1 - pp); 
-	    /* if (m==527)
-             Rprintf("s %4d m %4d pdots %8.6f \n", s,m, 	pdots[i3(s, x, m, ss, nmix)]); */
+	    pdots[i3(s, x, m, ss, nmix)] = (1 - pp); 
 	}
 }
 /*===============================================================*/
@@ -136,8 +137,8 @@ void getpdots (int m, int n, int markocc[], int x, int ncol,
 int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 		  int cc0, int nmix, double pmix[], int mm, double D[], double pi[],
 		  double area, double pID[], int markocc[], double pdots[], 
-		  int ncol, int PIA0[], double gk0[], double Tsk[], double a0[],
-                  double chat[], double *Tulik, double *Tmlik) {
+		 int ncol, int PIA0[], double gk0[], int binomN, int detect, 
+                 double Tsk[], double a0[], double chat[], double *Tulik, double *Tmlik) {
     int c,s,k,m,x, wxi;
     double mu1, mu2, musk1, musk2, tauskx, pdot;
     double  pmarked = 0;
@@ -166,14 +167,14 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
     /* check inputs 2015-11-16 */
     if ((chat[0]<=0) || (chat[1]<=0)) {
 	Rprintf("chat must be positive in sightinglik\n");
-	return(1);
+	return(11);
     }
     for (x=0; x<nmix; x++) {
 	if ((like < 5)) {    // otherwise pdots not used
 	    for (m=0; m<mm; m++)
 		if (pdots[i3(ss-1, x, m, ss, nmix)] <= 0) {
 		    /* Rprintf("pdot must be positive in sightinglik\n"); */
-		    return(1);
+		    return(21);
 		}
 	}        
     }
@@ -188,7 +189,7 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 	/* Rprintf("s %4d pID %8.6f\n", s, pID[s]); */
 	if (markocc[s] < 1) {     /* sighting occasions only */
 	    for (k=0; k < nk; k++) {
-                /* add 1 to index because element are reserved for nval */
+                /* add 1 to index because element 1 is reserved for nval */
 		if (!TuPooled) {
 		    Tusk = Tu[s * nk + k + 1];
 		    sumTu += Tusk;
@@ -206,38 +207,50 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 		    if (c >= 0) {                   /* drops unset traps */
 			nsk += (x == 0);            /* accumulate number of valid counts */
 			for (m=0; m < mm; m++) {
-			    g1 = gk0[i3(c,k,m,cc0,nk)];			
-			    tauskx = Tski * g1;	  
+			    g1 = gk0[i3(c,k,m,cc0,nk)];	
+			    /* 2015-12-21 if Poisson convert to lambda */
+			    if ((binomN == 0) & (detect == 2))
+				tauskx = Tski * hazard(g1);   /* Poisson count detector */
+			    else 
+				tauskx = Tski * g1;	      /* Bernoulli, and cum hazard poly */
+
 			    if (like == 1) {        /* CL; no Tu contribution */
-				mu2 +=  nc / a0[x] * tauskx * pdots[i3(s, x, m, ss, nmix)];
+				if (markocc[s] == 0)   /* otherwise -1 no marked nonID */
+				    if (a0[x] > 0)   // 2015-12-31
+				    mu2 +=  nc / a0[x] * tauskx * pdots[i3(s, x, m, ss, nmix)];
 			    }
 			    else if (like == 5) {   /* 'sighting only' known number marked */
 				Dmarked = pi[m] * nc/area;
 				if (D[m] < Dmarked) {
-				    *Tulik = -1e10;
-				    return(1);
+				    *Tulik = -1e20;
+				    return(51);
 				}
 				mu1 += (D[m] - Dmarked) * tauskx;
 				mu2 += Dmarked * tauskx; 
 			    }
 			    else if (like == 6) {   /* 'sighting only' unknown number marked */
-				Dmarked = pi[m] * nc / area * (A/a0[x]);
-				if (D[m] < Dmarked) {
-				    *Tulik = -1e10;
-				    return(1);
+				if (a0[x] > 0) {  // 2015-12-31
+				    Dmarked = pi[m] * nc / area * (A/a0[x]);
+				    if (D[m] < Dmarked) {
+					*Tulik = -1e20;
+					return(61);
+				    }
+				    mu1 += (D[m] - Dmarked) * tauskx;
+				    mu2 += Dmarked * tauskx; 
 				}
-				mu1 += (D[m] - Dmarked) * tauskx;
-				mu2 += Dmarked * tauskx; 
 			    }
 			    else {                  /* like  0,2,3,4 */
-
-				pmarked = pdots[i3(s, x, m, ss, nmix)];
+				if (markocc[s] == 0)   /* otherwise -1 no marked nonID */
+				    pmarked = pdots[i3(s, x, m, ss, nmix)];
+				else 
+				    pmarked = 0;
 				mu1 += D[m] * tauskx * (1 - pmarked);
 
                                 /* divide by pdot because we know animals were marked sometime */
-				pdot = pdots[i3(ss-1, x, m, ss, nmix)];	/* ss-1 : final value */
-				mu2 += D[m] * tauskx * pmarked / pdot; 
-
+				if (markocc[s] == 0) {   /* otherwise -1 no marked nonID */
+				    pdot = pdots[i3(ss-1, x, m, ss, nmix)]; /* ss-1 : final value */
+				    mu2 += D[m] * tauskx * pmarked / pdot; 
+				}
 			    }
 			}  /* end m loop */
 		    }
@@ -301,7 +314,10 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 	*Tmlik = dpois(sumTm,  summu2, 1) /  chat[1];
     }
     
-    /* Rprintf("Tulik %12.8f Tmlik %12.8f \n", *Tulik, *Tmlik); */
+    /*
+       Rprintf("sumTu %6d sumTm %6d summu1 %12.8f summu2 %12.8f Tulik %12.8f Tmlik %12.8f \n", 
+       sumTu, sumTm, summu1, summu2, *Tulik, *Tmlik); 
+    */
     return(0); 
 }
 /*==============================================================================*/
@@ -387,6 +403,11 @@ int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
 */
     /*-----------------------------------------------------*/
 
+    if (like == 1)  /* conditional likelihood incompatible with unresolved sightings */
+    for (s=0; s<ss; s++)
+	if (markocc[s] == -1) 
+	    return(2);
+
     Nm = (double *) S_alloc (mm, sizeof (double));   /* expected N in each cell */
     for (m=0; m<mm; m++) {
 	Nm[m] = D[m] * area;
@@ -424,6 +445,7 @@ int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
 		m = locate(unif_rand(), mm, cumprob);
 		if ((m<0) || (m>=mm)) {
 		    Rprintf("erroneous location of simulated animal in sightingchat\n");
+		    PutRNGstate();  /* return random seed to R */
 		    return(1);
 		}
 		pop[m] += 1;
@@ -479,8 +501,12 @@ int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
 		    if (c >= 0) {                       /* drops unset traps */
 			for (m=0; m < mm; m++) {
 			    if (pop[x*mm+m]>0) {
-				g1 = gk0[i3(c,k,m,cc0,nk)];			
-				tauskx = Tski * g1;	 
+				g1 = gk0[i3(c,k,m,cc0,nk)];	
+                                /* 2015-12-21 if Poisson convert to lambda */
+				if ((binomN == 0) & (detect == 2))
+				    tauskx = Tski * hazard(g1);	 
+				else
+				    tauskx = Tski * g1;	 
 				if (markocc[s] < 1) {                     /* sighting occasions */
 				    if (like == 1) {        /* CL */
 					if (markocc[s] == 0) 
@@ -488,16 +514,23 @@ int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
 				    }
 				    else if (like == 5) {   /* like 5 all sighting, known */
 					mu1 += pop[x*mm+m] * tauskx;
+					if (markocc[s] == -1)
+					    mu1 += popmarked[x*mm+m] * tauskx;
 					if (markocc[s] == 0) 
 					    mu2 +=  pi[m] * nc * tauskx; 
 				    }
 				    else if (like == 6) {   /* like 6 all sighting, unknown */
 					mu1 += pop[x*mm+m] * tauskx;
+					if (markocc[s] == -1)
+					    mu1 += popmarked[x*mm+m] * tauskx;
 					if (markocc[s] == 0) 
-					    mu2 +=  pi[m] * nc * (A/a0[x]) * tauskx; 
+					    if (a0[x] > 0)   // 2015-12-31
+						mu2 +=  pi[m] * nc * (A/a0[x]) * tauskx; 
 				    }
 				    else {                  /* like  0,2,3,4 */
 					mu1 += pop[x*mm+m] * tauskx ;
+					if (markocc[s] == -1)
+					    mu1 += popmarked[x*mm+m] * tauskx;
 					if (markocc[s] == 0) {
 					    mu2 += popmarked[x*mm+m] * tauskx;
 					}

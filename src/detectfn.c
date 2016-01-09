@@ -3,43 +3,67 @@
     2011-09-30
     2012-02-01 modified for single mufn
     2014-08-27 mufn moved here from utils.c
+    2015-12-21 expanded documentation in header
 
 Three forms are provided:
 hfn  -- distance is an argument (r)
 gfn  -- distance is computed from trap amd mask indices and coordinate objects
 gfnL -- distance is computed from trap amd mask indices and lookup table
 
-*/
-/*--------------------------------------------------------------------*/
+The function pfn() selects hfn on the fly.
+pfn() is used in pdotpoint, naiveRPSV, simdetect, trappingsingle, trappingmulti,
+trappingproximity, trappingcount, trappingtimes
 
-/*
-fn 0  halfnormal
-fn 1  hazard-rate
-fn 2  exponential
-fn 3  compound halfnormal
-fn 4  uniform
-fn 5  w-exponential
-fn 6  annular normal
-fn 7  cumulative lognormal
-fn 8  cumulative gamma
-fn 9  binary signal strength
-fn 10 signal strength
-fn 11 signal strength with spherical spreading
-fn 12 signal strength + noise
-fn 13 signal strength with spherical spreading + noise
-fn 14 hazard halfnormal
-fn 15 hazard hazard rate
-fn 16 hazard exponential
-fn 17 hazard annular normal
-fn 18 hazard cumulative gamma
+All functions return the detection probability g(x). For count detectors this
+must be transformed to the cumulative hazard -log(1-g(x)) (see function 'hazard' 
+in utils.c).
+
+The hfn and gfn forms are used 
+
+(i) for polygon and transect detectors, 
+(ii) for trappingXXX simulations  (via pfn)
+
+for which the function must be calculated on the fly within the integration algorithm 
+rather than from a lookup precomputed for a fixed set of trap-mask distances.
+
+[gfn is passed to all prwi functions in secr.c, but used only in 
+prwipolygon, prwipolygonX, prwitransect, prwitransectX]
+
+Proposed changes 2015-12-21:
+-- restrict polygons and transects to fn 14-18 (may correct semibug in trappingpolygon, where g treated as h)
+-- drop all gfn (but beware of flow-on issues for polygons)
+
+For each form there is a corresponding selection function:
+gethfn
+getgfn
+getgfnL
+                                   gethfn    getgfn    getgfnL
+
+fn 0  halfnormal                   hn        ghn       ghnL
+fn 1  hazard-rate                  hr        ghr       ghrL
+fn 2  exponential                  he        ghe       gheL
+fn 3  compound halfnormal          hn        ghnc      ghncL
+fn 4  uniform                      un        gun       gunL
+fn 5  w-exponential                hf        ghf       ghfL 
+fn 6  annular normal               hann      gan       ganL
+fn 7  cumulative lognormal         hcln      gcln      gclnL
+fn 8  cumulative gamma             hcg       gcg       gcgL
+fn 9  binary signal strength       hsigbin   gsigbin   gsigbinL
+fn 10 signal strength              hsig      gsig      gsigL
+fn 11 signal strength + ss         hsigsph   gsigsph   gsigsphL 
+fn 12 signal strength + noise      --        gsigSN    gsigSNL
+fn 13 signal strength + ss + noise --        gsigsphSN gsigsphSNL
+fn 14 hazard halfnormal            hhn       lhn       lhnL
+fn 15 hazard hazard rate           hhr       lhr       lhrL
+fn 16 hazard exponential           hex       lex       lexL
+fn 17 hazard annular normal        han       lan       lanL
+fn 18 hazard cumulative gamma      hcumg     lcg       lcgL
+
 */
 
-/*
-Likelihood function for presence detector type
-'simple' version is equivalent to Royle & Nichols 2003 Poisson
-'integrated' alows for non-step detection function
-MGE 2011-09-30
-*/
+// Also
+// gcnL cumulative normal
+// grsL cumulative reverse sigmoid
 
 #include "secr.h"
 
@@ -120,6 +144,50 @@ fnptr gethfn (int fn)
         return(han);
     else if (fn == 18)
         return(hcumg);
+    else (error("unknown or invalid detection function"));
+    return(hn);
+}
+/*--------------------------------------------------------------------*/
+
+/* 2016-01-01 experimental for polygon integral */
+fnptr getzfn (int fn) 
+{
+    if (fn == 0)
+        return(hn);
+    else if (fn == 1)
+        return(hr);
+    else if (fn == 2)
+        return(he);
+    else if (fn == 3)
+        return(hnc);
+    else if (fn == 4)
+        return(un);
+    else if (fn == 5)
+        return(hf);
+    else if (fn == 6)
+        return(hann);
+    else if (fn == 7)
+        return(hcln);
+    else if (fn == 8)
+        return(hcg);
+    else if (fn == 9)
+        return(hsigbin);
+    else if (fn == 10)
+        return(hsig);
+    else if (fn == 11)
+        return(hsigsph);
+    else if (fn == 12)
+        return(hsigsph);
+    else if (fn == 14)
+        return(zhn);
+    else if (fn == 15)
+        return(zhr);
+    else if (fn == 16)
+        return(zex);
+    else if (fn == 17)
+        return(zan);
+    else if (fn == 18)
+        return(zcumg);
     else (error("unknown or invalid detection function"));
     return(hn);
 }
@@ -332,6 +400,37 @@ double han (double param [], double r) {
 double hcumg (double param [], double r) {
     return (1 - exp( - (1 - exp( - param[0] * exp(-r / param[1])))));
 }
+
+/* hazard halfnormal */
+double zhn (double param [], double r) {
+    return(param[0] * exp(- r * r / 2 / param[1] / param[1]));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard hazard rate */
+double zhr (double param [], double r) {
+    return(param[0] * ( 1 - exp(- pow(r / param[1], -param[2]))));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard exponential */
+double zex (double param [], double r) {
+    return (param[0] * exp(-r / param[1]));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard annular normal */
+double zan (double param [], double r) {
+    return (param[0] * exp(-(r-param[2])*(r-param[2]) / 2 /
+				   param[1] / param[1]));
+}
+/*--------------------------------------------------------------------*/
+
+/* hazard cumulative gamma */
+double zcumg (double param [], double r) {
+    return ((1 - exp( - param[0] * exp(-r / param[1]))));
+}
+
 /*====================================================================*/
 
 /* halfnormal */

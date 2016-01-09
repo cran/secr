@@ -748,8 +748,11 @@
 
             ## 2015-10-11 better lambda0 -> g0 than vv...
             default$lambda0 <- sum(ch) / nrow(ch) / ncol(ch)
-            default$g0 <- 1 - exp(-default$lambda)
-
+            
+            ## default$g0 <- 1 - exp(-default$lambda)
+            ## bugfix 2015-12-09
+            default$g0 <- 1 - exp(-default$lambda0)
+            
             if (details$binomN > 1)
                 default$g0 <- default$g0 / details$binomN
             if ((details$binomN == 1) & (detector(traps(ch)) %in%

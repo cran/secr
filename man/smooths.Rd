@@ -74,9 +74,9 @@ See also the example in \href{http://www.otago.ac.nz/density/pdfs/secr-densitysu
 
 }
 
-\section{warning}{
+\section{Warning}{
 
-  This implementation of results in large fitted objects, on
+  This implementation of smooth models results in large fitted objects, on
   account of the need to store setup information from \pkg{mgcv}. It is
   also vulnerable to future changes in \pkg{mgcv}.
 

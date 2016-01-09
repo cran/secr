@@ -1,4 +1,3 @@
-##############################################################################
 ## package 'secr'
 ## sim.capthist.R
 ## simulate capture histories
@@ -17,6 +16,7 @@
 ## 2015-04-01 session-specific detection
 ## 2015-04-13 sim.capthist passes nsessions to sim.popn
 ## 2015-11-02 sim.resight, expands re-written
+## 2015-12-15 sim.resight delivers for unresolved sightings (markocc = -1)
 ###############################################################################
 
 expands <- function (x, s, default = 1) {
@@ -610,6 +610,7 @@ sim.capthist <- function (
                 w[,,] <- temp$value[1:(temp$n*noccasions*k)]
             }
             w <- aperm(w, c(3,1,2))
+            
         }
         else
 
@@ -829,26 +830,6 @@ sim.capthist <- function (
 ## pmark is probability an individual is marked, across the entire population, if all occasions
 ## are sighting occasions
 
-## ad hoc function for including pre-marked animals never sighted
-addZeroCH <- function (CH, nzero) {
-    if (nzero == 0)
-        return(CH)
-    else {
-
-        nc <- nrow(CH)
-        chdim <- dim(CH)
-        chdim[1] <- nzero
-        extra <- array(0, dim=chdim)
-        dimnames(extra) <- c(list(paste('Z', 1:nzero, sep='')), dimnames(CH)[2:3])
-        CH2 <- abind(CH, extra, along = 1)
-        class(CH2) <- 'capthist'
-        traps(CH2) <- traps(CH)
-        xy(CH2) <- xy(CH)  ## order is not affected by adding zero histories
-        ## ... and other essential attributes?
-        CH2
-    }
-}
-
 sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisson'), ...,
                          pID = 1, unmarked = TRUE, nonID = TRUE, unsighted = TRUE,
                          pmark = 0.5, Nmark = NULL, markingmask = NULL) {
@@ -864,55 +845,86 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     }
     else
         markocc <- markocc(traps)
-    markocc(traps) <- markocc
     allsighting <- !any(markocc>0)
 
+    ## markocc(traps) <- markocc
+    markocc(traps) <- NULL
+    
+    ## special case: Nmark animals distributed according to mask covariate
+    distributedmarking <- FALSE
+    if (!is.null(markingmask) & !is.null(Nmark)) {
+        if (!is.null(covariates(markingmask)))
+            distributedmarking <- 'marking' %in% names(covariates(markingmask))
+    }
+    
     ############################################################################
     ## make complete, identified capthist including all detections
     ## marking and sighting
 
     dots <- list(...)
     dots$traps <- traps
+
     if (!is.null(dots$seed)) {
         set.seed(dots$seed)
         dots$seed <- NULL
     }
     dots$noccasions <- length(markocc)  ## override noccasions
+    dots$renumber <- FALSE  ## to match animalID
 
     if (!inherits(popn,'popn'))         ## generate popn if not provided
     {
         popn <- replacedefaults(list(D = 5, buffer = 100,
                                      Ndist = 'poisson'), popn)
-        popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
-                          covariates = NULL, Ndist = popn$Ndist)
+        if (!(distributedmarking & allsighting))
+            popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
+                              covariates = NULL, Ndist = popn$Ndist)
     }
     #---------------------------------------------------------------------------
     if (allsighting) {
-        gotten <- rep(TRUE, nrow(popn))
-
-        ## circumscribe marked animals
-        if (!is.null(markingmask)) {
-            gotten <- pointsInPolygon(popn, markingmask)
-            if (!is.null(covariates(markingmask)))
-                if ('marking' %in% names(covariates(markingmask)))
-                    warning("uniform distribution over marking mask;",
-                            " covariate 'marking' ignored")
-        }
-
-        if (!is.null(Nmark)) {
-            if (Nmark > sum(gotten)) {
-                warning("Nmark exceeds population size, marking all")
+        if (distributedmarking) {
+            Nunmark <- if (popn$Ndist == 'fixed') {
+                if (!is.null(popn$Nbuffer)) popn$Nbuffer - Nmark
+                else popn$D * maskarea(markingmask) - Nmark
             }
-            else {
-                gottenN <- sample.int(sum(gotten), size = Nmark, replace = FALSE)
-                gotten[gotten] <- (1:sum(gotten)) %in% gottenN
+            else { 
+                rpois(1, popn$D * maskarea(markingmask)) - Nmark
             }
+            if (Nunmark<0) {
+                warning ("Nunmark < 0; setting to 0")
+                Nunmark <- 0
+            }
+            covariates(markingmask)$marking <- covariates(markingmask)$marking / sum(covariates(markingmask)$marking)
+            covariates(markingmask)$unmarking <- 1 - covariates(markingmask)$marking
+            popnM <- sim.popn(D = 'marking', core = markingmask, Ndist = 'fixed', Nbuffer = Nmark, model2D='IHP')
+            popnU <- sim.popn(D = 'unmarking', core = markingmask, Ndist = 'fixed', Nbuffer = Nunmark, model2D='IHP')
         }
         else {
-            gotten <- gotten & (runif(length(gotten)) < pmark)
+            gotten <- rep(TRUE, nrow(popn))
+            
+            ## circumscribe marked animals
+            if (!is.null(markingmask)) {
+                gotten <- pointsInPolygon(popn, markingmask)
+                if (!is.null(covariates(markingmask)))
+                    if ('marking' %in% names(covariates(markingmask)))
+                        warning("uniform distribution over marking mask;",
+                                " covariate 'marking' ignored")
+            }
+            
+            if (!is.null(Nmark)) {
+                if (Nmark > sum(gotten)) {
+                    warning("Nmark exceeds population size, marking all")
+                }
+                else {
+                    gottenN <- sample.int(sum(gotten), size = Nmark, replace = FALSE)
+                    gotten[gotten] <- (1:sum(gotten)) %in% gottenN
+                }
+            }
+            else {
+                gotten <- gotten & (runif(length(gotten)) < pmark)
+            }
+            popnM <- subset(popn, gotten)     ## inside A0 and marked
+            popnU <- subset(popn, !gotten)    ## outside A0 or not marked
         }
-        popnM <- subset(popn, gotten)     ## inside A0 and marked
-        popnU <- subset(popn, !gotten)    ## outside A0 or not marked
         dots$popn <- popnM
     }
     else
@@ -964,11 +976,11 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         CH <- make.capthist(dfID[,1:4, drop=FALSE], traps, fmt = 'trapID', noccasions = S)
     }
 
+    ## marked but never sighted
     if (allsighting & unsighted) {
         nzero <- nrow(popnM) - nrow(CH)
-        CH <- addZeroCH(CH, nzero)
+        CH <- addzeroCH(CH, nzero)
     }
-## so are nonID being counted twice? - in dfnonID/Tm and here?
     ############################################################################
 
     if (detector(traps(capthist)) %in% c('polygon', 'transect'))
@@ -978,6 +990,8 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
 
     ##------------------------------------------------------------------------------
 
+    unresolved <- markocc == -1
+    markocc(traps(CH)) <- markocc
     if (unmarked) {
 
         countfn <- function(x) {
@@ -997,17 +1011,44 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
                                   factor(dfunmarked$occasion, levels = 1:S)))
         }
         Tu[,markocc>0] <- 0  ## just in case...
+        
+        ## 2015-12-15
+        if (sum(unresolved)>0) {
+            markedsightings <- t(apply(CH[,unresolved,], 2:3, sum, drop = FALSE))
+            CH[,unresolved,] <- 0
+            Tu[,unresolved] <- Tu[,unresolved] + markedsightings
+        }    
+        
         Tu(CH) <- Tu
     }
     ##------------------------------------------------------------------------------
 
     if (nonID) {
-        attr(CH, 'Tm') <- as.matrix(table(factor(dfnonID$trapID, levels = trapnames),
+        Tm <- as.matrix(table(factor(dfnonID$trapID, levels = trapnames),
                                           factor(dfnonID$occasion, levels = 1:S)))
+        ## 2015-12-15
+        if (sum(unresolved)>0) {
+            ## add to unmarked sightings
+            Tu(CH)[,unresolved] <- Tu[,unresolved] + Tm[,unresolved]
+            Tm[,unresolved] <- 0
+        }
+        Tm(CH) <- Tm 
     }
     ##------------------------------------------------------------------------------
 
-    attr(CH, 'popn') <- attr(capthist, 'popn')   ## NULL unless savepopn = TRUE
+    ## if savepopn = TRUE...
+    if (!is.null(attr(capthist, 'popn'))) {
+        if (allsighting) {
+            popn <- rbind(popnM, popnU)
+            covariates(popn) <- data.frame(marked = rep(c(TRUE, FALSE), c(nrow(popnM), nrow(popnU))))
+            attr(CH, 'popn') <- popn
+        }
+        else {
+            ## 2015-12-18; this could be moved to sim.capthist
+            covariates(popn) <- data.frame(marked = rownames(popn) %in% dfmarked$animalID)   
+            attr(CH, 'popn') <- popn   ## NULL unless 
+        }
+    }
     CH
 }
 ############################################################################################

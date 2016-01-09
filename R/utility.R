@@ -41,6 +41,8 @@
 ## 2015-04-03 mapbeta moved from score.test.R
 ## 2015-11-02 xyinpoly moved from verify.R
 ## 2015-11-17 improved robustness of mapbeta when real parameter missing from new model 
+## 2016-01-08 addzerodf function used by join()
+## 2016-01-08 addzeroCH function used by sim.resight()
 #######################################################################################
 
 # Global variables in namespace
@@ -65,6 +67,7 @@
 .localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
                              'transect','times','unmarked','presence','telemetry')
 .localstuff$iter <- 0
+.localstuff$iter2 <- 0
 .localstuff$detectionfunctions <-
         c('halfnormal',
       'hazard rate',
@@ -1096,6 +1099,7 @@ make.lookup <- function (tempmat) {
        tempmat <- unlist(sapply(tempmat, as.numeric, simplify = FALSE))
     }
     dimnames(tempmat) <- NULL
+
     temp <- .C('makelookup', PACKAGE = 'secr',
         ## as.double(tempmat),
         ## 2014-09-09
@@ -1685,6 +1689,7 @@ xyinpoly <- function (xy, trps) {
         as.logical(temp$result)
     }
     lxy <- split (trps, levels(polyID(trps)))
+    
     firstinside <- function (i) {
         frstk <- 0
         for (k in 1:length(lxy)) {
@@ -1733,6 +1738,13 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
                 chat <- c(chat,1)
                 warning("assuming chat 1.0 for Tm")
             }
+            if (chat[1]<1) {
+                warning("chat(Tu) = ", chat[1], ", setting to 1.0")
+            }
+            if (chat[2]<1) {
+                warning("chat(Tm) = ", chat[2], ", setting to 1.0")
+            }
+            chat <- pmax(chat, 1)
         }
     }
     else
@@ -1758,3 +1770,55 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
 }
 
 ############################################################################################
+
+addzerodf <- function (df, oldCH, sess) {
+    ## add dummy detection records to dataframe for 'all-zero' case
+    ## that arises in sighting-only mark-resight with known marks
+    allzero <- apply(oldCH,1,sum)==0
+    naz <- sum(allzero)
+    if (naz > 0) {
+        df0 <- expand.grid(newID = rownames(oldCH)[allzero], newocc = NA, 
+                           newtrap = trap(oldCH)[1], alive = TRUE, sess = sess, 
+                           stringsAsFactors = FALSE)
+        df <- rbind(df,df0)
+        if (!is.null(xy(oldCH))) {
+            df$x <- c(xy(oldCH)$x, rep(NA, naz))
+            df$y <- c(xy(oldCH)$y, rep(NA, naz))
+        }
+        if (!is.null(signal(oldCH)))  {
+            df$signal <- c(signal(oldCH), rep(NA, naz))
+        }
+    }
+    df
+}
+############################################################################################
+
+## including pre-marked animals never sighted
+## cov is optional dataframe of covariates
+addzeroCH <- function (CH, nzero, cov = NULL) {
+    if (nzero == 0)
+        return(CH)
+    else {
+        
+        nc <- nrow(CH)
+        chdim <- dim(CH)
+        chdim[1] <- nzero
+        extra <- array(0, dim=chdim)
+        dimnames(extra) <- c(list(paste('Z', 1:nzero, sep='')), dimnames(CH)[2:3])
+        CH2 <- abind(CH, extra, along = 1)
+        class(CH2) <- 'capthist'
+        traps(CH2) <- traps(CH)
+        xy(CH2) <- xy(CH)  ## order is not affected by adding zero histories
+        if (!is.null(covariates(CH)) & (nrow(CH)>0)) {
+            if (is.null(cov)) {
+                cov <- covariates(CH)[rep(1,nzero),]
+                cov[,] <- NA   ## covariates are unknown
+            }
+            covariates(CH2) <- rbind(covariates(CH), cov[1:nzero,])
+        }
+        ## ... and other essential attributes?
+        CH2
+    }
+}
+############################################################################################
+

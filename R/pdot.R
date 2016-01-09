@@ -304,8 +304,8 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
             lines(temp,...)
         temp
     }
-    if (!inherits(traps, 'traps'))
-        stop ("requires 'traps' object")
+    if (!(inherits(traps, 'traps') | inherits(traps, 'mask')))
+        stop ("requires 'traps' or 'mask' object")
 
     if (ms(traps)) {
         output <- lapply(traps, buffer.contour, buffer = buffer, nx = nx, convex = convex,

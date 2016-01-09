@@ -15,7 +15,7 @@ If \code{object} contains transect data the problem is passed to \code{\link{sni
 \usage{
 
 discretize(object, spacing = 5, outputdetector = c("proximity", "count", "multi"), 
-    tol = 0.001, ...)
+    tol = 0.001, cell.overlap = FALSE, type = c("centre","any", "all"), ...)
 
 }
 
@@ -24,6 +24,8 @@ discretize(object, spacing = 5, outputdetector = c("proximity", "count", "multi"
   \item{spacing}{numeric spacing between point detectors in metres }
   \item{outputdetector}{character output detector type}
   \item{tol}{numeric fractional inflation of perimeter (see Details)}
+  \item{cell.overlap}{logical; if TRUE the area of overlap is stored in usage attribute }
+  \item{type}{character; see Details}
   \item{\dots}{other arguments passed to \code{\link{snip}} if object is transect}
 }
 
@@ -31,12 +33,18 @@ discretize(object, spacing = 5, outputdetector = c("proximity", "count", "multi"
   
   The input should have detector type `polygon' or `polygonX'.
 
-  Centres of a new array of equally spaced detectors are placed within
+  A new array of equally spaced detectors is generated within
   each polygon of the input, inflated radially by 1 + tol to avoid some
-  inclusion problems. The origin of the superimposed grid is fixed automatically.
+  inclusion problems. The origin of the superimposed grid is fixed automatically. If \code{type = "centre"} detectors are included if they lie within the (inflated) polygon. Otherwise, the decision on whether to include a candidate new detector is based on the corner vertices of the cell around the detector (side = \code{spacing}); \code{type = "any"} and  \code{type = "all"} have the obvious meanings. 
 
-  `tol' may be negative, in which case the array(s) will be shrunk relative
+  \code{tol} may be negative, in which case the array(s) will be shrunk relative
   to the polygon(s). 
+  
+  For irregular polygons the edge cells in the output may be only partially contained within the polygon they represent. Set \code{cell.overlap = TRUE} to retain the proportion of overlap as the `usage' of the new traps object. This can take a few seconds to compute. If `usage' is already defined then the new `usage' is the old multiplied by the proportion of overlap.
+  
+  Combining \code{type = "any"} and \code{cell.overlap = TRUE} with \code{tol} > 0 can have the odd effect of including some marginal detectors that are assigned zero usage.
+  
+  With \code{type = "any"}, the sum of the overlap proportions times cell area is equal to the area of the polygons.
 
 }
 

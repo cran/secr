@@ -31,6 +31,8 @@ importFrom(mgcv, formula.gam)
 import(sp)
 import(parallel)
 
+## importFrom(rgeos, gArea, gIntersection)
+
 importFrom(raster, 'values<-')
 importFrom(raster, values)
 importFrom(raster, clump)

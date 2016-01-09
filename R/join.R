@@ -6,6 +6,7 @@
 ## 2015-04-05 previous bug fix failed...
 ## 2015-04-13
 ## 2015-10-29 extended to deal with Tu, Tm and all-zero histories
+## 2016-01-08 addzerodf function moved to utility.R
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
@@ -16,27 +17,17 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         newID <- animalID(CH)
         newocc <- occasion(CH) + before[sess]
         newtrap <- trap(CH)
-
         df <- data.frame(newID = newID, newocc = newocc, newtrap = newtrap,
                          alive = alive(CH), sess = rep(sess, length(newID)),
                          stringsAsFactors = FALSE)
-
-        allzero <- rownames(CH)[apply(CH,1,sum)==0]
-        naz <- length(allzero)
-        if (naz > 0) {
-            df0 <- expand.grid(newID = allzero, newocc = NA, newtrap = newtrap[1],
-                               alive = TRUE, sess = sess, stringsAsFactors = FALSE)
-            df <- rbind(df,df0)
-        }
-        if (!is.null(xy(CH))) {
-            df$x <- c(xy(CH)$x, rep(NA, naz))
-            df$y <- c(xy(CH)$y, rep(NA, naz))
-        }
-        if (!is.null(signal(CH)))  {
-            df$signal <- c(signal(CH), rep(NA, naz))
-        }
-
-        df
+        if (!is.null(xy(CH)))
+            df[,c('x','y')] <- xy(CH)
+        if (!is.null(signal(CH)))
+            df[,'signal'] <- signal(CH)
+        
+        ## add all-zero (sighting-only) records as required,
+        ## otherwise leave unchanged
+        addzerodf (df, CH, sess)
     }
     ####################################################################
 
@@ -100,10 +91,11 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         if (length(usage(traps(object))) > 0)
             usage(newtraps) <- do.call(cbind, usage(traps(object)))
         ## df$newtrap unchanged
-
     }
     else {
-        temptrp <- mapply(condition.usage, traps(object), 1:nsession)
+        ## temptrp <- mapply(condition.usage, traps(object), 1:nsession)
+        ## 2015-12-08
+        temptrp <- mapply(condition.usage, traps(object), 1:nsession, SIMPLIFY = FALSE)
         newtraps <- do.call(rbind, c(temptrp, renumber = FALSE))
         class(newtraps) <- c("traps", "data.frame")
         df$newtrap <- paste(df$newtrap,df$sess, sep=".")

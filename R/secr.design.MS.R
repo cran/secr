@@ -575,14 +575,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
 
     #--------------------------------------------------------------------------
-    ## 2009 10 07 mark-resight
-#     q <- attr(capthist, 'q')
-#     if (any((q > 0) & (q < S))) {
-#         ## marking  on occasions 1:q, sighting on occasions (q+1):S
-#         ## following line must be revised for vector q (varying by session)
-#         dframe$sighting <- factor( insertdim (rep(0:1, c(q, S-q)), 3, dims) )
-#     }
-    #--------------------------------------------------------------------------
 
     ## all autovars should have now been dealt with
     vars <- vars[!(vars %in% c(autovars, dframevars))]

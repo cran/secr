@@ -4,6 +4,11 @@
 /*
 This file contains functions for integration of home range overlap
 with polygon detectors and similar. Moved from secr.c 2012-11-13 
+
+The choice of detection function is a bit problematic. Before Jan 2016 (2.10.1) 
+the function integrated was g(r) (a probability, hence between 0 and 1) but the theory 
+is for the hazard. Testing zfn 2016-01-02.
+
 */
 
 #include "secr.h"
@@ -44,7 +49,8 @@ void fy(double *x, int n, void *ex) {
     xy[0] = p[6];
 
     /* set detection function */
-    fnp = gethfn(fn);
+    // fnp = gethfn(fn);
+    fnp = getzfn(fn);  // 2016-01-02
     for (i=0; i<n; i++) {
         xy[1] = x[i];   /* set each y value */
         d = sqrt ( (xy[1]-my)*(xy[1]-my) + (xy[0]-mx)*(xy[0]-mx) );
@@ -56,11 +62,6 @@ void fx(double *x, int n, void *ex) {
     int i;
     double * p;
 
-/*
-    double * poly;
-    double * a;
-    double * b;
-*/
     double poly[maxvertices * 2];
     double a;
     double b;
@@ -80,20 +81,13 @@ void fx(double *x, int n, void *ex) {
     p = (double*) ex;
     kk = round(p[9]);
 
-/*
-    a = (double *) R_alloc(1, sizeof(double));
-    b = (double *) R_alloc(1, sizeof(double));
-    poly = (double *) R_alloc(kk * 2, sizeof(double));
-*/
     for (i=0; i<kk; i++) {
         poly[i] = p[i+10];
         poly[i+kk] = p[i+kk+10];
     }
     for (i=0; i<n; i++) {
-/*        yab(x, &i, &kk, poly, a, b);   refine limits here */
         yab(x, &i, &kk, poly, &a, &b);   /* refine limits here */
         p[6] = x[i];                   /* pass forward the value of x; consider &ex etc. */
-/*        Rdqags(fy, ex, a, b, &epsabs, &epsrel, &result, &abserr, &neval, &ier, */
         Rdqags(fy, ex, &a, &b, &epsabs, &epsrel, &result, &abserr, &neval, &ier,
           &limit, &lenw, &last, iwork, work);
         x[i] = result;
@@ -233,7 +227,8 @@ void fx1 (double *x, int n, void *ex) {
         cumd[i+1] = cumd[i] + distance (line[i],line[i+1]);
     }
     /* set detection function - default hn */
-    fnp = gethfn(fn);
+    // fnp = gethfn(fn);
+    fnp = getzfn(fn);  // 2016-01-02
     /* for each x in x[] */
     for (i=0; i<n; i++) {
         xy = getxy (x[i], cumd, line, ns, 0);
