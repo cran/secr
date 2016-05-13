@@ -1555,7 +1555,6 @@ plot.traps <- function(x,
     ... )
 {
 #### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
-
     if (ms(x)) {
         lapply(x, plot.traps,
             border, label, offset,

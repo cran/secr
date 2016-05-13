@@ -120,8 +120,9 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
                 ## use mask spacing by default
                 spacing <- spacing(mask)
             }
-            if ((inherits(region, 'SpatialPolygonsDataFrame') & (masktype == "mask")) |
-                (inherits(region, 'SpatialLinesDataFrame') & (masktype == "linearmask"))
+            ## 2016-02-17 extended from SpatialPolygonsDataFrame
+            if ((inherits(region, 'SpatialPolygons') & (masktype == "mask")) |
+                (inherits(region, 'SpatialLines') & (masktype == "linearmask"))
                 ) {
                 bbox <- bbox(region)
             }

@@ -101,7 +101,7 @@ head(ovenRD)
 
 unRMarkInput(ovenRD)
 
-RMarkInput(deermouse.ESG, grouped = TRUE)
+RMarkInput(deermouse.ESG, covariates = FALSE, grouped = TRUE)
 RMarkInput(deermouse.ESG, covariates = TRUE)
 
 \dontrun{

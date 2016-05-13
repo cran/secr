@@ -73,18 +73,10 @@ in \pkg{secr} it seems worth saving the time needed to load \pkg{methods}. \code
 
 \section{Warning}{
 
-It appears that multicore operations in \pkg{secr} using \pkg{parallel} may fail if the packages \pkg{snow} and \pkg{snowfall} are also loaded. These packages are loaded automatically by \pkg{RMark}. For example, under R3.2.0 on Windows 7:
-
-\code{library(secr); library(RMark); sims <- sim.secr(secrdemo.0, nsim = 6, ncores = 6)}
-
-results in the error message: 
+It appears that multicore operations in \pkg{secr} using \pkg{parallel} may fail if the packages \pkg{snow} and \pkg{snowfall} are also loaded. The error message is obscure:
 
 ``Error in UseMethod("sendData") : 
   no applicable method for 'sendData' applied to an object of class "SOCK0node"''
-
-The solution is to start a new session without \pkg{RMark} or 
-
-\code{unloadNamespace("RMark"); unloadNamespace("snowfall"); unloadNamespace("snow")}
 
 }
 

@@ -38,6 +38,8 @@ object. Each component corresponds to a level of \code{f}.  The argument
 \code{x} of \code{split} cannot be a list (i.e. \code{x} must be a
 single-session traps object). 
 
+If the levels of \code{f} are numeric, from version 2.10.3 a leading zero is inserted in the names of the output list to maintain the sort order.
+
 }
 \value{
 

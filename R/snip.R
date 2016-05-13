@@ -114,6 +114,7 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     }
     ############
     ## main line
+
     if (!detector(object) %in% c('transect','transectX'))
         stop ("requires 'transect' input")
     temp <- split(as.data.frame(object), transectID(object))

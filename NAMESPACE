@@ -3,7 +3,7 @@ importFrom(graphics, ".filled.contour", "abline", "contour", "hist", "lines", "l
            "strwidth", "symbols", "text")
 importFrom(grDevices, "chull", "contourLines", "grey", "palette", "terrain.colors",
            "topo.colors")
-importFrom(methods, "is", "Ops", "Math")
+importFrom(methods, "as", "is", "Ops", "Math")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
            "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", "integrate",
            "lm", "logLik", "model.matrix", "nlm", "nls", "optim", "optimise", "optimize",
@@ -21,12 +21,6 @@ importFrom(mgcv, gam)
 importFrom(mgcv, s)
 importFrom(mgcv, te)
 importFrom(mgcv, formula.gam)
-
-## removed these 2015-01-23
-## instead use requireNamespace for nedist()
-## importFrom(gdistance, transition)
-## importFrom(gdistance, geoCorrection)
-## importFrom(gdistance, costDistance)
 
 import(sp)
 import(parallel)
@@ -139,6 +133,7 @@ export (fxi.mode)
 export (pointsInPolygon)
 export (predictDsurface)
 export (rectangularMask)
+export (plotMaskEdge)
 export (spotHeight)
 export (strip.legend)
 export (randomHabitat)

@@ -1,3 +1,21 @@
+Changes in version 2.10.3 (2016-05-13)
+
+New features or changed behaviour of old functions
+    o   pointsInPolygon() and make.mask() now work with SpatialPolygons poly
+    o   make.mask() changes: new arguments 'random.origin' and 'cell.overlap',
+        new type 'polybuffer', and accepts an existing mask as 'poly' argument
+    o   plotMaskEdge() new function
+    o   plot.mask() coerces logical covariates to factors
+    o   split.traps inserts leading zero in numeric splitting factor f
+
+Bugs fixed
+    o   pointsInPolygon() erratic with SpatialPolygonsDataFrame input (missed some overlaps)
+    o   score.test() failed (mapbeta requires betanames)
+    o   plot.Dsurface() required 'covariate' to be specified for multi-session input
+
+Other
+    o   usagePlot() no longer adds tiny point on occasions when detector unused
+
 Changes in version 2.10.2 (2016-01-08)
 
 New features or changed behaviour of old functions

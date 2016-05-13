@@ -228,6 +228,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         ##########################
 
+        ## 2016-03-08
+        ## allow core to be a named object
+        if (is.character(core)) core <- get(core)
+            
         if (model2D %in% c('IHP')) {
             if (!inherits(core, 'mask'))
                 stop ("for model2D = IHP, 'core' should be a habitat mask")

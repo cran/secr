@@ -346,6 +346,7 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
 
     if (type == 'real') {
+
         predict <- lapply (object, getLP)
         stripped <- lapply(predict, function(x) lapply(x[parnames], function(y) y[, c('estimate','se')] ))
         stripped <- array(unlist(stripped), dim=c(nr, 2, np, nsecr))

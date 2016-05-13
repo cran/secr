@@ -1,7 +1,9 @@
 ############################################################################################
 ## package 'secr'
 ## split.traps.R
-## last changed 2012 09 14, 2012-12-18 (usage)
+## last changed 
+## 2012-12-18 (usage), 
+## 2016-05-10 leadingzero in numeric 
 ############################################################################################
 
 split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...) {
@@ -13,9 +15,13 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
   options(warn=-1)
   f <- factor(f)
 
-  if (any(!is.na(as.numeric(levels(f))))) {
-      f <- factor(paste (prefix,f,sep=''))
-      sp <- paste(prefix, levels(polyID(x)), sep='')
+  ## if (any(!is.na(as.numeric(levels(f))))) {
+  if (all(!is.na(as.numeric(levels(f))))) {
+      # f <- factor(paste (prefix,f,sep=''))
+      # sp <- paste(prefix, levels(polyID(x)), sep='')
+      # 2016-05-10
+      f <- factor(paste0 (prefix,leadingzero(f)))
+      sp <- paste0(prefix, leadingzero(levels(polyID(x))))
   }
   else {
       sp <- levels(polyID(x))

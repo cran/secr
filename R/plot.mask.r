@@ -189,6 +189,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                 meshcol, ppoly = ppoly, polycol = polycol, legend = legend, ...)
     }
     else {
+     
         buff <- c(-border,+border)
         if (!add) {
             eqscplot (x$x, x$y,
@@ -200,7 +201,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
 
         if (!is.null(attr(x,'polygon')) & ppoly) {
             poly <- attr(x,'polygon')
-            if (class(poly) == "SpatialPolygonsDataFrame") {
+            if (inherits(poly, "SpatialPolygons")) {
 # plot(poly, col = polycol, add = TRUE)
 # poor control of colours
                 plot(poly, add = TRUE)
@@ -212,7 +213,9 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         if (is.null(covariate))
             covfactor <- factor(1)
         else {
-            if (is.factor(covariates(x)[,covariate]))
+            if (is.logical(covariates(x)[,covariate]))  ## 2016-03-02
+                covfactor <- factor(covariates(x)[,covariate])
+            else if (is.factor(covariates(x)[,covariate]))
                 covfactor <- covariates(x)[,covariate]
             else {
               covvalue <- covariates(x)[,covariate]
@@ -271,7 +274,8 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                 newargs <- list(xy = 'right', col = col[1:ncolour],
                                 legend = legendtext, tileborder = meshcol,
                                 title = covariate)
-                if (is.factor(covariates(x)[,covariate])) {
+                if (is.factor(covariates(x)[,covariate]) |
+                    is.logical(covariates(x)[,covariate])) {   ## 2016-03-02
                   newargs$legendtype <- 'other'
                   newargs$height <- min(1, length(legendtext) * 0.06)
                 }

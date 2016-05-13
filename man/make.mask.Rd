@@ -12,8 +12,10 @@ A mask object is a set of points with optional attributes.
 
 make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64, type =
     c("traprect", "trapbuffer", "pdot", "polygon", "clusterrect",
-    "clusterbuffer", "rectangular"), poly = NULL, poly.habitat = TRUE,
-    keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, ...)
+    "clusterbuffer", "rectangular", "polybuffer"), poly = NULL, poly.habitat = TRUE,
+    cell.overlap = c("centre","any","all"), keep.poly = TRUE, check.poly = TRUE, 
+    pdotmin = 0.001, random.origin = FALSE,
+    ...)
 
 }
 
@@ -27,11 +29,13 @@ make.mask(traps, buffer = 100, spacing = NULL, nx = 64, ny = 64, type =
   \item{poly}{ bounding polygon to which mask should be clipped (see Details) }
   \item{poly.habitat}{ logical for whether poly represents habitat or
   its inverse (non-habitat)}
+  \item{cell.overlap}{character string for cell vertices used to determine overlap with `poly'}
   \item{keep.poly}{ logical; if TRUE any bounding polygon is saved as the
   attribute `polygon' }
   \item{check.poly}{ logical; if TRUE a warning is given for traps that
   lie outside a bounding polygon }
   \item{pdotmin}{ minimum detection probability for inclusion in mask when \code{type = "pdot"} (optional) }
+  \item{random.origin}{ logical; if TRUE the mask coordinates are jittered}
   \item{...}{ additional arguments passed to \code{pdot} when \code{type = "pdot"} }
 }
 
@@ -63,20 +67,24 @@ because it starts with a `clusterrect' mask.
 The `rectangular' method constructs a simple rectangular mask with the
 given nx, ny and spacing. 
 
-If \code{poly} is specified, points outside \code{poly} are dropped. The
-`polygon' method places points on a rectangular grid clipped to the
+The `polybuffer' method cnstructs a mask by buffering around the polygon specified in the `poly' argument. If that inherits from `SpatialPolygons' then the buffering is performed with rgeos::gBuffer. Otherwise, buffering is approximate, based on the distance to points on an initial discretized mask enclosed by `poly' (points at half the current `spacing').
+
+If \code{poly} is specified, points outside \code{poly} are dropped (unless type = "polybuffer"). The default is to require only the centre to lie within \code{poly}; use \code{cell.overlap = "all"} to require all cell corners to lie within \code{poly}, or \code{cell.overlap = "any"} to accept cells with any corner in \code{poly}. The `polygon' method places points on a rectangular grid clipped to the
 polygon (\code{buffer} is not used). Thus `traprect' is equivalent to
 `polygon' when \code{poly} is supplied. \code{poly} may be either
 \itemize{
 \item a matrix or dataframe of two columns interpreted as x and y
 coordinates, or
-\item a SpatialPolygonsDataFrame object as defined in the package `sp',
+\item a SpatialPolygons or SpatialPolygonsDataFrame object as defined in the package `sp',
 possibly from reading a shapefile with readShapePoly() from package
 `maptools'.
 }
 
 If \code{spacing} is not specified then it is determined by dividing the
 range of the x coordinates (including any buffer) by \code{nx}.
+
+\code{random.origin} shifts the origin of the mask by a uniform random displacement within a spacing x spacing grid cell, while ensuring that the mask also satisfies the buffer requirement. \code{random.origin} is available only for `traprect', `trapbuffer', `polygon', and `rectangular' types, and \code{spacing} 
+must be specified.
 
 }
 

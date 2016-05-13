@@ -131,7 +131,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
 
     if (inherits(object, 'secrlist')) {
         lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
-               loginterval, distribution)
+               loginterval, distribution, ncores)
     }
     else {
         if (!is.null(distribution)) {

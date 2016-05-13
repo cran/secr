@@ -278,6 +278,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
     nsession <- length(sessionlevels)
     if ((ncores>1) & missing(clust))
         stop("not ready for multicore here")
+    if ((ncores>1) & (nsession==1))  ## 2016-02-20
+        warning("ncores>1 has no benefit when nsession = 1")
 
     nmix <- details$nmix
 
@@ -326,7 +328,8 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         ##    that comprse the subset CH (used to navigate parameter index array PIA)
         ## NT > 0 indicates the number of telemetered individuals in the case of concurrent
         ##    telemetry (i.e. incl all-zero histories)
-        ## like = 3 (CL=F) or like = 4 (CL=T) is used to flag a fully-known set of capture histories
+        ## like = 3 (CL=F) or
+        ## like = 4 (CL=T) is used to flag a fully-known set of capture histories
         ## like = 5 is used for all-sighting histories
         ## pi.mask[1] = -1 is used to flag constant distribution of location across all animals
         ##    if any animal has a non-uniform prior then pi.mask[1] >= 0
@@ -833,7 +836,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                            value = double(1),
                            resultcode = integer(1))
             }
-          
+
             LL <- if ((temp$resultcode != 0) | (temp$value < -1e9)) NA else LL + temp$value
             if (details$debug & temp$resultcode != 0) browser()
 

@@ -5,6 +5,7 @@
 ## 2012-10-25 bug fixed in getDensityArray with multi-session mask
 ## 2014-03-18 fixedbeta allowed
 ## 2014-10-13 predictD generalized for noneuc
+## 2016-05-13 plot.Dsurface no longer requires 'covariate' specified for multisession input
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
@@ -247,6 +248,11 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
 
 plot.Dsurface <- function (x, covariate, group = NULL, plottype = 'shaded',
      scale = 1, ...) {
+    # 2016-05-13
+    if (missing(covariate)) {
+        covariate <- attr(x, 'parameter')
+        if (is.null(covariate)) covariate <- 'D'  ## for backwards compatibility
+    }
     if (ms(x)) {
         breaklist <- lapply(x, plot, covariate, group, plottype, scale, ...)
         invisible(breaklist)
@@ -254,10 +260,11 @@ plot.Dsurface <- function (x, covariate, group = NULL, plottype = 'shaded',
     else {
         if (is.null(group))
             group <- 0
-        if (missing(covariate)) {
-          covariate <- attr(x, 'parameter')
-          if (is.null(covariate)) covariate <- 'D'  ## for backwards compatibility
-        }
+        # moved 2016-05-13
+        # if (missing(covariate)) {
+        #     covariate <- attr(x, 'parameter')
+        #     if (is.null(covariate)) covariate <- 'D'  ## for backwards compatibility
+        # }
         if (length(covariate)>1)
             stop ("whoa... just one at a time")
         if (covariate %in% c('D','noneuc','SE','lcl','ucl')) {

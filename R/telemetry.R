@@ -298,6 +298,7 @@ read.telemetry <- function (file = NULL, data = NULL, noccasions = NULL,
 
     ## let's be clear about this...
     names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
+    ## X, Y must be numeric 2016-01-12
     if (any(is.na(capt[,1:nvar])))
         stop ("missing values not allowed")
 

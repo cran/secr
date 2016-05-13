@@ -342,8 +342,9 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
                 contour (xlevels, ylevels, matrix(z, nrow = nx), add = add,
                          drawlabels = FALSE, levels = buffer,...)
                 if (!is.null(fill)) {
-                    z[z < (0.999 * min(levels))] <- NA
-                    levels <- c(0,levels,1)
+                    #z[z < (0.999 * min(levels))] <- NA
+                    #levels <- c(0,levels,1)
+                    levels <- c(0,buffer)
                     .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
                                     col = fill)
                 }

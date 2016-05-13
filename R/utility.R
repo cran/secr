@@ -40,9 +40,11 @@
 ## 2015-03-31 nparameters
 ## 2015-04-03 mapbeta moved from score.test.R
 ## 2015-11-02 xyinpoly moved from verify.R
-## 2015-11-17 improved robustness of mapbeta when real parameter missing from new model 
+## 2015-11-17 improved robustness of mapbeta when real parameter missing from new model
 ## 2016-01-08 addzerodf function used by join()
 ## 2016-01-08 addzeroCH function used by sim.resight()
+## 2016-02-17 pointsInPolygon allows both SatialPolygons and SpatialPolygonsDataFrame
+
 #######################################################################################
 
 # Global variables in namespace
@@ -66,8 +68,8 @@
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked','telemetry')
 .localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
                              'transect','times','unmarked','presence','telemetry')
-.localstuff$iter <- 0
-.localstuff$iter2 <- 0
+.localstuff$iter <- 0   ## counter 1
+.localstuff$iter2 <- 0  ## counter 2
 .localstuff$detectionfunctions <-
         c('halfnormal',
       'hazard rate',
@@ -554,16 +556,22 @@ spatialscale <- function (object, detectfn, session = '') {
 
 pointsInPolygon <- function (xy, poly, logical = TRUE) {
     xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
-    if (inherits(poly, 'SpatialPolygonsDataFrame')) {
-        xy <- SpatialPoints(xy)
+    ##if (inherits(poly, 'SpatialPolygonsDataFrame')) {
+    ## 2016-02-17 includes both SP and SPDF
+    if (inherits(poly, 'SpatialPolygons')) {
+            xy <- SpatialPoints(xy)
         ## 2013-04-20 update for deprecation of 'overlay'
         ## OK <- overlay (xy, poly)
         ## 2014-12-11
         proj4string(poly) <- CRS()
+        ## 2016-02-24
+        ## coerce to SpatialPolygons
+        ## over() returns numeric vector of polygon number, NA if no overlap
+        poly <- as(poly, 'SpatialPolygons')
         OK <- sp::over (xy, poly)
-        ## bug fix 2013-11-09
-        if (!is.null(dim(OK)))
-            OK <- OK[,1]
+        ## bug fix 2013-11-09; redundant 2016-02-24
+        #         if (!is.null(dim(OK)))
+        #             OK <- OK[,1]
         !is.na(OK)
     }
     else if (inherits(poly, 'mask')) {  # 2012-04-13
@@ -646,12 +654,16 @@ nclusters <- function (capthist) {
 #     formatC(x, width=max(nchar(x)), flag='0')  ## returns character value
 # }
 
-## clunky but effective re-write 2012-09-04
+## clunky but effective re-write 2012-09-04, improved 2016-02-20, 2016-05-10
 leadingzero <- function (x) {
-    x <- as.character(x)
-    w <- max(nchar(x))
+    xc <- as.character(x)
+    w <- max(nchar(xc))
     n0 <- function(n) paste(rep('0',n), collapse='')
-    paste(sapply(w-nchar(x), n0), x, sep='')
+    paste(sapply(w-nchar(xc), n0), x, sep='')
+    
+    ## or, 2016-01-15, 2016-02-20 BUT DOESN'T HANDLE NON-INTEGER 2016-05-10
+    #     if (is.character(x)) x <- as.numeric(x)
+    #     sprintf(paste("%0", w, "d", sep = ""), x)
 }
 
 ###############################################################################
@@ -813,9 +825,10 @@ distancetotrap <- function (X, traps) {
         ## 2015-10-18 added protection
         trps <- matrix(unlist(traps), ncol = 2)
 
-    if (inherits(trps, 'SpatialPolygonsDataFrame')) {
+    ## extended from SpatialPolygonsDataFrame 2016-02-17
+    if (inherits(trps, 'SpatialPolygons')) {
         trps <- coordinates(trps@polygons[[1]]@Polygons[[1]])
-        warning("using only first polygon of SpatialPolygonsDataFrame")
+        warning("using only first polygon of SpatialPolygons")
     }
 
     temp <- .C('nearest',  PACKAGE = 'secr',
@@ -839,9 +852,10 @@ nearesttrap <- function (X, traps) {
     ## with x coord in col 1 and y coord in col 2
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
-    if (inherits(traps, 'SpatialPolygonsDataFrame')) {
+    ## extended from SpatialPolygonsDataFrame 2016-02-17
+    if (inherits(traps, 'SpatialPolygons')) {
         traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-        warning("using only first polygon of SpatialPolygonsDataFrame")
+        warning("using only first polygon of SpatialPolygons")
     }
     temp <- .C('nearest',  PACKAGE = 'secr',
         as.integer(nxy),
@@ -1433,13 +1447,14 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
 
     ## 2014-08-19
     ## mat <- model.matrix(model, data = newdata)
-
+    
     mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup)
     if (nrow(mat) < nrow(newdata))
         warning ("missing values in predictors?")
 
     ## drop pmix beta0 column from design matrix (always zero)
     nmix <- 1
+    
     if (field=='pmix') {
         mat <- mat[,-1,drop=FALSE]
         if ('h2' %in% names(newdata)) nmix <- 2
@@ -1450,6 +1465,9 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     ## 2015-09-30 new code for pmix based on old fixpmix function in utility.R
     ## deals with mlogit link always used by pmix
     if ((nmix > 1) & (field == 'pmix')) {
+        ## partial check 2016-03-31 - needs refinement
+        if (((nrow(lpred)) %% nmix) != 0)
+            stop ("all mixture levels must appear in newdata")
         temp <- matrix(lpred[,1], ncol = nmix)
         if (nmix==2) temp[,newdata[,'h2']] <- lpred[,1]
         if (nmix==3) temp[,newdata[,'h3']] <- lpred[,1]
@@ -1570,8 +1588,9 @@ deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
     else {
         plot(mask, add = add, ...)
         if (!is.null(poly)) {
-            SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
-            if (!SPDF) {
+            ## extended from SpatialPolygonsDataFrame 2016-02-17
+            SP <- inherits(poly, "SpatialPolygons")
+            if (!SP) {
                 poly <- matrix(unlist(poly), ncol = 2)
                 poly <- rbind (poly, poly[1,])  # force closure of poly
             }
@@ -1688,8 +1707,9 @@ xyinpoly <- function (xy, trps) {
                    result = integer(1))
         as.logical(temp$result)
     }
-    lxy <- split (trps, levels(polyID(trps)))
-    
+# lxy <- split (trps, levels(polyID(trps)))
+# 2016-05-10
+    lxy <- split (trps, polyID(trps))
     firstinside <- function (i) {
         frstk <- 0
         for (k in 1:length(lxy)) {
@@ -1777,8 +1797,8 @@ addzerodf <- function (df, oldCH, sess) {
     allzero <- apply(oldCH,1,sum)==0
     naz <- sum(allzero)
     if (naz > 0) {
-        df0 <- expand.grid(newID = rownames(oldCH)[allzero], newocc = NA, 
-                           newtrap = trap(oldCH)[1], alive = TRUE, sess = sess, 
+        df0 <- expand.grid(newID = rownames(oldCH)[allzero], newocc = NA,
+                           newtrap = trap(oldCH)[1], alive = TRUE, sess = sess,
                            stringsAsFactors = FALSE)
         df <- rbind(df,df0)
         if (!is.null(xy(oldCH))) {
@@ -1799,7 +1819,7 @@ addzeroCH <- function (CH, nzero, cov = NULL) {
     if (nzero == 0)
         return(CH)
     else {
-        
+
         nc <- nrow(CH)
         chdim <- dim(CH)
         chdim[1] <- nzero

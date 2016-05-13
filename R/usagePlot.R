@@ -25,7 +25,7 @@ usagePlot <- function(object, add = FALSE, occasion = NULL, col =
             usge <- apply(usage(object)[,occasion, drop = FALSE], 1, sum)
             radius <- sqrt(usge) * scale
         }
-
+        
         # metres: use symbols with inches = FALSE
         if (metres) {
             fg <- col
@@ -33,6 +33,7 @@ usagePlot <- function(object, add = FALSE, occasion = NULL, col =
                 bg <- fg
             else
                 bg <- NULL
+            radius[radius==0] <- NA  ## 2016-03-17
             symbols(xy, circles = radius, inches = FALSE, fg = fg, bg = bg, add = T)
         }
         else {

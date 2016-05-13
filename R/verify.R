@@ -101,7 +101,9 @@ overlappoly <- function (xy, polyID) {
         }
         OK
     }
-    lxy <- split (xy, levels(polyID))
+# lxy <- split (xy, levels(polyID))
+# 2016-05-10    
+    lxy <- split (xy, polyID)
     nr <- length(lxy)
     if (nr<2)
         FALSE
@@ -128,7 +130,9 @@ validpoly <- function (xy, polyID, nx = 500) {
         }
         cross <= 2
     }
-    lxy <- split (xy, levels(polyID))
+# lxy <- split (xy, levels(polyID))
+# 2016-05-10    
+    lxy <- split (xy, polyID)
     temp <- lapply(lxy, OKpoly)
     all(unlist(temp))
 }
@@ -149,7 +153,9 @@ xyontransect <- function (xy, trps, tol=0.01) {
             result = integer(1))
         as.logical(temp$result)
     }
-    lxy <- split (trps, levels(transectID(trps)))
+# lxy <- split (trps, levels(transectID(trps)))
+# 2016-05-10 
+    lxy <- split (trps, transectID(trps))
     firsttransect <- function (i) {
         for (k in 1:length(lxy))
             if (ptontransect(i,k)) return(k)
@@ -271,7 +277,9 @@ verify.traps <- function (object, report = 2, ...) {
         }
         else
         if (poly | telem) {
-            areaOK <- !overlappoly (object, levels(polyID(object)))
+        # areaOK <- !overlappoly (object, levels(polyID(object)))
+        # 2016-05-10
+            areaOK <- !overlappoly (object, polyID(object))
         }
 
         ## 7
@@ -572,7 +580,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
             inpoly <- xyinpoly(xy(object), traps(object))
-
             inpoly <- inpoly == trap(object, names = F)
             xyinpolyOK <- all(inpoly)
         }

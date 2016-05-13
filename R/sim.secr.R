@@ -218,6 +218,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
     }
     fitmodel <- function (sc) {
         ## i <<- i+1
+        ## use second counter so as not to interfere with secrloglik
         .localstuff$iter2 <- .localstuff$iter2 + 1   ## 2016-01-09
         if (tracelevel>0)
             memo (paste('sim.secr fitting replicate', .localstuff$iter2, '...'), TRUE)

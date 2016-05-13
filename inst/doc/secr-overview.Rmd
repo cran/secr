@@ -772,6 +772,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 | `make.systematic` | construct random systematic design |
 | `MS.capthist`   	| combine 'capthist' objects into one multisession 'capthist' |
 | `plot`*     	| plot 'capthist', 'traps' or 'mask' |
+| `plotMaskEdge` | draw line around mask cells |
 | `randomHabitat`  | generates habitat mask with random landscape |
 | `rbind.capthist` | append 'capthist' objects |
 | `read.capthist`	| input captures and trap layout from Density format, one call |

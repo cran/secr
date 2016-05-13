@@ -147,7 +147,8 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
 
         #########################################################
         # check components on which model differs from secr$model
-
+        
+        
         if (length(secr$model) != length(model))
             stop ("models differ in number of real parameters")
         if (any(names(secr$model) != names(model)))
@@ -164,6 +165,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         newsecr$details <- replace (secr$details, 'trace', trace)  ## override
 
         beta0 <- secr$fit$par
+        names(beta0) <- secr$betanames
         beta1 <- mapbeta(secr$parindx, newsecr$parindx, beta0, betaindex)
         names(beta1) <- newsecr$betanames
 
@@ -172,7 +174,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
             .localstuff$iter <- 0
             cat('Eval     logLik', formatC(newsecr$betanames, format='f', width=11), '\n')
         }
-
         loglikfn <- function (beta, design) {
            -secr.loglikfn(
                beta     = beta,
@@ -206,7 +207,9 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         u.star <- grad.Hess$gradient
         i.star <- -grad.Hess$Hessian
 
-        score <- try (solve(i.star), silent = TRUE)
+        ## score <- try (solve(i.star), silent = TRUE)
+        ## use MASS function 2016-03-10
+        score <- try (ginv(i.star), silent = TRUE)
         if (inherits(score, "try-error")) {
             warning ("could not invert information matrix")
             score <- NA

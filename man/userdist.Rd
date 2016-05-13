@@ -16,9 +16,9 @@ the \code{details} argument of \code{\link{secr.fit}}.
 \code{details$userdist} is either a function to compute distances
 between detectors and mask points, or a pre-computed matrix of such
 distances. Pre-computing assumes the matrix is static (i.e. fixed and
-not dependent on any estimated coefficients. The functions
+not dependent on any estimated coefficients). The functions
 \code{\link{edist}} and \code{\link{nedist}} are useful for computing
-static matrices of Euclidean or non-Euclidean distances (the latter
+static matrices of Euclidean or non-Euclidean distances (the latter is 
 useful when there are barriers to movement).
 
 If \code{details$userdist} is a function then it should take the form

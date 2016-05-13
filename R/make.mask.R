@@ -5,6 +5,10 @@
 ## 2012 04 10 fixed bug in ymax of bounding box
 ## 2012 04 11 added 'rectangular' mask type
 ## 2014-03-22 all polygon type with no 'traps'
+## 2016-02-17 allow SpatialPolygons
+## 2016-03-02 allow poly to be mask object
+## 2016-03-21 random.origin
+## 2016-03-23 cell.overlap, using cellPointsInPolygon
 ###############################################################################
 
 getCentres <- function (xy) {
@@ -14,11 +18,32 @@ getCentres <- function (xy) {
     else
         xy
 }
+cellPointsInPolygon <- function (object, poly, cell.overlap = c("centre","any","all"), spacing) {
+    if (inherits(object, "mask") & missing(spacing))
+        spacing <- spacing(object)
+    cell.overlap <- match.arg(cell.overlap)
+    if (cell.overlap == "centre") {
+        inside <- pointsInPolygon(object, poly)  # vector
+    }
+    else {
+        sp2 <- spacing/2 * c(-1, +1)
+        dxy <- expand.grid(dx=sp2, dy=sp2)
+        vertices <- lapply(1:4, function(i) sweep(object, MARGIN=2, STATS=unlist(dxy[i,]), FUN="+"))
+        vertices <- array(unlist(vertices), dim = c(nrow(object), 2, 4))
+        inside <- apply(vertices, 3, pointsInPolygon, poly)
+    }
+    if (cell.overlap=="any")
+        inside <- apply(inside,1,any)
+    if (cell.overlap=="all")
+        inside <- apply(inside,1,all)
+    inside
+}
 
 make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     type = c("traprect", "trapbuffer", "pdot", "polygon", "clusterrect",
-    "clusterbuffer", "rectangular"), poly = NULL, poly.habitat = TRUE, keep.poly = TRUE,
-    check.poly = TRUE, pdotmin = 0.001, ...)
+    "clusterbuffer", "rectangular", "polybuffer"), 
+    poly = NULL, poly.habitat = TRUE, cell.overlap = c("centre","any","all"), 
+    keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, random.origin = FALSE, ...)
 {
 
     type <- match.arg(type)
@@ -29,14 +54,13 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         ## 2014-09-20 now passes keep.poly and check.poly
         temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx, ny = ny,
                         type = type, poly = poly, poly.habitat = poly.habitat, keep.poly = TRUE,
-                        check.poly = TRUE,  pdotmin = pdotmin, ...)
+                        check.poly = TRUE,  pdotmin = pdotmin, random.origin = random.origin, ...)
         class (temp) <- c('list', 'mask')
         temp
       }
     else {
-
         allowedType <- c('traprect','trapbuffer','polygon', 'pdot', 'clusterrect',
-                         'clusterbuffer', 'rectangular')
+                         'clusterbuffer', 'rectangular', 'polybuffer')
         if (! (type %in% allowedType))
             stop ("mask type must be one of ",
                   paste(sapply(allowedType, dQuote), collapse=","))
@@ -44,13 +68,34 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         if ((length(dots)==0) & (type == 'pdot'))
             warning ("no detection parameters supplied; using defaults")
 
-        buff <- c(-buffer,+buffer)
+        ## extend buff to allow for random origin 2016-03-21
+        if (random.origin) {
+            if (is.null(spacing))                     
+                stop ("random.origin requires that spacing to be specified")
+            if (!(type %in% c("traprect","trapbuffer","polygon", "rectangular")))
+                stop ("random.origin not implemented for this mask type")
+            if (type == "polygon")
+                buffer <- 0    ## to ensure no change in behaviour secr 2.10.3
+            offset <- runif(2)
+            buffx <- c(-buffer-offset[1]*spacing,+buffer+(1-offset[1])*spacing)
+            buffy <- c(-buffer-offset[2]*spacing, +buffer+(1-offset[2])*spacing)
+        }
+        else {
+            buffx <- buffy <- c(-buffer,+buffer)
+        }  
+            
 
         if (!is.null(poly)) {
-            SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
-            if (!SPDF) {
-                poly <- matrix(unlist(poly), ncol = 2)
-                poly <- rbind (poly, poly[1,])  # force closure of poly
+#             if (class(poly) == 'SpatialPolygons')  ## 2016-01-14
+#                 stop ("make.mask does not work if poly is SpatialPolygons")
+            # SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
+            SP <- inherits(poly, "SpatialPolygons")
+            if (!SP) {
+                if (!inherits(poly, "mask")) {     ## 2016-03-02
+                    poly <- matrix(unlist(poly), ncol = 2)
+                    poly <- rbind (poly, poly[1,])  # force closure of poly
+                }
+                ## otherwise allow poly to be mask object
             }
         }
 
@@ -58,7 +103,8 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         ##    type <- 'rectangular'
         ## replaced 2014-03-22
         if (is.null(traps)) check.poly <- FALSE
-        if (is.null(traps) & !(type == 'polygon'))
+    
+        if (is.null(traps) & !(type %in% c('polygon','polybuffer')))
             type <- 'rectangular'
         if (type == 'rectangular') {
             if (is.null(spacing))
@@ -66,25 +112,34 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             xl <- c(0, spacing * nx)
             yl <- c(0, spacing * ny)
         }
-        else if (type=='polygon') {
+        else if (type %in% c('polygon', 'polybuffer')) {
             if (is.null(poly))
                 stop ("mask polygon must be supplied")
             if (!poly.habitat)
-                stop ("type = 'polygon' not compatible with nonhabitat")
-            if (SPDF) {
+                stop ("types 'polygon' and 'polybuffer' not compatible with nonhabitat")
+            if (SP) {
                 xl <- poly@bbox[1,]
                 yl <- poly@bbox[2,]
             }
             else {
-                xl <- range(poly[,1])
-                yl <- range(poly[,2])
+                if (inherits(poly, "mask")) {     ## 2016-03-02
+                    xl <- range(poly[,1]) + c(-1,1) * spacing(poly)/2
+                    yl <- range(poly[,2]) + c(-1,1) * spacing(poly)/2
+                }
+                else {
+                    xl <- range(poly[,1])
+                    yl <- range(poly[,2])
+                }
             }
         }
         else {
-            xl <- range(traps$x) + buff
-            yl <- range(traps$y) + buff
+            xl <- range(traps$x)
+            yl <- range(traps$y)
         }
-
+        ## 2016-03-21 for random
+        xl <- xl + buffx
+        yl <- yl + buffy
+        
         if (is.null(spacing)) spacing <- diff(xl) / nx
 
         if (type %in% c('clusterrect', 'clusterbuffer')) {
@@ -116,18 +171,32 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             ## appropriate convex buffer 2011-01-22
             ## (this re-use of nx may not be appropriate)
             if (detector(traps) %in% c('polygon','polygonX')) {
-               temp <- buffer.contour(traps, buffer = buffer, nx = nx,
-                                      convex = T, plt = F)
-               OK <- array(dim=c(length(x), length(y), length(temp)))
-               for (i in 1:length(temp))
-                  OK[,,i] <- pointsInPolygon(mask, temp[[i]][,c('x','y')])
-               OK <- apply(OK, 1:2, any)
-               mask <- mask[OK,,drop=F]
-           }
+                temp <- buffer.contour(traps, buffer = buffer, nx = nx,
+                                       convex = T, plt = F)
+                OK <- array(dim=c(length(x), length(y), length(temp)))
+                for (i in 1:length(temp))
+                    OK[,,i] <- pointsInPolygon(mask, temp[[i]][,c('x','y')])
+                OK <- apply(OK, 1:2, any)
+                mask <- mask[OK,,drop=F]
+            }
             else
                 mask <- mask[distancetotrap(mask, traps) <= buffer,]
         }
-
+        
+        if (type=='polybuffer') {
+            if (SP) {
+                if (!requireNamespace('rgeos', quietly = TRUE))
+                    stop ("package rgeos is required for type polybuffer")
+                bufferedpoly <- rgeos::gBuffer(poly, width = buffer)    
+                mask <- mask[pointsInPolygon(mask, bufferedpoly),]
+            }
+            else {
+                polymask <- make.mask(type = 'polygon', poly = poly, keep.poly = FALSE, check.poly = FALSE,
+                                      spacing = spacing/2)   # arbitrary
+                mask <- mask[distancetotrap(mask, polymask) <= buffer,]
+            }
+        }
+        
         if (type=='clusterbuffer') {
             mask <- mask[distancetotrap(mask, traps) <= buffer,]
         }
@@ -144,9 +213,11 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             warning ("'pdot' mask may have been truncated; ",
                      "possibly increase buffer")
         }
-        if (!is.null(poly)) {
+        
+        ## adjusted 2016-03-23 to use cellPointsInPolygon
+        if ((!is.null(poly)) & (type != 'polybuffer' )) {
+            inpoly <- cellPointsInPolygon(mask, poly, cell.overlap, spacing)
             if (poly.habitat) {
-                inpoly <- pointsInPolygon(mask, poly)
                 mask <- mask[inpoly,]
                 if (check.poly) {
                     if (any (!pointsInPolygon(traps, poly)))
@@ -154,7 +225,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
                 }
             }
             else {
-                mask <- mask[!pointsInPolygon(mask, poly),]
+                mask <- mask[!inpoly,]
                 if (check.poly)
                     if (any (pointsInPolygon(traps, poly)))
                     warning ("some traps are inside non-habitat polygon")

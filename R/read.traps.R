@@ -108,7 +108,6 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         if ('transectID' %in% names(data))
             transectID(traps) <- factor(data$transectID)
     }
-
     detector(traps) <- detector
     traps <- renamepolyrows(traps)
     usage(traps)      <- NULL
