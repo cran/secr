@@ -186,7 +186,7 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
     /*-----------------------------------------------------------------------------*/
     /* loop over occasions */
     for (s=0; s < ss; s++) {
-	/* Rprintf("s %4d pID %8.6f\n", s, pID[s]); */
+	// Rprintf("s %4d pID %8.6f\n", s, pID[s]); 
 	if (markocc[s] < 1) {     /* sighting occasions only */
 	    for (k=0; k < nk; k++) {
                 /* add 1 to index because element 1 is reserved for nval */
@@ -270,8 +270,8 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 		    /* if ((Tusk>0) && (mu1<=0))
 		       error ("zero sighting probability when number >0"); */
 		    *Tulik += dpois(Tusk, musk1, 1) / chat[0];	
-		    /*  Rprintf("s %4d Tusk %4d musk1 %6.4f Tulik %7.4f \n",
-			s,Tusk, musk1, *Tulik); */
+		    // Rprintf("s %4d Tusk %4d musk1 %6.4f Tulik %7.4f \n",
+		    //	s,Tusk, musk1, *Tulik);
 		}
 		if (TmPooled) {
 		    if (markocc[s] == 0) {
@@ -314,10 +314,10 @@ int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
 	*Tmlik = dpois(sumTm,  summu2, 1) /  chat[1];
     }
     
-    /*
-       Rprintf("sumTu %6d sumTm %6d summu1 %12.8f summu2 %12.8f Tulik %12.8f Tmlik %12.8f \n", 
-       sumTu, sumTm, summu1, summu2, *Tulik, *Tmlik); 
-    */
+    
+    // Rprintf("sumTu %6d sumTm %6d summu1 %12.8f summu2 %12.8f Tulik %12.8f Tmlik %12.8f \n", 
+    //   sumTu, sumTm, summu1, summu2, *Tulik, *Tmlik); 
+    
     return(0); 
 }
 /*==============================================================================*/

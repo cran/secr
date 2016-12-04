@@ -182,8 +182,8 @@ to augment capture--recapture data (see `addTelemetry`).
 
 **Table 2.** Detector types in **secr**
 
-| Detector | Description |
-|----------|-------------|
+| Detector   | Description                               |
+|------------|-------------------------------------------|
 | single | traps that catch one animal at a time |
 | multi | traps that may catch more than one animal at a time |
 | proximity | records presence at a point without restricting movement |
@@ -214,12 +214,12 @@ detector arrays and models fitted to those data.
 
 **Table 3.** Essential classes in **secr**.
 
-| Class | Data |
-|-------|------|
-|  traps | locations of detectors; detector type ('proximity', 'multi', etc.) |
+| Class   | Data                                        |
+|---------|---------------------------------------------|
+|  traps  | locations of detectors; detector type ('proximity', 'multi', etc.) |
 |  capthist | spatial detection histories, including a 'traps' object |
-|  mask | raster map of habitat near the detectors |
-|  secr | fitted SECR model|
+|  mask   | raster map of habitat near the detectors |
+|  secr   | fitted SECR model|
 
 [^S3class]:Technically, these are S3 classes. A 'class' in R specifies a
   particular type of data object and the functions (methods) by which
@@ -228,7 +228,7 @@ detector arrays and models fitted to those data.
   
 To perform an SECR analysis you explicitly or implicitly construct each of these objects in turn. Fig. 3 summarizes the relationships among the classes.  
 
-\setkeys{Gin}{height=95mm, width=130mm,keepaspectratio=TRUE}
+\setkeys{Gin}{height=95mm, width=140mm,keepaspectratio=TRUE}
 ![secr schematic][schematicfigure]
 
 **Fig. 3.** Essentials of the **secr** package.
@@ -278,8 +278,8 @@ Other documentation, in the form of pdf vignettes built with **knitr**,  will be
 
 **Table 4.** Vignettes for **secr** 2.10.
 
-| Vignette | Topic |
-|----------|----------|
+| Vignette            | Topic                                            |
+|---------------------|--------------------------------------------------|
 | [secr-overview.pdf] | introduction (this document) |
 | [secr-datainput.pdf] | data formats and input functions |
 | [secr-densitysurfaces.pdf] | modelling density surfaces |
@@ -325,8 +325,8 @@ Effects on parameters of detection probability are specified via R formulae. The
 
 **Table 5.** Automatically generated predictor variables used in detection models
 
-| Variable | Description | Notes |
-|----------|-------------|-------|
+| Variable | Description   | Notes                                        |
+|--------|---------------|----------------------------------------------|
 | g | group | individual covariates listed in `secr.fit` argument 'groups'|
 | t | time factor | one level for each occasion |
 | T | time trend  | linear trend over occasions on link scale |
@@ -363,8 +363,8 @@ g0; the effects are additive on the link scale. See Table 7 for other examples.
 
 **Table 7.** Some examples of the 'model' argument in `secr.fit`
 
-| Formula | Effect |
-|---------|--------|
+| Formula        | Effect                                   |
+|----------------|------------------------------------------|
 | g0 $\sim$ 1  | g0 is constant across animals, occasions and detectors |
 | g0 $\sim$ b  | learned response affects g0 |
 | list(g0 $\sim$ b, sigma $\sim$ b) | learned response affects both g0 and sigma |
@@ -637,8 +637,8 @@ predict(secr0)
 
 &#9702; incomplete or inferior implementation.
 
-| Feature | DENSITY 5.0 | **secr** 2.10 |
-|---------|-------------|--------------|
+|                   Feature                   | DENSITY 5.0 | **secr** 2.10 |
+|---------------------------------------------|-------------|---------------|
 | **General**                                 | | | |
 | Graphical interface                         | &#8226; | &#9702; |
 | Inverse prediction (IP SECR)                | &#8226; | &#8226; |
@@ -728,20 +728,20 @@ b. Not recommended because of heavy tail
 
 These are the core functions of **secr** 2.10 -- the ones that you are most likely to use. S3 methods are marked with an asterisk.
 
-| Function | Purpose |
-|----------|-------------|
-| `AIC`*  | model selection, model weights |
-| `covariates`*	| extract or replace covariates of traps, capthist or mask |
-|  `derived`	| compute density from conditional likelihood models |
-| `make.mask`  | construct habitat mask (= mesh) |
-| `plot`*       | plot capthist, traps or mask |
-| `read.capthist`  | input captures and trap layout from Density format, one call |
-| `predict`*	| compute 'real' parameters for arbitrary levels of predictor variables |
+|  Function       | Purpose                                           |
+|-----------------|---------------------------------------------------|
+| `AIC`*            | model selection, model weights |
+| `covariates`*	    | extract or replace covariates of traps, capthist or mask |
+|  `derived`        | compute density from conditional likelihood models |
+| `make.mask`       | construct habitat mask (= mesh) |
+| `plot`*           | plot capthist, traps or mask |
+| `read.capthist`   | input captures and trap layout from Density format, one call |
+| `predict`*	    | compute 'real' parameters for arbitrary levels of predictor variables |
 | `predictDsurface`* | evaluate density surface at each point of a mask |
-|	`region.N`       | compute expected and realised population size in specified region |
-| `secr.fit`  | maximum likelihood fit; result is a fitted 'secr' object | 
-| `summary`* | summarise capthist, traps or mask
-| `traps`*  | extract or replace traps object in capthist |
+|	`region.N`      | compute expected and realised population size in specified region |
+| `secr.fit`        | maximum likelihood fit; result is a fitted 'secr' object | 
+| `summary`*        | summarise capthist, traps or mask
+| `traps`*          | extract or replace traps object in capthist |
 
 \pagebreak
 
@@ -759,7 +759,8 @@ Here is an index of **secr** functions classified by use (some minor functions a
 - [Convert or export data](#convert)
 - [Miscellaneous](#misc)
 
-|---------------------------------------------------------|--|
+|  Function          | Purpose                                           |
+|----------------------|-------------------------------------------------|
 |  <a name="manipulate"></a>  **Manipulate data objects** |  |
 | `addCovariates`	| add spatial covariates to 'traps' or 'mask' |
 | `deleteMaskPoints`	| edit 'mask' |

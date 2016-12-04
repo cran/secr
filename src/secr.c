@@ -2269,6 +2269,9 @@ void secrloglik (
 	    if (!R_FINITE(templog)) *resultcode = 9;
 	    if (*resultcode == 9) return;
 	    *value += templog;
+
+	    /* Rprintf("n %5d value %12.8f\n", n, *value); */
+
 	    R_CheckUserInterrupt();
 	}        /* end of loop over individuals */
 

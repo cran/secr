@@ -4,9 +4,10 @@
 ## make.grid, make.poly, make.transect, make.circle
 ## 2011 10 10 transferred from methods.R
 ## 2015-10-19 removed searchcell attribute
+## 2016-05-30 changed default spacey to spacex
 ###############################################################################
 
-make.grid <- function (nx=6, ny=6, spacex = 20, spacey = 20, spacing=NULL, detector='multi',
+make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, detector='multi',
     originxy=c(0,0), hollow=F, ID='alphay')
 
 {

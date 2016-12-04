@@ -75,6 +75,7 @@
 ## 2015-09-02 change alongtransect to fix occsim: remove 'S' prefix
 ## 2015-10-02 summary.capthist reports sightings
 ## 2015-10-10 subset.capthist updated for mark-resight data
+## 2016-09-20 plot.pop modified to allow SpatialPolygons polygon attribute
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -1834,8 +1835,16 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
                 add = TRUE, ...)
         }
         if (frame) {
-            if (!is.null(attr(x,'polygon')))
-                polygon (attr(x,'polygon'))
+            if (!is.null(attr(x,'polygon'))) {
+                poly <- attr(x,'polygon')
+                # modified 2016-09-20 to allow SpatialPolygonsDataFrame
+                # we are assuming that the polygon attribute may be either
+                # a 2-column matrix or a SpatialPolygons object
+                if (inherits(poly, "SpatialPolygons"))
+                    plot(poly, add = TRUE)
+                else
+                    polygon (poly)
+            }
             else
                 polygon (vertices)
         }
@@ -2038,6 +2047,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             if (is.null(cutval)) cutval <- attr(x, 'cutval')
             if (cutval < attr(x, 'cutval'))
                 stop ("cannot decrease 'cutval'")
+        
             if (cutabssignal) {
                 signalOK <- (signal(x) >= cutval)
             }

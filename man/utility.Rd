@@ -85,7 +85,7 @@ Dijkstra, E. W. (1959) A note on two problems in connexion with
 graphs. \emph{Numerische Mathematik}, \bold{1}, 269--271.
 
 Csardi, G. and Nepusz, T. (2006) The igraph software package for complex
-network research. *InterJournal* **1695**. http://igraph.org.
+network research. \emph{InterJournal}, \bold{1695}. http://igraph.org.
 
 van Etten, J. (2014) gdistance: distances and routes on geographical
 grids. R package version 1.1-5. http://CRAN.R-project.org/package=gdistance

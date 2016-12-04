@@ -179,8 +179,9 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
                 OK <- apply(OK, 1:2, any)
                 mask <- mask[OK,,drop=F]
             }
-            else
+            else {
                 mask <- mask[distancetotrap(mask, traps) <= buffer,]
+            }
         }
         
         if (type=='polybuffer') {

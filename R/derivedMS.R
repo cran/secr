@@ -7,6 +7,7 @@
 ## 2013-06-24 fixed bug in esa dummy grp (0 should be 1) that caused intermittent fault in derived
 ## 2014-04-05 fixed bug mapply SIMPLIFY = FALSE
 ## 2014-10-28 adjust for linear mask
+## 2016-09-25 derived() now returns NA instead of crashing when no animals detected in a session
 ############################################################################################
 
 
@@ -191,17 +192,19 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
 
             getderived <- function (selection, NT = 0) {
                 if (is.null(sessnum)) sessnum <- 1
-                selected.a <- esa(object, sessnum)[selection]
-                derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
-                derivedSE <- c(NA, NA)
-                varcomp1 <- c(NA, NA)
-                varcomp2 <- c(NA, NA)
-                if (se.esa) derivedSE[1] <- se.deriveesa(selection, sessnum)
-                if (se.D) {
-                    varDlist <- se.deriveD(selection, selected.a, sessnum)
-                    derivedSE[2] <- varDlist$SE
-                    varcomp1[2] <- varDlist$s2
-                    varcomp2[2] <- varDlist$varDn
+                derivedmean <- derivedSE <- varcomp1 <- varcomp2 <- c(NA, NA)
+                ## 2016-09-25 
+                if (length(selection) > 0) 
+                {
+                    selected.a <- esa(object, sessnum)[selection]
+                    derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
+                    if (se.esa) derivedSE[1] <- se.deriveesa(selection, sessnum)
+                    if (se.D) {
+                        varDlist <- se.deriveD(selection, selected.a, sessnum)
+                        derivedSE[2] <- varDlist$SE
+                        varcomp1[2] <- varDlist$s2
+                        varcomp2[2] <- varDlist$varDn
+                    }
                 }
                 A <-  if (inherits(mask, 'linearmask'))
                     masklength(mask)
@@ -256,7 +259,6 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
             else
                 individuals <-  split (numeric(0), grp) ## list of empty grp levels
             n <- length(individuals)   ## number of groups
-
             xyl <- telemetryxy(capthist)   ## attr(capthist,'xylist')
             if ( is.null(xyl) | is.null(object$details$telemetrytype) )
                 object$details$telemetrytype <- 'none'
@@ -270,6 +272,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
             else {
                 NT <- numeric(n)  ## zeros
             }
+      
             if ( n > 1)
                 out <- mapply (getderived, individuals, NT, SIMPLIFY = FALSE)
             else {

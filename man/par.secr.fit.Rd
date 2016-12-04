@@ -49,7 +49,7 @@ par.region.N (secrlist, ncores = 1, ...)
   intermediate results is unreliable on Windows when \code{ncores > 1}.
 
   It is convenient to provide the names of the capthist and mask arguments
-  in each component of arglist as character values; objects thus
+  in each component of arglist as character values (i.e. in quotes); objects thus
   named are exported from the workspace to each worker process (see Examples).
 
 }

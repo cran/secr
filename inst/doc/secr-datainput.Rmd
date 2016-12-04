@@ -222,6 +222,10 @@ The defaults may be changed with settings that are passed by
 
 If the study includes multiple sessions and the detector layout or usage varies between sessions then it is necessary to provide session-specific detector layout files. This is done by giving 'trapfile' as a vector of names, one per session (repetition allowed; all '.csv' or all not '.csv'). Sessions are sorted numerically if all session identifiers are numeric, otherwise alphanumerically. Care is needed to match the order of layout files to the session order: always confirm the result matches your intention by reviewing the summary.
 
+###When read.capthist is inadequate...
+
+Some data do not neatly import with `read.capthist`. You may need to first construct `traps` objects with `read.traps` and then marry them to capture data by a custom call to `make.capthist` (`make.capthist` is called automatically by `read.capthist`). Please consult the help for `read.traps` and `make.capthist`.
+
 ###Other detector types
 
 ####Count detectors
@@ -439,8 +443,7 @@ Label used to distinguish detectors, animals or sessions.
 
 #####Occasion
 In conventional capture--recapture, 'occasion' refers to a discrete sampling event (e.g., Otis et al. (1978) and program CAPTURE). A typical 'occasion' is a daily trap visit, but the time
-  interval represented by an 'occasion' varies widely between studies. Although trapped samples accumulate over an interval (e.g., the preceding day), for analysis they are treated as instantaneous. Occasions are numbered 1, 2, 3, etc. Closed population analyses usually require two or more occasions (see
-  Miller et al. 2005 for an exception).
+  interval represented by an 'occasion' varies widely between studies. Although trapped samples accumulate over an interval (e.g., the preceding day), for analysis they are treated as instantaneous. Occasions are numbered 1, 2, 3, etc. Closed population analyses usually require two or more occasions (see Miller et al. 2005 for an exception).
 
 SECR follows conventional capture--recapture in assuming discrete sampling events (occasions). However, SECR takes a closer interest in the sampling process, and each discrete sample is modelled as the outcome of processes operating through the interval between trap visits. In particular, a model of competing risks in continuous time is used for the probability of capture in multi-catch traps (Borchers & Efford 2008).
 

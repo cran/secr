@@ -74,8 +74,10 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     ## pad on first dimension
                     vals <- lapply(cov, function(x) pad1(x[,variable], dims[dimcov[1]]))
                     vals <- unlist(vals)
-                    if (any(is.na(vals)))
-                        stop ("covariate missing values not allowed")
+                    ## suppress this check 2016-08-02 
+                    ## see secrgroup hcov post of Ben Augustine
+                    ## if (any(is.na(vals)))
+                    ##    stop ("covariate missing values not allowed")
                     dframe[,variable] <<- insertdim (vals, dimcov, dims)
                 }
             }
@@ -354,11 +356,16 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## 2011-09-26
     prox <- detector(trps)[[1]] %in% .localstuff$detectors3D
     makeb <- function (caphist) {      ## global response
-        if (prox) {
-           temp0 <- apply(abs(caphist), 1:2, sum)
-           t(apply(temp0, 1, prevcapt))
+        # condition added 2016-10-01
+        if (nrow(caphist)==0) 
+            array(dim = c(0,S))
+        else {
+            if (prox) {
+                temp0 <- apply(abs(caphist), 1:2, sum)
+                t(apply(temp0, 1, prevcapt))
+            }
+            else t(apply(abs(caphist),1, prevcapt))
         }
-        else t(apply(abs(caphist),1, prevcapt))
     }
     makek <- function (caphist) {      ## trap responds to capture of any animal
         if (!prox) {
@@ -369,32 +376,42 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         apply(temp, 2, prevcapt)
     }
     makebk <- function (caphist) {     ## individual trap-specific response
-        if (!prox) {
-            caphist <- reduce(caphist, output = 'proximity',
-                dropunused = FALSE, verify = FALSE)
+        # condition added 2016-10-01
+        if (nrow(caphist)==0) 
+            array(dim = c(0,S,K))
+        else {
+            if (!prox) {
+                caphist <- reduce(caphist, output = 'proximity',
+                                  dropunused = FALSE, verify = FALSE)
+            }
+            temp <- apply(abs(caphist), c(1,3), prevcapt)
+            aperm(temp, c(2,1,3))
         }
-        temp <- apply(abs(caphist), c(1,3), prevcapt)
-        aperm(temp, c(2,1,3))
     }
     makebkc <- function (caphist) {     ## trap-specific multi-level response
-        if (!prox) {
-            caphist <- reduce(caphist, output = 'proximity',
-                dropunused = FALSE, verify = FALSE)
+        # condition added 2016-10-01
+        if (nrow(caphist)==0) 
+            array(dim = c(0,S,K))
+        else {
+            if (!prox) {
+                caphist <- reduce(caphist, output = 'proximity',
+                                  dropunused = FALSE, verify = FALSE)
+            }
+            ## same animal
+            caphist[,,] <- abs(caphist)
+            b1 <- apply(caphist, c(1,3), prevcapt)
+            b1 <- aperm(b1, c(2,1,3))
+            
+            ## other animal
+            b2 <- array(dim = dim(caphist))
+            for (i in 1:nrow(caphist)) {
+                temp <- apply(caphist[-i,,], 2:3, sum)
+                b2[i,,] <- apply(temp, 2, prevcapt)
+            }
+            ## output array dim (n,S,K)
+            ## 1 none, 2 this animal, 3 other animal, 4 both
+            b1 + 2 * b2 + 1
         }
-        ## same animal
-        caphist[,,] <- abs(caphist)
-        b1 <- apply(caphist, c(1,3), prevcapt)
-        b1 <- aperm(b1, c(2,1,3))
-
-        ## other animal
-        b2 <- array(dim = dim(caphist))
-        for (i in 1:nrow(caphist)) {
-            temp <- apply(caphist[-i,,], 2:3, sum)
-            b2[i,,] <- apply(temp, 2, prevcapt)
-        }
-        ## output array dim (n,S,K)
-        ## 1 none, 2 this animal, 3 other animal, 4 both
-        b1 + 2 * b2 + 1
     }
 
     #--------------------------------------------------------------------------

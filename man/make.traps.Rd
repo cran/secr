@@ -12,7 +12,7 @@
 }
 
 \usage{
-make.grid(nx = 6, ny = 6, spacex = 20, spacey = 20, spacing = NULL,
+make.grid(nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing = NULL,
     detector = "multi", originxy = c(0,0), hollow = F,
     ID = "alphay")
 

@@ -16,6 +16,7 @@
 ## 2014-12-29 buffertypes concave, convex
 ## 2015-01-13 debugged non-rectangular buffers; see sim.popn.test.R in testing
 ## 2015-02-18 multisession sim.popn updated for Nbuffer
+## 2016-09-21 model2D = "even" option
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -50,7 +51,7 @@ tile <- function (popn, method = "reflect") {
 }
 
 sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
-    "cluster", "IHP", "coastal", "hills", "linear"), buffertype =
+    "cluster", "IHP", "coastal", "hills", "linear", "even"), buffertype =
     c("rect", "concave", "convex"), poly = NULL,
     covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
     = c('poisson','fixed','specified'), nsessions = 1, details = NULL,
@@ -62,7 +63,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     buffertype <- match.arg(buffertype)
     if (buffertype %in% c('convex','concave') & (model2D != 'poisson'))
         stop ("buffertype incompatible with model2D")
-
+    if (model2D == 'even' & Ndist != 'fixed') {
+        warning ('Ndist is coerced to "fixed" when model2D even')
+        Ndist <- 'fixed'
+    }
     if (nsessions > 1) {
         discrete <- function(x) {
             fr <- x-trunc(x)
@@ -272,7 +276,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                   rect = area,
                                   convex = polyarea (bufferpoly),
                                   concave = sum(sapply(bufferpoly, polyarea)))
-
+            
             if ((buffertype == 'concave') & (is.null(Nbuffer)))
                 warning("automatic Nbuffer unreliable with concave buffer")
 
@@ -295,10 +299,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                     specified = round(Nbuffer))
                 N <- Nbuffer
             }
-
-#             if (buffertype %in% c('convex','concave')) {
-#                 N <- N * area / bufferarea
-#             }
 
             if (model2D == 'poisson') {
                 animals <- data.frame (
@@ -377,27 +377,40 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                     offspr <- sweep(matrix(runif(2*nparent), ncol = 2), 2, c(xrange,yrange), '*')
                 }
                 else {
-                     nparent <- switch (Ndist,
-                         poisson = rpois(1, lambda=D[1] * area/details$mu),
-                         fixed = discreteN (1, D[1] * area / details$mu),
-                         specified = discreteN (1, D[1] / details$mu))  ## here arg D is N
-                     N <- nparent * details$mu
-                     if (nparent==0)
-                         warning ("zero clusters")
-                     parent <-  sweep(matrix(runif(2*nparent), ncol = 2), 2, c(xrange,yrange), '*')
-
-                     offspr <- matrix(rnorm(2*N), ncol = 2) * details$hsigma
-                     parentn <- rep(1:nparent, details$mu)
-                     offspr <- offspr + parent[parentn,]
-                     while (any ((offspr[,1]<0) | (offspr[,1]>xrange) | (offspr[,2]<0) |
-                                 (offspr[,2]>yrange))) {
-                       offspr[,1] <- ifelse (offspr[,1]<0, offspr[,1]+xrange, offspr[,1])
-                       offspr[,1] <- ifelse (offspr[,1]>xrange, offspr[,1]-xrange, offspr[,1])
-                       offspr[,2] <- ifelse (offspr[,2]<0, offspr[,2]+yrange, offspr[,2])
-                       offspr[,2] <- ifelse (offspr[,2]>yrange, offspr[,2]-yrange, offspr[,2])
-                     }
+                    nparent <- switch (Ndist,
+                                       poisson = rpois(1, lambda=D[1] * area/details$mu),
+                                       fixed = discreteN (1, D[1] * area / details$mu),
+                                       specified = discreteN (1, D[1] / details$mu))  ## here arg D is N
+                    N <- nparent * details$mu
+                    if (nparent==0)
+                        warning ("zero clusters")
+                    parent <-  sweep(matrix(runif(2*nparent), ncol = 2), 2, c(xrange,yrange), '*')
+                    
+                    offspr <- matrix(rnorm(2*N), ncol = 2) * details$hsigma
+                    parentn <- rep(1:nparent, details$mu)
+                    offspr <- offspr + parent[parentn,]
+                    while (any ((offspr[,1]<0) | (offspr[,1]>xrange) | (offspr[,2]<0) |
+                                (offspr[,2]>yrange))) {
+                        offspr[,1] <- ifelse (offspr[,1]<0, offspr[,1]+xrange, offspr[,1])
+                        offspr[,1] <- ifelse (offspr[,1]>xrange, offspr[,1]-xrange, offspr[,1])
+                        offspr[,2] <- ifelse (offspr[,2]<0, offspr[,2]+yrange, offspr[,2])
+                        offspr[,2] <- ifelse (offspr[,2]>yrange, offspr[,2]-yrange, offspr[,2])
+                    }
                 }
                 animals <- as.data.frame(sweep(offspr,2,c(xl[1],yl[1]),'+'))
+            }
+            else if (model2D == 'even') {
+                ## 'even' distribution from Efford 2004 and Density
+                D <- N / area
+                xrange <- diff(xl)
+                yrange <- diff(yl)
+                cellside <- sqrt(10000/D)
+                centrex <- seq(xl[1]+cellside/2, xl[2]+3*cellside/2, cellside)
+                centrey <- seq(yl[1]+cellside/2, yl[2]+3*cellside/2, cellside)
+                centres <- expand.grid(x=centrex, y=centrey)
+                animals <- centres + runif(nrow(centres*2)) * cellside - cellside/2
+                animals <- animals[animals[,1] <= xl[2] & animals[,2] <= yl[2], ]
+                # possibly save grid?
             }
             else stop ("unrecognised 2-D distribution")
         }

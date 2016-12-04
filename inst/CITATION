@@ -2,7 +2,7 @@ citHeader("To cite package 'secr' in publications use:")
 
 year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
 vers <- paste("R package version", meta$Version)
-url <- "http://CRAN.R-project.org/package=secr"
+url <- "https://CRAN.R-project.org/package=secr"
 
 citEntry(entry="Manual",
     title = "secr: Spatially explicit capture-recapture models",

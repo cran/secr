@@ -1,4 +1,5 @@
 ## 2014-02-11
+## 2016-06-04 annotation; memo -> message
 
 par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
                           logfile = "logfile.txt") {
@@ -7,6 +8,8 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
     ## 'inherits' causes R to search in enclosing frames
     if (is.character(arglist))
         arglist <- mget(arglist, inherits = TRUE)
+    
+    ## force 'trace' to common value across all components of arglist
     arglist <- lapply(arglist, function (x) {x$trace <- trace; x})
 
     ## check for capthist, mask, dframe mentioned by name
@@ -20,6 +23,7 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
 
     ## individual fits must use ncores = 1
     if (ncores > 1) {
+        ## force 'ncores' to 1 across all components of arglist
         arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
         clusterSetRNGStream(clust, seed)
@@ -31,11 +35,13 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
         set.seed (seed)
         output <- lapply(arglist, do.call, what = 'secr.fit')
     }
+    
+    ## apply standard naming convention
     names(output) <- paste('fit', names(arglist), sep = '.')
 
-    memo(paste('Completed in ', round((proc.time() - ptm)[3]/60,3), ' minutes at ',
-        format(Sys.time(), "%H:%M:%S %d %b %Y"),
-        sep=''), trace)
+    ## changed from memo() 2016-06-04
+    message(paste('Completed in ', round((proc.time() - ptm)[3]/60,3), ' minutes at ',
+        format(Sys.time(), "%H:%M:%S %d %b %Y"), sep=''))
 
     if (inherits(output[[1]], 'secr')) 
         secrlist(output)

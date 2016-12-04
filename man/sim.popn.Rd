@@ -11,7 +11,7 @@ Simulate a Poisson process representing the locations of individual animals.
 \usage{
 
 sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
-  "IHP", "coastal", "hills", "linear"), buffertype = c("rect",
+  "IHP", "coastal", "hills", "linear", "even"), buffertype = c("rect",
   "concave", "convex"), poly = NULL, covariates = list(sex = c(M = 0.5,
   F = 0.5)), number.from = 1, Ndist = c("poisson", "fixed",
   "specified"), nsessions = 1, details = NULL, seed = NULL, keep.mask =
@@ -139,6 +139,8 @@ the effect is to split the hill into the four corners). Negative
 displacements are replaced by runif(1). Density is zero at the edge when
 the displacement vector is (0,0) and rows are not offset.
 
+If \code{model2D = "even"} then the buffered area is divided into square cells with side sqrt(10000/D) and one animal is located at a random uniform location within each cell. If the height or width is not an exact multiple of the cell side then one whole extra row or column of cells is added; animals located at random in these cells are discarded if they fall outside the original area.
+
 If \code{poly} is specified, points outside \code{poly} are
 dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
 of two columns interpreted as x and y coordinates, or \item a
@@ -159,8 +161,7 @@ The random number seed is managed as in \code{simulate.lm}.
 
 \value{
 
-An object of class \code{c("popn", "data.frame")} a data frame with columns `x' and `y'. Rows
-correspond to individuals. Individual covariates (optional) are stored
+An object of class \code{c("popn", "data.frame")} a data frame with columns `x' and `y'. Rows correspond to individuals. Individual covariates (optional) are stored
 as a data frame attribute. The initial state of the R random number generator is
 stored in the `seed' attribute.
 

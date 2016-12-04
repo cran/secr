@@ -24,7 +24,7 @@ clone.default <- function (object,  type, ...)       {
         else
             stop("unrecognised type")
         index <- rep(1:n, freq)
-        object[index,]
+        object[index,,drop = FALSE]
     }
 }
 
@@ -50,9 +50,9 @@ clone.popn <- function (object, type, ...) {
             else
                 stop("unrecognised type")
             index <- rep(1:n, freq)
-            out <- object[index,]
+            out <- object[index,,drop = FALSE]
             if (!is.null(covariates(object)))
-                covariates(out) <- covariates(object)[index,]
+                covariates(out) <- covariates(object)[index,,drop = FALSE]
             attr (out, 'freq') <- freq
         }
         out
@@ -82,9 +82,9 @@ clone.capthist <- function (object, type, ...) {
                 stop("unrecognised type")
             index <- rep(1:n, freq)
             if (length(dim(object))==2)
-                out <- object[index,]
+                out <- object[index,,drop = FALSE]
             else
-                out <- object[index,,]
+                out <- object[index,,,drop = FALSE]
 
             seqn <- unlist(lapply(freq[freq>0], seq, from = 1))
             seqn <- leadingzero(seqn)
@@ -93,7 +93,7 @@ clone.capthist <- function (object, type, ...) {
             traps(out) <- traps(object)
             attr(out, 'cutval') <- attr(object, 'cutval')
             if (!is.null(covariates(object))) {
-                covariates(out) <- covariates(object)[index,]
+                covariates(out) <- covariates(object)[index,,drop = FALSE]
                 rownames(covariates(out)) <- rown
             }
 

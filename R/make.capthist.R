@@ -123,18 +123,22 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                         trapID    <- interaction(traps$x, traps$y)
                         captTrap  <- match(interaction(captures[,4], captures[,5]), trapID)
                     }
-                    if (any(is.na(captTrap)))
+                    if (any(is.na(captTrap))) {
+                        print(captures[is.na(captTrap),])
                         stop ("failed to match some capture locations ",
                               "to detector sites")
+                    }
                 }
             }
             else {
                 if (detector(traps) %in% .localstuff$polydetectors)
                     stop ("use fmt XY to input detections from polygons or transects")
                 captTrap <- match(captures[,4], row.names(traps))
-                if (any(is.na(captTrap)))
+                if (any(is.na(captTrap))) {
+                    print(captures[is.na(captTrap),])
                     stop ("failed to match some capture locations ",
                           "to detector sites")
+                }
             }
         }  ## end of condition for noncapt 2015-11-03
         else captTrap <- numeric(0)

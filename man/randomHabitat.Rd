@@ -78,7 +78,7 @@ is added.
 
 Hijmans, R. J. and van Etten, J. (2011) raster: Geographic analysis and
 modeling with raster data. R package version 1.9-33.
-\url{http://CRAN.R-project.org/package=raster}.
+\url{https://CRAN.R-project.org/package=raster}.
 
 Saura, S. and Martinez-Millan, J. (2000) Landscape patterns simulation
 with a modified random clusters method. \emph{Landscape Ecology},

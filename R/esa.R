@@ -15,6 +15,7 @@
 ## 2014-09-08 esa adjusted for linearmask cell size
 ## 2015-10-04 markocc argument for integralprw1
 ## 2015-11-19 dropped param
+## 2016-06-04 provisional bug fix in esa
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -77,11 +78,9 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         k <- nrow(trps)
         K <- k
     }
-
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## need session-specific mask...
     cell   <- getcellsize(mask)           ## length or area
-
     if (constant) {
         ## assume constant
         if (is.null(beta))
@@ -91,6 +90,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                 object$parindx, object$link, object$fixed)  # naive
             realparval <- as.list(realparval)
             names(realparval) <- parnames(object$detectfn)
+            realparval$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
         }
         a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
                              detectpar = realparval, noccasions = noccasions))
@@ -109,20 +109,46 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                 dim(object$design0$PIA) <- c(dim(object$design0$PIA),1)
             # replaced 2012-09-21
             # PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]
-            PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
-            ncolPIA <- dim(object$design0$PIA)[2]
-            #############################################
+            
+            ##############################################################
+            ## 2016-06-04
+            ## PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
+            
+            ## scenarios for dim2 = dim(object$design0$PIA)[2]
+            ## object$CL = T
+            ##     dim2 = max over sessions(n), and therefore dim2 >= n
+            ## object$CL = F
+            ##     dim2 = ngrp = max(1, length(object$groups)), usually 1
+            ## 
+            
+            if (object$CL) {
+                ## one column for each detected animal
+                PIA <- object$design0$PIA[sessnum,1:n,1:s,1:K,,drop=F]
+            }
+            else {
+                ## use whatever columns are present as the number of groups
+                ## should be constant over sessions
+                PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
+                dim(PIA) <- dim(PIA)[-1]  ## drop session dimension
+                ## fill array with PI appropriate to grouping of i-th animal
+                PIA <- PIA[group.factor(capthists, object$groups),,,]
+            }
+            
+            ## ncolPIA <- dim(object$design0$PIA)[2]
+            ncolPIA <- n
+            
             ## trick to allow for changed data 2009 11 20
             ## nmix>1 needs further testing 2010 02 26
             ## NOTE 2010-11-26 THIS LOOKS WEAK
-            if (dim(PIA)[2] != n) {
-                # 2012-09-21
-                PIA <- array(rep(PIA[1,1,,,],n), dim=c(s,K,nmix,n))
-                PIA <- aperm(PIA, c(4,1,2,3))   ## n,s,K,nmix
-                ncolPIA <- n     ## 2010 02 26
-            }
-            #############################################
+            # if (dim(PIA)[2] != n) {
+            #     # 2012-09-21
+            #     PIA <- array(rep(PIA[1,1,,,],n), dim=c(s,K,nmix,n))
+            #     PIA <- aperm(PIA, c(4,1,2,3))   ## n,s,K,nmix
+            #     ncolPIA <- n     ## 2010 02 26
+            # }
 
+            ##############################################################
+            
             realparval0 <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
 

@@ -984,32 +984,6 @@
             dimnames(covar) <- list(betanames, betanames)
         }
 
-        ## predicted D across mask
-        if (!CL) {
-            D <- getD (designD, this.fit$par, mask, parindx, link, fixed,
-                       grouplevels, sessionlevels, 'D')
-            N <- t(apply(D, 2:3, sum, drop = FALSE))
-
-            if (inherits(mask, 'linearmask')) {
-                if (ms(mask)) {
-                    scale <- sapply(mask, attr, 'spacing')
-                }
-                else {
-                    scale <- attr(mask, 'spacing')
-                }
-                scale <- scale / 1000   ## per km
-            }
-            else {
-                if (ms(mask)) {
-                    scale <- sapply(mask, attr, 'area')
-                }
-                else {
-                    scale <- attr(mask, 'area')
-                }
-            }
-            ## rows are sessions
-            N <- sweep(N, FUN = '*', MARGIN = 1, STATS = scale)
-        }
     }
 
     ############################################
@@ -1047,7 +1021,6 @@
                   fit = this.fit,
                   beta.vcv = covar,
                   smoothsetup = smoothsetup,
-                  N = N,
                   version = desc$Version,
                   starttime = starttime,
                   proctime = (proc.time() - ptm)[3]

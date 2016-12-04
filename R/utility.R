@@ -379,10 +379,13 @@ pad1 <- function (x, n) {
 padarray <- function (x, dims) {
     temp <- array(dim=dims)
     dimx <- dim(x)
-    if (length(dimx)<2 | length(dimx)>3)
-        stop ("invalid array")
-    if (length(dimx)>2) temp[1:dimx[1], 1:dimx[2], 1:dimx[3]] <- x
-    else temp[1:dimx[1], 1:dimx[2]] <- x
+    # condition added 2016-10-01
+    if (all(dimx>0)) {   
+        if (length(dimx)<2 | length(dimx)>3)
+            stop ("invalid array")
+        if (length(dimx)>2) temp[1:dimx[1], 1:dimx[2], 1:dimx[3]] <- x
+        else temp[1:dimx[1], 1:dimx[2]] <- x
+    }
     temp
 }
 
@@ -1021,22 +1024,20 @@ se.Xuntransform <- function (beta, sebeta, linkfn, varnames)
 ############################################################################################
 
 group.levels <- function (capthist, groups, sep='.') {
+    # 2016-06-05 use also for trap strata
     if (inherits(capthist, 'list')) {
-        temp <- lapply(capthist, group.levels, groups, sep)   ## sep added 2010 02 24
+        temp <- lapply(capthist, group.levels, groups, sep)
         sort(unique(unlist(temp)))  ## vector of global levels
     }
     else {
         if (is.null(groups)) 0
         else {
-            ## 2014-12-04 error check precedes attempt to extract by groups
             if (!all(groups %in% names(covariates(capthist))))
                 stop ("one or more grouping variables is missing ",
-                      "from covariates(capthist)")
+                      "from covariates")
             temp <- as.data.frame(covariates(capthist)[,groups])
-##            if (ncol(temp) != length(groups))
-##                stop ("one or more grouping variables is missing ",
-##                      "from covariates(capthist)")
-            sort(levels(interaction(temp, drop=T, sep=sep)))  # omit null combinations, sort as with default of factor levels
+            # omit null combinations, sort as with default of factor levels
+            sort(levels(interaction(temp, drop=T, sep=sep)))  
         }
     }
 }
@@ -1075,8 +1076,8 @@ n.occasion <- function (capthist) {
 ############################################################################################
 
 group.factor <- function (capthist, groups, sep='.')
-## convert a set of grouping factors to a single factor (g)
-## levels common to all sessions
+    ## convert a set of grouping factors to a single factor (g)
+    ## levels common to all sessions
 {
     if (inherits(capthist, 'list')) {
         temp <- lapply(capthist, group.factor, groups)  ## recursive call
@@ -1468,6 +1469,8 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
         ## partial check 2016-03-31 - needs refinement
         if (((nrow(lpred)) %% nmix) != 0)
             stop ("all mixture levels must appear in newdata")
+        ## 2016-08-23 this makes unwarranted assumption about ordering of h2,h3 levels
+        ## see email of Ben Stevenson
         temp <- matrix(lpred[,1], ncol = nmix)
         if (nmix==2) temp[,newdata[,'h2']] <- lpred[,1]
         if (nmix==3) temp[,newdata[,'h3']] <- lpred[,1]

@@ -37,8 +37,9 @@ assumed to be of the same type (usage codes greater than 1 are treated
 as 1), and more than one covariate may be specified.
 
 If \code{file} is missing then x-y coordinates will be taken instead
-from \code{data}. This option does not allow for \code{covariates} or
-\code{usage}, but they maybe added later.
+from \code{data}, which should include columns `x' and `y'. Row names of 
+\code{data} are read as detector identifiers. This option does not allow 
+for \code{covariates} or \code{usage}, but they maybe added later.
 
 \code{detector} specifies the behaviour of the detector following Efford
 et al. (2009). `single' refers to a trap that is able to catch at most
@@ -103,6 +104,18 @@ read.traps ("c:/myfolder/mytraps.txt", detector = "proximity")
 # 2     365     395
 # 3     365     425
 # etc.
+
+## If we have a dataframe of coordinates...
+mytrapdf <- data.frame(x = c(365,365,365), y = c(365,395,425), 
+    row.names = c('A','B','C'))
+mytrapdf
+#     x   y
+# A 365 365
+# B 365 395
+# C 365 425
+## ...then we can convert it to a `traps' object with
+tr <- read.traps(data = mytrapdf)
+summary(tr)
 }
 
 }

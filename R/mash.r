@@ -1,4 +1,5 @@
-# 2012-09-17 moved from trap.builder
+## 2012-09-17 moved from trap.builder
+## 2016-06-14 bug fix : remove trapnum
 
 mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
 
@@ -57,6 +58,7 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
         if (is.null(trapnum)) {
             tmp <- lapply(tmp, function(x) {x$trapnum <- 1:nrow(x); x})
             trapnum <- unlist(sapply(tmp, function(x) x$trapnum))
+            tmp[[1]]$trapnum <- NULL
         }
 
         ## take first cluster for new traps

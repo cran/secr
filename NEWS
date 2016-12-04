@@ -1,3 +1,25 @@
+Changes in version 2.10.4 (2016-12-03)
+
+New features or changed behaviour of old functions
+    o   default spacey changed to equal spacex in make.grid
+    o   make.capthist() now prints captures with detector that does not appear in 
+        traps object (fmt = "trapID")
+    o   sim.popn() acquires "even" option for model2D
+
+Bugs fixed
+    o   esa() could fail for multi-session models with individual covariates
+    o   mash() erroneously retained column 'trapnum', breaking later make.mask()
+    o   check for NA covariate values blocked legitimate multi-session hcov
+    o   plot.pop failed if polygon attribute was SpatialPolygonsDataFrame
+    o   derived() crashed R if no animals detected in a session
+    o   secr.fit() failed for learned response models (b, bk) if no animal was 
+        detected in a session
+    o   clone.capthist failed for data with a single occasion
+
+Other
+    o   par.secr.fit uses 'message'
+    o   collate() and model.average() ignore n.mashed, now with a warning
+
 Changes in version 2.10.3 (2016-05-13)
 
 New features or changed behaviour of old functions
