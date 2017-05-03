@@ -41,18 +41,25 @@ typedef double (*gfnptr)(int, int, int, double[], int, double[], double[], int, 
      double mask[], int kk, int mm, double miscparm []);
 */
 
+typedef double (*zfnptr)(int, int, int, double[], int, double[], double[], int, int, double[]);
+/*
+    (int k, int m, int c, int double gsbval[], int cc, double traps[],
+     double mask[], int kk, int mm, double miscparm []);
+*/
+
 typedef double (*gfnLptr)(int, int, int, double[], int, double[], int, double[]);
 /*
     (int k, int m, int c, int double gsbval[], int cc, double dist2[],
      int kk, double miscparm []);
 */
 
+/* 2017-03-20 extended to include hk */
 typedef double (*prwfnptr)(int, int, int, int[], double[], double[], int[],
-   double[], int, double[], double[], int[], int, int, int, int, int, int, gfnptr, double[],
-			   double[], double[], double [], double[], double, double[]);
+   double[], double[], int[], double[], double[], int[], int, int, int, int, int, int, gfnptr,
+   double[], double[], double[], double [], double[], double, double[]);
 /*
     (int m, int n, int x, int w[], double xy[], double signal[], int gsb[],
-     double gk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
+     double gk[], double hk[], int binomN, double detspec[], double h[], double hindex[], int cc, 
      int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[], 
      double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[]);
  
@@ -70,11 +77,15 @@ typedef double (*fnptr)(double[], double);
 /*---------*/
 
 void pdotpoint (double *xy, int *nxy, double *traps, double *dist2, int *detect, 
-		double *Tsk, int *kk, int *fn, double *par, int *nocc, double *w2, 
+		double *Tsk, int *markocc, int *ss, int *kk, int *fn, double *par, double *w2, 
                 int *binomN, double *value);
 
-void pdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk, 
-	       int *kk, int *fn, double *par, int *nocc, int *binomN, double *value);
+void hdotpoint (double *xy, int *nxy, double *traps, double *dist2, 
+		int *detect, double *Tsk, int *occasions, int *ss, int *kk, int *fn, double *par, 
+		double *w2, double *value);
+
+void hdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *markocc, 
+	       int *nk, int *ss, int *kk, int *fn, double *par, double *value);
 
 /*
 void pdottransect (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk, 
@@ -118,46 +129,49 @@ void integralprw1 (
 
 /*---------------------------------------------------------------------*/
 
-
 void secrloglik (
-        int    *like,        /* likelihood 0 full, 1 conditional */
-int    *detect,      /* detector 0 multi, 1 proximity etc. */
-int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
-int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
-double *xy,          /* xy coordinates of polygon records */
-double *signal,      /* signal strength vector, or times */
-int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
-int    *nc,          /* number of capture histories */
-int    *ss,          /* number of occasions */
-int    *kk,          /* number of traps */
-int    *mm,          /* number of points on mask */
-int    *gg,          /* number of groups */
-int    *nmix,        /* number of mixtures */
-int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
-double *traps,       /* x,y locations of traps (first x, then y) */
-double *dist2,       /* distances (optional: -1 if unused) */
-double *Tsk,         /* nk x s usage matrix */
-int    *markocc,     /* which are marking occasions? */
-int    *Tu,          /* detector x occasion matrices of no. sightings Tu */
-int    *Tm,          /* detector x occasion matrices of no. sightings Tm */
-double *chat,        /* sighting overdispersion */
-double *mask,        /* x,y points on mask (first x, then y) */
-double *Dmask,       /* density at each point on mask, possibly x group */
-double *pimask,      /* individual probability density; used if pimask[0] >= -tol (>=0) */
-double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
-double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
-int    *cc,          /* number of g0/sigma/b combinations  */
-int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
-int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
-int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
-double *area,        /* area associated with each mask point (ha) */
-double *miscparm,    /* miscellaneous parameters (cutval, normalization, NT etc.) */
-int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
-int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
-double *minprob,     /* minimum value of P(detection history) */
-double *a,           /* a(theta) */
-double *value,       /* return value integral */
-int    *resultcode   /* 0 if OK */
+    int    *like,        /* likelihood 0 full, 1 conditional etc. */
+    int    *detect,      /* detector 0 multi, 1 proximity etc. */
+    int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
+    int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
+    double *xy,          /* xy coordinates of polygon records */
+    double *signal,      /* signal strength vector, or times */
+    int    *grp,         /* group number for 0<=n<*nc   [full likelihood only] */
+    int    *nc,          /* number of capture histories */
+    int    *ss,          /* number of occasions */
+    int    *kk,          /* number of traps */
+    int    *mm,          /* number of points on mask */
+    int    *gg,          /* number of groups */
+    int    *nmix,        /* number of mixtures */
+    int    *knownclass,  /* known membership of 'latent' classes; 1='unknown' */
+    double *traps,       /* x,y locations of traps (first x, then y) */
+    double *dist2,       /* distances (optional: -1 if unused) */
+    double *Tsk,         /* nk x s usage matrix */
+    int    *telemcode,   /* 0 none 1 IT 2 DT 3 CT */
+    int    *markocc,     /* which are marking occasions? */
+    int    *Tu,          /* detector x occasion matrices of no. sightings Tu */
+    int    *Tm,          /* detector x occasion matrices of no. sightings Tm */
+    int    *Tn,          /* detector x occasion matrices of no. sightings Tn */
+    double *chat,        /* sighting overdispersion */
+    double *mask,        /* x,y points on mask (first x, then y) */
+    double *Dmask,       /* density at each point on mask, possibly x group */
+    double *pimask,      /* individual probability density; used if pimask[0] >= -tol (>=0) */
+    double *gsbval,      /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
+    double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
+    int    *cc,          /* number of g0/sigma/b combinations  */
+    int    *cc0,         /* number of g0/sigma/b combinations for naive animals */
+    int    *PIA,         /* lookup which g0/sigma/b combination to use for given n, S, K */
+    int    *PIA0,        /* lookup which g0/sigma/b combination to use for given g, S, K [naive] */
+    double *area,        /* area associated with each mask point (ha) */
+    double *miscparm,    /* miscellaneous parameters (cutval, normalization, NT etc.) */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
+    double *minprob,     /* minimum value of P(detection history) */
+    double *telemscale,  /* numerical fudge factor for telemetry */
+    int    *debug,       /* 0 messages off, 1 messages on */
+    double *comp,        /* returned likelihood components LT, Tulik, Tmlik */
+    double *value,       /* return value integral */
+    int    *resultcode   /* 0 if OK */
 );
 /*---------------------------------------------------------------------*/
 
@@ -511,6 +525,7 @@ void trappingmulti (
     double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
+    int    *binomN,     /* not used */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
@@ -531,6 +546,7 @@ void trappingsingle (
     double *Tsk,        /* ss x npoly array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
+    int    *binomN,     /* not used */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
@@ -573,41 +589,72 @@ void presenceloglik (
     int    *resultcode   /* 0 if OK */
     );
 
+void presenceloglik2017 (
+    int    *w,           /* capture histories (1:nc, 1:ss, 1:kk) */
+    int    *nc,          /* number of rows in w */
+    int    *ss,          /* number of occasions */
+    int    *kk,          /* number of detectors */
+    int    *mm,          /* number of mask points */
+    double *traps,       /* x,y locations of traps (first x, then y) */
+    double *mask,        /* x,y locations of mask points (first x, then y) */
+    double *cellarea,
+    double *D,           /* Parameter value - density */
+    double *lambda0,     /* Parameter value - lambda0 */
+    double *sigma,       /* Parameter value - radius */
+    double *z,           /* Parameter value - shape (hazard rate, cumulative gamma etc) */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential etc.*/
+    double *value,       /* return value */
+    int    *resultcode   /* 0 if OK */
+    );
+
 /*------------*/
 /* detectfn.c */
 /*------------*/
 
 gfnptr getgfn (int fn); 
-fnptr gethfn (int fn); 
-fnptr getzfn (int fn);
+zfnptr getzfn (int fn); 
+fnptr getgfnr (int fn);
+fnptr getzfnr (int fn);
 gfnLptr getgfnL (int fn); 
 
 /* detection functions used internally in C code */
-/* these exist in two forms 'g' and 'h' */
+/* these exist in two forms 'r' and 'L' */
 
-double hn (double param [], double r);
-double hr (double param [], double r);
-double he (double param [], double r);
-double hnc (double param [], double r);
-double un (double param [], double r);
-double hf (double param [], double r);
-double hann (double param [], double r);
-double hcln (double param [], double r);
-double hcg (double param [], double r);
-double hsigbin  (double param [], double r);
-double hsig (double param [], double r);
-double hsigsph (double param [], double r);
-double hhn (double param [], double r);
-double hhr (double param [], double r);
-double hex (double param [], double r);
-double han (double param [], double r);
-double hcumg (double param [], double r);
+double ghnr (double param [], double r);
+double ghrr (double param [], double r);
+double gexr (double param [], double r);
+double ghncr (double param [], double r);
+double gunr (double param [], double r);
+double ghfr (double param [], double r);
+double ganr  (double param [], double r);
+double gclnr (double param [], double r);
+double gcgr (double param [], double r);
+double gsigbinr  (double param [], double r);
+double gsigr (double param [], double r);
+double gsigsphr (double param [], double r);
+double ghhnr (double param [], double r);
+double ghhrr (double param [], double r);
+double ghexr (double param [], double r);
+double ghanr (double param [], double r);
+double ghcgr (double param [], double r);
 
-double zhn (double param [], double r);
-double zhr (double param [], double r);
-double zex (double param [], double r);
-double zan (double param [], double r);
-double zcumg (double param [], double r);
+double zhnr (double param [], double r);
+double zhrr (double param [], double r);
+double zexr (double param [], double r);
+double zhncr (double param [], double r);
+double zunr (double param [], double r);
+double zhfr (double param [], double r);
+double zanr  (double param [], double r);
+double zclnr (double param [], double r);
+double zcgr (double param [], double r);
+double zsigbinr  (double param [], double r);
+double zsigr (double param [], double r);
+double zsigsphr (double param [], double r);
+double zhhnr (double param [], double r);
+double zhhrr (double param [], double r);
+double zhexr (double param [], double r);
+double zhanr (double param [], double r);
+double zhcgr (double param [], double r);
 
 /*---------------------------------------------------------------*/
 
@@ -620,7 +667,7 @@ double ghnc
 double ghr 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double ghe 
+double gex 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 double gun
@@ -659,19 +706,84 @@ double gsigSN
 double gsigsphSN
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double lhn
+double ghhn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double lhr
+double ghhr
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double lex 
+double ghex 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double lan 
+double ghan 
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
-double lcg
+double ghcg
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+
+/*---------------------------------------------------------------*/
+double zhn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhnc 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhr 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zex 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zun
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhf 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zan 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zcln
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zcn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zcg
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zrs
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zsigbin
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zsig
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zsigsph
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zsigSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zsigsphSN
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhhn
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhhr
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhex 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhan 
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+    double mask[], int kk, int mm, double miscparm[]);
+double zhcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
     double mask[], int kk, int mm, double miscparm[]);
 
@@ -686,7 +798,7 @@ double ghncL
 double ghrL 
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double gheL 
+double gexL 
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
 double gunL
@@ -725,34 +837,30 @@ double gsigSNL
 double gsigsphSNL
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double lhnL
+double ghhnL
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double lhrL
+double ghhrL
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double lexL 
+double ghexL 
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double lanL 
+double ghanL 
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
-double lcgL
+double ghcgL
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
     int kk, double miscparm[]);
 /*---------------------------------------------------------------*/
 
-double pfn (
-    int fn,
-    double d2val,
-    double g0,
-    double sigma,
-    double z,
-    double miscparm[],
-    double w2);
+double pfn (int fn, double d2val, double g0, double sigma, double z,
+    double miscparm[], double w2);
 
-int par3 (
-    int fn);
+double zfn (int fn, double d2val, double lambda0, double sigma, double z,
+	    double miscparm [], double w2);
+    
+int par3 (int fn);
 
 /*---------*/
 /* utils.c */
@@ -880,40 +988,26 @@ struct rpoint getxy(
     double offset);
 /*---------------------------------------------------------------------*/
 
-double gintegral (int fn, double par[]);
+double hintegral (int fn, double par[]);
 /*---------------------------------------------------------------------*/
 
-double gintegral1 (
-    int fn, 
-    double par[]);
+double hintegral1 (int fn, double par[]);
 /*---------------------------------------------------------------------*/
 
 double randomtime (double p);
 /*---------------------------------------------------------------------*/
 
-void probsort (
-    int n, 
-    struct trap_animal tran[]);
+void probsort (int n, struct trap_animal tran[]);
 /*---------------------------------------------------------------------*/
 
-double gr (
-    int *fn, 
-    double par[], 
-    struct rpoint xy, 
-    struct rpoint animal);
+double gr (int *fn, double par[], struct rpoint xy, struct rpoint animal);
 /*---------------------------------------------------------------------*/
 
 /* random point from 2-D radial distribution specified by g function */
-void gxy (
-    int *n, 
-    int *fn,
-    double *par,
-    double *w, 
-    double *xy
-); 
+void gxy (int *n, int *fn, double *par, double *w, double *xy);
 /*---------------------------------------------------------------------*/
 
-void nearest (   
+void nearestC (   
     int    *nxy,        /* number of input points */
     double *xy,         /* input points */
     int    *ntrap,      /* input */
@@ -942,7 +1036,7 @@ void ontransect (
     int    *on);
 /*---------------------------------------------------------------------*/
 
-void alongtransect (
+void alongtransectC (
     double *xy,
     int    *n1,
     int    *n2,
@@ -964,15 +1058,22 @@ double integral2D  (int fn, int m, int c, double gsbval[], int cc, double traps[
 /*---------------------------------------------------------------------*/
 
 void getpdots (int m, int n, int markocc[], int x, int ncol,
-             int PIA0[], double gk0[], int detect, int binomN, double Tsk[], int ss,
-             int kk, int cc0, int nmix, double gsb0val[], double pdots[]);
+             int PIA0[], double gk0[], double hk0[], int detect[], int binomN[], double Tsk[],
+	       int ss, int kk, int cc0, int nmix, double gsb0val[], double pdots[]);
 /*---------------------------------------------------------------------*/
 
-int sightinglik (int Tu[], int Tm[], int like, int nc, int ss, int nk,
-		  int cc0, int nmix, double pmix[], int mm, double D[], double pi[], 
-		  double area, double pID[], int markocc[], double pdots[], 
-		 int ncol, int PIA0[], double gk0[], int binomN, int detect, 
-                 double Tsk[], double a0[], double chat[], double *Tulik, double *Tmlik);
+int Tsightinglik (int T[], int ss, int nk, int markocc[], int ncol, 
+                  int detect[], double Tsk[], double musk[], int debug, 
+		  double *Tlik);
+
+/*---------------------------------------------------------------------*/
+
+int expectedTmTu (int like, int distrib, int TmTu, int nc, int ss, int nk,
+		int cc0, int nmix, double pmix[], int mm, double D[], double pi[],
+		double area, int markocc[], double pdots[], 
+	    	int ncol, int PIA0[], double gk0[], double hk0[], int binomN[], int detect[], 
+		  double Tsk[], int nmarked[], double a0[], double pID[], double musk[]);
+
 /*---------------------------------------------------------------------*/
 
 void chat (
@@ -1008,10 +1109,10 @@ int    *resultcode
 );
 /*---------------------------------------------------------------------*/
 
-int sightingchat (int like, int detect, int binomN, int nc, int ss, int nk,
-		   int cc0, int nmix, double pmix[], int mm, double D[], double pi[],
-		   double area, double pID[], int markocc[], 
-		   int ncol, int PIA0[], double gk0[], double Tsk[], 
+int sightingchat (int like, int detect[], int binomN[], int nc, int ss, int nk,
+		   int cc0, int nmix, double pmix[], int mm, double D[], double pimask[],
+		   double area, double pID[], int markocc[],  int nmark,
+		   int ncol, int PIA0[], double gk0[], double hk0[], double Tsk[], 
 		  double a0[], int distrib, int nsim, double pdots[], double chat[]);
 /*---------------------------------------------------------------------*/
 
@@ -1024,14 +1125,36 @@ int markresightini (
     int    PIA[],
     int    cc,
     double gsbval[],
-    double pID[],       /* UPDATED */
-    int    gpar         /* version returned*/
+    double pID[],       /* UPDATED on exit */
+    int    gpar          
     );
+
+/*---------------------------------------------------------------------*/
+
+void incmusk (double Dprwi, int n, int m, int x, int w[], int PIA[], double gk[], double hk[], 
+	      int binomN[], int cc, int nc, int nk, int ss, int nmix, 
+	      double gsbval[], double Tsk[], int markocc[], int firstocc,
+	      int detect[], double musk[]);
+
+/*---------------------------------------------------------------------*/
+
+void finmusk (int ss, int nk, double tmpmusk[], double musk[], double sumDprwi, 
+              double pID[], double mult);
+
+/*---------------------------------------------------------------------*/
+
+/* void getfirstocc2(int ss, int nk, int nc, int w[], int grp[], int detect[], */
+/* 		  int firstocc[], int ntelem[], int telem[], int nzero[],  */
+/* 		  int allzero[]); */
+
+void getfirstocc2(int ss, int nk, int nc, int w[], int grp[], int knownclass[],
+		  int detect[], int firstocc[], int ntelem[], int telem[], 
+		  int nzero[], int kcnzero[],  int allzero[]);
+
 /*---------------------------------------------------------------------*/
 
 int discreteN (double N);
+
 /*---------------------------------------------------------------------*/
 
 double hazard (double pp);
-
-int cleanbinomN(int binomN, int detect);

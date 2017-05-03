@@ -27,7 +27,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL, buffer = NULL
 
 \arguments{
   \item{capthist}{ \code{\link{capthist}} object including capture data and detector (trap) layout }
-  \item{mask}{ \code{\link{mask}} object}
+  \item{mask}{ \code{\link{mask}} object or (for a multi-session analysis) a list of \code{mask} objects, one for each session}
   \item{buffer}{ scalar mask buffer radius if \code{mask} not specified
   (default 100 m)}
   \item{CL}{ logical, if true then the model is fitted by maximizing the conditional likelihood }
@@ -138,9 +138,8 @@ LLonly \tab compute one likelihood for values in \code{start} \cr
 miscparm \tab starting values for extra parameters fitted via userdist function \cr
 nsim \tab number of simulations to compute overdispersion \cr
 param \tab optional parameterisation code\cr
+savecall \tab optionally suppress saving of call\cr
 telemetrytype \tab treat telemetry data as independent, dependent or concurrent\cr
-telemetrysigma \tab use coordinate information from telemetry\cr
-telemetrybvn \tab use bivariate normal prior for centres of telemetered animals \cr
 normalize \tab rescale detection to individual range use \cr
 usecov \tab spatial covariate of use for normalization \cr
 userdist \tab user-provided distance function or matrix \cr

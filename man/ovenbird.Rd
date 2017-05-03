@@ -3,6 +3,7 @@
 
 \alias{ovenbird}
 \alias{ovenCH}
+\alias{ovenCHp}
 \alias{ovenbird.model.1}
 \alias{ovenbird.model.1b}
 \alias{ovenbird.model.1T}
@@ -47,16 +48,23 @@ ovenbird was killed by a predator in the net in 2009, as indicated by a
 negative net number in the dataset.  Sex was determined in the hand from
 the presence of a brood patch (females) or cloacal protuberance (males).
  Birds are listed by their band number (4-digit prefix, `.', and 5-digit
-number).  Recaptures within a day are not included in this dataset, so
-each bird occurs at most once per day and the detector type is `multi'
-rather than `proximity'.  Although several individuals were captured in
-more than one year, no use is made of this information in the analyses
-presently offered in \pkg{secr}.
+number).  
 
 
 The data are provided as a multi-session \code{capthist} object
-`ovenCH'.  Sex is coded as a categorical individual covariate ("M"
+`ovenCHp'.  Sex is coded as a categorical individual covariate ("M"
 or "F").
+
+Recaptures at the same site within a day are not included in this dataset, 
+so \code{ovenCHp} has detector type `proximity'. Previous versions of \pkg{secr}
+provided only a trimmed version of these data, retaining only one capture 
+per bird per day (\code{ovenCH} with detector type `multi'). That may be 
+obtained from \code{ovenCHp} as shown in the examples.
+
+Although several individuals were captured in
+more than one year, no use is made of this information in the analyses
+presently offered in \pkg{secr}.
+
 
 An analysis of the data for males in the first four years showed that
 they tended to avoid nets after their first capture within a season
@@ -65,8 +73,8 @@ the number of detections in any one year was too small to give reliable
 estimates of density; pooling of detection parameters across years
 helped to improve precision.
 
-Included with the data are a mask and four models fitted as in
-Examples.
+Included with the data are a mask and four models fitted to \code{ovenCH} as in
+Examples. 
 
 \tabular{ll}{
   Object \tab Description \cr
@@ -122,20 +130,23 @@ wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31}
 ## "netsites0509.txt" and "ovencapt.txt"
 ## for information only - these files not distributed
 netsites0509 <- read.traps(file = "netsites0509.txt",
-    skip = 1, detector = "multi")
+    skip = 1, detector = "proximity")
 temp <- read.table("ovencapt.txt", colClasses=c("character",
     "character", "numeric", "numeric", "character"))
-ovenCH <- make.capthist(temp, netsites0509, covnames=c("Sex"))
-
+ovenCHp <- make.capthist(temp, netsites0509, covnames=c("Sex"))
+ovenCHp <- updateCH(ovenCHp)   # drop repeat detections
 }
 
 par(mfrow = c(1,5), mar = c(1,1,4,1))
-plot(ovenCH, tracks = TRUE, varycol = TRUE)
+plot(ovenCHp, tracks = TRUE, varycol = TRUE)
 par(mfrow = c(1,1), mar = c(5,4,4,2) + 0.1)  ## defaults
 
-counts(ovenCH, "n")
+counts(ovenCHp, "n")
 
 \dontrun{
+## trimmed version of data - for consistency with earlier versions
+
+ovenCH <- reduce(ovenCHp, outputdetector = "multi", dropunused = FALSE)
 
 ## array constant over years, so build mask only once
 ovenmask <- make.mask(traps(ovenCH)[["2005"]], type="pdot", buffer=400,

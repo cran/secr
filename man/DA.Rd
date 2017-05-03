@@ -134,12 +134,12 @@ write.DA (hornedlizardCH, buffer = 100, units = 100)
 ## First, obtain the list lzdata
 olddir <- setwd (system.file("extdata", package="secr"))
 source ("lizarddata.R")
+setwd(olddir)
 str(lzdata)
 ## Now convert to capthist
 tempcapt <- read.DA(lzdata, Y = "H", xcoord = "X",
     ycoord = "Y", buffer = 0, units = 100)
-summary(tempcapt)
-setwd(olddir)
+#summary(tempcapt)
 
 \dontrun{
 plot(tempcapt)

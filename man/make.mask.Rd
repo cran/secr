@@ -76,8 +76,7 @@ polygon (\code{buffer} is not used). Thus `traprect' is equivalent to
 \item a matrix or dataframe of two columns interpreted as x and y
 coordinates, or
 \item a SpatialPolygons or SpatialPolygonsDataFrame object as defined in the package `sp',
-possibly from reading a shapefile with readShapePoly() from package
-`maptools'.
+possibly imported by reading a shapefile with readOGR() from package rgdal.
 }
 
 If \code{spacing} is not specified then it is determined by dividing the
@@ -115,7 +114,8 @@ with varying strip widths.
 \seealso{
 
   \code{\link{mask}}, \code{\link{read.mask}}, \code{\link{subset.mask}},
-  \code{\link{pdot}}, \code{\link{buffer.contour}}, \code{\link{deleteMaskPoints}}
+  \code{\link{pdot}}, \code{\link{buffer.contour}}, \code{\link{deleteMaskPoints}},
+  \code{\link{as.mask}}
 
 }
 
@@ -150,9 +150,11 @@ plot (temptrap, add = TRUE)
 ## classes by Ed Pebesma and Roger Bivand.
 
 \dontrun{
-library(maptools)
-setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly("possumarea")  ## possumarea.shp etc.
+
+datadir <- system.file("extdata", package = "secr")
+possumareafile <- paste0(datadir, "/possumarea.shp")
+possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+
 possummask2 <- make.mask(traps(possumCH), spacing = 20,
     buffer = 250, type = "trapbuffer", poly = possumarea)
 par(mar = c(1,6,6,6), xpd = TRUE)

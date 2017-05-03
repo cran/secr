@@ -39,8 +39,8 @@ deleteMaskPoints(mask, onebyone = TRUE, add = FALSE, poly = NULL,
 
   Defining \code{poly} here is equivalent to calling \code{make.mask}
   with \code{poly} defined. \code{poly}
-  may be a SpatialPolygonsDataFrame from \pkg{sp}, possibly imported
-  with \code{maptools::readShapeSpatial}. Whether \code{poly} represents habitat or
+  may be a SpatialPolygonsDataFrame from \pkg{sp}, possibly imported from a polygon shapefile
+  with \code{rgdal::readOGR}. Whether \code{poly} represents habitat or
   non-habitat is toggled with \code{poly.habitat} -- the default here
   differs from \code{\link{make.mask}}.
 

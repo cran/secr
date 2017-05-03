@@ -73,7 +73,7 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
-capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  
+capture--recapture data. \emph{Ecology} \bold{95}, 1341--1348.  
 
 }
 

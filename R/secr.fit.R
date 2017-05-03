@@ -36,6 +36,9 @@
 ## 2015-05-24 default details$minprob changed to 1e-200
 ## 2015-10-09 reinstated pID and mark-sight
 ## 2015-10-11 adjusted default start values polygon detectors
+## 2017-01-06 telemetrytype transferred to attribute of traps
+## 2017-01-30 streamlined detectortype checks (anytelem etc.)
+## 2017-04-04 detectfn limited to 14:18 for polygons, transects
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -72,50 +75,77 @@
 
 
     #################################################
-    ## Remember start time and call
-
+    ## Remember start time
     ptm  <- proc.time()
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
 
-    cl   <- match.call(expand.dots = TRUE)
-
-    ## 2014-02-13
     if (is.character(capthist)) {
-        capthist <- get(capthist, pos=-1)
+        capthistname <- capthist; rm(capthist)
+        capthist <- get(capthistname, pos=-1)
     }
     if (is.character(mask)) {
-        mask <- get(mask, pos=-1)
+        maskname <- mask; rm(mask)
+        mask <- get(maskname, pos=-1)
     }
     if (is.character(dframe)) {
-        dframe <- get(dframe, pos=-1)
+        dframename <- dframe; rm(dframe)
+        dframe <- get(dframename, pos=-1)
+    }
+    if (is.character(details)) {
+        detailsname <- details; rm(details)
+        details <- get(detailsname, pos=-1)
     }
 
     if (!inherits(capthist, 'capthist'))
         stop ("requires 'capthist' object")
 
+    detectortype <- unlist(detector(traps(capthist)))
+    anycount <- any(detectortype %in% .localstuff$countdetectors)
+    anypoly  <- any(detectortype %in% c('polygon',  'polygonX'))
+    anytrans <- any(detectortype %in% c('transect', 'transectX'))
+    alltelem <- all(detectortype %in% 'telemetry')
+    anytelem <- any(detectortype %in% 'telemetry')
+    anysingle <- any(detectortype %in% 'single')
+    allpresence <- all(detectortype %in% 'presence')
+    allsignal <- all(detectortype %in% 'signal')
+    allsignalnoise <- all(detectortype %in% 'signalnoise')
+
     #################################################
     ## Default detection function
 
     if (is.null(detectfn)) {
-        if (detector(traps(capthist)) %in% c('signal')) {
+        if (allsignal) {
             detectfn <- 10
             warning ("detectfn not specified; using signal strength (10)")
         }
-        else if (detector(traps(capthist)) %in% c('signalnoise')) {
+        else if (allsignalnoise) {
             detectfn <- 12
             warning ("detectfn not specified; using signal-noise (12)")
+        }
+        else if (anytelem) {
+            detectfn <- 14
+            warning ("detectfn not specified; using hazard half-normal (14)")
+        }
+        else if (anypoly | anytrans) {
+            detectfn <- 14
         }
         else {
             detectfn <- 0
         }
     }
-
     else {
-        if (detector(traps(capthist)) == 'presence')
+        if (anytelem)
+            detectfn <- valid.detectfn(detectfn, c(14,16))
+        else if (allpresence)
             detectfn <- valid.detectfn(detectfn, 0:8)
+        else  if (anypoly | anytrans)
+            detectfn <- valid.detectfn(detectfn, 14:18)  ## 2017-04-04
         else
             detectfn <- valid.detectfn(detectfn)
     }
+
+    #################################################
+    if (anysingle) warning ("multi-catch likelihood used for single-catch traps")
 
     #################################################
     ## Use input 'details' to override various defaults
@@ -125,18 +155,15 @@
                            trace = TRUE,
                            LLonly = FALSE,
                            centred = FALSE,
-                           binomN = 1,
+                           binomN = 0,                      ## Poisson
                            cutval = 0,
-                           ## 2015-05-24 minprob = 1e-50,
-                           minprob = 1e-200,
+                           minprob = 1e-200,                ## before 2015-05-24 minprob = 1e-50
                            tx = 'identity',
                            param = 0,
                            unmash = FALSE,
-                           telemetrytype = 'concurrent',
-                           telemetrysigma = FALSE,
-                           telemetrybvn = FALSE,
+                           telemetryscale = 1,
                            ignoreusage = FALSE,
-                           debug = FALSE,
+                           debug = 0,
                            intwidth2 = 0.8,
                            normalize = FALSE,
                            usecov = NULL,
@@ -145,73 +172,46 @@
                            knownmarks = TRUE,
                            nsim = 0,
                            chatonly = FALSE,
-                           chat = NULL
+                           chat = NULL,
+                           savecall = TRUE
                            )
-
-    if (detector(traps(capthist)) %in% .localstuff$countdetectors)
-        defaultdetails$binomN <- 0   ## Poisson
     if (!is.null(attr(capthist,'cutval')))
         defaultdetails$cutval <- attr(capthist,'cutval')
-    else if (ms(capthist) & !is.null(attr(capthist[[1]],'cutval')))   ## 2012-09-04
+    else if (ms(capthist)) {
+        if (!is.null(attr(capthist[[1]],'cutval')))   ## 2012-09-04
         defaultdetails$cutval <- attr(capthist[[1]],'cutval')
+    }
     if (is.logical(details$hessian))
         details$hessian <- ifelse(details$hessian, 'auto', 'none')
-## details$telemetrytype <- match.arg(details$telemetrytype, c('none', 'independent',
-##                           'dependent', 'concurrent'))
-## 2015-04-12, 2015-06-14
-    details$telemetrytype <- match.arg(details$telemetrytype,
-        c('concurrent', 'none', 'independent', 'dependent'))
-    if (is.null(attr(capthist,'xylist')))
-         details$telemetrytype <- 'none'
-    if (details$telemetrytype == 'independent')
-        details$telemetrysigma <- TRUE
     details <- replace (defaultdetails, names(details), details)
-    if (details$telemetrytype == 'none' && details$telemetrysigma == TRUE)
-        details$telemetrytype <- 'independent'
     if (!is.null(trace)) details$trace <- trace
     if (!is.null(binomN)) {
-        if (detector(traps(capthist)) == 'count') {
-            if (tolower(binomN) == 'usage')
-                binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
-            if (tolower(binomN) == 'poissonhazard')
-                binomN <- -1  ## interpret g() as true detection function 2013-01-07
-        }
+        if (tolower(binomN) == 'usage')
+            binomN <- 1   ## code for 'binomial size from usage' 2012-12-22
+        if (tolower(binomN) == 'poissonhazard')
+            binomN <- -1  ## interpret g() as true detection function 2013-01-07
         details$binomN <- binomN   ## 2011 01 28
     }
     if (details$LLonly)  details$trace <- FALSE
 
-    if (!(detector(traps(capthist)) %in% c('single','multi')) & (details$param == 1)) {
-        warning ("Gardner & Royle parameterisation not appropriate, using param = 0")
+    if (details$param == 1) {
+        warning ("Gardner & Royle parameterisation discontinued in secr 3.0, using param = 0")
         details$param <- 0
     }
 
-    ## 2011-02-06 to be quite clear -
-    if (detector(traps(capthist)) %in% c(.localstuff$exclusivedetectors,
-                                         'proximity','signal','signalnoise'))
-        details$binomN <- 1;
+    if (details$savecall) {
+        cl   <- match.call(expand.dots=TRUE)
+        cl[[1]] <- quote(secr.fit)
+    }
+    else cl <- NULL
 
     #################################################
     ## MS - indicator TRUE if multi-session (logical)
     ## sessionlevels - names of sessions (character)
-
     MS <- ms(capthist)
     sessionlevels <- session(capthist)
-
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    anycount <- any(detector(traps(capthist)) %in% .localstuff$countdetectors)
-    anypoly  <- any(detector(traps(capthist)) %in% c('polygon',  'polygonX'))
-    anytrans <- any(detector(traps(capthist)) %in% c('transect', 'transectX'))
-    alltelem <- all(detector(traps(capthist)) %in% c('telemetry'))
     if (alltelem) CL <- TRUE
-
-    if (MS) {
-       if (any (sapply(traps(capthist), detector) == 'single'))
-        warning ("multi-catch likelihood used for single-catch traps")
-    }
-    else {
-       if (detector(traps(capthist)) == 'single')
-        warning ("multi-catch likelihood used for single-catch traps")
-    }
 
     #################################################
     ## Optional data check added 2009 09 19
@@ -243,11 +243,22 @@
     if (usebuffer) {
         if (is.null(buffer)) {
             buffer <- 100
-            if (!(detector(traps(capthist))=='presence') & !alltelem)
+            if (!allpresence)
                 warning ("using default buffer width 100 m")
         }
-        if (MS) mask <- lapply (traps(capthist), make.mask, buffer = buffer, type = "trapbuffer")
-        else    mask <- make.mask(traps(capthist), buffer = buffer, type = "trapbuffer")
+        makemaskCH <- function (CH, ...) {
+            tr <- traps(CH)
+            # specific to a session, don't use global anytelem
+            if (any(detector(tr)=='telemetry')) {
+                centroids <- t(sapply(telemetryxy(CH), apply, 2, mean))
+                tmpxy <- rbind(centroids, data.frame(tr))
+                make.mask(tmpxy, ...)
+            }
+            else make.mask(tr, ...)
+        }
+        # default is to buffer around both traps and centroids if telemetry
+        if (MS) mask <- lapply (capthist, makemaskCH, buffer = buffer, type = "trapbuffer")
+        else    mask <- makemaskCH(capthist, buffer = buffer, type = "trapbuffer")
     }
     else {
       if (MS & !ms(mask)) {
@@ -271,7 +282,7 @@
 
     #################################################
     ## mark-resight
-
+    ## the checks here do not take account of details$markresight 2016-12-05
     if (MS) {
         sighting <- sighting(traps(capthist[[1]]))
         Tu <- Tu(capthist[[1]])
@@ -283,7 +294,7 @@
         Tm <- Tm(capthist)
     }
     if (('pID' %in% names(fixed)) & !is.null(Tm)){
-        if ((fixed$pID == 1) & (sum(Tm)>0))
+        if ((fixed$pID == 1) & (sum(Tm)>0) & any(markocc(traps(capthist))==0))
         warning ("mark-resight nonID sightings ignored when fixed$pID = 1")
     }
     if (sighting & CL & !is.null(Tu)) {
@@ -326,7 +337,7 @@
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
     if (CL) model$D <- NULL
-    if (detector(traps(capthist)) %in% 'telemetry') model$g0 <- NULL
+    if (all(detectortype %in% c('telemetry'))) model$g0 <- NULL
     details$param <- new.param(details, model, CL)
     ## intercept and fix certain models with bad defaults
     model <- updatemodel(model, detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
@@ -345,6 +356,12 @@
                 fixed$c <- 0
         }
     }
+
+    if (alltelem & !("lambda0" %in% names(fixed))) {
+        ## default to fixed lambda0 = 1
+            fixed$lambda0 <- 1.0
+    }
+
     fnames <- names(fixed)
 
     #################################################
@@ -448,7 +465,7 @@
                         b0='log', b1='neglog',  pID='logit',
                         pmix='logit', cut='identity')
 
-    if (anycount) defaultlink$g0 <- 'log'
+    # if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
     link[!(names(link) %in% c(fnames,pnames))] <- NULL
 
@@ -488,7 +505,6 @@
             memo ('Preparing density design matrix', details$trace)
             if (!all (all.vars(model$D) %in%
                       c('session', 'Session','g')) & details$param %in% c(4,5)) {
-                ## 2014-09-30, 2014-10-04
                 if (is.null(details$userdist))
                 stop ("only session and group models allowed for density when details$param = ",
                       details$param)
@@ -508,7 +524,6 @@
     ############################################
     # Prepare non-Euclidean design matrix
     ############################################
-    ## NE.modelled <- is.function(details$userdist)
     NE.modelled <- ('noneuc' %in% getuserdistnames(details$userdist)) &
         is.null(fixed$noneuc)
     if (!NE.modelled) {
@@ -611,71 +626,34 @@
     }
     ############################################
 
-    ## estimate overdispersion by simulation
-    ## if (nsim > 0) and details$chatonly then exit, returning only chat
-    if (is.null(details$chat))
-        details$chat <- matrix(1, nrow = length(sessionlevels), ncol = 2)
-    else
-        details$chat <- rep(details$chat,2)[1:2]  ## duplicate scalar
-    if (details$nsim > 0) {
-        TuTm <- function(x) !(is.null(Tu(x)) & is.null(Tm(x)))
-        anysightings <- if (MS)
-            any (sapply(capthist, TuTm))
-        else TuTm(capthist)
-        if (anysightings) {
-            memo('Simulating sightings to estimate overdispersion...', details$trace)
-
-            chat <- secr.loglikfn (beta       = start,
-                                   parindx    = parindx,
-                                   link       = link,
-                                   fixedpar   = fixed,
-                                   designD    = designD,
-                                   designNE   = designNE,
-                                   design     = design,
-                                   design0    = design0,
-                                   capthist   = capthist,
-                                   mask       = mask,
-                                   detectfn   = detectfn,
-                                   CL         = CL,
-                                   hcov       = hcov,
-                                   groups     = groups,
-                                   details    = details,
-                                   logmult    = FALSE,
-                                   ncores     = ncores,
-                                   clust      = clust
-            )
-            if (details$chatonly)
-                return(chat)   ## and no more!
-            else {
-                details$chat <- chat
-                details$nsim <- 0
-                ## and proceed to call secr.loglikfn again
-            }
-        }
-    }
-
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed)
     # or a list (secr >= 2.9.1)
     ############################################
-    ## 2014-10-14
-    ## if (is.null(start)) {
-    ## 2015-01-06 only use autoini if required
-    if (is.null(start) | is.list(start)) {
-        start3 <- list(D = NA, g0 = NA, sigma = NA)
-        ch <- if (MS) capthist[[details$autoini]] else capthist
-        msk <- if (MS) mask[[details$autoini]] else mask
 
-        requireautoini <- is.null(start) | !all(names(parindx) %in% names(start))
+    if (is.null(start) | is.list(start)) {
+        ch <- if (MS) capthist[[details$autoini]] else capthist
+        rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
+        if (inherits(rpsv, 'try-error')) rpsv <- NA
+        start3 <- list(D = NA, g0 = NA, sigma = NA)
+        msk <- if (MS) mask[[details$autoini]] else mask
+        requireautoini <- (is.null(start) | !all(names(parindx) %in% names(start))) & !alltelem
+
         if (requireautoini) {
             ## not for signal attenuation
             if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
                 memo('Finding initial parameter values...', details$trace)
-                ## autoini uses default buffer dbar * 4
-                ## 2015-01-06
+                # specific to session, do not use anytelem
+                if (any(detector(traps(ch))=="telemetry")) {
+                    if (all(detector(traps(ch))=="telemetry"))
+                        stop("cannot compute start from telemetry data; \n",
+                             "set manually or select different session with details autoini")
+                    ch <- subset(ch, occasions = detector(traps(ch)) != "telemetry")
+                }
                 if (nrow(ch)<5)
-                    stop ("too few values in session 1 to determine start; set manually")
+                    stop ("too few values session ", details$autoini, " to determine start; \n",
+                          "set manually or select different session with details autoini")
                 start3 <- autoini (ch, msk, binomN = details$binomN,
                                    ignoreusage = details$ignoreusage)
 
@@ -701,9 +679,6 @@
         #--------------------------------------------------------------
         # assemble start vector
         ## revised 2014-12-04 to avoid sessions with no detections
-        rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
-        if (inherits(rpsv, 'try-error'))
-            rpsv <- NA
         n <- nrow(ch)
 
         default <- list(
@@ -748,18 +723,20 @@
 
             ## 2015-10-11 better lambda0 -> g0 than vv...
             default$lambda0 <- sum(ch) / nrow(ch) / ncol(ch)
-            
+
             ## default$g0 <- 1 - exp(-default$lambda)
             ## bugfix 2015-12-09
-            default$g0 <- 1 - exp(-default$lambda0)
-            
-            if (details$binomN > 1)
-                default$g0 <- default$g0 / details$binomN
-            if ((details$binomN == 1) & (detector(traps(ch)) %in%
+            ## suppress 2017-04-04 because only lambda0 allowed in secr >=3.0
+            ## default$g0 <- 1 - exp(-default$lambda0)
+            ## if (details$binomN > 1)
+            ##    default$g0 <- default$g0 / details$binomN
+
+            if (any(details$binomN == 1) & all(detector(traps(ch)) %in%
                                              c('polygon','transect'))) {
                 ## assume using usage for binomN
                 usge <- usage(traps(ch))
-                default$g0 <- default$g0 / mean(usge[usge>0])
+
+                ## default$g0 <- default$g0 / mean(usge[usge>0]) suppress 2017-04-04
             }
             default$sigma <- rpsv
         }
@@ -793,6 +770,52 @@
         # start vector completed
         #--------------------------------------------------------------
     }
+
+    ############################################
+    ## estimate overdispersion by simulation
+    ############################################
+
+    ## if (nsim > 0) and details$chatonly then exit, returning only chat
+    if (is.null(details$chat))
+        details$chat <- matrix(1, nrow = length(sessionlevels), ncol = 3)
+    else
+        details$chat <- rep(details$chat,3)[1:3]  ## duplicate scalar
+    if (details$nsim > 0) {
+        TuTm <- function(x) !(is.null(Tu(x)) & is.null(Tm(x)))
+        anysightings <- if (MS)
+            any (sapply(capthist, TuTm))
+        else TuTm(capthist)
+        if (anysightings) {
+            memo('Simulating sightings to estimate overdispersion...', details$trace)
+            chat <- secr.loglikfn (beta       = start,
+                                   parindx    = parindx,
+                                   link       = link,
+                                   fixedpar   = fixed,
+                                   designD    = designD,
+                                   designNE   = designNE,
+                                   design     = design,
+                                   design0    = design0,
+                                   capthist   = capthist,
+                                   mask       = mask,
+                                   detectfn   = detectfn,
+                                   CL         = CL,
+                                   hcov       = hcov,
+                                   groups     = groups,
+                                   details    = details,
+                                   logmult    = FALSE,
+                                   ncores     = ncores,
+                                   clust      = clust
+            )
+            if (details$chatonly)
+                return(chat)   ## and no more!
+            else {
+                details$chat <- chat
+                details$nsim <- 0
+                ## and proceed to call secr.loglikfn again
+            }
+        }
+    }
+
     ############################################
     ## ad hoc fix for experimental parameters
     ############################################
@@ -803,7 +826,7 @@
         if (length(start) < max(unlist(parindx)) + nmiscparm )
             start <- c(start, details$miscparm)
     }
-    if (detector(traps(capthist)) %in% c('signalnoise'))
+    if (allsignalnoise)
         nmiscparm <- 2
 
     NP <- NP + nmiscparm
@@ -887,6 +910,7 @@
     ############################################
     ## calls for specific maximisation methods
     ## 2013-04-21
+
     if (NP == 1) {
         lcmethod <- "optimise"
         signs <- c(-1,1) * sign(start)
@@ -902,7 +926,8 @@
         if (details$hessian != "none")
             details$hessian <- "fdHess"
     }
-    else if (lcmethod %in% c('newton-raphson')) {
+    else
+        if (lcmethod %in% c('newton-raphson')) {
 
         args <- list (p         = start,
                       f         = loglikefn,
@@ -984,6 +1009,32 @@
             dimnames(covar) <- list(betanames, betanames)
         }
 
+        ## predicted D across mask
+        if (!CL) {
+            D <- getD (designD, this.fit$par, mask, parindx, link, fixed,
+                       grouplevels, sessionlevels, 'D')
+            N <- t(apply(D, 2:3, sum, drop = FALSE))
+
+            if (inherits(mask, 'linearmask')) {
+                if (ms(mask)) {
+                    scale <- sapply(mask, attr, 'spacing')
+                }
+                else {
+                    scale <- attr(mask, 'spacing')
+                }
+                scale <- scale / 1000   ## per km
+            }
+            else {
+                if (ms(mask)) {
+                    scale <- sapply(mask, attr, 'area')
+                }
+                else {
+                    scale <- attr(mask, 'area')
+                }
+            }
+            ## rows are sessions
+            N <- sweep(N, FUN = '*', MARGIN = 1, STATS = scale)
+        }
     }
 
     ############################################
@@ -1021,6 +1072,7 @@
                   fit = this.fit,
                   beta.vcv = covar,
                   smoothsetup = smoothsetup,
+                  N = N,
                   version = desc$Version,
                   starttime = starttime,
                   proctime = (proc.time() - ptm)[3]
@@ -1029,7 +1081,9 @@
     class(output) <- 'secr'
 
     if (usebuffer & !is.na(biasLimit)) {
-        test <- try(bufferbiascheck(output, buffer, biasLimit))
+        test <- try(bufferbiascheck(output, buffer, biasLimit), silent = TRUE)
+        if (inherits(test, 'try-error'))
+            warning("test for mask truncation bias could not be performed")
     }
 
     memo(paste('Completed in ', round(output$proctime,2), ' seconds at ',

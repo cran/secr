@@ -35,6 +35,10 @@ overdispersion statistics for sighting counts Tu and Tm to be estimated and
 returned as a vector or 2-column matrix (multi-session models), with no further
 model fitting.
 
+\code{details$debug} is an integer code used to control the printing of intermediate 
+values (1,2) and to switch on the R code browser (3). In ordinary use it should not be 
+changed from the default (0).
+
 \code{details$distribution} specifies the distribution of the number of
 individuals detected \eqn{n}; this may be conditional on the number in the
 masked area ("binomial") or unconditional ("poisson").
@@ -118,6 +122,16 @@ sigmak ~ 1)
 \code{details$param = 5} combines parameterisations (3) and (4) (first
 compute sigma from D, then compute lambda0 from sigma).
 
+\code{details$savecall} determines whether the full call to \code{secr.fit} is 
+saved in the output object. The default is TRUE except when called by 
+\code{par.secr.fit} as names in the call are then evaluated, causing the 
+output to become unwieldy.
+
+\code{details$splitmarked} determines whether the home range centre of marked 
+animals is allowed to move between the marking and sighting phases of a spatial 
+capture--mark--resight study. The default is to assume a common home-range centre 
+(\code{splitmarked = FALSE}). 
+
 \code{details$telemetrytype} determines how telemetry data in the
 attribute `xylist' are treated. `none' causes the xylist data to be
 ignored. `dependent' uses information on the sampling distribution of
@@ -125,18 +139,6 @@ each home-range centre in the SECR likelihood. `concurrent' does that
 and more: it splits capthist according to telemetry status and appends
 all-zero histories to the telemetry part for any animals present in
 xylist. The default is `concurrent'. 
-
-\code{details$telemetrysigma} = TRUE uses coordinate information from
-telemetry for estimating spatial detection parameters when capthist has
-attribute `xylist' (see \code{\link{addTelemetry}}). The default is
-FALSE. \code{details$telemetrysigma} is always TRUE when
-\code{details$telemetrytype = 'independent'}.
-
-\code{details$telemetrybvn} = TRUE includes a bivariate normal prior for
-the centres of telemetered individuals when \code{details$telemetrytype}
-is `concurrent' or `dependent'; otherwise the sample mean of telemetry
-locations is taken as the known location (without uncertainty). The
-default is FALSE.
 
 \code{details$normalize} = TRUE rescales detection so that individual range use
 sums to 1.0 (cf Royle et al. 2013)
@@ -151,7 +153,7 @@ such distances. The first two arguments of the function should be
 2-column matrices of x-y coordinates (respectively \eqn{k} detectors and
 \eqn{m} mask points). The third argument is a habitat mask that defines
 a non-Euclidean habitat geometry (a linear geometry is described in
-documentation for the forthcoming package `secrlinear'). The matrix
+documentation for the package `secrlinear'). The matrix
 returned by the function must have exactly \eqn{k} rows and \eqn{m}
 columns. When called with no arguments the function should return a
 character vector of names for the required covariates of `mask',

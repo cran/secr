@@ -101,7 +101,9 @@ posted when no errors are found.
 }
 
 \seealso{
-\code{\link{capthist}}, \code{\link{secr.fit}}
+
+\code{\link{capthist}}, \code{\link{secr.fit}}, \code{\link{shareFactorLevels}}
+
 }
 
 \examples{

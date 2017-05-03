@@ -12,6 +12,8 @@ problems of identifiability, as described for capture--recapture models
 in general by Gimenez et al. (2004). Here are some tips that may help
 you.
 
+This page has largely been superceded by \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}.
+
 }
 
 \section{The log-likelihood values shown with trace = TRUE are all NA}{
@@ -67,9 +69,9 @@ See also the section `Potential problems' in
 
 }
 
-\section{secr.fit finishes with warning nlm code 1 or 3}{
+\section{secr.fit finishes with warning nlm code 3}{
 
-  These conditions do not invariably indicate a failure of model
+  This condition do not invariably indicate a failure of model
   fitting. Proceed with caution, checking as suggested in the preceding
   section.
   
@@ -86,18 +88,6 @@ See also the section `Potential problems' in
   previous point about scaling of covariates.
   
   }
-
-\section{secr.fit crashes near end}{
-
-  When fitting a model with \code{verify = TRUE} you see the log
-  likelihood converge (assuming \code{trace = TRUE}), but
-  \code{secr.fit} crashes without returning, perhaps with an obscure
-  message referring to \code{nls}, or \code{"Error in integrate... : the
-  integral is probably divergent"}. This is most likely due to numerical
-  problems in the optional bias check with \code{\link{bias.D}}. Simply
-  set \code{verify = FALSE} and repeat.
-  
-}
 
 \section{secr.fit demands more memory than is available}{
 

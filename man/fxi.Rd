@@ -159,13 +159,14 @@ plot(secrdemo.0$capthist)
 fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
     plotmode = TRUE, drawlabels = FALSE)
 
-## extract modes only
-## these are more reliable than those from fit.mode called directly as
-## they use a contour-based approximation for the starting point
-fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
-t(sapply(fxiout, "[[", "mode"))
-
 \dontrun{
+
+  ## extract modes only
+  ## these are more reliable than those from fit.mode called directly as
+  ## they use a contour-based approximation for the starting point
+  fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
+  t(sapply(fxiout, "[[", "mode"))
+
   ## using fill colours
   ## lty = 0 suppresses contour lines
   ## nx = 256 ensures smooth outline

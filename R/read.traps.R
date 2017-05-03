@@ -10,7 +10,7 @@
 
 renamepolyrows <- function (tr) {
     # update vertex labels for polygon and transect detectors
-    if (detector(tr) %in% .localstuff$polydetectors) {
+    if (all(detector(tr) %in% .localstuff$polydetectors)) {
         tr.freq <- table(polyID(tr))
         vertex <- unlist(sapply(tr.freq, function(x) 1:x))
         rownames(tr) <-  paste(polyID(tr),vertex,sep='.')
@@ -33,7 +33,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         xyi
     }
 
-    if (!( detector %in% .localstuff$validdetectors ))
+    if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
     if (is.null(file) & is.null(data))
         stop ("requires 'file' or 'data'")
@@ -59,7 +59,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             stop ("requires 3 fields (detectorID, x, y)")
         if (min(nfld) == 3) colcl <- c('character',NA,NA)
         else colcl <- c('character',NA,NA,'character')
-        if (detector %in% c('polygon', 'polygonX')) {
+        if (all(detector %in% c('polygon', 'polygonX'))) {
             temp <- read.table (file, row.names=NULL, as.is=T,
                 colClasses = colcl, ...)
             names(temp)[1:3] <- c('polyID','x','y')
@@ -74,7 +74,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             polyID(traps) <- factor(temp1[,1])
             temp <- temp[,-1,drop=FALSE]   ## discard polyID so usage >= col3
         }
-        else if (detector %in% c('transect', 'transectX')) {
+        else if (all(detector %in% c('transect', 'transectX'))) {
             temp <- read.table (file, row.names=NULL, as.is=T,
                                 colClasses = colcl, ...)
             names(temp)[1:3] <- c('transectID','x','y')
@@ -127,14 +127,16 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 used <- gsub(',','', used)                                      # remove commas
                 nocc <- max(nchar(used))
                 if (nocc>0) {
-                    if (detector %in% .localstuff$polydetectors) {
+                    if (all(detector %in% .localstuff$polydetectors)) {
                         used <- used[tempindex]
                         nocc <- max(nchar(used))   ## recompute
+                        
                         if (any(nchar(used) != nocc))
                             stop ("'usage' fields suggest varying number ",
                                   "of occasions")
                         usge <- (matrix(unlist(strsplit(used,split='')),
                              byrow = TRUE, ncol = nocc)>0) * 1
+                        
                         dimnames(usge) <- list( tempID, 1:nocc)
                         usage(traps) <- usge
                     }
@@ -155,7 +157,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 usge <- as.matrix(read.table(tempcon))
                 close(tempcon)
                 nocc <- ncol(usge)
-                if (detector %in% .localstuff$polydetectors) {
+                if (all(detector %in% .localstuff$polydetectors)) {
                     ## 2014-08-23 bug fix
                     ## usge <- usge[tempindex,]
                     usge <- usge[tempindex,,drop = FALSE]
@@ -166,9 +168,11 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                 }
                 usage(traps) <- usge
             }
-
+            if (length(detector)>1 & length(detector) != nocc)
+                stop ("differing number of occasions in detector and usage")
+            
             if (ncol(splitfield)>1) {
-                if (detector %in% .localstuff$polydetectors) {
+                if (all(detector %in% .localstuff$polydetectors)) {
                     splitfield <- splitfield[tempindex,, drop = FALSE]
                     rownam <- tempID
                 }

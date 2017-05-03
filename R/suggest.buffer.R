@@ -8,6 +8,7 @@
 ## 2014-02-13 removed gpclib
 ## 2014-03-12 bufferbiascheck() shifted from secr.fit
 ## 2014-08-25 comment out lth which was unused and called undefined fn get.pts
+## 2017-03-29 tweaked to allow character detectfn
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
@@ -81,9 +82,9 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
 #    }
 
     detectfn <- valid.detectfn(detectfn)
-    if (!(detector(traps) %in% .localstuff$pointdetectors))
+    if (!all(detector(traps) %in% .localstuff$pointdetectors))
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
-    if (!(detector(traps) %in% .localstuff$individualdetectors))
+    if (!all(detector(traps) %in% .localstuff$individualdetectors))
         stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
     if (!is.null(usage(traps))) {
         if (any(usage(traps) != 1))
@@ -241,16 +242,19 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 traps <- traps(object)
                 noccasions <- ncol(object)
                 if (is.null(detectpar)) {
-                    tempmask <- make.mask (traps, 6*RPSV(object))
+                    tempmask <- make.mask (traps, buffer = 5*RPSV(object, CC = TRUE))
                     detectpar <- autoini (object, tempmask,
                         ignoreusage = ignoreusage)[parnames(0)]
                     tempdp <- lapply(detectpar,formatC,4)
                     warning ("using automatic 'detectpar' ",
                         paste(names(detectpar), "=", tempdp, collapse=", "),
                         call. = FALSE)
-                    if (!is.null(detectfn))
+                    if (!is.null(detectfn)) {
+                        detectfn <- valid.detectfn(detectfn)
+                        ## limited!
                         if (detectfn != 0)
                             warning ("forcing 'detectfn' to halfnormal", call. = FALSE)
+                    }
                     detectfn <- 0
                 }
             }
@@ -264,9 +268,9 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         }
         detectfn <- valid.detectfn(detectfn)
         detectpar <- valid.detectpar(detectpar, detectfn)
-        if (!(detector(traps) %in% .localstuff$pointdetectors))
+        if (!all(detector(traps) %in% .localstuff$pointdetectors))
             stop ("require passive point detectors (not polygon or transect)")
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        if (!all(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require passive individual detectors (not unmarked or presence)")
 
         if (ignoreusage)
@@ -298,8 +302,8 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
     validbiasLimit <- validbiasLimit & is.finite(biasLimit)
     validbiasLimit <- validbiasLimit & (biasLimit>0)
     if ((output$fit$value < 1e9) &
-        (detector(traps(capthist)) %in% .localstuff$pointdetectors) &
-        !(detector(traps(capthist)) %in% c('unmarked','presence')) &
+        (all(detector(traps(capthist)) %in% .localstuff$pointdetectors)) &
+        !any(detector(traps(capthist)) %in% c('unmarked','presence')) &
         is.null(telemetryxy(capthist)) &
         validbiasLimit) {
         if (ms(capthist)) {

@@ -6,9 +6,10 @@
 ## 2014-08-05 strict argument
 ## 2014-08-05 relax requirement for object to be traps or mask:
 ## 2014-08-05 may now be any numeric vector that can be formed into a 2-column matrix
+## 2017-03 new argument replace; use readOGR for shapefiles
 ###############################################################################
 
-addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) {
+addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
     if (!(inherits(object, 'mask') | inherits(object, 'traps')))
         ## stop ("require mask or traps object")
         object <- matrix(unlist(object), ncol = 2)
@@ -43,16 +44,32 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) 
             stop ("spatialdata type unrecognised or unsupported")
 
         if (type == "shapefile") {
-            polyfilename <- spatialdata  ## strip shp?
-            if (!requireNamespace('maptools', quietly = TRUE))
-                stop("requires maptools")
-            spatialdata <- maptools::readShapePoly(polyfilename)
+            polyfilename <- spatialdata  
+
+            # if (!requireNamespace('maptools', quietly = TRUE))
+            #     stop("requires package maptools")
+            # spatialdata <- maptools::readShapePoly(polyfilename)
+            
+            if (!requireNamespace('rgdal', quietly = TRUE))
+                stop("requires package rgdal")
+            isshp <- function(filename) {
+                nch <- nchar(filename)
+                tolower(substring(filename, nch-3,nch)) == ".shp"
+            }
+            if (!isshp(polyfilename)) {
+                polyfilename <- paste0(polyfilename, ".shp")
+            }
+            spatialdata <- basename(spatialdata)
+            if (isshp(spatialdata)) {
+                spatialdata <- substring(spatialdata, 1, nchar(spatialdata)-4)
+            }
+            spatialdata <- rgdal::readOGR(dsn = polyfilename, layer = spatialdata)
+
         }
         if (type %in% c("shapefile", "SPDF", "SGDF")) {
             xy <- matrix(unlist(object), ncol = 2)
-            xy <- SpatialPoints(xy)
-            ## 2014-12-11
-            proj4string(spatialdata) <- CRS()
+            xy <- sp::SpatialPoints(xy)
+            sp::proj4string(spatialdata) <- sp::CRS()
             df <- sp::over (xy, spatialdata)
         }
         else {
@@ -62,7 +79,7 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) 
             index <- nearesttrap(object, spatialdata)
             df <- covariates(spatialdata)[index,, drop=FALSE]
             ## new argument 2014-08-05
-            if (strict) {
+            if (strict & type %in% c("mask")) {
                 incell <- function (xy, m, mask) {
                     sp2 <- spacing(mask) / 2
                     mxy <- mask[m,]
@@ -98,8 +115,13 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE) 
         rownames(df) <- 1:nrow(df)
         if (is.null(covariates(object)))
             covariates(object) <- df
-        else
+        else {
+            if (replace) {
+                repeated <- names(covariates(object)) %in% names(df)
+                covariates(object) <- covariates(object)[,!repeated]
+            }
             covariates(object) <- cbind(covariates(object), df)
+        }
         object
     }
 }

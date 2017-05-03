@@ -50,7 +50,7 @@ read.DA <- function (DAlist, detector = 'polygonX', units = 1, session = 1,
     Y = 'Y', xcoord = 'U1', ycoord = 'U2', xmin = 'Xl', xmax = 'Xu',
     ymin = 'Yl', ymax = 'Yu', buffer = 'delta', verify = TRUE) {
 
-    if (!(detector %in% c('polygon','polygonX')))
+    if (!all(detector %in% c('polygon','polygonX')))
         stop ("detector type must be 'polygon' or 'polygonX'")
     ## captures
     Y <- DAlist[[Y]]    ## binary CH matrix

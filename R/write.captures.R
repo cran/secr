@@ -38,15 +38,23 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
         occ <- occasion(object)
         session <- rep(sess,length(ID))
 
-        if (det %in% c('polygon','transect','polygonX','transectX')) {
+        if (det[1] %in% c('polygon','transect','polygonX','transectX')) {
             XY <- xy(object)
             temp <- data.frame (Session=session, ID=ID, Occasion=occ,
                 x=round(XY$x,ndec), y=round(XY$y,ndec))
         }
-        else if (det %in% c('signal')) {
+        else if (det[1] %in% c('signal')) {
             signal <- signal(object)
             trap <- trap(object)
             temp <- data.frame (Session=session, ID=ID, Occasion=occ, Detector=trap, Signal=signal)
+        }
+        else if (all(det %in% c('telemetry'))) {
+            xyl <- telemetryxy(object)
+            xy <- do.call(rbind, xyl)
+            ID <- rep(names(xyl), sapply(xyl, nrow))
+            trap <- trap(object)
+            temp <- data.frame (Session=session, ID=ID, Occasion=rep(1,nrow(xy)), 
+                                x = round(xy[,1],ndec), y = round(xy[,2],ndec))
         }
         else {
             trap <- trap(object)

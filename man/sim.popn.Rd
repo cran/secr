@@ -145,7 +145,7 @@ If \code{poly} is specified, points outside \code{poly} are
 dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
 of two columns interpreted as x and y coordinates, or \item a
 SpatialPolygonsDataFrame object as defined in the package `sp', possibly
-from reading a shapefile with readShapePoly() from package `maptools'.}
+from reading a shapefile with readOGR() from package `rgdal'.}
 
 The \code{\link{subset}} method is called internally when \code{poly} is used;
 the \dots argument may be used to pass values for \code{keep.poly} and

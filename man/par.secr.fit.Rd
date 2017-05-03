@@ -15,7 +15,8 @@
 
 \usage{
 
-par.secr.fit (arglist, ncores = 1, seed = 123, trace = TRUE, logfile = "logfile.txt")
+par.secr.fit (arglist, ncores = 1, seed = 123, trace = TRUE, logfile = "logfile.txt", 
+    prefix = "fit.")
 par.derived (secrlist, ncores = 1, ...)
 par.region.N (secrlist, ncores = 1, ...)
 
@@ -33,6 +34,8 @@ par.region.N (secrlist, ncores = 1, ...)
   \item{trace}{logical; if TRUE intermediate output may be logged}
   
   \item{logfile}{character name of file to log progress reports}
+  
+  \item{prefix}{character prefix for names of output}
 
   \item{\dots}{other arguments passed to \code{derived} or \code{region.N}}
 
@@ -57,7 +60,7 @@ par.region.N (secrlist, ncores = 1, ...)
 \value{
 
 For \code{par.secr.fit} - \code{\link{secrlist}} of model fits (see
-\code{\link{secr.fit}}). Names are created by prefixing ``fit.'' to the
+\code{\link{secr.fit}}). Names are created by prefixing \code{prefix} to the
 names of \code{argslist}. If \code{trace} is TRUE then the total
 execution time and finish time are displayed.
 

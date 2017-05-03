@@ -3,6 +3,8 @@
 ## plot.capthist.R
 ## 2013-11-20
 ## 2015-10-11 type = 'sightings'
+## 2016-10-08 secr 3.0
+## 2016-12-08 type = "centres"
 ##############################################################################
 
 plot.capthist <- function(x, rad = 5,
@@ -13,7 +15,7 @@ plot.capthist <- function(x, rad = 5,
    lab1cap = FALSE, laboffset = 4,
    ncap = FALSE,
    splitocc = NULL, col2 = 'green',
-   type = c("petal", "n.per.detector", "n.per.cluster", "sightings"),
+   type = c("petal", "n.per.detector", "n.per.cluster", "sightings", "centres", "telemetry"),
    cappar = list(cex=1.3, pch=16, col='blue'),
    trkpar = list(col='blue', lwd=1),
    labpar = list(cex=0.7, col='black'),
@@ -22,87 +24,66 @@ plot.capthist <- function(x, rad = 5,
     # see also version in d:\single sample with stems=F, mst=F 2009 02 22
 
 {
-
     ## recursive if list of capthist
     if (ms(x)) {
+        if ((prod(par()$mfrow) < length(x)) & !add)
+            warning("screen layout does not allow for all sessions and some plots may be lost;",
+                    " set par mfrow")
         sapply (x, plot.capthist,
-            rad = rad, hidetraps = hidetraps, tracks = tracks,
-            title = title, subtitle = subtitle, add = add, varycol = varycol, icolours =
-            icolours, randcol = randcol, lab1cap = lab1cap, laboffset =
-            laboffset, ncap = ncap, splitocc = splitocc, col2 = col2,
-            type = type, cappar = cappar, trkpar = trkpar, labpar = labpar, ...)
+                rad = rad, hidetraps = hidetraps, tracks = tracks,
+                title = title, subtitle = subtitle, add = add, varycol = varycol, icolours =
+                    icolours, randcol = randcol, lab1cap = lab1cap, laboffset =
+                    laboffset, ncap = ncap, splitocc = splitocc, col2 = col2,
+                type = type, cappar = cappar, trkpar = trkpar, labpar = labpar, ...)
     }
     else {
 
-        plotprox <- function (x) {
-            x <- abs(x)   # do not distinguish deads for now
-            # some dupl points will be over plotted - could increase rad for
-            # captures after first at a trap on a given day
-            dx  <- rep((cos((1:nocc) * 2 * pi / nocc) * rad), ncol(x))[x>0]
-            dy  <- rep((sin((1:nocc) * 2 * pi / nocc) * rad), ncol(x))[x>0]
-            if (varycol) icol <<- icol+1  ## 2009 10 02
-            par(trkpar)
-            if (varycol) par(col=icol)    ## override 2009 10 02
-            if (tracks) lines (traps$x[x]+dx, traps$y[x]-dy)
-            par(cappar)
-            if (varycol) par(col=icol)    ## override 2009 10 02
-            points (traps$x[x]+dx, traps$y[x]-dy)
-        }
-        plotpolygoncapt <- function (xy) {
-            # some dupl points will be over plotted - could increase rad for
-            # captures after first at a trap on a given day
-            if (varycol) icol <<- icol+1  ## 2009 10 02
-            par(trkpar)
-            if (varycol) par(col=icol)    ## override 2009 10 02
-            if (tracks) lines (xy$x, xy$y)
-            par(cappar)
-            if (varycol) par(col=icol)    ## override 2009 10 02
-            points (xy$x, xy$y)
-        }
-        plotcapt <- function (x) {
-            x <- abs(x)   # do not distinguish deads for now
-            dx <- (cos((1:nocc) * 2 * pi / nocc) * rad)
-            dy <- (sin((1:nocc) * 2 * pi / nocc) * rad)
-            occ2 <- (1:nocc) %in% splitocc
-            x0 <- x>0
-            x1 <- x0 & !(occ2)
-            x2 <- x0 & occ2
-            x[!x0] <- 1   # fool into keeping length..
-            usesplit <- !is.null(splitocc) & (sum(x2)>0)
-            if (varycol) icol <<- icol+1
-            par(trkpar)
-            if (varycol) par(col=icol)   # override
-
-            if (tracks) {
-                if (usesplit) {
-                    par(col=col2)
-                    lines ((traps$x[x]+dx)[x0], (traps$y[x]-dy)[x0])  # all
-                    par(trkpar)
-                    if (varycol) par(col=icol)   # override
-                    lines ((traps$x[x]+dx)[x1], (traps$y[x]-dy)[x1])  # pre-split
-                }
-                else
-                lines ((traps$x[x]+dx)[x0], (traps$y[x]-dy)[x0])  # all
+        plotproxcapt <- function (xy, occ, icol, emphasis = FALSE) {
+            oxy <- order(occ)  # sort by occasion
+            xy <- xy[oxy,]
+            occ <- occ[oxy]
+            xy[,1] <- xy[,1] + cos(occ * 2 * pi / nocc) * rad
+            xy[,2] <- xy[,2] - sin(occ * 2 * pi / nocc) * rad
+            
+            if (!is.null(splitocc)) {
+                colr <- ifelse(occ<splitocc,cappar$col, col2)
+                par(trkpar)
+                if (tracks) lines (xy, col = colr)
+                par(cappar)
+                points (xy, col = colr)
             }
-
-            par(cappar)
-            if (varycol) par(col=icol)   # override
-            points ((traps$x[x]+dx)[x0], (traps$y[x]-dy)[x0])
-            if (usesplit) {
-              par(col=col2)
-              points ((traps$x[x]+dx)[x2], (traps$y[x]-dy)[x2])
+            else {
+                par(trkpar)
+                if (varycol) par(col=icol)   
+                if (tracks) lines (xy)
+                par(cappar)
+                if (varycol) par(col=icol)   
+                points (xy)
+                if (emphasis)
+                    points (xy, col='black', bg=par()$col, pch=21)
             }
+        }
+        plotpolygoncapt <- function (xy, icol, emphasis = FALSE) {
+            par(trkpar)
+            if (varycol) par(col=icol)    ## override 2009 10 02
+            if (tracks) lines (xy)
+            par(cappar)
+            if (varycol) par(col=icol)    ## override 2009 10 02
+            points (xy)
+            if (emphasis)
+                points (xy, col='black', bg=par()$col, pch=21)
         }
         labcapt <- function (n) {
-            if ( detectr %in% c('proximity', 'count', 'polygonX',
+            if ( detectr[1] %in% c('proximity', 'count', 'polygonX',
                 'transectX', 'signal', 'signalnoise', 'polygon',
                 'transect', 'unmarked', 'presence') ) {
                 warning ("labels not implemented for this detector type")
             }
             else {
-                t1 <- abs(x[n,])
-                o1 <- sum(cumsum(t1)==0)+1   # first occasion
-                t1 <- t1[o1]                 # first trap site
+                xn <- apply(abs(x[n,,,drop=FALSE]),2,sum)
+                o1 <- sum(cumsum(xn)==0)+1   # first occasion
+                t1 <- which(x[n,o1,]>0)                 # first trap site
+                # cat(n, ' ',xn, ' o1 ', o1, ' t1 ', t1, '\n')
                 dx  <- (cos((1:nocc) * 2 * pi / nocc) * rad)[o1]
                 dy  <- (sin((1:nocc) * 2 * pi / nocc) * rad)[o1]
                 par(labpar)
@@ -119,17 +100,11 @@ plot.capthist <- function(x, rad = 5,
                       row.names(x)[n])
         }
         ncapt <- function (x) {
-            if (detectr %in% .localstuff$detectors3D){
-               temp <- t(apply (abs(x),c(2,3),sum)) # capts/trap/day)
-            }
-            else if (detectr %in% .localstuff$polydetectors){
+            if (detectr[1] %in% .localstuff$polydetectors) {
                stop ("ncap does not work with polygon and similar detectors")
             }
-            else {
-               fx   <- factor(x, levels=0:nrow(traps))
-               temp <- table (fx, col(x)) # capts/trap/day
-               temp <- temp[-1,,drop=F] # drop zeros
-            }
+            temp <- t(apply (abs(x),c(2,3),sum)) # capts/trap/day)
+                
             dx  <- rep(cos((1:nocc) * 2 * pi / nocc) * rad, rep(nrow(traps),nocc))
             dy  <- rep(sin((1:nocc) * 2 * pi / nocc) * rad, rep(nrow(traps),nocc))
             par(labpar)
@@ -159,11 +134,10 @@ plot.capthist <- function(x, rad = 5,
             points (traps[df$trap,'x']+dx, traps[df$trap,'y']-dy, col = greycol)
         }
         plotsightings <- function (x) {
-            ## plot sightings; assumes proximity or count detectors
             Tu <- Tu(x)
             Tu0 <- Tu
             marking <- Tu
-            if (is.null(Tu)) stop ("sightings type requires sighting data")
+            if (is.null(Tu)) stop ("sightings type requires sighting data Tu")
             markocc <- markocc(traps(x))
             Tu0[Tu!=0] <- NA
             Tu0[,markocc>0] <- NA
@@ -171,10 +145,9 @@ plot.capthist <- function(x, rad = 5,
             marking[,markocc<1] <- NA
             dx  <- rep((cos((1:nocc) * 2 * pi / nocc) * rad), each = nrow(Tu))
             dy  <- rep((sin((1:nocc) * 2 * pi / nocc) * rad), each = nrow(Tu))
-            par(cappar)
             dx0 <- dx; dx0[is.na(Tu0)] <- NA
             
-            if (detector(traps(x)) %in% c('polygon')) {
+            if (all(detector(traps(x)) %in% c('polygon'))) {
                 centres <- split(traps(x), polyID(traps(x)))
                 ## assume each polygon closed, so first vertex redundant
                 centres <- lapply(centres, function(xy) apply(xy[-1,,drop=FALSE], 2, mean))
@@ -182,25 +155,60 @@ plot.capthist <- function(x, rad = 5,
                 names(trapxy) <- c('x','y')
             }
             else trapxy <- traps(x)
-            text (rep(trapxy$x, nocc) + dx, rep(trapxy$y, nocc) - dy, Tu, cex = 0.7)
+            
+            par(labpar)
+            text (rep(trapxy$x, nocc) + dx, rep(trapxy$y, nocc) - dy, Tu, cex = 0.8)
+            par(cappar)
             points (rep(trapxy$x, nocc) + dx0, rep(trapxy$y, nocc) - dy, pch = 1, cex = 0.7)
             ## marking occasions shown as dot
             dx[is.na(marking)] <- NA
             points (rep(trapxy$x, nocc) + dx, rep(trapxy$y, nocc) - dy, pch=16, cex=0.4)
         }
         
+        plotcentres <- function (x) {
+            xtraps <- traps(x)
+            meanxya <- function(xy) apply(xy, 2, mean)
+            meanxy <- function(trp) apply(xtraps[trp,],2,mean)
+            if (all(detector(traps(x)) %in% 'telemetry')) {
+                xyl <- telemetryxy(x)
+                xyl <- lapply(xyl, meanxya)
+                xy <- do.call(rbind, xyl)
+                
+            }
+            else if (!any(detector(traps(x)) %in% .localstuff$polydetectors)) {
+                trplist <- split(trap(x), animalID(x))
+                xyl <- lapply(trplist, meanxy)
+                xy <- do.call(rbind, xyl)
+            }
+            else {
+                xyl <- telemetryxy(x)
+                if (is.null(xyl))
+                    xyl <- split(xy(x), animalID(x))
+                xyl <- lapply(xyl, meanxya)
+                xy <- do.call(rbind, xyl)
+            }
+            if (rad>0) xy <- xy + (runif(2*nrow(xy))-0.5) * rad
+            points (xy, ...)
+        }
+        
         ###########
         ## MAINLINE
 
-        ## suggested by Mike Meredith 2013-05-24
+        x <- check3D(x)
         opal <- palette() ; on.exit(palette(opal))
         type <- match.arg(type)
         traps <- traps(x)
-        detectr <- detector(traps)
-        nocc <- ncol(x)
-        nanimal <- nrow(x)
-
-        if (type == 'petal')
+        detectr <- expanddet(x)
+        if (all(detectr == 'telemetry')) {
+            type <- 'telemetry'
+            # warning("assuming type = 'telemetry' as all data from telemetry")
+        }
+        if (type =='telemetry')
+            nocc <- sum(detectr == 'telemetry')
+        else
+            nocc <- sum(detectr != 'telemetry')
+        
+        if (type %in% c('petal','centres'))
             cappar <- replacedefaults (list(cex=1.3, pch=16, col='blue'), cappar)
         if (type == 'sightings')
             cappar <- replacedefaults (list(cex=1, pch=16, col='blue'), cappar)
@@ -210,65 +218,78 @@ plot.capthist <- function(x, rad = 5,
         trkpar <- replacedefaults (list(col='blue', lwd=1), trkpar)
         labpar <- replacedefaults (list(cex=0.7, col='black'), labpar)
         initialpar <- par(cappar)
+        if (!add) {
+            if (type=="telemetry") {
+                xyl <- telemetryxy(x)
+                xy <- do.call(rbind, xyl)
+                xl <- range(xy[,1])
+                yl <- range(xy[,2])
+                tr <- expand.grid(x=xl, y=yl)
+                class(tr) <- c('traps', 'data.frame')
+                plot(tr, hidetr=TRUE, ...)
+            }
+            else {
+                plot(traps, hidetr=hidetraps, ...)
+            }
+        }
 
-        if (!add) plot(traps, hidetr=hidetraps, ...)
-
-        ## check added 2012-10-25
         if (nrow(x) == 0) {
             warning("no detections in capthist object")
             type <- 'null'
         }
 
+        if (is.null(icolours)) icolours <- topo.colors((nrow(x)+1)*1.5)
+        if (varycol) {
+            if (randcol) icolours <- sample(icolours)
+            test <- try (palette(icolours))  ## too many?
+            if (inherits(test, 'try-error'))
+                stop ("requested too many colours; ",
+                      "try with varycol = FALSE")
+            icol <- 0
+        }
+        else {
+            # splitcol?
+        }
+        
         if (type == 'petal') {
-            if (is.null(icolours)) icolours <- topo.colors((nanimal+1)*1.5)
-            if (varycol) {
-                if (randcol) icolours <- sample(icolours)
-                test <- try (palette(icolours))  ## too many?
-                if (inherits(test, 'try-error'))
-                    stop ("requested too many colours; ",
-                          "try with varycol = FALSE")
-                icol <- 0
-            }
-            if ((nocc == 1) & ! (detectr %in% c('signal','signalnoise'))) rad <- 0
 
-            if ( detectr %in% c('proximity', 'count', 'unmarked', 'presence') )
-            {
-                ## detector number
-                w <- apply(x,1:2,function(x) (abs(x)>0) * (1:length(x)))
-                w <- array(w, dim=dim(x)[c(3,1,2)])  ## 2013-11-20, in case dim dropped
-                multiples <- any(apply(x,1:2, function(y) sum(abs(y)))>1)
-                if (multiples & tracks)
-                    warning("track for repeat detections on same occasion",
-                            " joins points in arbitrary sequence")
-                w <- aperm(w, c(2,3,1))
-                apply( w, 1, plotprox )
-            }
-            else
-            if ( detectr %in% .localstuff$polydetectors ) {
+            if ((nocc == 1) & ! (detectr[1] %in% c('signal','signalnoise'))) rad <- 0
+
+            if ( detectr[1] %in% .localstuff$polydetectors ) {
                 ## occasions not distinguished
                 lxy <- split (xy(x), animalID(x, names=FALSE))
-                lapply (lxy, plotpolygoncapt)
+                mapply (plotpolygoncapt, lxy, 1:length(lxy))
             }
-            else
-            if ( detectr %in% c('signal','signalnoise') )
+            else if ( detectr[1] %in% c('signal','signalnoise') )
             {
                 .localstuff$i <- 0
                 temp <- data.frame(ID = animalID(x), occ = occasion(x),
                                    trap=trap(x), signal = signal(x))
                 lsignal <- split(temp, animalID(x, names = FALSE))
                 lapply(lsignal, plotsignal, minsignal = min(temp$signal),
-                    maxsignal = max(temp$signal), n=nanimal)
+                    maxsignal = max(temp$signal), n=nrow(x))
             }
-            else  {   ## single, multi-catch traps
-                apply( x, 1, plotcapt )
+            else  {   
+                xydf <- as.data.frame(traps(x)[trap(x),])
+                occ <- occasion(x)
+                OK <- detectr[occ] != 'telemetry'
+                ID <- factor(animalID(x), levels = rownames(x))
+                lxy <- split(xydf[OK,], ID[OK])
+                occ <- split(occ[OK], ID[OK])
+                if (tracks & any(unlist(sapply(occ, duplicated))))
+                    warning("track for repeat detections on same occasion",
+                            " joins points in arbitrary sequence")
+                mapply(plotproxcapt, lxy, occ, 1:length(lxy), telemetered(x))
             }
 
             if (lab1cap) {
-                if ( detectr %in% .localstuff$polydetectors ) {
+                if ( detectr[1] %in% .localstuff$polydetectors ) {
                     lxy <- split (xy(x), animalID(x, names = FALSE))
-                    sapply(1:nanimal, labhead, df=lxy)
+                    sapply(1:nrow(x), labhead, df=lxy)
                 }
-                else sapply(1:nanimal, labcapt)
+                else {
+                    sapply(1:nrow(x), labcapt)
+                }
             }
 
             if (ncap) { ncapt(x)}
@@ -329,6 +350,15 @@ plot.capthist <- function(x, rad = 5,
         else if (type == 'sightings') {
             plotsightings(x)
         }
+        else if (type == 'centres') {
+            plotcentres(x)
+        }
+        else if (type == 'telemetry') {
+            lxy <- telemetryxy(x)
+            seqnum <- match(names(lxy), rownames(x))
+            caught <- apply(abs(x[seqnum,detectr!='telemetry',,drop=FALSE]),1,sum)>0
+            mapply (plotpolygoncapt, lxy, seqnum, caught)
+        }
         else
             if (type != 'null') stop ("type not recognised")
         
@@ -336,15 +366,28 @@ plot.capthist <- function(x, rad = 5,
         ####################################################
         ## Titles
 
-        nd <- if(detectr %in% .localstuff$exclusivedetectors) 
-            sum(abs(x)>0) else sum(abs(x))
+        if (type == 'telemetry') {
+            nocc <- sum(detectr == 'telemetry')
+            nd <- sum(abs(x)[,detectr == 'telemetry',])
+            nanimal <- length(telemetryxy(x))
+        }
+        else {
+            nocc <- sum(detectr != 'telemetry')
+            nd <- sum(abs(x)[,detectr != 'telemetry',])
+            nanimal <- sum(apply(abs(x)[,detectr != 'telemetry',,drop=FALSE],1,sum)>0)
+        }
+        pl <- if (nocc>1) 's' else ''  ## plural marker
         if (type == 'sightings') {
             markocc <- markocc(traps(x))
             Tu <- Tu(x)
             nd <- sum(Tu)
             nocc <- sum(markocc<1)
         }
-        
+        if (type == 'telemetry') {
+            nd <- sum(sapply(lxy,nrow))
+            nocc <- sum(detector(traps(x))=="telemetry")
+            nanimal <- length(lxy)
+        }
         if (is.logical(title)) {
             txt <- ifelse (is.null(session(x)), paste(deparse(substitute(x)),
                        collapse=''), session(x))
@@ -359,13 +402,16 @@ plot.capthist <- function(x, rad = 5,
             subtitle <- if (subtitle) {
                 if (type == 'sightings') {
                     if (any(markocc<0))
-                        paste(nocc, 'sighting occasions,', nd, 'sightings of marked and unmarked animals')
+                        paste0(nocc, ' sighting occasion', pl, ', ', nd, ' sightings of marked and unmarked animals')
                     else
-                        paste(nocc, 'sighting occasions,', nd, 'sightings of unmarked animals')
+                        paste0(nocc, ' sighting occasion', pl, ', ', nd, ' sightings of unmarked animals')
                 }
+                else if (type == 'telemetry')
+                    paste0(nocc, ' occasion', pl, ', ', nd, ' fixes,',
+                           nanimal, ' animals')
                 else
-                    paste(nocc, 'occasions,', nd, 'detections,',
-                          nanimal, 'animals')
+                    paste0(nocc, ' occasion', pl, ', ', nd, ' detections, ',
+                           nanimal, ' animals')
             }
                 else ''
         }
@@ -387,12 +433,17 @@ plot.capthist <- function(x, rad = 5,
 plotMCP <- function(x, add = FALSE, col = 'black', fill = NA, lab1cap = FALSE,
                     laboffset = 4, ncap = FALSE, ...) {
     plotone <- function (df, col, fill) {
-        par(fg=col)
-        polygon(df, col=fill)
+        if (nrow(df)>0) {
+            par(fg=col)
+            polygon(df, col=fill)
+        }
     }
     mcp <- function (df) {
+        if (nrow(df)>1) {
         df <- df[chull(df[,1], df[,2]),]
         rbind(df, df[1,])
+        }
+        else df
     }
     if (ms(x)) {
         lapply(x, plotMCP, add = add, col = col, ...)
@@ -400,10 +451,12 @@ plotMCP <- function(x, add = FALSE, col = 'black', fill = NA, lab1cap = FALSE,
     else {
         xyl <- telemetryxy(x)
         if (is.null(xyl)) {
-            if (detector(traps(x)) %in% c('polygon','polygonX','telemetry'))
+            if (all(detector(traps(x)) %in% c('polygon','polygonX')))
                 xyl <- split(xy(x), animalID(x))
-            else
-                stop ("requires polygon or telemetry data")
+            else {
+                df <- as.data.frame(traps(x)[trap(x, names=FALSE),])
+                xyl <- split(df, animalID(x))
+            }
         }
         if (!add)
             plot(traps(x), ...)
@@ -411,6 +464,7 @@ plotMCP <- function(x, add = FALSE, col = 'black', fill = NA, lab1cap = FALSE,
         on.exit(par(fg=fg))
         if (missing(col)) col <- 'black'
         xymcp <- lapply(xyl, mcp)
+        if (length(xymcp)>0) {
         mapply(plotone, xymcp, col, fill)
 
         if (lab1cap | ncap) {
@@ -423,9 +477,40 @@ plotMCP <- function(x, add = FALSE, col = 'black', fill = NA, lab1cap = FALSE,
             }
             mapply(labhead, xymcp, names(xyl), sapply(xyl,nrow), col)
         }
+        }
         invisible(xyl)
     }
 }
 ############################################################################################
 # plotMCP(AB2004,col=1:12, gridl=F)
+
+## 2016-10-17, 2016-11-14
+occasionKey <- function (capthist, noccasions, rad = 3, x, y, px = 0.9, py = 0.9, 
+                         title = 'Occasion', ...) {
+    if (missing(x)) {
+        ux <- par()$usr[1:2]
+        x <- ux[1] + px * diff(ux)
+    }
+    if (missing(y)) {
+        uy <- par()$usr[3:4]
+        y <- uy[1] + py * diff(uy)
+    }
+    if (!missing(capthist)) {
+        if (ms(capthist))
+            stop ("occasionKey requires single-session capthist")
+        noccasions <- ncol(capthist)
+    }
+    else {
+        if (missing (noccasions))
+            stop ("occasionKey requires one of capthist or noccasions")
+    }
+    dx  <- cos((1:noccasions) * 2 * pi / noccasions) * rad
+    dy  <- sin((1:noccasions) * 2 * pi / noccasions) * rad
+    points (x,y, cex = 0.5)
+    text (x, y+rad*2.3, title, ...)
+    text (x+dx, y-dy, 1:noccasions, ...)
+}
+# plot(captdata, border = 30)
+# occasionKey(nocc=5, rad = 10, cex = 0.8)
+############################################################################################
 

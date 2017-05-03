@@ -6,7 +6,7 @@
 
 \description{
   
-  A compendium of ways to make \code{\link{secr.fit}} run faster. 
+  A list of ways to make \code{\link{secr.fit}} run faster. 
   
 }
 

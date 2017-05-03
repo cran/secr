@@ -88,11 +88,16 @@ replaced using generic methods of the same name.
 
 }
 
-\seealso{ \code{\link{make.grid}}, \code{\link{read.traps}},
+\seealso{ 
+
+  \code{\link{make.grid}}, \code{\link{read.traps}},
   \code{\link{rbind.traps}}, \code{\link{reduce.traps}},
   \code{\link{plot.traps}}, \code{\link{secr.fit}},
   \code{\link{spacing}}, \code{\link{detector}},
-  \code{\link{covariates}}, \code{\link{trap.builder}} }
+  \code{\link{covariates}}, \code{\link{trap.builder}},
+  \code{\link{as.mask}}
+  
+  }
 
 \examples{
 

@@ -9,19 +9,17 @@
 }
 
 \usage{
-\method{plot}{capthist}(x, rad = 5,
-    hidetraps = FALSE, tracks = FALSE,
+\method{plot}{capthist}(x, rad = 5, hidetraps = FALSE, tracks = FALSE,
     title = TRUE, subtitle = TRUE, add = FALSE, varycol = TRUE, 
-    icolours = NULL, randcol = FALSE, 
-    lab1cap = FALSE, laboffset = 4, ncap = FALSE, 
-    splitocc = NULL, col2 = "green",
-    type = c("petal", "n.per.detector", "n.per.cluster", "sightings"),
+    icolours = NULL, randcol = FALSE, lab1cap = FALSE, laboffset = 4, ncap = FALSE, 
+    splitocc = NULL, col2 = "green", type = c("petal", "n.per.detector", "n.per.cluster",
+        "sightings", "centres", "telemetry"),
     cappar = list(cex = 1.3, pch = 16, col = "blue"), 
     trkpar = list(col = "blue", lwd = 1), 
     labpar = list(cex = 0.7, col = "black"), ...)
 
-plotMCP(x, add = FALSE, col = "black", fill = NA, lab1cap = FALSE,
-laboffset = 4, ncap = FALSE, ...)
+plotMCP(x, add = FALSE, col = "black", fill = NA, lab1cap = FALSE, laboffset = 4,
+    ncap = FALSE, ...)
 
 }
 
@@ -55,11 +53,19 @@ laboffset = 4, ncap = FALSE, ...)
 \details{ 
 
 By default, a `petal' plot is generated in the style of Density (Efford 2012)
-using \code{eqscplot} from the MASS library. If \code{type =
+using \code{eqscplot} from the MASS library. 
+
+If \code{type =
 "n.per.detector"} or \code{type = "n.per.cluster"} the result is a
 colour-coded plot of the number of individuals at each unit, pooled over
-occasions. If \code{type = "sightings"} the sightings of unmarked animals are 
-displayed on a petal-like plot (requires mark-resight data).
+occasions. 
+
+If \code{type = "sightings"} the sightings of unmarked animals are 
+displayed on a petal-like plot (requires mark-resight data) (see also \code{\link{sightingPlot}}).
+
+If \code{type = "centres"} then a single point is plotted for each animal, jittered on each axis by a random amount (limits +/- \code{rad}/2).
+
+If \code{type = "telemetry"} and the `telemetryxy' attribute is not NULL then the telemetry locations are plotted.
 
 If \code{title} = FALSE no title is displayed; if \code{title} = TRUE,
 the session identifer is used for the title.
@@ -75,7 +81,8 @@ grid of plots to be displayed simultaneously (nr rows x nc columns).
 These arguments are used only for petal plots: \code{rad},
 \code{tracks}, \code{varycol}, \code{randcol}, \code{lab1cap},
 \code{laboffset}, \code{ncap}, \code{splitocc}, \code{col2},
-\code{trkpar}, and \code{labpar}.
+\code{trkpar}, and \code{labpar}. Call \code{\link{occasionKey}} 
+to add a key to the petals.
 
 If \code{icolours = NULL} and \code{varycol = TRUE} then a vector of
 colours is generated automatically as topo.colors((nrow(x)+1) * 1.5).
@@ -87,10 +94,6 @@ data over a base plot of detector locations. Usually the data are
 telemetry locations in the xylist attribute of the capthist
 object; if this is not present and \code{x} is a polygon search
 capthist then the individual xy data are plotted.
-
-To overplot the point telemetry locations use \code{\link{xy2CH}} to
-first convert the xylist attribute to a full telemetry capthist object
-(see Examples).
 
 }
 
@@ -114,7 +117,13 @@ University of Otago, Dunedin, New Zealand. \url{http://www.otago.ac.nz/density}.
 
 }
 
-\seealso{ \code{\link{capthist}} }
+\seealso{ 
+
+\code{\link{capthist}}, 
+\code{\link{occasionKey}}, 
+\code{\link{sightingPlot}} 
+
+}
 
 \examples{
 demotrap <- make.grid()
@@ -123,7 +132,6 @@ tempcapt <- sim.capthist(demotrap,
     detectpar = list(g0 = 0.15, sigma = 30))
 plot(tempcapt, border = 10, rad = 3, tracks = TRUE, 
     lab1cap = TRUE, laboffset = 2.5)
-
 
 ## type = n.per.cluster
 
@@ -158,19 +166,18 @@ plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = T,
 
 \dontrun{
 ## generate telemetry data
-## as in ?addTelemetry
 te <- make.telemetry()
 tr <- make.grid(detector = "proximity")
 totalpop <- sim.popn(tr, D = 20, buffer = 100)
 tepop <- subset(totalpop, runif(nrow(totalpop)) < 0.05)
-trCH <- sim.capthist(tr,  popn = totalpop, renumber = FALSE, detectfn = "HHN")
 teCH <- sim.capthist(te, popn = tepop, renumber=FALSE, detectfn = "HHN",
     detectpar = list(lambda0 = 3, sigma = 25))
-combinedCH <- addTelemetry(trCH, teCH)
+plot(teCH, type = 'telemetry', tracks = TRUE)
 
-plotMCP(combinedCH)
-plot(xy2CH(combinedCH), add=T)
-
+## simple "centres" example
+CH <- sim.capthist(make.poly(), nocc = 20, detectpar = list(g0 = 1, sigma = 10))
+plot(CH, cappar = list(col = 'orange'), varycol = FALSE, border = 10)
+plot(CH, type = 'centres', add = TRUE, rad = 0)
 }
 }
 

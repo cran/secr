@@ -5,9 +5,9 @@
 
 ## 2014-08-19 moved from methods.R
 ## 2015-09-30 fixpmix now done in secr.lpredictor
-
+## 2017-04-08 realnames argument
 ############################################################################################
-predict.secr <- function (object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
+predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("response", "link"), se.fit = TRUE,
                           alpha = 0.05, savenew = FALSE, ...) {
 
     if (is.null(object$fit)) {
@@ -18,6 +18,13 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
 
     if (is.null(newdata)) newdata <- secr.make.newdata (object)
 
+    if (is.null(realnames))
+        realnames <- object$realnames
+    else {
+        if (!all(realnames %in% object$realnames))
+            stop ("realnames not in fitted model object")
+    }
+    
     ## unmashing 2012-07-24
     unmash <- object$details$unmash
     if (object$CL | is.null(unmash)) unmash <- FALSE
@@ -74,21 +81,21 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
                 beta.vcv = beta.vcv, smoothsetup = smoothsetup[[x]])
         }
     }
-    predict <- sapply (object$realnames, getfield, simplify = FALSE)
+    predict <- sapply (realnames, getfield, simplify = FALSE)
   
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
     if (se.fit)  out <- list(nrow(newdata))
     else {
         out <- newdata
         ## add columns for real parameter estimates
-        for (varname in object$realnames)
+        for (varname in realnames)
             out[,varname] <- rep(NA,nrow(out))
     }
     
     for (new in 1:nrow(newdata)) {
         lpred  <- sapply (predict, function(x) x[new,'estimate'])
         if (type == "response")
-            Xlpred <- Xuntransform(lpred, object$link, object$realnames)
+            Xlpred <- Xuntransform(lpred, object$link[realnames], realnames)
 
         if (ms(object)) {
             if (!('session' %in% names(newdata))) {
@@ -115,12 +122,12 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
             selpred <- sapply (predict,function(x) x[new,'se'])
             if (type == "response") {
                 temp <- data.frame (
-                    row.names = object$realnames,
-                    link = unlist(object$link[object$realnames]),
+                    row.names = realnames,
+                    link = unlist(object$link[realnames]),
                     estimate = Xlpred,
-                    SE.estimate = se.Xuntransform (lpred, selpred, object$link, object$realnames),
-                    lcl = Xuntransform(lpred-z*selpred, object$link, object$realnames),
-                    ucl = Xuntransform(lpred+z*selpred, object$link, object$realnames)
+                    SE.estimate = se.Xuntransform (lpred, selpred, object$link[realnames], realnames),
+                    lcl = Xuntransform(lpred-z*selpred, object$link[realnames], realnames),
+                    ucl = Xuntransform(lpred+z*selpred, object$link[realnames], realnames)
                 )
                 ## truncate density at zero; adjust for mash(); adjust for telemetry
                 if ('D' %in% row.names(temp)) {
@@ -132,8 +139,8 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
             }
             else {
                 temp <- data.frame (
-                    row.names = object$realnames,
-                    link = unlist(object$link[object$realnames]),
+                    row.names = realnames,
+                    link = unlist(object$link[realnames]),
                     estimate = lpred,
                     SE.estimate = selpred,
                     lcl = lpred-z*selpred,
@@ -153,8 +160,8 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
                 det <- detector(traps(object$capthist))
 
             ## purge irrelevant real parameters
-            if (det == 'telemetry') {
-                    rnum <- match(c('D','g0'), row.names(temp))
+            if (all(det %in% c('telemetry'))) {
+                    rnum <- match(c('D','g0','lambda0'), row.names(temp))
                     rnum <- rnum[!is.na(rnum)]
                     if (length(rnum)>0)
                         temp <- temp[-rnum,]
@@ -189,8 +196,8 @@ predict.secr <- function (object, newdata = NULL, type = c("response", "link"), 
 }
 ############################################################################################
 
-predict.secrlist <- function (object, newdata = NULL, type = c("response","link"), se.fit = TRUE,
+predict.secrlist <- function (object, newdata = NULL, realnames = NULL, type = c("response","link"), se.fit = TRUE,
                               alpha = 0.05, savenew = FALSE, ...) {
-    lapply(object, predict, newdata, type, se.fit, alpha, savenew, ...)
+    lapply(object, predict, newdata, realnames, type, se.fit, alpha, savenew, ...)
 }
 ############################################################################################

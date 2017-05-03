@@ -98,6 +98,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 survive <- sample (nrow(oldpopn), replace = FALSE, size = nsurv)
                 survive <- sort(survive)   ## numeric indices
             }
+            
             newpopn <- subset.popn(oldpopn, subset=survive)
             if (turnoverpar$sigma.m[t] > 0) {
                 newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,

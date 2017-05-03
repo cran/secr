@@ -9,6 +9,7 @@
 ## 2012-10-19 telemetry detector type
 ## 2013-01-11 adjust call to count.fields etc to allow binary.usage
 ##            to be passed through to read.traps
+##
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
  
@@ -103,7 +104,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     fmt <- match.arg(fmt)
     dots <- match.call(expand.dots = FALSE)$...
 
-    if ((detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
+    if (any(detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
@@ -111,8 +112,6 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         nx <- nchar(x)
         tolower(substring(x, nx-3, nx))
     }
-    if (missing(trapfile) & (detector=='telemetry'))
-        trapfile <- 0  ## dummy value; not used
 
     countargs <- dots[names(dots) %in% names(formals(count.fields))]
     if (filetype(captfile) == '.csv')
@@ -151,40 +150,44 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
 ## and perhaps set prior to NA?
     capt$Occ <- as.numeric(capt$Occ)
 
-    ## assumes file= is first argument of read.traps
-    ## allows for multiple trap files
-    defaultdots <- list(sep = '', comment.char = '#')
-    if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
-    dots <- replacedefaults (defaultdots, list(...))
-    readtraps <- function (x, mo) {
-        if (detector == 'telemetry') {
-            buffer <- c(-10,10)
-            trps <- expand.grid(x = range(capt$X)+buffer,
-                                y = range(capt$Y)+buffer)[c(1,3,4,2,1),]
-            rownames(trps) <- 1:5
-            class(trps) <- c('traps', 'data.frame')
-            attr(trps, 'polyID') <- factor(rep(1,nrow(trps)))
-            attr(trps, 'detector') <- 'telemetry'
+    if (all(detector=='telemetry')) {                     ## untested
+        maketelemetrytrap <- function(x) {
+            trp <- t(apply(x,2,mean))
+            trp <- as.data.frame(trp)
+            dimnames(trp) <- list(1:nrow(trp), c('x','y'))
+            class(trp) <- c('traps', 'data.frame')
+            attr(trp, 'detector') <- 'telemetry'   ## or rep('telemetry', noccasions) ?
+            attr(trp, 'telemetrytype') <- 'independent'
+            
             trps
         }
-        else {
-            
-            do.call ('read.traps', c(list(file = x), detector = detector,
-                                 list(covnames = trapcovnames), 
-                                 list(markocc = mo), dots) )
-        }
-    }
-   
-    ## use mapply to carry session-varying markocc?
-    molist <- inherits(markocc, 'list')
-    if (molist) {
-        trps <- mapply(readtraps, trapfile, markocc, SIMPLIFY = FALSE)
+        captsess <- split(capt[,4:5], capt[,1])
+        trps <- lapply(captsess, maketelemetrytrap)
     }
     else
-        trps <- sapply(trapfile, readtraps, mo = markocc, simplify = FALSE)
-    
+    {
+        ## assumes file= is first argument of read.traps
+        ## allows for multiple trap files
+        defaultdots <- list(sep = '', comment.char = '#')
+        if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
+        dots <- replacedefaults (defaultdots, list(...))
+        
+        readtraps <- function (x, mo) {
+            trapargs <- c(list(file = x, detector = detector,
+                               covnames = trapcovnames, markocc = mo), dots)
+            do.call ('read.traps', trapargs)
+        }
+        ## use mapply to carry session-varying markocc?
+        molist <- inherits(markocc, 'list')
+        if (molist) {
+            trps <- mapply(readtraps, trapfile, markocc, SIMPLIFY = FALSE)
+        }
+        else {
+            trps <- sapply(trapfile, readtraps, mo = markocc, simplify = FALSE)
+        }
+    }
     if (length(trps)==1) trps <- trps[[1]]
-
+    
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
         covnames = covnames, sortrows = TRUE, cutval = cutval,
         noncapt = noncapt, tol = tol, snapXY = snapXY)

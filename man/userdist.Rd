@@ -80,7 +80,7 @@ Full documentation of the \pkg{secr} capability for non-Euclidean
 distances is in the separate document
 \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf},
 which includes example code for the analysis of Sutherland et
-al. (2014).
+al. (2015).
 
 }
 
@@ -108,9 +108,9 @@ restricted to locations on the `mask' grid.
 
 \references{
 
-Sutherland, C., Fuller, A. K. and Royle, J. A. (2014) Modelling
+Sutherland, C., Fuller, A. K. and Royle, J. A. (2015) Modelling
 non-Euclidean movement and landscape connectivity in highly structured
-ecological networks. \emph{Methods in Ecology and Evolution} (in press).
+ecological networks. \emph{Methods in Ecology and Evolution} \bold{6}, 169--177.
 
 }
 

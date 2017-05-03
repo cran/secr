@@ -44,13 +44,13 @@ If a positive \code{length.out} is specified, \code{by} will be computed as
 }
 
 \seealso{
-\code{\link{transectlength}}
+\code{\link{transectlength}}, \code{\link{discretize}}
 }
 
 \examples{
 
 x <- seq(0, 4*pi, length = 41)
-temptrans <- make.transect(x = x*100, y = sin(x)*300, )
+temptrans <- make.transect(x = x*100, y = sin(x)*300)
 plot (snip(temptrans, by = 200), markvertices = 1)
 
 \dontrun{

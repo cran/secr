@@ -78,7 +78,7 @@ int bswitch (int btype, int N, int i, int k, int caughtbefore[])
 /*==============================================================================*/
 
 void simdetect (
-    int    *detect,     /* detector 0 multi, 1 proximity, 2 single, 3 count, 4 area ??? */
+    int    *detect,     /* detector -1 single, 0 multi, 1 proximity, 2 count,... */
     double *gsb0val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal] */
     double *gsb1val,    /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before] */
     int    *cc0,        /* number of g0/sigma/b combinations for naive animals */
@@ -193,7 +193,7 @@ void simdetect (
     double maxg = 0;
     double lambdak;  /* temp value for Poisson rate */
     double grx;      /* temp value for integral gr */
-    double stdint;
+    double H;
     int    J;
     int    maybecaught;
     double dx,dy,d;
@@ -252,7 +252,6 @@ void simdetect (
         maxdet = *N * *ss * *kk;
         if (!((*fn == 10) || (*fn == 11)))
             error ("simsecr not implemented for this combination of detector & detectfn");
-
     }
 
     if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
@@ -575,9 +574,9 @@ void simdetect (
                         par[2] = z;
                         n1 = cumk[k];
                         n2 = cumk[k+1]-1;
-                        stdint = gintegral1(*fn, par);
+                        H = hintegral1(*fn, par);
                         sumhaz += -log(1 - par[0] * integral1D (*fn, i, 0, par, 1, traps, 
-			    animals, n1, n2, sumk, *N, ex) / stdint);
+			    animals, n1, n2, sumk, *N, ex) / H);
                     }
                 }
                 /* ------------------------------------ */
@@ -593,9 +592,9 @@ void simdetect (
                         par[2] = z;
                         n1 = cumk[k];
                         n2 = cumk[k+1]-1;
-                        stdint = gintegral1(*fn, par);
+                        H = hintegral1(*fn, par);
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, traps, animals,
-						       n1, n2, sumk, *N, ex) / stdint;
+						       n1, n2, sumk, *N, ex) / H;
     	                pks = (1 - exp(-sumhaz)) * (-log(1-lambdak)) / sumhaz;
                         count = Random() < pks;
                         maxg = 0;
@@ -717,9 +716,9 @@ void simdetect (
                         par[2] = z;
                         n1 = cumk[k];
                         n2 = cumk[k+1]-1;
-                        stdint = gintegral1(*fn, par);
+                        H = hintegral1(*fn, par);
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, traps, animals,
-						       n1, n2, sumk, *N, ex) / stdint;
+						       n1, n2, sumk, *N, ex) / H;
                         count = rcount(*binomN, lambdak, Tski);  /* numb detections on transect */
                         maxg = 0;
                         if (count>0) {                       /* find maximum - approximate */

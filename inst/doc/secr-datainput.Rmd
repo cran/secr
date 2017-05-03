@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: 
   pdf_document:
     toc: yes
-    toc_depth: 4
+    toc_depth: 2
 vignette: >
   %\VignetteIndexEntry{Data input for secr}
   %\VignetteEngine{knitr::rmarkdown}
@@ -24,7 +24,7 @@ data already in R or from text files. This vignette describes data
 input directly from text files with `read.capthist`, which will
 be adequate for most analyses.
 
-###Introduction
+#Introduction
 
 The text file formats used by `read.capthist` are shared with
 program DENSITY (Efford 2012). Two types of file are needed, one for
@@ -33,7 +33,7 @@ terms 'detector', 'identifier', 'covariate', 'session' and 'occasion';
 if you are not familiar with these as used in **secr** then
 consult the [Glossary](#glossary).
 
-###Text formats - general
+#Text formats - general
 
 Input files should be prepared with a text editor, not a word
 processing program. Values are usually separated by blanks or tabs,
@@ -49,7 +49,7 @@ fields will be taken literally ('01' is read as '01', not '1'), and it
 is essential to be consistent between the capture data file and the
 detector layout file when using 'trapID' format.
 
-###Capture data format
+#Capture data format
 
 Capture data are read from a single text file with one detection
 record per line. Each detection record starts with a session
@@ -103,7 +103,7 @@ covariate are the same in each session, whether or not all levels are
 used. This may require the levels in the final capthist object to be
 set manually.
 
-###Detector layout format
+#Detector layout format
 
 The basic format for a detector (trap) layout file simply gives the x-
 and y-coordinates for each detector, one per line:
@@ -183,7 +183,7 @@ at the end of each line, separated by one forward slash '/':
 $s$ covariate columns associated with occasions 1:$s$ and
  to give the set of columns a name that may be used in model formulae.
 
-###Using read.capthist
+#Using read.capthist
 
 Having described the file formats, we now demonstrate the use of
 `read.capthist` to import data to a 'capthist'
@@ -222,13 +222,13 @@ The defaults may be changed with settings that are passed by
 
 If the study includes multiple sessions and the detector layout or usage varies between sessions then it is necessary to provide session-specific detector layout files. This is done by giving 'trapfile' as a vector of names, one per session (repetition allowed; all '.csv' or all not '.csv'). Sessions are sorted numerically if all session identifiers are numeric, otherwise alphanumerically. Care is needed to match the order of layout files to the session order: always confirm the result matches your intention by reviewing the summary.
 
-###When read.capthist is inadequate...
+#When read.capthist is inadequate...
 
 Some data do not neatly import with `read.capthist`. You may need to first construct `traps` objects with `read.traps` and then marry them to capture data by a custom call to `make.capthist` (`make.capthist` is called automatically by `read.capthist`). Please consult the help for `read.traps` and `make.capthist`.
 
-###Other detector types
+#Other detector types
 
-####Count detectors
+##Count detectors
 
 The 'proximity' detector type allows at most one detection of each
 individual at a particular detector on any occasion. Detectors that
@@ -242,7 +242,7 @@ Count data are input by repeating each line in the capture data the required num
 `?make.capthist` for an example that automatically replicates rows of a capture dataframe according to a frequency vector f (f could be a column in the capture dataframe).
 
 
-####Signal detectors
+##Signal detectors
 
 Signal strength detectors are described in the document [secr-sound.pdf] (see also Efford et al. 2009). Here we just note that signal strength data may be input with `read.capthist` using a minor
 extension of the DENSITY format: the signal strength for each detection is appended as the fifth ('fmt = trapID') or sixth ('fmt = XY') value in each row of the capture data file. There will usually be
@@ -253,7 +253,7 @@ write.capthist(signalCH, 'temp')  ## export data for demo
 tempCH <- read.capthist('tempcapt.txt', 'temptrap.txt', detector = 'signal', cutval = 52.5)
 ```
 
-####Polygon, transect and telemetry detectors
+##Polygon and transect detectors
 
 'Detectors' are usually modelled as if they exist at a point, and each row
 of the 'trapfile' for `read.capthist` gives the x-y coordinates
@@ -318,8 +318,6 @@ plot(tempcapt, label = TRUE, tracks = TRUE, title = 'Simulated detections within
 See [secr-polygondetectors.pdf] for more on polygon and
 transect detectors. 
 
-The 'telemetry' detector type is used to input animal locations from radiotelemetry. For input it works much the same as a polygon detector; while a perimeter is required, it is not used in analysis and therefore may be as crude as you like.
-
 Usage and covariates apply to the polygon or transect as a whole rather than to each vertex. Usage codes and covariates are appended to the end of the line, just as for point detectors (traps etc.). The usage
 and covariates for each polygon or transect are taken from its first vertex. Although the end-of-line strings of other vertices are not used, they cannot be blank and should use the same spacing as the
 first vertex.
@@ -341,11 +339,21 @@ Here is a polygon file that defines both usage and a categorical covariate. It w
 
 Detections along a transect have a similar structure to detections within a polygon, and input follows the same format. Locations are input as x-y coordinates for the position on the transect line from which each detection was made, not as distances along the transect.
 
-###Mark--resight
+##Telemetry
+
+NOTE: This section applies to secr 3.0 - previous versions handled telemetry differently.
+
+The 'telemetry' detector type is used for animal locations from radiotelemetry. Even if the ultimate goal is to analyse telemetry data jointly with capture--recapture data, the first step is to create separate capthist objects for the telemetry and capture--recapture components. This section covers the input of standalone telemetry data; [secr-telemetry.pdf] shows how to combine telemetry and capture--recapture datasets with the function `addTelemetry`.
+
+Telemetry observations ('fixes') are formatted in the standard 'XY' format. The input text file comprises at least five columns (session, animalID, occasion, x, y). 'Occasion' is largely redundant, and all fixes may be associated with  occasion 1. It is desirable to keep fixes in the correct temporal order within each animal, but this is not used for modelling. The function `read.telemetry` is a version of `read.capthist` streamlined for telemetry data (detector locations are not needed).
+
+See [secr-telemetry.pdf] for an example.
+
+##Mark--resight
 
 Spatial mark--resight data combine detection histories of marked animals, input as described above, and counts of sighted but unmarked or unidentified animals. The latter are input separately as described in [secr-markresight.pdf], using the `addSightings` function. Sighting-only data may include all-zero detection histories of previously marked animals known to be alive but not seen; these are coded with occasion 0 (zero).
 
-###Troubleshooting
+#Troubleshooting
 
 A message like
 
@@ -358,7 +366,7 @@ just one or two stray lines with an extra value. You can use
 'filename.txt' with your own filename.
 
 
-###Further notes
+#Further notes
 
 'Filters' are used in DENSITY to select and reconfigure data. Their
 function is taken over in **secr** by the methods `subset`
@@ -390,7 +398,7 @@ object from polygon detection data in an R list, structured as input
 for the Bayesian analysis of Royle and Young (2008), using data
 augmentation.
 
-###References
+#References
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. *Biometrics* **64**,
@@ -428,20 +436,20 @@ Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and
   Society - India Program, Centre for Wildlife Studies, Bangalure,
   India.
 
-###Appendix: Glossary  {#glossary}
+#Appendix: Glossary  {#glossary}
 
-#####Covariate
+###Covariate
 Auxiliary data used in a model of detection probability. Covariates may be associated with detectors, individuals, sessions or occasions. Spatial covariates of density are a separate matter -- see `?mask`. Individual covariates[^footnote] are stored in a dataframe (one row per animal) that is an attribute of a capthist object. Detector covariates are stored in a dataframe (one row per detector) that is an attribute of a traps object (remembering that a capthist object always includes a traps object). Session and occasion (=time) covariates are not stored with the data; they are provided as the arguments 'sessioncov' and 'timecov' of function `secr.fit`.
 
 [^footnote]:Individual covariates may be used directly only when a model is fitted by maximizing the conditional likelihood, but they are used to define groups for the full likelihood case.
 
-#####Detector 
+###Detector 
 A device used to detect the presence of an animal. Often used interchangeably with 'trap' but it is helpful to distinguish true traps, which always detain the animal until it is released, from other detectors such as hair snags and cameras that leave the animal free to roam. A detector in SECR has a known physical location, usually a point defined by its x-y coordinates.
 
-#####Identifier 
+###Identifier 
 Label used to distinguish detectors, animals or sessions.
 
-#####Occasion
+###Occasion
 In conventional capture--recapture, 'occasion' refers to a discrete sampling event (e.g., Otis et al. (1978) and program CAPTURE). A typical 'occasion' is a daily trap visit, but the time
   interval represented by an 'occasion' varies widely between studies. Although trapped samples accumulate over an interval (e.g., the preceding day), for analysis they are treated as instantaneous. Occasions are numbered 1, 2, 3, etc. Closed population analyses usually require two or more occasions (see Miller et al. 2005 for an exception).
 
@@ -449,13 +457,13 @@ SECR follows conventional capture--recapture in assuming discrete sampling event
 
 Proximity and count detectors allow multiple occurrences of an animal to be recorded in each sampling interval. Analysis is then possible with data from a single occasion. For consistency we retain the term 'occasion', although such a sample is clearly not instantaneous.
 
-#####SECR
+###SECR
 Spatially explicit capture--recapture, an inclusive term
   for capture--recapture methods that model detection probability as
   function of distance from unobserved 'home-range' centres (e.g.,
   Borchers and Efford 2008). **secr** refers to the R package.
 
-#####Session  
+###Session  
   A session is a set of occasions over which a population is
   considered closed to gains and losses. Each 'primary session' in the
   'robust' design of Pollock (1982) is treated as a session in
@@ -473,5 +481,6 @@ Spatially explicit capture--recapture, an inclusive term
 [secr-polygondetectors.pdf]: http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
 [secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
 [secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
+[secr-telemetry.pdf]: http://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
 [secr-sound.pdf]: http://www.otago.ac.nz/density/pdfs/secr-sound.pdf
 [simpolyfigure]: simpoly.png

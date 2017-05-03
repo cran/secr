@@ -70,7 +70,7 @@ See also the example in \href{http://www.otago.ac.nz/density/pdfs/secr-densitysu
   Setting the intercept of a smooth to zero is not a canned option in
   \pkg{mgcv}, and is not offered in \pkg{secr}. It may be achieved by
   placing a knot at zero and hacking the matrix of basis functions to
-  drop the corresponding column, plus some more \href{https://bit.ly/1rcIsQ6}{jiggling}.
+  drop the corresponding column, plus some more \href{http://bit.ly/1rcIsQ6}{jiggling}.
 
 }
 
@@ -129,7 +129,7 @@ plot(sapply(pred, '[', 'g0', 'estimate'))
 
 Borchers, D. L. and Kidney, D. J. (2014) Flexible density surface
 estimation using regression splines with spatially explicit
-capture-recapture data. Technical Report, Univ. St Andrews.
+capture-recapture data. In prep.
 
 Wood, S. N. (2006) \emph{Generalized Additive Models: An Introduction with
 R.} Chapman and Hall/CRC.

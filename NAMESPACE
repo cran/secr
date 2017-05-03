@@ -1,8 +1,8 @@
 importFrom(graphics, ".filled.contour", "abline", "contour", "hist", "lines", "locator",
            "mtext", "par", "persp", "points", "polygon", "rect", "segments", "strheight",
-           "strwidth", "symbols", "text")
+           "strwidth", "symbols", "text", "legend")
 importFrom(grDevices, "chull", "contourLines", "grey", "palette", "terrain.colors",
-           "topo.colors")
+           "topo.colors", "rainbow")
 importFrom(methods, "as", "is", "Ops", "Math")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
            "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", "integrate",
@@ -33,7 +33,7 @@ importFrom(raster, clump)
 importFrom(raster, adjacent)
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
-exportClasses(mask, Dsurface)
+# exportClasses(mask, Dsurface)   NOT WORKING 2016-10-07
 exportMethods(raster)
 
 export (secr.fit)
@@ -139,6 +139,7 @@ export (spotHeight)
 export (strip.legend)
 export (randomHabitat)
 export (make.lookup)
+export (as.mask)
 
 # new generics
 export (reduce)
@@ -194,10 +195,14 @@ export (covariates)
 export (timevaryingcov)
 export (usage)
 export (markocc)
+export (telemetrytype)
 export (Tu)
 export (Tm)
+export (Tn)
 export (sighting)
 export (usagePlot)
+export (sightingPlot)
+export (occasionKey)
 export (detector)
 export (clusterID)
 export (clustertrap)
@@ -234,8 +239,10 @@ S3method(covariates,default)
 S3method(timevaryingcov,default)
 S3method(usage,default)
 S3method(markocc,default)
+S3method(telemetrytype,default)
 S3method(Tu,default)
 S3method(Tm,default)
+S3method(Tn,default)
 S3method(clusterID,default)
 S3method(clustertrap,default)
 S3method(detector,default)
@@ -247,8 +254,10 @@ export ('covariates<-')
 export ('timevaryingcov<-')
 export ('usage<-')
 export ('markocc<-')
+export ('telemetrytype<-')
 export ('Tu<-')
 export ('Tm<-')
+export ('Tn<-')
 export ('detector<-')
 export ('clusterID<-')
 export ('clustertrap<-')
@@ -258,6 +267,7 @@ export ('transectID<-')
 export ('traps<-')
 export ('session<-')
 export ('xy<-')
+export ('telemetryxy<-')
 export ('signalframe<-')
 export ('signal<-')
 export ('noise<-')
@@ -281,9 +291,8 @@ export (edist)
 export (nedist)
 export (deleteMaskPoints)
 export (pmixProfileLL)
-
-## export (telemetry.LT)
-## export (telemetry.LC)
+export (updateCH)
+export (shareFactorLevels)
 
 S3method(print, traps)
 S3method(plot, traps)
@@ -342,6 +351,7 @@ S3method(plot, secrlist)
 S3method(predict, secrlist)
 S3method(AIC, secrlist)
 S3method('[', secrlist)
+S3method(c, secrlist)
 
 S3method(print, Dsurface)
 S3method(plot, Dsurface)
@@ -353,30 +363,4 @@ S3method(print, Rsurface)
 S3method(print, secrtest)
 S3method(plot, secrtest)
 
-useDynLib (
-    secr,
-    fxIHP,
-    chat,
-    pdotpoint,
-    pdotpoly,
-    integralprw1,
-    secrloglik,
-    trappingsingle,
-    trappingmulti,
-    trappingproximity,
-    trappingcount,
-    trappingpolygon,
-    trappingpolygonX,
-    trappingtransect,
-    trappingtransectX,
-    trappingtelemetry,
-    trappingsignal,
-    trappingtimes,
-    simdetect,
-    naived,
-    naivecap2,
-    makelookup,
-    SegCircle,
-    getdenomext
-)
-
+useDynLib (secr, .registration = TRUE)

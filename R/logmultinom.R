@@ -19,7 +19,6 @@ logmultinom <- function (capthist, grp = NULL) {
         lmn
     }
     else {
-        dim3 <- length(dim(capthist)) > 2  # 2009 10 07
         nc <- nrow(capthist)  # 'nc' = number caught
         if (nc==0) {
             0               # hypothetical 2011-03-19
@@ -27,7 +26,7 @@ logmultinom <- function (capthist, grp = NULL) {
         else {
             if (is.null(grp)) grp <- rep(1,nc)
             # Count = number per unique capture history
-            if (dim3) capthist <- matrix(capthist, nrow = nc)
+            capthist <- matrix(capthist, nrow = nc)
             groupeddata <- split.data.frame(capthist, grp)
             count <- function(x) table(make.lookup(x)$index)
             counts <- sapply(groupeddata, count)

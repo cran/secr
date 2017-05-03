@@ -102,7 +102,8 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
     else {                        ## single session
         if (refit) {
             if (!is.call(object$call))
-                stop ("requires fitted object from secr 1.5.0 or later with complete call")
+                stop ("requires fitted object with complete call (details$savecall = TRUE)")
+
             trps <- traps(object$capthist)
             msk <- object$mask
             cpts <- object$capthist

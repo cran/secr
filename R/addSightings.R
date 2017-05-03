@@ -1,4 +1,10 @@
-addSightings <- function (capthist, unmarked = NULL, nonID = NULL, verify = TRUE, ...) {
+###############################################################################
+## package 'secr'
+## addSightings.R
+## 2017-03-27 tweaked to allow NULL
+###############################################################################
+
+addSightings <- function (capthist, unmarked = NULL, nonID = NULL, uncertain = NULL, verify = TRUE, ...) {
     if (ms(capthist)) {
         if (is.character(unmarked)) {
             ##pre-read and split text file as list
@@ -12,6 +18,12 @@ addSightings <- function (capthist, unmarked = NULL, nonID = NULL, verify = TRUE
             session <- nonID[,1]
             nonID <- split(nonID[,-1], session)
         }
+        if (is.character(uncertain)) {
+            ##pre-read and split text file as list
+            uncertain<- read.table(uncertain, ...)
+            session <- uncertain[,1]
+            uncertain <- split(uncertain[,-1], session)
+        }
         if (!is.null(unmarked)) {
             if (!inherits(unmarked, 'list'))
                 stop ("unmarked should be a list for multi-session capthist")
@@ -24,11 +36,14 @@ addSightings <- function (capthist, unmarked = NULL, nonID = NULL, verify = TRUE
             if (length(nonID) != length(capthist))
                 stop("number of sessions differs between nonID and capthist")
         }
+        if (!is.null(uncertain)){
+            if (!inherits(uncertain, 'list'))
+                stop ("uncertain should be a list for multi-session capthist")
+            if (length(uncertain) != length(capthist))
+                stop("number of sessions differs between uncertain and capthist")
+        }
         for (i in 1:length(capthist)) {
-#             s <- ncol(capthist[[i]])
-#             capthist[[i]] <- addSightings(capthist[[i]], unmarked[[i]][,1:s], nonID[[i]][,1:s], 
-#                                           verify = FALSE)
-            capthist[[i]] <- addSightings(capthist[[i]], unmarked[[i]], nonID[[i]], 
+            capthist[[i]] <- addSightings(capthist[[i]], unmarked[[i]], nonID[[i]], uncertain[[i]],
                                           verify = FALSE)
         }
         if (verify) verify(capthist)
@@ -46,9 +61,13 @@ addSightings <- function (capthist, unmarked = NULL, nonID = NULL, verify = TRUE
         if (is.character(nonID))
             ## discard session column as unused
             nonID <- read.table(nonID, ...)[1:K,2:(S+1)]
+        if (is.character(uncertain))
+            ## discard session column as unused
+            uncertain <- read.table(uncertain, ...)[1:K,2:(S+1)]
         
-        Tu(capthist) <- as.matrix(unmarked)
-        Tm(capthist) <- as.matrix(nonID)
+        Tu(capthist) <- if (is.null(unmarked)) NULL else as.matrix(unmarked)
+        Tm(capthist) <- if (is.null(nonID)) NULL else as.matrix(nonID)
+        Tn(capthist) <- if (is.null(uncertain)) NULL else as.matrix(uncertain)
         if (verify) verify(capthist)
         capthist
     }

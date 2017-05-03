@@ -20,7 +20,6 @@
 ## 2013-07-19 a0 in valid.detectpar
 ## 2013-10-28 fixed mlogit.untransform
 ## 2013-10-29 fixpmix moved here: code was in model.average.R and methods.R
-
 ## 2013-06-17 I have so far resisted the temptation to add HCU hazard cumulative uniform df
 ##            based on Horne & Garton 2006
 ## 2013-11-09 pointsInPolygon bug fix
@@ -44,7 +43,9 @@
 ## 2016-01-08 addzerodf function used by join()
 ## 2016-01-08 addzeroCH function used by sim.resight()
 ## 2016-02-17 pointsInPolygon allows both SatialPolygons and SpatialPolygonsDataFrame
-
+## 2016-10-16 makerealparameters shifted here
+## 2016-10-28 userdist may be session-specific; may be called by (character) name
+## 2017-02-06 xy2CH multi-session enabled
 #######################################################################################
 
 # Global variables in namespace
@@ -53,21 +54,22 @@
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
+.localstuff$packageType <- ''   # no longer pre-release
 .localstuff$validdetectors <- c('single','multi','proximity','count',
-    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
+    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
                                 'unmarked','presence','telemetry')
 .localstuff$simpledetectors <- c('single','multi','proximity','count')
 .localstuff$individualdetectors <- c('single','multi','proximity','count',
-    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 'times',
+    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 
                                      'telemetry')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
     'signal', 'signalnoise', 'unmarked','presence')
-.localstuff$polydetectors <- c('polygon','transect','polygonX','transectX','telemetry')
+.localstuff$polydetectors <- c('polygon','transect','polygonX','transectX')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
 ## 'signal' is not a count detector 2011-02-01
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked','telemetry')
 .localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
-                             'transect','times','unmarked','presence','telemetry')
+                             'transect','unmarked','presence','telemetry')
 .localstuff$iter <- 0   ## counter 1
 .localstuff$iter2 <- 0  ## counter 2
 .localstuff$detectionfunctions <-
@@ -222,25 +224,24 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
       pnames <- c(pnames, 'noneuc')
     if (sighting)
       pnames <- c(pnames, 'pID')
-    if (alltelem) {
-        rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
-        rnum[is.na(rnum)] <- 0
-        pnames <- pnames[-rnum]
-    }
+    # if (alltelem) {
+    #     rnum <- match(c('D','lambda0','a0','esa','g0'), pnames)
+    #     rnum[is.na(rnum)] <- 0
+    #     pnames <- pnames[-rnum]
+    # }
     if (nmix>1)
         pnames <- c(pnames, 'pmix')
     pnames
 }
 #-------------------------------------------------------------------------------
 
-valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
-    ## 2014-09-01, 2014-09-10, 2014-10-13
+valid.userdist <- function (userdist, detector, xy1, xy2, mask, sessnum) {
     if (is.null(userdist)) {
         ## default to Euclidean distance
-        result <- edist(xy1, xy2)  ## as.matrix(dist(rbind(xy1, xy2)))[1:nr1, (nr1+1):(nr1+nr2)]
+        result <- edist(xy1, xy2) 
     }
     else {
-        if (detector %in% .localstuff$polydetectors) {
+        if (any(detector %in% .localstuff$polydetectors)) {
             stop ("userdist cannot be used with polygon detector types;")
         }
         if (is.function(userdist))
@@ -252,7 +253,19 @@ valid.userdist <- function (userdist, detector, xy1, xy2, mask) {
             result <- do.call(userdist, c(list(xy1, xy2, mask)))
         }
         else {
-            result <- userdist
+            if (is.character(userdist)) {
+                userdist <- get(userdist, pos=-1)
+            }
+                
+            if (is.list(userdist) & !is.data.frame(userdist)) {
+                if (missing(sessnum))
+                    stop("This use does not yet allow for session-specific userdist")
+                else
+                    result <- userdist[[sessnum]]
+            }
+            else {
+                result <- userdist
+            }
         }
         if (!all(dim(result) == c(nrow(xy1), nrow(xy2))))
             stop ("invalid distance matrix dim = ", dim(result)[1], ',', dim(result)[2])
@@ -292,9 +305,11 @@ new.param <- function (details, model, CL) {
     newparam
 }
 
-detectorcode <- function (object, MLonly = TRUE) {
-    ## numeric detector code from traps object
-    detcode <- switch (detector(object),
+# secr 3.0 2016-10-05
+## NEEDS MULTI-SESSION FORM
+detectorcode <- function (object, MLonly = TRUE, noccasions = NULL) {
+    ## numeric detector code from a traps object
+    detcode <- sapply(detector(object), switch,
         single = -1,
         multi = 0,
         proximity = 1,
@@ -304,19 +319,27 @@ detectorcode <- function (object, MLonly = TRUE) {
         signal = 5,
         polygon = 6,
         transect = 7,
-        times = 8,
-        ## cue = 9, defunct 2015-10-01 secr 2.10.0
         unmarked = 10,
         presence = 11,
         signalnoise = 12,
         telemetry = 13,
         -2)
     if (MLonly) {
-        detcode <- ifelse (detcode==-1, 0, detcode)
-        if (detcode<0)
+        detcode <- ifelse (detcode==-1, rep(0,length(detcode)), detcode)
+        if (any(detcode<0))
             stop ("Unrecognised detector type")
     }
+    
+    if (!is.null(noccasions) & (length(detcode)==1))
+        detcode <- rep(detcode, noccasions)
     detcode
+}
+
+expanddet <- function(CH) {
+    det <- detector(traps(CH))
+    if (length(det)<ncol(CH))
+        rep(det[1], ncol(CH))
+    else det
 }
 
 ## 2013-06-16
@@ -334,7 +357,7 @@ discreteN <- function (n, N) {
 }
 
 ndetector <- function (traps) {
-    if (detector(traps) %in% .localstuff$polydetectors)
+    if (all(detector(traps) %in% .localstuff$polydetectors))
         length(levels(polyID(traps)))
     else
         nrow(traps)
@@ -603,7 +626,7 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
     }
     else {
         checkone <- function (xy1) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside',  # PACKAGE = 'secr',
                 as.double (xy1),
                 as.integer (0),
                 as.integer (np-1),
@@ -800,13 +823,19 @@ gradient <- function (pars, fun, eps=0.001, ...)
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
+
     X <- matrix(unlist(X), ncol = 2)
 
     nxy <- nrow(X)
-    ## 2011-10-14
     detecttype <- detector(traps)
     detecttype <- ifelse (is.null(detecttype), '', detecttype)
-    if (detecttype %in% .localstuff$polydetectors) {
+
+    ## extended from SpatialPolygonsDataFrame 2016-02-17, 2016-10-16
+    if (inherits(traps, 'SpatialPolygons')) {
+        trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
+        warning("using only first polygon of SpatialPolygons")
+    }
+    else if (all(detecttype %in% .localstuff$polydetectors)) {
         ## approximate only
         traps <- split(traps, polyID(traps))
         trpi <- function (i, n=100) {
@@ -828,13 +857,7 @@ distancetotrap <- function (X, traps) {
         ## 2015-10-18 added protection
         trps <- matrix(unlist(traps), ncol = 2)
 
-    ## extended from SpatialPolygonsDataFrame 2016-02-17
-    if (inherits(trps, 'SpatialPolygons')) {
-        trps <- coordinates(trps@polygons[[1]]@Polygons[[1]])
-        warning("using only first polygon of SpatialPolygons")
-    }
-
-    temp <- .C('nearest',  PACKAGE = 'secr',
+    temp <- .C('nearestC',   #  PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
         as.integer(nrow(trps)),
@@ -842,7 +865,7 @@ distancetotrap <- function (X, traps) {
         index = integer(nxy),
         distance = double(nxy)
     )
-    if (detecttype %in% c('polygon', 'polygonX')) {
+    if (all(detecttype %in% c('polygon', 'polygonX'))) {
         inside <- lapply(traps, pointsInPolygon, xy=X)
         inside <- do.call(rbind, inside)
         temp$distance [apply(inside,2,any)] <- 0
@@ -860,7 +883,7 @@ nearesttrap <- function (X, traps) {
         traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
         warning("using only first polygon of SpatialPolygons")
     }
-    temp <- .C('nearest',  PACKAGE = 'secr',
+    temp <- .C('nearestC',  # PACKAGE = 'secr',
         as.integer(nxy),
         as.double(X),
         as.integer(nrow(traps)),
@@ -1090,7 +1113,7 @@ group.factor <- function (capthist, groups, sep='.')
     }
     else {
         if (is.null(groups) | (length(groups)==0) )
-            return (factor(rep(1, nrow(capthist))))
+            return (factor(rep(1, nrow(capthist)), levels = 1))  # added levels 2017-04-18
         temp <- as.data.frame(covariates(capthist)[,groups])
         if (ncol(temp) != length(groups))
             stop ("one or more grouping variables is missing from ",
@@ -1098,6 +1121,14 @@ group.factor <- function (capthist, groups, sep='.')
         temp <- interaction(temp, drop=T, sep=sep)  # omit null combinations
         temp
     }
+}
+############################################################################################
+
+getgrpnum <- function (capthist, groups) {
+    if (is.null(groups))
+        rep(1, nrow(capthist))
+    else
+        match(group.factor(capthist, groups), group.levels(capthist, groups))
 }
 ############################################################################################
 
@@ -1115,7 +1146,7 @@ make.lookup <- function (tempmat) {
     }
     dimnames(tempmat) <- NULL
 
-    temp <- .C('makelookup', PACKAGE = 'secr',
+    temp <- .C('makelookup', # PACKAGE = 'secr',
         ## as.double(tempmat),
         ## 2014-09-09
         ## compare values rounded to 10 dp
@@ -1203,8 +1234,9 @@ inflate <- function (xy, rmult = 1) {
 }
 ###############################################################################
 ## moved from pdot.R 2013-11-09
+## scalar 2016-10-14
 getbinomN <- function (binomN, detectr) {
-    if (detectr %in% .localstuff$countdetectors) {
+    if (any(detectr %in% .localstuff$countdetectors)) {
         if (is.null(binomN))
             return(0)
         else if (binomN == 'usage')
@@ -1217,34 +1249,45 @@ getbinomN <- function (binomN, detectr) {
 }
 ###############################################################################
 
-## convert xylist attribute of a combined dataset into a standalone capthist
+## convert telemetryxy attribute of a combined dataset into a standalone capthist
+
+## TO DO: option of telemetry or polygon output
+
 xy2CH <- function (CH, inflation = 1e-8) {
-    xylist <- telemetryxy(CH)
-    if (is.null(xylist))
-        stop ("requires xylist attribute")
-    n <- length(xylist)
-    neach <- sapply(xylist, nrow)
-    allxy <- do.call(rbind, xylist)
-    trps <-  allxy[chull(allxy),]
-    trps <- rbind(trps, trps[1,,drop=F])
-    trps <- inflate(trps, 1 + inflation)  ## see also telemetry.R
-
-    trps <- as.data.frame(trps)
-    dimnames(trps) <- list(1:nrow(trps), c('x','y'))
-    class(trps) <- c("traps","data.frame")
-    detector(trps) <- "telemetry"
-    polyID(trps) <- factor(rep(1,nrow(trps)))
-
-    rown <- rep(names(xylist), neach)
-    newCH <- array(neach, dim = c(n, 1, 1))
-    attr(newCH, "detectedXY") <- allxy
-    if (!is.null(covariates(CH))) {
-        rowlookup <- match(names(xylist), rownames(CH))
-        covariates(newCH) <- covariates(CH)[rowlookup,, drop=FALSE]
+    if (ms(CH)) {
+        out <- lapply(CH, xy2CH, inflation)
+        class(out) <- c('list','capthist')
+        out
     }
-    class(newCH) <- "capthist"
-    traps(newCH) <- trps
-    newCH
+    else {
+        xylist <- telemetryxy(CH)
+        if (is.null(xylist))
+            stop ("requires 'telemetryxy' attribute")
+        n <- length(xylist)
+        neach <- sapply(xylist, nrow)
+        allxy <- do.call(rbind, xylist)
+        
+        trps <-  allxy[chull(allxy),]
+        trps <- rbind(trps, trps[1,,drop=F])
+        trps <- inflate(trps, 1 + inflation)  ## see also telemetry.R
+        
+        trps <- as.data.frame(trps)
+        dimnames(trps) <- list(1:nrow(trps), c('x','y'))
+        class(trps) <- c("traps","data.frame")
+        detector(trps) <- "polygon"
+        polyID(trps) <- factor(rep(1,nrow(trps)))
+        
+        rown <- rep(names(xylist), neach)
+        newCH <- array(neach, dim = c(n, 1, 1))
+        attr(newCH, "detectedXY") <- allxy
+        if (!is.null(covariates(CH))) {
+            rowlookup <- match(names(xylist), rownames(CH))
+            covariates(newCH) <- covariates(CH)[rowlookup,, drop=FALSE]
+        }
+        class(newCH) <- "capthist"
+        traps(newCH) <- trps
+        newCH
+    }
 }
 ###############################################################################
 ## return coordinates from simple SpatialPolygons object
@@ -1273,11 +1316,12 @@ inflatechull <- function (poly, r, ntheta = 60) {
 
 ###############################################################################
 ## used by sim.capthist to update telemetry boundary polygon 2013-11-21
+## OBSOLETE 2017-01-11
 refreshMCP <- function (CH, tol) {
-    if (detector(traps(CH)) %in% c('polygon','polygonX','telemetry'))
+    if (all(detector(traps(CH)) %in% c('polygon','polygonX')))
         allxy <- xy(CH)
     else
-        stop ("requires polygon or telemetry detector type")
+        stop ("requires polygon detector type")
     trps <-  allxy[chull(allxy),]
     trps <- inflatechull(trps, r = tol)   ## 2014-08-28
     class(trps) <- c("traps","data.frame")
@@ -1558,15 +1602,16 @@ getcellsize <- function (mask) {
 }
 ############################################################################################
 
-## 2014-10-25
+## 2014-10-25, 2017-01-24
 ## intercept and fix certain ,models with bad defaults
-updatemodel <- function (model, detectfn, detectfns, oldvar, newvar) {
+updatemodel <- function (model, detectfn, detectfns, oldvar, newvar, warn = FALSE) {
     if (detectfn %in% detectfns) {
         for (i in 1:length(oldvar)) {
             if (oldvar[i] %in% names(model)) {
                 names(model)[names(model) == oldvar[i]] <- newvar[i]
-                warning ("replacing ", oldvar[i], " by ", newvar[i], " in model for detectfn ",
-                         detectfn)
+                if (warn) 
+                    warning ("replacing ", oldvar[i], " by ", newvar[i], 
+                             " in model for detectfn ", detectfn)
             }
         }
     }
@@ -1701,7 +1746,7 @@ xyinpoly <- function (xy, trps) {
         polyxy <- as.matrix(lxy[[k]])
         polyxy <- rbind(polyxy, polyxy[1,])   ## close 2014-08-28
         nr <- nrow(polyxy)
-        temp <- .C('inside',  PACKAGE = 'secr',
+        temp <- .C('inside',  # PACKAGE = 'secr',
                    as.double (xy[i,]),
                    as.integer (0),
                    as.integer (nr-1),
@@ -1728,29 +1773,76 @@ xyinpoly <- function (xy, trps) {
 ############################################################################################
 ##
 ## settings for mark-resight
-markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
+markresight <- function (capthist, mask, CL, fixed, chat, sessnum, control) {
+    getsight <- function(T) {
+        Tval <- attr(capthist,T)
+        tmp <- if ((control[[T]]=='ignore') | is.null(Tval))
+            NULL
+        else 
+            if (control[[T]]=='sum')
+                sum(Tval)
+        else 
+            if (control[[T]]=='bydetector') {
+                if (is.matrix(Tval)) {
+                    apply(Tval, 1, sum)
+                }
+                else {
+                    if (length(Tval) == ndetector(traps(capthist)))
+                        Tval
+                    else
+                        stop ("bydetector expects", T, "as a matrix or length-K vector,",
+                              "where K is the number of detectors")
+                }
+            }
+        else
+            Tval
+        ## second element is number of values; '1' indicates summed counts
+        if (is.null(tmp)) c(-1,0) else c(length(unlist(tmp)), tmp)
+    }
     markocc <- markocc(traps(capthist))
     s <- ncol(capthist)
     m <- nrow(mask)
+    defaultcontrol <- list(Tu='as.is', Tm='as.is', Tn='ignore')
+    # possible control values
+    #   ignore
+    #   as.is 
+    #   bydetector
+    #   sum
+    control <- replacedefaults(defaultcontrol, control)
     if (is.null(markocc)) {
         markocc <- rep(1, s)
-        Tu <- c(-1,0)
-        Tm <- c(-1,0)
+        Tu <- Tm <- Tn <- c(-1,0)
         allsighting <- FALSE
+        anysighting <- FALSE
     }
     else {
         allsighting <- !any(markocc>0)
-
-        Tu <- if (CL) NULL else Tu(capthist)
-        Tm <- Tm(capthist)
+        anysighting <- any(markocc<1)
+        
+        if (CL) control$Tu <- 'ignore'
+        if (!any(markocc==0)) control$Tm <- 'ignore'
+        
+        
+        ## risk of double counting: 
+        ## consider Tn only when markocc[s] = -1
+        ## there should be no Tu on those occasions
+        if (any(markocc<0)) control$Tn <- 'as.is'
+        
         if (!is.null(fixed$pID)) {
-            if (fixed$pID == 1) Tm <- NULL
+            if (fixed$pID == 1) control$Tm <- 'ignore'
         }
-        if (!any(markocc==0))
-            Tm <- NULL
-        ## second element is number of values; '1' indicates summed counts
-        Tu <- if (is.null(Tu)) c(-1,0) else c(length(unlist(Tu)), Tu)
-        Tm <- if (is.null(Tm)) c(-1,0) else c(length(unlist(Tm)), Tm)
+        if(is.null(fixed$pID) & control$Tm == 'ignore')
+            warning("Set fixed = list(pID=1) if no sightings of unidentified marked animals Tm")
+            
+        Tu <- getsight('Tu')
+        Tm <- getsight('Tm')
+        Tn <- getsight('Tn')
+        
+        ## special case: unmarked or presence/absence detector
+        detect <- detector(traps(capthist))
+        if (any(detect %in% c('unmarked','markocc'))) {
+            # no action needed?
+        }
     }
     if (!is.null(chat)) {
         if (is.matrix(chat))
@@ -1758,20 +1850,17 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
         else {
             chat <- unlist(chat)
             if (length(chat)==1) {
-                chat <- c(chat,1)
+                chat <- c(chat,1,chat)
                 warning("assuming chat 1.0 for Tm")
             }
-            if (chat[1]<1) {
-                warning("chat(Tu) = ", chat[1], ", setting to 1.0")
-            }
-            if (chat[2]<1) {
-                warning("chat(Tm) = ", chat[2], ", setting to 1.0")
+            if (any(chat<1)) {
+                warning("setting chat < 1.0 to 1.0")
             }
             chat <- pmax(chat, 1)
         }
     }
     else
-        chat <- c(1,1)
+        chat <- c(1,1,1)
 
 
     pi.mask <- -1      ## signals pimask not used
@@ -1788,8 +1877,9 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum) {
         }
     }
 
-    list(markocc = markocc, Tu = Tu, Tm = Tm, allsighting = allsighting, chat = chat,
-         pi.mask = pi.mask)
+    list(markocc = markocc, Tu = Tu, Tm = Tm, Tn = Tn, 
+         anysighting = anysighting, allsighting = allsighting, 
+         chat = chat, pi.mask = pi.mask)
 }
 
 ############################################################################################
@@ -1822,7 +1912,6 @@ addzeroCH <- function (CH, nzero, cov = NULL) {
     if (nzero == 0)
         return(CH)
     else {
-
         nc <- nrow(CH)
         chdim <- dim(CH)
         chdim[1] <- nzero
@@ -1845,3 +1934,137 @@ addzeroCH <- function (CH, nzero, cov = NULL) {
 }
 ############################################################################################
 
+expandbinomN <- function (binomN, detectorcodes) {
+    # assumes detectorcodes is a vector of length = noccasions
+    binomN <- ifelse (detectorcodes %in% c(2,6,7), binomN, 1)
+    if (any(is.na(binomN))) stop ("NA value in binomN") 
+    binomN
+}
+############################################################################################
+
+check3D <- function (object) {
+    if (ms(object)) {
+        out <- lapply(object, check3D)
+        class(out) <- class(object)
+        out
+    }
+    else {
+        if (is.matrix(object)) {
+            warning("secr 3.0 requires 3-D capthist; using updateCH() to convert")
+            updateCH(object)
+        }
+        else { 
+            object
+        }
+    }
+}
+############################################################################################
+
+updateCH <- function(object) {
+    if (!inherits(object, 'capthist'))
+        stop ("requires capthist object")
+    reduce(object, dropunused = FALSE)
+}
+############################################################################################
+
+## shifted from secrloglik 2016-10-16
+makerealparameters <- function (design, beta, parindx, link, fixed) {
+    modelfn <- function(i) {
+        ## linear predictor for real parameter i
+        Yp <- design$designMatrices[[i]] %*% beta[parindx[[i]]]
+        if (names(link)[i] == 'pmix') {
+            ## 2013-04-14 index of class groups (pmix sum to 1.0 within latentmodel)
+            cols <- dimnames(design$designMatrices[[i]])[[2]]
+            h2 <- grep('.h2', cols, fixed=T)
+            h3 <- grep('.h3', cols, fixed=T)
+            h2c <- grep(':h2', cols, fixed=T)
+            h3c <- grep(':h3', cols, fixed=T)
+            h.cols <- c(h2,h3,h2c,h3c)
+            tmp <- design$designMatrices[[i]][,-h.cols, drop = FALSE]
+            tmph <- design$designMatrices[[i]][,h.cols, drop = FALSE]
+            latentmodel <- as.numeric(factor(apply(tmp,1,paste, collapse='')))
+            refclass <- apply(tmph,1,sum) == 0
+            Yp[refclass] <- NA
+            Yp <- mlogit.untransform(Yp, latentmodel)
+            Yp[design$parameterTable[,i]]
+        }
+        else {
+            Yp <- untransform(Yp, link[[i]])
+            Yp[design$parameterTable[,i]]   ## replicate as required
+        }
+    }
+    ## construct matrix of detection parameters
+    nrealpar  <- length(design$designMatrices)
+    parindx$D <- NULL ## detection parameters only
+    link$D    <- NULL ## detection parameters only
+    parindx$noneuc <- NULL ## detection parameters only
+    link$noneuc    <- NULL ## detection parameters only
+    detectionparameters <- names(link)
+    fixed.dp <- fixed[detectionparameters[detectionparameters %in% names(fixed)]]
+    
+    if (length(fixed.dp)>0)
+        for (a in names(fixed.dp))  ## bug fixed by adding this line 2011-09-28
+            link[[a]] <- NULL
+    if (length(link) != nrealpar)
+        stop ("number of links does not match design matrices")
+    
+    if (nrealpar == 0) {
+        return(matrix(unlist(fixed.dp),nrow = 1))
+    }
+    
+    temp <- sapply (1:nrealpar, modelfn)
+    if (nrow(design$parameterTable)==1) temp <- t(temp)
+    nrw <- nrow(temp)
+    ## make new matrix and insert columns in right place
+    temp2 <- as.data.frame(matrix(nrow = nrw, ncol = length(detectionparameters)))
+    names(temp2) <- detectionparameters
+    temp2[ , names(design$designMatrices)] <- temp          ## modelled
+    if (!is.null(fixed.dp) & length(fixed.dp)>0)
+        temp2[ , names(fixed.dp)] <- sapply(fixed.dp, rep, nrw)    ## fixed
+    as.matrix(temp2)
+    
+}
+############################################################################################
+
+newstr <-function (strings) {
+    ## compress a character vector
+    ## use run length encoding function
+    rl <- rle(strings)
+    st <- rl$values
+    le <- paste0(' (',as.character(rl$lengths), ')')
+    le[le==' (1)'] <- ''
+    paste(paste0(st, le), collapse = ', ')
+}
+# newstr(c("single", rep("proximity",4)))
+############################################################################################
+
+## moved from Telemetry 2016-12-28
+outsidemask <- function(CH, mask, threshold = spacing(mask) / sqrt(2)) {
+    xylist <- telemetryxy(CH)
+    dfun <- function(xy) {
+        centres <- matrix(apply(xy, 2, mean), ncol = 2)
+        distancetotrap(centres, mask)
+    }
+    sapply(xylist, dfun) > threshold
+}
+############################################################################################
+
+shareFactorLevels <- function (object, columns = NULL) {
+    if (ms(object)) {
+        if (!is.null(covariates(object))) {
+            df <- do.call(rbind, covariates(object))
+            if (is.null(columns)) columns <- 1:ncol(df)
+            for (i in columns) {
+                if (is.factor(df[,i])) {
+                    levelsi <- levels(df[,i])
+                    for (sess in 1:length(object)) {
+                        covariates(object[[sess]])[,i] <-
+                            factor(covariates(object[[sess]])[,i],
+                                   levels = levelsi)
+                    }
+                }
+            }
+        }
+    }
+    object
+}

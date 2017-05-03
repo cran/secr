@@ -55,8 +55,8 @@ MS.capthist <- function (...) {
 ###############################################################################
 
 rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
-## NOT S3 method (for now) because then naming lost...
-
+    ## NOT S3 method (for now) because then naming lost...
+    
 {
     dots <- match.call(expand.dots = FALSE)$...
     allargs <- list(...)
@@ -66,42 +66,42 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
     ## don't understand the purpose of this line, and it breaks secrdesign
     ## temporarily(?) suppress
     ## names(allargs) <- lapply(dots, as.character)
-
+    
     ## 2015-01-11
     ## Aha! It provides input object names as base for rownames later in:
     ## source <- rep(names(object), sapply(object, nrow))
-
+    
     inputnames <- lapply(dots, as.character)
     ## if (any(is.na(inputnames) | duplicated(inputnames)))
     if (any(is.na(inputnames) | duplicated(inputnames) | (nchar(inputnames)>100)))
         inputnames <- as.character(1:length(allargs))
+   
     names(allargs) <- inputnames
     ##############################################################
-
+    
     if (length(dots)==1) object <- allargs[[1]]
     else object <- allargs
-    newMCP <- TRUE ## option 2013-11-20
-
+    
     ## Catch singleton - added 2011-09-12
     if ((length(dots) == 1) & !ms(object) )
         return(object)       ## unchanged!
     if ((length(dots) == 1) & ms(object) & (length(object) == 1) )
         return(object[[1]])  ## unchanged!
-
+    
     ## Case 1 DEPRECATED 2011-09-12
     ## several lists or a combination of list & elementary capthist objects
     ## concatenate lists, including elementary objects (ignore 'pool')
     ## objects may differ in traps etc.
-
+    
     if ((length(dots)>1) & any(sapply(allargs, is.list)))
         stop ("invalid input to rbind.capthist; ",
               "use MS.capthist to concatenate sessions")
-
+    
     ## Case 2
     ## a single MS capthist (i.e. a list)
     ## rbind components as identified in 'pool'
     ## recursive call for each component of 'pool'
-
+    
     if((length(dots)==1) & (is.list(object)) & !is.null(pool)) {
         if (!is.list(pool)) {
             pool <- list(combined=1:length(object))
@@ -109,17 +109,17 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         }
         else if (any (sapply(unlist(pool),
                              function(x) length(object[[x]])==0)))
-                ## prempted by 'subscript out of bounds'
-                stop ("invalid pooling indices")
-
+            ## prempted by 'subscript out of bounds'
+            stop ("invalid pooling indices")
+        
         ## 2011-09-12
         getpooled <- function (x) {
             temphist <- object[x]
             class(temphist) <- c('list', 'capthist')
-             ## recursive call
+            ## recursive call
             rbind.capthist(temphist, renumber = renumber, pool=NULL, verify = FALSE)
         }
-
+        
         temp <- lapply (pool, getpooled)
         if (length(temp)==1) {
             temp <- temp[[1]]
@@ -140,12 +140,12 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         return(temp)
     }
     else {
-
-    ## Case 3
-    ## 1 to several several elementary capthist objects
-    ## conventional rbind, given compatible traps, covariates, noccasions
-    ## optional renumbering
-
+        
+        ## Case 3
+        ## 1 to several elementary capthist objects
+        ## conventional rbind, given compatible traps, covariates, noccasions
+        ## optional renumbering
+        
         check <- function (x) {
             if (!is(x,'capthist'))
                 stop ("all arguments must be 'capthist' objects")
@@ -158,22 +158,19 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             if (any(dim(x)[-1] != dim(object[[1]])[-1]))
                 stop ("varying numbers of occasions and/or detectors ",
                       "in rbind.capthist", call. = FALSE)
-            notPoolPoly <- !(detector(traps(object[[1]])) %in% c('polygon','polygonX', 'telemetry'))
+            notPoolPoly <- !all(detector(traps(object[[1]])) %in% c('polygon','polygonX'))
             if (!identical(traps(x), traps(object[[1]])) & notPoolPoly)
                 stop ("cannot pool capthist with different",
                       " detector arrays in rbind.capthist", call. = FALSE)
         }
-
-        ## 2011-09-12 reinstated this check
         sapply (object, check)
-
+        
         ## form new object
         temp <- abind(..., along = 1)
-        class(temp) <- c('capthist')
+        class(temp) <- 'capthist'
         trps <- traps(object[[1]])
-        mergepoly <- detector(trps) %in% c('polygon','telemetry')
+        mergepoly <- all(detector(trps) %in% c('polygon'))
         if (mergepoly) {
-        
             srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
             tmp <- Polygons(srl,1)
             if (!requireNamespace ('maptools', quietly = TRUE))
@@ -188,12 +185,10 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             ## note any covariates have been abandoned
         }
         traps(temp) <- trps
-
-        ## 2011-09-13 common covariates
         tempcov <- covariates(object)
         covnamelist <- lapply (tempcov, names)
         covnames <- Reduce(intersect, covnamelist)
-
+        
         if (length(covnames) > 0) {
             tempcov <- lapply(tempcov, function(x) x[,covnames, drop = FALSE])
             tempcov <- do.call (rbind, tempcov)
@@ -201,7 +196,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         }
         else
             covariates(temp) <- NULL
-
+        
         ##################################################
         ## sightings
         ## either all-scalar or all-matrix
@@ -214,22 +209,32 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         ## polygon or transect coordinates xy
         tempxy <-  lapply(object, xy)
         xy(temp) <- do.call(rbind, tempxy)
-
+        
+        ##################################################
+        ## telemetry coordinates cf join() no merge of identities
+        
+        if ('telemetry' %in% detector(traps(temp))) {
+            newtelem <- lapply(object, telemetryxy)
+            ntelem <- sapply(newtelem, length)
+            newtelem <- unlist(newtelem, recursive = FALSE)
+            telemetryxy(temp) <- newtelem
+        }
+        
         ##################################################
         ## signal
         tempsig <- lapply(object, signalframe)
         signalframe(temp) <- do.call(rbind, tempsig)
-#        if (!is.null(signalframe))
-#            stop("rbind.capthist not yet updated for signalframe structure")
-#            signal(temp) <- do.call(c, tempsig)
-#            cutvals <- sapply(object, function(x) attr(x,'cutval'))
-#            attr(temp, 'cutval') <- max(cutvals)
-#            temp <- subset(temp, cutval = max(cutvals))
-#        }
-#        else
-#            if (!all(sapply(tempsig, is.null)))
-#                stop ("signal attribute missing in one or more sessions")
-
+        #        if (!is.null(signalframe))
+        #            stop("rbind.capthist not yet updated for signalframe structure")
+        #            signal(temp) <- do.call(c, tempsig)
+        #            cutvals <- sapply(object, function(x) attr(x,'cutval'))
+        #            attr(temp, 'cutval') <- max(cutvals)
+        #            temp <- subset(temp, cutval = max(cutvals))
+        #        }
+        #        else
+        #            if (!all(sapply(tempsig, is.null)))
+        #                stop ("signal attribute missing in one or more sessions")
+        
         ##################################################
         ## messy problem of correct order of detections
         if (!is.null(xy(temp)) | !is.null(signalframe(temp))) {
@@ -247,17 +252,240 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
                 signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
         }
         ##################################################
-
+        
         ## name new sessions
         session (temp) <- paste(names(object), collapse='+')
-
+        
         ## optionally construct unique row names
         if (renumber) {
             ID <- unlist(sapply(object, rownames))
             source <- rep(names(object), sapply(object, nrow))
             rownames(temp) <- paste(source, ID, sep='.')
+            if ('telemetry' %in% detector(traps(temp))) {
+                names(newtelem) <- paste(rep(names(object), ntelem), names(newtelem), sep='.')
+            }
         }
+        
+        ## optionally verify
+        if (verify) {
+            verify(temp)
+        }
+        temp
+    }
+}
+###############################################################################
 
+OLD.rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
+    ## NOT S3 method (for now) because then naming lost...
+    
+{
+    dots <- match.call(expand.dots = FALSE)$...
+    allargs <- list(...)
+    
+    ##############################################################
+    ## 2014-11-23
+    ## don't understand the purpose of this line, and it breaks secrdesign
+    ## temporarily(?) suppress
+    ## names(allargs) <- lapply(dots, as.character)
+    
+    ## 2015-01-11
+    ## Aha! It provides input object names as base for rownames later in:
+    ## source <- rep(names(object), sapply(object, nrow))
+    
+    inputnames <- lapply(dots, as.character)
+    ## if (any(is.na(inputnames) | duplicated(inputnames)))
+    if (any(is.na(inputnames) | duplicated(inputnames) | (nchar(inputnames)>100)))
+        inputnames <- as.character(1:length(allargs))
+    names(allargs) <- inputnames
+    ##############################################################
+    
+    if (length(dots)==1) object <- allargs[[1]]
+    else object <- allargs
+    
+    ## Catch singleton - added 2011-09-12
+    if ((length(dots) == 1) & !ms(object) )
+        return(object)       ## unchanged!
+    if ((length(dots) == 1) & ms(object) & (length(object) == 1) )
+        return(object[[1]])  ## unchanged!
+    
+    ## Case 1 DEPRECATED 2011-09-12
+    ## several lists or a combination of list & elementary capthist objects
+    ## concatenate lists, including elementary objects (ignore 'pool')
+    ## objects may differ in traps etc.
+    
+    if ((length(dots)>1) & any(sapply(allargs, is.list)))
+        stop ("invalid input to rbind.capthist; ",
+              "use MS.capthist to concatenate sessions")
+    
+    ## Case 2
+    ## a single MS capthist (i.e. a list)
+    ## rbind components as identified in 'pool'
+    ## recursive call for each component of 'pool'
+    
+    if((length(dots)==1) & (is.list(object)) & !is.null(pool)) {
+        if (!is.list(pool)) {
+            pool <- list(combined=1:length(object))
+            warning ("list not specified, pooling all components")
+        }
+        else if (any (sapply(unlist(pool),
+                             function(x) length(object[[x]])==0)))
+            ## prempted by 'subscript out of bounds'
+            stop ("invalid pooling indices")
+        
+        ## 2011-09-12
+        getpooled <- function (x) {
+            temphist <- object[x]
+            class(temphist) <- c('list', 'capthist')
+            ## recursive call
+            rbind.capthist(temphist, renumber = renumber, pool=NULL, verify = FALSE)
+        }
+        
+        temp <- lapply (pool, getpooled)
+        if (length(temp)==1) {
+            temp <- temp[[1]]
+            class(temp) <- 'capthist'
+        }
+        else {
+            class (temp) <- c('list', 'capthist')
+            if (is.null(names(pool)) | any(names(pool) == ""))
+                names(temp) <- sapply(temp,session)
+            else {
+                session(temp) <- names(pool)
+            }
+        }
+        ## do it once
+        if (verify) {
+            verify(temp)
+        }
+        return(temp)
+    }
+    else {
+        
+        ## Case 3
+        ## 1 to several elementary capthist objects
+        ## conventional rbind, given compatible traps, covariates, noccasions
+        ## optional renumbering
+        
+        check <- function (x) {
+            if (!is(x,'capthist'))
+                stop ("all arguments must be 'capthist' objects")
+            if (is.null(covariates(x)) != is.null(covariates(object[[1]]) ))
+                stop ("covariates must be provided for all or none")
+            if (is.null(Tu(x)) != is.null(Tu(object[[1]])))
+                stop ("unmarked sightings Tu must be provided for all or none")
+            if (is.null(Tm(x)) != is.null(Tm(object[[1]])))
+                stop ("nonID sightings Tu must be provided for all or none")
+            if (any(dim(x)[-1] != dim(object[[1]])[-1]))
+                stop ("varying numbers of occasions and/or detectors ",
+                      "in rbind.capthist", call. = FALSE)
+            notPoolPoly <- !all(detector(traps(object[[1]])) %in% c('polygon','polygonX'))
+            if (!identical(traps(x), traps(object[[1]])) & notPoolPoly)
+                stop ("cannot pool capthist with different",
+                      " detector arrays in rbind.capthist", call. = FALSE)
+        }
+        sapply (object, check)
+        
+        ## form new object
+        temp <- abind(..., along = 1)
+        class(temp) <- 'capthist'
+        trps <- traps(object[[1]])
+        mergepoly <- all(detector(trps) %in% c('polygon'))
+        if (mergepoly) {
+            srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
+            tmp <- Polygons(srl,1)
+            if (!requireNamespace ('maptools', quietly = TRUE))
+                stop("maptools required")
+            tmp2 <- maptools::unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
+            ## tmp2 <- unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
+            trps <- as.data.frame(getcoord(tmp2)[[1]])
+            rownames(trps) <- 1:nrow(trps)
+            class(trps) <- c('traps', 'data.frame')
+            detector(trps) <- detector( traps(object[[1]]))
+            polyID(trps) <- rep(1,nrow(trps))
+            ## note any covariates have been abandoned
+        }
+        traps(temp) <- trps
+        tempcov <- covariates(object)
+        covnamelist <- lapply (tempcov, names)
+        covnames <- Reduce(intersect, covnamelist)
+        
+        if (length(covnames) > 0) {
+            tempcov <- lapply(tempcov, function(x) x[,covnames, drop = FALSE])
+            tempcov <- do.call (rbind, tempcov)
+            covariates(temp) <- tempcov
+        }
+        else
+            covariates(temp) <- NULL
+        
+        ##################################################
+        ## sightings
+        ## either all-scalar or all-matrix
+        if (!is.null(Tu(object[[1]])))
+            Tu(temp) <- sum(Tu(object))
+        if (!is.null(Tm(object[[1]])))
+            Tm(temp) <- sum(Tm(object))
+        
+        ##################################################
+        ## polygon or transect coordinates xy
+        tempxy <-  lapply(object, xy)
+        xy(temp) <- do.call(rbind, tempxy)
+        
+        ##################################################
+        ## telemetry coordinates cf join() no merge of identities
+        
+        if ('telemetry' %in% detector(traps(temp))) {
+            newtelem <- lapply(object, telemetryxy)
+            ntelem <- sapply(newtelem, length)
+            newtelem <- unlist(newtelem, recursive = FALSE)
+            telemetryxy(temp) <- newtelem
+        }
+        
+        ##################################################
+        ## signal
+        tempsig <- lapply(object, signalframe)
+        signalframe(temp) <- do.call(rbind, tempsig)
+        #        if (!is.null(signalframe))
+        #            stop("rbind.capthist not yet updated for signalframe structure")
+        #            signal(temp) <- do.call(c, tempsig)
+        #            cutvals <- sapply(object, function(x) attr(x,'cutval'))
+        #            attr(temp, 'cutval') <- max(cutvals)
+        #            temp <- subset(temp, cutval = max(cutvals))
+        #        }
+        #        else
+        #            if (!all(sapply(tempsig, is.null)))
+        #                stop ("signal attribute missing in one or more sessions")
+        
+        ##################################################
+        ## messy problem of correct order of detections
+        if (!is.null(xy(temp)) | !is.null(signalframe(temp))) {
+            occ <- unlist(lapply(object, occasion))
+            ID  <- lapply(object, animalID, names = FALSE)
+            maxID <- suppressWarnings(sapply(ID, max))
+            nID <- sapply(ID, length)
+            ID <- unlist(ID)
+            uniqueID <- ID + rep(c(0, cumsum(maxID[-length(maxID)])), nID)
+            trp <- unlist(lapply(object, trap))
+            neworder <- order (occ, uniqueID, trp)
+            if (!is.null(xy(temp)))
+                xy(temp) <- xy(temp)[neworder,,drop=F]
+            if (!is.null(signalframe(temp)))
+                signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
+        }
+        ##################################################
+        
+        ## name new sessions
+        session (temp) <- paste(names(object), collapse='+')
+        
+        ## optionally construct unique row names
+        if (renumber) {
+            ID <- unlist(sapply(object, rownames))
+            source <- rep(names(object), sapply(object, nrow))
+            rownames(temp) <- paste(source, ID, sep='.')
+            if ('telemetry' %in% detector(traps(temp))) {
+                names(newtelem) <- paste(rep(names(object), ntelem), names(newtelem), sep='.')
+            }
+        }
+        
         ## optionally verify
         if (verify) {
             verify(temp)

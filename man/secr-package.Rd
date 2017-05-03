@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 2.10.4\cr
-Date: \tab 2016-12-02\cr
+Version: \tab 3.0.1\cr
+Date: \tab 2017-05-02\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -50,11 +50,19 @@ A link at the bottom of each help page takes you to the
 help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
+General interest \tab \cr
   \href{../doc/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
   \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}  \tab problems with secr.fit, including speed issues \cr
+\cr
+\cr
+More specialised topics \tab \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} \tab mark-resight data and models \cr
+    \href{http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} \tab multi-session capthist objects and models \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf}{secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
@@ -107,6 +115,9 @@ to the documentation and provided valued criticism and support.
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
+
+Borchers, D. L. and Fewster, R. M. (2016)  Spatial capture--recapture models.  
+\emph{Statistical Science} \bold{31}, 219--232.
 
 Efford, M. G. (2004) Density estimation in live-trapping studies.
 \emph{Oikos} \bold{106}, 598--610.

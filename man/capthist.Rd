@@ -35,6 +35,7 @@ Ancillary data are retained as attributes of a \code{capthist} object as follows
 \item{xylist}{ -- coordinates of telemetered animals}
 \item{Tu}{ -- detectors x occasions matrix of sightings of unmarked animals}
 \item{Tm}{ -- detectors x occasions matrix of sightings of marked but unidentified animals }
+\item{Tn}{ -- detectors x occasions matrix of sightings with unknown mark status }
 }
 
 \code{read.capthist} is adequate for most data input. Alternatively, the parts of a 

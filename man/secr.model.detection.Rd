@@ -81,6 +81,8 @@ h2       \tab 2-class mixture \tab -- \tab 2 \cr
 h3       \tab 3-class mixture \tab -- \tab 3 \cr
 session  \tab session factor (one level for each session) \tab automatic \tab \eqn{R} \cr
 Session  \tab session number 0:(R-1) \tab automatic \tab \eqn{R} \cr
+ts       \tab marking vs sighting occasions \tab automatic \tab \eqn{S} \cr
+tt       \tab capture--recapture vs telemetry occasions \tab automatic \tab \eqn{S} \cr
 [user]   \tab individual covariate \tab \code{covariates (capthist)} \tab \eqn{n} \cr
 [user]   \tab session covariate \tab \code{sessioncov} \tab \eqn{R} \cr
 [user]   \tab time covariate \tab \code{timecov} \tab \eqn{S} \cr
@@ -127,7 +129,7 @@ The design matrix for detection parameters may also be provided manually
 in the argument \code{dframe}. This feature requires some care and is
 better avoided.
 
-The submodels for `g0', `sigma' and `z' are named components of the
+The submodels for `g0' (`lambda0'), `sigma' and `z' are named components of the
 \code{model} argument of \code{secr.fit}. They are expressed in \R
 formula notation by appending terms to \eqn{\sim{~}}{~}.
 The name of the response may optionally appear on the left hand side of

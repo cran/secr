@@ -34,7 +34,7 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
         p <- apply(ptot, 1, function(x) rank(x)[1]/ (nsim+1))
         list(simulated = simulated, observed = observed, p = p)
     }
-
+    
     sims <- simulate(object = object, nsim = nsim, ncores = ncores, seed = seed)
 
     if (fit) {

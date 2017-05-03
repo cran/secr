@@ -77,8 +77,6 @@ Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in
   \code{\link{addSightings}}
 }
 
-\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
-
 \examples{
 demo.traps <- make.grid(nx = 6, ny = 8)
 ## random usage over 5 occasions

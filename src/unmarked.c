@@ -9,6 +9,11 @@
 /* likelihood assumes indepndence between sites AND between successive occasions,
    but latter limitation should be fixable */
 
+/*
+   can compile with gcc 4.6.3 :
+   gcc -Ic:/R/R-3.3.0/include -c unmarked.c -Wall -pedantic -std=gnu99
+*/
+
 void unmarkedloglik (
     int    *w,           /* capture histories (1:nc, 1:ss, 1:kk) */
     int    *nc,          /* number of rows in w */
@@ -51,7 +56,7 @@ void unmarkedloglik (
     par[0] = *g0;
     par[1] = *sigma;
     par[2] = *z;
-    integral = gintegral(*fn, par);     /* one occasion */
+    integral = hintegral(*fn, par);     /* one occasion */
     for (k = 0; k < *kk; k++) {
         for (s = 0; s < *ss; s++) {
             lambda = *D * integral / 10000;
@@ -78,13 +83,13 @@ void rgr2(double *x, int n, void *ex) {
     p = (double*) ex;
     for (i=0; i<5; i++) tmp[i] = p[i];
     fn = tmp[3];
-    fnptr fnp = hn;
-    fnp = gethfn(fn);
+    fnptr fnp = ghnr;
+    fnp = getgfnr(fn);
     for (i=0; i<n; i++) {
         x[i] = x[i] * (1 - pow(1 - fnp(tmp,x[i]), tmp[4])); 
     }
 }
-double gintegral2 (int fn, int sj, double par[]) {
+double hintegral2 (int fn, int sj, double par[]) {
 /* integral of radial 2-D function rgr2 */
     double ex[5];
     double a;
@@ -245,7 +250,7 @@ void presenceloglik (
         for (k = 0; k < *kk; k++) {
             tempsum = 0;
             for (j = 0; j <= y[k]; j++) {
-                integral = gintegral2(*fn, *ss - j, par);
+                integral = hintegral2(*fn, *ss - j, par);
                 mu = *D * integral / 10000;
                 tempsum += choose(y[k],j) * pow(-1, y[k]-j) * exp(-mu);
             }
@@ -288,8 +293,123 @@ void presenceloglik (
             R_CheckUserInterrupt();
         }
     }
+    else if (*type == 3) {
+
+        /*--------------------------------*/
+        /* Independent points, hazard     */
+        /*--------------------------------*/
+
+        par[0] = *g0;
+        par[1] = *sigma;
+        par[2] = *z;
+        for (k = 0; k < *kk; k++) {
+            tempsum = 0;
+            for (j = 0; j <= y[k]; j++) {
+                integral = hintegral2(*fn, *ss - j, par);
+                mu = *D * integral / 10000;
+                tempsum += choose(y[k],j) * pow(-1, y[k]-j) * exp(-mu);
+            }
+            *value += log(tempsum * choose(*ss, y[k]));
+        }
+    }
     else
         error ("unrecognised type");
+
+    *resultcode = 0;
+}
+/*==============================================================================*/
+
+/* copied from secrdesign */
+
+void Lambda (
+    double *par,       /* lambda0, sigma, z */
+    int    *kk,        /* number of traps */
+    int    *mm,        /* number of points on mask */
+    double *traps,     /* x,y locations of traps (first x, then y) */
+    double *mask,      /* x,y points on mask (first x, then y) */
+    int    *fn,        /* detectfn code 0 = halfnormal */
+    double *L,         /* return value vector of length mm */
+    int    *resultcode /* 0 for successful completion */
+)
+{
+    int k,m;
+    *resultcode = 1;                   /* generic failure */
+    if (*fn != 14) error("only hazard halfnormal");
+    for (m=0; m<*mm; m++) {
+	L[m] = 0;
+	for (k = 0; k < *kk; k++) {
+	    L[m] += exp(-d2(k, m, traps, mask, *kk, *mm) /2 / par[1] / par[1]);
+	}
+	L[m] *= par[0];
+    }
+    *resultcode = 0;                   /* successful completion */
+}
+
+void presenceloglik2017 (
+    int    *w,           /* capture histories (1:nc, 1:ss, 1:kk) */
+    int    *nc,          /* number of rows in w */
+    int    *ss,          /* number of occasions */
+    int    *kk,          /* number of detectors */
+    int    *mm,          /* number of mask points */
+    double *traps,       /* x,y locations of traps (first x, then y) */
+    double *mask,        /* x,y locations of mask points (first x, then y) */
+    double *cellarea,
+    double *D,           /* Parameter value - density */
+    double *lambda0,     /* Parameter value - lambda0 */
+    double *sigma,       /* Parameter value - radius */
+    double *z,           /* Parameter value - shape (hazard rate, cumulative gamma etc) */
+    int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential etc.*/
+    double *value,       /* return value */
+    int    *resultcode   /* 0 if OK */
+)
+
+{
+    int    k,n,s;
+    int    *y;           /* vector of detector-specific counts, length *kk 0 <= yk <= ss) */
+    double *kappa;       /* vector of detector-specific kappa, length *kk */
+    double tempsum;
+    double p;
+    double par[3];
+ 
+    /*===============================================================*/
+
+    /*-------------------------------*/
+    /* summarise input w as y vector */
+    /*-------------------------------*/
+    y = (int *) R_alloc(*kk, sizeof(int));
+    kappa = (double *) R_alloc(*kk, sizeof(double));
+    for (k = 0; k < *kk; k++) {
+        y[k] = 0;
+        for (s = 0; s < *ss; s++) {
+            tempsum = 0;
+            for (n = 0; n < *nc; n++) {
+                tempsum += w[i3(n,s,k,*nc,*ss)];
+	    }
+            if (tempsum>0) y[k]++;
+	}
+    }
+
+    /*--------------------------*/
+    /* set generic failure code */
+    /*--------------------------*/
+    *resultcode = 1;
+    *value = 0;
+    par[0] = *lambda0;
+    par[1] = *sigma;
+    par[2] = *z;
+
+    /*-----------------------------------*/
+    /* Independent points, summed hazard */
+    /*-----------------------------------*/
+
+    Lambda(par, mm, kk, mask, traps, fn, kappa, resultcode);
+    for (k=0; k < *kk; k++) {
+	p = 1 - exp(-kappa[k] * *ss * *D * *cellarea);
+	if (y[k]>0)
+	    *value += log (p);
+	else
+	    *value += log (1-p);
+    }
 
     *resultcode = 0;
 }

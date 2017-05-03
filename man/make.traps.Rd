@@ -25,7 +25,7 @@ make.poly (polylist = NULL, x = c(-50,-50,50,50),
 make.transect (transectlist = NULL, x = c(-50,-50,50,50),
     y = c(-50,50,50,-50), exclusive = FALSE)
 
-make.telemetry (...) 
+make.telemetry (xy = c(0,0)) 
 
 }
 
@@ -50,7 +50,7 @@ make.telemetry (...)
   per occasion }
   \item{verify}{ logical if TRUE then the resulting traps object is
     checked with \code{\link{verify}}}
-  \item{...}{arguments passed to \code{make.poly}}
+  \item{xy}{vector with coordinates of arbitrary point (e.g., centroid of fixes)}
     
 }
 
@@ -87,8 +87,6 @@ straightline distance between adjacent detectors. Traps are numbered
 from the trap due east of the origin, either clockwise or anticlockwise
 as set by \code{IDclockwise}. 
 
-Specialised functions for arrays using a triangular grid are described
-separately (\code{\link{make.tri}},  \code{\link{clip.hex}}).
 
 Polygon vertices may be specified with \code{x} and \code{y} in the case
 of a single polygon, or as \code{polylist} for one or more polygons. Each
@@ -100,8 +98,10 @@ differ.
 Transects are defined by a sequence of vertices as for polygons, except 
 that they are not closed.
 
-\code{make.telemetry} merely calls \code{make.poly} and assigns
-`telemetry' as the detector type of the result.
+\code{make.telemetry} builds a simple traps object for the 'telemetry' detector type. The attribute 'telemetrytype' is set to "independent". 
+
+Specialised functions for arrays using a triangular grid are described
+separately (\code{\link{make.tri}},  \code{\link{clip.hex}}).
 
 }
 

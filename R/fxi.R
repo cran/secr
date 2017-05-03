@@ -9,13 +9,14 @@
 ## 2015-01-31 average all trap locations for default start in fxi.mode
 ## 2015-02-19 sessnum bug in fxi.contour fixed
 ## 2015-10-11 mark-resight included
+## 2016-10-28 userdist may be session-specific
 ###############################################################################
 
 fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) {
 
 # Return scaled Pr(wi|X).pi(X) for one nominated detection history,
 # where X holds coordinates of points
-    
+
     ##--------------------------------------------------------------------
     ## in multi-session case must get session-specific data from lists
     if (ms(object)) {
@@ -108,19 +109,8 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) 
     s     <- ncol(session.capthist)
     m     <- nrow(session.mask)
 
-    dettype <- detectorcode(session.traps)
-
-    if (dettype == 9) {
-    # Groups defined by 'animal' covariate
-        grp  <- group.factor (session.capthist, 'animal')
-        ngrp <- max(1,length(group.levels(session.capthist, 'animal')))
-    }
-    else {
-        grp <- rep(1,nrow(session.capthist))
-        ngrp <- 1
-    }
-
-    if (dettype %in% c(5,9,12)) {    # signal strength
+    dettype <- detectorcode(session.traps, noccasions = s)
+    if (all(dettype %in% c(5,12))) {    # signal strength
         session.signal <- signal(session.capthist)
         session.signal <- switch( details$tx,
             log = log(session.signal),
@@ -128,16 +118,20 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) 
             identity = session.signal
         )
     }
-    else
+    else {
         session.signal <- 0
-    
-    
+    }
+
+    grp <- rep(1,nrow(session.capthist))
+    ngrp <- 1
+
+
     ##############################################################################
-    ## prepare mark-resight data 2015-10-11,15,17
+    ## prepare mark-resight data 2015-10-11,15,17, 2016-12-05
     MRdata <- markresight(session.capthist, session.mask, object$CL, object$fixed,
-                          object$details$chat, sessnum) 
+                          object$details$chat, sessnum, object$details$markresight)
     ##############################################################################
-    
+
 
     ## miscparm is used to package beta parameters that are not modelled
     ## and hence do not have a beta index specified by parindx.
@@ -150,14 +144,14 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) 
     else if (object$detectfn %in% c(10,11))  ## Dawson & Efford 2009 models
         miscparm[1] <- details$cutval
 
-    if (dettype %in% c(3,6,13)) {            ## polygonX, polygon, telemetry
+    if (all(dettype %in% c(3,6))) {            ## polygonX, polygon
         k <- table(polyID(session.traps))
         K <- length(k)
         k <- c(k,0)                          ## zero-terminated
         session.xy <- xy(session.capthist)
     }
     else {
-        if (dettype %in% c(4,7)) {
+        if (all(dettype %in% c(4,7))) {
             k <- table(transectID(session.traps))
             K <- length(k)
             k <- c(k,0) ## zero terminate
@@ -187,16 +181,18 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) 
                                    detector(session.traps),
                                    xy1 = session.traps,
                                    xy2 = session.mask,
-                                   mask = session.mask)
+                                   mask = session.mask,
+                                   sessnum = sessnum)
         ## But we also need distances to new points X...
         distmatX <- valid.userdist (details$userdist,
                                    detector(session.traps),
                                    xy1 = session.traps,
                                    xy2 = X,
-                                   mask = session.mask)
+                                   mask = session.mask,
+                                   sessnum = sessnum)
     }
     fxone <- function (i) {
-        temp <- .C('fxIHP', PACKAGE = 'secr',
+        temp <- .C('fxIHP', # PACKAGE = 'secr',
                    as.integer(i),                 # number of detection history within capthist
                    as.integer(nrow(X)),
                    as.double(X),
@@ -229,7 +225,7 @@ fxi.secr <- function (object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1) 
                    as.double(miscparm),
                    as.integer(normal),
                    as.integer(object$detectfn),
-                   as.integer(binomN),
+                   as.integer(expandbinomN(binomN, dettype)),
                    as.double(0),                  ## bugfix 2014-09-03: do not need a floor here
                    value=double(nrow(X)),
                    resultcode=integer(1))
@@ -398,13 +394,13 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
 ##     n <- nrow(object$capthist)
 ##     if (is.null(mask))
 ##         mask <- if (ms(object)) object$mask[[sessnum]] else object$mask
-## 
+##
 ##     ## sum of individual fxi
 ##     fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask, normal = TRUE, ncores = ncores)
 ##     fx <- do.call(cbind, fxi)
 ##     fxt <- apply(fx, 1, sum)
 ##     fxt <- fxt / getcellsize(mask)   ## length or area 2014-09-10
-## 
+##
 ##     ## predicted uncaught animals
 ##     D <- predictDsurface(object, mask = mask)
 ##     if (ms(object)) D <- D[[sessnum]]
@@ -413,33 +409,33 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ...) {
 ##     pd <- pdot(X = mask, traps = traps(CH), detectfn = object$detectfn,
 ##                detectpar = detectpar(object, ...), noccasions = ncol(CH))
 ##     nct <- D * (1 - pd)
-## 
+##
 ##     covariates(mask) <- data.frame(D.fx = fxt, D.nc = nct, D.sum = fxt + nct)
 ##     class(mask) <- c('Dsurface', class(mask))
 ##     mask
 ## }
 
-fx.total <- function (object, sessnum = 1, mask = NULL, ncores = 1, ...) 
+fx.total <- function (object, sessnum = 1, mask = NULL, ncores = 1, ...)
 {
-    n <- if (ms(object)) nrow(object$capthist[[sessnum]])   
+    n <- if (ms(object)) nrow(object$capthist[[sessnum]])
     else nrow(object$capthist)
-    if (is.null(mask)) 
+    if (is.null(mask))
         mask <- if (ms(object)) object$mask[[sessnum]]
             else object$mask
-    fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask, 
+    fxi <- fxi.secr(object, i = 1:n, sessnum = sessnum, X = mask,
         normal = TRUE, ncores = ncores)
     fx <- do.call(cbind, fxi)
     fxt <- apply(fx, 1, sum)
     fxt <- fxt/getcellsize(mask)
     D <- predictDsurface(object, mask = mask)
     D <- covariates(D)$D.0
-    CH <- if (ms(object)) 
+    CH <- if (ms(object))
         object$capthist[[sessnum]]
     else object$capthist
-    pd <- pdot(X = mask, traps = traps(CH), detectfn = object$detectfn, 
+    pd <- pdot(X = mask, traps = traps(CH), detectfn = object$detectfn,
         detectpar = detectpar(object, ...), noccasions = ncol(CH))
     nct <- D * (1 - pd)
-    covariates(mask) <- data.frame(D.fx = fxt, D.nc = nct, D.sum = fxt + 
+    covariates(mask) <- data.frame(D.fx = fxt, D.nc = nct, D.sum = fxt +
         nct)
     class(mask) <- c("Dsurface", class(mask))
     mask

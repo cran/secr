@@ -1,8 +1,9 @@
 ## 2014-02-11
 ## 2016-06-04 annotation; memo -> message
+## 2017-04-04 prefix argument
 
 par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
-                          logfile = "logfile.txt") {
+                          logfile = "logfile.txt", prefix = "fit.") {
     ptm  <- proc.time()
 
     ## 'inherits' causes R to search in enclosing frames
@@ -18,9 +19,19 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
         tmpnames <- sapply(arglist, function(x) if (is.character(x[[obj]])) x[[obj]] else '')
         unique(tmpnames)
     }
-    data <- c(getnames('capthist'), getnames('mask'),getnames('dframe'))
+    data <- c(getnames('capthist'), getnames('mask'),getnames('dframe'),getnames('details'))
     data <- data[nchar(data)>0]
 
+    ## default details savecall to FALSE across all components of arglist
+    arglist <- lapply(arglist, function (x) {
+        if (is.null(x$details))
+            x$details <- list(savecall = FALSE)
+        else if (!('savecall' %in% names(x$details))) {
+            x$details[['savecall']] <- FALSE
+        }
+        x
+    })
+    
     ## individual fits must use ncores = 1
     if (ncores > 1) {
         ## force 'ncores' to 1 across all components of arglist
@@ -37,7 +48,7 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
     }
     
     ## apply standard naming convention
-    names(output) <- paste('fit', names(arglist), sep = '.')
+    names(output) <- paste0(prefix, names(arglist))
 
     ## changed from memo() 2016-06-04
     message(paste('Completed in ', round((proc.time() - ptm)[3]/60,3), ' minutes at ',

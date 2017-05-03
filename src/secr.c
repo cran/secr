@@ -2,13 +2,11 @@
    External procedures for secr package
 
    can compile with gcc 4.6.3 :
-   gcc -Ic:/R/R-3.2.0/include -c secr.c -Wall -pedantic -std=gnu99
+   gcc -Ic:/R/R-3.3.0/include -c secr.c -Wall -pedantic -std=gnu99
 
    [confirmed 2014-08-27 1021]
 
 */
-/* 2011-04-05 allow 'partial likelihood' option in secrloglik */
-/* *like == 2 */
 /* 2011-05-05 tweak integralprw1 to admit factor of D */
 /* integralprw1 acquires *useD argument 0/1 */
 /* D may be provided as a third column of *mask */
@@ -44,7 +42,7 @@
 /*            see test.R, valgrind etc. */
 /* 2014-08-27 major rejig to use lookup distances (d2L) computed with makedist2 */
 /*            and saved in dist2. This is preliminary to user-provided distance matrix */
-/*            Thes functions do NOT use d2L and dist2 */
+/*            These functions do NOT use d2L and dist2 */
 /*            -- prwi fns for polygons and transects, and pdotpoly */
 /* 2014-09-10 fxIHP drastically redone - now much cleaner */
 /* 2014-10-04 geth drastic speed improvement for constant detector covariates WITHDRAWN */
@@ -57,8 +55,17 @@
 /* 2015-11-20 fixed bug in fxIHP that crashed R when detector type='multi' and usage varied */
 /* 2015-12-21 temporary fix prwicount */
 /* 2016-01-08 correct overflow and make memrequest in secrloglik more specific */
+/* 2016-10-06 secr 3.0 -- detect as an integer vector */
+/* 2016-10-07 secr 3.0 -- remove Gardner et al 2009 param fn = 20 */
+/* 2016-12-30 remove superbinomial option distrib = 2 */
+/* 2017-01-05 remove like = 3,4 (CT) and usepimask */
+/* 2017-03-23 stdint renamed H */
+/* 2017-03-23 gintegral renamed hintegral */
+/* 2017-04-03 fixed bug for polygons in getdetspec */
+/* 2017-04-03 only precompute gk0 if gsb0val differs from gsbval (behavioural effects) */
+/* 2017-04-04 hdotpoly replaces pdotpoly */
 /*
-        *detect may take values -
+        detect[s] may take values -
         0  multi-catch traps
         1  binary proximity detectors
         2  count  proximity detectors
@@ -67,10 +74,41 @@
         5  signal detector
         6  polygon detector
         7  transect detector
-        8  times  (undocumented)
-        9  cue    (undocumented) -- removed in secr 2.10.0
-	12 signalnoise
+	10 unmarked
+	11 presence/absence
+     	12 signalnoise
+	13 telemetry
 */
+
+/* *like codes for the type of likelihood. It may take values -
+
+0 full
+1 conditional
+2 full, split integral for sightings of marked animals (from 2016-11-23)
+5 all-sighting histories, n0 known (includes all-zero histories)
+6 all-sighting histories, n0 unknown
+
+*/
+
+/* 
+2016-12-30 Development of likelihood component for telemetry fixes 
+
+Restricted to detectfn 14,16 (HHN, HEX)
+Supercedes previous clunky CT and DT implementation in like=3, like=4
+
+Function getrhr -- precomputes cc x mm x nt array of pdf components 'rhr',
+                   and the normalising factor 'normal'
+                -- called after 'precompute'
+Function fnu    -- probability density for the fixes of one animal 
+                -- called after prwi
+
+2017-03-24 Cleanup of polygon hazard formulation
+
+Complete reliance on integrating hazard (zfn)
+Removed unnecessary factor of 10000 from prwipolygon, prwipolygonX
+Removed unnecessary factor of 100 from prwitransect and prwitransectX
+
+ */
 
 #include "secr.h"
 #include <time.h>
@@ -80,8 +118,94 @@
 void R_CheckUserInterrupt(void);
 
 /*==============================================================================*/
+
+/* Functions to characterize detector type */
+/* polygon, transect and signal detector types must be constant 
+   across occasions */
+
+int anyexclusive (int detect[], int ss) {
+    int s;
+    int exclusive = 0;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]==0) || (detect[s]==3) || (detect[s]==4))
+	    exclusive = 1;
+    return exclusive;
+}
+int anypolygon (int detect[], int ss) {
+    int s;
+    int polygon = 0;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]==3) || (detect[s]==6) )
+	    polygon = 1;
+    return polygon;
+}
+int anytransect (int detect[], int ss) {
+    int s;
+    int transect = 0;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]==4) || (detect[s]==7))
+	    transect = 1;
+    return transect;
+}
+int anysignal (int detect[], int ss) {
+    int s;
+    int signal = 0;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]==5) || (detect[s]==12))
+	    signal = 1;
+    return signal;
+}
+int anytelemetry (int detect[], int ss) {
+    int s;
+    int telemetry = 0;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]==13))
+	    telemetry = 1;
+    return telemetry;
+}
+int alltelemetry (int detect[], int ss) {
+    int s;
+    int telemetry = 1;
+    for (s=0; s<ss; s++) 
+	if ((detect[s]!=13))
+	    telemetry = 0;
+    return telemetry;
+}
+int allpoint (int detect[], int ss, int allowsignal, int allowtelem) {
+    int s;
+    int point;
+    int OK = 1;
+    for (s=0; s<ss; s++) {
+	point = (detect[s]==0) || (detect[s]==1) || (detect[s]==2)
+	    || (detect[s]==10) || (detect[s]==11)
+	    || (allowsignal && ((detect[s]==5) || (detect[s]==12)))
+	    || (allowtelem && ((detect[s]==13) || (detect[s]==8)));
+	OK = OK && point;
+    }
+    return OK;
+}
+int allmulti (int detect[], int ss) {
+    int s;
+    int notmulti = 0;
+    for (s=0; s<ss; s++) 
+	if (detect[s]!=0)
+	    notmulti = 1;
+    return 1-notmulti;
+}
+
+/* Do parameter values for naive animals differ at all from thos for other animals ?*/
+int anyb (double gsbval[], double gsb0val[], int cc, int npar) {
+    int identical = 1;
+    int i;
+    for (i=0; i<(cc*npar); i++) {
+	if (gsbval[i] != gsb0val[i]) identical = 0;
+    }
+    return 1 - identical;
+}
+/*==============================================================================*/
+
 double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
-	      double gk0[], int detect, int binomN, double Tsk[], int ss, int nk, 
+	      double gk0[], double hk0[], int detect[], int binomN[], double Tsk[], int ss, int nk, 
 	      int cc0, int nmix, double gsb0val[], int allsighting)
 
 /*
@@ -98,6 +222,8 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
     2012 12 25 DOES NOT ALLOW binomN < 0
     2015-03-18 used 'p0' as variable for Pr(not caught) instead of re-using g1
     2015-11-19 dropped 'param=1'
+    2016-12-31 notional telemetry trap (nk) is always usage=0 for detect[s] != 13
+    2017-03-20 hk; force polygon = count
 */
 {
     int k,s,c;
@@ -105,46 +231,36 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
     int wxi;
     double pp;
     double p0;
-    double g1;
     double Tski;
-    if (binomN < 0) error ("negative binomN not allowed in C fn pndot");
     pp = 1;
     for (s=0; s<ss; s++) {
-	if ((markocc[s]>0) || allsighting) {
+        if (((markocc[s]>0) || allsighting) && (detect[s]!=13)) {   /* capture occasions */
+	    if (binomN[s] < 0) error ("negative binomN not allowed in C fn pndot");
 	    for (k=0; k< nk; k++) {
 		wxi = i4(n,s,k,x,ncol,ss,nk);
 		c = PIA0[wxi] - 1;
 		if (c >= 0) {    /* drops unset traps */
 		    gi = i3(c,k,m,cc0,nk);
-		    g1 = gk0[gi];
 		    Tski = Tsk[s * nk + k];
 		    /* expect binomN = 1 if not count detector */
 		    if (fabs(Tski-1) > 1e-10) {                  /* effort <> 1.0 */
-			if ((detect < 8) & (detect != 5))  {
-			    /* 2015-12-21, 2015-12-29 */
-			    if (binomN == 0) {
-				if (detect == 2)
-				   p0 = exp(-Tski * hazard(g1)); /* Poisson count detector */
-				else
-				   p0 = exp(-Tski * g1);         /* Poisson polygon */
-			    }
+			if ((detect[s] < 8) & (detect[s] != 5))  {
+			    if (binomN[s] == 0)
+				p0 = exp(-Tski *  hk0[gi]);      /* Poisson count or polygon detr */
 			    else
-				p0 = pow(1-g1, Tski * binomN);   /* Binomial and Bernoulli */
+				p0 = pow(1-gk0[gi], Tski * binomN[s]);  /* Binomial and Bernoulli */
 			}
 			else error("no effort adjustment for detector type");
 		    }
 		    else {
-			if (binomN == 0) {
-			    if (detect == 2)
-				p0 = exp(-hazard(g1));       /* Poisson count detector */
-			    else
-				p0 = exp(-g1);               /* Poisson polygon */
-			}
-			else  if (binomN == 1)
-			    p0 = 1 - g1;                         /* Bernoulli */
-			else {
-			    p0 = pow(1-g1, binomN);              /* Binomial */
-			}
+			if (binomN[s] == 0) 
+				p0 = exp(- hk0[gi]);       /* Poisson count or polygon detector */
+			else 
+			    if (binomN[s] == 1)
+			    p0 = 1 - gk0[gi];                   /* Bernoulli */
+			else 
+			    p0 = pow(1-gk0[gi], binomN[s]);     /* Binomial */			
+			
 		    }
 		    pp *= p0;
 		    
@@ -157,200 +273,217 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
 }
 /*===============================================================*/
 
-/* changed 2014-09-23, but note this function is not used */
-/* int nonzero (int detect, int w[], int nc, int ss, int kk) */
-int nonzero (int detect, double w[], int nc, int ss, int kk)
-/*
-    number of nonzero capture histories 
-*/
+double prwipoint
+    (int m, int n, int x, int w[], double xy[], double signal[],
+     int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+     int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
+     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
+    
+    /*
+
+    Probability of capture history n (0 <= n < *nc)
+    given that animal's range centre is at m
+    
+    Combined code for all point detectors (previously prwimulti, prwiprox, prwicount)
+
+    */
 {
-    int n;   /* index of animal    0 <= n < nc  */
     int s;   /* index of occasion  0 <= s < ss  */
     int k;   /* index of trap      0 <= k < kk  */
-    int wi;
-    int count = 0;
-    int caught;
+    int c, gi, wi, w0, wxi;
+    int count;
+    int detect;
+    int dead = 0;
+    double htemp;
+    double result = 1.0;
+    double g1;
+    double Tski;
+    double pks;
+    double pI = 1.0;
+    for (s=0; s<ss; s++) {
+	pI = pID[s + ss*x];
+	detect = (int) (detspec[s]+0.1);
+	// if (m==0) Rprintf("prwipoint s %3d detect %3d\n", s, detect);
+        /* sneaky way to control which occasions to use */
+	if ((detect>=0) && (detect!=13)) {   
 
-    for (n = 0; n < nc; n++) {
-	caught = 0;
-	for (s = 0; s < ss; s++) {
-	    if (detect == 0) {   /* 2-D data array */
-		wi = nc * s + n;
-		if (fabs(w[wi]) > 1e-8) {
-		    caught = 1;
-		    break;
+	    if (detect == 0) {                                     /* trap */
+                /* assume trapped animals are never 'sightings'; ignore pI */
+		htemp = h[i3(x,m,hindex[s*nc + n],nmix, mm)];
+		if (htemp < fuzz) { result = 0; break; }
+		w0 = i3(n, s, 0, nc, ss);
+		if (w[w0] != 0) {                                /* Captured */
+		    // if(m==0) Rprintf("n %5d s %5d  w[w0] %5d  \n", n, s, w[w0]);
+		    if (w[w0] < 0) dead = 1;  
+		    k = abs(w[w0])-1;
+		    Tski = Tsk[s * kk + k];
+		    wxi = i4(n, s, k, x, nc, ss, kk);
+		    c = PIA[wxi] - 1;
+		    gi = i3(c, k, m, cc, kk);
+		    pks = Tski * hk[gi];
+		    pks *=  (1-expmin(-htemp)) / htemp;
 		}
+		else  {
+		    pks = expmin(-htemp);      /* Not captured */
+		}
+		result *= pks;	
 	    }
 	    else {
 		for (k=0; k<kk; k++) {
 		    wi = i3(n, s, k, nc, ss);
-		    if (fabs(w[wi]) > 1e-8) {
-			caught = 1;
-			break;
+		    wxi = i4(n, s, k, x, nc, ss, kk);
+		    count = w[wi];
+		    if (count<0) {dead=1; count=-count;}
+		    c = PIA[wxi] - 1;
+		    if (c >= 0) {                                     /* skip if this trap not set */
+			gi  = i3(c, k, m, cc, kk);
+			g1 = gk[gi];
+			Tski = Tsk[s * kk + k];
+
+			if (fabs(Tski-1) > 1e-10) {                   /* not unity */ 
+			    if (Tski < 1e-10)                         /* 2014-11-10 */
+				g1 = 0;
+			    else
+				g1 = 1 - pow(1 - g1, Tski);
+			}
+			if (detect == 1 ) {                           /* binary proximity    */
+			    if (count)                                /* Bernoulli count 0/1 */
+				result *= g1 * pI;
+			    else 
+				result *= (1 - g1 * pI);
+			}
+			else {                                        /* count proximity */
+
+			    if (binomN[s] == 0) {                     /* Poisson */
+				if (count == 0) 
+				    result *= expmin(-Tski * hk[gi] * pI);
+				else
+				    result *= dpois(count, Tski * hk[gi] * pI, 0); 
+			    }
+			    else if (binomN[s] == 1) {                /* Binomial, size from Tsk */ 
+				result *= countp (count, round(Tski), g1 * pI);
+			    }
+			    else if (binomN[s] > 1) {                 /* Binomial, specified size */
+				if (fabs(Tski-1) > 1e-10)             /* not unity */
+				    g1 = 1 - pow(1 - g1, Tski);
+				result *= countp (count, binomN[s], g1 * pI);
+			    }
+			}
+			if (result < minp) {result = minp; break;}    /* truncate */
 		    }
 		}
+		if (result <= minp) {result = minp; break;}           /* truncate */
+	    }
+	    if (dead==1) break;
+	}
+    }
+    return (result);
+}
+/*=============================================================*/
+
+void gethr(int detect[], int fn, int ss, int mm, int cc, int nt,
+	    double mask[], double xy[], double gsbval[], double hr[],
+            double telemscale) {
+
+    /* precompute all telemetry-to-mask detectfn values */ 
+
+    int c,m,t,hri;
+    double par[3];   
+    double r;
+    fnptr zfn;
+    double hrsum=0.0;
+    double normal=1.0;
+
+    zfn = getzfnr(fn);                                          
+    for (c=0; c<cc; c++) {
+	par[0] = 1; // gsbval[c];
+	par[1] = gsbval[cc + c];
+	// par[2] = gsbval[2*cc + c];
+	if ((fn==14) || (fn==16))
+	    //normal[c] = 1/(2 * M_PI * par[0] * par[1] * par[1]);
+	    normal = telemscale/(2 * M_PI * par[1] * par[1]);
+	else
+	    error ("telemetry only coded for HHN and HEX");
+
+	for (m=0; m<mm; m++) {
+	    for (t=0; t<nt; t++) {
+		r = sqrt(d2 (m, t, mask, xy, mm, nt)); 
+		hri = i3(c, m, t, cc, mm); 
+		hr[hri] = zfn(par, r) * normal;
+                hrsum += hr[hri];   /* test */
+	    }	    
+	}
+    }
+    // Rprintf("cc %3d hrmean %10.8f\n", cc, hrsum/mm/nt/cc);
+}
+/*=============================================================*/
+
+double fnu (int m, int n, int x, int w[], int PIA[], int start[],
+	    double hr[], int detect[],
+	    int cc, int nc, int kk, int ss, int mm, double minp) {
+
+/* Probability density of telemetry locations for animal n if it belongs to
+   latent class x and is centred at m. It is assumed that telemetry data correspond
+   to the last detector (kk)
+
+   detspec is an array with the occasion-specific detector type in positions 0:(ss-1)
+   and the starting location of fixes for each animal in positions ss:(ss+nc-1).
+
+   The array hr contains precomputed detection function evaluations 
+   (dimension cc x mm x nt where nt is total number of telemetry locations).
+
+   The argument 'normal' contains the normalising coefficient 1/c.
+
+   [The size of hr can grow very large, and maybe there needs to be an option to
+    compute hr dynamically.]
+
+   Assume detections are sorted by occasion.
+
+ */
+    int s,c = 0;
+    int hri = 0; 
+    int i, t, wi, wxi;
+    int count, cumcount = 0;
+    double result = 1.0;
+
+    /* fnui <- apply(hr*norm, 1, function (tt) tapply(tt, ID, prod)) */
+    /* nsum <- apply(fnui, 1, sum) * (1/mm)   ## area of pixel? */
+
+
+    for (s=0; s<ss; s++) {
+	if (detect[s] == 13) {
+	    wi = i3(n, s, kk-1, nc, ss);
+	    count = w[wi];  /* number of telemetry fixes */
+	    if (count>0) {
+		wxi = i4(n, s, kk-1, x, nc, ss, kk);
+		c = PIA[wxi] - 1;
+		if (c<0) {
+		    Rprintf("n %4d m %5d x %5d ss %4d kk %4d wxi %7d PIA[wxi] %4d\n", 
+			    n,m,x,ss,kk,wxi,PIA[wxi]);
+		    error ("telemetry usage zero on telemetry occasion");
+		}
+		for (i=cumcount; i<(cumcount+count); i++) {
+		    t = start[n] + i;
+		    hri  = i3(c, m, t, cc, mm); 
+		    result *= hr[hri]; 
+		    /* if (result<minp) { */
+		    /* 	result = 0.0; */
+		    /* 	break; */
+		    /* } */
+		}
+		cumcount += count;
 	    }
 	}
-	count += caught;
-    }
-    return(count);
-}
-
-double prwimulti
-   (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
-
-/*
-    Probability of capture history n (0 <= n < *nc)
-    given that animal's range centre is at m
-    MULTI-CATCH DETECTOR
-*/
-{
-    int s;                             /* index of occasion  0 <= s < *ss */
-    int k;                             /* index of trap      0 <= k < *kk */
-    int c;
-    int gi;
-    int dead = 0;
-    double htemp;
-    double pks;
-    double result = 1.0;
-    double Tski;
-    for (s=0; s<ss; s++)
-    {
-        htemp = h[i3(x,m,hindex[s*nc + n],nmix, mm)];
-        if (htemp < fuzz) { result = 0; break; }
-        k = w[nc * s + n];
-        if (k < 0) {dead=1; k=-k;}  /*  1 <= k <= kk */
-        if (k > 0) {
-	    Tski = Tsk[s * kk + k-1];
-            c = PIA[i4(n, s, k-1, x, nc, ss, kk)] - 1;
-            gi = i3(c, k-1, m, cc, kk);
-            pks = Tski * hazard(gk[gi]);
-            pks *= (1-expmin(-htemp)) / htemp;
-        }
-        else  {
-            pks = expmin(-htemp);      /* Not captured */
-        }
-         result *= pks;
-        if (dead) break;
     }
     return (result);
-}
-/*=============================================================*/
 
-double prwiprox
-   (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
-
-/*
-    Probability of capture history n (0 <= n < nc)
-    given that animal's range centre is at m
-    BINARY PROXIMITY DETECTOR distinguished from count detector 2012-12-22
-*/
-{
-    int s;   /* index of occasion  0 <= s < ss  */
-    int k;   /* index of trap      0 <= k < kk  */
-    int c, gi, wi, wxi;
-    int count;
-    int dead = 0;
-    double result = 1.0;
-    double g1;
-    double Tski;
-
-    for (s=0; s<ss; s++) {
-        for (k=0; k<kk; k++) {
-            wi = i3(n, s, k, nc, ss);
-            wxi = i4(n, s, k, x, nc, ss, kk);
-            count = w[wi];
-            if (count<0) {dead=1; count=-count;}
-            c = PIA[wxi] - 1;
-            if (c >= 0) {                                       /* skip if this trap not set */
-                gi  = i3(c, k, m, cc, kk);
-		g1 = gk[gi] * pID[s + ss*x];
-		Tski = Tsk[s * kk + k];
-		if (fabs(Tski-1) > 1e-10) {      /* not unity */ 
-		    if (Tski < 1e-10)   /* 2014-11-10 */
-			g1 = 0;
-		    else
-			g1 = 1 - pow(1 - g1, Tski);
-		}
-		if (count)                                      /* Bernoulli */
-		    result *= g1;
-		else 
-		    result *= (1-g1);
-                if (result < minp) {result = minp; break;}      /* truncate */
-            }
-        }
-        if (result <= minp) {result = minp; break;}             /* truncate */
-        if (dead==1) break;
-    }
-    /* Rprintf("m=%5d, n=%5d, %10.5f\n", m, n, log(result)); */
-    return (result);
-}
-/*=============================================================*/
-
-double prwicount
-   (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
-
-/*
-    Probability of capture history n (0 <= n < nc)
-    given that animal's range centre is at m
-    COUNT DETECTOR, excludes BINARY PROXIMITY
-*/
-{
-    int s;   /* index of occasion  0 <= s < ss  */
-    int k;   /* index of trap      0 <= k < kk  */
-    int c, gi, wi, wxi;
-    int count;
-    int dead = 0;
-    double result = 1.0;
-    double g1;
-    double Tski;
-
-    if (binomN < 0) error ("negative binomN not allowed in C fn prwicount");
-    for (s=0; s<ss; s++) {
-        for (k=0; k<kk; k++) {
-            wi = i3(n, s, k, nc, ss);
-            wxi = i4(n, s, k, x, nc, ss, kk);
-            count = w[wi];
-            if (count<0) {dead = 1; count = -count;}
-            c = PIA[wxi] - 1;
-            if (c >= 0) {                               /* skip if this trap not set */
-                gi  = i3(c, k, m, cc, kk);
-		g1 = gk[gi] * pID[s + ss*x];
-		Tski = Tsk[s * kk + k];
-		if (binomN == 0) {                      /* Poisson */
-		    result *= dpois(count, Tski * hazard(g1), 0); 
-		}
-		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
-		    result *= countp (count, round(Tski), g1);
-		}
-		else if (binomN > 1) {                  /* Binomial, specified size */
-		    if (fabs(Tski-1) > 1e-10) /* not unity */
-			g1 = 1 - pow(1 - g1, Tski);
-		    result *= countp (count, binomN, g1);
-		}
-                if (result < minp) {result = minp; break;}      /* truncate */
-            }
-        }
-        if (result <= minp) {result = minp; break;}             /* truncate */
-        if (dead==1) break;
-    }
-    return (result);
 }
 /*=============================================================*/
 
 double prwisignal
    (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+    int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+    int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 
 /*
@@ -375,7 +508,7 @@ double prwisignal
     double sig = 0;
     double g1;
 
-    spherical = round (detspec[3]);
+    spherical = (int) detspec[3];
     for (s=0; s<ss; s++) {
         for (k=0; k<kk; k++) {
             wxi = i4(n, s, k, x, nc, ss, kk);
@@ -387,11 +520,11 @@ double prwisignal
                     /* not detected at this mic */
                     gi = i3(c,k,m,cc,kk);
 		    g1 = gk[gi];
-                    result *= countp (0, binomN, g1);
+                    result *= countp (0, binomN[s], g1);
                 }
                 else {
                     /* detected at this mic */
-                    start = round(detspec[wi+4]);
+                    start = (int) detspec[wi+4];
                     for (j=0; j<count; j++) {
 			sig = signal[start+j];
 			if (sig >= 0) {
@@ -408,7 +541,7 @@ double prwisignal
                             /* signal value missing; detection only */
 			    gi = i3(c,k,m,cc,kk);
 			    g1 = gk[gi];
-			    result *= countp (1, binomN, g1);
+			    result *= countp (1, binomN[s], g1);
 			}			   
                     }
                 }
@@ -423,8 +556,8 @@ double prwisignal
 
 double prwisignalnoise
    (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+    int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+    int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 
 /*
@@ -468,8 +601,8 @@ start[w_isk] + nd is index to noise for w_isk
     double f = 1;
 
     /* xi = 10 /  M_LN10; */
-    nd = round (detspec[1]);
-    spherical = round (detspec[5]);
+    nd = (int) detspec[1];
+    spherical = (int) detspec[5];
     /* cut = detspec[2]; */
     muN = detspec[3];
     sdN = detspec[4];
@@ -483,11 +616,11 @@ start[w_isk] + nd is index to noise for w_isk
                 if (count==0) {
                     /* not detected at this mic */
                     gi = i3(c,k,m,cc,kk);
-                    result *= countp (0, binomN, gk[gi]);
+                    result *= countp (0, binomN[s], gk[gi]);
                 }
                 else {
                     /* detected at this mic */
-                    start = round(detspec[wi+6]);
+                    start = (int) detspec[wi+6];
                     for (j=0; j<count; j++) {
 			sig = signal[start+j];
 			nois = signal[start+nd+j];
@@ -510,7 +643,7 @@ start[w_isk] + nd is index to noise for w_isk
 			else  {
                             /* signal value missing; detection only */
 			    gi = i3(c,k,m,cc,kk);
-			    result *= countp (1, binomN, gk[gi]);
+			    result *= countp (1, binomN[s], gk[gi]);
 			}			   
                     }
                 }
@@ -518,202 +651,6 @@ start[w_isk] + nd is index to noise for w_isk
             }
         }
         if (result <= minp) {result = minp; break;}                 /* truncate */
-    }
-    return (result);
-}
-/*=============================================================*/
-
-void fnst (double *x, int n, void *ex){
-    int i;
-    double * st;
-    st = (double*) ex;   /* [s, t] */
-    for(i=0; i<n; i++) 
-	x[i] = exp(st[0] * x[i] - x[i]*x[i]/2) * pow(pnorm(x[i],0,1,1,0), st[1]-1);
-}
-
-double d2lnorm (double x, double mu1, double s1, double mu2, double s2) {
-/* approximate density of sum of two lognormal random variables */
-/* Szyszkowiccz and Yanikomeroglu */
-    double s;
-    double m;
-    double t;
-    double y;
-    double Lambda = 0;
-    double ex[2];
-    double bound = 0;
-    int    inf = 2;
-    double epsabs = 0.0001;
-    double epsrel = 0.0001;
-    double abserr = 0;
-    int neval = 0;
-    int ier = 0;
-    int limit = 100;
-    int lenw = 400;
-    int last = 0;
-    int iwork[100];
-    double work[400];
-
-    s = fmax2(s1,s2);
-    t = s*s * (1/(s1*s1) + 1/(s2*s2));
-    if (s1 == s2) {
-        m = log(exp(mu1) + exp(mu2)) - log(2) - pnorm(s/sqrt(2),0,1,1,1);
-    }
-    else {
-        ex[0] = s;
-        ex[1] = t;
-        Rdqagi(fnst, ex, &bound, &inf, &epsabs, &epsrel, &Lambda, &abserr, &neval, &ier,
-          &limit, &lenw, &last, iwork, work);
-	m = log (exp(mu1 + s1*s1/2) + exp(mu2 + s2*s2/2)) - log(Lambda) - log(t) + log(M_2PI)/2;
-    }
-    y = (log(x) - m) / s;
-    return (t / (sqrt(M_2PI) * x * s) * exp( - y * y / 2 ) * pow( pnorm (y,0,1,0,0), t-1));
-}
-
-double prwisignal2
-   (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
-
-/*
-    Probability of capture history n (0 <= n < nc)
-    given that animal's range centre is at m
-    SIGNAL STRENGTH DETECTOR
-    Modified 2012-01-30 to allow missing signal strengths
-    Does not need cut: simplified dnorm call 2012-02-01
-
-    Model sum of two lognormals
-*/
-
-{
-    int s;   /* index of occasion  0 <= s < ss */
-    int k;   /* index of trap      0 <= k < kk */
-    int j;   /* index of detection */
-    int c, wi, wxi, gi;
-    double result = 1.0;
-    double mu, sdS;
-    int start = 0;
-    int count = 0;
-    int spherical;
-    double sig = 0;
-    double xi;
-    double f = 1;
-
-    xi = 10 / log(10);
-
-    spherical = round (detspec[3]);
-    for (s=0; s<ss; s++) {
-        for (k=0; k<kk; k++) {
-            wxi = i4(n, s, k, x, nc, ss, kk);
-            c = PIA[wxi] - 1;
-            if (c >= 0) {                                           /* skip if this trap not set */
-                wi = i3(n, s, k, nc, ss);
-                count = abs(w[wi]);                                 /* ignore 'deaths */
-                if (count==0) {
-                    /* not detected at this mic */
-                    gi = i3(c,k,m,cc,kk);
-                    result *= countp (0, binomN, gk[gi]);
-                }
-                else {
-                    /* detected at this mic */
-                    start = round(detspec[wi+4]);
-                    for (j=0; j<count; j++) {
-			sig = signal[start+j];
-			if (sig >= 0) {
-                            /* valid measurement of signal */
-			    /* mu = mufn (k, m, gsbval[c], gsbval[cc + c],
-				       traps, mask, kk, mm, spherical); */
-			    mu  = mufnL (k, m, gsbval[c], gsbval[cc + c], 
-					  dist2, kk, spherical);
-			    sdS = gsbval[cc * 2 + c];
-                            /* fixed mu2, s2 : ovenbird noise */
-			    f = d2lnorm(sig/xi, mu/xi, sdS/xi, detspec[1]/xi, detspec[2]/xi);
-			    if (m == 2200)
- 			    result *= f; 
-			}
-			else  {
-                            /* signal value missing; detection only */
-			    gi = i3(c,k,m,cc,kk);
-			    result *= countp (1, binomN, gk[gi]);
-			}			   
-                    }
-                }
-                if (result < minp) {result = minp; break;}          /* truncate */
-            }
-        }
-        if (result <= minp) {result = minp; break;}                 /* truncate */
-    }
-    return (result);
-}
-/*=============================================================*/
-
-double prwitimes
-   (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
-    double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
-/*
-    Probability of capture history n (0 <= n < nc)
-    given that animal's range centre is at m
-    TIMES DETECTOR  (uses 'signal' vector for times)
-*/
-
-/* R-exts.pdf "the exponential and gamma distributions are parametrized
-   by scale rather than rate" see code in src\nmath\... */
-
-{
-    int s;   /* index of occasion  0 <= s < ss */
-    int k;   /* index of trap      0 <= k < kk */
-    int c, wi, wxi, gi;
-    double lambda;
-    double result = 1.0;
-    int count = 0;
-
-    /*  for times ... */
-    int j;
-    int start = 0;
-    double time0;
-    double y = 0;
-
-    for (s=0; s<ss; s++) {
-        for (k=0; k<kk; k++) {
-            wxi = i4(n,s,k,x,nc,ss,kk);
-            wi = i3(n,s,k,nc,ss);
-            c = PIA[wxi] - 1;
-            if (c >= 0) {                       /* skip if this trap not set */
-                count = abs(w[wi]);
-                gi = i3(c,k,m,cc,kk);
-                lambda = Tsk[s * kk + k] * gk[gi];
-
-/*
-    The following 'intuitive' code attempts to implement a continuous-time
-    model. This appears to be ill-conceived because in a homogeneous
-    model the times contain no additional information (e.g. Nayak 1988
-    Biometrika 75:113).
-
-    It is unclear whether the final likelihood component is needed.
-    A small trial without it suggests the asymptotic variances estimates
-    are slightly greater than the corresponding 'count' detector estimates.
-
-    'times' detectors are therefore not mentioned in current documentation.
-
-    MGE 2009 12 07
-*/
-                result *= countp (0, binomN, lambda);
-                if (count>0) {
-                    start = round(detspec[wi]);  /* plus offset ? */
-                    time0 = 0.0;
-                    for (j=0; j<count; j++) {
-                        y = signal[start+j]-time0;
-                        result *= dexp(y, 1/lambda, 0) / pexp (1-time0, 1/lambda, 1, 0);
-                        time0 = signal[start+j];
-                    }
-                    /* result *= 1- pexp (1-time0, 1/lambda, 1, 0);   no detection after last */
-                }
-                if (result < minp) {result = minp; break;}      /* truncate */
-            }
-        }
-        if (result <= minp) {result = minp; break;}             /* truncate */
     }
     return (result);
 }
@@ -721,8 +658,8 @@ double prwitimes
 
 double prwipolygon
    (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+    int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+    int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 
 /*
@@ -740,15 +677,14 @@ double prwipolygon
     double result = 1.0;
     int nd;
     int start = 0;
-    double H;
+    double hint;
     double g1;
     double Tski;
 
-    if (binomN < 0) error ("negative binomN < 0 not allowed in C fn prwipoly");
-
-    nd = round(detspec[1]);
+    nd = (int) detspec[1];
     for (s=0; s<ss; s++) {
-	if (pID[s + ss*x]>0)  /* test 2015-11-01 */
+        if (binomN[s] < 0) error ("negative binomN < 0 not allowed in C fn prwipoly");
+        if (pID[s + ss*x]>0)  /* test 2015-11-01 */
         for (k=0; k<kk; k++) {
             wi = i3(n,s,k,nc,ss);
             count = w[wi];
@@ -757,25 +693,28 @@ double prwipolygon
             c = PIA[wxi] - 1;
             if (c >= 0) {                          /* skip if this polygon not used */
                 gi  = i3(c,k,m,cc,kk);
-		g1 = gk[gi] * pID[s + ss*x];   /* 2015-11-01 */
 		Tski = Tsk[s * kk + k];
-		if (binomN == 0) {                      /* Poisson */
-		    result *= dpois (count, Tski * g1, 0);   /* already cum hazard */
+		if (binomN[s]== 0) {                      /* Poisson */
+//		    result *= dpois (count, Tski * gk[gi]  * pID[s + ss*x] , 0);   
+		    result *= dpois (count, Tski * hk[gi]  * pID[s + ss*x] , 0);   
 		}
-		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
+		else if (binomN[s] == 1) {                 /* Binomial, size from Tsk */ 
+		    g1 = gk[gi] * pID[s + ss*x]; 
 		    result *= countp (count, round(Tski), g1);
 		}
-		else {                                  /* Binomial */ 
+		else {                                  /* Binomial including Bernoulli */ 
+		    g1 = gk[gi] * pID[s + ss*x]; 
 		    if (fabs(Tski-1) > 1e-10) 
 			g1 = 1 - pow(1 - g1, Tski);
-		    result *= countp (count, binomN, g1);
+		    result *= countp (count, binomN[s], g1);
 		}
+                /* for each detection pdf(xy) | detected */
                 if ((result > minp) && (count>0)) {               /* avoid underflow 2009 11 16 */
-                    start = round(detspec[wi+cc+2]);
+		    /* retrieve hint = integral2D(zfn(x) over k)) */
+		    hint = hk[gi] / gsbval[c] * detspec[2+c];
+                    start = (int) detspec[wi+cc+2];
                     for (j=start; j < start+count; j++) {
-                        /* convoluted way of retrieving integral2D(gfn(x) over k)) */
-			H = gk[gi] / gsbval[c] * detspec[2+c] / 10000;  /* why 10000? */
-                        result *= gfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / H;
+                        result *= zfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / hint;
                     }
 		}
             }
@@ -788,18 +727,15 @@ double prwipolygon
         }
         if (dead==1) break;
     }
-/*
-    if (n==5 || n == 15 || n == 25 || n == 35)
-       Rprintf("prwipolygon n %4d  m %4d %14.11f\n", n, m, result); 
-*/
     return (result);
 }
 /*=============================================================*/
 
+/* NEEDS UPDATING FOR 3.0 */
 double prwipolygonX
    (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+    int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+    int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 
 /*
@@ -818,10 +754,10 @@ double prwipolygonX
     double result = 1.0;
     int j, wi;
     int nd;
-    double H;
+    double hint;
     double Tski;
 
-    nd = round(detspec[1]);
+    nd = (int) detspec[1];
 
     for (s=0; s<ss; s++)
     {
@@ -835,7 +771,7 @@ double prwipolygonX
 	    Tski = Tsk[s * kk + k-1];
             c = PIA[i4(n, s, k-1, x, nc, ss, kk)] - 1;
             gi = i3(c, k-1, m, cc, kk);
-            pks = -Tski * log (1 - gk[gi]);
+            pks = Tski * hk[gi];
             pks *= (1-expmin(-htemp)) / htemp;
         }
         /* PR | not detected */
@@ -845,9 +781,17 @@ double prwipolygonX
         result *= pks;
         /* Pr(location) */
         if (k > 0) {
-            j = round(detspec[wi+cc+2]);
-            H = gk[gi] / gsbval[c] * detspec[2+c] / 10000;
-            result *= gfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / H;
+	    /* retrieve hint = integral2D(zfn(x) over k)) */
+            /* use of  gsbval[c] appropriate for HHN, HHR etc. */
+	    hint = hk[gi] / gsbval[c] * detspec[2+c];
+            j = (int) detspec[wi+cc+2];
+            result *= zfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / hint;
+/*
+TESTING
+	if (m==400 && n == 3)
+	    Rprintf("prwipolygonX s %4d htemp %12.8f hk[gi] %12.8f detspec[2+c] %12.8f  hint %12.8f result %12.8f \n", s, 
+		    htemp, hk[gi], detspec[2+c], hint, result);
+*/
         }
 
         if (dead) break;
@@ -858,8 +802,8 @@ double prwipolygonX
 
 double prwitransect
     (int m, int n, int x, int w[], double xy[], double signal[],
-     int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-     int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+     int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+     int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
      double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 
 /*
@@ -877,11 +821,11 @@ double prwitransect
     double result = 1.0;
     int nd;
     int start = 0;
-    double H; 
+    double hint; 
     double g1;
     double Tski;
 
-    nd = round(detspec[1]);
+    nd = (int) detspec[1];
     for (s=0; s<ss; s++) {
         for (k=0; k<kk; k++) {
             wi = i3(n,s,k,nc,ss);
@@ -892,24 +836,26 @@ double prwitransect
             if (c >= 0) {                               /* skip if this transect not used */
 		Tski = Tsk[s * kk + k];
                 gi  = i3(c,k,m,cc,kk);
-                g1 = gk[gi];
-		if (binomN == 0) {                      /* Poisson; already cum hazard */
-		    result *= countp (count, 0, Tski * g1); 
+		if (binomN[s] == 0) {                      /* Poisson */
+//		    result *= countp (count, 0, Tski * gk[gi]); 
+		    result *= countp (count, 0, Tski * hk[gi]); 
 		}
-		else if (binomN == 1) {                 /* Binomial, size from Tsk */ 
+		else if (binomN[s] == 1) {                 /* Binomial, size from Tsk */ 
+		    g1 = gk[gi];
 		    result *= countp (count, round(Tski), g1);
 		}
 		else {                                  /* Binomial, size from binomN */ 
+		    g1 = gk[gi];
 		    if (fabs(Tski-1) > 1e-10) 
 			g1 = 1 - pow(1 - g1, Tski);
-		    result *= countp (count, binomN, g1);
+		    result *= countp (count, binomN[s], g1);
 		}
                 if ((result > minp) && (count>0)) {     /* avoid underflow 2009 11 16 */
-                    start = round(detspec[wi+cc+2]);
+                    start = (int) detspec[wi+cc+2];
+		    /* retrieve integral1D(zfn(x) over k)) */
+		    hint = hk[gi] / gsbval[c] * detspec[2+c];
                     for (j=start; j < start+count; j++) {
-                        /* convoluted way of retrieving integral1D(gfn(x) over k)) */
-			H = gk[gi] / gsbval[c] * detspec[2+c] / 100;   /* why 100? */
-                        result *= gfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / H;
+                        result *= zfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / hint;
                     }
 		}
             }
@@ -928,8 +874,8 @@ double prwitransect
 
 double prwitransectX
    (int m, int n, int x, int w[], double xy[], double signal[],
-    int PIA[], double gk[], int binomN, double detspec[], double h[], int hindex[],
-    int cc, int nc, int kk, int ss, int mm, int nmix, gfnptr gfn, double gsbval[],
+    int PIA[], double gk[], double hk[], int binomN[], double detspec[], double h[], int hindex[],
+    int cc, int nc, int kk, int ss, int mm, int nmix, zfnptr zfn, double gsbval[],
     double traps[], double dist2[], double Tsk[], double mask[], double minp, double pID[])
 /*
     Probability of capture history n (0 <= n < *nc)
@@ -947,10 +893,10 @@ double prwitransectX
     double result = 1.0;
     int j, wi;
     int nd;
-    double H;
+    double hint;
     double Tski;
 
-    nd = round(detspec[1]);
+    nd = (int) detspec[1];
 
     for (s=0; s<ss; s++)
     {
@@ -964,7 +910,7 @@ double prwitransectX
 	    Tski = Tsk[s * kk + k-1];
             c = PIA[i4(n, s, k-1, x, nc, ss, kk)] - 1;
             gi = i3(c, k-1, m, cc, kk);
-            pks = Tski * hazard(gk[gi]);
+            pks = Tski * hk[gi];
             pks *= (1-expmin(-htemp)) / htemp;
         }
         /* PR | not detected */
@@ -974,9 +920,9 @@ double prwitransectX
         result *= pks;
         /* Pr(location) */
         if (k > 0) {
-            j = round(detspec[wi+cc+2]);
-            H = gk[gi] / gsbval[c] * detspec[2+c] / 100;
-            result *= gfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / H;
+            j = (int) detspec[wi+cc+2];
+            hint = gk[gi] / gsbval[c] * detspec[2+c];
+            result *= zfn(j, m, c, gsbval, cc, xy, mask, nd, mm, 0) / hint;
         }
 
         if (dead) break;
@@ -986,8 +932,8 @@ double prwitransectX
 /*=============================================================*/
 
 void pdotpoint (double *xy, int *nxy, double *traps, double *dist2, 
-		int *detect, double *Tsk, int *kk, int *fn, double *par, 
-		int *nocc, double *w2, int *binomN, double *value)
+		int *detect, double *Tsk, int *markocc, int *ss, int *kk, int *fn, double *par, 
+		double *w2, int *binomN, double *value)
 {
     int i,k,s;
     double dk2;
@@ -999,10 +945,14 @@ void pdotpoint (double *xy, int *nxy, double *traps, double *dist2,
     double p;
     double Tski = 1.0;
     cutval[0] = 0;
-
+    int allsighting = 1;
+    
+    for (s=0; s<*ss; s++) {
+        if (markocc[s]>0) allsighting = 0;                    /* capture occasions */
+    }
     /*-----------------------------------------------------------*/
     if (dist2[0] < 0) {
-        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        if (anypolygon(detect, *ss) || anytransect(detect, *ss)) {
 	    dist2 = (double *) S_alloc(1, sizeof(double));
 	}
 	else {
@@ -1016,109 +966,156 @@ void pdotpoint (double *xy, int *nxy, double *traps, double *dist2,
     /*-----------------------------------------------------------*/
 
     if (*fn>18)
-        if (*fn != 20) error("pdotpoint requires detectfn < 18");
+        error("pdotpoint requires detectfn < 18");
     g0 = par[0];
     sigma = par[1];
-    if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) || (*fn == 20)
+    if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) 
 	  || (*fn == 14) || (*fn == 16)))
         z = par[2];
     if ((*fn == 10) || (*fn == 11) || (*fn == 12) || (*fn == 13))
         cutval[0] = par[3];
-
-    if (*fn == 20) {    /* Gardner et al 2009 */
-	for (i=0; i<*nxy; i++) {
-	    tempval = 0;
-	    for (k=0; k<*kk; k++) {
-		dk2 = d2L(k, i, dist2, *kk);
-		tempval += pfn(0, dk2, 1, sigma, z, cutval, *w2);
-	    }
-	    if (tempval>0)
-		value[i] = 1 - pow (1 - g0 * exp(-1/tempval), *nocc);
-	    else
-		value[i] = 0;
-	}
-    }
-    else for (i=0; i<*nxy; i++) {
-	tempval = 1;
-	for (s=0; s<*nocc; s++) {
-	    for (k=0; k<*kk; k++) {
-		Tski = Tsk[s * *kk + k];
-		if (Tski > 1e-10) {
-		    dk2 = d2L(k, i, dist2, *kk);
-		    p = pfn(*fn, dk2, g0, sigma, z, cutval, *w2);
-		    if (*detect == 2) {    /* counts */
-			if (*binomN == 0)
-                            /* 2015-12-22  */
-			    p = 1 - countp(0, 0, Tski * hazard(p));
-			else if (*binomN == 1)
-			    p = 1 - countp(0, round(Tski), p);
-			else {
-			    if (fabs(Tski-1) > 1e-10)
-				p = 1 - pow(1-p, Tski);
-			    p = 1 - countp(0, *binomN, p);
-			}
-		    }
-		    else {                 /* multi, proximity */ 
-			if (fabs(Tski-1) > 1e-10)
-			    p = 1 - pow(1-p, Tski);
-		    }
-		    tempval *= 1 - p;
-		}
-	    }
-	}
-	value[i] = 1 - tempval;
+    
+    for (i=0; i<*nxy; i++) {
+        tempval = 1;
+        for (s=0; s<*ss; s++) {
+            if (((markocc[s]>0) || allsighting) && (detect[s]!=13)) {                     
+                for (k=0; k<*kk; k++) {
+                    Tski = Tsk[s * *kk + k];
+                    if (Tski > 1e-10) {
+                        dk2 = d2L(k, i, dist2, *kk);
+                        p = pfn(*fn, dk2, g0, sigma, z, cutval, *w2);
+                        /* counts */
+                        if (detect[s] == 2) {    
+                            if (binomN[s] == 0)
+                                /* 2015-12-22  */
+                                p = 1 - countp(0, 0, Tski * hazard(p));
+                            else if (binomN[s] == 1)
+                                p = 1 - countp(0, round(Tski), p);
+                            else {
+                                if (fabs(Tski-1) > 1e-10)
+                                    p = 1 - pow(1-p, Tski);
+                                p = 1 - countp(0, binomN[s], p);
+                            }
+                        }
+                        else {                 /* multi, proximity */ 
+                                if (fabs(Tski-1) > 1e-10)
+                                    p = 1 - pow(1-p, Tski);
+                        }
+                        tempval *= 1 - p;
+                    }
+                }
+            }
+        }
+        value[i] = 1 - tempval;
     }
 }
 
 /*=============================================================*/
 
-void pdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *nk,
-    int *kk, int *fn, double *par, int *nocc, int *binomN, double *value)
-/* ignores effort except 0/1 */
-/* incorporated pdottransect 2012-12-24 */
-/* NEED TO CLARIFY HAZARD FORMULATION 2012-12-24 */
+// 2017-04-04 NOT TESTED YET
+
+void hdotpoint (double *xy, int *nxy, double *traps, double *dist2, 
+		int *detect, double *Tsk, int *occasions, int *ss, int *kk,
+                int *fn, double *par, 
+		double *w2, double *value)
+{
+    int i,k,s;
+    double dk2;
+    double lambda0;
+    double sigma;
+    double z = 1;
+    double h, H = 0;
+    double Tski = 1.0;
+    double miscparm[1];
+    
+    /*-----------------------------------------------------------*/
+    if (dist2[0] < 0) {
+        if (anypolygon(detect, *ss) || anytransect(detect, *ss)) {
+	    dist2 = (double *) S_alloc(1, sizeof(double));
+	}
+	else {
+	    dist2 = (double *) S_alloc(*kk * *nxy, sizeof(double));
+	    makedist2 (*kk, *nxy, traps, xy, dist2);
+	}
+    }
+    else {
+	squaredist(*kk, *nxy, dist2);
+    }
+    /*-----------------------------------------------------------*/
+    if ((*fn<14) || (*fn>18))
+        error("hdotpoint requires detectfn 14-18");
+    lambda0 = par[0];
+    sigma = par[1];
+    if (!((*fn == 14) || (*fn == 16))) z = par[2];
+    for (i=0; i<*nxy; i++) {
+        H = 0.0;
+        for (s=0; s<*ss; s++) {
+            if (occasions[s]>0) {                     
+		for (k=0; k<*kk; k++) {
+		    Tski = Tsk[s * *kk + k];
+		    if (Tski > 1e-10) {
+			dk2 = d2L(k, i, dist2, *kk);
+			h = zfn(*fn, dk2, lambda0, sigma, z, miscparm, *w2);
+			H += Tski * h;
+		    }
+		}
+	    }
+        }
+        value[i] = H;
+    }
+}
+
+/*=============================================================*/
+
+void hdotpoly (double *xy, int *nxy, double *traps, int *detect, double *Tsk, int *markocc, 
+               int *nk, int *ss, int *kk, int *fn, double *par, double *value)
 {
     int i,k,s;
     double hk = 0;
     double sumhk;
-    double tempval;
     int *cumk;
-    double stdint = 1.0;
+    double H = 1.0;
     double *ex;
     double Tski = 1.0;
     ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-
+    int allsighting = 1;
+    
+    for (s=0; s<*ss; s++) {
+        if (markocc[s]>0) allsighting = 0;                    /* capture occasions */
+    }
+    
     cumk = (int *) R_alloc(*nk+1, sizeof(int));
     cumk[0] = 0;
     for (i=0; i<*nk; i++)
         cumk[i+1] = cumk[i] + kk[i];
 
-    if ((*detect == 3) | (*detect == 6))          /* polygon */
-	stdint = gintegral(*fn, par);
-    else if ((*detect == 4) | (*detect == 7))     /* transect */
-	stdint = gintegral1(*fn, par);
+    /* 2017-03-22 integrated hazard */
+    if (anypolygon(detect, *ss))           /* polygon */
+	H = hintegral(*fn, par);     
+    else if (anytransect(detect, *ss))     /* transect */
+	H = hintegral1(*fn, par);
     else 
-	error ("unrecognised detector type in pdotpoly");
-
+	error ("unrecognised detector type in hdotpoly");
+    
     for (i=0; i<*nxy; i++) {
-	tempval = 1.0;
-	for (s=0; s<*nocc; s++) {
-	    sumhk = 0.0;
-	    for (k=0; k<*nk; k++) {
-                Tski = Tsk[s * *nk + k];
-		if (Tski > 1e-10) {
-		    if ((*detect == 3) | (*detect == 6))
-			hk = par[0] * integral2D (*fn, i, 0, par, 1, traps, xy,
-			    cumk[k], cumk[k+1]-1, cumk[*nk], *nxy, ex) / stdint;
-		    else if ((*detect == 4) | (*detect == 7))
-			hk = par[0] * integral1D (*fn, i, 0, par, 1, traps, xy,
-			    cumk[k], cumk[k+1]-1, cumk[*nk], *nxy, ex) / stdint;
-		    sumhk += hk;
-		}
-	    }
-	    tempval *= countp(0, *binomN, sumhk);
-	}
-	value[i] = 1 - tempval;
+        sumhk = 0.0;
+        for (s=0; s<*ss; s++) {
+            if (((markocc[s]>0) || allsighting) && (detect[s]!=13)) {                     
+                for (k=0; k<*nk; k++) {
+                    Tski = Tsk[s * *nk + k];
+                    if (Tski > 1e-10) {  /* effort > 0 */
+                        if (anypolygon(detect,*ss))
+                            hk = par[0] * integral2D (*fn, i, 0, par, 1, traps, xy,
+                                               cumk[k], cumk[k+1]-1, cumk[*nk], *nxy, ex) / H;
+                        else if (anytransect(detect,*ss))
+                            hk = par[0] * integral1D (*fn, i, 0, par, 1, traps, xy,
+                                               cumk[k], cumk[k+1]-1, cumk[*nk], *nxy, ex) / H;
+                        sumhk += hk * Tski;
+                    }
+                }
+            }
+        }
+        value[i] = sumhk;
     }
 }
 /*=============================================================*/
@@ -1190,9 +1187,10 @@ void getdenom (int *fn, double *miscparm, double *mask, int *mm, double *scale,
 	}
     }	
 }
+/*=============================================================*/
 
-void getdenomext (int *fn, double *miscparm, double *mask, int *mm, double *sigma, double *z,
-		  double *invdenom, double *scale) {
+void getdenomext (int *fn, double *miscparm, double *mask, int *mm, double *sigma, 
+		  double *z, double *invdenom, double *scale) {
     /* external wrapper for getdenom : 1 / denom[m] or zero if no usage*/
     /* mask must be dim(*mm, 3) if miscparm[1]==0, otherwise dim(*mm,4) */
     /* accepts interrupts once every checkinterval mask rows */
@@ -1203,14 +1201,16 @@ void getdenomext (int *fn, double *miscparm, double *mask, int *mm, double *sigm
 	invdenom[m] = mask[im];
     }	
 }
+/*=============================================================*/
 
 void precompute(
-    int *detect, 
-    int *fn, 
-    int *binomN,
-    int *kk,
-    int *mm,
-    int *cc,
+    int detect[], 
+    int fn, 
+    int binomN[],
+    int ss,
+    int kk,
+    int mm,
+    int cc,
     int nk,
     int cumk[],
     double traps[],
@@ -1219,12 +1219,14 @@ void precompute(
     double gsbval[],
     double miscparm[],
     double detspec[],
-    double gk[]
+    double gk[],
+    double hk[],
+    int debug
  ) {
     /*---------------------------------------------------------*/
-    /* populate pre-computed gk and gk0 arrays                            */
+    /* populate pre-computed gk and gk0, hk and hk0  arrays    */
     /*
-        *detect may take values -
+        detect[s] may take values -
         0  multi-catch traps
         1  binary proximity detectors
         2  count  proximity detectors
@@ -1233,201 +1235,226 @@ void precompute(
         5  signal detector
         6  polygon detector
         7  transect detector
-        8  times  (undocumented)
      	12 signalnoise
+	13 telemetry
     */
     /*---------------------------------------------------------*/
 
     int c,m,k,gi;
 
     double par[4];   /* passing parameter values to integr fn  */
-    double stdint = 1;
+    double H = 1;
     gfnLptr gfnL;
     double *ex; 
-    gfnL = getgfnL(*fn); 
+    gfnL = getgfnL(fn); 
 
-    if ((*detect == 0) || (*detect == 1) || (*detect == 2) || (*detect == 5) || 
-             (*detect == 8) || (*detect == 9) || (*detect == 12)) {
-	for (c=0; c<*cc; c++) {
+    /* allowtelem = 1 */
+    if (allpoint(detect, ss, 1, 1)) {
+	for (c=0; c<cc; c++) {
 	    /*---------------------------------------------------------*/
 	    /* normalization NOT implemented 2013-11-10 */
 	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
 	    /*---------------------------------------------------------*/
 	    for (k=0; k<nk; k++) {
-		for (m=0; m<*mm; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-                    gk[gi] = gfnL(k, m, c, gsbval, *cc, dist2, 
-		       nk, miscparm);
+		for (m=0; m<mm; m++) {
+                    gi = i3(c,k,m,cc,nk);
+                    gk[gi] = gfnL(k, m, c, gsbval, cc, dist2, 
+				  nk, miscparm);
+                    hk[gi] = -log(1-gk[gi]);   /* stopgap */
                 }
             }
         }
     }
-    else if ((*detect == 3) || (*detect == 6)) {
+    else if (anypolygon(detect, ss)) {
 	ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-        for (c=0; c<*cc; c++) {
+	for (c=0; c<cc; c++) {
 	    /*---------------------------------------------------------*/
 	    /* normalization NOT implemented 2013-11-11 */
-	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]);  */
+	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
 	    /*---------------------------------------------------------*/
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral(*fn, par);
-            detspec[2+c] = stdint;               /* passed to prwipolygon */
-            for (k=0; k<nk; k++) {               /* over parts */
-                for (m=0; m<*mm; m++) {
-                    gi = i3(c, k, m, *cc, nk);
-		    gk[gi] = par[0] * integral2D (*fn, m, 0, par,
-			  1, traps, mask, cumk[k], cumk[k+1]-1, cumk[nk],
-			  *mm, ex) / stdint;
-                }
-            }
-        }
+	    par[0] = gsbval[c];
+	    par[1] = gsbval[cc + c];
+	    par[2] = gsbval[2 * cc + c];
+	    H = hintegral(fn, par);         /* 2017-03-22 unbounded integrated hazard */
+
+	    if (debug>2) Rprintf("c %4d  H %12.8f\n", c, H);
+
+	    detspec[2+c] = H;               /* passed to prwipolygon */
+	    for (k=0; k<nk; k++) {               /* over parts */
+		for (m=0; m<mm; m++) {
+		    gi = i3(c, k, m, cc, nk);
+		    /* 2017-03-22 strictly use hazard form : expected detections of animals at m */
+                    /* par[0] only makes sense here if fn is HHN, HHR, HEX, HAN HCG */
+		    hk[gi] = par[0] * integral2D (fn, m, 0, par,
+						  1, traps, mask, cumk[k], cumk[k+1]-1, cumk[nk],
+						  mm, ex) / H;
+		    gk[gi] = 1 - exp(-hk[gi]);
+/*TESTING
+ if (m==400) Rprintf("hk[gi]  %12.8f\n", hk[gi]);
+*/		}
+	    }
+	}
     }
-    else if ((*detect == 4) || (*detect == 7)) {
+    else if (anytransect(detect,ss)) {
 	ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-        for (c=0; c<*cc; c++) {
+	for (c=0; c<cc; c++) {
 	    /*---------------------------------------------------------*/
 	    /* normalization NOT implemented 2013-11-11 */
-	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]);  */
+	    /* getdenom(fn, miscparm, mask, mm, scale, gsbval[*cc + c], gsbval[2 * *cc + c]); */
 	    /*---------------------------------------------------------*/
-            par[0] = gsbval[c];
-            par[1] = gsbval[*cc + c];
-            par[2] = gsbval[2* *cc + c];
-            stdint = gintegral1(*fn, par);
-            detspec[2+c] = stdint;               /* passed to prwitransect */
-            for (k=0; k<nk; k++) {               /* over transects */
-                for (m=0; m<*mm; m++) {
-                    gi = i3(c,k,m,*cc,nk);
-		    gk[gi] = par[0] * integral1D (*fn, m, c, gsbval, *cc,
-    		        traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], *mm, ex) /
-			stdint;
-                }
-            }
-        }
+	    par[0] = gsbval[c];
+	    par[1] = gsbval[cc + c];
+	    par[2] = gsbval[2* cc + c];
+	    H = hintegral1(fn, par);         /* 2017-03-22 unbounded integrated hazard */
+	    detspec[2+c] = H;               /* passed to prwitransect */
+	    for (k=0; k<nk; k++) {               /* over transects */
+		for (m=0; m<mm; m++) {
+		    gi = i3(c,k,m,cc,nk);
+		    /* 2017-03-22 strictly use hazard form */
+		    hk[gi] = par[0] * integral1D (fn, m, c, gsbval, cc,
+			 traps, mask, cumk[k], cumk[k+1]-1, cumk[nk], mm, ex) / H;
+		    gk[gi] = 1 - exp(-hk[gi]);
+		}
+	    }
+	}
+    }	
+    else {
+	Rprintf("allpoint %12d \n", allpoint(detect, ss, 1, 1));
+        error ("unrecognised detector type in external C fn");
     }
-    else error ("unrecognised detector type in external C fn secrloglik");
+
 } /* end precompute */
 /*=============================================================*/
 
-prwfnptr getprwfn (int detect) 
-{
+prwfnptr getprwfn (int detect[], int ss) {
+/* ss unused? */
     prwfnptr prwfn;
-    prwfn = prwicount; /* default */
-    if (detect == 0)
-        prwfn = prwimulti;
-    else if (detect == 1)
-        prwfn = prwiprox;
-    else if (detect == 3)
+    prwfn = prwipoint; /* default for detect 0,1,2,13 */
+//    if (allmulti(detect,ss))
+//	prwfn = prwimulti; /* old for 0 */
+//    else 
+    if (detect[0] == 3)
         prwfn = prwipolygonX;
-    else if (detect == 4)
+    else if (detect[0] == 4)
         prwfn = prwitransectX;
-    else if ((detect == 5) || (detect==9)) 
-	    prwfn = prwisignal;
-    else if (detect == 6)
+    else if (detect[0] == 5)
+	prwfn = prwisignal;
+    else if (detect[0] == 6)
         prwfn = prwipolygon;
-    else if (detect == 7)
+    else if (detect[0] == 7)
         prwfn = prwitransect;
-    else if (detect == 8)
-        prwfn = prwitimes;
-    else if (detect == 12) {
+    else if (detect[0] == 12) {
     	prwfn = prwisignalnoise;   /* experimental 2012-02-07 */
     }
     return(prwfn);
 } /* end getprwfn */
 /*=============================================================*/
 
-int getstart(int *detect, int start[], int nc1, int *nc, 
-	     int *ss, int nk, int w[]) {
+int getstart(int detect[], int start[], int nc1, int nc, 
+		 int ss, int nk, int w[]) {
 
-    /*---------------------------------------------------------*/
-    /* Identify start positions of ancillary data for each     */
-    /* animal                                                  */
+	/*------------------------------------------------------------*/
+	/* Identify start positions of ancillary data for each animal */
+        /* Telemetry is incompatible with polygon or signal detectors */
 
-    int nd = 0;
-    int i,s,k,wi;
+	int nd = 0;
+	int i,s,k,wi,first;
 
-    /* max one detection per occasion */
-    if ( (*detect == 3) || (*detect==4) ) {
-        /* start[z] indexes the row in xy
-           for each detection z, where z is w-order (is) */
-        for (s=0; s< *ss; s++) {
-            for (i=0; i< *nc; i++) {
-                wi = *nc * s + i;
-                start[wi] = nd;
-                nd += (w[wi] != 0);
-            }
-        }
+	if (anytelemetry(detect, ss)) {
+            /* assume all telemetry fixes associate with last detector */
+	    for (i=0; i< nc; i++) {
+		first = 1;
+		for (s=0; s<ss; s++) {
+		    if (first) start[i] = nd;
+		    first = 0;
+		    wi = i3(i,s,nk-1,nc,ss);
+		    nd += abs(w[wi]);
+		}
+	    }
+	}
+	else {
+	    if (anypolygon(detect, ss) || anytransect(detect,ss) || 
+		anysignal(detect,ss)) {
+		/* start[z] indexes the first row in xy (or element in signal)
+		   for each possible count z, where z is w-order (isk) */
+		for (k=0; k<nk; k++) {
+		    for (s=0; s< ss; s++) {
+			for (i=0; i< nc; i++) {
+			    wi = i3(i,s,k,nc,ss);
+			    start[wi] = nd;
+			    nd += abs(w[wi]);
+			}
+		    }
+		}
+	    }
+	}
+	return(nd);
     }
-    if (((*detect>=5) && (*detect<=9)) || (*detect==12)) {
-        /* start[z] indexes the first row in xy (or element in signal)
-           for each possible count z, where z is w-order (isk) */
-        for (k=0; k<nk; k++) {
-            for (s=0; s< *ss; s++) {
-                for (i=0; i< *nc; i++) {
-                    wi = i3(i,s,k,*nc,*ss);
-                    start[wi] = nd;
-                    nd += abs(w[wi]);
-                }
-            }
-        }
-    }
-    return(nd);
-}
 /*=============================================================*/
 
-void getdetspec (int *detect, int *fn, int *nc,  int nc1, 
-		 int *cc, int *nmix, int nd, int nk, int *ss, int *kk, int *mm, 
+void getdetspec (int detect[], int fn, int nc,  int nc1, 
+		 int cc, int nmix, int nd, int nk, int ss, int kk, int mm, 
 		 int PIA[], double miscparm[], int start[], double detspec[]) {
 
-    /* detector-specific data passed later to prwi functions */
+    /* detector-type-specific data passed later to prwi functions */
 
     /* mixtures are group-specific for full likelihood, and     */
     /* individual-specific for conditional likelihood           */
 
-    int i;
+    int i,s;
 
-    if ((*detect == 3) || (*detect == 4)) {
+    /* default for (possibly mixed) point detectors and telemetry */
+    if (allpoint(detect, ss, 0, 1)) {
+	for(s=0; s<ss; s++)
+	    detspec[s] = (double) detect[s];
+
+	/* start position (in xy) of telemetry fixes of each animal */
+	if (anytelemetry(detect, ss)) {
+	    for (i=0; i< nc; i++)
+		detspec[ss+i] = (double) start[i];
+	}
+    }
+    /*  polygonX and transectX */
+    else if ((detect[0] == 3) || (detect[0] == 4)) {
         detspec[0] = (double) nk;
         detspec[1] = (double) nd;
         /* pass index of first detection of each animal + occasion */
         /* maximum 1 per polygon as exclusive */
-        for (i=0; i< (*nc * *ss); i++)
-            detspec[2+*cc+i] = (double) start[i];
+        for (i=0; i< (nc * ss); i++)
+            detspec[2+cc+i] = (double) start[i];
     }
-    else if ((*detect == 5) || (*detect==9)) {
+    /*  polygon and transect */
+    else if ((detect[0] == 6) || (detect[0] == 7)) {
+        detspec[0] = (double) nk;
+        detspec[1] = (double) nd;
+        /* pass index of first detection of each animal + occasion */
+        /* maximum 1 per polygon as exclusive */
+        for (i=0; i< (nc * ss * nk); i++)
+            detspec[2+cc+i] = (double) start[i];
+    }
+    /* signal */ 
+    else if (detect[0] == 5) {    
         for (i=0; i<3; i++) detspec[i]= miscparm[i];
-        detspec[3]= ((*fn == 11) || (*fn == 13));     /* spherical */
-        for (i=0; i< (*nc * *ss * nk); i++)
+        detspec[3]= ((fn == 11) || (fn == 13));     /* spherical */
+        for (i=0; i< (nc * ss * nk); i++)
             detspec[4+i] = (double) start[i];
     }
-    else if (*detect==12) {                           /* signal-noise */        
+    /* signal-noise */
+    else if (detect[0] == 12) {                           
         detspec[0] = (double) nk;
         detspec[1] = (double) nd;                     /* number of detections or detectors??*/
 	detspec[2]= miscparm[0];                      /* cut */
 	detspec[3]= miscparm[1];                      /* noise mean */
 	detspec[4]= miscparm[2];                      /* noise sd */
-        detspec[5]= ((*fn == 11) || (*fn == 13));     /* spherical */
-        for (i=0; i< (*nc * *ss * nk); i++)
+        detspec[5]= ((fn == 11) || (fn == 13));     /* spherical */
+        for (i=0; i< (nc * ss * nk); i++)
             detspec[6+i] = (double) start[i];
-    }
-    else if ((*detect == 6) || (*detect == 7)) {
-        detspec[0] = (double) nk;
-        detspec[1] = (double) nd;
-        /* pass index of first detection of each animal + occasion + polygon */
-        /* possibly more than one per polygon */
-        for (i=0; i< (*nc * *ss * nk); i++)
-            detspec[2+*cc+i] = (double) start[i];
-    }
-    else if (*detect == 8) {
-        for (i=0; i< (*nc * *ss * nk); i++)
-            detspec[i] = (double) start[i];
     }
 }
 /*=============================================================*/
 
-void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm, 
-	   int PIA[], int hc0[], double gk[], double Tsk[],
+void geth (int nc1, int cc, int nmix, int nk, int ss, int mm, 
+	   int PIA[], int hc0[], double hk[], double Tsk[],
 		 double h[], int hindex[]) {
 
     /* total hazard for animal n on occasion s wrt mask point m */
@@ -1455,10 +1482,10 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
     /* case that detectors are not used PIA < 0      */
     
     for (n=0; n < nc1; n++) {
-        for (s=0; s < *ss; s++) {
-	    PIAval0 = PIA[i4(n,s,0,0, nc1, *ss, nk)];
+        for (s=0; s < ss; s++) {
+	    PIAval0 = PIA[i4(n,s,0,0, nc1, ss, nk)];
 	    for (k=1; k<nk; k++) {
-                PIAvalk = PIA[i4(n,s,k,0, nc1, *ss, nk)];
+                PIAvalk = PIA[i4(n,s,k,0, nc1, ss, nk)];
 		if (PIAval0 < 0)
 		    PIAval0 = PIAvalk;
 		else if (PIAvalk>0) {
@@ -1468,50 +1495,27 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
 		    } 
 		}              
 	    } 
-	    if (fullns == 1) break;
+	    if (fullns) break;
 	}
-	if (fullns == 1) break;
+	if (fullns) break;
     }
-    
-    /* failed revision 2014-10-04 
-    if (*ss > 1) {
-	for (n=0; n < nc1; n++) {
-	    for (k=0; k<nk; k++) {
-		PIAval0 = PIA[i4(n,0,k,0, nc1, *ss, nk)];
-		for (s=1; s < *ss; s++) {
-		    PIAvalk = PIA[i4(n,s,k,0, nc1, *ss, nk)];
-		    if (PIAval0 < 0)
-			PIAval0 = PIAvalk;
-		    else if (PIAvalk>0) {
-			if (PIAval0 != PIAvalk) {
-			    fullns = 1;
-			    break;
-			} 
-		    }              
-		} 
-		if (fullns == 1) break;
-	    }
-	    if (fullns == 1) break;
-	}
-    }
-    */
     /* Rprintf("fullns %5d \n", fullns); */
 
-    for (i=0; i<*cc; i++) hc0[i] = -1;
+    for (i=0; i<cc; i++) hc0[i] = -1;
     next = 0;        
     for (n=0; n < nc1; n++) {
-	for (s=0; s < *ss; s++) {
+	for (s=0; s < ss; s++) {
 	    hi = s*nc1 + n;
 	    /* Case 1. within-trap variation */
 	    if (fullns) {
 		for (k=0; k < nk; k++) {
 		    Tski = Tsk[s * nk + k];
-		    for (x = 0; x < *nmix; x++) {
-			c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
-			for (m = 0; m < *mm; m++) { 
+		    for (x = 0; x < nmix; x++) {
+			c = PIA[i4(n,s,k,x, nc1, ss, nk)]-1; 
+			for (m = 0; m < mm; m++) { 
 			    if (c >= 0) {
-				gi = i3(c,k,m,*cc,nk);
-				h[i3(x,m,hi,*nmix, *mm)] += Tski * hazard(gk[gi]);
+				gi = i3(c,k,m,cc,nk);
+				h[i3(x,m,hi,nmix, mm)] += Tski * hk[gi];
 			    }
 			}
 		    }
@@ -1520,18 +1524,18 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
 	    }
 	    /* Case 2. no within-trap variation */
 	    else {
-		c0 = PIA[i4(n,s,0,0, nc1, *ss, nk)] - 1;                    
+		c0 = PIA[i4(n,s,0,0, nc1, ss, nk)] - 1;                    
 		if (hc0[c0] < 0) {
 		    hc0[c0] = next;
 		    next ++;
 		    for (k=0; k < nk; k++) {
 			Tski = Tsk[s * nk + k];
-			for (x = 0; x < *nmix; x++) {
-			    c = PIA[i4(n,s,k,x, nc1, *ss, nk)]-1; 
-			    for (m=0; m< *mm; m++) { 
+			for (x = 0; x < nmix; x++) {
+			    c = PIA[i4(n,s,k,x, nc1, ss, nk)]-1; 
+			    for (m=0; m< mm; m++) { 
 				if (c >= 0) {
-				    gi = i3(c,k,m,*cc,nk);
-				    h[i3(x,m, hc0[c0],*nmix, *mm)] += Tski * hazard(gk[gi]);
+				    gi = i3(c,k,m,cc,nk);
+				    h[i3(x,m, hc0[c0],nmix, mm)] += Tski * hk[gi];
 				}
 			    }
 			}
@@ -1545,7 +1549,8 @@ void geth (int nc1, int *cc, int *nmix, int nk, int *ss, int *mm,
 /*=============================================================*/
 
 /* no need to return gpar 2015-10-10 */
-void getpmix(int gpar, int nc1, int *nmix, int knownclass[], int *nc, int *cc, int *ss, 
+
+void getpmix(int gpar, int nc1, int nmix, int knownclass[], int nc, int cc, int ss, 
             int nk, int grp[], int PIA[], double gsbval[], double pmixg[], 
             double pmixn[]){
 
@@ -1555,57 +1560,59 @@ void getpmix(int gpar, int nc1, int *nmix, int knownclass[], int *nc, int *cc, i
 
     int g, n, c, x, wxi;
     double pmix;
-    if (*nmix>1) {
+    if (nmix>1) {
         /* one extra real parameter for h2, h3 */
         gpar++;
         for (n=0; n<nc1; n++) {
-            for (x=0; x<*nmix; x++) {
-                wxi = i4(n,0,0,x,*nc,*ss,nk);
+            for (x=0; x<nmix; x++) {
+                wxi = i4(n,0,0,x,nc,ss,nk);
                 c = PIA[wxi] - 1;
-		pmix = gsbval[*cc * (gpar-1) + c];  /* last column in gsbval */
+		if (c<0) error ("c<0 error in getpmix");  /* 2017-02-08 */
+		pmix = gsbval[cc * (gpar-1) + c];  /* last column in gsbval */
+
+                /* group-specific, and overall pmix by class for knownclass case */
 		g = grp[n]-1;
-		pmixg[*nmix * g + x] = pmix;
-                
+		pmixg[nmix * g + x] = pmix;
+
+                /* individual-specific */                
 		if (knownclass[n] > 1) {
 		    if (knownclass[n] == (x+2))   /* knownclass=2 maps to x=0 */
-			pmixn[*nmix * n + x] = 1;
+			pmixn[nmix * n + x] = 1;
 		    else 
-			pmixn[*nmix * n + x] = 0;
+			pmixn[nmix * n + x] = 0;
 		}
 		else
-		    pmixn[*nmix * n + x] = pmix;
+		    pmixn[nmix * n + x] = pmix;
             }
         }
     }
 }
 /*=============================================================*/
 
-int nval(int *detect, int nc1, int *cc, int *ss, int nk) {
+int nval(int detect0, int nc1, int cc, int ss, int nk) {
     /* compute and allocate the space needed for ancillary data */
     int nval;
-    if ((*detect==3) || (*detect==4))
-        nval = 2 + *cc + nc1 * *ss;
-    else if ((*detect==5) || (*detect==9))
-        nval = 4 + nc1 * *ss * nk;
-    else if (*detect==12)    /* signalnoise */
-        nval = 6 + nc1 * *ss * nk;
-    else if ((*detect==6) || (*detect==7))
-        nval = 2 + *cc + nc1 * *ss * nk;
-    else if (*detect==8)
-        nval = nc1 * *ss * nk;
+    if ((detect0==3) || (detect0==4))
+        nval = 2 + cc + nc1 * ss;
+    else if ((detect0==6) || (detect0==7))
+        nval = 2 + cc + nc1 * ss * nk;
+    else if (detect0==5)
+        nval = 4 + nc1 * ss * nk;
+    else if (detect0==12)    /* signalnoise */
+        nval = 6 + nc1 * ss * nk;
     else
-        nval = 4;    /* 1-4, mostly not used */
+        nval = ss + nc1;    /* default for (possibly mixed) 0,1,2,13 */
     return(nval);
 }
 /*=============================================================*/
 
-int fillcumk(int *detect, int kk[], int cumk[]){
+int fillcumk(int detect[], int ss, int kk[], int cumk[]){
     /* determine number of polygons if polygon detector */
     /* for polygon detectors, kk is vector ending in zero */
     /* and first nk+1 elements of vector cumk are filled */
     int i;
     int nk = 0;
-    if ((*detect==3) || (*detect==4) || (*detect==6) || (*detect==7)) {
+    if (anypolygon(detect, ss) || anytransect(detect, ss)) {
         cumk[0] = 0;
         for (i=0; i<maxnpoly; i++) {
             if (kk[i]<=0) break;
@@ -1617,41 +1624,17 @@ int fillcumk(int *detect, int kk[], int cumk[]){
 		error("exceeded maximum number of vertices %d per polygon", maxvertices);
     }
     else
-        nk = kk[0];
+        nk = kk[0];  /* return number of detectors unchanged */
 
     return(nk);
 }
 /*=============================================================*/
 
-/* unused 2015-12-06 */
-void fillns(int w[], int nc, int ss, int nk, int ns[]){
-    /* cumulative number of individuals detected */
-    int i,s,k;
-    int *caught;
-    caught = (int *)  S_alloc(nc, sizeof (int));
-    for (s=0; s<ss;s++) {
-	if(s>0) ns[s] = ns[s-1];
-	for (i=0; i<nc; i++) {
-	    if (caught[i]) break;
-	    for (k=0; k<nk; k++) {
-                // assume 3-D
-		if (w[i3(i, s, k, nc, ss)] > 0) {
-		    ns[s] ++;
-		    caught[i] = 1;
-		    break;
-		}
-	    }
-	}
-    }
-}
-
-/*=============================================================*/
-
-void fillng(int nc, int gg, int *grp, int ng[]) {
+void fillng(int nc, int gg, int grp[], int ng[]) {
     int g, n;
     /* Count number per group (not used for CL)                */
     /* Assume histories sorted by group = individual           */
-    /* CH are numbered 0 <= n < *nc in C code                  */
+    /* CH are numbered 0 <= n < nc in C code                  */
     for (g=0; g<gg; g++)
         ng[g] = 0;
     for (n=0; n<nc; n++) { 
@@ -1662,7 +1645,7 @@ void fillng(int nc, int gg, int *grp, int ng[]) {
 /*=============================================================*/
 
 int filla0 (int like, int n, int markocc[], int ncol, int PIA0[],
-	    double gk0[], int detect, int binomN, double Tsk[], int ss, int nk, 
+	    double gk0[], double hk0[], int detect[], int binomN[], double Tsk[], int ss, int nk, 
 	    int mm, int cc0, int nmix, double gsb0val[], int allsighting, 
 	    double pimask[], double area, double a0[]) {
     double pdt;
@@ -1674,7 +1657,7 @@ int filla0 (int like, int n, int markocc[], int ncol, int PIA0[],
 	if (like == 6) {
 	    a0[x] = 0;
 	    for (m=0; m< mm; m++) {
-		pdt = pndot (m, 0, markocc, x, ncol, PIA0, gk0, detect, binomN, 
+		pdt = pndot (m, 0, markocc, x, ncol, PIA0, gk0, hk0, detect, binomN, 
 			     Tsk, ss, nk, cc0, nmix, gsb0val, allsighting);
 		/* adjust both integral and pi to size of pixel */
 		a0[x] += pimask[m] * pdt * area * mm;  
@@ -1729,7 +1712,8 @@ void integralprw1 (
 {
     int i,n,m,s,x;
     double asum = 0;
-    double *gk0;
+    double *gk0 = NULL;
+    double *hk0 = NULL;
     double D = 1.0;
     int cumk[maxnpoly];
     int nk = 0;
@@ -1737,19 +1721,14 @@ void integralprw1 (
     double *pmixg;      /* proportion in each mixture by group*/
     double *pmixn;      /* proportion in each mixture by individual*/
     int gpar;
-    int    *ng;         /* number per group */
     double *detspec = NULL;
     int nv;
-    double *pID;
+    double *pID = NULL;
     int allsighting = 1;
 
     *resultcode = 1;                   /* generic failure */
 
-    /* groups are not used in functions that call integralprw1 */
-    /* but we go through the motions...*/
-    ng = (int *) R_alloc(*gg, sizeof(int));
-    fillng(*nc, *gg, grp, ng);                                    /* number per group */
-    nk = fillcumk(detect, kk, cumk);                            /* detections per polygon */
+    nk = fillcumk(detect, *ss, kk, cumk);                            /* detections per polygon */
 
     pID = (double *)  S_alloc(*ss * *nmix, sizeof (double));
     gpar = par3(*fn) + 2;   /* number of detection parameters */
@@ -1769,18 +1748,19 @@ void integralprw1 (
         nc1 = *nc;
     /*---------------------------------------------------------*/
 
-    nv = nval(detect, nc1, cc0, ss, nk);
+    nv = nval(detect[0], nc1, *cc0, *ss, nk);
 
     detspec = (double *) R_alloc(nv, sizeof(double));
 
     /* Allocate space for array of naive detection probability */
     gk0 = (double *) R_alloc(*cc0 * nk * *mm, sizeof (double));
+    hk0 = (double *) R_alloc(*cc0 * nk * *mm, sizeof (double));
 
     pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
     pmixn = (double *)  R_alloc(*nc * *nmix, sizeof (double));
     for (i=0; i < *gg * *nmix; i++) pmixg[i] = 1; /* default */
     for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
-    getpmix(gpar, nc1, nmix, knownclass, nc, cc0, ss, nk, 
+    getpmix(gpar, nc1, *nmix, knownclass, *nc, *cc0, *ss, nk, 
 		   grp, PIA0, gsb0val, pmixg, pmixn);
 
     if (dist2[0] < 0) {
@@ -1791,10 +1771,9 @@ void integralprw1 (
 	squaredist(*kk, *mm, dist2);
     }
 
-    *binomN = cleanbinomN(*binomN, *detect);       /* default 1 */
+    precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc0, nk, cumk,   
+	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0, hk0, 0); 
 
-    precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
-	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
 
     for (n=0; n < nc1; n++) {            /* CH numbered 0 <= n < nc1 */
         if ((*ncol > 1) || (n == 0)) {   /* no need to repeat if constant */
@@ -1806,9 +1785,10 @@ void integralprw1 (
             for (x=0; x<*nmix; x++) {
                 for (m=0; m<*mm; m++) {
                     if (*useD > 0) D = mask[2 * *mm + m];
-                    asum += pmixn[*nmix * n + x] * D * pndot (m, n, markocc, x,
-   		        *ncol, PIA0, gk0, *detect, *binomN, Tsk, *ss, nk, *cc0, 
-		     	      *nmix, gsb0val, allsighting);
+                    asum += pmixn[*nmix * n + x] * D * 
+			pndot (m, n, markocc, x, *ncol, PIA0, gk0, hk0, detect, 
+			       binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, 
+			       allsighting);
                 }
             }
         }
@@ -1883,8 +1863,84 @@ double classmembership (int n, int x, int knownclass[], double pmixn[], int nmix
 
 }
 
+void zerok (int detect[], int nc, int ss, int nk, int w[]) {
+    /* Bring any capture to k=0 for exclusive-detector occasions */
+    /* It saves time to do this once, rather than for each mask point */
+    /* even better to do this once before calling C */
+    int n, s, k, w0;
+    int wi = 0;
+
+    for (n=0; n<nc; n++) {
+	for (s=0; s<ss; s++) {
+	    if (detect[s]==0 || detect[s]==3 || detect[s]==4) {
+		k = 0;
+		do {
+		    wi = i3(n, s, k, nc, ss);
+		    k++;
+		}
+		while ((w[wi] == 0) && (k<nk));
+		    
+		if (w[wi] != 0) {                              /* Captured */
+		    w0 = i3(n, s, 0, nc, ss);
+		    if (w[wi]<0) w[w0] = -k;           /* save detector number */
+		    else w[w0] = k; 
+		    // Rprintf("n %5d s %5d  w[w0] %5d  \n", n, s, w[w0]);
+		}
+	    }
+	}
+    }
+}
+/*=============================================================*/
+
+void sumwsk (int w[], int nc, int ss, int nk, double musk[]) {
+    int n,s,k;
+    for (n=0;n<nc; n++)
+	for (s=0; s<ss; s++)
+	    for(k=0; k<nk; k++)
+		musk[k + s*nk] += abs(w[i3(n,s,k,nc,ss)]); 
+}
+/*=============================================================*/
+
+void getnmarked(int w[], int nc, int ss, int nk, int nmarked[]) {  // Number marked at occasion s
+    int n,s,k;
+    int *caught;
+    caught = (int *)  S_alloc(nc, sizeof (int)); 
+    for (s=0; s<ss; s++) {
+	for (n=0;n<nc; n++) {
+	    if (!caught[n]) {
+		for(k=0; k<nk; k++) {
+		    if (abs(w[i3(n,s,k,nc,ss)]) > 0) {
+			nmarked[s] ++; 
+			caught[n] = 1;
+			break;
+		    }
+		    if (caught[n]) break;
+		}
+	    }
+	}
+	// Rprintf("s %4d nmarked %4d \n", s, nmarked[s]);
+	nmarked[s+1] = nmarked[s];  // requires ss+1 slots
+    }
+}
+/*=============================================================*/
+
+void selectoccasions (int ss, int markocc[], int detect[], double detspec[], int debug, int mcode) {
+    int s;
+    /* reset if mcode < -5 */
+    if (debug>=2) Rprintf("detspec ");
+    for(s=0; s<ss; s++) {
+	if ((markocc[s]==mcode) || (mcode < -5))
+	    detspec[s] = (double)detect[s];
+	else 
+	    detspec[s] = -1.0;
+	if (debug>=2) Rprintf(" %4.0f", detspec[s]);
+    }
+    if (debug>=2) Rprintf("\n");
+}
+/*=============================================================*/
+
 void secrloglik (
-    int    *like,        /* likelihood 0 full, 1 conditional etc. */
+    int    *like,        /* likelihood 0 full, 1 conditional etc. See list at top */
     int    *detect,      /* detector 0 multi, 1 proximity etc. */
     int    *distrib,     /* distribution of nc 0 Poisson, 1 binomial */
     int    *w,           /* capture histories (1:nc, 1:s, 1:k) */
@@ -1901,9 +1957,11 @@ void secrloglik (
     double *traps,       /* x,y locations of traps (first x, then y) */
     double *dist2,       /* distances (optional: -1 if unused) */
     double *Tsk,         /* nk x s usage matrix */
+    int    *telemcode,   /* 0 none 1 IT 2 DT 3 CT */
     int    *markocc,     /* which are marking occasions? */
     int    *Tu,          /* detector x occasion matrices of no. sightings Tu */
     int    *Tm,          /* detector x occasion matrices of no. sightings Tm */
+    int    *Tn,          /* detector x occasion matrices of no. sightings Tn */
     double *chat,        /* sighting overdispersion */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
@@ -1919,8 +1977,10 @@ void secrloglik (
     int    *fn,          /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     int    *binomN,      /* number of trials for 'count' detector modelled with binomial */
     double *minprob,     /* minimum value of P(detection history) */
-    double *a,           /* a(theta) */
-    double *value,       /* return value integral */
+    double *telemscale,
+    int    *debug,       /* 0 messages off, 1 messages on */
+    double *comp,        /* likelihood components */
+    double *value,       /* returned log likelihood (sum of components) */
     int    *resultcode   /* 0 if OK */
 )
 
@@ -1929,7 +1989,7 @@ void secrloglik (
 
   Using 'i' to subscript animals, 's' to subscript occasions, 'k' to subscript detectors..
 
- 'w' is in isk order - dim(CH) = c(nc,ss,nk) or c(nc,ss) for 2-D exclusive detectors 
+ 'w' is in isk order - dim(CH) = c(nc,ss,nk) 
 
  'signal' is in linear ksi order and includes positive detections only, 1:nd 
 
@@ -1956,9 +2016,10 @@ void secrloglik (
     int    *nm;       /* number per known mixture class */
     double *sumD;     
     double *sumDp;    
+    double *pdot = NULL;
 
     /* generalised detection and detector functions */
-    gfnptr gfn;
+    zfnptr  zfn;
     prwfnptr prwfn;
 
     /* numbers of individuals and detectors */
@@ -1967,47 +2028,69 @@ void secrloglik (
     unsigned long nk = 0;
 
     /* number of 'g' (detection) parameters */
-    int ncol;
+    int    ncol;
     int    gpar;    
 
     /* number of detections */
     int    nd = 0;  
 
     /* number of marking occasions and related */
-    double *pID;
+    double *pID = NULL;
     double *pdots = NULL;
     double Tulik = 0.0;
     double Tmlik = 0.0;
+    double Tnlik = 0.0;
     int    allsighting = 0;
     double numerator = 1;
     double a0[maxnmix];
+    double *Tumu = NULL;
+    double *Tmmu = NULL;
+    double *tmpmusk = NULL;
 
-    /* stored pdot for usepimask */
-    double *pdot = NULL;
+    int    *firstocc = NULL;
+    int    alltelem = 0;
+    int    anytelem = 0;
+    int    *ntelem;    /* number telemetry histories per group */
+    int    *telem;     /* telemetry history? */
+    int    *nzero;     /* number all-zero histories per group  */
+    int    *kcnzero;   /* number all-zero histories per knownclass  */
+    int    *allzero;   /* all-zero history? */
+    int     nonzero;   
+
+    /* switch between Tm likelihoods: 0 shorter (unconditional) 1 longer (conditional) */
+    int Tmswitch = 1;      
+    int *nmarked = NULL;      
+
+    /* stored pdot for allsighting */
+//    double *pdot = NULL;
 
     /* pre-computed detection probabilities */
     double *gk = NULL;
     double *gk0 = NULL;
+    double *hk = NULL;
+    double *hk0 = NULL;
+    double *hr = NULL;
 
     /* mixture membership probability */
     double *pmixg = NULL;
     double *pmixn = NULL;
     double pmixnx;        /* proportion in current class */
-    int    known = 0;     /* number known class */
+    int    known = 0;     /* number of 'known-class' individuals */
     int    knownx = -1;   /* class of current animal (negative if unknown) */
 
     /* passing data to prwfn */
     double *detspec = NULL;
     int    *start = NULL;
 
-    /* total hazard computation 2011-11-15*/
+    /* total hazard computation */
     int    *hc0 = NULL;        
     int    *hindex = NULL;     
     double *h = NULL;          
 
     /* CL only */
     int    indiv = 0;     /* indicate detection varying between individuals */
-    double asum[maxnmix];
+    double asum[maxnmix] = {0.0};  /* initialises all to zero */
+    double *a = NULL;
 
     double pdt = 0;
     int    nv;
@@ -2017,9 +2100,7 @@ void secrloglik (
 
     /* telemetry pi */
     double f = 1.0;         /* probability density of range centre */
-    int    usepimask = 0;
-    double kappa = 0.0;
-    int    norg;
+
     /*-------------------------------------------------------*/
 
     /* MAINLINE */
@@ -2028,8 +2109,10 @@ void secrloglik (
      int timing = 0;
      int counter = 0;
      ticks = clock();
+     for (i=0; i<6; i++) comp[i]=0;
+     *value = 0;
 
-     /* 0 */
+     /* 0 ******************************************************/
      if (timing) ticks = timestamp(ticks, &counter);
 
     /*---------------------------------------------------------*/
@@ -2052,6 +2135,7 @@ void secrloglik (
     /* knownclass 2 -> nm[1] 'latent class 1' */
     /* knownclass 3 -> nm[2] 'latent class 2' */
     nm = (int *) R_alloc(*nmix + 1, sizeof(int));
+    kcnzero = (int *) S_alloc(*nmix+1, sizeof(int));
     fillng(*nc, *nmix+1, knownclass, nm);                           
     if (*nmix > 1) {
 	for (x = 1; x < (*nmix+1); x++)
@@ -2060,18 +2144,25 @@ void secrloglik (
     /*---------------------------------------------------------*/
 
     /* Number per group */
-    ng = (int *) R_alloc(*gg, sizeof(int));
+    ng = (int *) S_alloc(*gg, sizeof(int));
+    ntelem = (int *) S_alloc(*gg, sizeof(int));
+    nzero = (int *) S_alloc(*gg, sizeof(int));
+    telem = (int *) S_alloc(*nc, sizeof(int));
+    allzero = (int *) S_alloc(*nc, sizeof(int));
     fillng(*nc, *gg, grp, ng);                                    
+    pdot = (double *)  S_alloc(nc1 * *nmix * *mm, sizeof (double));   // limited use: CT?
+
     /*---------------------------------------------------------*/
 
-    /* Detections per polygon */
-    nk = fillcumk(detect, kk, cumk);                            
+    /* Detections per polygon cumk and nk */
+    nk = fillcumk(detect, *ss, kk, cumk);                            
     /*---------------------------------------------------------*/
 
     /* Select detection function and detector */
     /* see utils.c for these functions */
-    gfn = getgfn(*fn);                                          
-    prwfn = getprwfn(*detect);
+    /* zfn is hazard function used by polygon and transect detectors */
+    zfn = getzfn(*fn);                                          
+    prwfn = getprwfn(detect, *ss);
     gpar = par3(*fn) + 2;
 
     /*---------------------------------------------------------*/
@@ -2079,64 +2170,95 @@ void secrloglik (
     /* Mark-resight */
     /* Update pID, gpar */
     pID = (double *)  S_alloc(*ss * *nmix, sizeof (double));
-    if (*like==1) ncol = nc1;
+    if (*like == 1) ncol = nc1;
     else ncol = *gg;
     gpar = markresightini (*ss, *nmix, markocc, nk, ncol, PIA, *cc, gsbval,
-		    pID, gpar);
+			   pID, gpar);
     allsighting = (*like >= 5);
-    if ((Tu[0]>=0) || (Tm[0]>=0)) {
+    if (Tu[0]>=0) {
         /* storage for Pr(marked on or before s) */
 	pdots = (double *)  S_alloc(*ss * *nmix * *mm, sizeof (double));
     }
+    Tumu  = (double *)  S_alloc(*ss * nk, sizeof (double));  // Tu expected value
+    Tmmu = (double *)  S_alloc(*ss * nk, sizeof (double));  // Tm expectedvalue
+    nmarked = (int *)  S_alloc(*ss+1, sizeof (int));  // Number marked at occasion s
+    if (Tm[0]>=0 && Tmswitch) {
+	tmpmusk = (double *)  S_alloc(*ss * nk, sizeof (double));
+    }
 
-    /*---------------------------------------------------------*/
-    /* pimask has dual use: telemetry and allsighting */
-    usepimask = (pimask[0] > -tol) && (!allsighting);
-    if (usepimask || *like == 6) {
-	pdot = (double *)  S_alloc(nc1 * *nmix * *mm, sizeof (double));
+    if (chat[0]<=0 || chat[1]<=0 || chat[2]<=0) {
+	Rprintf("chat must be positive\n");
+	*resultcode = 11;
+	return;
+    }
+
+    // Number marked at occasion s; for Tu distrib = binomial
+    if ((Tu[0]>=0) && *distrib) {
+        getnmarked(w, *nc, *ss, nk, nmarked);  
     }
 
     /*---------------------------------------------------------*/
+    alltelem = alltelemetry(detect,*ss);
+    anytelem = anytelemetry(detect,*ss);
 
+    /*---------------------------------------------------------*/
     /* 'start' is index to position of ancillary data for each
        individual, used for polygon, transect and sound detectors */
-    if ( (*detect == 3) || (*detect==4) ) 
+    if ( (detect[0] == 3) || (detect[0] == 4) ) 
 	start = (int *) R_alloc(nc1 * *ss, sizeof(int));
-    else if (((*detect>=5) && (*detect<=9)) || (*detect==12)) 
+    else if (((detect[0]>=5) && (detect[0]<=9)) || (detect[0]==12)) 
 	start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
-    nd = getstart(detect, start, nc1, nc, ss, nk, w);
+    else if (anytelem)
+	start = (int *) R_alloc(nc1, sizeof(int));
+    nd = getstart(detect, start, nc1, *nc, *ss, nk, w);
+    if (*debug>2) Rprintf("nd %4d \n", nd);
+
+    /* work arrays for telemetry */
+    if (anytelem) {
+	memrequest =  *cc;
+	memrequest *= *mm;
+	memrequest *= nd;
+	if (*debug>=2) {
+	    Rprintf("Memory request: cc %6d mm %6d nd %6d cc.mm.nd %lu \n",
+		    *cc, *mm, nd, memrequest);
+	}
+	hr = (double *) S_alloc(memrequest, sizeof (double));
+    }
+
     /*---------------------------------------------------------*/
 
     pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
     pmixn = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
     for (i=0; i < (*gg * *nmix); i++) pmixg[i] = 1; /* default */
     for (i=0; i < (nc1 * *nmix); i++) pmixn[i] = 1; /* default */
-    getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, 
+    getpmix(gpar, nc1, *nmix, knownclass, *nc, *cc, *ss, nk, 
 		   grp, PIA, gsbval, pmixg, pmixn);
-    /* Rprintf("pmixg %6.4f, %6.4f\n", pmixg[0], pmixg[1]); */
+    if (*debug>1) Rprintf("pmixg %6.4f, %6.4f\n", pmixg[0], pmixg[1]);
 
-    nv = nval(detect, nc1, cc, ss, nk);
+    nv = nval(detect[0], nc1, *cc, *ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
 
     memrequest =  *cc;
     memrequest *= *mm;
     memrequest *= nk;
-    // Rprintf("OK 2 cc %6d nk %6d mm %6d cc.nk.mm %lu \n", *cc, nk, *mm, memrequest);
-    gk = (double *) R_alloc(memrequest, sizeof(double)); 
-    for (i=0; i<memrequest; i++) gk[i] = 0;
-
+    if (*debug>=2) {
+	Rprintf("Memory request: cc %6d nk %6d mm %6d cc.nk.mm %lu \n",
+		*cc, nk, *mm, memrequest);
+    }
+    gk = (double *) S_alloc(memrequest, sizeof(double)); 
+    hk = (double *) S_alloc(memrequest, sizeof(double)); 
     memrequest = *cc0;
     memrequest *= *mm;
     memrequest *= nk;
-    gk0 = (double *) R_alloc(memrequest, sizeof(double));
-    for (i=0; i<memrequest; i++) gk0[i] = 0;
+    gk0 = (double *) S_alloc(memrequest, sizeof(double));
+    hk0 = (double *) S_alloc(memrequest, sizeof(double));
 
-    /* 1 */
+    /* 1 *********************************************************/
     if (timing) ticks = timestamp(ticks, &counter);
 
     /*-----------------------------------------------------------*/
     if (dist2[0] < 0) {
-        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        if (anypolygon(detect,*ss) || anytransect(detect,*ss)) {
 	    dist2 = (double *) S_alloc(1, sizeof(double));
 	}
 	else {
@@ -2147,67 +2269,89 @@ void secrloglik (
     else {
 	squaredist(*kk, *mm, dist2);
     }
+    // dist2 checked 2017-01-01
     /*----------------------------------------------------------*/
 
-    *binomN = cleanbinomN(*binomN, *detect);       /* default 1 */
+    precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc, nk, cumk,    
+	       traps, dist2, mask, gsbval, miscparm, detspec, gk, hk, *debug); 
+    if (anyb(gsbval, gsb0val, *cc, gpar)) {
+	precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc0, nk, cumk,   
+		   traps, dist2, mask, gsb0val, miscparm, detspec, gk0, hk0, *debug); 
+    }
+   else {   // merely copy 
+	for (i=0; i<(*cc * *mm * nk); i++) {
+	    gk0[i] = gk[i];
+	    hk0[i] = hk[i];
+	}
+        // detspec[2+c] remains unchanged 
+    }
 
-    /*----------------------------------------------------------*/
-    precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,    
-	       traps, dist2, mask, gsbval, miscparm, detspec, gk); 
-    precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
-	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
+    firstocc = (int *) R_alloc (nc1, sizeof(int));
+    if (anytelem)  {
+	gethr(detect, *fn, *ss, *mm, *cc, nd, mask, xy, gsbval, hr, *telemscale);
+    }
+    /* getfirstocc2(*ss, nk, *nc, w, grp, detect, firstocc, ntelem, telem, nzero, allzero); */
+    getfirstocc2(*ss, nk, *nc, w, grp, knownclass, detect, firstocc, ntelem, telem, 
+		 nzero, kcnzero, allzero);
+    if (*debug>2) for (x=0;x<(*nmix+1);x++) Rprintf("x %4d kcnzero[x] %5d\n", x, kcnzero[x]);
+    if (*debug>2) Rprintf("ntelem[0] %4d \n", ntelem[0]);
 
-    /* 2 */
+    /* 2 *********************************************************/
     if (timing) ticks = timestamp(ticks, &counter);
+    /*-----------------------------------------------------------*/
 
     R_CheckUserInterrupt();
-    if ((*detect==0) || (*detect==3) || (*detect==4)) {   /* exclusive detectors require hazard */ 
+
+    if (anyexclusive(detect,*ss)) {   /* exclusive detectors require hazard */ 
+	zerok (detect, *nc, *ss, nk, w);
         hc0 = (int *) R_alloc (*cc, sizeof(int));
         hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
 	h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
-	geth (nc1, cc, nmix, nk, ss, mm, PIA, hc0, gk, Tsk, h, hindex);
+	geth (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hc0, hk, Tsk, h, hindex);
     } 
 
-    getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,     /* complete filling of detspec */
-		kk, mm, PIA, miscparm, start, detspec);
+   /* complete filling of detspec */
+    getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss, 
+		*kk, *mm, PIA, miscparm, start, detspec);
+
+    if (*debug>2)  {
+	Rprintf("Detector ");
+	for(i=0;i<*ss;i++) Rprintf("%3d", (int) detspec[i]);
+	Rprintf("\n");
+    }
 
     /*-------------------------*/
     /* Now evaluate likelihood */
     /*-------------------------*/
 
-    if (*like == 1)    /* Conditional likelihood */
-                       /* allows dependent telemetry usepimask */
-    {
+    if (*like == 1) {  /* Conditional likelihood */
         indiv = anyvarying (*nc, *ss, nk, *nmix, PIA0);
-	if (!indiv) {
+	if (*debug>2) Rprintf("indiv %3d\n", indiv);
+	if (!indiv && !alltelem) {
 	    /* all individuals the same */
 	    /* save time by doing this once, rather than inside n loop */
 	    for (x=0; x<*nmix; x++) {
 		asum[x] = 0;
 		for (m=0; m<*mm; m++) {
-		    pdt = pndot (m, 0, markocc, x, *nc, PIA0, gk0, *detect, *binomN, 
+		    asum[x] += pndot (m, 0, markocc, x, *nc, PIA0, gk0, hk0, detect, binomN, 
 				 Tsk, *ss, nk, *cc0, *nmix, gsb0val, allsighting);
-		    asum[x] += pdt;
-		    if (usepimask)
-			pdot[i3(0,m,x,*nc,*mm)] = pdt;
 
-		    /* save time- and site-specific Pr(marked) */
 		    /* for mark-resight likelihood */
 		    if (Tm[0] >= 0) {
-			getpdots (m, 0, markocc, x, *nc, PIA0, gk0, *detect, *binomN, 
-				Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
+			error("unfinished");
 		    }
-
 		}
 	    }
 	}
 	/* else asum not needed or calculated for each individual in loop below */
-        *value = 0;
-	
-	/* 3 */
+	if (*debug>1) Rprintf("asum(0) %10.6f\n", asum[0]);
+
+	/* 3 *********************************************************/
 	if (timing) ticks = timestamp(ticks, &counter);
+        /*-----------------------------------------------------------*/
 
 	/* Loop over individuals... */
+	a = (double *)  S_alloc(nc1, sizeof (double));
 	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
 	    a[n] = 0;
 	    if (knownclass[n] == 1) 
@@ -2215,10 +2359,15 @@ void secrloglik (
 	    else
 		knownx = imax2(0, knownclass[n]-2);  /* known class */
 
+	    /* zero array for expected sightings of unidentified */
+	    if (Tm[0] >= 0 && Tmswitch) {
+		for(i=0; i< (*ss * nk); i++) tmpmusk[i] = 0;
+	    }
+
 	    /* unknown class : weighted by probability of membership  */
 	    /* known class does not require probability of membership */
 	    tempsum = 0;
-	    kappa = 0;
+
 	    for (x = 0; x < *nmix; x++) {
 		temp = 0;
 		if (knownx < 0)
@@ -2232,160 +2381,116 @@ void secrloglik (
 		    if (indiv > 0)
 			asum[x] = 0;
 		    for (m=0; m<*mm; m++) {
-			if (indiv) { 
-			    pdt = pndot (m, n, markocc, x, *nc, PIA0, gk0, *detect, 
-					 *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, 
+			if (indiv && *telemcode<3 && !allzero[n]) { 
+			    pdt = pndot (m, n, markocc, x, *nc, PIA0, gk0, hk0, detect, 
+					 binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, 
 					 allsighting); 
-			    if (Tm[0] >= 0) {
-				getpdots (m, n, markocc, x, *nc, PIA0, gk0, *detect, *binomN, 
-					Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
-			    }
 			    asum[x] += pdt;
 			}
-			else if (usepimask)
-			    pdt = pdot[i3(0,m,x,*nc,*mm)];
-			if (usepimask) {
-			    f = pimask[*mm * n + m];   /* cols = animals */
-			    kappa += f * pdt * pmixnx;
-			}
-			if (f > tol) {   /* default f = 1 */
 
-			    prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, *binomN, 
-					  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-					  gfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
+			/* telemetry fixes IT, DT, CT */
+                        /* could provide non-mask-based likelihood for IT */
+			if (*telemcode>0 && telem[n]) {
+			    f = fnu (m, n, x, w, PIA, start, hr, detect,  
+				      *cc, *nc, *kk, *ss, *mm, *minprob);
+			}
+			else {
+			    f = 1.0;
+			}
+
+			if (f > *minprob) 
+			{   /* default f = 1 ; minprob was tol*/
+			    if (telem[n] && *telemcode == 1)
+				prwi = 1.0;
+			    else
+				prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, hk, binomN,
+			    		  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+			    		  zfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
 			    temp += prwi * f;
+			    if (*debug>1 &&  m==400) 
+				Rprintf("m %5d n %4d f %12.10f prwi %12.10f sum prwi %12.10f\n",
+					m,n,f,prwi,temp);
+			    if (Tm[0]>=0  && Tmswitch) { 
+				incmusk (temp, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
+					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+			    }
 			}
 		    }
-		    a[n] += pmixnx * asum[x];
-		    tempsum += pmixnx * temp;
-		    /* Rprintf("%5d tempsum %12.8f a[n] %9.6f \n", n, tempsum, a[n]); */
+		    a[n] += asum[x] * pmixnx;  // weight by pmixnx 2017-01-02
+		    tempsum += temp * pmixnx;
+		    if (*debug>2) Rprintf("%5d tempsum %12.8f a[n] %9.6f \n", n, tempsum, a[n]);
 		}
 	    }    /* end of loop over mixture classes */
-	    if (usepimask)
-		templog = log(tempsum/kappa);
-	    else
-		templog = log(tempsum/a[n]);
-	    a[n] = *area * a[n];	
+
+            if (Tm[0]>=0 && Tmswitch) finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1); 
+
+            /* 2017-02-07 let templog go NaN if it wants... */
+	    templog = log(tempsum * *area);
 	    if (!R_FINITE(templog)) *resultcode = 9;
 	    if (*resultcode == 9) return;
-	    *value += templog;
+	    comp[0] += templog;
 
-	    /* Rprintf("n %5d value %12.8f\n", n, *value); */
+            /* if all telemetry then no adjustment for p(detected) */
+	    if (!allzero[n] && (*telemcode<3 || !telem[n])) 
+		comp[1] -= log(a[n] * *area);
 
+	    // Rprintf("n %5d value %12.8f\n", n, comp[0]);
 	    R_CheckUserInterrupt();
 	}        /* end of loop over individuals */
 
         /* multinomial probability of known class membership (excludes coefficient) */
         /* ignored if telemetry */
-	if ((known>0) && (!usepimask)) {
+	if (known>0) {
 	    tempsum = 0;
 	    for (x=0; x<*nmix; x++) {
 		asum[x] = 0;
 		for (m=0; m<*mm; m++) {
-		    asum[x] += pndot (m, 0, markocc, x, *nc, PIA0, gk0, *detect, 
-				      *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, 
+		    asum[x] += pndot (m, 0, markocc, x, *nc, PIA0, gk0, hk0, detect, 
+				      binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, 
 				      allsighting);
 		}
 		tempsum += asum[x] * pmixg[x];
 	    }
 	    for (x=0; x<*nmix; x++) 
-		*value += nm[x+1] * log(asum[x] * pmixg[x] / tempsum); 
-	    if (!R_FINITE(*value)) *resultcode = 9;
+		comp[2] +=  (nm[x+1] - kcnzero[x+1]) * log(asum[x] * pmixg[x] / tempsum); 
+	    if (!R_FINITE(comp[2])) *resultcode = 9;
+    	    if (*resultcode == 9) return;
 	}
 
 	/* sightings of unidentified animals */
-	/* array pdots previously filled by function getpdots */
-	if (Tm[0] >= 0) {
-	    *resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0, 
-	       *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc, 
-	       pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, 
-	       asum, chat, &Tulik, &Tmlik);
-	    /* Rprintf("Tulik %12.8f Tmlik %12.8f \n", Tulik, Tmlik);  */
+	if (Tm[0]>=0) {
+	    if (!Tmswitch) {
+                /* standalone calculation of Tmmu */
+		*resultcode = expectedTmTu (*like, *distrib, 0, *nc, *ss, nk,
+					  *cc0, *nmix, pmixg, *mm, Dmask, pimask,
+					    *area, markocc, pdots, ncol, PIA0, gk0, hk0, 
+					    binomN, detect, Tsk, nmarked, asum, pID, Tmmu);
+		if (*resultcode>0) return;
+	    }
+	    *resultcode = Tsightinglik (Tm, *ss, nk, markocc, ncol, detect, Tsk, Tmmu,
+					 *debug, &Tmlik);
+	    if (*debug>=1) {
+		Rprintf("CL sighting marked nonID Tmlik %12.8f \n", Tmlik);  
+	    }
 	    if (*resultcode>0) return;
-	    *value += Tulik + Tmlik;  
+	    comp[5] = Tmlik / chat[1];
 	}
 	
     } /* end (*like == 1) */
-
     /*-------------------------------------------------------------------------------------------*/
 
-    else if ((*like==3) || (*like==4))    /* Concurrent telemetry, full or CL */
-    {
-	/* else pdot calculated as needed in loop below */
-        *value = 0;
+    else if ((*like == 0) || (*like == 2)) {  /* Full likelihood; 2 = split sightings */
 
-	if ((Tu[0] >= 0) || (Tm[0] >= 0)) {
-	    error ("concurrent telemetry not yet enabled for sighting data");
-	}
-	
-	/* Loop over individuals... */
-	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
-	    if (*like == 3)
-		norg = grp[n]-1;
-	    else
-		norg = n;
-	    if (knownclass[n] == 1) 
-		knownx = -1;                         /* unknown class */
-	    else
-		knownx = imax2(0, knownclass[n]-2);  /* known class */
-
-	    /* unknown class : weighted by probability of membership  */
-	    /* known class does not require probability of membership */
-	    tempsum = 0;
-	    for (x = 0; x < *nmix; x++) {
-		if (knownx < 0) {
-		    if (*like == 3) 
-			pmixnx = pmixg[*nmix * norg + x];
-		    else
-			pmixnx = pmixn[*nmix * norg + x];
-		}
-		else if (knownx == x)
-		    pmixnx = 1.0;
-		else 
-		    pmixnx = 0.0;
-
-		if (pmixnx > 1e-6) {
-		    temp = 0;
-		    for (m=0; m<*mm; m++) {
-			f = pimask[*mm * n + m];  /* columns = animals */
-			if (f > tol) {   /* default f = 1 */
-			    prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, *binomN, 
-					  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-					  gfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
-			    temp += prwi * f;
-			}
-		    }
-		    tempsum += pmixnx * temp;
-		}
-	    }    /* end of loop over mixture classes */
-	    templog = log(tempsum);
-	    if (!R_FINITE(templog)) *resultcode = 9;
-	    if (*resultcode == 9) return;
-	    *value += templog;
-	}        /* end of loop over individuals */
-
-    }   /* end (*like == 3) || (*like == 4) */
-    /*-------------------------------------------------------------------------------------------*/
-    else if ((*like == 0) || (*like == 2)) {  /* Full or Partial likelihood */
-
-	sumD = (double *) R_alloc(*gg, sizeof(double));
-	sumDp = (double *) R_alloc(*gg, sizeof(double));
-	for (g=0; g<*gg; g++) {
-	    sumD[g] = 0;
-	    sumDp[g] = 0;
-	}
+	sumD = (double *) S_alloc(*gg, sizeof(double));
+	sumDp = (double *) S_alloc(*gg, sizeof(double));
 	if ((known>0) && (*nmix>1)) {
 	    /* no groups, only mixture classes; use group 0 for aggregates */
 	    for (m=0; m<*mm; m++)  {
 		sumD[0] += Dmask[m];
 		for (x=0; x<*nmix; x++) {
-		    pdt = pndot (m, 0, markocc, x, *gg, PIA0, gk0, *detect, *binomN, 
+		    pdt = pndot (m, 0, markocc, x, *gg, PIA0, gk0, hk0, detect, binomN,
 				 Tsk, *ss, nk, *cc0, *nmix, gsb0val, allsighting);
 		    sumDp[0] += pdt * pmixg[x] * Dmask[m]; 
-		    if (usepimask) {
-                        /* store pdt for later */
-			pdot[i3(0,m,x,*gg,*mm)] = pdt;
-		    } 
 		}
 	    }
 	}
@@ -2395,197 +2500,414 @@ void secrloglik (
 		for (m=0; m<*mm; m++)  {
 		    sumD[g] += Dmask[*mm * g + m];
 		    for (x=0; x<*nmix; x++) {
-			pdt = pndot (m, g, markocc, x, *gg, PIA0, gk0, *detect, *binomN, 
+			pdt = pndot (m, g, markocc, x, *gg, PIA0, gk0, hk0, detect, binomN, 
 				     Tsk, *ss, nk, *cc0, *nmix, gsb0val, allsighting);
 			sumDp[g] += pdt * pmixg[*nmix * g + x] * Dmask[*mm * g + m];
-			if (usepimask) {
-			    /* store pdt for later */
-			    pdot[i3(g,m,x,*gg,*mm)] = pdt;  
-			} 
+			pdot[i3(m,g,x, *mm, *gg)] = pdt; // save if needed for CT?
 			/* save time- and site-specific Pr(marked) */
                         /* for mark-resight likelihood */
-			if ((Tu[0] >= 0) || (Tm[0] >= 0)) {
-			    getpdots (m, g, markocc, x, *gg, PIA0, gk0, *detect,
-				    *binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
+			if (Tu[0] >= 0) {
+			    getpdots (m, g, markocc, x, *gg, PIA0, gk0, hk0, detect,
+				    binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
 			}
 		    }
 		}
 	    }
 	}
 	
-	/* 4 */
+	/* 3 *********************************************************/
 	if (timing) ticks = timestamp(ticks, &counter);
+        /*-----------------------------------------------------------*/
+
         
-        *value = 0;
+        /*------------------------------------------*/
         /* compute likelihood component from pr(wi) */
-        if (*like == 0) {  /* Full likelihood only */
-	    g = 0;
-	    for (n=0; n < *nc; n++) {
-		if ((known==0) || (*nmix==1)) 
-		    g = grp[n]-1;
-		temp = 0;
-		kappa = 0;
+        /*------------------------------------------*/
+	g = 0;
+
+	for(i=0; i< *ss; i++) 
+	    if (markocc[i] == -1) detspec[i] = -2.0;
+
+
+	for (n=0; n < *nc; n++) {
+	    tempsum = 0;
+	    if ((known==0) || (*nmix==1)) 
+		g = grp[n]-1;
+	    if (Tm[0]>=0  && Tmswitch) {
+		for(i=0; i< (*ss * nk); i++) tmpmusk[i] = 0;
+	    }
+	    if (*like == 2) {
+		selectoccasions(*ss, markocc, detect, detspec, *debug, 1);
+	    }
+	    for (x=0; x<*nmix; x++) {
+		pmixnx = classmembership (n, x, knownclass, pmixn, *nmix);
+		if (pmixnx > 1e-6) {
+		    for (m=0; m<*mm; m++) {
+			/* telemetry fixes */
+			if (*telemcode > 0 && telem[n]) {
+			    f = fnu (m, n, x, w, PIA, start, hr, detect,
+				      *cc, *nc, *kk, *ss, *mm, *minprob);
+			}
+			else f = 1.0;
+
+			if (f > *minprob) {
+			    if (telem[n] && *telemcode == 1)  /* independent telem */
+				prwi = 1.0;
+			    else
+				prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, hk, binomN,
+			    		  detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+			    		  zfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
+			    tempp = f * prwi * pmixnx;
+                            /* do not do this for IT, allzero CT telemetry animals */	    
+			    if (!telem[n] || !allzero[n])
+				tempp *= Dmask[*mm * g + m];  /* Dprwi; note pdt cancels except CT (see next) */	 
+			    if (*telemcode==3 && !allzero[n] && telem[n]) {
+				tempp *= pdot[i3(m,g,x, *mm, *gg)];
+			    }
+   
+			    tempsum += tempp;                             /* sumDprwi */
+			    /* for unidentified marked sightings, increment each mu_sk */
+			    if (Tm[0]>=0 && Tmswitch) { 
+				incmusk (tempp, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
+					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+			    }
+			}
+		    }
+		}
+	    }
+            /* for unidentified marked sightings */	        
+	    if (Tm[0]>=0 && Tmswitch) {
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1);		
+	    }
+	    templog = log(tempsum);
+	    if (!R_FINITE(templog)) *resultcode = 9;
+	    if (*resultcode == 9) return;
+	    if (*debug>=2) Rprintf("log prwi1: n %4d logprwi %8.3f \n", n, templog);
+	    comp[0] += templog;
+
+	    /*--------------------------------------------------------*/
+	    /* separate treatment of sighting component */
+	    /* later be more careful here - maybe should include in pmix loop above */
+	    if (*like == 2) {
+		selectoccasions(*ss, markocc, detect, detspec, *debug, 0);
+		tempsum = 0;
 		for (x=0; x<*nmix; x++) {
 		    pmixnx = classmembership (n, x, knownclass, pmixn, *nmix);
 		    if (pmixnx > 1e-6) {
 			for (m=0; m<*mm; m++) {
-			    if (usepimask) {
-				f = pimask[*mm * n + m];   /* cols = animals */
-				kappa += f * pdot[i3(g,m,x,*gg,*mm)] * pmixnx;
-			    }
 			    if (f > tol) {    /* default f = 1 */
-
-				prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, *binomN, 
+				prwi = prwfn (m, n, x, w, xy, signal, PIA, gk, hk, binomN, 
 					      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, 
-					      gfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
-
+					      zfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
 				tempp = f * prwi * pmixnx;	    
-				if (!usepimask) tempp *= Dmask[*mm * g + m];	    
-				temp += tempp;
+				tempsum += tempp;                                /* sumprwi */
 			    }
 			}
 		    }
 		}	        
-		templog = log(temp);
-		if (usepimask) templog -= log(kappa);
+		templog = log(tempsum);
 		if (!R_FINITE(templog)) *resultcode = 9;
 		if (*resultcode == 9) return;
-		*value += templog;
-		R_CheckUserInterrupt();
+		if (*debug>=2) Rprintf("log prwi2: n %4d logprwi %8.3f \n", n, templog);
+		selectoccasions(*ss, markocc, detect, detspec, *debug, -10);  /* reset */
+		comp[0] += templog;
 	    }
-	
-	    /* 5 */
-	    if (timing) ticks = timestamp(ticks, &counter);
-	    
-	    if ((known>0) && (*nmix>1)) {
-		/* likelihood component due to n */
+	    /*--------------------------------------------------------*/
+
+	    R_CheckUserInterrupt();
+	} /* end n loop over indiviudals */
+
+	/* 4 *************************************************************/
+	if (timing) ticks = timestamp(ticks, &counter);	    
+	/*---------------------------------------------------------------*/
+
+	/* Known membership of latent classes                            */
+	/*---------------------------------------------------------------*/
+
+	if ((known>0) && (*nmix>1)) {
+	    nonzero = *nc - nzero[0];         
+
+	    /*-------------------------------*/
+	    /* likelihood component due to n */
+	    /*-------------------------------*/
+	    /* Poisson */
+	    if (*distrib == 0) {
+		comp[1] = gpois(nonzero, sumDp[0] * *area, 1);
+	    }
+	    /* binomial */
+	    if (*distrib == 1) {
 		tempN = sumD[0] * *area;
+		if (nonzero > tempN) {
+		    *resultcode = 8;
+		    return;
+		}
+		p = sumDp[0] / sumD[0];
+		comp[1] = dbinom_raw (nonzero, tempN, p, 1-p, 1);
+	    }
+	    /*---------------------------------------------------*/
+	    /* likelihood component due to denominator of f()    */
+	    comp[2] -= nonzero * log(sumDp[0]);
+
+	    /* adjustment for mixture probabilities when class known */
+	    for (x=0; x<*nmix; x++) {
+		comp[3] += (nm[x+1] - kcnzero[x+1]) * log(pmixg[x]);
+	    }
+	}
+
+	/*---------------------------------------------------------------*/
+	/* No known membership of latent classes                         */
+	/*---------------------------------------------------------------*/
+	else {
+	    for (g=0; g<*gg; g++) {
+
+        	if (*telemcode==0 || *telemcode==2)  /* no telem or DT */
+		    nonzero = ng[g];
+		else                                 /* IT or CT */
+		    nonzero = ng[g] - nzero[g];         
+
+		/*-------------------------------*/
+		/* likelihood component due to n */
+		/*-------------------------------*/
+	    
 		/* Poisson */
 		if (*distrib == 0) {
-		    *value += gpois(*nc, sumDp[0] * *area, 1);
+			comp[1] += gpois(nonzero, sumDp[g] * *area, 1);
 		}
 		/* binomial */
-		if (*distrib == 1) {
-		    if (*nc > tempN) {
+		else if (*distrib == 1) {
+		    tempN = sumD[g] * *area;
+		    if (nonzero > tempN) {    /* including ntelem[g] */
 			*resultcode = 8;
 			return;
 		    }
-		    // *value += gbinomFP (*nc, tempN, sumDp[0] / sumD[0], 1);
-		    p = sumDp[0] / sumD[0];
-		    *value += dbinom_raw (*nc, tempN, p, 1-p, 1);
+		    p = sumDp[g] / sumD[g];
+		    comp[1] += dbinom_raw (nonzero, tempN, p, 1-p, 1);
 		}
-		/* likelihood component due to denominator of f() */
-                /* if usepimask this has already been done via kappa */
-		if (!usepimask)
-		    *value -= *nc * log(sumDp[0]);
-
-		/* adjustment for mixture probabilities when class known */
-		for (x=0; x<*nmix; x++)
-		    *value += nm[x+1] * log(pmixg[x]);
-	    }
-	    else {
-		/* no known mixture classes */
-		for (g=0; g<*gg; g++) {
-		    /* likelihood component due to n */
-		    tempN = sumD[g] * *area;
-		    
-		    /* Poisson */
-		    if (*distrib == 0) {
-			*value += gpois(ng[g], sumDp[g] * *area, 1);
-		    }
-		    /* binomial */
-		    if (*distrib == 1) {
-			if (ng[g] > tempN) {
-			    *resultcode = 8;
-			    return;
-			}
-			p = sumDp[g] / sumD[g];
-			*value += dbinom_raw (ng[g], tempN, p, 1-p, 1);
-		    }
 		
-		    /* likelihood component due to denominator of f() */
-		    /* if usepimask this has already been done via kappa */
-		    if (!usepimask)
-			*value -= ng[g] * log(sumDp[g]); 
-		    
-		    /* special case: superbinomial (specified N) */
-		    if (*distrib>=2) {
-			p = sumDp[g] * *area / *distrib;
-			*value += dbinom_raw (ng[g], *distrib, p, 1-p, 1);
-		    }		
-		}
-	    }
-	      
-            /* sightings of unmarked or unidentified animals */
-            /* array pdots previously filled by function getpdots */
-	    if ((Tu[0]>=0) || (Tm[0]>=0)) {	
-		if (*gg > 1) error("mark-resight does not allow groups");
-		*resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0,
-			     *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc,
-			   pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, asum, 
-					   chat, &Tulik, &Tmlik);
-		if (*resultcode>0) return;
-		*value += Tulik + Tmlik;  
+		/*---------------------------------------------------*/
+		/* likelihood component due to denominator of f()    */
+		/*---------------------------------------------------*/
+		comp[2] -= nonzero * log(sumDp[g]); 
 	    }
 	}
+
+	/*------------------------------------------------------*/
+	/* sightings of unmarked or unidentified animals        */
+	/* array pdots previously filled by function getpdots   */
+	/*------------------------------------------------------*/
+
+	if ((Tu[0]>=0) || (Tm[0]>=0))
+	    if (*gg > 1) error("mark-resight does not allow groups");
+
+	/*------------------------------------------------------*/
+	if (Tu[0]>=0) {	    /* unmarked */
+	    *resultcode = expectedTmTu (*like, *distrib, 1, *nc, *ss, nk,
+					*cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+					markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+					detect, Tsk, nmarked, asum, pID, Tumu);
+	    if (*resultcode>0) return;
+	    *resultcode = Tsightinglik (Tu, *ss, nk, markocc, ncol, detect, Tsk, Tumu,
+					*debug, &Tulik);
+	    if (*resultcode>0) return;
+	    comp[4] = Tulik / chat[0];
+	}
+	/*------------------------------------------------------*/
+	if (Tn[0]>=0) {	   /* unresolved */
+            /* using Tumu for Tnmu  */
+            /* using chat[0] for Tn */
+	    *resultcode = expectedTmTu (*like, *distrib, 2, *nc, *ss, nk,
+					*cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+					markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+					detect, Tsk, nmarked, asum, pID, Tumu);
+	    if (*resultcode>0) return;
+	    *resultcode = Tsightinglik (Tn, *ss, nk, markocc, ncol, detect, Tsk, Tumu,
+					*debug, &Tnlik);
+	    if (*resultcode>0) return;
+	    comp[4] += Tnlik / chat[2];  /* sum of any Tu, Tn likelihood components */
+	}
+	/*------------------------------------------------------*/
+	if (Tm[0]>=0) {	   /* marked, not identified */
+	    if (!Tmswitch) {
+		*resultcode = expectedTmTu (*like, *distrib, 0, *nc, *ss, nk,
+					    *cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+					    markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+					    detect, Tsk, nmarked, asum, pID, Tmmu);
+		if (*resultcode>0) return;
+	    }
+	    *resultcode = Tsightinglik (Tm, *ss, nk, markocc, ncol, detect, 
+					Tsk, Tmmu, *debug, &Tmlik);
+	    if (*resultcode>0) return;
+	    comp[5] = Tmlik / chat[1];
+	}
+	/*------------------------------------------------------*/
+
+	if (*debug>=1) {
+	    Rprintf("Full likelihood: Total %8.3f,  Tulik %8.3f  chat(Tu) %7.3f",
+		    comp[4], Tulik, chat[0]); 
+	    Rprintf(" Tmlik %8.3f  chat(Tm) %8.3f \n", Tmlik, chat[1]);
+	    Rprintf(" Tnlik %8.3f  chat(Tn) %8.3f \n", Tnlik, chat[2]);
+	}
+
     }   /* end (*like == 0) || (*like == 2) */
     /*----------------------------------------------------------------------------------------*/
+
     else if ((*like == 5) || (*like == 6)) /* All-sighting conditional likelihood  2015-10-15 */
     {
         /* Preliminaries ... */
-
         /* all-sighting data presumes prior marking with known distribution over the habitat mask */
-
-        *value = 0;
+/*
+	if (*like == 6) {
+	    for (x=0; x<*nmix; x++) {
+		asum[x] = 0;
+		for (m=0; m<*mm; m++) {
+		    asum[x] += pndot (m, 0, markocc, x, *nc, PIA0, gk0, hk0, detect, binomN, 
+				      Tsk, *ss, nk, *cc0, *nmix, gsb0val, allsighting);
+		}
+	    }
+	}
+*/
+        /* 3 *********************************************************/
 	if (timing) ticks = timestamp(ticks, &counter);
+        /*-----------------------------------------------------------*/
 
-	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, *detect, *binomN, Tsk, 
+	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, hk0, detect, binomN, Tsk, 
 			      *ss, nk, *mm, *cc0, *nmix, gsb0val, allsighting, pimask, 
 			      *area, a0);
 	if (*resultcode>0) return;   // abort this likelihood evaluation with resultcode 5 or 6
 
+	if (Tm[0] >= 0 && Tmswitch) {
+	    for(i=0; i< (*ss * nk); i++) tmpmusk[i] = 0;
+	}
+	if (*debug>1)
+	    Rprintf("nc = %4d\n", *nc);
 	/* Loop over individuals... */
 	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
 	    tempsum = 0;
+	    if (Tm[0] >= 0 && Tmswitch) {
+		for(i=0; i<(*ss * nk); i++) tmpmusk[i] = 0;
+	    }
 	    for (x = 0; x < *nmix; x++) {
 		temp = 0;
 		pmixnx = classmembership (n, x, knownclass, pmixn, *nmix);
 		/* Rprintf("pmixnx %8.6f\n", pmixnx); */
 		if (pmixnx > 1e-6) {
 		    for (m=0; m< *mm; m++) {
-			numerator = pimask[m] * prwfn (m, n, x, w, xy, signal, PIA, gk, *binomN, 
-				      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
-				      gfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
+			numerator = pmixnx * pimask[m] * 
+			    prwfn (m, n, x, w, xy, signal, PIA, gk, hk, binomN, 
+				    detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
+				    zfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
+			if ((Tm[0]>=0) && Tmswitch && (firstocc[n] < *ss)) { 
+			    incmusk (numerator, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
+					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+			}
 			if (*like == 5)
 			    temp += numerator;
 			else if (a0[x]>0)
 			    temp += numerator / a0[x];  
 		    }
 		}
-		tempsum += pmixnx * temp;
+		tempsum += temp;
 	        /* Rprintf("%5d tempsum %12.8f asum[x] %9.6f \n",
 		   n, tempsum, asum[x]);   */
 	    }    /* end of loop over mixture classes */
 
+/* MOVE INSIDE X LOOP TO ALLOW FOR NMIX>1 */
+	    if (Tm[0] >= 0 && Tmswitch) {
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1);		
+	    }
+
 	    templog = log(tempsum * *area);    
 	    if (!R_FINITE(templog)) *resultcode = 9;
 	    if (*resultcode == 9) return;
-	    *value += templog;
+	    comp[0] += templog;
 	    R_CheckUserInterrupt();
 	}        /* end of loop over individuals */
 
-        /* sighting matrices */
-	if ((Tu[0]>=0) || (Tm[0]>=0)) {
-	    *resultcode = sightinglik (Tu, Tm, *like, *nc, *ss, nk, *cc0, 
-			 *nmix, pmixg, *mm, Dmask, pimask, *area, pID, markocc, 
-		       pdots, ncol, PIA0, gk0, *binomN, *detect, Tsk, a0, chat, &Tulik, &Tmlik);
+        /* separately compute for nzero all-zero detection histories */
+        /* of pre-marked animals. There are nzero of these observed when */
+        /* like == 5; the number is estimated when like == 6 */
+
+	if ((Tm[0]>0) && Tmswitch && (*like == 6)) { 
+	    error("allsighting Tm not ready yet");
+/*
+	    tempsum = 0.0;   
+            for(i=0; i<(*ss * nk); i++) tmpmusk[i] = 0;
+	    for (x = 0; x < *nmix; x++) {
+		temp = 0;
+		pmixnx = 1 / *nmix;    // TEMPORARY FUDGE - NEED PMIX 
+		if (pmixnx > 1e-6) {
+		    for (m=0; m< *mm; m++) {
+			numerator = pmixnx * pimask[m] * prwi0(m,x,PIA etc.);
+			temp += numerator / a0[x];  
+			incmusk (numerator, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
+					 *nmix, gsbval, Tsk, markocc, 0, detect, tmpmusk);
+		    }		    
+		}
+		tempsum += temp;
+	    } 
+	    if (*like == 5)
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, nzero);		
+	    else 
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, *nc/a0[0] - *nc);
+	    // note preceding fudge when we don't know a0[x] 
+	    */
+	}
+
+    /* sighting matrices */
+
+	if (Tu[0]>=0) {	
+	    *resultcode = expectedTmTu (*like, *distrib, 1, *nc, *ss, nk,
+					*cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+					markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+					detect, Tsk, nmarked, a0, pID, Tumu);
 	    if (*resultcode>0) return;
+	    *resultcode = Tsightinglik (Tu, *ss, nk, markocc, ncol, detect, Tsk, Tumu,
+					*debug, &Tulik);
 
-	    // Rprintf("LL %12.8f  Tulik %12.8f Tmlik %12.8f \n", *value,  Tulik, Tmlik); 
-	    *value += Tulik + Tmlik;  
-	}	
+	    if (*resultcode>0) return;
+	    comp[4] = Tulik / chat[0];
+	}
+	if (Tm[0]>=0) {	
+	    if (!Tmswitch) {
+	        *resultcode = expectedTmTu (*like, *distrib, 0, *nc, *ss, nk,
+                                     *cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+                                     markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+                                     detect, Tsk, nmarked, a0, pID, Tmmu);
+	        if (*resultcode>0) return;
+	    }
+	    *resultcode = Tsightinglik (Tm, *ss, nk, markocc, ncol, detect, Tsk, Tmmu,
+                                 *debug, &Tmlik);
+                                 if (*resultcode>0) return;
+                                 comp[5] = Tmlik / chat[1];
+	}
+	/* if (Tn[0] > 0) error ("unresolved sightings incompatible with all-sighting"); */
+	/* NOTE: Tn not an option for sighting only */
+        /* BUT we may use it for one session among several 2017-04-17 */
+	if (Tn[0]>=0) {	   /* unresolved */
+	    /* using Tumu for Tnmu  */
+	    *resultcode = expectedTmTu (*like, *distrib, 2, *nc, *ss, nk,
+					*cc0, *nmix, pmixg, *mm, Dmask, pimask, *area, 
+					markocc, pdots, ncol, PIA0, gk0, hk0, binomN, 
+					detect, Tsk, nmarked, asum, pID, Tumu);
+	    if (*resultcode>0) return;
+	    *resultcode = Tsightinglik (Tn, *ss, nk, markocc, ncol, detect, Tsk, Tumu,
+					*debug, &Tnlik);
+	    if (*resultcode>0) return;
+	    comp[4] += Tnlik / chat[2];  /* sum of any Tu, Tn likelihood components */
+	}
+	if (*debug>=1) {
+	    Rprintf("Full likelihood: Total %8.3f,  Tulik %8.3f  chat(Tu) %7.3f",
+		    comp[4], Tulik, chat[0]); 
+	    Rprintf(" Tmlik %8.3f  chat(Tm) %8.3f ", Tmlik, chat[1]);
+	    Rprintf(" Tnlik %8.3f  chat(Tn) %8.3f \n", Tnlik, chat[2]);
+	}
     } /* end (*like == 5) || (*like == 6) */
+    /*----------------------------------------------------------------------------------------*/
 
+    /* General wrap-up - no changes to likelihood */
+    for (i=0; i<6; i++) {
+	*value += comp[i];  /* sum components */
+    }
     if (!R_FINITE(*value)) {
 	*resultcode = 9;
 	*value = -1e10;
@@ -2595,7 +2917,8 @@ void secrloglik (
     }
 }
 
-/*==============================================================================*/
+/*===========================================================================================*/
+/*===========================================================================================*/
     
 /*
     'naive' functions are used to estimate auto initial values
@@ -2725,7 +3048,7 @@ void naiveRPSV (
 /*==============================================================================*/
 
 void naivecap2 (
-  int    *detect,  /* code 0 = multicatch, 1 = proximity */
+  int    *detect,  /* scalar code 0 = multicatch, 1 = proximity */
   double *g0,      /* Parameter : detection magnitude */
   double *sigma,   /* Parameter : detection scale */
   int    *ss,      /* number of occasions */
@@ -2932,10 +3255,14 @@ void fxIHP (
     double sumprwi = 1.0;
     double prwi;
 
-    double *gk;
-    double *gkx;
+    double *gk = NULL;
+    double *hk = NULL;
+    double *gkx = NULL;
+    double *hkx = NULL;
     double *detspec;
     double *detspecx;
+
+//    double *hr = NULL;
 
     int    *hc0 = NULL;        
     int    *hindex = NULL;     
@@ -2946,7 +3273,7 @@ void fxIHP (
     double *hx;            /* 2011-11-15 */ 
     int    *start = NULL;
 
-    gfnptr gfn;
+    zfnptr zfn;
     prwfnptr prwfn;
     int cumk[maxnpoly];
     int nk = 0;
@@ -2958,7 +3285,6 @@ void fxIHP (
 
     double scale = 1e6;
 
-    /* 2015-10-11 */
     double *pID;
 
     /*===============================================================*/
@@ -2983,39 +3309,66 @@ void fxIHP (
     ng = (int *) R_alloc(*gg, sizeof(int));
     fillng(*nc, *gg, grp, ng);                                    /* number per group */
 
-    nk = fillcumk(detect, kk, cumk);                              /* detections per polygon */
-    gfn = getgfn(*fn);                                            /* see utils.c */
-    prwfn = getprwfn(*detect);
+    nk = fillcumk(detect, *ss, kk, cumk);                          /* detections per polygon */
 
-    /* 2015-10-10 number of detection parameters */
-    gpar = par3 (*fn) + 2;
+    /*---------------------------------------------------------*/
 
-    if ( (*detect == 3) || (*detect==4) ) 
+    /* Select detection function and detector */
+    /* see utils.c for these functions */
+    zfn = getzfn(*fn);                                          
+    prwfn = getprwfn(detect, *ss);
+    gpar = par3(*fn) + 2;
+
+    /*---------------------------------------------------------*/
+
+    /* Mark-resight */
+    /* Update pID, gpar */
+    pID = (double *)  S_alloc(*ss * *nmix, sizeof (double));
+    if (*like == 1) ncol = nc1;
+    else ncol = *gg;
+    gpar = markresightini (*ss, *nmix, markocc, nk, ncol, PIA, *cc, gsbval,
+		   pID, gpar);;
+
+//    allsighting = (*like >= 5);
+//    if ((Tu[0]>=0) || (Tm[0]>=0)) {
+        /* storage for Pr(marked on or before s) */
+//	pdots = (double *)  S_alloc(*ss * *nmix * *mm, sizeof (double));
+//    }
+
+    /*---------------------------------------------------------*/
+
+    /* pimask has dual use: telemetry and allsighting */
+    /*
+    usepimask = (pimask[0] > -tol) && (!allsighting);
+    if (usepimask || *like == 6) {
+	pdot = (double *)  S_alloc(nc1 * *nmix * *mm, sizeof (double));
+    }
+    */
+    /*---------------------------------------------------------*/
+
+    /* 'start' is index to position of ancillary data for each
+       individual, used for polygon, transect and sound detectors */
+    if ( (detect[0] == 3) || (detect[0] == 4) ) 
 	start = (int *) R_alloc(nc1 * *ss, sizeof(int));
-    else if (((*detect>=5) && (*detect<=9)) || (*detect==12)) 
+    else if (((detect[0]>=5) && (detect[0]<=7)) || (detect[0]==12)) 
 	start = (int *) R_alloc(nc1 * *ss * nk, sizeof(int));
-    nd = getstart(detect, start, nc1, nc, ss, nk, w);
+    nd = getstart(detect, start, nc1, *nc, *ss, nk, w);
+    /*---------------------------------------------------------*/
 
     pmixn = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
     pmixg = (double *)  R_alloc(*gg * *nmix, sizeof (double));
     for (i=0; i < *gg * *nmix; i++) pmixg[i] = 1; /* default */
     for (i=0; i < nc1 * *nmix; i++) pmixn[i] = 1; /* default */
-    getpmix(gpar, nc1, nmix, knownclass, nc, cc, ss, nk, grp, PIA, 
+    getpmix(gpar, nc1, *nmix, knownclass, *nc, *cc, *ss, nk, grp, PIA, 
 		   gsbval, pmixg, pmixn);
-    nv = nval(detect, nc1, cc, ss, nk);
+    nv = nval(detect[0], nc1, *cc, *ss, nk);
 
-    /*---------------------------------------------------------*/
-    /* mark-resight */
-    pID = (double *)  R_alloc(*ss * *nmix, sizeof (double));
-    if (*like==1) ncol = nc1;
-    else ncol = *gg;
-    gpar = markresightini (*ss, *nmix, markocc, nk, ncol, PIA, *cc, gsbval,
-		    pID, gpar);
     /*---------------------------------------------------------*/
     /* distance options Sept 2014 */
     /* distances to mask points */
+    /* skip for polygon or transect detectors */
     if (dist2[0] < 0) {
-        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        if (anypolygon(detect,*ss) || anytransect(detect,*ss)) {
 	    dist2 = (double *) S_alloc(1, sizeof(double));
 	}
 	else {
@@ -3028,8 +3381,9 @@ void fxIHP (
     }
 
     /* distances to novel points X */
+    /* skip for polygon or transect detectors */
     if (distX2[0] < 0) {
-        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        if (anypolygon(detect,*ss) || anytransect(detect,*ss)) {
 	    distX2 = (double *) S_alloc(1, sizeof(double));
 	}
 	else {
@@ -3042,33 +3396,35 @@ void fxIHP (
     }
     /*---------------------------------------------------------*/
 
-    *binomN = cleanbinomN(*binomN, *detect);
-
-    /*---------------------------------------------------------*/
+    /* do this once */
+    if (anyexclusive(detect,*ss)) {
+        zerok (detect, *nc, *ss, nk, w);
+    }
 
     /* optionally compute sumprwi, denominator used for normalisation */
     /* as at 2014-09-10 this does not allow hcov */
     if (*normal > 0) {
 	gk = (double *) S_alloc(*cc * nk * *mm, sizeof(double)); /* S_alloc sets to zero */
+	hk = (double *) S_alloc(*cc * nk * *mm, sizeof(double)); /* S_alloc sets to zero */
 	detspec = (double *) R_alloc(nv, sizeof(double));
-	precompute(detect, fn, binomN, kk, mm, cc, nk, cumk,  
-		   traps, dist2, mask, gsbval, miscparm, detspec, gk); 
+	precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc, nk, cumk,  
+		   traps, dist2, mask, gsbval, miscparm, detspec, gk, hk, 0); 
 	/* space allocation and precomputation for exclusive detector types (traps) */
-	if ((*detect==0) || (*detect==3) || (*detect==4)) {
+	if (anyexclusive(detect,*ss)) {
 	    hc0 = (int *) R_alloc (*cc, sizeof(int));
 	    hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
 	    h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
-	    geth (nc1, cc, nmix, nk, ss, mm, PIA, hc0, gk, Tsk, h, hindex);
+	    geth (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hc0, hk, Tsk, h, hindex);
 	} 
-	getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,  /* complete filling of detspec */
-		    kk, mm, PIA, miscparm, start, detspec);
+	getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss,  /* complete fill of detspec */
+		    *kk, *mm, PIA, miscparm, start, detspec);
 	
         sumprwi = 0;
         for (x = 0; x < *nmix; x++) {
             temp = 0;
             for (m = 0; m < *mm; m++) {
-		prwi = prwfn (m, *which-1, x, w, xy, signal, PIA, gk, *binomN,
-			      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, gfn,
+		prwi = prwfn (m, *which-1, x, w, xy, signal, PIA, gk, hk, binomN,
+			      detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix, zfn,
 			      gsbval, traps, dist2, Tsk, mask, *minprob, pID);
 		temp += prwi * pimask[m];
             }
@@ -3085,18 +3441,18 @@ void fxIHP (
     /* h for total hazard added 2011-11-15                     */
 
     gkx = (double *) S_alloc(*cc * nk * *xx, sizeof(double));
+    hkx = (double *) S_alloc(*cc * nk * *xx, sizeof(double));
     detspecx = (double *) R_alloc(nv, sizeof(double));
 
-    precompute(detect, fn, binomN, kk, xx, cc, nk, cumk,  
-	       traps, distX2, X, gsbval, miscparm, detspecx, gkx); 
+    precompute(detect, *fn, binomN, *ss, *kk, *xx, *cc, nk, cumk,  
+	       traps, distX2, X, gsbval, miscparm, detspecx, gkx, hkx, 0); 
 
     /* space allocation and precomputation for exclusive detector types (traps) */
-    if ((*detect==0) || (*detect==3) || (*detect==4)) {
+    if (anyexclusive(detect,*ss)) {
         hc0x = (int *) R_alloc (*cc, sizeof(int));
         hindexx = (int *) S_alloc (nc1 * *ss, sizeof(int));
-        // following array badly dimensioned before 2.10.0 2015-11-20
         hx = (double *) S_alloc (nc1 * *ss * *xx * *nmix, sizeof(double));
-	geth (nc1, cc, nmix, nk, ss, xx, PIA, hc0x, gkx, Tsk, hx, hindexx);
+	geth (nc1, *cc, *nmix, nk, *ss, *xx, PIA, hc0x, hkx, Tsk, hx, hindexx);
     }
     else {
         hc0x = (int *) R_alloc (1, sizeof(int));
@@ -3104,8 +3460,8 @@ void fxIHP (
         hx = (double *) S_alloc (1, sizeof(double));
     }
 
-    getdetspec (detect, fn, nc, nc1, cc, nmix, nd, nk, ss,     /* complete filling of detspecx */
-		kk, xx, PIA, miscparm, start, detspecx);
+    getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss,     /* complete filling of detspecx */
+		*kk, *xx, PIA, miscparm, start, detspecx);
 
 
     R_CheckUserInterrupt();
@@ -3117,8 +3473,8 @@ void fxIHP (
 	    temp += 
 		pmixg[x] * 
 		prwfn (i, *which-1, x, w, xy, signal, PIA,
-		       gkx, *binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
-		       *ss, *xx, *nmix, gfn, gsbval, traps, distX2, Tsk, X, *minprob, pID) *
+		       gkx, hkx, binomN, detspecx, hx, hindexx, *cc, *nc, nk, 
+		       *ss, *xx, *nmix, zfn, gsbval, traps, distX2, Tsk, X, *minprob, pID) *
 		piX[i] * scale;
 	}
         value[i] = temp / sumprwi;
@@ -3145,7 +3501,7 @@ void chat(
     double *dist2,       /* distances (optional: -1 if unused) */
     double *Tsk,         /* nk x s usage matrix */
     int    *markocc,     /* which are marking occasions? */
-    double *pimask,      /* pdf of marked animals like=5,6 */
+    double *pimask,      /* pdf of marked animals like == 5,6 */
     double *mask,        /* x,y points on mask (first x, then y) */
     double *Dmask,       /* density at each point on mask, possibly x group */
     double *gsb0val,     /* Parameter values (matrix nr= comb of g0,sigma,b nc=3) */
@@ -3182,6 +3538,7 @@ void chat(
 
     /* pre-computed detection probabilities */
     double *gk0 = NULL;
+    double *hk0 = NULL;
 
     /* mixture membership probability */
     double *pmixg = NULL;
@@ -3207,7 +3564,7 @@ void chat(
     /*---------------------------------------------------------*/
 
     /* Detections per polygon */
-    nk = fillcumk(detect, kk, cumk);                            
+    nk = fillcumk(detect, *ss, kk, cumk);                            
     /*---------------------------------------------------------*/
 
     gpar = par3(*fn) + 2;
@@ -3228,16 +3585,17 @@ void chat(
     pmixn = (double *)  R_alloc(nc1 * *nmix, sizeof (double));
     for (i=0; i < (*gg * *nmix); i++) pmixg[i] = 1; /* default */
     for (i=0; i < (nc1 * *nmix); i++) pmixn[i] = 1; /* default */
-    getpmix(gpar, nc1, nmix, knownclass, nc, cc0, ss, nk, 
+    getpmix(gpar, nc1, *nmix, knownclass, *nc, *cc0, *ss, nk, 
 		   grp, PIA0, gsb0val, pmixg, pmixn);
 
-    nv = nval(detect, nc1, cc0, ss, nk);
+    nv = nval(detect[0], nc1, *cc0, *ss, nk);
     detspec = (double *) R_alloc(nv, sizeof(double));
     gk0 = (double *) S_alloc(*cc0 * nk * *mm, sizeof(double));
+    hk0 = (double *) S_alloc(*cc0 * nk * *mm, sizeof(double));
 
     /*-----------------------------------------------------------*/
     if (dist2[0] < 0) {
-        if ((*detect == 3) || (*detect == 4) || (*detect == 6) || (*detect == 7)) {
+        if (anypolygon(detect, *ss) || anytransect(detect,*ss)) {
 	    dist2 = (double *) S_alloc(1, sizeof(double));
 	}
 	else {
@@ -3250,16 +3608,15 @@ void chat(
     }
     /*-----------------------------------------------------------*/
 
-    *binomN = cleanbinomN(*binomN, *detect);
+    precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc0, nk, cumk,   
+	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0, hk0, 0); 
 
-    /*---------------------------------------------------------*/
-
-    precompute(detect, fn, binomN, kk, mm, cc0, nk, cumk,   
-	       traps, dist2, mask, gsb0val, miscparm, detspec, gk0); 
-
-    if ((*detect==0) || (*detect==3) || (*detect==4))
+    /*
+     if (anyexclusive(detect,*ss)) 
         error ("exclusive detectors not supported");
-    if ((*detect==5) || (*detect>7))
+    */
+    
+    if ((detect[0]==5) || (detect[0]>7))
         error ("detector type not supported for chat");
     if (*nsim < 2)
 	error ("nsim for chat must be at least 2, and preferably much more!");
@@ -3269,13 +3626,13 @@ void chat(
     if (*like < 5) { /* otherwise getpdots not used by sightingchat */
 	for (x=0; x < *nmix; x++) {
 	    for (m=0; m < *mm; m++)  {
-		getpdots (m, 0, markocc, x, ncol, PIA0, gk0, *detect,
-			*binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
+		getpdots (m, 0, markocc, x, ncol, PIA0, gk0, hk0, detect,
+			binomN, Tsk, *ss, nk, *cc0, *nmix, gsb0val, pdots);
 	    }
 	}
     }
     else
-	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, *detect, *binomN, Tsk, 
+	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, hk0, detect, binomN, Tsk, 
 			      *ss, nk, *mm, *cc0, *nmix, gsb0val, allsighting, pimask, 
 			      *area, a0);
     if (*resultcode>0) {
@@ -3283,9 +3640,8 @@ void chat(
 	return;
     }
 
-    *resultcode = sightingchat (*like, *detect, *binomN, *nc, *ss, nk, *cc0, *nmix, pmixg, 
-				*mm, Dmask, pimask, *area, pID, markocc, ncol, PIA0,
-				gk0, Tsk, a0, *distrib, *nsim, pdots, chat);
+    *resultcode = sightingchat (*like, detect, binomN, *nc, *ss, nk, *cc0, *nmix, pmixg, 
+				*mm, Dmask, pimask, *area, pID, markocc, *nc, ncol, PIA0,
+				gk0, hk0, Tsk, a0, *distrib, *nsim, pdots, chat);
 }
 /*==============================================================================*/
-

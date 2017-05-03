@@ -20,6 +20,7 @@
 ## 2014-09-08 prepared for secrlinear linearmask models, not activated
 ## 2015-10-04 markocc argument for integralprw1
 ## 2015-11-19 dropped param argument for integralprw1
+## 2016-10-28 userdist may be session-specific
 ############################################################################################
 
 region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -80,16 +81,22 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
     ## if N requested for multiple sessions,
     ## call region.N recursively for each session
     nsess <- length(session)
+    details <- object$details
     if (nsess > 1) {
         ## predict for each session
         out <- vector('list')
-        for (sess in session) {
-            if (ms(region))
+        for (sess in 1:nsess) {
+            if (ms(region)) {
                 tempregion <- region[[sess]]
+            }
             else
                 tempregion <- region
+            detail <- details
+            if (ms(detail$userdist))
+                detail$userdist <- detail$userdist[[sess]]
+            object$details <- detail
             out[[sess]] <- region.N (object, region = tempregion,
-                spacing = spacing, session = sess, group = group,
+                spacing = spacing, session = session[sess], group = group,
                 se.N = se.N, alpha = alpha, loginterval = loginterval,
                 keep.region = keep.region, nlowerbound = nlowerbound,
                 RN.method = RN.method, pooled.RN = FALSE)
@@ -147,8 +154,10 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
 
         ## 2015-01-16
         if (is.matrix(object$details$userdist))
-            if (ncol(object$details$userdist) != nrow(regionmask))
-                stop("userdist matrix incompatible with region mask")
+            if (ncol(object$details$userdist) != nrow(regionmask)) {
+                warning("userdist matrix incompatible with region mask - ignored")
+                object$details$userdist <- NULL
+            }
 
         #######################################################
 
@@ -159,11 +168,12 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             cell <- attr(regionmask, 'area')              ## ha
         regionsize <- nrow(regionmask) * cell
 
+        ngrp <- function(x) sum(getgrpnum(x, object$groups) == group)
         if (ms(object)) {
             if (pooled.RN)
-                n <- sum(sapply(object$capthist, nrow))
+                n <- sum(sapply(object$capthist, ngrp))
             else
-                n <- nrow(object$capthist[[session]])
+                n <- ngrp(object$capthist[[session]])
         }
         else
             n <- nrow(object$capthist)
@@ -226,7 +236,7 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
         else
             det <- detector(traps(object$capthist))
 
-        if (det %in% .localstuff$individualdetectors) {
+        if (all(det %in% .localstuff$individualdetectors)) {
             noneuc <- predictD (object, regionmask, group, session, parameter = 'noneuc')
             RN.method <- tolower(RN.method)
             if (RN.method == 'mspe') {
@@ -271,7 +281,9 @@ region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
             temp <- add.cl (temp, alpha, loginterval, c(0, n))
         else
             temp <- add.cl (temp, alpha, loginterval, c(0, 0))
+        
         temp$n <- rep(n, nrow(temp))
+        
  #       temp$E.n <- rep(round(En,2), nrow(temp))
         ## 2014-11-12
         if (inherits(region, 'linearmask'))
@@ -322,10 +334,10 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
         trps <- do.call(rbind, c(traps(object$capthist), list(addusage = TRUE)))
     else
         trps   <- traps(capthists)  ## use session-specific traps
-    if (!(detector(trps) %in% .localstuff$individualdetectors))
+    if (!all(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for sumDpdot")
 
-    dettype <- detectorcode(trps)
+    dettype <- detectorcode(trps, noccasions = s)
     nmix    <- getnmix(object$details)
     knownclass <- getknownclass(capthists, nmix, object$hcov)
 
@@ -336,11 +348,11 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
         markocc <- rep(1,s)
     ##############################################
 
-    if (dettype %in% c(3,6)) {
+    if (dettype[1] %in% c(3,6)) {
         k <- c(table(polyID(trps)),0)
         K <- length(k)-1
     }
-    else if (dettype %in% c(4,7)) {
+    else if (dettype[1] %in% c(4,7)) {
         k <- c(table(transectID(trps)),0)
         K <- length(k)-1
     }
@@ -442,7 +454,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
                                        detector(trps),
                                        xy1 = trps,
                                        xy2 = mask,
-                                       mask = mask)
+                                       mask = mask,
+                                       sessnum = sessnum)
         }
         ##------------------------------------------
 
@@ -454,7 +467,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             useD <- TRUE
         }
 
-        temp <- .C("integralprw1", PACKAGE = 'secr',
+        temp <- .C("integralprw1", # PACKAGE = 'secr',
             as.integer(dettype),
             as.double(Xrealparval0),
             as.integer(rep(1,n)),           ## dummy groups 2012-11-13; 2013-06-24
@@ -476,7 +489,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             as.double(cell),
             as.double(miscparm),
             as.integer(object$detectfn),
-            as.integer(binomN),
+            as.integer(expandbinomN(binomN, dettype)),
             as.integer(useD),
             a = double(n),
             resultcode = integer(1)

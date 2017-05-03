@@ -34,6 +34,7 @@ void trappingsingle (
     double *Tsk,       /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform */
     double *w2,        /* truncation radius */
+    int    *binomN,    /* not used */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     int    *value,     /* return value matrix of trap locations n x s */
@@ -166,6 +167,7 @@ void trappingmulti (
     double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
+    int    *binomN,     /* not used */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
@@ -388,14 +390,13 @@ void trappingcount (
                     /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
                     theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
                     if (theta>0) {
-			if (*binomN == 1) {
+			if (binomN[s] == 1) {
 			    count = rcount (round(Tski), theta, 1);
 			}
 			else {
-                /* 2015-12-21 bug fix */
-                if (*binomN == 0)   
+                if (binomN[s] == 0)   
                     theta = hazard(theta);
-                count = rcount (*binomN, theta, Tski);
+                count = rcount (binomN[s], theta, Tski);
 			}
                         if (count>0)
                         {
@@ -506,7 +507,7 @@ void trappingpolygon (
         par[2] = z[s];
         if (lambda[s]>0) {
             for (i=0; i<*N; i++) {
-                count = rcount (*binomN, lambda[s], Tski);   /* NOT YET DEFINED !!!!*/
+                count = rcount (binomN[s], lambda[s], Tski);   /* NOT YET DEFINED !!!!*/
                 /* require maximum at r=0 */
                 if (*fn == 6) error ("annular normal not allowed in trappingpolygon");
                 par[0] = 1;
@@ -606,7 +607,7 @@ void trappingtransect (
     int    *sortorder;
     double *sortkey;
     double *ex;
-    double stdint;
+    double H;
     double Tski;
 
     *resultcode = 1;
@@ -655,12 +656,12 @@ void trappingtransect (
                         par[0] = lambda[s];
                         par[1] = sigma[s];
                         par[2] = z[s];
-                        stdint = gintegral1(*fn, par) / par[0];
+                        H = hintegral1(*fn, par) / par[0];
 
 /* flaw in following: integral1D can exceed diameter */
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, 
-			     traps, animals, n1, n2, sumk, *N, ex) / stdint;
-                        count = rcount(*binomN, lambdak, Tski);
+			     traps, animals, n1, n2, sumk, *N, ex) / H;
+                        count = rcount(binomN[s], lambdak, Tski);
                         maxg = 0;
                         if (count>0) {    /* find maximum - approximate */
                             for (l=0; l<=100; l++) {
@@ -923,7 +924,7 @@ void trappingtransectX (
     int    *sortorder;
     double *sortkey;
     double *ex;
-    double stdint;
+    double H;
     double sumhaz;
     double pks;
     double Tski;
@@ -968,7 +969,7 @@ void trappingtransectX (
             par[0] = g0[s];
             par[1] = sigma[s];
             par[2] = z[s];
-            stdint = gintegral1(*fn, par);
+            H = hintegral1(*fn, par);
 
             for (i=0; i<*N; i++) {                        /* each animal */
                 animal.x = animals[i];
@@ -982,7 +983,7 @@ void trappingtransectX (
                         n1 = cumk[k];
                         n2 = cumk[k+1]-1;
                         sumhaz += -log(1 - par[0] * integral1D (*fn, i, 0, par, 1, traps, 
-			   animals, n1, n2, sumk, *N, ex) / stdint);
+			   animals, n1, n2, sumk, *N, ex) / H);
                     }
                 }
                  
@@ -993,7 +994,7 @@ void trappingtransectX (
                         n1 = cumk[k];
                         n2 = cumk[k+1]-1;
                         lambdak = par[0] * integral1D (*fn, i, 0, par, 1, traps, 
-						       animals, n1, n2, sumk, *N, ex) / stdint;
+						       animals, n1, n2, sumk, *N, ex) / H;
     		        pks = (1 - exp(-sumhaz)) * (-log(1-lambdak)) / sumhaz;
                         count = Random() < pks;
                         maxg = 0;
@@ -1262,7 +1263,7 @@ void trappingtelemetry (
 		if (*exactn)
 		    count = *exactn;
 		else
-		    count = rcount (*binomN, lambda[s], Tski); 
+		    count = rcount (binomN[s], lambda[s], Tski); 
                 /* require maximum at r=0 */
                 if (*fn == 6) error ("annular normal not allowed in trappingtelemetry");
                 par[0] = 1;

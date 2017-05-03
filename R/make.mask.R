@@ -170,7 +170,8 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         if (type=='trapbuffer') {
             ## appropriate convex buffer 2011-01-22
             ## (this re-use of nx may not be appropriate)
-            if (detector(traps) %in% c('polygon','polygonX')) {
+            if (!is.null(detector(traps)) &    ## 2017-01-27
+                all(detector(traps) %in% c('polygon','polygonX'))) {
                 temp <- buffer.contour(traps, buffer = buffer, nx = nx,
                                        convex = T, plt = F)
                 OK <- array(dim=c(length(x), length(y), length(temp)))

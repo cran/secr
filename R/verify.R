@@ -12,6 +12,11 @@
 ## 2015-10-03 resight data
 ## 2015-10-12 verify.traps error messages
 ## 2015-11-02 xyinpoly moved to utility.R
+## 2016-10-06 secr 3.0 revamped
+
+## 2017-01-27 future telemetry checks:
+##                cannot have occasions with no detections    
+
 ############################################################################################
 
 verify <- function (object, report, ...) UseMethod("verify")
@@ -28,7 +33,7 @@ overlapcells <- function (xy) {
     vertexinside <- function (a,b) {
         OK <- FALSE
         for (k in 1:4) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside', # PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -36,7 +41,7 @@ overlapcells <- function (xy) {
                 as.double (b),
                 result = integer(1))
             if (any(as.logical(temp$result))) OK <- TRUE
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside', # PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (3),
@@ -80,7 +85,7 @@ overlappoly <- function (xy, polyID) {
         a <- as.matrix(a)
         b <- as.matrix(b)
         for (k in 1:n.a) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside', # PACKAGE = 'secr',
                 as.double (a[k,]),
                 as.integer (0),
                 as.integer (n.b-1),
@@ -90,7 +95,7 @@ overlappoly <- function (xy, polyID) {
             if (any(as.logical(temp$result))) OK <- TRUE
         }
         for (k in 1:n.b) {
-            temp <- .C('inside',  PACKAGE = 'secr',
+            temp <- .C('inside', # PACKAGE = 'secr',
                 as.double (b[k,]),
                 as.integer (0),
                 as.integer (n.a-1),
@@ -102,7 +107,7 @@ overlappoly <- function (xy, polyID) {
         OK
     }
 # lxy <- split (xy, levels(polyID))
-# 2016-05-10    
+# 2016-05-10
     lxy <- split (xy, polyID)
     nr <- length(lxy)
     if (nr<2)
@@ -131,7 +136,7 @@ validpoly <- function (xy, polyID, nx = 500) {
         cross <= 2
     }
 # lxy <- split (xy, levels(polyID))
-# 2016-05-10    
+# 2016-05-10
     lxy <- split (xy, polyID)
     temp <- lapply(lxy, OKpoly)
     all(unlist(temp))
@@ -143,7 +148,7 @@ xyontransect <- function (xy, trps, tol=0.01) {
         ## is point i on transect k?
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
-        temp <- .C('ontransect',  PACKAGE = 'secr',
+        temp <- .C('ontransect', # PACKAGE = 'secr',
             as.double (xy[i,]),
             as.integer (0),
             as.integer (nr-1),
@@ -154,7 +159,7 @@ xyontransect <- function (xy, trps, tol=0.01) {
         as.logical(temp$result)
     }
 # lxy <- split (trps, levels(transectID(trps)))
-# 2016-05-10 
+# 2016-05-10
     lxy <- split (trps, transectID(trps))
     firsttransect <- function (i) {
         for (k in 1:length(lxy))
@@ -211,7 +216,7 @@ verify.traps <- function (object, report = 2, ...) {
         anyerrors <- any(sapply(temp, function(x) x$errors))
 
         ## check covariate factor levels conform across sessions
-        
+
         if (!all(sapply(covariates(object), is.null))) {
             if (any(sapply(covariates(object), is.null)))
                 stop ("mixture of NULL and non-NULL trap covariates in different sessions")
@@ -227,19 +232,20 @@ verify.traps <- function (object, report = 2, ...) {
     }
     else {
 
-        single <- detector(object) %in% c('single')
-        area <- FALSE
-        poly <- detector(object) %in% c('polygon','polygonX')
-        telem <- detector(object) == 'telemetry'
+        poly <- all(detector(object) %in% c('polygon','polygonX'))
+        telemonly <- all(detector(object) %in% 'telemetry')
 
+        detectorsOK <- TRUE
         usagedetectorsOK <- TRUE
+        usagedetectors2OK <- TRUE
         usagenonzeroOK <- TRUE
         markoccOK <- TRUE
-        markoccOK2 <- TRUE
+        markocc2OK <- TRUE
         areaOK <- TRUE
         polyIDOK <- TRUE
         polyconvexOK <- TRUE
         trapcovariatesOK <- TRUE
+        telemOK <- TRUE
 
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
@@ -252,49 +258,68 @@ verify.traps <- function (object, report = 2, ...) {
         if (!is.null(covariates(object)))
             trapcovariatesOK <- nrow(covariates(object)) == ndetector(object)
 
+        ## 3
+        uniquedetectors <- unique(detector(object))
+        nontelemetrydetectors <- uniquedetectors[uniquedetectors != "telemetry"]
+        detectorsOK <- (length(uniquedetectors)==1) |
+            all(nontelemetrydetectors %in% .localstuff$pointdetectors)
+
         ## 'usage' of traps
         if (!is.null(usage(object))) {
-            ## 3
+            ## 4
             usagedetectorsOK <- nrow(usage(object)) == ndetector(object)
 
-            ## 4
+            ## 5
+            if (length(detectorcode(object))>1)
+                usagedetectors2OK <- length(detectorcode(object)) == ncol(usage(object))
+
+            ## 6
             usagecount <- apply(usage(object),2,sum)
             usagenonzeroOK <- !any(usagecount == 0)
         }
         else usagecount <- rep(NA, ncol(object))
 
-        ## 5
+        ## 7
         if (sighting(object)) {
-            if (!is.null(usage(object))) 
+            if (!is.null(usage(object)))
                 markoccOK <- length(markocc(object)) == ncol(usage(object))
-            markoccOK2 <- all(markocc(object) %in% c(-1,0,1))
+            ## 8
+            markocc2OK <- all(markocc(object) %in% c(-2,-1,0,1))
         }
-        
-        ## 6
-        if (area) {
-            areaOK <- !is.na(searcharea(object))
-            areaOK <- areaOK & !overlapcells(object)
-        }
-        else
-        if (poly | telem) {
-        # areaOK <- !overlappoly (object, levels(polyID(object)))
-        # 2016-05-10
+
+        ## 9
+        if (poly) {
             areaOK <- !overlappoly (object, polyID(object))
         }
 
-        ## 7
-        if (poly | telem) {
+        ## 10
+        if (poly) {
             polyIDOK <- (length(polyID(object)) == nrow(object)) &
                 is.factor(polyID(object))
         }
 
-        ## 8
+        ## 11
         if (poly) {
             polyconvexOK <- validpoly (object, polyID(object))
         }
+        
+        ## 12
+        if (telemonly) {
+            telemOK <- nrow(object) == 1
+        }
 
-        errors <- !all(c(trapNAOK, trapcovariatesOK, usagedetectorsOK, usagenonzeroOK,
-                         areaOK, polyIDOK, polyconvexOK))
+        errors <- !all(c(trapNAOK,
+                         trapcovariatesOK,
+                         detectorsOK,
+                         usagedetectorsOK,
+                         usagedetectors2OK,
+                         usagenonzeroOK,
+                         markoccOK,
+                         markocc2OK,
+                         areaOK,
+                         polyIDOK,
+                         polyconvexOK,
+                         telemOK))
 
         if (report > 0) {
             if (errors) {
@@ -303,13 +328,22 @@ verify.traps <- function (object, report = 2, ...) {
                 }
                 if (!trapcovariatesOK) {
                     cat ('Wrong number of rows in dataframe of detector covariates\n')
+                    cat (uniquedetectors, '\n')
+                }
+                if (!detectorsOK) {
+                    cat ('Invalid combination of detector types\n')
                     cat ('traps :', ndetector(object), 'detectors\n')
-                    cat ('covariates :', nrow(covariates(object)), 'detectors\n')
+                    cat ('usage(traps) :', nrow(usage(object)), 'detectors\n')
                 }
                 if (!usagedetectorsOK) {
                     cat ('Conflicting number of detectors in usage matrix\n')
                     cat ('traps :', ndetector(object), 'detectors\n')
                     cat ('usage(traps) :', nrow(usage(object)), 'detectors\n')
+                }
+                if (!usagedetectors2OK) {
+                    cat ('Conflicting number of occasions in usage matrix\n')
+                    cat ('detector attribute :', length(detectorcode(object)), 'occasions\n')
+                    cat ('usage(traps) :', ncol(usage(object)), 'occasions\n')
                 }
                 if (!usagenonzeroOK) {
                     cat ("Occasions when no detectors 'used'\n")
@@ -320,8 +354,8 @@ verify.traps <- function (object, report = 2, ...) {
                     cat ('markocc : ', length(markocc(object)), 'occasions \n')
                     cat ('usage : ', ncol(usage(object)), 'occasions \n')
                 }
-                if (!markoccOK2) {
-                    cat ("Values in markocc should be -1,0 or 1 \n")
+                if (!markocc2OK) {
+                    cat ("Values in markocc should be -2, -1, 0 or 1 \n")
                     cat ('markocc(object) \n')
                 }
                 if (!areaOK) {
@@ -333,21 +367,28 @@ verify.traps <- function (object, report = 2, ...) {
                 if (!polyconvexOK) {
                     cat ("The boundary of at least one polygon is concave east-west \n")
                 }
+                if (!telemOK) {
+                    cat ("More than one row in notional traps object for telemetry \n")
+                }
             }
         }
 
-        if ((report == 2) && !errors) cat('No errors found :-)\n')
+        if ((report == 2) && !errors) message('No errors found :-)')
 
         out <- list(errors = errors,
             trapNAOK = trapNAOK,
             trapcovariatesOK = trapcovariatesOK,
+            detectorsOK = detectorsOK,
             usagedetectorsOK = usagedetectorsOK,
+            usagedetectors2OK = usagedetectors2OK,
             usagenonzeroOK = usagenonzeroOK,
             markoccOK == markoccOK,
+            markocc2OK == markocc2OK,
             areaOK = areaOK,
             polyIDOK = polyIDOK,
             polyconvexOK = polyconvexOK,
-            usagecount = usagecount
+            usagecount = usagecount,
+            telemOK = telemOK
         )
 
         invisible(out)
@@ -370,10 +411,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 ## -- Number of rows in dataframe of individual covariates differs from capthist
 ## -- Number of occasions in usage matrix differs from capthist
 ## -- Detections at unused detectors
-    
+
 ## -- resighting attributes Tu, Tm compatible if present
 ## -- no resightings on marking occasions, or new animals on resighting occasions
-    
+
     if (!inherits(object, 'capthist'))
         stop ("object must be of class 'capthist'")
     if (inherits(object, 'list')) {
@@ -383,7 +424,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## check covariate factor levels conform across sessions
         if (!all(sapply(covariates(object), is.null))) {
             if (any(sapply(covariates(object), is.null)))
-                stop ("mixture of NULL and non-NULL individual covariates in different sessions")            
+                stop ("mixture of NULL and non-NULL individual covariates in different sessions")
             covariatelevelsOK <- checkcovariatelevels(covariates(object))
             if (!covariatelevelsOK & report>0) {
                 warning ('Levels of factor covariate(s) differ between sessions')
@@ -395,16 +436,15 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
     }
     else {
         ## preliminaries
-        dim3 <- length(dim(object)) == 3
-        count <- detector(traps(object)) %in% .localstuff$countdetectors
-        area <- FALSE
-        binary <- detector(traps(object)) %in% c('proximity')
-        single <- detector(traps(object)) %in% c('single')
-        signal <- detector(traps(object)) %in% c('signal','signalnoise')
-        poly <- detector(traps(object)) %in% c('polygon', 'polygonX')
-        telem <- detector(traps(object)) %in% c('telemetry')
-        transect <- detector(traps(object)) %in% c('transect', 'transectX')
-        unmarked <- detector(traps(object)) %in% c('unmarked')
+        object <- check3D(object)
+        detectortype <- expanddet(object)  # vector length noccasions
+        telemetrytype <- telemetrytype(traps(object))
+        signal <- all(detectortype %in% c('signal','signalnoise'))
+        unmarked <- all(detectortype %in% c('unmarked'))
+        poly <- all(detectortype %in% c('polygon', 'polygonX'))
+        transect <- all(detectortype %in% c('transect', 'transectX'))
+        telem <- any(detectortype %in% c('telemetry'))
+        
         markocc <- markocc(traps(object))
         sighting <- sighting(traps(object))
         allsighting <- if (sighting) !any(markocc>0) else FALSE
@@ -412,12 +452,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         NAOK <- TRUE
         deadOK <- TRUE
         usageOK <- TRUE
+        detectorsOK <- TRUE
         usageoccasionsOK <- TRUE
-        usagedetectorsOK <- TRUE
-        usagenonzeroOK <- TRUE
         detectornumberOK <- TRUE
         detectorconflcts <- NULL
         singleOK <- TRUE
+        multiOK <- TRUE
         binaryOK <- TRUE
         countOK <- TRUE
         cutvalOK <- TRUE
@@ -425,14 +465,13 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         xyOK <- TRUE
         xyinpolyOK <- TRUE
         xyontransectOK <- TRUE
-        IDOK <- TRUE
         rownamesOK <- TRUE
-        xylistOK <- TRUE
         sightingsOK <- TRUE
-        sightingusageOK <- TRUE        
+        sightingusageOK <- TRUE
         MOK <- TRUE
         ROK <- TRUE
-        
+        telemOK <- TRUE
+
         if (!is.null(covariates(object)))
             if ((ncol(covariates(object)) == 0 ) |
                 (nrow(covariates(object)) == 0 ))
@@ -473,60 +512,67 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     if (any(maxbyanimal < attr(object,'cutval')))
                         cutvalOK <- FALSE
                 }
+                ## 6
                 if (length(signal(object)) != sum(abs(object)))
                     signalOK <- FALSE
             }
-            ## 6
+            ## 7
             else {
                 fn <- function(x) {
-                    if (dim3) x <- apply(x,1,min)
+                    x <- apply(x,1,min)
                     (min(x)<0) && (tail(x[x!=0],1)>0)
                 }
                 undead <- apply(object, 1, fn)
                 deadOK <- !any(undead)
                 if (!deadOK) {
-                    if (dim3)
-                        reincarnated <- object[undead,,, drop=F]
-                    else
-                        reincarnated <- object[undead,, drop=F]
+                    reincarnated <- object[undead,,, drop=F]
                 }
             }
 
-            ## 7
-            if (single) {
-                fn <- function (x) duplicated(abs(x)[x!=0])
-                multiple <- apply(object, 2, fn)
-                singleOK <- !any(unlist(multiple))
-            }
+            ###################
+            ## binary detectors
+
+            detectorcodes <- detectorcode(traps(object), MLonly = FALSE, noccasions = ncol(object))
 
             ## 8
-            if (binary) {
-                ## must be binary
-                multiples <- sum(abs(object)>1)
-                binaryOK <- multiples == 0
-            }
+            ## single, multi, proximity, polygonX, transectX, signal and signalnoise must be binary
+            multiples <- sum(abs(object[, detectorcodes %in% c(-1,0,1,3,4,5,12), , drop = FALSE])>1)
+            binaryOK <- multiples == 0
 
             ## 9
-## blocked 2010-12-01 - no problem with 'dead' count
-##            if (count) {
-##                countOK <- all (object>=0)
-##            }
+            fn <- function (x) duplicated(abs(x)[x!=0])
+            ## no more than one obs per animal and per trap on any occasion
+            multiplei <- apply(object[, detectorcodes==-1, , drop = FALSE], 1:2, fn)
+            multiplek <- apply(object[, detectorcodes==-1, , drop = FALSE], 2:3, fn)
+            singleOK <- !any(unlist(multiplei)) & !any(unlist(multiplek))
+
+            ## 10
+            ## no more than one obs per animal per occasion
+            multiplei <- apply(object[, detectorcodes %in% c(0,3,4), , drop = FALSE], 1:2, fn)
+            multiOK <- !any(unlist(multiplei))
+
+            ###################
+            ## count detectors
+
+            ## 11
+            ## count, polygon, transect cannot be dead (?)
+            countOK <- all(object[, detectorcodes %in% c(2,6,7), ] >= 0)
+
+            ##################
+
         }
 
-        ## 10
+        ## 12
         if (nrow(object) > 0) {
-            if (poly | transect | telem) {
-                detectornumberOK <- ifelse (dim3,
-                    length(levels(polyID(traps(object)))) == dim(object)[3],
-                    max(abs(object)) <= ndetector(traps(object)))
+            if (poly | transect) {
+                detectornumberOK <- length(levels(polyID(traps(object)))) == dim(object)[3]
             }
-            else
-                detectornumberOK <- ifelse (dim3,
-                  dim(object)[3] == nrow(traps(object)),
-                  max(abs(object)) <= nrow(traps(object)))
+            else {
+                detectornumberOK <- dim(object)[3] == nrow(traps(object))
+            }
         }
 
-        ## 11
+        ## 13
         covariatesOK <- ifelse(is.null(covariates(object)),
             TRUE,
             nrow(covariates(object)) == nrow(object))
@@ -535,91 +581,110 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         if (!is.null(usage(traps(object)))) {
             conflcts <- 0
 
-            ## 12
+            ## 14
             usageoccasionsOK <- ncol(usage(traps(object))) == ncol(object)
 
             if (detectionsOK) {
                 # 2012-12-17
                 # notused <- !usage(traps(object))   ## traps x occasions
                 notused <- usage(traps(object)) == 0 ## traps x occasions
-                if (dim3) {
-                    if (usagedetectorsOK && usageoccasionsOK) {
-                        tempobj <- aperm(object, c(2,3,1))   ## occasion, traps, animal sKn
-                        # 2012-12-17
-                        # tempuse <- array(t(usage(traps(object))), dim=dim(tempobj))
-                        tempuse <- array(t(usage(traps(object))>0), dim=dim(tempobj)) # repl to fill
-                        conflcts <- (abs(tempobj)>0) && (tempuse==0)
-                        tempobjmat <- array(tempobj[,,1], dim= dim(tempobj)[1:2])
-                        occasion <- rep(row(tempobjmat), dim(tempobj)[3])
-                        detector <- rep(col(tempobjmat), dim(tempobj)[3])
-                        ID <- rep(rownames(object), rep(prod(dim(tempobj)[1:2]), nrow(object)))
-                        detectorconflcts <- as.data.frame(cbind(ID,detector,occasion)[conflcts,])
-                    }
-                }
-                else {
-                    if (usagedetectorsOK && usageoccasionsOK) {
-                        occasion <- occasion(object)
-                        ID <- animalID(object, names = FALSE)
-                        detector <- trap(object, names = FALSE)
-                        conflcts <- notused[cbind(detector, occasion)] > 0
-                        detectorconflcts <- as.data.frame(cbind(ID,detector,occasion)[conflcts,])
-                    }
+                if (trapcheck$usagedetectorsOK && usageoccasionsOK) {
+                    tempobj <- aperm(object, c(2,3,1))   ## occasion, traps, animal sKn
+                    # 2012-12-17
+                    # tempuse <- array(t(usage(traps(object))), dim=dim(tempobj))
+                    tempuse <- array(t(usage(traps(object))>0), dim=dim(tempobj)) # repl to fill
+                    conflcts <- (abs(tempobj)>0) && (tempuse==0)
+                    tempobjmat <- array(tempobj[,,1], dim= dim(tempobj)[1:2])
+                    occasion <- rep(row(tempobjmat), dim(tempobj)[3])
+                    detector <- rep(col(tempobjmat), dim(tempobj)[3])
+                    ID <- rep(rownames(object), rep(prod(dim(tempobj)[1:2]), nrow(object)))
+                    detectorconflcts <- as.data.frame(cbind(ID,detector,occasion)[conflcts,])
                 }
             }
 
-            ## 13
+            ## 15
             usageOK <- sum(conflcts)==0
 
         }
 
-        ## 14
-        if (poly | telem) {
+        if (poly) {
             xy <- xy(object)
-            if (detector(traps(object)) %in% c('polygon','telemetry'))
+            ## 16
+            if (all(detectortype %in% c('polygon')))
                 xyOK <- nrow(xy) == sum(abs(object))
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
             inpoly <- xyinpoly(xy(object), traps(object))
             inpoly <- inpoly == trap(object, names = F)
+            ## 17
             xyinpolyOK <- all(inpoly)
         }
+        ## 17
         if (transect) {
             xy <- xy(object)
             ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
-            if (detector(traps(object))=='transect')
+            ## 16 again
+            if (all(detectortype == 'transect'))
                 xyOK <- nrow(xy) == sum(abs(object))
             else
                 xyOK <- nrow(xy) == sum(abs(object)>0)
             ontransect <- xyontransect(xy(object), traps(object), tol = tol)
             ontransect <- ontransect == trap(object, names = F)
+            ## 18
             xyontransectOK <- all(ontransect)
         }
+        ## 16 again
         if (telem) {
-            xyOK <- nrow(xy) == sum(abs(object))
+            telemocc <- detectortype=='telemetry'
+            telemdet <- apply(abs(object[,telemocc,,drop=FALSE]),1:2,sum)
+            captdet <- apply(abs(object[,!telemocc,,drop=FALSE]),1:2,sum)
+            
+            telemdet.byoccasion <- apply(telemdet,2,sum)
+            telemdet.byanimal <- apply(telemdet,1,sum)
+            captdet.byanimal <- apply(captdet,1,sum)
+            animaldet <- sapply(telemetryxy(object),nrow)
+            telemetrd <- telemetered(object)
+            if (any(telemdet.byoccasion == 0))
+                # telemetry occasions with no detections
+                telemOK <- FALSE
+            if (length(animaldet) != sum(telemetrd))
+                # mismatch of animals
+                telemOK <- FALSE
+            else if (any(sort(names(animaldet)) != sort(names(telemdet.byanimal[telemetrd]))))
+                # mismatch of names
+                telemOK <- FALSE
+            else if (any(animaldet != telemdet.byanimal[telemetrd][names(animaldet)]))
+                # number of observations does not match
+                telemOK <- FALSE
+            else if (telemetrytype=='dependent' & any(captdet.byanimal==0))
+                # all-zero detection histories for dependent telemetry
+                telemOK <- FALSE
+            else if (telemetrytype=='independent' & any(captdet.byanimal[telemetrd]!=0))
+                # non-zero detection histories for independent telemetry
+                telemOK <- FALSE
         }
 
-        ## 15
+        ## 19
         rownamesOK <- !any(duplicated(rownames(object)))
 
-        ## 16
-        ## 2012-10-22
-        if (nrow(object)>0) {
-            zeros <- apply(abs(object)>0,1,sum)==0
-            if (!allsighting) {
-                xyl <- telemetryxy(object)
-                if (!is.null(xyl) | any(zeros)) {
-                    xylistOK <- all(names(xyl) %in% row.names(object))
-                    if (!all(row.names(object)[zeros] %in% names(xyl)))
-                        xylistOK <- FALSE
-                }
-            }
-        }
-        
-        ## 17
-        ## 2015-10-03
+        ## 20
+        # superceded by telemOK 2017-01-27
+        # if (nrow(object)>0) {
+        #     zeros <- apply(abs(object)>0,1,sum)==0
+        #     if (!allsighting) {
+        #         xyl <- telemetryxy(object)
+        #         if (!is.null(xyl) | any(zeros)) {
+        #             xylistOK <- all(names(xyl) %in% row.names(object))
+        #             if (!all(row.names(object)[zeros] %in% names(xyl)))
+        #                 xylistOK <- FALSE
+        #         }
+        #     }
+        # }
+
         ## -- resighting attributes Tu, Tm compatible if present
         ## -- no resightings on marking occasions, or new animals on resighting occasions
-        
+
+        ## 21,22
         if (sighting) {
 
             Tu <- Tu(object)
@@ -632,7 +697,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             if (length(markocc) != nocc) sightingsOK <- FALSE
             ## allow scalar summed sighting counts 2015-10-31
             if (!is.null(Tu)) {
-                if (length(Tu) > 1) {  
+                if (length(Tu) > 1) {
                     if (any((Tu>0) & (usge==0))) sightingusageOK <- FALSE
                     if (ncol(Tu) != nocc) sightingsOK <- FALSE
                     if (nrow(Tu) != K) sightingsOK <- FALSE
@@ -643,7 +708,8 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             }
             if (!is.null(Tm)) {
                 if (length(Tm) > 1) {
-                    if (any((Tu>0) & (usge==0))) sightingusageOK <- FALSE
+                    # 2016-10-13 fixed bug Tu>Tm
+                    if (any((Tm>0) & (usge==0))) sightingusageOK <- FALSE
                     if (nrow(Tm) != K) sightingsOK <- FALSE
                     if (ncol(Tm) != nocc) sightingsOK <- FALSE
                     r <- r + apply(Tm,2,sum)
@@ -651,21 +717,42 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 if (any(Tm<0)) sightingsOK <- FALSE
                 if (!all(is.wholenumber(Tm))) sightingsOK <- FALSE
             }
+## 23
             if (sightingsOK) {
                 if (length(Tu)>1) {
                     u <- unlist(counts(object, 'u'))[1:nocc]
                     if ( any((u > 0) & (markocc<1) & !allsighting) ) MOK <- FALSE
                 }
+## 24
                 if (length(Tm)>1)
                     if ( any((r > 0) & (markocc>0))) ROK <- FALSE
             }
         }
 
-        errors <- !all(c(trapspresentOK, trapsOK, detectionsOK, NAOK,
-            deadOK, singleOK, binaryOK, countOK, cutvalOK, signalOK,
-            detectornumberOK, covariatesOK, usageoccasionsOK, usageOK,
-            xyOK, xyinpolyOK, xyontransectOK, IDOK, rownamesOK, xylistOK,
-            sightingsOK, sightingusageOK, MOK, ROK))
+        errors <- !all(c(trapspresentOK,
+                         trapsOK,
+                         detectionsOK,
+                         NAOK,
+                         cutvalOK,
+                         signalOK,
+                         deadOK,
+                         binaryOK,
+                         singleOK,
+                         multiOK,
+                         countOK,
+                         detectornumberOK,
+                         covariatesOK,
+                         usageoccasionsOK,
+                         usageOK,
+                         xyOK,
+                         xyinpolyOK,
+                         xyontransectOK,
+                         rownamesOK,
+                         sightingsOK,
+                         sightingusageOK,
+                         MOK,
+                         ROK,
+                         telemOK))
 
         if (report > 0) {
             if (errors) {
@@ -703,23 +790,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     cat ('Missing values not allowed in capthist\n')
                 }
 
-                if (!deadOK) {
-                    cat ('Recorded alive after dead\n')
-                    print(reincarnated)
-                }
-
-                if (!singleOK) {
-                    cat ('More than one capture in single-catch trap(s)\n')
-                }
-
-                if (!binaryOK) {
-                    cat ('More than one detection per detector per occasion at proximity detector(s)\n')
-                }
-
-                if (!countOK) {
-                    cat ('Count(s) less than zero\n')
-                }
-
                 if (!cutvalOK) {
                     cat ('Signal less than cutval or invalid cutval\n')
                 }
@@ -728,13 +798,31 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     cat ('Signal attribute does not match detections\n')
                 }
 
+                if (!deadOK) {
+                    cat ('Recorded alive after dead\n')
+                    print(reincarnated)
+                }
+
+                if (!binaryOK) {
+                    cat ('More than one detection per detector per occasion at binary detector(s)\n')
+                }
+
+                if (!singleOK) {
+                    cat ('More than one capture in single-catch trap(s)\n')
+                }
+
+                if (!multiOK) {
+                    cat ('Animal trapped at more than one detector\n')
+                }
+
+                if (!countOK) {
+                    cat ('Count(s) less than zero\n')
+                }
+
                 if (!detectornumberOK) {
                     cat ('traps object incompatible with reported detections\n')
                     cat ('traps(capthist) :', ndetector(traps(object)), 'detectors\n')
-                    if (dim3)
-                        cat ('capthist :', dim(object)[3], 'detectors\n')
-                    else
-                        cat ('capthist :', max(abs(object)), 'max(detector)\n')
+                    cat ('capthist :', dim(object)[3], 'detectors\n')
                 }
 
                 if (!covariatesOK) {
@@ -763,14 +851,8 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     cat ("XY coordinates not on transect\n")
                     print (xy(object)[!ontransect,])
                 }
-                if (!IDOK) {
-                    cat ("Polygon detector mismatch between ID attribute and counts\n")
-                }
                 if (!rownamesOK) {
                     cat ("Duplicated row names (animal ID)\n")
-                }
-                if (!xylistOK) {
-                    cat ("Telemetry data (xylist) do not match capture histories\n")
                 }
                 if (!sightingsOK) {
                     cat("Incompatible dimensions of sighting attributes markocc, Tu or Tm\n")
@@ -799,9 +881,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 if (!ROK) {
                     cat("Sighting(s) on marking-only occasion\n")
                 }
+                if (!telemOK) {
+                    cat ("Telemetry data (telemetryxy) do not match capture histories\n")
+                }
             }
 
-            if ((report == 2) && !errors) cat('No errors found :-)\n')
+            if ((report == 2) && !errors) message('No errors found :-)')
 
         }
 
@@ -867,7 +952,7 @@ verify.mask <- function (object, report = 2, ...) {
                 }
             }
 
-            if ((report == 2) && !errors) cat('No errors found :-)\n')
+            if ((report == 2) && !errors) message('No errors found :-)')
         }
 
         out <- list(errors = errors)

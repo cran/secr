@@ -184,11 +184,11 @@ void gxy (int *n, int *fn, double *par, double *w, double *xy) {
     int maxj = 1000000;
     double r;
     double theta;
-    fnptr fnp = hn;
+    fnptr fnp = ghnr;
     int i = 0;
     int j;
-    // fnp = gethfn(*fn);
-    fnp = getzfn(*fn);  // 2016-01-02
+    // fnp = getgfnr(*fn);
+    fnp = getzfnr(*fn);  // 2016-01-02
     for (i=0; i< *n; i++) {
         theta = unif_rand() * 2 * M_PI;
         for (j=0; j<maxj; j++) {
@@ -202,7 +202,7 @@ void gxy (int *n, int *fn, double *par, double *w, double *xy) {
 }
 /*--------------------------------------------------------------------------*/
 
-void nearest (
+void nearestC (
   int    *nxy,      /* number of input points */
   double *xy,       /* input points */
   int    *ntrap,    /* input */
@@ -653,10 +653,13 @@ void rgr(double *x, int n, void *ex) {
     p = (double*) ex;
     for (i=0; i<4; i++) tmp[i] = p[i];
     fn = tmp[3];
-    fnptr fnp = hn;
-    fnp = gethfn(fn);
+// 2017-03-22
+//    fnptr fnp = ghnr;
+//    fnp = getgfnr(fn);
+    fnptr fnp = zhnr;
+    fnp = getzfnr(fn);
     for (i=0; i<n; i++) {
-        x[i] = x[i] * fnp(tmp,x[i]);   /* r.g(r) */
+        x[i] = x[i] * fnp(tmp,x[i]);   /* r.h(r) */
     }
 }
 
@@ -668,15 +671,19 @@ void justgr(double *x, int n, void *ex) {
     p = (double*) ex;
     for (i=0; i<4; i++) tmp[i] = p[i];
     fn = tmp[3];
-    fnptr fnp = hn;
-    fnp = gethfn(fn);
+// 2017-03-22
+//    fnptr fnp = ghnr;
+//    fnp = getgfnr(fn);
+    fnptr fnp = zhnr;
+    fnp = getzfnr(fn);
     for (i=0; i<n; i++) {
-        x[i] = fnp(tmp,x[i]);   /* g(r) */
+        x[i] = fnp(tmp,x[i]);   /* h(r) */
     }
 }
 
-double gintegral (int fn, double par[]) {
+double hintegral (int fn, double par[]) {
 /* integral of radial 2-D function */
+/* from 2017-03-22 this is strictly a hazard function */
     double ex[4];
     double a;
     int b;
@@ -706,8 +713,9 @@ double gintegral (int fn, double par[]) {
 }
 /*----------------------------------------------------------------*/
 
-double gintegral1 (int fn, double par[]) {
+double hintegral1 (int fn, double par[]) {
 /* integral of 1-D function */
+/* from 2017-03-22 this is strictly a hazard function */
     double ex[4];
     double a;
     int b;
@@ -743,10 +751,12 @@ double gintegral1 (int fn, double par[]) {
 }
 /*----------------------------------------------------------------*/
 
+/* return probability g(r) for given detection function fn */
+/* used in simsecr.c and trapping.c */
 double gr (int *fn, double par[], struct rpoint xy, struct rpoint animal) {
     double r;
-    fnptr fnp = hn;
-    fnp = gethfn(*fn);
+    fnptr fnp = ghnr;
+    fnp = getgfnr(*fn);
     r = distance (xy, animal);
     return (fnp(par,r));
 }
@@ -807,7 +817,7 @@ void ontransect (
 }
 /*----------------------------------------------------------------*/
 
-void alongtransect (
+void alongtransectC (
     double *xy,
     int    *n1,
     int    *n2,
@@ -888,13 +898,4 @@ double hazard (double pp) {
 	12 signalnoise
 */
 
-int cleanbinomN(int binomN, int detect) {
-    /* all these detectors are Bernoulli, or similar           */
-    /* so we override binomN                                   */
-    if ((detect==0) || (detect==1) || (detect==3) || 
-        (detect==4) || (detect==5) || (detect==12)) {
-        binomN = 1;
-    }
-    return(binomN);
-}
 /*=============================================================*/

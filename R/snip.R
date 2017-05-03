@@ -2,6 +2,7 @@
 ## package 'secr'
 ## snip.R
 ## 2012-12-10,11,12,13 slice transects into small discrete units
+## 2017-03-13 snip uses all occasions
 ## uses xyontransect from verify.r
 ## transectX, transect
 ###############################################################################
@@ -115,7 +116,7 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     ############
     ## main line
 
-    if (!detector(object) %in% c('transect','transectX'))
+    if (!all(detector(object) %in% c('transect','transectX')))
         stop ("requires 'transect' input")
     temp <- split(as.data.frame(object), transectID(object))
     temp <- lapply(temp, sliceone)
@@ -124,7 +125,7 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     ID <- sapply(strsplit(rownames(temp),'.', fixed=T), IDfn)
     temp <- split(temp, ID)
     newobj <- make.transect(transectlist = temp, exclusive =
-                            detector(object) == 'transectX')
+                            all(detector(object) == 'transectX'))
     if (!is.null(usage(object))) {
 ## TO BE FIXED 2012-12-22
         usagematrix <- matrix (0, ndetector(newobj), ncol(usage(object)))
@@ -165,21 +166,21 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
             old.row.names <- row.names(object)
             df <- data.frame(
                              trap = trap(object, names = F),
-                             occ = occasion(object),
+                             occ = factor(occasion(object), levels=1:ncol(object)),    ## 2017-03-13 factor
                              ID = animalID(object, names = F),
                              alive = alive(object),
                              x = xy(object)[,1],
                              y = xy(object)[,2],
                              newtrap = newtrap)
 
-            if (detector(traps(object)) == 'transect') {
+            if (all(detector(traps(object)) == 'transect')) {
                 newobj <- table(df$ID, df$occ, df$newtrap)
                 alivesign <- tapply(df$alive, list(df$ID,df$occ,df$newtrap),all)
                 alivesign[is.na(alivesign)] <- TRUE
                 alivesign <- alivesign * 2 - 1
                 newobj <- newobj * alivesign
             }
-            else if (detector(traps(object)) == 'transectX') {
+            else if (all(detector(traps(object)) == 'transectX')) {
                 alivesign <- df$alive*2 - 1
                 alivesign[is.na(alivesign)] <- TRUE
                 newobj <- matrix(0, nrow = nrow(object), ncol = ncol(object))
@@ -190,7 +191,7 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
             class(newobj) <- 'capthist'
             traps(newobj) <- newtraps
             rownames(newobj) <- old.row.names
-            if (detector(traps(object)) == 'transectX')
+            if (all(detector(traps(object)) == 'transectX'))
                 xy(newobj) <- xy(object)
             else {
                 detectorder <- order(df$newtrap, df$occ, df$ID)

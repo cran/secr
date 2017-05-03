@@ -11,11 +11,12 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 }
 
 \usage{
-\method{predict}{secr}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-    alpha = 0.05, savenew = FALSE, \dots)
 
-\method{predict}{secrlist}(object, newdata = NULL, type = c("response", "link"), se.fit = TRUE,
-    alpha = 0.05, savenew = FALSE, \dots)
+\method{predict}{secr}(object, newdata = NULL, realnames = NULL, type = c("response", "link"), 
+    se.fit = TRUE, alpha = 0.05, savenew = FALSE, \dots)
+
+\method{predict}{secrlist}(object, newdata = NULL, realnames = NULL, type = c("response", "link"),
+    se.fit = TRUE, alpha = 0.05, savenew = FALSE, \dots)
 
 \method{detectpar}{secr}(object, \dots, byclass = FALSE) 
 
@@ -24,8 +25,8 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 \arguments{
   \item{object}{ \code{secr} object output from \code{secr.fit}, or list
   of \code{secr} objects (secrlist) }
-  \item{newdata}{ optional dataframe of values at which to evaluate
-    model }
+  \item{newdata}{ optional dataframe of values at which to evaluate model }
+  \item{realnames}{ character vector of real parameter names }
   \item{type}{ character; type of prediction required. The default ("response") provides estimates of the `real' parameters.} 
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
@@ -46,6 +47,8 @@ the variables in the model (see `vars' component of \code{object}).  If
 Default \code{newdata} are for a naive animal on the first occasion;
 numeric covariates are set to zero and factor covariates to their base
 (first) level.
+
+\code{realnames} may be used to select a subset of parameters.
 
 Standard errors for parameters on the response (real) scale are by the
 delta method (Lebreton et al. 1992), and confidence intervals are

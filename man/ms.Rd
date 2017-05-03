@@ -16,7 +16,7 @@ Multi-session Objects
   \method{ms}{default}(object, ...)
   \method{ms}{mask}(object, ...)
   \method{ms}{secr}(object, ...)
-}
+ }
 
 \arguments{
   \item{object}{any object}

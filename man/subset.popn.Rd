@@ -47,7 +47,7 @@ If \code{poly} is specified, points outside \code{poly} are
 dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
 of two columns interpreted as x and y coordinates, or \item a
 SpatialPolygonsDataFrame object as defined in the package `sp', possibly
-from reading a shapefile with readShapePoly() from package `maptools'.}
+from reading a shapefile with readOGR() from package `rgdal'.}
 
 }
 

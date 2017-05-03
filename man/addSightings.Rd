@@ -12,16 +12,19 @@
 
 \usage{
 
-addSightings(capthist, unmarked = NULL, nonID = NULL, verify = TRUE, ...)
+addSightings(capthist, unmarked = NULL, nonID = NULL, uncertain = NULL, verify = TRUE,
+    ...)
 
 }
 
 \arguments{
   \item{capthist}{secr capthist object}
   
-  \item{unmarked}{matrix or list of matrices of sightings of unmarked animals, or file name (see Details)}
+  \item{unmarked}{matrix or list of matrices of sightings of unmarked animals, Tu, or file name (see Details)}
   
-  \item{nonID}{matrix or list of matrices of unidentified sightings of marked animals, or file name (see Details)}
+  \item{nonID}{matrix or list of matrices of unidentified sightings of marked animals, Tm, or file name (see Details)}
+
+  \item{uncertain}{matrix or list of matrices of uncertain sightings, Tn, or file name (see Details)}
   
   \item{verify}{ logical; if TRUE then the resulting capthist object is
   checked with \code{\link{verify}}}
@@ -36,8 +39,8 @@ The capthist object for mark-resight analysis comprises distinct marking and sig
 
 Mark-resight data may be binary (detector type `proximity') or counts (detector types `count', 'polygon' or 'transect'). The detector type is an attribute of \code{traps(capthist)}. Values in \code{unmarked} and \code{nonID} should be whole numbers, and may be greater than 1 even for binary proximity detectors because multiple animals may be detected simultaneously at one place.
 
-Arguments \code{unmarked} and \code{nonID} provide data for attributes
-`Tu' and `Tm' respectively. They may take several forms
+Arguments \code{unmarked}, \code{nonID}, \code{uncertain} provide data for attributes
+`Tu', `Tm', `Tn' respectively. They may take several forms
 
 \itemize{
   \item a single integer, the sum of all counts*
@@ -63,6 +66,7 @@ Arguments \code{unmarked} and \code{nonID} provide data for attributes
   \code{\link{sim.resight}},
   \code{\link{Tm}},
   \code{\link{Tu}},
+  \code{\link{Tn}},
   \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
   
 }

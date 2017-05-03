@@ -7,7 +7,8 @@
 ## 2013-11-15 telemloglik renamed telemetry.LC
 ## 2013-11-15 telemetryloglik renamed telemetry.LT
 ## 2013-11-16 telemetry.LCmask for smuggling telemetry centres into C code
-## 2013-11-18 addTelemetry modified for multi detectors; retains cov if no zerohist
+
+## 2017-01-07 REDUNDANT?
 ###############################################################################
 
 distances <- function (X, Y) {
@@ -103,7 +104,7 @@ telemetry.LC <- function(CH, detectfn, detectpar, mask, bvn = TRUE) {
     ## likelihood component L_C for detection histories of telemetered animals only
     ## (including possible zero CH)
     ## experimental - doesn't allow covariates or work with traps or count detectors
-    if (! detector(traps(CH)) %in% c('proximity'))
+    if (! all(detector(traps(CH)) %in% c('proximity')))
         stop ("requires proximity CH")
     n <- dim(CH)[1]
     J <- dim(CH)[2]
@@ -208,131 +209,3 @@ telemetry.LCmask <- function(CH, mask, bvn = TRUE) {
     sapply(xylist, dfn)[,rownames(CH)]  ## take care to maintain animal order
 }
 ###############################################################################
-
-addTelemetry <- function (detectionCH, telemetryCH) {
-    ## combine capture histories from telemetry and hair snags etc.
-    if (ms(detectionCH) | ms(telemetryCH))
-        stop("addTelemetry is not ready for multi-session inputs")
-    if (!detector(traps(telemetryCH))=='telemetry')
-        stop ("telemetryCH should be of detector type 'telemetry'")
-    telemID <- animalID(telemetryCH)
-    telemxy <- xy(telemetryCH)
-    xylist <- split(telemxy, telemID)
-    proxID <- row.names(detectionCH)
-    OK <- names(xylist) %in% proxID
-    # construct empty histories for telemetry animals not caught
-    if (sum(!OK)>0) {
-        dimCH <- dim(detectionCH)
-        dimCH[1] <- sum(!OK)
-        zerohist <- array(0, dim = dimCH)
-        dimnames(zerohist) <- c(list(names(xylist)[!OK]), dimnames(detectionCH)[-1])
-        class(zerohist) <- 'capthist'
-        traps(zerohist) <- traps(detectionCH)
-        covariates(zerohist) <- covariates(telemetryCH)[!OK,,drop = FALSE]
-                                        # combine with true histories
-        if (ncol(covariates(zerohist)) == 0) covariates(zerohist) <- NULL
-        if (is.null(covariates(zerohist))) {
-            if (!is.null(covariates(detectionCH)))
-            warning ("no covariates in telemetryCH so discarding covariates of detectionCH")
-            covariates(detectionCH) <- NULL
-        }
-        CH <- rbind.capthist(detectionCH, zerohist, renumber = FALSE, verify=FALSE)
-    }
-    else {
-        CH <- detectionCH
-    }
-    attr(CH, 'xylist') <- xylist # for both non-empty and empty CH
-    CH
-}
-###############################################################################
-
-outsidemask <- function(CH, mask, threshold = spacing(mask) / sqrt(2)) {
-    xylist <- telemetryxy(CH)
-    dfun <- function(xy) {
-        centres <- matrix(apply(xy, 2, mean), ncol = 2)
-        distancetotrap(centres, mask)
-    }
-    sapply(xylist, dfun) > threshold
-}
-###############################################################################
-
-read.telemetry <- function (file = NULL, data = NULL, noccasions = NULL,
-                          covnames = NULL, verify = TRUE, ...) {
-
-    detector <- 'telemetry'
-    fmt <- 'XY'
-    inflation <- 1e-8
-    nvar <- 5
-
-    if (is.null(data)) {
-        ## input from text file
-        if (is.null(file))
-            stop ("must specify either file or data")
-        dots <- match.call(expand.dots = FALSE)$...
-
-        if (length(file) != 1)
-            stop ("requires single 'file'")
-
-        filetype <- function(x) {
-            nx <- nchar(x)
-            tolower(substring(x, nx-3, nx))
-        }
-
-        countargs <- dots[names(dots) %in% names(formals(count.fields))]
-        if (filetype(file) == '.csv')
-            countargs$sep <- ','
-        countargs$file <- file
-        nfield <- max(do.call(count.fields, countargs))
-        colcl <- c('character','character',NA,NA,NA, rep(NA,nfield-nvar))
-        defaultargs <- list(sep = '', comment.char = '#')
-        if (filetype(file)=='.csv') defaultargs$sep <- ','
-        captargs <- replacedefaults (defaultargs, list(...))
-        captargs <- captargs[names(captargs) %in% names(formals(read.table))]
-        capt <- do.call ('read.table', c(list(file = file, as.is = TRUE,
-        colClasses = colcl), captargs) )
-
-    }
-    else {
-        capt <- data
-    }
-
-    ## let's be clear about this...
-    names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
-    ## X, Y must be numeric 2016-01-12
-    if (any(is.na(capt[,1:nvar])))
-        stop ("missing values not allowed")
-
-    if (!is.null(noccasions))
-        if (noccasions < max(capt$Occ))
-        stop ("file contains occasion number > noccasions")
-
-    readtraps <- function(capt) {
-        ch <- chull(capt[,4:5])
-        ch <- c(ch,ch[1])  ## ensure closed
-        trps <- capt[ch,4:5]
-        ## inflate a tiny bit to ensure all fixes are inside boundary
-        ## the default inflation 1e-8 causes error of 1-(1 + 1e-8)^2 ~ 2e-8
-        trps <- inflate(trps, 1 + inflation)
-        trps <- as.data.frame(trps)
-        dimnames(trps) <- list(1:nrow(trps), c('x','y'))
-        class(trps) <- c('traps', 'data.frame')
-        attr(trps, 'polyID') <- factor(rep(1,nrow(trps)))
-        attr(trps, 'detector') <- 'telemetry'
-        trps
-    }
-
-    splitcapt <- split(capt, capt[,1])
-    trps <- sapply(splitcapt, readtraps, simplify = FALSE)
-    if (length(trps)==1)
-        trps <- trps[[1]]
-    else
-        class(trps) <- c("traps","list")
-
-    temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
-        covnames = covnames, sortrows = TRUE, cutval = NULL,
-        noncapt = 'NONE')
-
-    if (verify)
-        verify(temp)
-    temp
-}

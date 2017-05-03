@@ -1,4 +1,3 @@
-
 ## register S3 classes as (virtual) S4 classes
 setOldClass('mask')
 setOldClass('Dsurface')

@@ -20,10 +20,35 @@ plot.secrlist <- function (x, newdata=NULL, add = FALSE,
     ylim = NULL, xlab = NULL, ylab = NULL, ..., overlay = TRUE)
 {
     if (overlay) {
+       ## plot(x[[1]], newdata, add, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
+       ##        ylab, ...)
+       ## lapply(x[-1], plot, newdata, TRUE, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
+       ##        ylab, ...)
+        plotargs <- list(...)
+        nplot <- length(x)
+
+        if ("col" %in% names(plotargs))
+            col <- rep(plotargs$col, nplot)
+        else
+            col <- rep("black", nplot)
+
+        if ("lty" %in% names(plotargs))
+            lty <- rep(plotargs$lty, nplot)
+        else
+            lty <- rep(1, nplot)
+
+        if ("lwd" %in% names(plotargs))
+            lwd <- rep(plotargs$lwd, nplot)
+        else
+            lwd <- rep(1, nplot)
+
         plot(x[[1]], newdata, add, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
-               ylab, ...)
-        lapply(x[-1], plot, newdata, TRUE, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
-               ylab, ...)
+               ylab, col=col[1], lwd=lwd[1], lty=lty[1])
+        if (length(x)>1)
+        mapply(plot, x[-1], col=col[-1], lwd=lwd[-1], lty=lty[-1],
+               MoreArgs = list(newdata= newdata, add=TRUE, sigmatick=sigmatick, rgr=rgr,
+               limits=limits, alpha=alpha, xval=xval, ylim=ylim, xlab='', ylab=''),
+               SIMPLIFY = FALSE)
     }
     else {
         lapply(x, plot, newdata, TRUE, sigmatick, rgr, limits, alpha, xval, ylim, xlab,
@@ -50,9 +75,6 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             pars <- predicted[parnames(x$detectfn),'estimate']
             pars[is.na(pars)] <- unlist(x$fixed)
             dfn <- getdfn(x$detectfn)
-            ## superceded 2013-04-24
-            ## switch (x$detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS,
-            ##               SSS, SN, SNS, HHN, HHR, HEX, HAN, HCG)
             if (sigmatick) {
               sigma <- pars[2]
               y <- dfn(sigma, pars, x$details$cutval)
@@ -61,7 +83,6 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
             }
 
             y <- dfn(xval, pars, x$details$cutval)
-
             if (rgr) {
               y <- xval * y
               ymax <- par()$usr[4]
@@ -190,8 +211,8 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
         if (is.null(ylab)) {
            binomN <- ifelse(is.null(x$details$binomN),0,x$details$binomN)
 ## revisit this 2011-02-06
-           dlambda <- (detector(traps(x$capthist)) %in% c('polygon','polygonX')) |
-               ((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
+           dlambda <- any(detector(traps(x$capthist)) %in% c('polygon','polygonX')) |
+               any((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
            if (dlambda)
                ylab <- 'Detection lambda'
            else

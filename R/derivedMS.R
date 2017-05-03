@@ -8,6 +8,7 @@
 ## 2014-04-05 fixed bug mapply SIMPLIFY = FALSE
 ## 2014-10-28 adjust for linear mask
 ## 2016-09-25 derived() now returns NA instead of crashing when no animals detected in a session
+## 2017-01-04 updated for telemetry (but needs more work)
 ############################################################################################
 
 
@@ -210,6 +211,7 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                     masklength(mask)
                 else
                     maskarea(mask)
+
                 temp <- data.frame (
                                     row.names = c('esa','D'),
                                     estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below
@@ -250,33 +252,33 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                 capthist <- object$capthist[[sessnum]]
                 mask <- object$mask[[sessnum]]
             }
+            
+            ## ignore unmodelled histories 2017-01-04
+            telem <- telemetered(capthist)
+            
+            if (telemetrytype(traps(capthist)) %in% c('independent','concurrent'))
+                OK <- !allzero(capthist)
+            else
+                OK <- rep(TRUE, nrow(capthist))  ## use all if 'none','dependent'
 
+            OK <- !allzero(capthist)
+            
             grp <- group.factor(capthist, groups)
-            ind <- 1:nrow(capthist)
+            # NT <- tapply(telem, grp, sum)  ## suppressed 2017-01-05
+            NT <- 0
+            grp <- grp[OK]
+            ind <- (1:nrow(capthist))[OK]
 
-            if (nrow(capthist)>0)
+            if (length(ind)>0)
                 individuals <- split (ind, grp)
             else
                 individuals <-  split (numeric(0), grp) ## list of empty grp levels
-            n <- length(individuals)   ## number of groups
-            xyl <- telemetryxy(capthist)   ## attr(capthist,'xylist')
-            if ( is.null(xyl) | is.null(object$details$telemetrytype) )
-                object$details$telemetrytype <- 'none'
-            if (object$details$telemetrytype == 'concurrent') {
-                telem <- telemetered(capthist)
-                nottelem <- split(!telem, grp)
-                NT <- tapply(telem, grp, sum)
-                ## drop telemetry animals
-                individuals <- mapply ('[', individuals, nottelem, SIMPLIFY = FALSE)
-            }
-            else {
-                NT <- numeric(n)  ## zeros
-            }
-      
-            if ( n > 1)
+            ngrp <- length(individuals)   ## number of groups
+            
+            if ( ngrp > 1)
                 out <- mapply (getderived, individuals, NT, SIMPLIFY = FALSE)
             else {
-                if (n == 1)
+                if (ngrp == 1)
                     out <- getderived(individuals[[1]], NT)
                 else
                     out <- getderived(numeric(0), NT)

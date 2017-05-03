@@ -1,19 +1,13 @@
 ###############################################################################
 ## package 'secr'
 ## ip.secr.R
-## last changed 2009 09 12, 2009 09 14
-## 2010 07 01 alpha detection function
-## 2011 06 15 tidy up
-## 2011 12 20 maxtries argument
-## 2012-11-02 ncores
-## 2012-11-02 proctime[3]
-## 2012-12-30 usage OK
-## 2015-05-17 tweaked failure condition
-## 2015-11-24 replaced argument boxsize with boxsize1, boxsize2
+## 2016-10-16 secr 3.0
+## 2017-04-09 
 ###############################################################################
 
 ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
-    detectfn = 0, mask = NULL, start = NULL, boxsize = 0.2, boxsize2 = boxsize, centre = 3,
+    detectfn = 0, mask = NULL, start = NULL, 
+    boxsize = 0.2, boxsize2 = boxsize, centre = 3,
     min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
     maxbox = 5, maxtries = 2, ncores = 1, seed = NULL, trace = TRUE, ...) {
 
@@ -54,7 +48,6 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     else
         core <- NULL
 
-    ## added 2012-11-02
     if (ncores > 1) {
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         clusterSetRNGStream(clust, seed)
@@ -135,7 +128,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         else
             start <- unlist(autoini(capthist, mask))
         ## ad hoc bias adjustment
-        if (detector(traps)=='single')
+        if (detector(traps)[1]=='single')
             start[2] <- invodds(odds(start[2]) * 1.4)
         if (detectfn %in% 1) start <- c(start,5)  ## z
     }
@@ -205,7 +198,6 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
             B <- solve(t(B))  ## invert
             lambda <- coef(sim.lm)[1,]   ## intercepts
             par <- as.numeric(B %*% matrix((y - lambda), ncol = 1))
-            ## 2015-11-24, 2015-12-02 if (all(sapply(1:np, within))) break
             ## only break on second or later box if differ boxsize
             if (all(sapply(1:np, within)) & (all(boxsize == boxsize2) | (m>1))) break
         }
@@ -466,7 +458,7 @@ Mh <- function (fi) {
 }
 ##################################################
 
-pfn <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
+pfnold <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
     N.estimator <- tolower(N.estimator)
     N.estimator <- match.arg(N.estimator)
     ## capthist single-session only; ignoring deads
@@ -477,14 +469,40 @@ pfn <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
     fi <- cts['f', - ncol(cts)] ## drop total at end
     nocc <- ncol(capthist)      ## number of occasions
     estimates <- switch (N.estimator,
-        n = c(n, sum(ni)/n/nocc),
-        null = M0(c(sum(ni), n, nocc)),
-        zippin = Mb(ui),
-        jackknife = Mh(fi)
+                         n = c(n, sum(ni)/n/nocc),
+                         null = M0(c(sum(ni), n, nocc)),
+                         zippin = Mb(ui),
+                         jackknife = Mh(fi)
     )
     c(N=estimates[1], odds.p=odds(estimates[2]), rpsv=RPSV(capthist))
 }
 ##################################################
-
+pfn <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
+    N.estimator <- tolower(N.estimator)
+    N.estimator <- match.arg(N.estimator)
+    ## capthist single-session only; ignoring deads
+    n <- nrow(capthist)         ## number of individuals
+    ch <- abs(capthist)>0
+    nocc <- ncol(capthist)      ## number of occasions
+    ni <- apply(ch, 2, sum)     ## individuals on each occasion
+    estimates <- {
+        if (N.estimator == "n")
+            c(n, sum(ni)/n/nocc)
+        else if (N.estimator == "null")
+            M0(c(sum(ni), n, nocc))
+        else if (N.estimator == "zippin") {
+            tempx2 <- apply(ch, 1, function(x) cumsum(abs(x))>0)
+            Mt1 <- apply(tempx2,1,sum)
+            ui <- c(ni[1], diff(Mt1))
+            Mb(ui)
+        }
+        else if (N.estimator == "jackknife") {
+            fi <- tabulate(apply(ch,1,sum), nbins = nocc)
+            Mh(fi)
+        }
+    }
+    c(N=estimates[1], odds.p=odds(estimates[2]), rpsv=RPSV(capthist))
+}
+##################################################
 
 # ip.secr (captdata, pfn, start=c(5,0.2,30))

@@ -9,6 +9,9 @@
 ## 2012-12-21 re-write reduce.capthist to include spatial lumping
 ## 2012-12-21 amalgamated 'reduce' methods
 ## 2013-11-20 telemetry allowed
+## 2016-10-06 3D traps
+## 2017-03-12 revamp
+## 2017-03-25 debug for reduce from transect to count
 ############################################################################################
 
 #----------------------------------------------------------------------------------------------------
@@ -51,107 +54,188 @@ reduce.default <- function (object, columns, ...) {
   temp
 }
 
-reduce.traps <- function (object, newtraps = NULL, span = NULL, rename = FALSE, ...) {
+collapseocc <- function (newoccasions, inimatrix) {
+    fnused <- function (occ, fn) {
+        if (length(occ)>0) {
+            temp <- inimatrix[, occ, drop = FALSE]
+            apply (temp, 1, fn)
+        }
+        else NULL
+    }
+    tempmatrix <- unlist(sapply (newoccasions, fnused, sum))
+    matrix(tempmatrix, ncol=length(newoccasions)) 
+}
+#############################################################################################################
+
+reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = NULL, rename = FALSE, 
+                          ...) {
     if (ms(object)) {
-        lapply(object, reduce, newtraps = newtraps, span = span, rename = rename, ...)
+        out <- lapply(object, reduce, newtraps = newtraps, newoccasions = newoccasions, span = span, rename = rename, 
+                      ...)
+        class(out) <- class(object)
+        out
     }
     else {
         if (!inherits(object, 'traps'))
             stop ("requires traps object")
-        ## allow for vector input, or distance threshold
-        if (!is.null(span))
-            newtraps <- cutree (hclust(dist(object), ...), h = span)
-        if (missing(newtraps))
-            newtraps <- as.list(1:ndetector(object))  ## no change
-        if (!is.list(newtraps)) {
-            if (is.null(names(newtraps)))
-                names(newtraps) <- 1:length(newtraps)
-            newtraps <- split(names(newtraps), newtraps)
-        }
-        if (!detector(object) %in% .localstuff$pointdetectors)
-            stop ("reduce.traps is only for point detectors")
-        if (any(duplicated(unlist(newtraps))))
-            stop("traps should not appear in more than one group")
 
-        if (any(sapply(newtraps, is.character))) {
-            ## convert to numeric trap indices
-            newtraps <- lapply(newtraps, function(x) match(x, rownames(object)))
-        }
-
-        nnew <- length(newtraps)
-        if (rename)
-            newtrapnames <- 1:nnew
-        else if (any(sapply(newtraps, is.character))) {
-            newtrapnames <- sapply(newtraps, function(x) paste(x, collapse='+'))
+        splitfactor <- 1:ndetector(object)    # default to status quo
+        
+        #############################################################
+        if (is.null(span) & is.null(newtraps)) {
+            newxy <- object
+            newtrapnames <- levels(polyID(object))
+            attr(newxy, 'newtrap') <- newtrapnames
         }
         else {
-            namefn <- function(x) paste(rownames(object)[x], collapse='+')
-            newtrapnames <- sapply(newtraps, namefn)
+            if (!all(detector(object) %in% .localstuff$pointdetectors))
+                stop ("reduce.traps with 'span' or 'newtraps' is only for point detectors")
+            
+            ## allow for vector input, or distance threshold
+            if (!is.null(span))
+                newtraps <- cutree (hclust(dist(object), ...), h = span)
+
+            if (!is.list(newtraps)) {
+                if (is.null(names(newtraps)))
+                    names(newtraps) <- 1:length(newtraps)
+                newtraps <- split(names(newtraps), newtraps)
+            }
+            
+            if (any(duplicated(unlist(newtraps))))
+                stop("traps should not appear in more than one group")
+            
+            if (any(sapply(newtraps, is.character))) {
+                ## convert to numeric trap indices
+                newtraps <- lapply(newtraps, function(x) match(x, rownames(object)))
+            }
+            
+            nnew <- length(newtraps)
+            if (rename)
+                newtrapnames <- 1:nnew
+            else if (any(sapply(newtraps, is.character))) {
+                newtrapnames <- sapply(newtraps, function(x) paste(x, collapse='+'))
+            }
+            else {
+                namefn <- function(x) paste(rownames(object)[x], collapse='+')
+                newtrapnames <- sapply(newtraps, namefn)
+            }
+            
+            g <- rep(1:nnew, sapply(newtraps,length))
+            splitfactor[] <- 0
+            splitfactor[unlist(newtraps)] <- g             ## levels are indices of groups 1, 2,...
+            splitfactor <- factor(splitfactor)
+            
+            grouped <- split.data.frame(object, splitfactor) ## otherwise calls split.traps
+            ## or could use for usage and cov below and save repeat splitting...
+            if (any (splitfactor == 0)) grouped <- grouped[-1]  ## drop unwanted traps
+            names(grouped) <- newtrapnames
+            grouped <- lapply(grouped, function(df) apply(df,2,mean))
+            newxy <- do.call(rbind, grouped)
+            newxy <- as.data.frame(newxy)
+            class (newxy)   <- c('traps', 'data.frame')
+            
+            detector(newxy) <- detector(object)
+            markocc(newxy) <- markocc(object)
+            
+            sp <- spacing(newxy, recalculate = TRUE)
+            if (!is.null(sp)) spacing(newxy) <- sp
+            temp <- as.numeric(levels(splitfactor)[splitfactor])
+            temp[temp==0] <- NA
+            attr(newxy, 'newtrap') <- temp
+            
         }
-
-        g <- rep(1:nnew, sapply(newtraps,length))
-        splitfactor <- numeric(ndetector(object))   ## initially zero
-        splitfactor[unlist(newtraps)] <- g             ## levels are indices of groups 1, 2,...
-        splitfactor <- factor(splitfactor)
-
-        grouped <- split.data.frame(object, splitfactor) ## otherwise calls split.traps
-        ## or could use for usage and cov below and save repeat splitting...
-        if (any (splitfactor == 0)) grouped <- grouped[-1]  ## drop unwanted traps
-        names(grouped) <- newtrapnames
-        grouped <- lapply(grouped, function(df) apply(df,2,mean))
-        newxy <- do.call(rbind, grouped)
-        newxy <- as.data.frame(newxy)
-        class (newxy)   <- c('traps', 'data.frame')
-        detector(newxy) <- detector(object)
-        markocc(newxy) <- markocc(object)
-
+        
+        #############################################################
+        ## what if occasions collapsed?
+        if (!is.null(newoccasions)) {
+            ## return one detector type per new occasion
+            validdet <- function(occ) {
+                if (length(detector(object))==1)
+                    return(detector(object))
+                else {
+                    tempdet <- detector(object)[occ]
+                    if (length(unique(tempdet))>1)
+                        stop("cannot combine occasions with differing detector type")
+                    tempdet[1]
+                }
+            }
+            detector(newxy) <- sapply(newoccasions, validdet)
+            
+            ## return one markocc per new occasion
+            if (!is.null(markocc(object))) {
+                validmocc <- function(occ) {
+                    tempmocc <- markocc(object)[occ]
+                    if (length(unique(tempmocc))>1)
+                        stop("cannot combine occasions with differing markocc code")
+                    tempmocc[1]
+                }
+                markocc(newxy) <- sapply(newoccasions, validmocc)
+            }
+        }
+        #############################################################
+    
         if (!is.null(usage(object))) {
-            usagelist <- split(as.data.frame(usage(object)), splitfactor)
-            if (any (splitfactor == 0)) usagelist <- usagelist[-1]  ## drop unwanted traps
-            temp <- lapply(usagelist, function(x) apply(x,2,sum))
-            temp <- do.call(rbind, temp)
-            temp <- as.matrix(temp)
-            dimnames(temp) <- list(newtrapnames, 1:ncol(temp))
-            usage(newxy) <- temp
+            # if (is.null(splitfactor)) {
+            #     usagelist <- list(usage(object))
+            #     newusagenames <- rownames(usage(object))
+            # }
+            # else {
+                usagelist <- split(as.data.frame(usage(object)), splitfactor)
+                newusagenames <- newtrapnames 
+                if (any (splitfactor == 0)) usagelist <- usagelist[-1]  ## drop unwanted traps
+#            }
+            tempusage <- lapply(usagelist, function(x) apply(x,2,sum))
+            tempusage <- do.call(rbind, tempusage)
+            tempusage <- as.matrix(tempusage)
+            dimnames(tempusage) <- list(newusagenames, 1:ncol(tempusage))
 
-            daily <- as.data.frame(temp)
+            daily <- as.data.frame(tempusage)
             names(daily) <- paste('occ', names(daily), sep='')
+            
+            if (!is.null(newoccasions)) {
+                tempusage <- collapseocc (newoccasions, tempusage)
+            }
+          usage(newxy) <- tempusage
+            
         }
+        #############################################################
+        # return to consider covariates when traps combined, 
+        # using 'daily' from preceding
+        
+        if (!is.null(span) | !is.null(newtraps)) {
+            
+            if (!is.null(covariates(object))) {
+                covlist <- split(covariates(object), splitfactor)
+                if (any (splitfactor == 0)) covlist <- covlist[-1]  ## drop unwanted traps
+                varying <- sapply(covlist, function(x) apply(x,2,function(y) length(unique(y))>1))
+                if (any(varying))
+                    warning("covariates vary within groups; using only first")
+                temp <- lapply(covlist, head, 1)
+                temp <- do.call(rbind, temp)
+                covariates(newxy) <- temp
+                if (!is.null(usage(object)))
+                    covariates(newxy) <- cbind(covariates(newxy), daily)
+                else
+                    covariates(newxy)$combined <- sapply(newtraps, length)
+            }
+            else {  ## new covariate dataframe
+                if (!is.null(usage(object)))
+                    covariates(newxy) <- daily
+                else
+                    covariates(newxy) <- data.frame(combined = sapply(newtraps, length))
+            }
+        }
+        #############################################################
 
-        if (!is.null(covariates(object))) {
-            covlist <- split(covariates(object), splitfactor)
-            if (any (splitfactor == 0)) covlist <- covlist[-1]  ## drop unwanted traps
-            varying <- sapply(covlist, function(x) apply(x,2,function(y) length(unique(y))>1))
-            if (any(varying))
-                warning("covariates vary within groups; using only first")
-            temp <- lapply(covlist, head, 1)
-            temp <- do.call(rbind, temp)
-            covariates(newxy) <- temp
-            if (!is.null(usage(object)))
-                covariates(newxy) <- cbind(covariates(newxy), daily)
-            else
-                covariates(newxy)$combined <- sapply(newtraps, length)
-        }
-        else {  ## new covariate dataframe
-            if (!is.null(usage(object)))
-                covariates(newxy) <- daily
-            else
-                covariates(newxy) <- data.frame(combined = sapply(newtraps, length))
-        }
-
-        sp <- spacing(newxy, recalculate = TRUE)
-        if (!is.null(sp)) spacing(newxy) <- sp
-        temp <- as.numeric(levels(splitfactor)[splitfactor])
-        temp[temp==0] <- NA
-        attr(newxy, 'newtrap') <- temp
         newxy
     }
 }
+#############################################################################################################
 
 poly2point <- function (object, detector = 'count') {
-    if (!detector(object) %in% c('polygon','polygonX'))
+    if (!all(detector(object) %in% c('polygon','polygonX')))
         stop ("requires 'polygon' input")
-    if (detector %in% .localstuff$polydetectors)
+    if (any(detector %in% .localstuff$polydetectors))
         stop ("requires non-polygon, non-transect output")
     temp <- split(object, polyID(object))
     temp <- lapply(temp, function(df) apply(df,2,mean))
@@ -169,9 +253,9 @@ poly2point <- function (object, detector = 'count') {
 #-----------------------------------------------------------------------------
 
 transect2point <- function (object, detector = 'count') {
-    if (!detector(object) %in% c('transect','transectX'))
+    if (!all(detector(object) %in% c('transect','transectX')))
         stop ("requires 'transect' input")
-    if (detector %in% c('transect', 'transectX'))
+    if (any(detector %in% c('transect', 'transectX')))
         stop ("requires non-transect output")
     temp <- split(object, transectID(object))
     temp <- lapply(temp, function(df) apply(df,2,mean))
@@ -190,7 +274,6 @@ transect2point <- function (object, detector = 'count') {
 
 ## function to make list in which each component is a
 ## subset of occasions (for use in reduce.capthist)
-## MGE 2011-03-10
 
 split.by <- function (x, by) {
     if ((length(x) == 1) & (x[1] > 1))
@@ -204,8 +287,8 @@ split.by <- function (x, by) {
 #----------------------------------------------------------------------------------------------
 
 reduce.capthist <- function (object, newtraps = NULL, span = NULL,
-    rename = FALSE, newoccasions = NULL, by = 1, outputdetector =
-    detector(traps(object)), select = 'last', dropunused = TRUE,
+    rename = FALSE, newoccasions = NULL, by = 1, outputdetector = NULL,
+    select = c("last", "first", "random"), dropunused = TRUE,
     verify = TRUE, sessions = NULL, ...) {
 
     # newoccasions - list, each component gives occasions to include in new capthist
@@ -237,22 +320,10 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
     #----------------------------------------------------------------------------
     # functions applied to collapse a set of occasions 'occ' to a single occasion
     # result is a vector (single, multi detectors)
-    fnused <- function (occ, fn) {
-        if (length(occ)>0) {
-            temp <- usage(trps)[,occ,drop=F]
-            apply (temp, 1, fn)
-        }
-        else NULL
-    }
-    #----------------------------------------------------------------------------
     collapse <- function (df) {
         ## reduce data frame to a single row
         if (nrow(df)>1) {
             df$alive <- rep(all(df$alive), nrow(df))
-            allowedCriteria <- c('first','last','random')
-            if (!(select %in% allowedCriteria))
-                stop ("selection criterion for signal should be one of ",
-                      paste(sapply(allowedCriteria, dQuote),collapse=','))
             index <- switch (select, first = 1, last = nrow(df),
                 random = sample.int (nrow(df),1) )
             df <- df[index,,drop=FALSE]
@@ -280,21 +351,30 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         return(temp)
     }
     else {
-        if (tolower(by) == 'all')
-            by <- ncol(object)
+        select <- match.arg(select)
         polygons <- c('polygon','polygonX')
         transects <- c('transect','transectX')
-        inputdetector <- detector(traps(object))
         ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
-
         nrw <- nrow(object)
         if (is.null(newoccasions)) {
+            if (tolower(by) == 'all') by <- ncol(object)
             newoccasions <- split.by (1:ncol(object), by)
             if ((ncol(object) %% by) > 0)
                 warning ("number of occasions is not a multiple of 'by'")
         }
 
-        if (is.null(outputdetector)) outputdetector <- inputdetector
+        inputdetector <- detector(traps(object))
+        if (length(unique(inputdetector))>1)
+            stop("reduce.capthist does not yet handle mixed input detector types")
+        inputdetector <- inputdetector[1]
+        if (is.null(outputdetector)) 
+            outputdetector <- inputdetector
+        else 
+            if (length(unique(unlist(outputdetector)))>1) {
+                warning("reduce.capthist does not yet handle mixed output detector types")
+                outputdetector <- unlist(outputdetector[1])
+            }
+        
         if (!(outputdetector %in% .localstuff$validdetectors))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
@@ -339,12 +419,12 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         ####################################
         ## check and build newtraps
-
         trps <- traps(object)
-        reducetraps <- !is.null(newtraps) | !is.null(span)
+#        reducetraps <- !is.null(newtraps) | !is.null(span) | !is.null(newoccasions)
+        reducetraps <- !is.null(newtraps) | !is.null(span) | (length(newoccasions) != ncol(object))
         if (reducetraps) {
-            trps <- reduce(trps, newtraps = newtraps, span =
-                span, rename = rename, ...)
+            trps <- reduce(trps, newtraps = newtraps, newoccasions = newoccasions,
+                           span = span, rename = rename, ...)
             newtrapID <- attr(trps, 'newtrap')
             ntrap <- ndetector(trps)
         }
@@ -359,7 +439,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             alive = alive(object))
         if (reducetraps)
             df$trap <- newtrapID[df$trap]
-        if (outputdetector %in% c(polygons, transects, 'telemetry')) {   ## telemetry 2013-11-20
+        if (any(outputdetector %in% c(polygons, transects))) { 
             df$x <- xy(object)[,1]
             df$y <- xy(object)[,2]
         }
@@ -391,26 +471,18 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         ####################################
         ## build new object
         validrows <- (1:nrow(object)) %in% df$ID   ## or newID??? 2012-12-12
-
-        if (outputdetector %in% .localstuff$exclusivedetectors) {
-            alivesign <- df$alive*2 - 1
-            tempnew <- matrix(0, nrow = sum(validrows), ncol = nnew)
-            tempnew[cbind(df$newID, df$newocc)] <- df$trap * alivesign
+        df$trap <- factor(df$trap, levels = 1:ntrap)  ## bug fixed 2017-03-27
+        tempnew <- table(df$newID, df$newocc, df$trap)
+        alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
+        alivesign[is.na(alivesign)] <- TRUE
+        alivesign <- alivesign * 2 - 1
+        if (! (outputdetector %in% .localstuff$countdetectors)
+            && (length(tempnew)>0)) {
+            ## convert 'proximity' and 'signal' to binary
+            tempnew[tempnew>0] <- 1
         }
-        else {
-            df$trap <- factor(df$trap, levels=1:ntrap)
-            tempnew <- table(df$newID, df$newocc, df$trap)
-            alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
-            alivesign[is.na(alivesign)] <- TRUE
-            alivesign <- alivesign * 2 - 1
-            if (! (outputdetector %in% .localstuff$countdetectors)
-                && (length(tempnew)>0)) {
-                ## convert 'proximity' and 'signal' to binary
-                tempnew[tempnew>0] <- 1
-            }
-            tempnew <- tempnew * alivesign
-        }
-
+        tempnew <- tempnew * alivesign
+        
         ################################
         ## general attributes
         class(tempnew) <- 'capthist'
@@ -433,28 +505,58 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
              covariates(tempnew) <- covariates(object)[validrows,,drop=F]
      
         detectorder <- order(df$trap, df$newocc,df$ID)  ## CHECK!
-        if (outputdetector %in% c(polygons, transects, 'telemetry'))  ## telemetry added 2013-11-20
+
+        ################################
+        ## polygon & transect xy
+       
+        if (outputdetector %in% c(polygons, transects)) 
             xy(tempnew) <- df[detectorder,c('x','y'),drop=FALSE]
+        
+        ################################
+        ## telemetry xy
+        ## NOT FINISHED - NEEDS DISTINCT X,Y COLUMNS IN DF
+        if (any(outputdetector == 'telemetry') & (nrow(tempnew>0))) {
+            stop("reduce telemetry not ready")
+            idlevels <- rowname <- rownames(object)[(1:length(validrows))[validrows]]
+            id <- factor(df$ID, levels = idlevels) 
+            telemetryxy(tempnew) <- split(df[detectorder,c('x','y'),drop=FALSE], id)
+        }
+        
+        ################################
+        ## signalframe & cutval
+        
         if (outputdetector %in% c('signal','signalnoise')) {
             sigcolumns <- names(attr(object,'signalframe'))
             attr(tempnew,'signalframe') <- df[detectorder, sigcolumns, drop=FALSE]
             attr(tempnew, 'cutval') <- attr(object, 'cutval')
         }
+        
         ##################################
-        ## fix usage for reduced occasions
-        if (nrow(tempnew) > 0)
-            dimnames(tempnew)[[1]] <- 1:nrow(tempnew)  ## temporary, for animalID in subset
-        if (!is.null(usage(traps(tempnew)))) {
-            usagematrix <- unlist(sapply (newoccasions, fnused, sum))
-            usagematrix <- matrix(usagematrix, nrow = ndetector(traps(tempnew)))
-            usage(traps(tempnew)) <- usagematrix
-
-            if (dropunused) {
-                OK <- apply(usagematrix, 1, sum) > 0
-                tempnew <- subset(tempnew, traps = OK)
+        ## sightings
+        reduceT <- function (TmTu) {
+            if (length(dim(TmTu))==2) {
+                ## assume detector x occasion
+                collapseocc (newoccasions, TmTu)
+                }            
+            else {
+                if (!is.null(TmTu) & ((length(newoccasions)>1) | (length(newoccasions[[1]]) != ncol(object))))
+                    warning ("cannot selectively collapse summed sightings, including all")
+                TmTu
             }
         }
+        Tu(tempnew) <- reduceT(Tu(object))
+        Tm(tempnew) <- reduceT(Tm(object))
+
+        ##################################
+        ## optionally drop unused detectors
+        if (nrow(tempnew) > 0)
+            dimnames(tempnew)[[1]] <- 1:nrow(tempnew)  ## temporary, for animalID in subset
+        if (dropunused & !is.null(usage(traps(tempnew)))) {
+            OK <- apply(usage(traps(tempnew)), 1, sum) > 0
+            tempnew <- subset(tempnew, traps = OK)
+        }
         tempnew[is.na(tempnew)] <- 0
+        
         ################################
         ## dimnames
         if (nrow(tempnew) > 0) {
@@ -463,10 +565,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         }
         else
             rowname <- NULL
-        if (length(dim(tempnew)) == 3)
-            dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
-        else
-            dimnames(tempnew) <- list(rowname,1:nnew)
+        dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
 
         if (verify) verify(tempnew, report=1)
         tempnew

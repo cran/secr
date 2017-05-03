@@ -30,7 +30,8 @@ write.capthist(object, filestem = deparse(substitute(object)),
 \arguments{
 
   \item{captfile}{ name of capture data file }
-  \item{trapfile}{ name of trap layout file }
+  \item{trapfile}{ name of trap layout file or (for a multi-session captfile) 
+      a vector of file names, one for each session}
   \item{detector}{ character value for detector type (`single', `multi',
   `proximity', etc.) }
   \item{fmt}{ character value for capture format (`trapID' or `XY') }
@@ -101,6 +102,9 @@ recorded on some occasions. If the data span multiple sessions with differing
 combinations of marking and sighting occasions then \code{markocc} may be a 
 list with one vector per session.
 
+The function \code{\link{read.telemetry}} is a simplified version of 
+\code{read.capthist} for telemetry data.
+
 \code{write.capthist}
 
   For a single-session analysis, DENSITY requires one text file of
@@ -148,7 +152,7 @@ University of Otago, Dunedin, New Zealand
 
   The original DENSITY formats accommodate `single', `multi' and `proximity'
   data. Data for the newer detector types (`count', `signal', `polygon',
-  `polygonX', `transect', `transectX' and `telemetry') may be input using the
+  `polygonX', `transect', `transectX' and `telemetryonly') may be input using the
   DENSITY formats with minor variations. They may also be output with
   \code{write.capthist}, but a warning is given that DENSITY does not
   understand these data types. See \code{\link{detector}} and

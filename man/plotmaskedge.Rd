@@ -10,12 +10,13 @@ Plots the outer edge of a  mask.
 }
 \usage{
 
-plotMaskEdge(mask, add = FALSE, ...)
+plotMaskEdge(mask, plt = TRUE, add = FALSE, ...)
 
 }
 
 \arguments{
   \item{mask}{secr habitat mask object}
+  \item{plt}{logical; if TRUE the edge is plotted}
   \item{add}{logical; if TRUE the line is added to an existing plot}
   \item{\dots}{other line plotting arguments passed to \code{\link{segments}}}
 }
@@ -27,7 +28,7 @@ plotMaskEdge(mask, add = FALSE, ...)
 }
 
 \value{
-  None
+  A numeric matrix of 4 columns is returned invisibly. The columns may be used as arguments x0, y0, x1, y1 in a call to segments().
 }
 
 \examples{

@@ -7,6 +7,7 @@
 \alias{alongtransect}
 \alias{xy<-}
 \alias{telemetryxy}
+\alias{telemetryxy<-}
 \alias{telemetered}
 
 \title{ Dissect Spatial Capture History Object }
@@ -25,6 +26,7 @@ alongtransect(object, tol = 0.01)
 xy(object)
 xy(object) <- value
 telemetryxy(object, includeNULL = FALSE)
+telemetryxy(object) <- value
 telemetered(object)
 
 }
@@ -55,7 +57,7 @@ start of the transect with which it is associated.
 Replacement values must precisely match \code{object} in number of
 detections and in their order. \code{xy<-} expects a dataframe of x and y
 coordinates for points of detection within a `polygon' or `transect'
-detector.
+detector. \code{telemetryxy<-} expects a list of dataframes, one per telemetered animal.
 
 }
 

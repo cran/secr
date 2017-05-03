@@ -22,8 +22,9 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
     # purge blanks from names
     if (deblank) row.names(object) <- gsub(' ','',row.names(object))
 
-    poly <- detector(object) %in% c('polygon', 'polygonX')
-    transect <- detector(object) %in% c('transect', 'transectX')
+    det <- detector(object)
+    poly <- det[1] %in% c('polygon', 'polygonX')
+    transect <- det[1] %in% c('transect', 'transectX')
     if (poly) {
         temp <- cbind (polyID=polyID(object), x=object$x, y = object$y)
     }

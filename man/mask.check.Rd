@@ -104,7 +104,7 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
 
   When \code{LLonly = TRUE} the functionality of \code{mask.check}
   resembles that of the `Tools | ML SECR log likelihood' menu option in
-  Density 4. The help page in Density 4 for ML SECR 2-D integration (see
+  Density 5. The help page in Density 5 for ML SECR 2-D integration (see
   index) may be helpful.
 
   Warning messages from \code{secr.fit} are suppressed. `capthist'

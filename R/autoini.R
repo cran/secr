@@ -23,7 +23,7 @@
 naivesigma <- function (obsRPSV, trps, mask, wt, detectfn, z, tol = 0.001) {
     naiveRPSVcall <- function (sigma)
     {
-        temp <- .C ("naiveRPSV", PACKAGE = 'secr',
+        temp <- .C ("naiveRPSV", # PACKAGE = 'secr',
           as.double (sigma),               # Parameter : detection scale
           as.double (z),                   # Parameter : detection shape (fixed)
           as.integer(k),
@@ -59,11 +59,12 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 # obtain approximate fit of HN SECR model
 # for use as starting values in MLE
 # uses external C code
-
+# binomN is scalar
+    
 {
     naivedcall <- function (sigma)
     {
-        temp <- .C ("naived",  PACKAGE = 'secr',
+        temp <- .C ("naived",  # PACKAGE = 'secr',
           as.double (sigma),               # Parameter : detection scale
           as.integer(k),
           as.integer(m),
@@ -78,7 +79,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     naivecap2 <- function (g0, sigma, cap)
     # using new algorithm for number of captures per animal 2009 04 21
     {
-        temp <- .C ("naivecap2",  PACKAGE = 'secr',
+        temp <- .C ("naivecap2", # PACKAGE = 'secr',
           as.integer(prox),
           as.double (g0),                  # Parameter : detection magnitude
           as.double (sigma),               # Parameter : detection scale
@@ -109,7 +110,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
       if (is.null(area))   ## 2014-08-29 linear
           area <- attr(mask, 'spacing')/1000
       miscparm <- c(1,0,0,0)  ## dummy value
-      temp <- try ( .C("integralprw1",  PACKAGE = 'secr',
+      temp <- try ( .C("integralprw1", # PACKAGE = 'secr',
           as.integer(dettype),
           as.double(g0sigma0),
           as.integer(rep(1,nc)),        # group number 2013-06-24
@@ -131,7 +132,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           as.double(area),
           as.double(miscparm),
           as.integer(detectfn),
-          as.integer(0),                # binomN
+          as.integer(expandbinomN(binomN, dettype)),        # binomN
           as.integer(0),                # useD
           a=double(nc),
           resultcode=integer(1))
@@ -151,7 +152,6 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (nrow(capthist)<5)
         stop ("too few values for autoini")  ## message changed 2015-01-06
 
-    ## added 2010-07-01
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
@@ -163,7 +163,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (is.null(usge) | ignoreusage)
         ## assuming k = nk i.e. not polygon or transect detector
         usge <- matrix(1, nrow = nrow(trps), ncol = ncol(capthist))
-    dettype <- detectorcode(trps)
+    dettype <- detectorcode(trps, noccasions = ncol(capthist))
     n       <- nrow(capthist)    # number of individuals
     s       <- ncol(capthist)    # number of occasions
     k       <- nrow(trps)
@@ -172,10 +172,10 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         markocc <- rep(1,s)     ## assume all occasions were simple marking occasions
     allsighting <- !any(markocc>0)
 
-    if (!(dettype %in% c(-1:5,8)))
+    if (!all(dettype %in% c(-1:5,8)))
         list(D=NA, g0=NA, sigma=NA)
     else {
-        prox     <- detector(trps) %in% c('proximity', 'count','signal','times')
+        prox     <- any(detector(trps) %in% c('proximity', 'count','signal','times'))
         ## wt is the number of opportunities for capture given binary usage
         wt <- apply(usge>0, 1, sum)
 
@@ -185,11 +185,8 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         else
             thin <- 1.0
         m        <- nrow(mask)                   # number of points in mask
-        if (length(dim(capthist))>2)
-            cpa     <- sum(abs(capthist))/n      # captures per animal
-        else
-            cpa     <- sum(abs(capthist)>0)/n    # captures per animal
-
+        cpa     <- sum(abs(capthist))/n      # captures per animal
+        
         obsRPSV <- RPSV(capthist, CC = TRUE)
 
         if (is.na(obsRPSV) | (obsRPSV<1e-10)) {    ## try db

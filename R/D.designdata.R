@@ -187,6 +187,10 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
         }
         for (i in names(maskcovs)) {
             vals <- maskcovs[,i] ## vector
+            if (any(is.na(vals))) {
+                warning(sum(is.na(vals)), " NA set to zero in mask covariate")
+                vals[is.na(vals)] <- 0
+            }
             if (!is.factor(vals) & std)
                 vals <- scale(vals)
             if (ms(mask))

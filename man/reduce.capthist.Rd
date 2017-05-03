@@ -14,13 +14,13 @@ between detector types.
 
 \usage{
 
-\method{reduce}{traps}(object, newtraps = NULL, span = NULL, rename = FALSE, \dots)
+\method{reduce}{traps}(object, newtraps = NULL, newoccasions = NULL, span = NULL, 
+    rename = FALSE, \dots)
 
 \method{reduce}{capthist}(object, newtraps = NULL, span = NULL, rename =
-    FALSE, newoccasions = NULL, by = 1, outputdetector =
-    detector(traps(object)), select = "last", dropunused = TRUE, verify
+    FALSE, newoccasions = NULL, by = 1, outputdetector = NULL,
+    select = c("last","first","random"), dropunused = TRUE, verify
     = TRUE, sessions = NULL, \dots)
-
 }
 
 \arguments{
@@ -40,7 +40,7 @@ between detector types.
 
   \item{by}{ number of old occasions in each new occasion }
 
-  \item{outputdetector}{character value giving \link{detector} type for output }
+  \item{outputdetector}{character value giving \link{detector} type for output (defaults to input) }
 
   \item{select}{ character value for method to resolve conflicts }
 

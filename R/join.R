@@ -1,12 +1,13 @@
-## 2011-12-01, 2011-12-07, 2012-06-08, 2012-11-04
+#############################################################################
+## package 'secr'
+## join.R
+
 ## join returns single-session object from list of inputs
 
-## should new trap ID be numeric , character or factor???
-## 2015-01-31 join() bug fix could fail with exclusivedetector types
-## 2015-04-05 previous bug fix failed...
-## 2015-04-13
-## 2015-10-29 extended to deal with Tu, Tm and all-zero histories
-## 2016-01-08 addzerodf function moved to utility.R
+## 2016-10-10 secr3
+## 2017-01-29 telemetry fixes
+## 2017-03-25 RMarkInput fixed for 3D capthist only
+#############################################################################
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
@@ -32,14 +33,22 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     ####################################################################
 
     condition.usage <- function (trp, i) {
-        us <- matrix(0, nrow=nrow(trp), ncol=nnewocc)
-        s1 <- c(1, cumsum(nocc)+1)[i]
-        s2 <- cumsum(nocc)[i]
-        if (is.null(usage(trp)))
-            us[,s1:s2] <- 1
-        else
-            us[,s1:s2] <- usage(trp)
-        usage(trp) <- us
+        if (!is.null(trp)) {
+            us <- matrix(0, nrow=nrow(trp), ncol=nnewocc)
+            if ('telemetry' %in% detector(trp)) {
+                occasions <- outputdetector == 'telemetry'
+            }
+            else {
+                s1 <- c(1, cumsum(nocc)+1)[i]
+                s2 <- cumsum(nocc)[i]
+                occasions <- s1:s2
+            }
+            if (is.null(usage(trp)))
+                us[,occasions] <- 1
+            else
+                us[,occasions] <- usage(trp)
+            usage(trp) <- us
+        }
         trp
     }
     ####################################################################
@@ -60,12 +69,13 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     ####################################################################
 
     ## mainline
-
     if (!ms(object) | any(sapply(object, class) != 'capthist'))
         stop("requires multi-session capthist object or list of ",
              "single-session capthist")
 
-    outputdetector <- detector(traps(object)[[1]])
+    detectorlist <- lapply(object, expanddet)
+    outputdetector <- unlist(detectorlist)
+
     nsession <- length(object)
     nocc <- sapply(object, ncol)
     names(nocc) <- NULL
@@ -84,7 +94,9 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     ## first check whether all the same (except usage)
     temptrp <- lapply(traps(object), function(x) {usage(x) <- NULL; x})
     sametrp <- all(sapply(temptrp[-1], identical, temptrp[[1]]))
-
+    telemetrytrap <- function (ch) {
+        if ('telemetry' %in% detector(traps(ch))) dim(ch)[3] else 0
+    }
     if (sametrp & remove.dupl.sites) {
         newtraps <- temptrp[[1]]
         class(newtraps) <- c("traps", "data.frame")
@@ -93,12 +105,37 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         ## df$newtrap unchanged
     }
     else {
-        ## temptrp <- mapply(condition.usage, traps(object), 1:nsession)
-        ## 2015-12-08
-        temptrp <- mapply(condition.usage, traps(object), 1:nsession, SIMPLIFY = FALSE)
-        newtraps <- do.call(rbind, c(temptrp, renumber = FALSE))
+        temptrp <- traps(object)
+        if ('telemetry' %in% outputdetector) {
+            # drop all notional 'telemetry' traps and replace at end
+            ttraps0 <- sapply(object, telemetrytrap)
+            ttraps <- ttraps0[ttraps0>0]
+            teltrapno <- ttraps[length(ttraps)] # use last
+            df$newtrap[df$newtrap %in% ttraps] <- teltrapno
+            dropteltrap <- function (trps, teltrap) {
+                if (teltrap>0) {
+                    if (nrow(trps)==1)
+                        NULL
+                    else
+                        subset(trps, (1:nrow(trps)) != teltrap)
+                }
+                else 
+                    trps
+            }
+            newteltrap <- subset(temptrp[[1]],1)
+            temptrp <- mapply(dropteltrap, temptrp, ttraps0)
+            rownames(newteltrap) <- teltrapno
+            temptrp <- c(temptrp, list(newteltrap))
+        }
+        else {
+            df$newtrap <- paste(df$newtrap,df$sess, sep=".")
+        }
+        
+        temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), SIMPLIFY = FALSE)
+        temptrp <- temptrp[!sapply(temptrp, is.null)]
+        newtraps <- do.call(rbind, c(temptrp, renumber = FALSE, checkdetector = FALSE))
+        detector(newtraps) <- outputdetector     
         class(newtraps) <- c("traps", "data.frame")
-        df$newtrap <- paste(df$newtrap,df$sess, sep=".")
     }
 
     ##------------------------------------------------------------------
@@ -107,28 +144,16 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
 
     ##------------------------------------------------------------------
     ## construct new capthist matrix or array from positive detections
-    if (outputdetector %in% .localstuff$exclusivedetectors) {
-        alivesign <- df$alive*2 - 1
-        tempnew <- matrix(0, nrow = n, ncol = sum(nocc))
-        dimnames(tempnew) <- list(unique(df$newID), 1:sum(nocc))
-
-        ## bug fix 2015-04-05
-        ## trapindex <- match(df$newtrap, unique(df$newtrap))
-        trapindex <- match(df$newtrap, rownames(newtraps))
-        tempnew[cbind(df$newID, df$newocc)] <- trapindex * alivesign
-    }
-    else {
-        if (outputdetector %in% .localstuff$polydetectors)
-            df$newtrap <- factor(df$newtrap)
-        else
-            df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
-        tempnew <- table(df$newID, df$newocc, df$newtrap, useNA = "no")
-        alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
-        alivesign[is.na(alivesign)] <- TRUE
-        alivesign <- alivesign * 2 - 1
-        tempnew <- tempnew * alivesign
-    }
-
+    if (all(outputdetector %in% .localstuff$polydetectors))
+        df$newtrap <- factor(df$newtrap)
+    else
+        df$newtrap <- factor(df$newtrap, levels=rownames(newtraps))
+    tempnew <- table(df$newID, df$newocc, df$newtrap, useNA = "no")
+    alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
+    alivesign[is.na(alivesign)] <- TRUE
+    alivesign <- alivesign * 2 - 1
+    tempnew <- tempnew * alivesign
+    
     ##------------------------------------------------------------------
     ## pile on the attributes...
     class(tempnew) <- 'capthist'
@@ -186,6 +211,20 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
     }
 
     ##------------------------------------------------------------------
+    ## telemetry fixes
+    
+    if ('telemetry' %in% outputdetector) {
+        oldtelem <- lapply(object, telemetryxy)
+        telnames <- unique(unlist(lapply(oldtelem,names)))
+        newtelem <- vector('list', length(telnames))
+        names(newtelem) <- telnames
+        for (id in telnames) {
+            newtelem[[id]] <- do.call(rbind, lapply(oldtelem, '[[', id))
+        }
+        telemetryxy(tempnew) <- newtelem
+    }
+    
+    ##------------------------------------------------------------------
     ## negotiate problem that all-zero histories have no xy, signal
     tempdf <- df[neworder,, drop = FALSE]
     if (!is.null(df$x)) {
@@ -213,19 +252,17 @@ RMarkInput <- function (object, grouped = FALSE, covariates = TRUE) {
         stop ("requires single-session capthist object")
     if (ms(object))
         stop ("requires single-session capthist object - use 'join'")
-    if (length(dim(object)) != 2)
-        CH0 <- reduce(object, outputdetector = 'multi')
-    else
-        CH0 <- object
+    object <- check3D(object)
+
+    CH <- apply(object, 1:2, function(x) as.numeric(any(abs(x)>0)))
     ntimes <- ncol(object)
     alive <- apply(object,1,function(x) all(x>=0))
-    CH <- pmin(abs(CH0),1)
 
     if (is.logical(covariates)) {
         if (covariates) {
-            if (is.null(covariates(CH0)))
+            if (is.null(covariates(object)))
                 stop("no covariates in object")
-            covnames <- names(covariates(CH0))
+            covnames <- names(covariates(object))
         }
         else
             covnames <- ""
@@ -233,10 +270,10 @@ RMarkInput <- function (object, grouped = FALSE, covariates = TRUE) {
     else {
         covnames <- covariates
         if (is.character(covariates)) {
-            if (is.null(covariates(CH0)))
+            if (is.null(covariates(object)))
                 stop("no covariates in object")
         }
-        found <- covnames %in% names(covariates(CH0))
+        found <- covnames %in% names(covariates(object))
         if (any(!found)) {
             stop(paste(covnames[!found], collapse=','), " not in covariates(object)")
         }
@@ -267,7 +304,7 @@ RMarkInput <- function (object, grouped = FALSE, covariates = TRUE) {
     else {
         CH$freq <- ifelse(alive,1,-1)
         if (any(covnames != "")) {
-            CH[,covnames] <- covariates(CH0)[,covnames]
+            CH[,covnames] <- covariates(object)[,covnames]
         }
     }
     attr(CH, "interval") <- attr(object, "interval")

@@ -63,7 +63,7 @@ A single-session `traps' object.
 
 \seealso{
   \code{\link{trap.builder}}, \code{\link{cluster.centres}},
-  \code{\link[maptools]{readShapePoly}}
+  \code{\link[rgdal]{readOGR}}
 }
 
 \note{
@@ -86,9 +86,11 @@ temp <- make.systematic(c(6, 6), mini, region, plt = TRUE,
 ## a single multi-catch detector
 
 \dontrun{
-library(maptools)
-setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly("possumarea")  
+
+datadir <- system.file("extdata", package = "secr")
+possumareafile <- paste0(datadir, "/possumarea.shp")
+possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)
 

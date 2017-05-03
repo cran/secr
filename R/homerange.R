@@ -4,6 +4,9 @@
 ## all in homerange.R 2014-09-01
 ## 2014-09-01 modified for userdist
 ## 2014-09-10 does NOT work when userdist fn requires mask covariates..
+## 2016-10-06 secr 3.0
+## 2016-10-28 NOT YET userdist may be session-specific
+## 2017-02-06 updated for telemetry (completing job started last month)
 ############################################################################################
 
 dbar <- function (capthist, userdist = NULL, mask = NULL) {
@@ -11,10 +14,9 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
         lapply(capthist, dbar, userdist, mask)   ## recursive
     }
     else {
-        ## 2014-09-01
         dbarx    <- function (x) {
             x <- abs(unlist(x))
-            ## sqrt(diff(traps$x[x])^2 + diff(traps$y[x])^2)
+            ## assume that within animal, x is in order by occasion
             distmat[cbind(x[-length(x)], x[-1])]  ## vector
         }
         dbarxy    <- function (xy) {
@@ -22,15 +24,27 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
         }
 
         traps <- traps(capthist)
+        det <- expanddet(capthist)
         ## 2014-09-01
         ## NOT USING PARAMETERS noneuc ETC
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for dbar")
         
-        if (detector(traps) %in% .localstuff$polydetectors) {
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                NA
+            else {
+                d <- try(lapply(lxy,dbarxy), silent = TRUE)
+                if (inherits(d, 'try-error'))
+                    d <- NA
+                mean(unlist(d), na.rm=T)
+            }
+        }
+        else if (all(det %in% .localstuff$polydetectors)) {
             if (is.null(xy(capthist)))
-                temp <- NA
+                NA
             else {
                 lxy <- split (xy(capthist), animalID(capthist))
                 d <- try(lapply(lxy,dbarxy), silent = TRUE)
@@ -40,7 +54,14 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
             }
         }
         else {
-            w <- split(trap(capthist, names=F), animalID(capthist))
+            ## order is essential 2016-10-07
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+            }
+            ord <- order(animalID(capthist), occasion(capthist))
+            w <- split(trap(capthist, names=F)[ord], animalID(capthist)[ord])
             d <- try(unlist(lapply(w,dbarx)), silent = TRUE)
             if (inherits(d, 'try-error'))
                 d <- NA
@@ -50,7 +71,7 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
 }
 ############################################################################################
 
-moves <- function (capthist, userdist = NULL, mask = NULL) {
+moves <- function (capthist, userdist = NULL, mask = NULL, names = FALSE) {
     if (inherits (capthist, 'list')) {
         lapply(capthist, moves, userdist, mask)   ## recursive
     }
@@ -58,25 +79,44 @@ moves <- function (capthist, userdist = NULL, mask = NULL) {
         movex    <- function (x) {
             x <- abs(unlist(x))
             distmat[cbind(x[-length(x)], x[-1])]  ## vector
-            ## sqrt(diff(traps$x[x])^2 + diff(traps$y[x])^2)
         }
         movexy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
         traps <- traps(capthist)
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask)
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        det <- expanddet(capthist)
+        distmat <- valid.userdist(userdist, det, traps, traps, mask)
+        if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for moves")
-        if (detector(traps) %in% .localstuff$polydetectors) {
+        
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                NA
+            else {
+                lapply (lxy, movexy)
+            }
+        }
+        else if (all(det %in% .localstuff$polydetectors)) {
             if (is.null(xy(capthist)))
                 NA
             else {
-                lxy <- split (xy(capthist), animalID(capthist))
+#                lxy <- split (xy(capthist), animalID(capthist))
+                lxy <- split (xy(capthist), animalID(capthist, names = names))
                 lapply (lxy, movexy)
             }
         }
         else {
-            w <- split(trap(capthist, names=F), animalID(capthist))
+            ## order is essential 2016-10-08
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+            }
+#            ord <- order(animalID(capthist), occasion(capthist))
+#            w <- split(trap(capthist, names=F)[ord], animalID(capthist)[ord])
+            ord <- order(animalID(capthist, names = names), occasion(capthist))
+            w <- split(trap(capthist, names = FALSE)[ord], animalID(capthist, names = names)[ord])
             lapply(w,movex)
         }
     }
@@ -104,11 +144,22 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
             max(dist(cbind(xy$x, xy$y)))
         }
         traps <- traps(capthist)
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        det <- expanddet(capthist)
+        if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for ARL")
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
+        distmat <- valid.userdist(userdist, det, traps, traps, mask )
         prox  <- length(dim(capthist)) > 2
-        if (detector(traps) %in% .localstuff$polydetectors) {
+        
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                stop("no telemetry coordinates")
+            else {
+                maxd <- unlist(lapply (lxy, MMDMxy))
+                n <- unlist(lapply (lxy, nrow))
+            }
+        }
+        else if (all(det %in% .localstuff$polydetectors)) {
             if (is.null(xy(capthist)))
                 stop("no xy coordinates")
             else {
@@ -118,7 +169,14 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
             }
         }
         else {
-            w <- split(trap(capthist, names=F), animalID(capthist))
+            ## order is essential 2016-10-08
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+            }
+            ord <- order(animalID(capthist), occasion(capthist))
+            w <- split(trap(capthist, names=F)[ord], animalID(capthist)[ord])
             maxd <- unlist(lapply(w, MMDMx))
             n <- unlist(lapply(w, length))
         }
@@ -172,10 +230,21 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask 
                 max(dist(cbind(xy$x, xy$y)))
         }
         traps <- traps(capthist)
-        distmat <- valid.userdist(userdist, detector(traps), traps, traps, mask )
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        det <- expanddet(capthist)
+        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for MMDM")
-        if (detector(traps) %in% .localstuff$polydetectors) {
+        
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                stop ("no telemetry coordinates")
+            else {
+                maxd <- unlist(lapply (lxy, MMDMxy))
+                n <- unlist(lapply (lxy, nrow))
+            }
+        }
+        else if (all(det %in% .localstuff$polydetectors)) {
             if (is.null(xy(capthist)))
                 stop ("no xy coordinates")
             else {
@@ -185,7 +254,11 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask 
             }
         }
         else {
-            ## streamlined 2010 03 30
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+            }
             w <- split(trap(capthist, names=F), animalID(capthist))
             maxd <- unlist(lapply( w, MMDMx))
             n <- unlist(lapply(w, length))
@@ -225,18 +298,28 @@ RPSV <- function (capthist, CC = FALSE)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
         RPSVxy <- function (xy) {
-            x <- xy$x
-            y <- xy$y
+            x <- xy[,1]
+            y <- xy[,2]
             n <- length(x)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
         ## 2014-12-04
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        if (!(detector(traps) %in% .localstuff$individualdetectors))
+        det <- expanddet(capthist)
+        if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for RPSV")
-        if (detector(traps) %in% .localstuff$polydetectors) {
-  
+     
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                temp <- NA
+            else {
+                temp <- lapply (lxy, RPSVxy)
+            }
+        }
+        else if (all(det %in% .localstuff$polydetectors)) {
+            
             if (is.null(xy(capthist)))
                 temp <- NA
             else {
@@ -245,6 +328,11 @@ RPSV <- function (capthist, CC = FALSE)
             }
         }
         else {
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+            }
             w <- split(trap(capthist, names=F), animalID(capthist))
             temp <- lapply(w,RPSVx)
         }
@@ -289,3 +377,21 @@ RPSV <- function (capthist, CC = FALSE)
 ## source ('d:\\density secr 1.3\\secr\\r\\ARL.R')
 ##  data(Peromyscus)
 ##  ARL(Peromyscus.WSG, full=T)
+
+
+##################################################
+## 2017-02-06 not exported
+RPSVxy <- function (xy, CC = F) {
+    x <- xy[,1]
+    y <- xy[,2]
+    n <- length(x)
+    temp <- c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
+    if (CC)
+        temp <- sqrt((temp[2]+temp[3]) / (2 * temp[1]))
+    else
+        temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
+    attr(temp,'names') <- NULL
+    temp
+}
+##################################################
+

@@ -144,8 +144,8 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
                     beta.vcv = object1$beta.vcv, field = x,
                     smoothsetup = object1$smoothsetup[[x]])
             }
-            ## check added 2016-06-16
-            if (nclusters(object1$capthist)>1)
+            ## check added 2016-06-16, fixed 2016-11-08
+            if (any(unlist(nclusters(object1$capthist))>1))
                 warning("model.average is ignoring n.mashed", call. = FALSE)
             sapply (names(object1$model), getfield, simplify = FALSE)
         }
@@ -302,8 +302,8 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
                 beta.vcv = object1$beta.vcv, field = x,
                 smoothsetup = object1$smoothsetup[[x]])
         }
-        ## check added 2016-06-16
-        if (nclusters(object1$capthist)>1)
+        ## check added 2016-06-16, fixed 2016-11-08
+        if (any(unlist(nclusters(object1$capthist))>1))
             warning("collate is ignoring n.mashed", call. = FALSE)
         sapply (names(object1$model), getfield, simplify = FALSE)
     }

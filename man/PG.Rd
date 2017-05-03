@@ -6,7 +6,7 @@
 \description{
   
 For a telemetry dataset, either as a standalone capthist object with
-detector type `telemetry' or the xylist attribute of a combined capthist
+detector type `telemetryonly' or the xylist attribute of a combined capthist
 object resulting from \code{addTelemetry}, determine the proportion of
 fixes of each individual that lie within a set of polygons. Typically
 used to obtain the proportion of fixes on a trapping grid, hence

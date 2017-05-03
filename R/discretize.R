@@ -77,16 +77,15 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
         }
 
         trps <- if (inherits(object, 'traps')) object else traps(object)
-
         ## first make combined traps object
-        if (!(detector(trps) %in% c('polygon', 'polygonX','transect', 'transectX')))
+        if (!all(detector(trps) %in% c('polygon', 'polygonX','transect', 'transectX')))
             stop ("discretize is for polygon or transect data")
 
-        if (detector(trps) %in% c('transect', 'transectX')) {
+        if (all(detector(trps) %in% c('transect', 'transectX'))) {
             ## for transects, snip and reduce do all the work
             temp <- snip(object, by = spacing, ...)
             if (inherits(object, 'capthist'))
-                temp <- reduce(temp, outputdetector = outputdetector)
+                temp <- reduce(temp, outputdetector = outputdetector, dropunused = FALSE)
             return(temp)
         }
         else {
@@ -103,22 +102,21 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
 
                 ## now assemble captures dataframe
                 trpnum <- nearesttrap(xy(object), trps)
-
                 df <- data.frame(
                     trap = factor(trpnum, levels =1:nrow(trps)),
                     occ = factor(occasion(object), levels = 1:ncol(object)),
                     ID = factor(animalID(object, names = F)),
                     alive = alive(object))
 
-                if (outputdetector %in% c('multi')) {
-                    alivesign <- df$alive*2 - 1
-                    tempnew <- matrix(0, nrow = nrow(object), ncol = ncol(object))
-                    tempnew[cbind(df$ID, df$occ)] <- trpnum * alivesign
-                    if (detector(traps(object)) %in% 'polygon')
-                        warning("polygon data converted to multi-catch; ",
-                                "information may be lost", call. = FALSE)
-                }
-                else {
+                # if (outputdetector %in% c('multi')) {
+                #     alivesign <- df$alive*2 - 1
+                #     tempnew <- matrix(0, nrow = nrow(object), ncol = ncol(object))
+                #     tempnew[cbind(df$ID, df$occ)] <- trpnum * alivesign
+                #     if (detector(traps(object)) %in% 'polygon')
+                #         warning("polygon data converted to multi-catch; ",
+                #                 "information may be lost", call. = FALSE)
+                # }
+                # else {
                     tempnew <- table(df$ID, df$occ, df$trap)
                     alivesign <- tapply(df$alive, list(df$ID,df$occ,df$trap),all)
                     alivesign[is.na(alivesign)] <- TRUE
@@ -131,6 +129,9 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
                                 "information may be lost", call. = FALSE)
                     }
                     tempnew <- tempnew * alivesign
+#                }
+                if (outputdetector %in% c("multi", "single")) {
+                    CH <- reduce(CH, outputdetector = outputdetector, dropunused = FALSE)
                 }
 
                 ## restore attributes

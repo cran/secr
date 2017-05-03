@@ -37,7 +37,7 @@ Mapsource database format.
 ports, or the name of a file to create.
 
 The \code{proj} argument may be complex. For further information see the
-Examples, \url{http://www.remotesensing.org/geotiff/proj_list/} and the
+Examples, \url{https://www.nceas.ucsb.edu/scicomp/recipes/projections} and the
 help for \code{project} in the related package \pkg{rgdal}. If
 \code{proj} is an empty string then coordinates are assumed already to
 be latitudes (column 1) and longitudes (column 2).
@@ -62,7 +62,7 @@ No value is returned. The effect is to upload waypoints to an attached
 \note{
   
   GPSBabel is available free from
-\url{http://www.gpsbabel.org/}. Remember to add it to the Path. On
+\url{https://www.gpsbabel.org/}. Remember to add it to the Path. On
 Windows this means following something like Settings > Control panel >
 System > Advanced settings > Environment variables > (select Path) Edit
 and adding ";C:/Program Files (x86)/gpsbabel" to the end (without the
@@ -77,9 +77,11 @@ quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
 ## the grid comprises single multi-catch detectors.
 
 \dontrun{
-library(maptools)
-setwd(system.file("extdata", package = "secr"))
-possumarea <- readShapePoly("possumarea")  
+
+datadir <- system.file("extdata", package = "secr")
+possumareafile <- paste0(datadir, "/possumarea.shp")
+possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)
 

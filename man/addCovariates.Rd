@@ -12,7 +12,7 @@ ESRI polygon shapefiles input using \pkg{maptools}.
 }
 
 \usage{
-addCovariates(object, spatialdata, columns = NULL, strict = FALSE)
+addCovariates(object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE)
 }
 
 \arguments{
@@ -21,6 +21,7 @@ addCovariates(object, spatialdata, columns = NULL, strict = FALSE)
   \item{columns}{character vector naming columns to include (all by default)}
   \item{strict}{logical; if TRUE a check is performed for points in \code{object} that
 lie outside \code{spatialdata} (mask data sources only)}
+  \item{replace}{logical; if TRUE then covariates with duplicate names are replaced; otherwise a new column is added}
 }
 
 \details{

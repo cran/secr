@@ -18,9 +18,8 @@ sim.capthist(traps, popn = list(D = 5, buffer = 100,
     p.available = 1, renumber = TRUE, seed = NULL,
     maxperpoly = 100, chulltol = 0.001, userdist = NULL, savepopn = FALSE)
 sim.resight(traps, popn = list(D = 5, buffer = 100, Ndist = "poisson"), ...,
-    pID = 1, unmarked = TRUE, nonID = TRUE, unsighted = TRUE, pmark = 0.5, 
-    Nmark = NULL, markingmask = NULL)
-
+    pID = 1, unmarked = TRUE, nonID = TRUE,  unresolved = FALSE, unsighted = TRUE, 
+    pmark = 0.5, Nmark = NULL, markingmask = NULL)
 }
 
 \arguments{
@@ -48,8 +47,9 @@ sim.resight(traps, popn = list(D = 5, buffer = 100, Ndist = "poisson"), ...,
   \item{\dots}{ arguments to pass to \code{sim.capthist} }
   \item{pID}{ probability of individual identification for marked animals }
   \item{unmarked}{ logical, if TRUE unmarked individuals are not recorded during `sighting' }
-  \item{nonID}{ logical, if TRUE then unidentified marked individuals are not recorded during `sighting' }
-  \item{unsighted}{ logical, if TRUE and sighting only then capthist includes all-zero histories }
+  \item{nonID}{logical, if TRUE then unidentified marked individuals are not recorded during `sighting' }
+  \item{unresolved}{logical, if TRUE then individuals of unresolved mark status are not recorded during `sighting' }
+  \item{unsighted}{logical, if TRUE and sighting only then capthist includes all-zero histories }
   \item{pmark}{ numeric probability that an individual is `pre-marked' (see Details)}
   \item{Nmark}{ number of individuals to be `pre-marked' (see Details)}
   \item{markingmask}{ \code{mask} object}
@@ -134,12 +134,11 @@ of `traps' indicates the occasions which are for sighting-only (0) or
 marking and recapture (1). The number 
 of occasions is determined by \code{markocc}. \code{sim.capthist} is first 
 called with the arguments `traps' and \dots. The detector type of `traps' 
-must be `proximity' or `count'. At present the detector type is assumed to 
-be the same for marking and sighting occasions. If \dots includes a non-null `seed' the 
+should be `proximity' or `count' for sighting occasions (markocc = 0). The detector type need not be the same for marking and sighting occasions ('multi' is allowed on marking occasions). If \dots includes a non-null `seed' the 
 random seed is reset in \code{sim.resight} and not passed to 
 \code{sim.capthist}.
 
-A special case arises when all occasions are sighting-only. Then it is assumed that individuals in the population are marked prior to the start of sampling with a known spatial distribution (i.e. marking then does not follow a spatial detection model). By default, animals are marked with the probability \code{pmark}. If \code{Nmark} is specified then a sample of size \code{Nmark} will be selected for marking, overriding \code{pmark}.
+A special case arises when all occasions are sighting-only. Then it is assumed that individuals in the population are marked prior to the start of sampling with a known spatial distribution (i.e. marking does not follow a spatial detection model). By default, animals throughout the buffered area are pre-marked with probability \code{pmark}. If \code{Nmark} is specified then a sample of size \code{Nmark} will be selected for marking, overriding \code{pmark}.
 
 The marked population may be restricted to a subset of the space spanned by \code{popn} by specifying \code{markingmask}, which may have a further covariate `marking' to vary the intensity of marking.
 
@@ -185,8 +184,6 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 
 }
 
-\section{Warning}{\code{sim.resight} allows interspersed marking and sighting occasions, but data with interspersed occasions cannot yet be analysed with \code{\link{secr.fit}}}
-
 \note{
 
 External code is called to speed the simulations. The present version
@@ -218,8 +215,6 @@ Prior to 2.10.0 \code{sim.resight} interpreted length-2 vectors of detection par
     \code{\link{popn}}, \code{\link{Detection functions}}, \code{\link[stats]{simulate}}
 }
 
-\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
-
 \examples{
 ## simple example
 ## detector = "multi" (default)
@@ -234,10 +229,10 @@ summary(sim.capthist (temptrap, detectpar = list(g0 = 0.2,
     sigma = 20)))
 
 ## marking on occasions 1, 3 only
-## see Warning
+temptrap <- make.grid(nx = 6, ny = 6, spacing = 20, detector = 'proximity')
 markocc(temptrap) <- c(1,0,1,0,0)
-summary(sim.resight (temptrap, detectpar = list(g0 = 0.2, 
-    sigma = 20)))
+CH <- sim.resight (temptrap, detectpar = list(g0 = 0.2, sigma = 20))
+summary(CH)
 
 ## multiple sessions
 grid4 <- make.grid(nx = 2, ny = 2)
@@ -245,13 +240,13 @@ temp <- sim.capthist (grid4, popn = list(D = 1), nsessions = 20)
 summary(temp, terse = TRUE)
 
 ## unmarked or presence types
-grid <- make.grid(nx = 10, ny = 10, detector = "unmarked")
-CH <- sim.capthist (grid, noccasions = 5)
-CH
+# grid <- make.grid(nx = 10, ny = 10, detector = "unmarked")
+# CH <- sim.capthist (grid, noccasions = 5)
+# CH
 ## "presence" and "unmarked" data are stored as "count" data
 ## behaviour is controlled by detector type, e.g.
-detector(traps(CH)) <- "presence"
-CH
+# detector(traps(CH)) <- "presence"
+# CH
 
 
 }

@@ -89,6 +89,7 @@ predictD <- function (object, regionmask, group, session,
     }
     ## linear density model on link scale
     else {
+
         newdata <- D.designdata (regionmask, object$model[[parameter]],
              grouplevels, sessionlevels, sessioncov = object$sessioncov,
              meanSD = meanSD)
@@ -96,7 +97,10 @@ predictD <- function (object, regionmask, group, session,
         ## if newdata has more than one group or session...
         if (prod(dimD[2:3]) > 1) {
             ## select a single group
-            groupOK <- (group == grouplevels) | (dimD[2]==1)
+            # block 2017-02-15
+            # groupOK <- (group == grouplevels) | (dimD[2]==1)
+            # select by group number 2017-02-15
+            groupOK <- (group == (1:length(grouplevels))) | (dimD[2]==1)
             groupOK <- rep(rep(groupOK, each = dimD[1]), dimD[3])
             ## select a single session
             sessionOK <- if (is.character(session))

@@ -2,16 +2,14 @@
 ## package 'secr'
 ## make.grid.R
 ## make.grid, make.poly, make.transect, make.circle
-## 2011 10 10 transferred from methods.R
-## 2015-10-19 removed searchcell attribute
-## 2016-05-30 changed default spacey to spacex
+## 2016-10-16 secr 3.0
 ###############################################################################
 
 make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, detector='multi',
     originxy=c(0,0), hollow=F, ID='alphay')
 
 {
-    if (!( detector %in% .localstuff$validdetectors ))
+    if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
     if (!is.null(spacing)) {
         spacex <- spacing
@@ -100,6 +98,10 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, d
     attr(grid, 'cluster')     <- NULL
     attr(grid, 'clustertrap') <- NULL
     attr(grid, 'covariates')  <- NULL
+    
+    ##2016-10-05 to fix example in trapsfn.Rd
+    if (any(detector %in% .localstuff$polydetectors))
+        polyID(grid) <- rep(1, nrow(grid))
 
     grid
 }
@@ -144,9 +146,18 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
 }
 ###############################################################################
 
-make.telemetry <- function (...) {
-    temp <- make.poly(...)
+make.telemetry <- function (xy = c(0,0)) {
+    temp <- data.frame(x = xy[1], y = xy[2])
+    class(temp)     <- c('traps', 'data.frame')
     detector(temp) <- 'telemetry'
+    attr(temp, 'telemetrytype') <- "independent"
+    attr(temp, 'spacex')      <- NULL
+    attr(temp, 'spacey')      <- NULL
+    attr(temp, 'spacing')     <- NULL
+    attr(temp, 'usage')       <- NULL
+    attr(temp, 'cluster')     <- NULL
+    attr(temp, 'clustertrap') <- NULL
+    attr(temp, 'covariates')  <- NULL
     temp
 }
 
@@ -181,7 +192,7 @@ make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,
 make.circle <- function (n = 20, radius = 100, spacing = NULL,
     detector = 'multi', originxy=c(0,0), IDclockwise = T)
 {
-    if (!( detector %in% .localstuff$validdetectors ))
+    if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
     if (is.null(radius) & is.null(spacing))
         stop ("specify 'radius' or 'spacing'")

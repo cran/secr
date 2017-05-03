@@ -94,6 +94,9 @@ Efford, M. G. and Cowan, P. E. (2004) Long-term population trend of
      Zealand. In: \emph{The Biology of Australian Possums and
      Gliders}. Edited by R. L. Goldingay and S. M. Jackson. Surrey
      Beatty & Sons, Chipping Norton. Pp. 471--483.
+     
+Ward, G. D. (1978) Habitat use and home range of radio-tagged opossums \emph{Trichosurus       vulpecula} (Kerr) in New Zealand lowland forest. In: \emph{The ecology of arboreal        folivores}. Edited by G. G. Montgomery. Smithsonian Institute Press. Washington, D.C.
+     Pp. 267--287.
 
 }
 
@@ -103,11 +106,12 @@ summary(OVpossumCH, terse = TRUE)
 ovtrap <- traps(OVpossumCH[[1]])
 
 ## retrieve and plot the forest map
-library(maptools)
-setwd (system.file('extdata', package = 'secr'))
-OVforest <- readShapeSpatial ('OVforest')
+datadir <- system.file("extdata", package = "secr")
+OVforestfile <- paste0(datadir, "/OVforest.shp")
+OVforest <- rgdal::readOGR(dsn = OVforestfile, layer = "OVforest")
+
 forestcol <- terrain.colors(6)[c(4,2,2)]
-plot(OVforest, col = forestcol)
+sp::plot(OVforest, col = forestcol)
 plot(ovtrap, add = TRUE)
 
 ## construct a mask
@@ -123,7 +127,8 @@ plot(ovmask, covariate = 'forest', dots = FALSE, col = forestcol)
 plot(ovtrap, add = TRUE)
 
 ## add the left bank of the Orongorongo River
-lines(read.table('leftbank.txt'))
+lines(read.table(paste0(datadir,'/leftbank.txt')))
+
 }
 
 \keyword{datasets}

@@ -1,4 +1,73 @@
-Changes in version 2.10.4 (2016-12-03)
+Changes in version 3.0.1 (2017-05-03)
+
+New features or changed behaviour of old functions
+    o   'unresolved' sightings now stored in Tn attribute of capthist
+    o   sim.resight() acquires argument 'unresolved'
+    o   plot.secrlist() accepts colour vector
+    o   new function as.mask() to coerce traps objects for plotting
+    o   moves() acquires argument 'names' to control sort order (new default)
+
+Bugs fixed
+    o   sightingPlot() legend ignored fill argument
+
+Documentation
+    o   addTelemetry omitted 'single' and 'multi' from permitted detectionCH types
+
+Other
+    o   discretize() updated for 3.0
+    o   native routine registration completed
+
+Changes in version 3.0.0 (2017-04-11)
+
+New features or changed behaviour of old functions
+    o   3-D data structure used for trapping data
+    o   updateCH() for easy conversion of old data
+    o   multiple detector types may be used in one session 
+        (point detectors only: single, multi, proximity or count)
+    o   marking and sighting occasions may be interspersed
+    o   rbind.traps acquires argument 'checkdetector'
+    o   user-provided distance matrix may be session-specific
+    o   esa 'noccasions' may be less than ncol(usage)
+    o   function occasionKey() to embellish petal plots
+    o   explicit handling of 'uncertain' sightings Tn
+    o   plotMCP() now works with data from point detectors
+    o   details$debug in secr.fit() now integer with multiple levels
+    o   sightingPlot() new function
+    o   plot.capthist() new option "centres"
+    o   secr.fit() argument 'details' may be given as character value
+    o   telemetrytype attribute of traps objects replaces details$telemetrytype
+    o   new addTelemetry() function and revised handling of telemetry data
+    o   addTelemetry() allows multi-session data
+    o   secr.fit() etc. auto predictor 'tt' nontelemetry vs telemetry occasions
+    o   addCovariates() acquires argument 'replace'
+    o   c new method for combining secrlist objects
+    o   make.capthist() discards repeat detections at exclusive detectors, with a warning
+    o   models for polygon or transect detectors requre hazard detection functions 
+    o   esa.plot() accepts secrlist as input (curves overlaid)
+    o   par.secr.fit() acquires argument 'prefix'
+    o   predict.secr() acquires argument 'realnames' to select a subset of 'real' parameters
+
+Bugs fixed
+    o   make.grid() did not assign polyID attribute for polygon detectors
+    o   snip() and discretize() for transects dropped occasions with no detections
+    o   sim.capthist() failed when 'userdist' supplied (non-Euclidean distances)
+
+Other
+    o   ovenbird dataset provided with detector type "proximity"
+    o   esa() more robust to variation when noccasions specified
+    o   new details option 'splitmarked' for resightings (default FALSE)
+    o   usagePlot() argument occasion renamed occasions
+    o   more compact 'call' component of secr.fit output
+    o   discontinued warning when detectfn requires changed parameters (g0 -> lambda0)
+    o   plot method for traps enables box around plot (bty = 'o')
+    o   plotMaskEdge faster
+    o   secr.fit() details savecall = FALSE suppresses call (default in par.secr.fit)
+    o   new function shareFactorLevels() to force factor covariates to use the same levels
+    o   rgdal::readOGR used instead of deprecated maptools::readShapeSpatial
+    o   minor speed improvments for models without learned response
+    o   ip.secr() faster default predictorfn
+
+Changes in version 2.10.4 (2016-12-02)
 
 New features or changed behaviour of old functions
     o   default spacey changed to equal spacex in make.grid

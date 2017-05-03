@@ -8,7 +8,7 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
 }
 
 \usage{
-\method{rbind}{traps}(..., renumber = TRUE, addusage)
+\method{rbind}{traps}(..., renumber = TRUE, addusage, checkdetector = TRUE)
 }
 \arguments{
   \item{\dots}{ one or more \code{traps} objects }
@@ -18,6 +18,7 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
   \item{addusage}{ integer vector; if specified and the inputs lack
     usage attributes then a binary usage attribute will be generated
     with the given number of occasions for each input }
+    \item{checkdetector}{logical; if TRUE then variation in the detector attribute triggers a warning }
 
 }
 

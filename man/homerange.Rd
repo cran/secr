@@ -20,7 +20,7 @@ raw distances.
 distance between detections of each individual i.e. the observed range
 length averaged over individuals (Otis et al. 1978).
 
-\code{ARL} or `Asymptotic Range Length') is obtained by fitting an
+\code{ARL} (or `Asymptotic Range Length') is obtained by fitting an
 exponential curve to the scatter of observed individual range length vs
 the number of detections of each individual (Jett and Nichols 1987: 889).
 
@@ -28,13 +28,14 @@ the number of detections of each individual (Jett and Nichols 1987: 889).
 dispersion of the locations at which individual animals are detected,
 pooled over individuals (cf Calhoun and Casby 1958, Slade and Swihart 1983).
 
+
 }
 
 \usage{
 dbar(capthist, userdist = NULL, mask = NULL)
 MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask = NULL)
 ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, mask = NULL)
-moves(capthist, userdist = NULL, mask = NULL)
+moves(capthist, userdist = NULL, mask = NULL, names = FALSE)
 RPSV(capthist, CC = FALSE)
 }
 
@@ -42,6 +43,7 @@ RPSV(capthist, CC = FALSE)
   \item{capthist}{ object of class \code{\link{capthist}} }
   \item{userdist}{ function or matrix with user-defined distances}
   \item{mask}{ habitat mask passed to userdist function, if required}
+  \item{names}{ logical; should results be ordered alphanumerically by row names? }
   \item{min.recapt}{ integer minimum number of recaptures for a
   detection history to be used }
   \item{plt}{ logical; if TRUE observed range length is plotted against number
@@ -94,6 +96,9 @@ containing fewer than \code{min.recapt}+1 detections.
 The \code{userdist} option is included for exotic non-Euclidean cases
 (see e.g. \code{secr.fit} \link{details}). RPSV is not defined for
 non-Euclidean distances.
+
+If \code{capthist} comprises standalone telemetry data (all detector 'telemetry') 
+then calculations are performed on the telemetry coordinates.
 
 }
 
@@ -150,6 +155,8 @@ parameter from a fitted model (e.g., \eqn{\sigma}{sigma} of the
 half-normal detection function). Even then, be careful that
 \eqn{\sigma}{sigma} is not `contaminated' with behavioural effects (e.g.
 attraction of animal to detector) or `detection at a distance'.
+
+The argument 'names' was added in 3.0.1. The default \code{names = FALSE} causes a change in behaviour from that version onwards.
 
 }
 

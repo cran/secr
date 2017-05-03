@@ -2,12 +2,15 @@
 /* Murray Efford */
 
 /*
+
 This file contains functions for integration of home range overlap
 with polygon detectors and similar. Moved from secr.c 2012-11-13 
 
 The choice of detection function is a bit problematic. Before Jan 2016 (2.10.1) 
 the function integrated was g(r) (a probability, hence between 0 and 1) but the theory 
 is for the hazard. Testing zfn 2016-01-02.
+
+Shifting entirely to hazard formulation (zfn) 2017-03-22
 
 */
 
@@ -41,7 +44,7 @@ void fy(double *x, int n, void *ex) {
     double mx,my;
     double xy[2];
     double d;
-    fnptr fnp = hn;
+    fnptr fnzr = zhnr;
     p = (double*) ex;
     fn = round(p[3]);
     mx = p[4];
@@ -49,12 +52,11 @@ void fy(double *x, int n, void *ex) {
     xy[0] = p[6];
 
     /* set detection function */
-    // fnp = gethfn(fn);
-    fnp = getzfn(fn);  // 2016-01-02
+    fnzr = getzfnr(fn);  // 2016-01-02, 2017-03-22
     for (i=0; i<n; i++) {
         xy[1] = x[i];   /* set each y value */
         d = sqrt ( (xy[1]-my)*(xy[1]-my) + (xy[0]-mx)*(xy[0]-mx) );
-        x[i] = fnp(p, d);   /* g(r) */
+        x[i] = fnzr(p, d);   /* z(r) */
     }
 }
 
@@ -204,10 +206,9 @@ void fx1 (double *x, int n, void *ex) {
     struct rpoint mxy;
     struct rpoint xy;
     double * p;
-/*    double *cumd; */
     double cumd[maxvertices * 2];
     double d;
-    fnptr fnp = hn;
+    fnptr fnzr = zhnr;
     /* extract parameters passed in void pointer ex */
     p = (double*) ex;
     fn = round(p[3]);
@@ -226,14 +227,13 @@ void fx1 (double *x, int n, void *ex) {
     for (i=0; i<(ns-1); i++) {
         cumd[i+1] = cumd[i] + distance (line[i],line[i+1]);
     }
-    /* set detection function - default hn */
-    // fnp = gethfn(fn);
-    fnp = getzfn(fn);  // 2016-01-02
+    /* set detection function - default zhnr */
+    fnzr = getzfnr(fn);  // 2016-01-02, 2017-03-22
     /* for each x in x[] */
     for (i=0; i<n; i++) {
         xy = getxy (x[i], cumd, line, ns, 0);
         d = distance (xy, mxy);
-        x[i] = fnp(p, d);   /* g(r) */
+        x[i] = fnzr(p, d);   /* z(r) */
     }
 }
 

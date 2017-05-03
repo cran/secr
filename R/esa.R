@@ -16,6 +16,8 @@
 ## 2015-10-04 markocc argument for integralprw1
 ## 2015-11-19 dropped param
 ## 2016-06-04 provisional bug fix in esa
+## 2016-10-12 secr3
+## 2016-10-28 userdist may be session-specific
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
@@ -27,6 +29,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
 
 ## strictly doesn't need data, so better to avoid when object not available...
 {
+    if (inherits(object, 'secrlist'))
+        stop("object should be secr not secrlist")
     if (ms(object))
         capthists <- object$capthist[[sessnum]]
     else
@@ -43,12 +47,13 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     beta <- fullbeta(beta, object$details$fixedbeta)
 
     trps   <- traps(capthists)  ## need session-specific traps
-    if (!(detector(trps) %in% .localstuff$individualdetectors))
+    if (!all(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for esa")
-    dettype <- detectorcode(trps)
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
+    dettype <- detectorcode(trps, noccasions = s)
     constant <- !is.null(noccasions)    ## fix 2011-04-07
+  
     if (is.null(noccasions)) {
         noccasions <- s
     }
@@ -62,15 +67,19 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         warning("use of allsighting here untested")
         ## markocc[] <- 1
     }
+    else {
+        #not right, but getting there
+        #object$capthist <- subset(object$capthist, occasions = (markocc>0))
+    }
 
     nmix    <- getnmix (object$details)
     knownclass <- getknownclass(capthists, nmix, object$hcov)
 
-    if (dettype %in% c(3,6)) {
+    if (dettype[1] %in% c(3,6)) {
         k <- c(table(polyID(trps)),0)
         K <- length(k)-1
     }
-    else if (dettype %in% c(4,7)) {
+    else if (dettype[1] %in% c(4,7)) {
         k <- c(table(transectID(trps)),0)
         K <- length(k)-1
     }
@@ -88,8 +97,10 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         else {
             realparval <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
-            realparval <- as.list(realparval)
-            names(realparval) <- parnames(object$detectfn)
+            # realparval <- as.list(realparval)
+            # names(realparval) <- parnames(object$detectfn)
+            ## 2016-11-12
+            realparval <- as.list(realparval[1,])
             realparval$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
         }
         a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
@@ -228,16 +239,18 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                                        detector(trps),
                                        xy1 = trps,
                                        xy2 = mask,
-                                       mask = mask)
+                                       mask = mask,
+                                       sessnum = sessnum)
         }
         ##------------------------------------------
 
         ## protection added 2012-10-21
-        if (dettype %in% c(13)) {
+        if (dettype[1] %in% c(13)) {
             return(NA)
         }
         else {
-            temp <- .C("integralprw1", PACKAGE = 'secr',
+            
+            temp <- .C("integralprw1", # PACKAGE = 'secr',
                        as.integer(dettype),
                        as.double(Xrealparval0),
                        as.integer(rep(1,n)),           ## dummy groups 2012-11-13..2013-06-24
@@ -261,7 +274,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                        as.double(cell),                ## cell area (ha) or length (km)
                        as.double(miscparm),
                        as.integer(object$detectfn),
-                       as.integer(binomN),             ## 2012-12-18
+                       as.integer(expandbinomN(binomN, dettype)),             ## 2016-10-14
                        as.integer(useD),
                        a=double(n),
                        resultcode=integer(1)

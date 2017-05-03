@@ -18,6 +18,8 @@
 ## 2014-06-02 ignoreusage
 ## 2014-08-21 adapted for smooth terms in models; save smoothsetup
 ## 2015-10-08 added ts for marking and sighting occasions
+## 2016-10-12 secr3 b,bk,bkc adapted for always-3D
+## 2017-01-25 added tt for nontelemetry and telemetry occasions
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
@@ -220,7 +222,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
     dims <- c(R,n,S,K,nmix)    # 'virtual' dimensions
     dframenrow <- prod(dims)   # number of rows
-    autovars <- c('session','Session','g','t','T', 'ts',
+    autovars <- c('session','Session','g','t','T', 'ts', 'tt',
                   'b','bn','B','bk','bkn','Bk', 'k', 'K', 'bkc', 'Bkc',
                   'kcov','tcov', 'h2', 'h3')
     #--------------------------------------------------------------------------
@@ -277,6 +279,14 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             stop ("ts is appropriate only for mark-resight data")
         ts <- factor(c('marking','sighting'))[2 - (markocc>0)]   ## markocc 0 vs markocc 1
         dframe$ts <- insertdim (ts, c(3,1), dims)
+    }
+    if ('tt' %in% vars) {
+        detect <- detector(traps(capthist))
+        telem <- detect == 'telemetry'
+        if (!(any(telem) & !all(telem)))
+            stop ("tt is appropriate only for mixed telemetry data")
+        tt <- factor(c('nontelem','telem'))[telem+1] 
+        dframe$tt <- insertdim (tt, c(3,1), dims)
     }
     if ('tcov' %in% vars) {
         if (is.null(timecov))
@@ -352,26 +362,17 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     stop ("model should not use more than one type of behavioural response")
 
     ## assume sessions are same type
-    #  prox <- detector(trps)[[1]] %in% c('proximity', 'count', 'polygon','transect')
-    ## 2011-09-26
-    prox <- detector(trps)[[1]] %in% .localstuff$detectors3D
+    ## 2016-10-12
     makeb <- function (caphist) {      ## global response
         # condition added 2016-10-01
         if (nrow(caphist)==0) 
             array(dim = c(0,S))
         else {
-            if (prox) {
-                temp0 <- apply(abs(caphist), 1:2, sum)
-                t(apply(temp0, 1, prevcapt))
-            }
-            else t(apply(abs(caphist),1, prevcapt))
+            temp0 <- apply(abs(caphist), 1:2, sum)
+            t(apply(temp0, 1, prevcapt))
         }
     }
     makek <- function (caphist) {      ## trap responds to capture of any animal
-        if (!prox) {
-            caphist <- reduce(caphist, output = 'proximity',
-                dropunused = FALSE, verify = FALSE)
-        }
         temp <- apply(abs(caphist), c(2,3), sum) # occasion x trap
         apply(temp, 2, prevcapt)
     }
@@ -380,10 +381,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         if (nrow(caphist)==0) 
             array(dim = c(0,S,K))
         else {
-            if (!prox) {
-                caphist <- reduce(caphist, output = 'proximity',
-                                  dropunused = FALSE, verify = FALSE)
-            }
             temp <- apply(abs(caphist), c(1,3), prevcapt)
             aperm(temp, c(2,1,3))
         }
@@ -393,10 +390,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         if (nrow(caphist)==0) 
             array(dim = c(0,S,K))
         else {
-            if (!prox) {
-                caphist <- reduce(caphist, output = 'proximity',
-                                  dropunused = FALSE, verify = FALSE)
-            }
             ## same animal
             caphist[,,] <- abs(caphist)
             b1 <- apply(caphist, c(1,3), prevcapt)

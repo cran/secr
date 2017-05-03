@@ -52,20 +52,20 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
 
   else {
 
-      if (detector(x) %in% .localstuff$polydetectors) {
+      if (all(detector(x) %in% .localstuff$polydetectors)) {
           if (length(unique(f)) > length(levels(polyID(x))))
               warning ("split factor does not match traps object")
       }
       out <- list()
       for (i in levels(f)) {
-          if (detector(x) %in% .localstuff$polydetectors) {
+          if (all(detector(x) %in% .localstuff$polydetectors)) {
               temp <- subset (x, subset = (sp == i), ...)
           }
           else
               temp <- subset (x, subset = (f == i), ...)
           if (!drop | (nrow(temp)>0))
               out[[i]] <- temp
-          if (detector(x) %in% .localstuff$pointdetectors) {
+          if (all(detector(x) %in% .localstuff$pointdetectors)) {
               spacing(out[[i]]) <- spacing(out[[i]], recalculate = TRUE)
           }
       }

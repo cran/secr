@@ -8,6 +8,7 @@
 ## 2012-10-19 telemetry detector type
 ## 2013-10-29 noccasions derived from usage
 ## 2015-11-03 Improved handling of 'noncapt' with 'validcapt' - no need for dummy trapID etc
+## 2017-01-11 adjusted for direct input of telemetry
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
@@ -78,6 +79,25 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
 
     else ## single-session call
     {
+        ## 2017-03-28
+        ## sort by session, animal & occasion, retaining original order otherwise
+        captures <- captures[order(captures[,1], captures[,2], captures[,3]),]
+        if (any(detector(traps) %in% .localstuff$exclusivedetectors)) {
+            repeated <- duplicated(paste0(captures[,1],captures[,2],captures[,3]))
+            if (any(repeated)) {
+                if (length(detector(traps)) > 1)
+                    occasiondetector <- detector(traps)[abs(captures[,3])]
+                else
+                    occasiondetector <- detector(traps)
+                OK <- (!occasiondetector %in% .localstuff$exclusivedetectors) |
+                    !repeated
+                if (sum(OK) != nrow(captures))
+                    warning("dropping repeat detections within occasions at exclusive detectors (traps)")
+                captures <- captures[OK, ]
+            }
+        }
+        ## end 2017-03-28
+        
         uniqueID <- unique(captures[,2])
         ## condition inserted 2015-11-03 to avoid need to specify valid trap for noncapt
         validcapt <- uniqueID != noncapt
@@ -87,7 +107,11 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             if (fmt!='trapID') {
                 if (ncol(captures)<5)
                     stop ("too few columns in capture matrix")
-                if (detector(traps) %in% c('polygon','polygonX','telemetry')) {
+                
+                if (all(detector(traps) %in% 'telemetry')) {
+                    captTrap <- rep(1, nrow(captures))
+                }
+                else if (all(detector(traps) %in% c('polygon','polygonX'))) {
                     if (nrow(captures)==0)  ## 2016-01-02
                         captTrap <- numeric(0)
                     else
@@ -99,7 +123,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                                  "polygon(s) were dropped")
                     }
                 }
-                else if (detector(traps) %in% c('transect','transectX')) {
+                else if (all(detector(traps) %in% c('transect','transectX'))) {
                     if (nrow(captures)==0)
                         captTrap <- numeric(0)
                     else
@@ -112,8 +136,10 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     }
                 }
                 else {
-                    ## modified 2015-04-12 to snap to site
+                    if (!all(detector(traps) %in% .localstuff$pointdetectors))
+                        stop("cannot mix point and other detector types")
                     if (snapXY) {
+                        ## snap to site
                         dtrap <- distancetotrap(captures[,4:5], traps)
                         if (any(dtrap>tol))
                             stop("capture XY greater than distance tol from nearest trap")
@@ -131,8 +157,8 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 }
             }
             else {
-                if (detector(traps) %in% .localstuff$polydetectors)
-                    stop ("use fmt XY to input detections from polygons or transects")
+                if (any(detector(traps) %in% .localstuff$polydetectors))
+                    stop ("use fmt XY to input detections from polygons or transects or telemetry")
                 captTrap <- match(captures[,4], row.names(traps))
                 if (any(is.na(captTrap))) {
                     print(captures[is.na(captTrap),])
@@ -172,58 +198,39 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         nID    <- length(uniqueID)
         detectionOrder <- order(captTrap, abs(captures[validcapt,3]), captID)
 
-        dim3 <- detector(traps) %in% .localstuff$detectors3D
-        if (dim3) {
-            w <- array (0, dim=c(nID, nocc, ndetector(traps)))
-            ## 2011-03-19, 2011-03-27
-            ## drop rows if dummy input row indicates no captures
-            if (any(!validcapt)) {
-                if (any(validcapt))
-                    stop ("cannot combine data and noncapt")
-                w <- w[FALSE, , , drop = FALSE]
-                dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
-            }
-            else {
-                dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
-                if (nID>0) {
-                    dimnames(w)[[1]] <- 1:nID   ## 2016-01-02
-                    temp <- table (captID, abs(captures[,3]), captTrap)
-                    if ('0' == dimnames(temp)[[2]][1]) {
-                        ## drop zero occasion but retain animals for mark-resight
-                        temp <- temp[,-1,]
-                    }
-                    d <- dimnames(temp)
-                    d <- lapply(d, as.numeric)
-                    w[d[[1]], d[[2]], d[[3]]] <- temp
-                    
-                    ## fix to retain deads 2010-08-06
-                    dead <- captures[,3]<0
-                    deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
-                    w[deadindices] <- w[deadindices] * -1
-                }
-                #################################
-            }
+        ## all dim3 now
+        if ((length(detector(traps))>1) & (length(detector(traps)) != nocc))
+            stop("detector vector of traps object does not match nocc")
+            
+        w <- array (0, dim=c(nID, nocc, ndetector(traps)))
+        ## drop rows if dummy input row indicates no captures
+        if (any(!validcapt)) {
+            if (any(validcapt))
+                stop ("cannot combine data and noncapt")
+            w <- w[FALSE, , , drop = FALSE]
+            dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
         }
         else {
-            w     <- matrix(0, nrow = nID, ncol = nocc)
-            ## 2011-03-19, 2011-03-27
-            ## drop rows if dummy input row indicates no captures
-            if (any(!validcapt)) {
-                if (any(validcapt))
-                    stop ("cannot combine data and noncapt")
-                w <- w[FALSE, , drop = FALSE]
+            dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
+            if (nID>0) {
+                dimnames(w)[[1]] <- 1:nID   ## 2016-01-02
+                temp <- table (captID, abs(captures[,3]), captTrap)
+                if ('0' == dimnames(temp)[[2]][1]) {
+                    ## drop zero occasion but retain animals for mark-resight
+                    temp <- temp[,-1,]
+                }
+                d <- dimnames(temp)
+                d <- lapply(d, as.numeric)
+                w[d[[1]], d[[2]], d[[3]]] <- temp
+                
+                ## fix to retain deads 2010-08-06
+                dead <- captures[,3]<0
+                deadindices <- cbind(captID[dead], abs(captures[dead,3]), captTrap[dead])
+                w[deadindices] <- w[deadindices] * -1
             }
-            else {
-                ## adjusted 2009 08 13 to ensure first occurrence selected when
-                ## more than one per occasion
-                indices <- cbind(captID, abs(captures[,3]))
-                values <- captTrap * sign(captures[,3])
-                ord <- order (captID, 1:length(captID), decreasing=TRUE)
-                ## drop=F is critical in next line to ensure retains dim2
-                w[indices[ord,, drop=F]] <- values[ord]
-            }
+            #################################
         }
-
+    
         wout <- abind(wout, w, along=1)
         dimnames(wout)[[2]] <- 1:nocc
         attr(wout,'covariates') <- data.frame() ## default 2015-01-06
@@ -235,18 +242,15 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             ## check added 2010 05 01
             if (any(is.na(wout))) {
                 rw <- row(wout)[is.na(wout)]
-                if (dim3)
-                    print (wout[rw,,,drop=F])
-                else
-                    print (wout[rw,,drop=F])
+                print (wout[rw,,,drop=F])
                 stop ("missing values not allowed")
             }
 
             ## code to input permanent individual covariates if these are present
             zi <- NULL
             startcol <- ifelse (fmt=='trapID', 5, 6)
-            if (detector(traps) %in% c('signal')) startcol <- startcol+1
-            if (detector(traps) %in% c('signalnoise')) startcol <- startcol+1
+            if (all(detector(traps) %in% c('signal'))) startcol <- startcol+1
+            if (all(detector(traps) %in% c('signalnoise'))) startcol <- startcol+1
             if (ncol(captures) >= startcol)
                 zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
             if (!is.null(zi)) {
@@ -278,12 +282,16 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         traps(wout) <- traps
         session(wout)  <- as.character(captures[1,1])
         if (nrow(wout) > 0) {
-            if (detector(traps) %in% .localstuff$polydetectors) {
+            if (all(detector(traps) %in% 'telemetry')) {
+                xyl <- split(captures[,4:5], captures[,2], drop = TRUE)
+                telemetryxy(wout) <- xyl
+            }
+            if (all(detector(traps) %in% .localstuff$polydetectors)) {
                 xy <- captures[detectionOrder,4:5]
                 names(xy) <- c('x','y')
                 attr(wout,'detectedXY') <- xy
             }
-            if (detector(traps) %in% c('signal','signalnoise')) {
+            if (all(detector(traps) %in% c('signal','signalnoise'))) {
                 if (is.null(cutval))
                     stop ("missing value for signal threshold")
                 if (fmt=='XY')
