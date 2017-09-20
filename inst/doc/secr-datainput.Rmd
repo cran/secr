@@ -38,9 +38,11 @@ consult the [Glossary](#glossary).
 Input files should be prepared with a text editor, not a word
 processing program. Values are usually separated by blanks or tabs,
 but commas may also be used. Input files with extension '.csv' are
-recognised automatically as comma-delimited. This makes it feasible to
-prepare input files with spreadsheet software. Care should be taken to
+recognised automatically as comma-delimited. Care should be taken to 
 prefix header information with the comment character (default #).
+
+Input files may also be prepared with spreadsheet software 
+(see later section on [reading Excel files](#readxl)).
 
 Identifiers may be numeric values or alphanumeric values with no
 included spaces, tabs or commas. The underscore character should not
@@ -56,9 +58,9 @@ record per line. Each detection record starts with a session
 identifier, an animal identifier, an occasion number, and the location
 of the detection. Location is usually given in 'trapID' format as a
 detector (trap) identifier that matches a detector in the trap layout
-file (below)[^footnote1]
+file (below)[^footnote2]
 
-[^footnote1]: The older, but still supported, 'XY' format uses
+[^footnote2]: The older, but still supported, 'XY' format uses
   the actual x- and y-coordinates of the detection, but this is risky
   as coordinates must exactly match those in the trap layout file.
 
@@ -225,6 +227,34 @@ If the study includes multiple sessions and the detector layout or usage varies 
 #When read.capthist is inadequate...
 
 Some data do not neatly import with `read.capthist`. You may need to first construct `traps` objects with `read.traps` and then marry them to capture data by a custom call to `make.capthist` (`make.capthist` is called automatically by `read.capthist`). Please consult the help for `read.traps` and `make.capthist`.
+
+#Reading Excel files {#readxl}
+
+Input from spreadsheets to R has been problematic. The package **readxl** (Wickham and Bryan 2017) appears now to provide a stable and general solution. From **secr** 3.0.2 onwards `read.traps` and `read.capthist` use **readxl** to read Excel workbooks (.xls or .xlsx files). 
+
+We demonstrate with an Excel workbook containing the stoat data that is provided at http://www.otago.ac.nz/density/examples and here downloaded to the working directory:
+
+```{r download, echo = TRUE}
+download.file("http://www.otago.ac.nz/density/examples/stoat.xlsx",
+              "stoat.xlsx", quiet = TRUE, mode = "wb")
+```
+
+The trap locations and the detection data are in separate sheets. A capthist object is then formed in one call to `read.capthist`:
+
+```{r readxl, warning = FALSE}
+CH <- read.capthist ("stoat.xlsx", sheet = c("stoatcapt", "stoattrap"), skip = 1,
+                     detector = "proximity")
+summary(CH)
+```
+
+Note that in this case --
+
+1. **readxl** must have been installed, but it does not need to be loaded with `library`.
+2. If the 'trapfile' argument is omitted, as in the example, then 'captfile' is assumed to be a workbook with separate worksheets for the captures and the detector layout.
+3. The 'sheet' and 'skip' arguments are passed to `read_excel`. They may be vectors of length 1 (same for captures and detector layout) or length 2 (first captures, then detector layout). Sheets may be specified by number or by name.
+4. You should explicitly skip header lines except for the column headings (the comment character "#" is not recognised).
+5. The columns of coordinates should be headed "x" and "y". If these names are not found then the second and third columns will be used, with a warning.
+6. There is no provision yet for input from Excel of multi-session data with session-specific trap layouts.
 
 #Other detector types
 
@@ -435,13 +465,16 @@ Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and
     capture-recapture models. Version 1.0.* Wildlife Conservation
   Society - India Program, Centre for Wildlife Studies, Bangalure,
   India.
+  
+Wickham, H. and Bryan, J. (2017). **readxl**: Read Excel Files. R
+  package version 1.0.0. https://CRAN.R-project.org/package=readxl  
 
 #Appendix: Glossary  {#glossary}
 
 ###Covariate
-Auxiliary data used in a model of detection probability. Covariates may be associated with detectors, individuals, sessions or occasions. Spatial covariates of density are a separate matter -- see `?mask`. Individual covariates[^footnote] are stored in a dataframe (one row per animal) that is an attribute of a capthist object. Detector covariates are stored in a dataframe (one row per detector) that is an attribute of a traps object (remembering that a capthist object always includes a traps object). Session and occasion (=time) covariates are not stored with the data; they are provided as the arguments 'sessioncov' and 'timecov' of function `secr.fit`.
+Auxiliary data used in a model of detection probability. Covariates may be associated with detectors, individuals, sessions or occasions. Spatial covariates of density are a separate matter -- see `?mask`. Individual covariates[^footnote3] are stored in a dataframe (one row per animal) that is an attribute of a capthist object. Detector covariates are stored in a dataframe (one row per detector) that is an attribute of a traps object (remembering that a capthist object always includes a traps object). Session and occasion (=time) covariates are not stored with the data; they are provided as the arguments 'sessioncov' and 'timecov' of function `secr.fit`.
 
-[^footnote]:Individual covariates may be used directly only when a model is fitted by maximizing the conditional likelihood, but they are used to define groups for the full likelihood case.
+[^footnote3]:Individual covariates may be used directly only when a model is fitted by maximizing the conditional likelihood, but they are used to define groups for the full likelihood case.
 
 ###Detector 
 A device used to detect the presence of an animal. Often used interchangeably with 'trap' but it is helpful to distinguish true traps, which always detain the animal until it is released, from other detectors such as hair snags and cameras that leave the animal free to roam. A detector in SECR has a known physical location, usually a point defined by its x-y coordinates.

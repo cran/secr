@@ -1,7 +1,10 @@
 ############################################################################################
 ## package 'secr'
 ## secr.test.R
-## last changed 2014-08-07, 2014-09-07
+## changed 2014-08-07, 2014-09-07
+## 2017-07-26 tweaked seed = seed to seed = NULL in sim.secr
+## 2017-07-27 saved seed attribute from simulate, rather than just input value
+
 ############################################################################################
 
 ## Monte Carlo goodness of fit tests
@@ -41,7 +44,8 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
         if (missing(statfn))
             ## object is secr fit
             statfn <- function(object) c(devdf = deviance(object) / df.residual(object))
-        fitted <- sim.secr(object, nsim = nsim, extractfn = trim, seed = seed,
+        ## 2017-07-26 tweaked seed = seed to seed = NULL
+        fitted <- sim.secr(object, nsim = nsim, extractfn = trim, seed = NULL,
                            data = sims, start = object$fit$par, ncores = ncores,
                            tracelevel = tracelevel)
         out <- summarise(object, fitted)
@@ -67,7 +71,7 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
     }
 
     output <- list(object = object, nsim = nsim, statfn = statfn,
-                   fit = fit, seed = seed, output = out)
+                   fit = fit, seed = attr(sims, "seed"), output = out)
     class(output) <- c('secrtest', 'list')
     output
 }

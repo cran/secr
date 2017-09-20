@@ -274,10 +274,17 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
     if ('ts' %in% vars) {
         markocc <- markocc(traps(capthist))
-        sighting <- length(unique(markocc)) > 1
-        if (!sighting)
-            stop ("ts is appropriate only for mark-resight data")
-        ts <- factor(c('marking','sighting'))[2 - (markocc>0)]   ## markocc 0 vs markocc 1
+        ## reworked 2017-09-01
+        if (setequal(markocc, 0:1) | setequal(markocc, -1:1)) {
+            ## treat -1 (unresolved) and 0 (sighting) occasions the same
+            markocc <- pmax(markocc,0)  
+            ts <- factor(c('sighting','marking')[markocc+1])   ## markocc 0 vs markocc 1
+        }
+        else if (setequal(markocc, -1:0)) {
+            ts <- factor(c('unresolved','sighting')[markocc+2])   ## markocc -1 vs markocc 0
+        }
+        else
+            stop ("ts is used only for mark-resight data")
         dframe$ts <- insertdim (ts, c(3,1), dims)
     }
     if ('tt' %in% vars) {

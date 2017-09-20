@@ -5,12 +5,16 @@
 \title{ Combine capthist Objects }
 
 \description{
+
   Form a single \code{capthist} object from two or more compatible \code{capthist} objects.
+
 }
 
 \usage{
+
   MS.capthist(...)
-  rbind.capthist(..., renumber = TRUE, pool = NULL, verify = TRUE)
+  \method{rbind}{capthist}(..., renumber = TRUE, pool = NULL, verify = TRUE)
+
 }
 
 \arguments{
@@ -66,8 +70,7 @@ FALSE}, the animal IDs will not change.
 The use of \code{rbind.capthist} to concatenate sessions is now deprecated: 
 use \code{MS.capthist}. 
 
-Although \code{MS.capthist} and \code{rbind.capthist} look like S3
-methods, they aren't. The full function names must be used.
+Although \code{MS.capthist} looks like an S3 method, it isn't. The full function name must be used. \code{rbind.capthist} became an S3 method in \pkg{secr} 3.1, so it is called as \code{rbind} alone.
 
 }
 
@@ -108,7 +111,7 @@ summary(temp3)
 RPSV(temp3)
 
 ## pool sessions
-temp4 <- rbind.capthist(temp1, temp2)
+temp4 <- rbind(temp1, temp2)
 summary(temp4)
 RPSV(temp4)
 

@@ -17,6 +17,7 @@
 ## 2015-01-13 debugged non-rectangular buffers; see sim.popn.test.R in testing
 ## 2015-02-18 multisession sim.popn updated for Nbuffer
 ## 2016-09-21 model2D = "even" option
+## 2017-06-07 missing D becomes NULL
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -37,14 +38,18 @@ toroidal.wrap <- function (pop) {
 tile <- function (popn, method = "reflect") {
     bbox <- attr(popn, 'boundingbox')
     if (method== "reflect") {
-        p2 <- rbind.popn(popn, flip(popn,lr=min(bbox$x)), flip(popn,lr=max(bbox$x)))
-        rbind.popn(p2, flip(p2,tb=min(bbox$y)), flip(p2,tb=max(bbox$y)))
+        # p2 <- rbind.popn(popn, flip(popn,lr=min(bbox$x)), flip(popn,lr=max(bbox$x)))
+        # rbind.popn(p2, flip(p2,tb=min(bbox$y)), flip(p2,tb=max(bbox$y)))
+        p2 <- rbind(popn, flip(popn,lr=min(bbox$x)), flip(popn,lr=max(bbox$x)))
+        rbind(p2, flip(p2,tb=min(bbox$y)), flip(p2,tb=max(bbox$y)))
     }
     else if (method == "copy") {
         ht <- max(bbox$y) - min(bbox$y)
         wd <- max(bbox$x) - min(bbox$x)
-        p2 <- rbind.popn(popn, shift(popn,c(-wd,0)), shift(popn, c(wd,0)))
-        rbind.popn(p2, shift(p2,c(0,-ht)), shift(p2, c(0,ht)))
+        # p2 <- rbind.popn(popn, shift(popn,c(-wd,0)), shift(popn, c(wd,0)))
+        # rbind.popn(p2, shift(p2,c(0,-ht)), shift(p2, c(0,ht)))
+        p2 <- rbind(popn, shift(popn,c(-wd,0)), shift(popn, c(wd,0)))
+        rbind(p2, shift(p2,c(0,-ht)), shift(p2, c(0,ht)))
     }
     else
         stop ("unrecognised method")
@@ -57,7 +62,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     = c('poisson','fixed','specified'), nsessions = 1, details = NULL,
     seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL,
     ...)  {
-
+    if (missing(D)) D <- NULL
+  
     model2D <- match.arg(model2D)
     Ndist <- match.arg(Ndist)
     buffertype <- match.arg(buffertype)
@@ -72,7 +78,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             fr <- x-trunc(x)
             sample (c(trunc(x), trunc(x)+1), size=1, prob=c(1-fr, fr))
         }
-        session.popn <- function (s, D, Nbuffer) {
+        ## session.popn <- function (s, D, Nbuffer) {
+        session.popn <- function (s, D=NULL, Nbuffer=NULL) {
             ## independent population
             if (s > 1) seed <- NULL   ## 2015-02-18
             if (!is.null(Nbuffer))
@@ -99,7 +106,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 survive <- sort(survive)   ## numeric indices
             }
             
-            newpopn <- subset.popn(oldpopn, subset=survive)
+            ## 2017-06-07 newpopn <- subset.popn(oldpopn, subset=survive)
+            newpopn <- subset(oldpopn, subset=survive)
             if (turnoverpar$sigma.m[t] > 0) {
                 newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
                                                   sd = turnoverpar$sigma.m[t])
@@ -129,7 +137,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                    Ndist = 'specified', Nbuffer = nrecruit,
                                    nsessions = 1, details = details)
               ## danger: resets random seed
-                newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
+              # newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
+              newpopn <- rbind(newpopn, recruits, renumber = FALSE)
             }
             class(newpopn) <- class(MSpopn[[1]])
             attr(newpopn, 'mask') <- attr(MSpopn[[1]], 'mask')
@@ -451,6 +460,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         attr(animals, 'seed') <- RNGstate   ## save random seed
         attr(animals, 'Ndist') <- Ndist
+        attr(animals, 'Nbuffer') <- Nbuffer
+        attr(animals, 'D') <- D   # bulky if mask
         attr(animals, 'model2D') <- model2D
         attr(animals, 'buffertype') <- buffertype
         attr(animals, 'boundingbox') <- expand.grid (x=xl,y=yl)[c(1,3,4,2),]

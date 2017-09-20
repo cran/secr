@@ -838,10 +838,30 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     dots <- list(...)
     dots$traps <- traps
 
-    if (!is.null(dots$seed)) {
-        set.seed(dots$seed)
-        dots$seed <- NULL
+    # if (!is.null(dots$seed)) {
+        # set.seed(dots$seed)
+        # dots$seed <- NULL
+    # }
+    
+    #################################################################
+    ## 2017-07-26
+    seed <- dots$seed
+    dots$seed <- NULL
+    
+    ## set random seed
+    ## copied from simulate.lm
+    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+        runif(1)
+    if (is.null(seed))
+        RNGstate <- get(".Random.seed", envir = .GlobalEnv)
+    else {
+        R.seed <- get(".Random.seed", envir = .GlobalEnv)
+        set.seed(seed)
+        RNGstate <- structure(seed, kind = as.list(RNGkind()))
+        on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
     }
+    #################################################################
+    
     dots$noccasions <- S    ## override noccasions
     dots$renumber <- FALSE  ## to match animalID
 
@@ -856,12 +876,25 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     #---------------------------------------------------------------------------
     if (allsighting) {
         if (distributedmarking) {
-            Nunmark <- if (popn$Ndist == 'fixed') {
-                if (!is.null(popn$Nbuffer)) popn$Nbuffer - Nmark
-                else popn$D * maskarea(markingmask) - Nmark
+           
+            ## 2017-05-26
+            ## Nunmark <- if (popn$Ndist == 'fixed') {
+            Ndist <- attr(popn, 'Ndist')
+            if (is.null(Ndist)) {
+                warning ("popn does not have Ndist attribute; assuming Poisson")
+                Ndist <- "poisson"
+            }
+            Nbuffer <- attr(popn, 'Nbuffer')
+            D <- attr(popn, 'D')
+            if (is.null(Nbuffer) & (is.null(D) | inherits(D, 'mask')))
+                stop ("sim.resight option not available for missing Nbuffer,D or D as mask")
+            
+            Nunmark <- if (Ndist == 'fixed') {
+                    if (!is.null(Nbuffer)) Nbuffer - Nmark
+                else D * maskarea(markingmask) - Nmark
             }
             else { 
-                rpois(1, popn$D * maskarea(markingmask)) - Nmark
+                rpois(1, D * maskarea(markingmask)) - Nmark
             }
             if (Nunmark<0) {
                 warning ("Nunmark < 0; setting to 0")
@@ -964,9 +997,6 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         dfmarked <- df[df$occasion >= df$markingoccasion,, drop = FALSE]
         dfunmarked <- df[df$occasion < df$markingoccasion,, drop = FALSE]
         # which of the marked detections were identified?
-        # 2016-10-18
-        # dfmarked$ID <- (dfmarked$occasion == dfmarked$markingoccasion) |
-        #     (runif(nrow(dfmarked)) < pID)
         markingoccasions <- (1:S)[markocc>0]
         dfmarked$ID <- (dfmarked$occasion %in% markingoccasions) |
             (runif(nrow(dfmarked)) < pID)
@@ -989,6 +1019,9 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     else
         trapnames <- row.names(traps(CH))
     
+    ## 2017-09-01
+    CH[,unres,] <- 0
+    
     ############################################################################
     ## add all-zero histories for animals marked but never sighted (allsighting only)
     if (allsighting & unsighted) {
@@ -1004,6 +1037,9 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         dots$popn <- popnU
         capthistU <- do.call('sim.capthist', dots)
     }
+    
+    ##------------------------------------------------------------------------------
+    ## sightings of definitely unmarked animals
     
     if (unmarked) {
         countfn <- function(x) {
@@ -1025,38 +1061,39 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         Tu[,unres] <- 0
         Tu(CH) <- Tu
     }
-    if (unresolved) {
-        if (any(unres)) {
-            Tn <- as.matrix(table(factor(df$trapID, levels = trapnames),
-                                  factor(df$occasion, levels = 1:S)))
-            + as.matrix(table(factor(dfunmarked$trapID, levels = trapnames),  ## CHECK THIS
-                              factor(dfunmarked$occasion, levels = 1:S)))
-            Tn[,!unres] <- 0
-            Tn(CH) <- Tn
-            CH[,unres,] <- 0
-            if (allsighting & !unsighted) {
-                OK <- apply(CH,1,sum)>0
-                CH <- subset(CH,OK)
-            }
-            
-        }    
-    }
-        
+    
     ##------------------------------------------------------------------------------
-
+    ## sightings of marked animals that were not individuated
+    
     if (nonID) {
         Tm <- as.matrix(table(factor(dfnonID$trapID, levels = trapnames),
               factor(dfnonID$occasion, levels = 1:S)))
         Tm[, proximityocc] <- pmin (1, Tm[, proximityocc])
-        if (sum(unres)>0) {
-            ## add to unmarked sightings
-            Tu(CH)[,unres] <- Tu[,unres] + Tm[,unres]
-            Tm[,unres] <- 0
-        }
+        Tm[,unres] <- 0
         Tm(CH) <- Tm 
     }
+    
     ##------------------------------------------------------------------------------
-
+    ## sightings on occasions when mark status not recorded
+    
+    if (unresolved) {
+        if (any(unres)) {
+            Tn <- as.matrix(table(factor(df$trapID, levels = trapnames),
+                                  factor(df$occasion, levels = 1:S)))
+            + as.matrix(table(factor(dfunmarked$trapID, levels = trapnames),  
+                              factor(dfunmarked$occasion, levels = 1:S)))
+            Tn[,!unres] <- 0
+            Tn(CH) <- Tn
+            ## optionally drop all-zero histories
+            if (allsighting & !unsighted) {
+                OK <- apply(CH,1,sum)>0
+                CH <- subset(CH,OK)
+            }
+        }    
+    }
+    
+    ##------------------------------------------------------------------------------
+    
     ## if savepopn = TRUE...
     if (!is.null(attr(capthist, 'popn'))) {
         if (allsighting) {
@@ -1070,6 +1107,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
             attr(CH, 'popn') <- popn   ## NULL unless 
         }
     }
+    attr(CH, 'seed') <- RNGstate      ## save random seed
     CH
 }
 ############################################################################################

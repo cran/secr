@@ -39,6 +39,7 @@
 ## 2017-01-06 telemetrytype transferred to attribute of traps
 ## 2017-01-30 streamlined detectortype checks (anytelem etc.)
 ## 2017-04-04 detectfn limited to 14:18 for polygons, transects
+## 2017-09-10 fixed bug in start getdefault: relied on names(models) when should have used names(parindx)
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -631,13 +632,13 @@
     # 'start' is vector of beta values (i.e. transformed)
     # or a list (secr >= 2.9.1)
     ############################################
-
     if (is.null(start) | is.list(start)) {
         ch <- if (MS) capthist[[details$autoini]] else capthist
         rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
         if (inherits(rpsv, 'try-error')) rpsv <- NA
         start3 <- list(D = NA, g0 = NA, sigma = NA)
         msk <- if (MS) mask[[details$autoini]] else mask
+        
         requireautoini <- (is.null(start) | !all(names(parindx) %in% names(start))) & !alltelem
 
         if (requireautoini) {
@@ -755,7 +756,8 @@
 
         start <- rep(0, NP)
         for ( i in 1:length(parindx) )
-            start[parindx[[i]][1]] <- getdefault (names(model)[i])
+            ## start[parindx[[i]][1]] <- getdefault (names(model)[i])
+            start[parindx[[i]][1]] <- getdefault (names(parindx)[i])  # 2017-09-10
         if ((details$nmix>1) & !('pmix' %in% fnames) & !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:nmix)-0.5)[2]
 
@@ -851,7 +853,9 @@
     betanames <- unlist(sapply(design$designMatrices, colnames))
     names(betanames) <- NULL
     realnames <- names(model)
+    ## coefficients for D precede all others
     if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    ## coefficients for noneuc follow all others (except model-specific in para below)
     if (NE.modelled) betanames <- c(betanames, paste('noneuc', NEnames, sep='.'))
     betanames <- sub('..(Intercept))','',betanames)
 
@@ -870,11 +874,12 @@
         betanames <- c(betanames, miscnames)
     }
 
-    ## allow for fixed beta parameters
+    ## retain betanames only for non-fixed beta (i.e. NA fixedbeta)
     if (!is.null(details$fixedbeta))
         betanames <- betanames[is.na(details$fixedbeta)]
     betaw <- max(max(nchar(betanames)),8)   # for 'trace' formatting
-
+    names(start) <- betanames
+    
     ############################################
     # Maximize likelihood
     ############################################
@@ -928,7 +933,6 @@
     }
     else
         if (lcmethod %in% c('newton-raphson')) {
-
         args <- list (p         = start,
                       f         = loglikefn,
                       hessian   = tolower(details$hessian)=='auto',

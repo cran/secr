@@ -34,8 +34,7 @@ tile(popn, method = "reflect")
   \item{Ndist}{ character string for distribution of number of individuals }
   \item{nsessions}{ number of sessions to simulate }
   \item{details}{ optional list with additional parameters }
-  \item{seed}{ value for setting .Random.seed - either NULL or an
-    integer}
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   \item{keep.mask}{logical; if TRUE and model2D \%in\% c('IHP','linear')
   then \code{core} is saved as the attribute "mask"}
   \item{Nbuffer}{integer number of individuals to simulate}

@@ -17,7 +17,7 @@ matrix (`non-habitat' cells are optionally dropped). Spatial autocorrelation
 \usage{
 
 randomHabitat(mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
-drop = TRUE, covname = "habitat", plt = FALSE)
+drop = TRUE, covname = "habitat", plt = FALSE, seed = NULL)
 
 }
 
@@ -25,12 +25,12 @@ drop = TRUE, covname = "habitat", plt = FALSE)
   \item{mask}{secr mask object to use as template}
   \item{p}{parameter to control fragmentation}
   \item{A}{parameter for expected proportion of habitat}
-  \item{directions}{integer code for adjacency (rook's move 4 or queen's
-  move 8)}
+  \item{directions}{integer code for adjacency (rook's move 4 or queen's move 8)}
   \item{minpatch}{integer minimum size of patch}
   \item{drop}{logical for whether to drop non-habitat cells}
   \item{covname}{character name of covariate when \code{drop = FALSE}}
   \item{plt}{logical for whether intermediate stages should be plotted}
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
 }
 
 \details{
@@ -71,6 +71,10 @@ is added.
 
   An object of class `mask'. By default (\code{drop = TRUE}) this
   has fewer rows (points) than the input mask.
+  
+  The attribute ``type'' is a character string formed from \code{paste('MRC p=',p, ' A=',A, sep='')}.
+  
+  The \link{RNG} seed is stored as attribute `seed' (see \link{secrRNG}).
 
 }
 
@@ -91,7 +95,7 @@ with a modified random clusters method. \emph{Landscape Ecology},
   Single-linkage clustering and adjacency operations use functions
   `clump' and `adjacency' of the package \pkg{raster}; `clump' also
   requires package \pkg{igraph0} (\pkg{raster} still uses this
-  decrecated version). Optional plotting
+  deprecated version). Optional plotting
   of intermediate stages (\code{plt = TRUE}) uses the plot method for
   rasterLayers in \pkg{raster}.
 

@@ -33,7 +33,7 @@ sim.detect(object, popnlist, maxperpoly = 100, renumber = TRUE)
 \arguments{
   \item{object}{a fitted secr model}
   \item{nsim}{integer number of replicates}
-  \item{seed}{value for setting .Random.seed - either NULL or an integer}
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   \item{maxperpoly}{ integer maximum number of detections of an individual
   in one polygon or transect on any occasion }
   \item{chat}{real value for overdispersion parameter}

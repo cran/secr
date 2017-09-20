@@ -12,6 +12,7 @@ importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coe
            "smooth.spline", "terms", "uniroot", "update", "update.formula", "var", "vcov")
 importFrom(utils, "count.fields", "flush.console", "getS3method", "head", "packageDescription",
            "packageVersion", "read.csv", "read.table", "tail", "write.table")
+importFrom(tools, "file_ext")
 
 importFrom(MASS, ginv)
 importFrom(MASS, eqscplot)
@@ -107,7 +108,6 @@ export (distancetotrap)
 export (nearesttrap)
 export (secrlist)
 export (MS.capthist)
-export (rbind.capthist)
 export (join)
 export (unjoin)
 export (RMarkInput)
@@ -312,7 +312,8 @@ S3method(flip, popn)
 S3method(shift, popn)
 S3method(plot, popn)
 S3method(subset, popn)
-export (rbind.popn)   ## stopgap until can sort out dispatching
+## export (rbind.popn)   
+S3method(rbind, popn)   ## 2017-07-25
 
 S3method(print, capthist)
 S3method(plot, capthist)
@@ -322,6 +323,9 @@ S3method(subset, capthist)
 S3method(reduce, capthist)
 S3method(split, capthist)
 S3method(sort, capthist)
+## export (rbind.capthist)
+S3method(rbind, capthist) ## 2017-07-26
+
 
 S3method(subset, mask)
 S3method(rbind, mask)

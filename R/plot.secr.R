@@ -13,6 +13,8 @@
 ## 2013-04-24 uses getdfn from utility.r
 ## 2014-04-25 ylim bug when g0 fixed
 ## 2014-09-18 limits = TRUE now works with acoustic dfn
+
+## 2017-05-24 BUG label of plot.secr 'Detection lambda' suppressed
 ############################################################################################
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
@@ -211,12 +213,13 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
         if (is.null(ylab)) {
            binomN <- ifelse(is.null(x$details$binomN),0,x$details$binomN)
 ## revisit this 2011-02-06
-           dlambda <- any(detector(traps(x$capthist)) %in% c('polygon','polygonX')) |
-               any((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
-           if (dlambda)
-               ylab <- 'Detection lambda'
-           else
-               ylab <- 'Detection probability'
+## suppress confusing option 2017-05-24           
+           # dlambda <- any(detector(traps(x$capthist)) %in% c('polygon','polygonX')) |
+           #     any((detector(traps(x$capthist)) %in% c('count')) & (binomN==0))
+           # if (dlambda)
+           #     ylab <- 'Detection lambda'
+           # else
+           ylab <- 'Detection probability'
         }
         plot (type ='n', 0,0, xlim=range(xval), ylim=ylim,
             xlab=xlab, ylab=ylab,...)
@@ -226,7 +229,7 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
 ############################################################################################
 
 detectfnplot <- function (detectfn, pars, details = NULL,
-    add = FALSE, sigmatick = FALSE, rgr = FALSE,
+    add = FALSE, sigmatick = FALSE, rgr = FALSE, hazard = FALSE, 
     xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...)
 {
 
@@ -236,10 +239,20 @@ detectfnplot <- function (detectfn, pars, details = NULL,
         if (sigmatick) {
             sigma <- pars[2]
             y <- dfn(sigma, pars,details$cutval)
+            ###################
+            ## 2017-08-28
+            if (hazard)
+                y <- -log(1-y)
+            ###################
             dy <- par()$usr[4]/20
             segments (sigma, y-dy, sigma, y+dy)
         }
         y <- dfn(xval, pars, details$cutval)
+        ###################
+        ## 2017-08-28
+        if (hazard)
+            y <- -log(1-y)
+        ###################
         if (rgr) {
             y <- xval * y
             ymax <- par()$usr[4]

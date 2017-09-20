@@ -54,7 +54,8 @@
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
-.localstuff$packageType <- ''   # no longer pre-release
+#.localstuff$packageType <- ' pre-release' 
+.localstuff$packageType <- '' 
 .localstuff$validdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
                                 'unmarked','presence','telemetry')

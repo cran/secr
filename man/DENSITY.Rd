@@ -11,7 +11,9 @@ imported as a \code{capthist} object for analysis in \pkg{secr}. Data in
 a \code{capthist} object may also be exported in these formats for use
 in DENSITY (Efford 2012). \code{read.capthist} inputs data from text
 files and constructs a \code{capthist} object in one step using the
-functions \code{read.traps} and \code{make.capthist}.
+functions \code{read.traps} and \code{make.capthist}. Data may also be
+read from Excel spreadsheets if the package \pkg{readxl} is installed (see 
+\href{../doc/secr-datainput.pdf}{secr-datainput.pdf}). 
 
 }
 

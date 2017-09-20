@@ -51,11 +51,11 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
 \code{pdot.contour} constructs a rectangular mask and applies \code{\link{pdot}} to
 compute the p.(X) at each mask point.
 
-if \code{convex = FALSE}, \code{buffer.contour} constructs a mask and
+If \code{convex = FALSE}, \code{buffer.contour} constructs a mask and
 contours the points on the basis of distance to the nearest detector at the
 levels given in \code{buffer}.
 
-if \code{convex = TRUE}, \code{buffer.contour} constructs a set of
+If \code{convex = TRUE}, \code{buffer.contour} constructs a set of
 potential vertices by adding points on a circle of radius =
 \code{buffer} to each detector location; the desired contour is the
 convex hull of these points (this algorithm derives from Efford, 2012).

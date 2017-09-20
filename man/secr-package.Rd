@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 3.0.1\cr
-Date: \tab 2017-05-02\cr
+Version: \tab 3.1.0\cr
+Date: \tab 2017-09-20\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -106,7 +106,7 @@ David Borchers made many of these methods possible with his work on the
 likelihood. Deanna Dawson edited some of the documentation (the cleaner
 bits!) and her support and collaboration were important
 throughout. Tiago Marques and Mike Meredith suggested many improvements
-to the documentation and provided valued criticism and support.
+to the documentation and provided valued criticism and support. Erin Peterson and Mathias Tobler made specific suggestions that improved the \code{randomHabitat} and \code{par.secr.fit} functions.
 
 }
 
@@ -148,6 +148,10 @@ for analysing capture-recapture data from passive detector arrays.
 Efford, M. G. and Fewster, R. M. (2013) Estimating population
   size by spatially explicit capture--recapture. \emph{Oikos}
   \bold{122}, 918--928.
+  
+Efford, M. G. and Hunter, C. M. (2017) Spatial capture--mark--resight
+estimation of animal population density. \emph{Biometrics} in press
+DOI: 10.1111/biom.12766.
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
 capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.

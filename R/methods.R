@@ -80,6 +80,8 @@
 ## 2016-10-10 rbind.traps moved to separate file
 ## 2017-01-26 plot.traps moved to plot.traps.R
 ## 2017-01-28 subset.capthist updated for telemetry
+## 2017-07-25 rbind.popn moved to rbind.popn.R
+## 2017-07-25 rbind.mask moved to rbind.mask.R
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -1600,65 +1602,6 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, ...) {
     }
 }
 
-###############################################################################
-## 2015-12-18 deparse.level added
-
-rbind.popn <- function (..., renumber = TRUE) {
-## combine 2 or more popn objects
-## ... may be a single list object
-
-    dots <- match.call(expand.dots = FALSE)$...
-    allargs <- list(...)
-    
-    ## ad hoc fix for occasional inclusion of deparse.level 2015-12-18
-    if (length(dots)>length(allargs))
-        dots <- dots[-1]
-    
-    names(allargs) <- lapply(dots, as.character)
-
-    if ((length(dots)==1) & (!inherits(allargs[[1]],'popn'))) allargs <- allargs[[1]]
-
-    if (length(allargs)==1) return(allargs[[1]])
-
-    ## check input
-    check <- function (x) {
-        if (!is(x,'popn'))
-            stop ("all arguments must be 'popn' objects")
-        if (is.null(covariates(x)) != is.null(covariates(allargs[[1]]) ))
-            stop ("covariates must be provided for all or none")
-    }
-    sapply (allargs, check)
-
-    ## row names
-    an <- unlist(sapply(allargs, row.names, simplify=F))
-    names(an) <- NULL
-    if (any(duplicated(an))) # renumber
-    {
-        if (renumber) rn <- 1:length(an)
-        else {
-            for (i in 1:length(an)) an[[i]] <- paste(an[[i]],i,sep='.')
-            rn <- unlist(an)
-        }
-    }
-    else rn <- an
-
-    ## construct output
-    animals <- data.frame(abind (allargs, along=1), row.names = rn)
-    names(animals) <- c('x','y')
-    class(animals) <- c('popn', 'data.frame')
-    ## following 2 lines modified 2010-06-13
-    attr(animals, 'Ndist') <- 'user'
-    attr(animals, 'model2D') <- attr(allargs[[1]], 'model2D')
-    xl <- range(sapply(allargs, function(x) attr(x,'boundingbox')$x))
-    yl <- range(sapply(allargs, function(x) attr(x,'boundingbox')$y))
-    attr(animals, 'boundingbox') <- expand.grid (x=xl,y=yl)[c(1,3,4,2),]
-    if (!is.null(covariates(allargs[[1]]))) {
-        cov <- lapply(allargs, function(x) covariates(x))
-        covariates(animals) <- data.frame(abind(cov, along=1), row.names=rn)
-    }
-    animals
-}
-###############################################################################
 
 subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
     poly.habitat = TRUE, keep.poly = TRUE, renumber = FALSE, ...)
@@ -2191,7 +2134,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
             lapply (object, summary.capthist, ...)
     }
     else {
-       
+   
         object <- check3D(object)
         traps <- traps(object)
         detector <- expanddet(object) # detector(traps)
@@ -2434,54 +2377,6 @@ subset.mask <- function (x, subset, ...) {
 }
 ############################################################################################
 
-rbind.mask <- function (...) {
-# combine 2 or more mask objects
-
-##    no check for multi-session masks at present
-##        stop ('rbind of multi-session mask not implemented')
-##
-    dropduplicates <- TRUE   ## always
-    allargs <- list(...)
-    spacing <- attr(allargs[[1]],'spacing')
-    area    <- attr(allargs[[1]], 'area')
-    check <- function (x) {
-        if (!is(x,'mask'))
-            stop ("arguments must be mask objects")
-        if (attr(x,'spacing') != spacing)
-            stop ("arguments must have same 'spacing' attribute")
-        if (attr(x,'area') != area)
-            stop ("arguments must have same area attribute")
-    }
-    sapply (allargs, check)
-    temp <- rbind.data.frame(...)
-    class(temp) <- c('mask', 'data.frame')
-    tempcov <- lapply(allargs, covariates)
-    covariates(temp) <- do.call(rbind, tempcov)  ## pass list of dataframes
-
-    if (dropduplicates) {
-        dupl <- duplicated(temp)
-        droppedrows <- sum(dupl)
-        if (droppedrows>0) {
-            covariates(temp) <- covariates(temp)[!dupl,]
-            temp <- temp[!dupl,]
-            warning (droppedrows, " duplicate points dropped from mask")
-        }
-    }
-
-    attr(temp,'type')        <- 'rbind'
-    attr(temp,'meanSD')      <- getMeanSD(temp)
-    attr(temp,'area')        <- area
-    attr(temp,'spacing')     <- spacing
-    xl <- range(temp$x) + spacing/2 * c(-1,1)
-    yl <- range(temp$y) + spacing/2 * c(-1,1)
-
-    ##  xl <- range(temp[,1])
-    ##  yl <- range(temp[,2])
-
-    attr(temp,'boundingbox') <- expand.grid(x=xl,y=yl)[c(1,2,4,3),]
-    temp
-}
-############################################################################################
 
 
 read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL, ...)

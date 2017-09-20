@@ -147,7 +147,9 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
                 }
                 ## ------------------------------------------------------------------
             }
-            sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
+            ##sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
+            ## 2017-07-25 to work with new rbind.popn
+            sesspopn[[sessnum]] <- do.call(rbind, popn)   ## combine groups in one popn object
         }
         sim.detect(object, sesspopn, maxperpoly)
     }

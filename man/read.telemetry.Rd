@@ -49,7 +49,7 @@ coordinates, and a `traps' object with detector type = `telemetry'
 
 \dontrun{
 setwd('D:/bears/alberta')
-## peak at raw data
+## peek at raw data
 head(readLines('gps2008.txt'))
 gps2008CH <- read.telemetry("gps2008.txt")
 plot( gps2008CH, gridsp = 10000)

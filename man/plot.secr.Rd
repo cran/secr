@@ -21,7 +21,7 @@
     overlay = TRUE)
 
 detectfnplot (detectfn, pars, details = NULL, add = FALSE,
-    sigmatick = FALSE, rgr = FALSE, xval = 0:200, ylim = NULL,
+    sigmatick = FALSE, rgr = FALSE, hazard = FALSE, xval = 0:200, ylim = NULL,
     xlab = NULL, ylab = NULL, ...)
 
 attenuationplot (pars, add = FALSE, spherical = TRUE,
@@ -36,6 +36,7 @@ attenuationplot (pars, add = FALSE, spherical = TRUE,
   \item{add}{ logical to add curve(s) to an existing plot }
   \item{sigmatick}{ logical; if TRUE the scale parameter sigma is shown by a vertical line }
   \item{rgr}{ logical; if TRUE a scaled curve r.g(r) is plotted instead of g(r) }
+  \item{hazard}{logical; if TRUE the hazard of detection is plotted instead of probability}
   \item{limits}{ logical; if TRUE pointwise confidence limits are drawn }
   \item{alpha}{ alpha level for confidence intervals }
   \item{xval}{ vector of distances at for which detection to be plotted }

@@ -15,8 +15,8 @@
 
 \usage{
 
-par.secr.fit (arglist, ncores = 1, seed = 123, trace = TRUE, logfile = "logfile.txt", 
-    prefix = "fit.")
+par.secr.fit (arglist, ncores = 1, seed = NULL, trace = TRUE, logfile = "logfile.txt", 
+    prefix = "fit.", LB = FALSE, save.intermediate = FALSE)
 par.derived (secrlist, ncores = 1, ...)
 par.region.N (secrlist, ncores = 1, ...)
 
@@ -36,6 +36,10 @@ par.region.N (secrlist, ncores = 1, ...)
   \item{logfile}{character name of file to log progress reports}
   
   \item{prefix}{character prefix for names of output}
+  
+  \item{LB}{logical; if TRUE then use load balancing}
+  
+  \item{save.intermediate}{logical; if TRUE then each fit is saved to an external file}
 
   \item{\dots}{other arguments passed to \code{derived} or \code{region.N}}
 
@@ -54,6 +58,10 @@ par.region.N (secrlist, ncores = 1, ...)
   It is convenient to provide the names of the capthist and mask arguments
   in each component of arglist as character values (i.e. in quotes); objects thus
   named are exported from the workspace to each worker process (see Examples).
+
+  Setting \code{LB = TRUE} when \code{ncores} > 1 causes the function to call \code{\link{clusterApplyLB}} instead of \code{\link{clusterApply}}. Load balancing in \code{clusterApplyLB} is likely to result in faster completion than the default if fits differ in their in execution time and \code{ncores < length(arglist)}, but this cannot be guaranteed owing to the additional communication required with the worker processes. Results with \code{LB = TRUE} for a given \code{seed} may not be reproducible.
+  
+  \code{save.intermediate} causes each fit to be saved to a file with extension .RData.
 
 }
 

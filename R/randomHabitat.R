@@ -5,6 +5,8 @@
 ## Murray Efford 2012-04-09,10,11,12;
 ## 2013-07-09 replaced call to obsolete raster function 'adjacency'
 ## 2014-08-25 'raster' now in Imports, so do not 'require'
+## 2017-07-26 seed argument suggested by Erin Peterson
+
 ## Requires 'raster' and 'igraph0' packages:
 
 ## Robert J. Hijmans & Jacob van Etten (2011). raster: Geographic
@@ -20,13 +22,30 @@
 ##   (this yields an isotropic result)
 
 randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
-                           drop = TRUE, covname = 'habitat', plt = FALSE) {
+                     drop = TRUE, covname = 'habitat', plt = FALSE, seed = NULL) {
 
+    #############################
+    ## set random seed 2017-07-26
+    ## copied from simulate.lm
+    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+        runif(1)
+    if (is.null(seed))
+        RNGstate <- get(".Random.seed", envir = .GlobalEnv)
+    else {
+        R.seed <- get(".Random.seed", envir = .GlobalEnv)
+        set.seed(seed)
+        RNGstate <- structure(seed, kind = as.list(RNGkind()))
+        on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
+    }
+    #############################
+    
     if (ms(mask)) {
         ## allow for possibility that 'mask' is a list of masks
         temp <- lapply(mask, randomHabitat, p = p, A = A, directions = directions,
-                       minpatch = minpatch, drop = drop, covname = covname, plt = plt)
+                       minpatch = minpatch, drop = drop, covname = covname, plt = plt,
+                       seed = NULL)
         class(temp) <- c('list','mask')
+        attr(temp,'seed') <- RNGstate   ## save random seed
         temp
     }
     else {
@@ -120,6 +139,8 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
             else
                 covariates(mask)[,covname] <- hab
         }
+        attr(mask, 'seed') <- RNGstate   ## save random seed
+        
         mask
     }
 }

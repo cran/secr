@@ -36,8 +36,7 @@ sim.resight(traps, popn = list(D = 5, buffer = 100, Ndist = "poisson"), ...,
   \item{p.available}{ vector of one or two probabilities (see Details) }
   \item{renumber}{ logical for whether output rows should labeled sequentially (TRUE) or
  retain the numbering of the population from which they were drawn (FALSE) }
-  \item{seed}{an object specifying if and how the random number
-  generator should be initialized (`seeded') }
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   \item{maxperpoly}{ integer maximum number of detections of an individual
     in one polygon or transect on any occasion }
   \item{chulltol}{numeric buffer (m) for polygon around telemetry

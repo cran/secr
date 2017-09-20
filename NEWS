@@ -1,3 +1,39 @@
+Changes in version 3.1.0 (2017-09-20)
+
+New features or changed behaviour of old functions
+    o   par.secr.fit() acquires arguments save.intermediate and LB to allow
+        load balancing (thanks to Mathias Tobler)
+    o   par.secr.fit() default value of 'seed' changed from 123 to NULL
+    o   rbind.popn() now an S3 method; no longer accepts list input
+    o   rbind.capthist() now an S3 method
+    o   randomHabitat() acquires argument 'seed', saved as an attribute
+        (thanks to Erin Peterson)
+    o   detectfnplot() acquires argument 'hazard' for plotting hazard 
+
+Other
+    o   adjustment to 'ts' predictor for secr.fit mark-resight models
+    o   documentation of random number seeds in ?secrRNG
+    o   start vector returned by secr.fit now named
+
+Bugs fixed
+    o   faulty start vector when model included both h2 and noneuc
+
+Changes in version 3.0.2 (2017-06-07)
+
+New features or changed behaviour of old functions
+    o   make.grid() and make.circle() acquire argument 'markocc'
+    o   read.traps() accepts Excel xls or xlsx input (requires readxl)
+
+Bugs fixed
+    o   plot.secr misleading axis label 'Detection lambda'
+    o   sim.resight() could fail with markingmask and predefined popn
+
+Other
+    o   imports file_ext from tools package
+    o   attributes of output from sim.popn now include Nbuffer and D
+    o   speed increase for "count" detectors
+    o   miinor adjustments to sim.popn for compatibility R 3.4.0
+
 Changes in version 3.0.1 (2017-05-03)
 
 New features or changed behaviour of old functions

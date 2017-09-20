@@ -35,7 +35,7 @@ NULL, ncores = 1, tracelevel = 1)
   \item{fit}{logical; if TRUE the model is re-fitted to each simulated
   dataset}
  
-  \item{seed}{value for setting .Random.seed - either NULL or an integer}
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   
   \item{ncores}{integer number of cores available for parallel processing}
   

@@ -3,12 +3,14 @@
 \title{ Read Detector Data From File }
 
 \description{
-  Construct an object of class \code{traps} with detector locations from a text file or data frame. Usage per occasion and covariates may be included.
+  Construct an object of class \code{traps} with detector locations from a text file or data frame. Usage per occasion and covariates may be included. Data may also be read from an Excel spreadsheet if the package \pkg{readxl} is installed (see 
+\href{../doc/secr-datainput.pdf}{secr-datainput.pdf}).
+
 }
 
 \usage{
 read.traps(file = NULL, data = NULL, detector = "multi", covnames =
-NULL, binary.usage = TRUE, markocc = NULL, ...)
+NULL, binary.usage = TRUE, markocc = NULL, trapID = NULL, ...)
 }
 
 \arguments{
@@ -21,6 +23,7 @@ NULL, binary.usage = TRUE, markocc = NULL, ...)
   continuous effort}
   \item{markocc}{integer vector distinguishing marking occasions (1) from 
       sighting occasions (0)}
+      \item{trapID}{character column containing detector names (see Details)}
   \item{\dots}{ other arguments to pass to \code{read.table} }
 }
 
@@ -38,8 +41,9 @@ as 1), and more than one covariate may be specified.
 
 If \code{file} is missing then x-y coordinates will be taken instead
 from \code{data}, which should include columns `x' and `y'. Row names of 
-\code{data} are read as detector identifiers. This option does not allow 
-for \code{covariates} or \code{usage}, but they maybe added later.
+\code{data} are read as detector identifiers unless \code{trapID} is specified.
+This option does not allow for \code{covariates} or \code{usage}, 
+but they maybe added later.
 
 \code{detector} specifies the behaviour of the detector following Efford
 et al. (2009). `single' refers to a trap that is able to catch at most

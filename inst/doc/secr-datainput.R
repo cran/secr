@@ -10,6 +10,15 @@ stoatCH <- read.capthist('stoatcapt.txt', 'stoattrap.txt',
     detector = 'proximity')
 summary(stoatCH)
 
+## ----download, echo = TRUE-----------------------------------------------
+download.file("http://www.otago.ac.nz/density/examples/stoat.xlsx",
+              "stoat.xlsx", quiet = TRUE, mode = "wb")
+
+## ----readxl, warning = FALSE---------------------------------------------
+CH <- read.capthist ("stoat.xlsx", sheet = c("stoatcapt", "stoattrap"), skip = 1,
+                     detector = "proximity")
+summary(CH)
+
 ## ---- eval=TRUE----------------------------------------------------------
 write.capthist(signalCH, 'temp')  ## export data for demo
 tempCH <- read.capthist('tempcapt.txt', 'temptrap.txt', detector = 'signal', cutval = 52.5)

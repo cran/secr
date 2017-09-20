@@ -3,10 +3,11 @@
 ## make.grid.R
 ## make.grid, make.poly, make.transect, make.circle
 ## 2016-10-16 secr 3.0
+## 2017-05-23 markocc argument
 ###############################################################################
 
 make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, detector='multi',
-    originxy=c(0,0), hollow=F, ID='alphay')
+    originxy=c(0,0), hollow=F, ID='alphay', markocc = NULL)
 
 {
     if (!all( detector %in% .localstuff$validdetectors ))
@@ -103,6 +104,8 @@ make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, d
     if (any(detector %in% .localstuff$polydetectors))
         polyID(grid) <- rep(1, nrow(grid))
 
+    if (!is.null(markocc))
+        markocc(grid) <- markocc
     grid
 }
 ###############################################################################
@@ -190,7 +193,7 @@ make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,
 ###############################################################################
 
 make.circle <- function (n = 20, radius = 100, spacing = NULL,
-    detector = 'multi', originxy=c(0,0), IDclockwise = T)
+    detector = 'multi', originxy=c(0,0), IDclockwise = T, markocc = NULL)
 {
     if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
@@ -217,6 +220,8 @@ make.circle <- function (n = 20, radius = 100, spacing = NULL,
     attr(object, 'cluster')     <- NULL
     attr(object, 'clustertrap') <- NULL
     attr(object, 'covariates')  <- NULL
+    if (!is.null(markocc))
+        markocc(object) <- markocc
     object
 }
 ###############################################################################

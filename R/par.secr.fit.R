@@ -1,9 +1,13 @@
 ## 2014-02-11
 ## 2016-06-04 annotation; memo -> message
 ## 2017-04-04 prefix argument
+## 2017-07-22 LB and save.intermediate arguments (code of Mathias Tobler)
+## 2017-07-26 seed default changed from 123 to NULL
+## 2017-09-20 distinct names for saved intermediate fits
 
-par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
-                          logfile = "logfile.txt", prefix = "fit.") {
+par.secr.fit <- function (arglist, ncores = 1, seed = NULL, trace = TRUE,
+                          logfile = "logfile.txt", prefix = "fit.", 
+                          LB = FALSE, save.intermediate = FALSE) {
     ptm  <- proc.time()
 
     ## 'inherits' causes R to search in enclosing frames
@@ -12,6 +16,10 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
     
     ## force 'trace' to common value across all components of arglist
     arglist <- lapply(arglist, function (x) {x$trace <- trace; x})
+    
+    ## ensure args named
+    if (is.null(names(arglist)))
+        names(arglist) <- paste0("arg", 1:length(arglist))
 
     ## check for capthist, mask, dframe mentioned by name
     ## objects are exported to the worker processes as required
@@ -32,19 +40,51 @@ par.secr.fit <- function (arglist, ncores = 1, seed = 123, trace = TRUE,
         x
     })
     
+    ###################################################
+    ## Based on code of M. Tobler 2017-07
+    run.fit <- function(x) {
+        fitname <- attr(x,'name')
+        fit <- do.call("secr.fit", x)
+        if (save.intermediate){
+            assign(fitname, fit)
+            save(list = fitname, file = paste0(fitname, ".RData"))
+            }
+        fit
+    }
+    
+    ## capture names
+    nameattr <- function (x,n) {attr(x,'name') <- n; x}
+    arglist <- mapply(nameattr, arglist, names(arglist), SIMPLIFY = FALSE)
+    ###################################################
+    
+    
     ## individual fits must use ncores = 1
     if (ncores > 1) {
         ## force 'ncores' to 1 across all components of arglist
         arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
+
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
         clusterSetRNGStream(clust, seed)
         clusterExport(clust, c(data, 'secr.fit'), environment())
-        output <- parLapply(clust, arglist, do.call, what = 'secr.fit')
+        
+        ## previously
+        ## output <- parLapply(clust, arglist, do.call, what = 'secr.fit')
+        
+        ###################################################
+        ## Based on code of M. Tobler 2017-07
+        if (LB)
+            output <- clusterApplyLB(clust, arglist, run.fit)
+        else 
+            output <- clusterApply(clust, arglist, run.fit)
+        
+        ###################################################
+
         stopCluster(clust)
     }
     else {
         set.seed (seed)
-        output <- lapply(arglist, do.call, what = 'secr.fit')
+        ## output <- lapply(arglist, do.call, what = 'secr.fit')
+        output <- lapply(arglist, run.fit)
     }
     
     ## apply standard naming convention

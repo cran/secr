@@ -64,6 +64,8 @@
 /* 2017-04-03 fixed bug for polygons in getdetspec */
 /* 2017-04-03 only precompute gk0 if gsb0val differs from gsbval (behavioural effects) */
 /* 2017-04-04 hdotpoly replaces pdotpoly */
+/* 2017-06-04 speed up prwipoint for count detectors */
+
 /*
         detect[s] may take values -
         0  multi-catch traps
@@ -346,7 +348,8 @@ double prwipoint
 			    else
 				g1 = 1 - pow(1 - g1, Tski);
 			}
-			if (detect == 1 ) {                           /* binary proximity    */
+/*2017-06-05		if (detect == 1 ) {                            binary proximity    */
+			if ((detect == 1) || (count==0)) {            /* binary proximity    */
 			    if (count)                                /* Bernoulli count 0/1 */
 				result *= g1 * pI;
 			    else 

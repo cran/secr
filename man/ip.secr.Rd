@@ -44,7 +44,7 @@ pfn(capthist, N.estimator = c("n", "null","zippin","jackknife") )
   \item{maxbox}{ maximum number of attempts to `frame' solution }
   \item{maxtries}{ maximum number of attempts at each simulation }
   \item{ncores}{integer number of cores available for parallel processing}  
-  \item{seed}{integer random number seed, or NULL}
+  \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   \item{trace}{logical, set FALSE to suppress progress reports}
   \item{\dots}{ further arguments passed to sim.popn }
   \item{N.estimator}{ character value indicating population estimator to use }

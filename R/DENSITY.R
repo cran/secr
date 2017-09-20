@@ -9,6 +9,8 @@
 ## 2012-10-19 telemetry detector type
 ## 2013-01-11 adjust call to count.fields etc to allow binary.usage
 ##            to be passed through to read.traps
+## 2017-05-24 replace filetype function with file_ext from tools
+## 2017-05-24 modified to read Excel files
 ##
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
@@ -108,33 +110,49 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
-    filetype <- function(x) {
-        nx <- nchar(x)
-        tolower(substring(x, nx-3, nx))
-    }
-
-    countargs <- dots[names(dots) %in% names(formals(count.fields))]
-    if (filetype(captfile) == '.csv')
-        countargs$sep <- ','
-    countargs$file <- captfile
-    nfield <- max(do.call(count.fields, countargs))
-
-    if (fmt == 'trapID') {
-        nvar <- 4
-        colcl <- c('character','character','character','character', rep(NA,nfield-nvar))
+    nvar <- switch(fmt, trapID = 4, XY = 5)
+        
+    ext <- tolower(file_ext(captfile))
+    if (missing(trapfile) & ext %in% c("xls","xlsx"))
+        trapfile <- captfile
+    if (ext %in% c("xls","xlsx")) {
+        if (!requireNamespace("readxl", quietly = TRUE))
+            stop("package readxl is required for input from Excel spreadsheets")
+        defaultargs <- list(sheet = 1, skip = 0, col_names = TRUE)
+        captargs <- replacedefaults (defaultargs, list(...))
+        ## first refers to captfile
+        captargs$sheet <- captargs$sheet[1] 
+        captargs$skip <- captargs$skip[1] 
+        captargs$col_names <- captargs$col_names[1]
+        ## drop any junk
+        captargs <- captargs[names(captargs) %in% names(formals(readxl::read_excel))]
+        captargs <- c(list(path = captfile), captargs)
+        capt <- do.call(readxl::read_excel, captargs) 
+        capt <- data.frame(capt)
     }
     else {
-        nvar <- 5
-        colcl <- c('character','character','character',NA,NA, rep(NA,nfield-nvar))
+        
+        countargs <- dots[names(dots) %in% names(formals(count.fields))]
+        if (tolower(file_ext(captfile)) == 'csv')
+            countargs$sep <- ','
+        countargs$file <- captfile
+        nfield <- max(do.call(count.fields, countargs))
+        
+        if (fmt == 'trapID') {
+            colcl <- c('character','character','character','character', rep(NA,nfield-nvar))
+        }
+        else {
+            colcl <- c('character','character','character',NA,NA, rep(NA,nfield-nvar))
+        }
+        
+        defaultargs <- list(sep = '', comment.char = '#')
+        if (ext == 'csv') defaultargs$sep <- ','
+        captargs <- replacedefaults (defaultargs, list(...))
+        captargs <- captargs[names(captargs) %in% names(formals(read.table))]
+        capt <- do.call ('read.table', c(list(file = captfile, as.is = TRUE,
+                                              colClasses = colcl), captargs) )
     }
-
-    defaultargs <- list(sep = '', comment.char = '#')
-    if (filetype(captfile)=='.csv') defaultargs$sep <- ','
-    captargs <- replacedefaults (defaultargs, list(...))
-    captargs <- captargs[names(captargs) %in% names(formals(read.table))]
-    capt <- do.call ('read.table', c(list(file = captfile, as.is = TRUE,
-        colClasses = colcl), captargs) )
-
+    
     ## let's be clear about this...
     if (fmt =='trapID')
         names(capt)[1:4] <- c('Session','AnimalID','Occ','Trap')
@@ -142,14 +160,14 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
     if (any(is.na(capt[,1:nvar])))
         stop ("missing values not allowed")
-
+    
     ## allow injections 2014-07-26
     injected <- substring(capt$Occ,1,1) == '+'
     inject.time <- ifelse(injected, as.numeric(capt$Occ), 0)
-## need to retrospectively zero this detection...
-## and perhaps set prior to NA?
+    ## need to retrospectively zero this detection...
+    ## and perhaps set prior to NA?
     capt$Occ <- as.numeric(capt$Occ)
-
+    
     if (all(detector=='telemetry')) {                     ## untested
         maketelemetrytrap <- function(x) {
             trp <- t(apply(x,2,mean))
@@ -168,9 +186,19 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     {
         ## assumes file= is first argument of read.traps
         ## allows for multiple trap files
-        defaultdots <- list(sep = '', comment.char = '#')
-        if (filetype(trapfile[1])=='.csv') defaultdots$sep <- ','
-        dots <- replacedefaults (defaultdots, list(...))
+        ext <- tolower(file_ext(trapfile[1]))
+        if (ext %in% c("xls","xlsx")) {
+            defaultdots <- list(sheet = 2, skip = 0)
+            dots <- replacedefaults (defaultdots, list(...))
+            if (length(dots$sheet)>1) dots$sheet <- dots$sheet[2] 
+            if (length(dots$skip)>1)  dots$skip <- dots$skip[2] 
+            if (length(dots$col_names)>1) dots$col_names <- dots$col_names[2]
+        }
+        else {
+            defaultdots <- list(sep = '', comment.char = '#')
+            if (ext == 'csv') defaultdots$sep <- ','
+            dots <- replacedefaults (defaultdots, list(...))
+        }
         
         readtraps <- function (x, mo) {
             trapargs <- c(list(file = x, detector = detector,
@@ -189,9 +217,9 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     if (length(trps)==1) trps <- trps[[1]]
     
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
-        covnames = covnames, sortrows = TRUE, cutval = cutval,
-        noncapt = noncapt, tol = tol, snapXY = snapXY)
-
+                          covnames = covnames, sortrows = TRUE, cutval = cutval,
+                          noncapt = noncapt, tol = tol, snapXY = snapXY)
+    
     ## temporary (?) way to attach injection times, not changng make.capthist
     ## vector of occasion after inj at which first available for detection
     ## may be all zero
@@ -202,7 +230,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     ## -- animal not injected twice
     ## 2014-07-27
     attr(temp, 'inject.time') <- inject.time
-
+    
     if (verify) verify(temp)
     temp
 }

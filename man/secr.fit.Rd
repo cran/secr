@@ -113,13 +113,13 @@ are of type `count', `polygon' or `transect':
 \item{binomN > 1} {binomial with size binomN}
 \item{binomN = 1} {binomial with size determined by \link{usage}}
 \item{binomN = 0} {Poisson}
-\item{binomN < 0} {negative binomial with size abs(binomN) -- see 
-  \code{\link[stats]{NegBinomial}}}
+%\item{binomN < 0} {negative binomial with size abs(binomN) -- see 
+%  \code{\link[stats]{NegBinomial}}}
 }
 
-The default with these detectors is to fit a Poisson distribution. The
-`size' parameter of the negative binomial is not estimated: it must be
-supplied. \code{binomN} should be an integer unless negative.
+The default with these detectors is to fit a Poisson distribution.
+%The `size' parameter of the negative binomial is not estimated: it must be
+%supplied. \code{binomN} should be an integer unless negative.
 
 \code{details} is used for various specialized settings listed below. These are
 described separately - see \code{\link{details}}.

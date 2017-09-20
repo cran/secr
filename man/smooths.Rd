@@ -16,7 +16,7 @@
 
   Regression splines are a very flexible way to represent non-linear
   responses in generalized additive models (e.g., \pkg{mgcv}, Wood
-  2006). Borchers and Kidney (in prep.) have shown how they may be used
+  2006). Borchers and Kidney (2014) have shown how they may be used
   to model 2-dimensional trend in density in \pkg{secrgam}, an \R
   package that extends \pkg{secr}. Their approach is to use \pkg{mgcv}
   to construct regression spline basis functions from mask x- and
@@ -127,9 +127,7 @@ plot(sapply(pred, '[', 'g0', 'estimate'))
 
 \references{ 
 
-Borchers, D. L. and Kidney, D. J. (2014) Flexible density surface
-estimation using regression splines with spatially explicit
-capture-recapture data. In prep.
+Borchers, D. L. and Kidney, D. (2014) \emph{Flexible density surface estimation for spatially explicit capture--recapture surveys}. Technical Report, University of St Andrews.
 
 Wood, S. N. (2006) \emph{Generalized Additive Models: An Introduction with
 R.} Chapman and Hall/CRC.
