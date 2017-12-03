@@ -7,6 +7,8 @@
 ## 2011 10 09 revised for multi-session mask covariates; needs testing
 ## 2011 11 08 revised meanSD, getcol, scale
 ## 2014-10-25 designmatrix
+## 2017-10-25 simplified line 107
+
 ###############################################################################
 ## NOTE does not standardize sessioncov, maskcov
 ###############################################################################
@@ -16,7 +18,7 @@
 ## used only for secondary setup (e.g. confint, score.test)
 
 designmatrix <- function (modelled, mask, model, grouplevels, sessionlevels, 
-                          sessioncov, smoothsetup) {
+                          sessioncov, smoothsetup, contrasts = NULL) {
     if (!modelled) {
         designmatrix <- matrix(nrow = 0, ncol = 0)
         attr(designmatrix, 'dimD') <- NA
@@ -24,7 +26,8 @@ designmatrix <- function (modelled, mask, model, grouplevels, sessionlevels,
     else {
         temp <- D.designdata( mask, model, grouplevels,
                               sessionlevels, sessioncov)
-        designmatrix <- general.model.matrix(model, temp, smoothsetup)
+        designmatrix <- general.model.matrix(model, data = temp, gamsmth = smoothsetup, 
+                                             contrasts = contrasts)
         attr(designmatrix, 'dimD') <- attr(temp, 'dimD')
     }
     designmatrix
@@ -102,10 +105,10 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
             ## uniform mask across sessions
             x <- getcol(mask,1)
             y <- getcol(mask,2)
-            dframe <- as.data.frame( list (
+            dframe <- data.frame( 
                 x = rep(as.vector(unlist(x)), ngrp * R),
                 y = rep(as.vector(unlist(y)), ngrp * R)
-            ))
+            )
         }
         #---------------------------------------------
         ## coordinates transformed for quadratic trend

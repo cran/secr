@@ -38,13 +38,13 @@ MS.capthist <- function (...) {
     dots <- match.call(expand.dots = FALSE)$...
     ##    oldsess <- unlist(sapply(list(...), session))
     MS <- flatten(list(...))
-    class(MS) <- c('list', 'capthist')
+    class(MS) <- c('capthist', 'list')
     if (is.null(names(MS))) {
         names(MS) <- rep("",length(MS))
+        dots2 <- substitute(list(...))[-1]    ## 2017-11-13
+        if (length(MS) == length(dots2))
+            names(MS) <- sapply(dots2, deparse)
     }
-    ## if (any(names(MS)=="")) {
-    ##     names(MS)[names(MS)==""] <- oldsess[names(MS)==""]
-    ## }
     if (any(duplicated(names(MS))) | any(names(MS)=="")) {
         warning ("session names replaced to avoid duplication or omission")
         names(MS) <- 1:length(MS)
@@ -66,7 +66,6 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
     #     inputnames <- as.character(1:length(allargs))
     # names(allargs) <- inputnames
     ##############################################################
-    
     if (length(allargs)==1) 
         object <- allargs[[1]]
     else {
@@ -108,7 +107,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         
         getpooled <- function (x) {
             temphist <- object[x]
-            class(temphist) <- c('list', 'capthist')
+            class(temphist) <- c('capthist', 'list')
             ## recursive call
             rbind(temphist, renumber = renumber, pool=NULL, verify = FALSE)
         }
@@ -119,7 +118,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             class(temp) <- 'capthist'
         }
         else {
-            class (temp) <- c('list', 'capthist')
+            class (temp) <- c('capthist', 'list')
             if (is.null(names(pool)) | any(names(pool) == ""))
                 names(temp) <- sapply(temp,session)
             else {

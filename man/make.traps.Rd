@@ -166,7 +166,7 @@ summary(make.circle(n = 20, spacing = 30))
 temptrap <- make.grid(nx = 7, ny = 7, spacing = 30)
 tempmask <- make.mask(temptrap, buffer = 15, nx = 7, ny = 7)
 temptrap[,] <- temptrap[,] + 30 * (runif(7*7*2) - 0.5)
-plot(tempmask, dots = FALSE)
+plot(tempmask, dots = FALSE, mesh = 'white')
 plot(temptrap, add = TRUE)
 
 }

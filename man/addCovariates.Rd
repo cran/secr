@@ -8,7 +8,7 @@
 \description{
 Tools to construct spatial covariates for existing mask or traps objects
 from a spatial data source. Possible sources include GIS data such as
-ESRI polygon shapefiles input using \pkg{maptools}.
+ESRI polygon shapefiles input using \pkg{rgdal}.
 }
 
 \usage{
@@ -71,7 +71,7 @@ lie outside \code{spatialdata} (mask data sources only)}
 
 \note{
 
-  The package \pkg{maptools} is needed to read a shapefile, and the
+  The package \pkg{rgdal} is needed to read a shapefile, and the
   package \pkg{sp} is needed for spatial overlay.
 
 }

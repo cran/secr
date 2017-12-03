@@ -16,7 +16,7 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
             out[[i]] <- mash (object, origin, clustergroup[[i]], ...)
         }
         names(out) <- names(clustergroup)
-        class(out) <- c('list', 'capthist')
+        class(out) <- c('capthist', 'list')
         if (length(out) == 1) out <- out[[1]]
         return(out)
     }
@@ -24,7 +24,7 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
         out <- lapply(object, mash, origin, clustergroup, ...)
 #        names(out) <- names(clustergroup)
         names(out) <- names(object)
-        class(out) <- c('list', 'capthist')
+        class(out) <- c('capthist', 'list')
         if (length(out) == 1) out <- out[[1]]
         return(out)
     }

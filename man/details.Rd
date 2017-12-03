@@ -35,6 +35,8 @@ overdispersion statistics for sighting counts Tu and Tm to be estimated and
 returned as a vector or 2-column matrix (multi-session models), with no further
 model fitting.
 
+\code{details$contrasts} may be used to specify the coding of factor predictors. The value should be suitable for the 'contrasts.arg' argument of \code{\link[stats]{model.matrix}}. See `Trend across sessions' in \href{http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} for an example.
+
 \code{details$debug} is an integer code used to control the printing of intermediate 
 values (1,2) and to switch on the R code browser (3). In ordinary use it should not be 
 changed from the default (0).
@@ -91,6 +93,13 @@ coefficients when the likelihood is maximised. Any transformation (link
 function) etc. is handled by the user in the userdist function. The
 coefficients appear in the output from \code{\link{coef.secr}} and
 \code{\link{vcov.secr}}, but not \code{predict.secr}.
+
+\code{details$newdetector} specifies a detector type to use for this fit, 
+replacing the previous \code{detector(traps(capthist))}. The value may be 
+a vector (one value per occasion) or for multi-session data, a list of vectors. 
+A scalar value (e.g. "proximity") is otherwise used for all occasions and sessions. 
+The true detector type is usually known and will be specified in the 'traps' attribute; 
+\code{newdetector} is useful in simulation studies that examine the effect of misspecification. The capthist component of the output from secr.fit has the new type.
 
 \code{details$nsim} specifies the number of replicate simulations to 
 perform to estimate the overdispersion statistics for the sighting counts 

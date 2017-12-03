@@ -25,7 +25,7 @@ addTelemetry <- function (detectionCH, telemetryCH,
         CH <- mapply(addTelemetry, detectionCH, telemetryCH, MoreArgs = 
                          list(type = type, collapsetelemetry = collapsetelemetry, 
                               verify = FALSE))  ## delay verify
-        class(CH) <- c('list','capthist')
+        class(CH) <- c('capthist', 'list')
         if (verify) verify(CH)
         CH
     }

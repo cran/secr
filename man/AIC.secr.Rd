@@ -26,7 +26,7 @@ secrlist(...)
 
 \arguments{
   \item{object}{ \code{secr} object output from the function
-      \code{\link{secr.fit}}, or a list of such objects with class c("list","secrlist") }
+      \code{\link{secr.fit}}, or a list of such objects with class c("secrlist", "list") }
   \item{\dots}{ other \code{secr} objects }
   \item{sort}{ logical for whether rows should be sorted by ascending AICc }
   \item{k}{ numeric, penalty per parameter to be used; always k = 2 in this method}

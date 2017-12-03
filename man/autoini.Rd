@@ -121,7 +121,7 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 \examples{
 demotraps <- make.grid()
 demomask <- make.mask(demotraps)
-demoCH <- sim.capthist (demotraps, popn = list(D = 5, buffer = 100))
+demoCH <- sim.capthist (demotraps, popn = list(D = 5, buffer = 100), seed = 321)
 autoini (demoCH, demomask)
 }
 \keyword{ models }

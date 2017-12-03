@@ -46,12 +46,8 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
         if (type == "shapefile") {
             polyfilename <- spatialdata  
 
-            # if (!requireNamespace('maptools', quietly = TRUE))
-            #     stop("requires package maptools")
-            # spatialdata <- maptools::readShapePoly(polyfilename)
-            
             if (!requireNamespace('rgdal', quietly = TRUE))
-                stop("package rgdalis required to read shapefiles")
+                stop("package rgdal is required to read shapefiles")
             isshp <- function(filename) {
                 nch <- nchar(filename)
                 tolower(substring(filename, nch-3,nch)) == ".shp"

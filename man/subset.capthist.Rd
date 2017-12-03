@@ -18,7 +18,7 @@
 }
 \arguments{
   \item{x}{ object of class \code{capthist} }
-  \item{subset}{ vector of subscripts to select rows (individuals) }
+  \item{subset}{ vector of subscripts to select rows (individuals) (see Details for variations)}
   \item{occasions}{ vector of subscripts to select columns (occasions) }
   \item{traps}{ vector of subscripts to select detectors (traps) }
   \item{sessions}{ vector of subscripts to select sessions }
@@ -44,7 +44,7 @@
   \item{byoccasion}{logical; if TRUE then each level of f identifies occasions
   to include }
   \item{...}{ other arguments passed to subset.capthist (split.capthist)
- or not used currently (subset.capthist) }
+ or to optional subset function (subset.capthist) }
 }
 \details{
 
@@ -120,7 +120,12 @@ ovenCH.males <- mapply(subset, ovenCH,
     subset = lapply(ovenCH, function(x) covariates(x)$Sex == "M"),
     MoreArgs = list(occasions = 1:5))
 class(ovenCH.males) <- class(ovenCH)
-summary(ovenCH.males)
+summary(ovenCH.males, terse = TRUE)
+
+## A simpler approach using the new function option in 3.1.1
+subsetfn <- function(x, sex) covariates(x)$Sex == sex
+ovenCH.males <- subset(ovenCH, subset = subsetfn, sex = "M")
+summary(ovenCH.males, terse = TRUE)
 
 ## Divide one session into two by occasion
 split(captdata, f = factor(c(1,1,2,2,2)), byoccasion = TRUE)

@@ -30,7 +30,7 @@ as.mask(x)
 
   If \code{x} is a multi-session traps object --
   
-  an object of class c("list", "mask"), for which each component is a
+  an object of class c("mask", "list"), for which each component is a
   single-session mask.
   
 }

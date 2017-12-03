@@ -1,3 +1,49 @@
+Changes in version 3.1.3 (2017-12-02)
+
+New features or changed behaviour of old functions
+    o   secr.design.MS() acquires argument 'contrasts' (used internally)
+
+Bugs fixed
+    o   sim.capthist() ignored recapfactor provided in detectpar
+
+Other
+    o   region.N now a generic method with functions for secr and secrlist objects
+    o   corrected some obsolete documentation references to maptools package
+
+Changes in version 3.1.1 (2017-11-30)
+
+New features or changed behaviour of old functions
+    o   new detector type 'capped' in make.grid(), sim.capthist(), reduce(), verify(), secr.fit() etc.
+    o   as.data.frame methods for capthist and traps objects
+    o   secrlist() and MS.capthist() generate names from input objects
+    o   circular.r() and circular.p() acquire argument 'upper' for explicit upper limit of integration
+    o   LR.test generalised to any fitted models with a logLik method
+    o   plot method for secr objects: confidence limits now computed on log scale 
+        for hazard detectfn HHN, HEX etc. to match predict.secr
+    o   rbind method for traps adds suffix to names only when needed to avoid any duplication
+    o   verify method for capthist objects checks for all-zero histories and missing rownames
+    o   summary method for capthist objects: 'terse' option activated for single-session objects
+    o   subset method for capthist objects: subset may be defined as function (useful for covariate-based selection)
+    o   join() acquires arguments interval, to set between-session intervals directly, and sessions, for session names
+    o   secr.fit() details argument 'contrasts' for specialised coding of factor predictors (example in secr-multisession.pdf)
+    o   secr.fit() details argument 'newdetector' to override detector type
+    o   'newdetector' reported by print.secr
+
+Bugs fixed
+    o   predict method for secr objects failed to report SE for parameters with some fixed coefficients (fixedbeta)
+    o   verify.capthist failed to report detections at unused detectors
+
+Other
+    o   requires package stringr for some functions
+    o   class attribute of multisession objects changed to place "list" last -- 
+        c("list", "capthist") becomes c("capthist", "list")
+    o   LLsurface.secr automatically substitutes lambda0 for g0 given detectfn 14:18
+    o   experimental "nontarget" capthist attribute
+    o   make.mask() explicit error when capthist passed 
+    o   derived is now a generic method with functions for secr and secrlist objects
+    o   derived.nj() renamed derivednj(), derived.mash() renamed derivedMash() etc.
+    o   && changed to & throughout - should have no effect except fixes verify bug, but be wary
+
 Changes in version 3.1.0 (2017-09-20)
 
 New features or changed behaviour of old functions

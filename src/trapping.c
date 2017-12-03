@@ -16,7 +16,8 @@ trappingtimes
 
 2013-04-04 extended to allow k-specific g0
 2015-12-21 bug fix in trapping count for Poisson
-
+2017-12-02 Fixing bug when recapfactor != 1 required new trappingarg lastcapt
+           recapfactor only implemented for single, multi
 */
 
 #include "secr.h"
@@ -35,6 +36,7 @@ void trappingsingle (
     int    *fn,        /* code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform */
     double *w2,        /* truncation radius */
     int    *binomN,    /* not used */
+    int    *lastcapt,   /* occasion of last detection; 0 if none */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     int    *value,     /* return value matrix of trap locations n x s */
@@ -78,7 +80,9 @@ void trappingsingle (
 
     /* ------------------------------------------------------ */
 
-    for (i=0; i<*N; i++) caught[i] = 0;   /* has animal i been caught in session? */
+    for (i=0; i<*N; i++) {
+	caught[i] = 0;   /* has animal i been caught in session? */
+    }
     for (s=0; s<*ss; s++) {
         /* initialise day */
         tr_an_indx = 0;
@@ -94,10 +98,9 @@ void trappingsingle (
 		/* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
 		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
-		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
 		    d2val = d2L(k, i, dist2, *kk);
-		    gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
-                    si = (caught[i]>0) * *ss + s;
+		    gi = (lastcapt[i]>0) * *ss * *kk + k * *ss + s;
+                    si = (lastcapt[i]>0) * *ss + s;
 		    p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
 
 		    if (fabs(Tski-1) > 1e-10)           /* 2012 12 26 */
@@ -137,15 +140,16 @@ void trappingsingle (
             }
         }
         for (i=0; i<*N; i++)
-        if (intrap[i]>0) {
-            if (caught[i]==0) {                  /* first capture of this animal */
-               nc++;
-               caught[i] = nc;                   /* nc-th animal to be captured */
-               for (j=0; j<*ss; j++)
-                   value[*ss * (nc-1) + j] = 0;
-             }
-             value[*ss * (caught[i]-1) + s] = intrap[i];  /* trap = k+1 */
-        }
+	    if (intrap[i]>0) {
+		if (caught[i]==0) {                  /* first capture of this animal */
+		    nc++;
+		    caught[i] = nc;                   /* nc-th animal to be captured */
+		    for (j=0; j<*ss; j++)
+			value[*ss * (nc-1) + j] = 0;
+		}
+		lastcapt[i] = s+1;
+		value[*ss * (caught[i]-1) + s] = intrap[i];  /* trap = k+1 */
+	    }
     }
     *n = nc;
     *resultcode = 0;
@@ -168,12 +172,13 @@ void trappingmulti (
     int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
     double *w2,         /* truncation radius */
     int    *binomN,     /* not used */
+    int    *lastcapt,   /* occasion of last detection; 0 if none */
     int    *n,          /* number of individuals caught */
     int    *caught,     /* caught in session */
     int    *value,      /* return value matrix of trap locations n x s */
     int    *resultcode  /* 0 for successful completion */
 )
-
+    
 {
     double *h;
     double hsum[*N];
@@ -185,68 +190,171 @@ void trappingmulti (
     double p;
     double miscparm[3];
     double Tski;
-
+    
     *resultcode = 1;
     cump[0] = 0;
     nc = 0;
     GetRNGstate();
-/*    h = (double *) R_alloc(*N * *kk, sizeof(double)); */
+    /*    h = (double *) R_alloc(*N * *kk, sizeof(double)); */
     h = (double *) S_alloc(*N * *kk, sizeof(double));   /* initialise to zero */
-
+    
     /* ------------------------------------------------------ */
     /* pre-compute distances */
     if (dist2[0] < 0) {
-	dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
-	makedist2 (*kk, *N, traps, animals, dist2);
+        dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+        makedist2 (*kk, *N, traps, animals, dist2);
     }
     else {
-	squaredist (*kk, *N, dist2);
+        squaredist (*kk, *N, dist2);
     }
     /* ------------------------------------------------------ */
-
-    for (i=0; i<*N; i++) caught[i] = 0;
+    
+    for (i=0; i<*N; i++) {
+	caught[i] = 0;   /* has animal i been caught in session? */
+    }
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             hsum[i] = 0;
             for (k=0; k<*kk; k++)
             {
-		/* d2val = d2(i,k, animals, traps, *N, *kk); */
-		d2val = d2L(k, i, dist2, *kk);
-		gi = (caught[i]>0) * *ss * *kk + k * *ss + s;
-                si = (caught[i]>0) * *ss + s;
-		p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
-		/* p = p * used[s * *kk + k];  zero if not used 2009 11 09 */
-		Tski = Tsk[s * *kk + k];
-		if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
+                /* d2val = d2(i,k, animals, traps, *N, *kk); */
+                d2val = d2L(k, i, dist2, *kk);
+		gi = (lastcapt[i]>0) * *ss * *kk + k * *ss + s;
+		si = (lastcapt[i]>0) * *ss + s;
+                p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
+                /* p = p * used[s * *kk + k];  zero if not used 2009 11 09 */
+                Tski = Tsk[s * *kk + k];
+                if (fabs(Tski) > 1e-10) {          /* 2012 12 18 */
 		    h[k * *N + i] = -Tski * log(1 - p);
-		    hsum[i] += h[k * *N + i];
-		}
+                    hsum[i] += h[k * *N + i];
+                }
             }
-
+            
             for (k=0; k<*kk; k++) {
                 cump[k+1] = cump[k] + h[k * *N + i]/hsum[i];
             }
-
+            
             if (Random() < (1-exp(-hsum[i])))
             {
-		if (caught[i]==0)           /* first capture of this animal */
-		{
-		    nc++;
-		    caught[i] = nc;
-		    for (j=0; j<*ss; j++)
-			value[*ss * (nc-1) + j] = 0;
-		}
-		runif = Random();
-		k = 0;
-		while ((runif > cump[k]) && (k<*kk)) k++;  /* pick a trap */
-		value[*ss * (caught[i]-1) + s] = k;
+                if (caught[i]==0)           /* first capture of this animal */
+                {
+                    nc++;
+                    caught[i] = nc;
+                    for (j=0; j<*ss; j++)
+                        value[*ss * (nc-1) + j] = 0;
+                }
+                runif = Random();
+                k = 0;
+                while ((runif > cump[k]) && (k<*kk)) k++;  /* pick a trap */
+		lastcapt[i] = s+1;
+                value[*ss * (caught[i]-1) + s] = k;
             }
         }
     }
     *n = nc;
     *resultcode = 0;
     PutRNGstate();
+    
+}
+/*==============================================================================*/
 
+void trappingcapped (
+    double *g0,         /* Parameter : detection magnitude  */
+    double *sigma,      /* Parameter : detection scale */
+    double *z,          /* Parameter : detection shape (hazard) */
+    int    *ss,         /* number of occasions */
+    int    *kk,         /* number of traps */
+    int    *N,          /* number of animals */
+    double *animals,    /* x,y points of animal range centres (first x, then y)  */
+    double *traps,      /* x,y locations of traps (first x, then y)  */
+    double *dist2,     /* distances squared (optional: -1 if unused) */
+    double *Tsk,        /* ss x kk array of 0/1 usage codes or effort */
+    int    *fn,         /* code 0 = halfnormal, 1 = hazard, 2 = exponential */
+    double *w2,         /* truncation radius */
+    int    *binomN,     /* not used */
+    int    *lastcapt,   /* occasion of last detection; 0 if none */
+    int    *n,          /* number of individuals caught */
+    int    *caught,     /* caught in session */
+    int    *value,      /* return value array */
+    int    *resultcode  /* 0 for successful completion */
+)
+    
+{
+    double *h;
+    double hsum;
+    double *cumh;
+    double runif;
+    int    i,k,s;
+    int    gi, si;
+    int    nc;
+    double d2val;
+    double p;
+    double miscparm[3];
+    double Tski;
+    
+    *resultcode = 1;
+    nc = 0;
+    GetRNGstate();
+    h = (double *) S_alloc(*N, sizeof(double));      /* initialise to zero */
+    cumh = (double *) S_alloc(*N+1, sizeof(double)); /* initialise to zero */
+    cumh[0] = 0;
+    
+    /* ------------------------------------------------------ */
+    /* pre-compute distances */
+    if (dist2[0] < 0) {
+        dist2 = (double *) S_alloc(*kk * *N, sizeof(double));
+        makedist2 (*kk, *N, traps, animals, dist2);
+    }
+    else {
+        squaredist (*kk, *N, dist2);
+    }
+    /* ------------------------------------------------------ */
+    
+    for (i=0; i<*N; i++) caught[i] = 0;
+    for (i=0; i<(*ss * *N * *kk); i++) value[i] = 0;
+
+    for (s=0; s<*ss; s++) {
+	for (k=0; k<*kk; k++) {
+            hsum = 0;
+	    Tski = Tsk[s * *kk + k];
+	    if (fabs(Tski) > 1e-10) {    /* don't bother if unused */
+		for (i=0; i<*N; i++) {
+		    d2val = d2L(k, i, dist2, *kk);
+		    gi = k * *ss + s;
+		    si = s;
+		    p = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
+		    h[i] = -Tski * log(1 - p);
+		    hsum += h[i];
+		}    
+		if (hsum > 0) {       
+		    /* cumulative probability across animals, conditional on one detected */
+		    for (i=0; i<*N; i++) {
+			cumh[i+1] = cumh[i] + h[i];
+		    }
+           
+		    if (Random() < (1-exp(-hsum))) { /* success at this detector */
+			/* pick an animal */
+			runif = Random();
+			i = 0;
+			while ((runif > (cumh[i+1]/hsum)) && (i<*N)) i++; 
+
+			/* first capture of this animal */
+			if (caught[i] == 0) {
+			    nc++;
+			    caught[i] = nc;
+			}
+			/* Rprintf("i %4d k %4d caught[i]-1, %4d index %10d \n",
+			   i, k, caught[i]-1, i3(i, s, k, *N, *ss)); */
+			value[i3(i, s, k, *N, *ss)] = 1;      
+		    }
+		}
+	    }
+        }
+    }
+    *n = nc;
+    *resultcode = 0;
+    PutRNGstate();
+    
 }
 /*==============================================================================*/
 
@@ -265,15 +373,17 @@ void trappingproximity (
     double *w2,        /* truncation radius */
     int    *binomN,    /* 0 poisson, 1 Bernoulli, or number of trials for 'count'
                           detector modelled with binomial */
+    int    *lastcapt,   /* occasion of last detection; 0 if none */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
-    int    *value,     /* return value matrix of trap locations n x s */
+    int    *value,     /* return value array */
     int    *resultcode
 )
 {
     double d2val;
     double theta;
-    int    i,j,k,l,s;
+    int    i,k,s;
+    int    gi, si;
     int    nc;
     int    count;
     double miscparm[3];
@@ -295,31 +405,28 @@ void trappingproximity (
     /* ------------------------------------------------------ */
 
     for (i=0; i<*N; i++) caught[i] = 0;
+    for (i=0; i<(*ss * *N * *kk); i++) value[i] = 0;
+
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             for (k=0; k<*kk; k++) {
-                /* if (used[s * *kk + k]) { */
 		Tski = Tsk[s * *kk + k];
-                if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
-		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
+                if (fabs(Tski) > 1e-10) {       
 		    d2val = d2L(k, i, dist2, *kk);
-                    /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
-                    theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
-
+		    gi = k * *ss + s;
+		    si = s;
+                    theta = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
                     if (theta>0) {
                         count = rcount (1, theta, Tski);
                         if (count>0)
                         {
-                             /* first capture of this animal */
-                             if (caught[i]==0)                  
-                             {
-                                 nc++;
-                                 caught[i] = nc;
-                                 for (j=0; j<*ss; j++)
-                                   for (l=0; l<*kk; l++)
-                                     value[*ss * ((nc-1) * *kk + l) + j] = 0;
-                             }
-                             value[*ss * ((caught[i]-1) * *kk + k) + s] = count;
+			    /* first capture of this animal */
+			    if (caught[i]==0)                  
+			    {
+				nc++;
+				caught[i] = nc;
+			    }
+			    value[i3(i, s, k, *N, *ss)] = count; 
                         }
                     }
                 }
@@ -347,6 +454,7 @@ void trappingcount (
     double *w2,        /* truncation radius */
     int    *binomN,    /* 0 poisson, 1 Bernoulli, or number of trials for 'count'
                           detector modelled with binomial */
+    int    *lastcapt,   /* occasion of last detection; 0 if none */
     int    *n,         /* number of individuals caught */
     int    *caught,    /* caught in session */
     int    *value,     /* return value matrix of trap locations n x s */
@@ -356,7 +464,8 @@ void trappingcount (
 {
     double d2val;
     double theta;
-    int    i,j,k,l,s;
+    int    i,k,s;
+    int    gi, si;
     int    nc;
     int    count;
     double miscparm[3];
@@ -379,6 +488,7 @@ void trappingcount (
     /* ------------------------------------------------------ */
 
     for (i=0; i<*N; i++) caught[i] = 0;
+    for (i=0; i<(*ss * *N * *kk); i++) value[i] = 0;
     for (s=0; s<*ss; s++) {
         for (i=0; i<*N; i++) {
             for (k=0; k<*kk; k++) {
@@ -387,8 +497,9 @@ void trappingcount (
                 if (fabs(Tski) > 1e-10) {          /* nonzero 2012 12 18 */
 		    /* d2val = d2(i,k, animals, traps, *N, *kk); */
 		    d2val = d2L(k, i, dist2, *kk);
-                    /* theta = pfn(*fn, d2val, g0[s], sigma[s], z[s], miscparm, *w2); */
-                    theta = pfn(*fn, d2val, g0[k * *ss + s], sigma[s], z[s], miscparm, *w2); 
+		    gi = k * *ss + s;
+		    si = s;
+                    theta = pfn(*fn, d2val, g0[gi], sigma[si], z[s], miscparm, *w2); 
                     if (theta>0) {
 			if (binomN[s] == 1) {
 			    count = rcount (round(Tski), theta, 1);
@@ -405,11 +516,8 @@ void trappingcount (
                              {
                                  nc++;
                                  caught[i] = nc;
-                                 for (j=0; j<*ss; j++)
-                                   for (l=0; l<*kk; l++)
-                                     value[*ss * ((nc-1) * *kk + l) + j] = 0;
                              }
-                             value[*ss * ((caught[i]-1) * *kk + k) + s] = count;
+			    value[i3(i, s, k, *N, *ss)] = count; 
                         }
                     }
                 }

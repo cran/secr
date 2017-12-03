@@ -1,5 +1,7 @@
 \name{region.N}
 \alias{region.N}
+\alias{region.N.secr}
+\alias{region.N.secrlist}
 \alias{population size}
 
 \title{Population Size}
@@ -15,10 +17,17 @@ Note). }
 
 \usage{
 
-region.N (object, region = NULL, spacing = NULL, session = NULL,
+region.N(object, ...)
+
+\method{region.N}{secr}(object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
     keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson",
-    pooled.RN = FALSE)
+    pooled.RN = FALSE, ...)
+    
+\method{region.N}{secrlist}(object, region = NULL, spacing = NULL, session = NULL,
+    group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
+    keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson",
+    pooled.RN = FALSE, ...)
 
 }
 
@@ -55,7 +64,10 @@ region.N (object, region = NULL, spacing = NULL, session = NULL,
   \item{pooled.RN}{ logical; if TRUE the estimate of realised N for a multi-session
   model is computed as if for combined sampling with all detectors (see Details)}
 
+  \item{...}{ other arguments (not used)}
+
 }
+
 \details{
   
   If the density surface of the fitted model is flat

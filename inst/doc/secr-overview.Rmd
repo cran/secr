@@ -192,6 +192,7 @@ documented. Telemetry data are used to augment capture--recapture data
 | multi | traps that may catch more than one animal at a time |
 | proximity | records presence at a point without restricting movement |
 | count | proximity detector allowing >1 detection per animal per time |
+| capped | proximity detector with maximum one animal at a time |
 | polygon | counts from searching one or more areas |
 | transect | counts from searching one or more transects |
 | polygonX | binary data from mutually exclusive areas |
@@ -316,7 +317,7 @@ By default, the parameters of SECR models are assumed to be constant. We specify
 Models are defined symbolically in **secr** using R formula notation. A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and
 **secr** uses that term because it will be familiar to biologists.
 
-Three real parameters are commonly modelled in **secr** 3.1; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derived.cluster` etc.). 
+Three real parameters are commonly modelled in **secr** 3.1; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derivedCluster` etc.). 
 
 Here is a simple example of the model argument in use:
 ```{r, eval=FALSE}
@@ -515,7 +516,7 @@ if the 'capthist' object is first collapsed into one using the
 geometry of a single cluster (the object retains a memory of the
 number of individuals from each original cluster in the attribute
 'n.mash'). Use the function `mash` for this. Functions `derived`,
-`derived.mash` and the method `predict.secr` use 'n.mash' to adjust
+`derivedMash` and the method `predict.secr` use 'n.mash' to adjust
 their output density, SE, and confidence limits.
 
 ##Parallel processing
@@ -703,13 +704,13 @@ These are the core functions of **secr** 3.1 -- the ones that you are most likel
 |-----------------|---------------------------------------------------|
 | `AIC`*            | model selection, model weights |
 | `covariates`*	    | extract or replace covariates of traps, capthist or mask |
-|  `derived`        | compute density from conditional likelihood models |
+|  `derived`*        | compute density from conditional likelihood models |
 | `make.mask`       | construct habitat mask (= mesh) |
 | `plot`*           | plot capthist, traps or mask |
 | `read.capthist`   | input captures and trap layout from Density format, one call |
 | `predict`*	    | compute 'real' parameters for arbitrary levels of predictor variables |
 | `predictDsurface`* | evaluate density surface at each point of a mask |
-|	`region.N`      | compute expected and realised population size in specified region |
+|	`region.N`*     | compute expected and realised population size in specified region |
 | `secr.fit`        | maximum likelihood fit; result is a fitted 'secr' object | 
 | `summary`*        | summarise capthist, traps or mask
 | `traps`*          | extract or replace traps object in capthist |
@@ -800,12 +801,12 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |	`collate`	| tabulate estimates from several models |
 |	`confint`*	| profile likelihood confidence intervals |
 | `CVa, CVa0`    | CV of individual detection from fitted mixture model |
-|	`derived`	| density from conditional likelihood models |
+|	`derived`*	| density from conditional likelihood models |
 |	`deviance`*	| model deviance |
 |	`df.residual`*	| degrees of freedom for deviance |
-| `derived.nj` | variance from replicated sampling units |
-| `derived.cluster` | variance from replicated sampling units |
-| `derived.external` | variance from replicated sampling units |
+| `derivednj` | variance from replicated sampling units |
+| `derivedCluster` | variance from replicated sampling units |
+| `derivedExternal` | variance from replicated sampling units |
 | `ellipse.secr` | confidence ellipses for estimated parameters |
 | `fxi.secr`       | probability density of home-range centre |
 | `logLik`*	| log-likelihood of fitted model |
@@ -816,7 +817,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |	`plot`*		| plot detection functions with confidence bands |
 |	`predict`*	| 'real' parameters for arbitrary levels of predictor variables |
 |	`predictDsurface`* | evaluate density surface at each point of a mask |
-|	`region.N`       | expected and realised population size in specified region |
+|	`region.N`*    | expected and realised population size in specified region |
 |	`score.test`	| model selection with score statistic using observed information |
 | `secr.test` | Monte Carlo goodness-of-fit tests |
 |	`simulate`*	| generate realisations of fitted model |
@@ -915,7 +916,7 @@ A family of capture--recapture models, such as the Cormack-Jolly-Seber models fo
 The language of generalised linear models is convenient for describing submodels (e.g. Huggins 1989, Lebreton et al. 1992). Each parameter is treated as a linear combination of predictor variables on its transformed ('link') scale. This is useful for combining effects
 because, given a suitable link function, any combination maps to a feasible value of the parameter. The logit scale has this property for probabilities in (0, 1), and the natural log scale works for positive parameters i.e. (0, $+\infty$). These are the link functions used most often in **secr**, but there are others, including the identity (null) link. Set link functions with the 'link' argument of `secr.fit`.
 
-Submodels are defined symbolically in **secr** using R formula notation.  A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and **secr** uses that term because it will be familiar to biologists.  Three real parameters are commonly modelled in **secr**; these are denoted D (for density), g0, and sigma. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an `secr` object with the function `derived` or one of its siblings (`derived.cluster` etc.). 
+Submodels are defined symbolically in **secr** using R formula notation.  A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and **secr** uses that term because it will be familiar to biologists.  Three real parameters are commonly modelled in **secr**; these are denoted D (for density), g0, and sigma. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an `secr` object with the function `derived` or one of its siblings (`derivedCluster` etc.). 
 
 Other 'real' parameters appear in particular contexts. 'z' is a shape parameter that is used only when the detection function has three parameters (annular halfnormal, cumulative gamma, hazard-rate etc. -- see `?detectfn`). 'lambda0' substitutes for 'g0' when the detection function is defined in terms of cumulative hazard. 'pmix' represents the mixing proportion in finite mixture models (or e.g., the sex ratio in hybrid mixture models with 'hcov').
 

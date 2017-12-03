@@ -107,8 +107,7 @@ ovtrap <- traps(OVpossumCH[[1]])
 
 ## retrieve and plot the forest map
 datadir <- system.file("extdata", package = "secr")
-OVforestfile <- paste0(datadir, "/OVforest.shp")
-OVforest <- rgdal::readOGR(dsn = OVforestfile, layer = "OVforest")
+OVforest <- rgdal::readOGR(dsn = datadir, layer = "OVforest")
 
 forestcol <- terrain.colors(6)[c(4,2,2)]
 sp::plot(OVforest, col = forestcol)

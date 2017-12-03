@@ -8,7 +8,7 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
 }
 
 \usage{
-\method{rbind}{traps}(..., renumber = TRUE, addusage, checkdetector = TRUE)
+\method{rbind}{traps}(..., renumber = TRUE, addusage, checkdetector = TRUE, suffix = TRUE)
 }
 \arguments{
   \item{\dots}{ one or more \code{traps} objects }
@@ -19,6 +19,7 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
     usage attributes then a binary usage attribute will be generated
     with the given number of occasions for each input }
     \item{checkdetector}{logical; if TRUE then variation in the detector attribute triggers a warning }
+    \item{suffix}{logical; if TRUE then suffix to the row names indicates source }
 
 }
 
@@ -37,11 +38,17 @@ Form a single \code{traps} object from two or more existing \code{traps} objects
   of columns in any input.
   
   \dots may be a single multi-session traps object (from 2.10.0).
+  
+  By default (and always prior to 3.1.1) row names include a suffix 
+  (e.g., ".1", or ".2") to indicate the original object (first, second etc.). 
+  A suffix is added automatically to all names if any name is duplicated, and a warning is generated.
 
 }
 
 \value{
+
 An object of class \code{traps} with number of rows equal to the sum of the rows in the input objects.
+
 }
 
 \seealso{ \code{\link{traps}}, \code{\link{subset.traps}} }

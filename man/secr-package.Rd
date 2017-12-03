@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 3.1.0\cr
-Date: \tab 2017-09-20\cr
+Version: \tab 3.1.3\cr
+Date: \tab 2017-12-02\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -88,10 +88,10 @@ intensity, and other characteristics
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see
-\href{http://www.otago.ac.nz/density/index.html}{www.otago.ac.nz/density}
+\href{http://www.otago.ac.nz/density}{www.otago.ac.nz/density}
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
-\href{http://www.phidot.org/forum/index.php}{www.phidot.org} and
+\href{http://www.phidot.org/forum}{www.phidot.org} and
 the Google group `secr'. Feedback
 on the software is also welcome, including suggestions for additional
 documentation or new features consistent with the overall design.
@@ -106,7 +106,9 @@ David Borchers made many of these methods possible with his work on the
 likelihood. Deanna Dawson edited some of the documentation (the cleaner
 bits!) and her support and collaboration were important
 throughout. Tiago Marques and Mike Meredith suggested many improvements
-to the documentation and provided valued criticism and support. Erin Peterson and Mathias Tobler made specific suggestions that improved the \code{randomHabitat} and \code{par.secr.fit} functions.
+to the documentation and provided valued criticism and support. 
+Erin Peterson and Mathias Tobler made specific suggestions that improved 
+the \code{randomHabitat} and \code{par.secr.fit} functions.
 
 }
 

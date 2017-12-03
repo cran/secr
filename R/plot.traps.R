@@ -96,7 +96,7 @@ plot.traps <- function(x,
             points(df$x[i], df$y[i], pch = detpar$pch, bg = bg, col=detpar$col)
         }
         
-        if (hidetr==F) {
+        if (!hidetr) {
             if (all(detector(x) %in% c('polygon','polygonX'))) {
                 templist <- split (x, levels(polyID(x)), prefix='')
                 lapply(templist, function (y)
@@ -139,10 +139,10 @@ plot.traps <- function(x,
                 }
             }
             par(txtpar)
-            if (label && !(all(detector(x) %in% .localstuff$polydetectors))) {
+            if (label & !(all(detector(x) %in% .localstuff$polydetectors))) {
                 text (x$x+offset[1], x$y+offsety, rownames(x))
             }
-            if (labelclusters && !all(detector(x) %in% .localstuff$polydetectors)) {
+            if (labelclusters & !all(detector(x) %in% .localstuff$polydetectors)) {
                 if (is.null(clusterID(x)) | is.null(clustertrap(x)))
                     stop ("require clustered traps to label with clusterID")
                 cl1 <- clustertrap(x) == 1

@@ -48,7 +48,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
             out <- mapply(read.traps, file=file, markocc = markocc, MoreArgs = list(detector = detector,
                                                                                     covnames = covnames, binary.usage = binary.usage, ...), SIMPLIFY = FALSE)
         }
-        class (out) <- c('list', 'traps')
+        class (out) <- c('traps', 'list')
         out
     }
     else {

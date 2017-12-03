@@ -269,7 +269,7 @@ plot.capthist <- function(x, rad = 5,
                 lapply(lsignal, plotsignal, minsignal = min(temp$signal),
                     maxsignal = max(temp$signal), n=nrow(x))
             }
-            else  {   
+            else  { 
                 xydf <- as.data.frame(traps(x)[trap(x),])
                 occ <- occasion(x)
                 OK <- detectr[occ] != 'telemetry'
@@ -293,7 +293,6 @@ plot.capthist <- function(x, rad = 5,
             }
 
             if (ncap) { ncapt(x)}
-
         }
         else if (type %in% c('n.per.cluster','n.per.detector')) {
             if (type == 'n.per.detector') {

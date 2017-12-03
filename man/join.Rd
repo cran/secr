@@ -8,7 +8,7 @@
 single-session objects, or a multi-session capthist object.  }
 
 \usage{ 
-join(object, remove.dupl.sites = TRUE, tol = 0.001) 
+join(object, remove.dupl.sites = TRUE, tol = 0.001, interval = NULL, sessions = NULL) 
 unjoin(object, interval, ...)
 }
 
@@ -23,7 +23,9 @@ retained for each trap site used in multiple input sessions }
   \item{tol}{ absolute distance in metres within which sites are
 considered identical }
 
-  \item{interval}{ vector of times between occasions; zero indicates same session }
+  \item{interval}{ vector of times between sessions (join) or occasions (unjoin; zero indicates same session) }
+  
+  \item{sessions}{ vector of session names }
 
   \item{...}{ other arguments passed to \code{\link{subset.capthist}} }
 }

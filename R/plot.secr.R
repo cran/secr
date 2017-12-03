@@ -15,6 +15,8 @@
 ## 2014-09-18 limits = TRUE now works with acoustic dfn
 
 ## 2017-05-24 BUG label of plot.secr 'Detection lambda' suppressed
+## 2017-10-16 plot.secr confidence limits for detection functions 14:18 use 
+##            log(hazard) scale to match output of predict.secr for g(0)
 ############################################################################################
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
@@ -59,9 +61,9 @@ plot.secrlist <- function (x, newdata=NULL, add = FALSE,
     invisible()
 }
 
-plot.secr <- function (x, newdata=NULL, add = FALSE,
-    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, xval = 0:200,
-    ylim = NULL, xlab = NULL, ylab = NULL, ...)
+plot.secr <- function (x, newdata = NULL, add = FALSE,
+    sigmatick = FALSE, rgr = FALSE, limits = FALSE, alpha = 0.05, # bootstrap = FALSE, nboot = 10000, 
+    xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...)
 {
     gline <- function (predicted, rowi = 1, eps = 1e-10) {
         ## eps is used to limit y to range where gradient() works
@@ -97,83 +99,54 @@ plot.secr <- function (x, newdata=NULL, add = FALSE,
 
                 grad <- matrix(nrow = length(xval), ncol = length(x$fit$par))  ## beta pars
                 if (is.null(newdata)) newdata <- secr.make.newdata (x)
-
+                parnamvec <- parnames(x$detectfn)
+                if (!parnamvec[1] %in% c('g0','lambda0'))
+                    stop ("first detection parameter not g0 or lambda0")
+                
                 lkdfn <- function (beta, r) {
                     ## real g() from all beta pars and model.matrix
-                    parnamvec <- parnames(x$detectfn)
                     real <- numeric(length(parnamvec))
                     names(real) <- parnamvec
-
+                    
                     for (rn in parnamvec) {
-                         par.rn <- x$parindx[[rn]]
-                         ## 2014-08-19
-                         ## mat <- model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
-                         mat <- general.model.matrix(x$model[[rn]], data=newdata[rowi,,drop=F])
-                         lp <- mat %*% matrix(beta[par.rn], ncol = 1)
-                         real[rn] <- untransform (lp, x$link[[rn]])
+                        par.rn <- x$parindx[[rn]]
+                        mat <- general.model.matrix(x$model[[rn]], data=newdata[rowi,,drop=FALSE], 
+                                                    gamsmth = x$smoothsetup[[rn]],
+                                                    contrasts = x$details$contrasts)
+                        lp <- mat %*% matrix(beta[par.rn], ncol = 1)
+                        real[rn] <- untransform (lp, x$link[[rn]])
                     }
-                    ## bug fix 2014-09-18 : requires x$details$cutval
-                    logit(dfn(r, real, x$details$cutval))
+                    # 2017-10-16 logit(dfn(r, real, x$details$cutval))
+                    gr <- dfn(r, real, x$details$cutval)
+                    if (parnamvec[1] == 'lambda0')
+                        log(-log(1-gr))
+                    else 
+                        logit(gr) 
                 }
-
+                
                 for (i in 1:length(xval))
-
-            ## Fast special cases: checking only
-            ##    if ((x$detectfn==0) & (all(sapply(x$model, function(m) m == ~1)) ))
-            ##    {
-            ##        ## ASSUME DEFAULT LINK
-            ##        g0 <- logit(pars[1])
-            ##        sigma <- log(pars[2])
-            ##        r <- xval[i]
-            ##        ## D(expression(1/(1+exp(-g0)) * exp(-r^2/2/exp(sigma)^2)), 'g0')
-            ##        ## D(expression(1/(1+exp(-g0)) * exp(-r^2/2/exp(sigma)^2)), 'sigma')
-            ##        tempgrad <- c(exp(-g0)/(1 + exp(-g0))^2 * exp(-r^2/2/exp(sigma)^2),
-            ##            -(1/(1 + exp(-g0)) * (exp(-r^2/2/exp(sigma)^2) * (-r^2/2 * (2 * (exp(sigma)
-            ##            * exp(sigma)))/(exp(sigma)^2)^2))))
-            ##        if (!x$CL) tempgrad <- c(0,tempgrad)  ## for density
-            ##        grad[i,] <- tempgrad
-            ##    }
-            ##    else
-            ##       if ((x$detectfn==1) & (all(sapply(x$model, function(m) m == ~1)) ))
-            ##    {
-            ##        ## ASSUME DEFAULT LINK
-            ##        g0 <- logit(pars[1])
-            ##        sigma <- log(pars[2])
-            ##        z <- log(pars[3])
-            ##           r <- xval[i]
-            ##        tempgrad <- c(
-            ##            exp(-g0)/(1 + exp(-g0))^2 * (1 - exp(-(r/exp(sigma))^(-exp(z)))),
-            ##            -(1/(1 + exp(-g0)) * (exp(-(r/exp(sigma))^(-exp(z))) * ((r/exp(sigma))^((-exp(z)) -
-            ##            1) * ((-exp(z)) * (r * exp(sigma)/exp(sigma)^2))))),
-            ##            -(1/(1 + exp(-g0)) * (exp(-(r/exp(sigma))^(-exp(z))) * ((r/exp(sigma))^(-exp(z)) *
-            ##            (log((r/exp(sigma))) * exp(z)))))
-            ##        )
-            ##        if (!x$CL) tempgrad <- c(0,tempgrad)  ## for density
-            ##        grad[i,] <- tempgrad
-            ##    }
-            ##    else
-
-                # grad[i,] <- fdHess (pars = x$fit$par, fun = lkdfn, r = xval[i])$gradient
-                # grad[i,] <- grad (func = lkdfn, x = x$fit$par, r = xval[i])  ## needs numDeriv
-                grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'utility.R'
-
+                    grad[i,] <- gradient (pars = x$fit$par, fun = lkdfn, r = xval[i])  ## see 'utility.R'
+                
                 vc <- vcov (x)
                 gfn <- function(gg) {
                     gg <- matrix(gg, nrow = 1)
                     gg %*% vc %*% t(gg)
-                    }
+                }
                 se <- apply(grad, 1, gfn)^0.5
-                ## lcl <- pmax(y - z*se,0)  # on natural scale
-                ## ucl <- pmin(y + z*se,1)
-
-                ## limits on link scale
-                lcl <- ifelse ((y>eps) & (y<(1-eps)), invlogit (logit(y) - z*se), NA)
-                ucl <- ifelse ((y>eps) & (y<(1-eps)), invlogit (logit(y) + z*se), NA)
-
+                
+                ## limits on g(r) scale 2017-10-16
+                if (parnamvec[1] == 'lambda0') {
+                    lcl <- ifelse ((y>eps) & (y<(1-eps)), 1 - exp(-exp(log(-log(1-y)) - z*se)), NA)
+                    ucl <- ifelse ((y>eps) & (y<(1-eps)), 1 - exp(-exp(log(-log(1-y)) + z*se)), NA)
+                }
+                else {
+                    lcl <- ifelse ((y>eps) & (y<(1-eps)), invlogit(logit(y) - z*se), NA)
+                    ucl <- ifelse ((y>eps) & (y<(1-eps)), invlogit(logit(y) + z*se), NA)
+                }
                 lines (xval, lcl, lty=2, ...)
                 lines (xval, ucl, lty=2, ...)
             }
-
+            
             if (limits & !rgr)
                 data.frame(x=xval, y=y, lcl = lcl, ucl = ucl)
             else

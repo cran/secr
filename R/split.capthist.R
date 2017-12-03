@@ -40,7 +40,7 @@
 #     if (!drop | (nrow(temp)>0))
 #       out[[i]] <- temp
 #   }
-#   class (out) <- c('list', 'capthist')
+#   class (out) <- c('capthist', 'list')
 #   out
 # }
 ############################################################################################
@@ -93,7 +93,7 @@ split.capthist <- function (x, f, drop = FALSE, prefix='S', bytrap = FALSE,
     if (!drop | (nrow(temp)>0))
       out[[i]] <- temp
   }
-  class (out) <- c('list', 'capthist')
+  class (out) <- c('capthist', 'list')
   out
 }
 ############################################################################################

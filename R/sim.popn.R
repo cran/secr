@@ -126,10 +126,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 ## probability of entry at this point?
                 ## cf Schwarz & Arnason betas
             if (nrecruit>0) {
-#               recruits <- sim.popn(D = nrecruit, core = core, buffer = buffer,
-#                                    model2D = model2D, buffertype = buffertype, poly = poly,
-#                                    covariates = covariates, number.from = newstart,
-#                                    Ndist = 'specified', nsessions = 1, details = details)
               ## 2015-04-06 using Nbuffer
               recruits <- sim.popn(D = D, core = core, buffer = buffer,
                                    model2D = model2D, buffertype = buffertype, poly = poly,
@@ -188,9 +184,9 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
         }
         if (model2D == 'linear')
-            class(MSpopn) <- c('list', 'linearpopn', 'popn')
+            class(MSpopn) <- c('linearpopn', 'popn', 'list')
         else
-            class(MSpopn) <- c('list','popn')
+            class(MSpopn) <- c('popn', 'list')
         names(MSpopn) <- 1:nsessions
         MSpopn
     }

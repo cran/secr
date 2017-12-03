@@ -9,7 +9,7 @@
 \usage{
 secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
     groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
-    keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, ...)
+    keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, contrasts = NULL, ...)
 
 make.lookup (tempmat)
 }
@@ -35,6 +35,7 @@ make.lookup (tempmat)
     output dframe (ignored if \code{keep.dframe = FALSE})}
   \item{ignoreusage}{logical; if TRUE any usage attribute of traps(capthist)
   is ignored}
+  \item{contrasts}{contrast specification as for \code{\link[stats]{model.matrix}}}
   \item{\dots}{ other arguments passed to the \R function
     \code{\link{model.matrix}} }
   \item{tempmat}{matrix for which row lookup required}

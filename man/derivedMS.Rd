@@ -1,6 +1,8 @@
 \name{derived}
 \alias{derived}
 \alias{esa}
+\alias{derived.secr}
+\alias{derived.secrlist}
 
 \title{ Derived Parameters of Fitted SECR Model }
 
@@ -9,15 +11,17 @@ Compute derived parameters of spatially explicit capture-recapture model.
 Density is a derived parameter when a model is fitted by maximizing the conditional likelihood. So also is the effective sampling area (in the sense of Borchers and Efford 2008).
 }
 \usage{
-derived(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
-    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, 
-    distribution = NULL, ncores = 1)
+derived(object, ...)
+\method{derived}{secr}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
+    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...)
+\method{derived}{secrlist}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
+    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...)
 esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
 }
 
 \arguments{
   \item{object}{ \code{secr} object output from \code{secr.fit}, or an
-  object of class \code{c("list","secrlist")} }
+  object of class \code{c("secrlist", "list")} }
   \item{sessnum}{ index of session in object$capthist for which output required }
   \item{groups}{ vector of covariate names to define group(s) (see Details) }
   \item{alpha}{ alpha level for confidence intervals }
@@ -29,6 +33,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
   \item{noccasions}{ integer number of sampling occasions (see Details) } 
+  \item{...}{other arguments (not used)}
 }
 
 \details{
@@ -138,20 +143,19 @@ Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{
 }
 
 \seealso{
+
   \code{\link{predict.secr}},
   \code{\link{print.secr}},
   \code{\link{secr.fit}},
   \code{\link{empirical.varD}}
   \code{\link{par.derived}}
+
 }
 
 \note{
 
-  Before version 2.1, the output table had columns for `varcomp1' (the
-variance in \eqn{\hat{D}}{D-hat} due to variation in \eqn{n}, i.e.,
-Huggins' \eqn{s^2}), and `varcomp2' (the variance in
-\eqn{\hat{D}}{D-hat} due to uncertainty in estimates of detection
-parameters).
+Before version 2.1, the output table had columns for `varcomp1' (the variance in \eqn{\hat{D}}{D-hat} due to variation in \eqn{n}, i.e.,
+Huggins' \eqn{s^2}), and `varcomp2' (the variance in \eqn{\hat{D}}{D-hat} due to uncertainty in estimates of detection parameters).
 
 These quantities are related to CVn and CVa as follows:
 
@@ -159,14 +163,11 @@ These quantities are related to CVn and CVa as follows:
 
 \eqn{\mbox{CVa} = \sqrt{ \mbox{varcomp2} } / \hat{D} }{ CVa = sqrt(varcomp2) / D-hat}
 
-
 }
 
 \section{Warning}{
 %2014-06-08
-\code{derived()} may be applied to detection models fitted by maximizing the
-full likelihood (\code{CL = FALSE}). However, models using g (groups)
-will not be handled correctly.
+\code{derived()} may be applied to detection models fitted by maximizing the full likelihood (\code{CL = FALSE}). However, models using g (groups) will not be handled correctly.
 
 }
 

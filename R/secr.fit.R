@@ -40,6 +40,7 @@
 ## 2017-01-30 streamlined detectortype checks (anytelem etc.)
 ## 2017-04-04 detectfn limited to 14:18 for polygons, transects
 ## 2017-09-10 fixed bug in start getdefault: relied on names(models) when should have used names(parindx)
+## 2017-10-31 details newdetector
 ###############################################################################
 
   secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -107,6 +108,7 @@
     alltelem <- all(detectortype %in% 'telemetry')
     anytelem <- any(detectortype %in% 'telemetry')
     anysingle <- any(detectortype %in% 'single')
+    anycapped <- any(detectortype %in% 'capped')
     allpresence <- all(detectortype %in% 'presence')
     allsignal <- all(detectortype %in% 'signal')
     allsignalnoise <- all(detectortype %in% 'signalnoise')
@@ -174,7 +176,9 @@
                            nsim = 0,
                            chatonly = FALSE,
                            chat = NULL,
-                           savecall = TRUE
+                           savecall = TRUE,
+                           newdetector = NULL,
+                           contrasts = NULL
                            )
     if (!is.null(attr(capthist,'cutval')))
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -205,6 +209,20 @@
         cl[[1]] <- quote(secr.fit)
     }
     else cl <- NULL
+    
+    if (!is.null(details$newdetector)) {
+        warning("replacement detector type specified by user")
+        if (ms(capthist)) {
+            for (i in 1:length(capthist)) {
+                if (inherits(details$newdetector, 'list'))
+                    detector(traps(capthist[[i]])) <- details$newdetector[[i]]
+                else
+                    detector(traps(capthist[[i]])) <- details$newdetector
+            }
+        }
+        else 
+            detector(traps(capthist)) <- details$newdetector       
+    }
 
     #################################################
     ## MS - indicator TRUE if multi-session (logical)
@@ -264,9 +282,9 @@
     else {
       if (MS & !ms(mask)) {
           if (inherits(mask, 'linearmask'))
-              newclass <- c('list', 'linearmask', 'mask')
+              newclass <- c('linearmask', 'mask', 'list')
           else
-              newclass <- c('list', 'mask')
+              newclass <- c('mask', 'list')
           ## inefficiently replicate mask for each session!
           mask <- lapply(sessionlevels, function(x) mask)
           class (mask) <- newclass
@@ -441,7 +459,7 @@
       groups <- NULL
       warning ("groups not valid with CL; groups ignored")
     }
-    if (CL && var.in.model('g', model))
+    if (CL & var.in.model('g', model))
       stop ("'g' is not a valid effect when 'CL = TRUE'")
     if ((length(model) == 0) & !is.null(fixed))
       stop ("all parameters fixed")     ## assume want only LL
@@ -475,10 +493,11 @@
     ##############################################
     memo ('Preparing detection design matrices', details$trace)
     design <- secr.design.MS (capthist, model, timecov, sessioncov, groups, hcov,
-                              dframe, ignoreusage = details$ignoreusage)
+                              dframe, ignoreusage = details$ignoreusage, 
+                              contrasts = details$contrasts)
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, hcov,
                                dframe, ignoreusage = details$ignoreusage, naive = T,
-                               bygroup = !CL)
+                               bygroup = !CL, contrasts = details$contrasts)
 
     ############################################
     # Prepare density design matrix
@@ -514,7 +533,8 @@
             if (any(smooths(model$D)))
                 smoothsetup$D <- gamsetup(model$D, temp)
             ## otherwise, smoothsetup$D remains NULL
-            designD <- general.model.matrix(model$D, temp, smoothsetup$D)
+            designD <- general.model.matrix(model$D, data = temp, gamsmth = smoothsetup$D, 
+                                            contrasts = details$contrasts)
             attr(designD, 'dimD') <- attr(temp, 'dimD')
 
             Dnames <- colnames(designD)
@@ -540,7 +560,8 @@
         if (any(smooths(model$noneuc)))
             smoothsetup$noneuc <- gamsetup(model$noneuc, temp)
         ## otherwise, smoothsetup$NE remains NULL
-        designNE <- general.model.matrix(model$noneuc, temp, smoothsetup$noneuc)
+        designNE <- general.model.matrix(model$noneuc, data = temp, gamsmth = smoothsetup$noneuc, 
+                                         contrasts = details$contrasts)
         attr(designNE, 'dimD') <- attr(temp, 'dimD')
         NEnames <- colnames(designNE)
         nNEParameters <- length(NEnames)
@@ -643,7 +664,7 @@
 
         if (requireautoini) {
             ## not for signal attenuation
-            if (!(detectfn %in% c(9,10,11,12,13)) && !anypoly && !anytrans) {
+            if (!(detectfn %in% c(9,10,11,12,13)) & !anypoly & !anytrans) {
                 memo('Finding initial parameter values...', details$trace)
                 # specific to session, do not use anytelem
                 if (any(detector(traps(ch))=="telemetry")) {
@@ -736,18 +757,16 @@
                                              c('polygon','transect'))) {
                 ## assume using usage for binomN
                 usge <- usage(traps(ch))
-
                 ## default$g0 <- default$g0 / mean(usge[usge>0]) suppress 2017-04-04
             }
             default$sigma <- rpsv
         }
-
+        
         if (is.na(default$sigma)) default$sigma <- 20
         getdefault <- function (par) {
             transform (default[[par]], link[[par]])
         }
 
-        ## 2014-10-14, 2014-11-12
         if (is.list(start)) {
             startnames <- names(start)
             default <- replace(default, startnames, start)
@@ -755,9 +774,9 @@
         else startnames <- NULL
 
         start <- rep(0, NP)
-        for ( i in 1:length(parindx) )
-            ## start[parindx[[i]][1]] <- getdefault (names(model)[i])
+        for ( i in 1:length(parindx) ) {
             start[parindx[[i]][1]] <- getdefault (names(parindx)[i])  # 2017-09-10
+        }
         if ((details$nmix>1) & !('pmix' %in% fnames) & !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:nmix)-0.5)[2]
 

@@ -104,7 +104,7 @@ identified in \code{signalcovariates} are saved along with signal
 strength measurements in the attribute `signalframe'.
 
 If the input has data from multiple sessions then the output is an
-object of class c("list","capthist") comprising a list of single-session
+object of class c("capthist", "list") comprising a list of single-session
 \code{capthist} objects.
 
 }

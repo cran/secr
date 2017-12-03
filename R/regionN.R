@@ -23,10 +23,19 @@
 ## 2016-10-28 userdist may be session-specific
 ############################################################################################
 
-region.N <- function (object, region = NULL, spacing = NULL, session = NULL,
+region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = NULL,
+                               group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
+                               keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',
+                               pooled.RN = FALSE, ...) {
+    lapply(object, region.N, region, spacing, session, group, se.N, alpha, loginterval,
+           keep.region, nlowerbound, RN.method, pooled.RN)
+}
+
+
+region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
     keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',
-    pooled.RN = FALSE) {
+    pooled.RN = FALSE, ...) {
 
     ## Notes
     ## se.N = FALSE returns scalar N

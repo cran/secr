@@ -88,7 +88,7 @@ Csardi, G. and Nepusz, T. (2006) The igraph software package for complex
 network research. \emph{InterJournal}, \bold{1695}. http://igraph.org.
 
 van Etten, J. (2014) gdistance: distances and routes on geographical
-grids. R package version 1.1-5. http://CRAN.R-project.org/package=gdistance
+grids. R package version 1.1-5. https://CRAN.R-project.org/package=gdistance
 
 
 }

@@ -39,9 +39,9 @@ prepare <- function (secr, newmodel) {
     grouplevels  <- group.levels(capthist, groups)
 
     design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
-                              ignoreusage = details$ignoreusage)
+                              ignoreusage = details$ignoreusage, contrasts = details$contrasts)
     design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
-                               ignoreusage = details$ignoreusage,
+                               ignoreusage = details$ignoreusage, contrasts = details$contrasts,
                                naive = T, bygroup = !CL)
     
     D.modelled <- !CL & is.null(fixed$D)
@@ -49,9 +49,9 @@ prepare <- function (secr, newmodel) {
     sessionlevels <- session(capthist)
     grouplevels  <- group.levels(capthist, groups)
     D.designmatrix <- designmatrix (D.modelled, mask, newmodel$D,
-                            grouplevels, sessionlevels, sessioncov, smoothsetup$D)
+                            grouplevels, sessionlevels, sessioncov, smoothsetup$D, details$contrasts)
     NE.designmatrix <- designmatrix (NE.modelled, mask, newmodel$noneuc,
-                            grouplevels, sessionlevels, sessioncov, smoothsetup$noneuc)        
+                            grouplevels, sessionlevels, sessioncov, smoothsetup$noneuc, details$contrasts)        
             
     #############################
     # Parameter mapping (general)

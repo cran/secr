@@ -9,6 +9,7 @@
 ## 2016-03-02 allow poly to be mask object
 ## 2016-03-21 random.origin
 ## 2016-03-23 cell.overlap, using cellPointsInPolygon
+## 2017-11-13 stop if provided with capthist
 ###############################################################################
 
 getCentres <- function (xy) {
@@ -55,7 +56,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx, ny = ny,
                         type = type, poly = poly, poly.habitat = poly.habitat, keep.poly = TRUE,
                         check.poly = TRUE,  pdotmin = pdotmin, random.origin = random.origin, ...)
-        class (temp) <- c('list', 'mask')
+        class (temp) <- c('mask', 'list')
         temp
       }
     else {
@@ -68,6 +69,8 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         if ((length(dots)==0) & (type == 'pdot'))
             warning ("no detection parameters supplied; using defaults")
 
+        if (inherits(traps, 'capthist'))
+            stop("argument should be a traps object or equivalent, not capthist")
         ## extend buff to allow for random origin 2016-03-21
         if (random.origin) {
             if (is.null(spacing))                     
@@ -86,9 +89,6 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             
 
         if (!is.null(poly)) {
-#             if (class(poly) == 'SpatialPolygons')  ## 2016-01-14
-#                 stop ("make.mask does not work if poly is SpatialPolygons")
-            # SPDF <- inherits(poly, "SpatialPolygonsDataFrame")
             SP <- inherits(poly, "SpatialPolygons")
             if (!SP) {
                 if (!inherits(poly, "mask")) {     ## 2016-03-02
@@ -99,9 +99,6 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             }
         }
 
-        ## if (is.null(traps))
-        ##    type <- 'rectangular'
-        ## replaced 2014-03-22
         if (is.null(traps)) check.poly <- FALSE
     
         if (is.null(traps) & !(type %in% c('polygon','polybuffer')))
@@ -170,6 +167,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         if (type=='trapbuffer') {
             ## appropriate convex buffer 2011-01-22
             ## (this re-use of nx may not be appropriate)
+          
             if (!is.null(detector(traps)) &    ## 2017-01-27
                 all(detector(traps) %in% c('polygon','polygonX'))) {
                 temp <- buffer.contour(traps, buffer = buffer, nx = nx,

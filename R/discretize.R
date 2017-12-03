@@ -122,7 +122,7 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
                     alivesign[is.na(alivesign)] <- TRUE
                     alivesign <- alivesign * 2 - 1
                     if (! (outputdetector %in% c('count'))
-                        && (length(tempnew)>0)) {
+                        & (length(tempnew)>0)) {
                         ## convert 'proximity' to binary
                         tempnew[tempnew>0] <- 1
                         warning("count data converted to binary; ",

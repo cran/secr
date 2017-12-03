@@ -1,10 +1,10 @@
 ################################################################################## package 'secr'
 ## circular.R
 ## "circular error probable"
-## last changed 2011 06 12; 2013-04-19; 2013-04-24; 2013-05-11
+## last changed 2011 06 12; 2013-04-19; 2013-04-24; 2013-05-11; 2017-10-28
 ################################################################################
 
-circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, ...) {
+circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, upper = Inf, ...) {
 
     ## translate character detectfn to numeric code
     if (is.character(detectfn))
@@ -23,10 +23,7 @@ circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, haz
                   "halfnormal, exponential and uniform")
     detectpar$g0 <- 1  ## always
     detectpar$lambda0 <- 1  ## 2013-04-19
-    truncate <- detectpar$truncate
-    if (is.null(truncate))
-         truncate <- Inf
-    OK <- truncate == Inf
+    OK <- upper == Inf
     detectpar <- detectpar[parnames(detectfn)]  ## correct order
     pars <- unlist(detectpar)
     cutval <- ifelse (detectfn %in% c(9,10,11), detectpar$cutval, NA)
@@ -56,10 +53,10 @@ circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, haz
             haz[!is.finite(haz)] <- 0
             r * haz
         }
-        I1 <- integrate (rdfn, 0, truncate, pars, cutval, ...)$value
+        I1 <- integrate (rdfn, 0, upper, pars, cutval, ...)$value
 
         fnr <- function (r, this.p) {
-            I2 <- integrate (rdfn, 0, min(r,truncate), pars, cutval, ...)$value
+            I2 <- integrate (rdfn, 0, min(r,upper), pars, cutval, ...)$value
             I2 / I1 - this.p
         }
         getroot <- function (p) uniroot(fnr, c(0,200*scale), this.p = p)$root
@@ -68,29 +65,25 @@ circular.r <- function (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, haz
 }
 
 
-circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, ...) {
+circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard = TRUE, upper = Inf, ...) {
 
     ## convert character detectfn to numeric code
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
     if (detectfn %in% c(0,2,3,14,16)) {
-        ## if input is a named list
-        if (!is.null(detectpar)) {
-            sigma <- detectpar$sigma
+        if (is.null(detectpar)) {
+            detectpar <- list(sigma = sigma)
         }
-        detectpar <- list(sigma = sigma)
     }
-    else
+    else {
         if (is.null(detectpar))
             stop ("require detectpar, in list format, except for ",
                   "halfnormal, exponential and uniform")
+    }
     detectpar$g0 <- 1       ## always
     detectpar$lambda0 <- 1  ## always
-    truncate <- detectpar$truncate
-    if (is.null(truncate))
-         truncate <- Inf
-    OK <- truncate == Inf
+    OK <- upper == Inf
     detectpar <- detectpar[parnames(detectfn)]  ## correct order
     pars <- unlist(detectpar)
     cutval <- ifelse (detectfn %in% c(9,10,11), detectpar$cutval, NA)
@@ -117,10 +110,9 @@ circular.p <- function (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard
             haz[!is.finite(haz)] <- 0
             r * haz
         }
-        I1 <- integrate (rdfn, 0, truncate, pars, cutval, ...)$value
-
+        I1 <- integrate (rdfn, 0, upper, pars, cutval, ...)$value
         fnr <- function (r) {
-            I2 <- integrate (rdfn, 0, min(r,truncate), pars, cutval, ...)$value
+            I2 <- integrate (rdfn, 0, min(r,upper), pars, cutval, ...)$value
             I2 / I1
         }
         sapply(r, fnr)

@@ -25,7 +25,7 @@
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                             groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE,
                             bygroup = FALSE, keep.dframe = FALSE, full.dframe = FALSE,
-                            ignoreusage = FALSE, ...) {
+                            ignoreusage = FALSE, contrasts = NULL, ...) {
 
 ## Generate design matrix, reduced parameter array, and parameter index array (PIA)
 ## for detection function parameters
@@ -643,11 +643,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             list (model = NULL, index = rep(1,dframenrow))
         }
         else {
-            ## 2014-08-19
-            ## tempmat <- model.matrix(formula, dframe, ...)
             ## see utility.R for general.model.matrix
             ## allows regression splines (mgcv)
-            tempmat <- general.model.matrix(formula, dframe, ...)
+            tempmat <- general.model.matrix(formula, data = dframe, contrasts = contrasts, ...)  ## secr.design.MS contrasts
             ## drop pmix beta0 column from design matrix
             if (prefix=='pmix') {
                 tempmat <- tempmat[,-1,drop=FALSE]
@@ -664,7 +662,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     # list with one component per real parameter
     # each of these is a list with components 'model' and 'index'
     designMatrices <- sapply (1:length(models), simplify=FALSE,
-        function (x) make.designmatrix(models[[x]], names(models[x])))
+        function (x) make.designmatrix(models[[x]], names(models[x])), ...)
     names(designMatrices) <- names(models)
 
     ## dim(indices) = c(R*n*S*K*nmix, npar)

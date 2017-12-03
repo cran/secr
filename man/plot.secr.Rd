@@ -73,8 +73,7 @@ For \code{detectfnplot} the signal threshold parameters `cutval' and
 
 Approximate confidence limits for g(r) are calculated using a numerical
 first-order delta-method approximation to the standard error at each
-\code{xval}. The distribution is assumed to be normal on the logit scale;
-limits are back-transformed from that scale.
+\code{xval}. The distribution of g(r) is assumed to be normal on the logit scale for non-hazard functions (detectfn 0:13). For hazard detection functions (detectfn 14:18) the hazard is assumed (from version 3.1.1) to be distributed normally on the log scale. Limits are back-transformed to the probability scale g(r).
 
 \code{attenuationplot} plots the expected decline in signal strength
 with distance, given parameters \eqn{\beta_0}{beta0} and

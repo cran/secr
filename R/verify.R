@@ -13,6 +13,8 @@
 ## 2015-10-12 verify.traps error messages
 ## 2015-11-02 xyinpoly moved to utility.R
 ## 2016-10-06 secr 3.0 revamped
+## 2017-10-18 zerohist check ()
+## 2017-10-19 capped detector check
 
 ## 2017-01-27 future telemetry checks:
 ##                cannot have occasions with no detections    
@@ -69,7 +71,7 @@ overlapcells <- function (xy) {
                 {
                     verti <- t(apply(pixel, 1, function (x) xy[i,] + x))
                     vertj <- t(apply(pixel, 1, function (x) xy[j,] + x))
-                    if ((length(verti)>0) && (length(vertj)>0))
+                    if ((length(verti)>0) & (length(vertj)>0))
                     overlap[i,j] <- vertexinside(verti,vertj)
                 }
         any (overlap, na.rm=T)
@@ -226,7 +228,7 @@ verify.traps <- function (object, report = 2, ...) {
             }
         }
 
-        if ((report == 2) && !anyerrors)
+        if ((report == 2) & !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))
     }
@@ -373,7 +375,7 @@ verify.traps <- function (object, report = 2, ...) {
             }
         }
 
-        if ((report == 2) && !errors) message('No errors found :-)')
+        if ((report == 2) & !errors) message('No errors found :-)')
 
         out <- list(errors = errors,
             trapNAOK = trapNAOK,
@@ -430,11 +432,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 warning ('Levels of factor covariate(s) differ between sessions')
             }
         }
-        if ((report == 2) && !anyerrors)
+        if ((report == 2) & !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))
     }
     else {
+        
         ## preliminaries
         object <- check3D(object)
         detectortype <- expanddet(object)  # vector length noccasions
@@ -456,8 +459,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         usageoccasionsOK <- TRUE
         detectornumberOK <- TRUE
         detectorconflcts <- NULL
+        zerohistOK <- TRUE
         singleOK <- TRUE
         multiOK <- TRUE
+        cappedOK <- TRUE
         binaryOK <- TRUE
         countOK <- TRUE
         cutvalOK <- TRUE
@@ -518,9 +523,12 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             }
             ## 7
             else {
-                fn <- function(x) {
-                    x <- apply(x,1,min)
-                    (min(x)<0) && (tail(x[x!=0],1)>0)
+                fn <- function(x) {   ## tweaked 2017-11-29
+                    x <- apply(x,1,min)   ## by occasion
+                    dead <- min(x)<0
+                    last <- tail(x[x!=0],1)
+                    if (length(last)==0) last <- 0
+                    dead & (last>0)
                 }
                 undead <- apply(object, 1, fn)
                 deadOK <- !any(undead)
@@ -530,13 +538,21 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             }
 
             ###################
+            ## zero histories
+            ## all-zero histories are meaningful only for concurrent telemetry and
+            ## sighting-only data with known number marked
+            if (telemetrytype != "concurrent" & !allsighting) {
+                zerohistOK <- all(apply(abs(object),1,sum)>0)
+            }
+            
+            ###################
             ## binary detectors
 
             detectorcodes <- detectorcode(traps(object), MLonly = FALSE, noccasions = ncol(object))
 
             ## 8
-            ## single, multi, proximity, polygonX, transectX, signal and signalnoise must be binary
-            multiples <- sum(abs(object[, detectorcodes %in% c(-1,0,1,3,4,5,12), , drop = FALSE])>1)
+            ## single, multi, capped, proximity, polygonX, transectX, signal and signalnoise must be binary
+            multiples <- sum(abs(object[, detectorcodes %in% c(-1,0,1,3,4,5,8,12), , drop = FALSE])>1)
             binaryOK <- multiples == 0
 
             ## 9
@@ -551,6 +567,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
             multiplei <- apply(object[, detectorcodes %in% c(0,3,4), , drop = FALSE], 1:2, fn)
             multiOK <- !any(unlist(multiplei))
 
+            ## no more than one individual per detector per occasion
+            multiplek <- apply(object[, detectorcodes==8, , drop = FALSE], 2:3, fn)
+            cappedOK <- !any(unlist(multiplek))
+            
             ###################
             ## count detectors
 
@@ -588,12 +608,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 # 2012-12-17
                 # notused <- !usage(traps(object))   ## traps x occasions
                 notused <- usage(traps(object)) == 0 ## traps x occasions
-                if (trapcheck$usagedetectorsOK && usageoccasionsOK) {
+                if (trapcheck$usagedetectorsOK & usageoccasionsOK) {
                     tempobj <- aperm(object, c(2,3,1))   ## occasion, traps, animal sKn
-                    # 2012-12-17
-                    # tempuse <- array(t(usage(traps(object))), dim=dim(tempobj))
                     tempuse <- array(t(usage(traps(object))>0), dim=dim(tempobj)) # repl to fill
-                    conflcts <- (abs(tempobj)>0) && (tempuse==0)
+                    # bug 2017-11-29 && changed to &
+                    conflcts <- (abs(tempobj)>0) & (tempuse==0)
                     tempobjmat <- array(tempobj[,,1], dim= dim(tempobj)[1:2])
                     occasion <- rep(row(tempobjmat), dim(tempobj)[3])
                     detector <- rep(col(tempobjmat), dim(tempobj)[3])
@@ -665,7 +684,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 19
-        rownamesOK <- !any(duplicated(rownames(object)))
+        rownamesOK <- !any(duplicated(rownames(object))) &
+            !is.null(rownames(object)) 
+        if (!is.null(rownames(object)))
+            rownamesOK <- rownamesOK & !any(is.na(rownames(object)))
 
         ## 20
         # superceded by telemOK 2017-01-27
@@ -736,9 +758,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                          cutvalOK,
                          signalOK,
                          deadOK,
+                         zerohistOK,
                          binaryOK,
                          singleOK,
                          multiOK,
+                         cappedOK,
                          countOK,
                          detectornumberOK,
                          covariatesOK,
@@ -803,10 +827,14 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     print(reincarnated)
                 }
 
+                if (!zerohistOK) {
+                    cat ('Empty histories allowed only with concurrent telemetry or sighting-only data\n')
+                }
+                
                 if (!binaryOK) {
                     cat ('More than one detection per detector per occasion at binary detector(s)\n')
                 }
-
+                
                 if (!singleOK) {
                     cat ('More than one capture in single-catch trap(s)\n')
                 }
@@ -814,7 +842,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 if (!multiOK) {
                     cat ('Animal trapped at more than one detector\n')
                 }
-
+                
+                if (!cappedOK) {
+                    cat ('More than one animal at detector\n')
+                }
+                
                 if (!countOK) {
                     cat ('Count(s) less than zero\n')
                 }
@@ -852,7 +884,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                     print (xy(object)[!ontransect,])
                 }
                 if (!rownamesOK) {
-                    cat ("Duplicated row names (animal ID)\n")
+                    cat ("Duplicated or missing row names (animal ID)\n")
                 }
                 if (!sightingsOK) {
                     cat("Incompatible dimensions of sighting attributes markocc, Tu or Tm\n")
@@ -886,7 +918,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
                 }
             }
 
-            if ((report == 2) && !errors) message('No errors found :-)')
+            if ((report == 2) & !errors) message('No errors found :-)')
 
         }
 
@@ -919,7 +951,7 @@ verify.mask <- function (object, report = 2, ...) {
                 warning ('Levels of factor mask covariate(s) differ between sessions')
             }
         }
-        if ((report == 2) && !anyerrors)
+        if ((report == 2) & !anyerrors)
             cat('No errors found :-)\n')
         invisible(list(errors = anyerrors, bysession = temp))
     }
@@ -927,7 +959,7 @@ verify.mask <- function (object, report = 2, ...) {
 
         ## 1
         xyOK <- !(is.null(object$x) | is.null(object$y) | any(is.na(object)))
-        xyOK <- xyOK && is.numeric(unlist(object))
+        xyOK <- xyOK & is.numeric(unlist(object))
 
         ## 2
 
@@ -952,7 +984,7 @@ verify.mask <- function (object, report = 2, ...) {
                 }
             }
 
-            if ((report == 2) && !errors) message('No errors found :-)')
+            if ((report == 2) & !errors) message('No errors found :-)')
         }
 
         out <- list(errors = errors)

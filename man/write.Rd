@@ -3,6 +3,7 @@
 \alias{write.traps}
 
 \title{ Write Data to Text File }
+
 \description{
   Export detections or detector layout to a text file in format suitable
   for input to DENSITY. 
@@ -46,6 +47,15 @@ write.traps(object, file = "", deblank = TRUE,  header = TRUE,
   are coerced to numeric before export.
   
 }
+\value{
+
+None
+
+}
+\seealso{
+\code{\link{as.data.frame.capthist}}
+}
+
 \examples{
   write.captures (captdata)
 }

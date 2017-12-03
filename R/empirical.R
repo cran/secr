@@ -7,6 +7,7 @@
 ## 2012 12 24 - clust argument required in derived.external
 ## 2014-10-17 revised to require spsurvey
 ## 2016-06-05 started derived.stratified
+## 2017-11-21 renamed derived.nj to derivednj, derived.cluster to derivedCluster etc.
 ##            to do - treat sessions resulting from mash() clustergroups as strata
 ############################################################################################
 
@@ -29,7 +30,7 @@ localvar <- function (z, xy) {
     temp1[1,4]^2
 }
 
-derived.nj <- function ( nj, esa, se.esa, method = c('SRS','local','poisson','binomial'), xy = NULL,
+derivednj <- function ( nj, esa, se.esa, method = c('SRS','local','poisson','binomial'), xy = NULL,
     alpha = 0.05, loginterval = TRUE, area = NULL ) {
     method <- match.arg(method)
     esa <- unlist(esa)
@@ -77,23 +78,23 @@ derived.nj <- function ( nj, esa, se.esa, method = c('SRS','local','poisson','bi
 }
 ############################################################################
 
-derived.session <- function ( object, method = c('SRS','local'), xy = NULL,
+derivedSession <- function ( object, method = c('SRS','local'), xy = NULL,
     alpha = 0.05, loginterval = TRUE ) {
     method <- match.arg(method)
     if (!inherits (object, 'secr') | !ms(object))
         stop ("requires fitted multi-session model")
     if (('session' %in% object$vars) | ('Session' %in% object$vars) |
         (!is.null(object$sessioncov)))
-        stop ("derived.session assumes detection model constant over sessions")
+        stop ("derivedSession assumes detection model constant over sessions")
     der <-  derived(object, se.esa = TRUE, se.D = FALSE)[[1]][,1:2]
     nj <- sapply(object$capthist, nrow)    ## animals per session
-    derived.nj(nj, der['esa','estimate'], der['esa','SE.estimate'], method,
+    derivednj(nj, der['esa','estimate'], der['esa','SE.estimate'], method,
                xy, alpha, loginterval)
 }
 
 ############################################################################
 
-derived.mash <- function (object, sessnum = NULL, method = c('SRS',
+derivedMash <- function (object, sessnum = NULL, method = c('SRS',
                           'local'), alpha = 0.05, loginterval = TRUE) {
     if (ms(object) & (is.null(sessnum))) {
             ## recursive call if MS
@@ -101,7 +102,7 @@ derived.mash <- function (object, sessnum = NULL, method = c('SRS',
             nsess <- length(sessnames)
             output <- vector('list', nsess )
             for (i in 1:nsess) {
-                output[[i]] <- derived.mash(object, sessnum = i, method, alpha, loginterval)
+                output[[i]] <- derivedMash(object, sessnum = i, method, alpha, loginterval)
             }
             names(output) <- sessnames
             output
@@ -127,13 +128,13 @@ derived.mash <- function (object, sessnum = NULL, method = c('SRS',
         else
             der <-  derived(object, se.esa = TRUE, se.D = FALSE)[,1:2]
 
-        derived.nj(n.mash, der['esa','estimate'], der['esa','SE.estimate'],
+        derivednj(n.mash, der['esa','estimate'], der['esa','SE.estimate'],
                    method, centres, alpha, loginterval)
 
     }
 }
 ####################################################################################
-derived.cluster <- function (object, sessnum = NULL, method = c('SRS','local'), alpha = 0.05,
+derivedCluster <- function (object, sessnum = NULL, method = c('SRS','local'), alpha = 0.05,
     loginterval = TRUE) {
 
     if (ms(object)) {
@@ -142,7 +143,7 @@ derived.cluster <- function (object, sessnum = NULL, method = c('SRS','local'), 
             nsess <- length(sessnames)
             output <- vector('list', nsess )
             for (i in 1:nsess) {
-                output[[i]] <- derived.cluster(object, sessnum = i, alpha, loginterval)
+                output[[i]] <- derivedCluster(object, sessnum = i, alpha, loginterval)
             }
             names(output) <- sessnames
             output
@@ -157,7 +158,7 @@ derived.cluster <- function (object, sessnum = NULL, method = c('SRS','local'), 
             capthist <- object$capthist[[sessnum]]
 
         if (!is.null(attr(capthist, 'n.mash')))
-            warning ("use derived.mash for mashed data")
+            warning ("use derivedMash for mashed data")
 
         nj <- cluster.counts(capthist)
         centres <- cluster.centres(traps(capthist))
@@ -167,14 +168,14 @@ derived.cluster <- function (object, sessnum = NULL, method = c('SRS','local'), 
         else
             der <-  derived(object, se.esa = TRUE, se.D = FALSE)[,1:2]
 
-        derived.nj(nj, der['esa','estimate'], der['esa','SE.estimate'], method,
+        derivednj(nj, der['esa','estimate'], der['esa','SE.estimate'], method,
                    centres, alpha, loginterval)
 
     }
 }
 ####################################################################################
 
-derived.external <- function (object, sessnum = NULL, nj, cluster,
+derivedExternal <- function (object, sessnum = NULL, nj, cluster,
     buffer = 100, mask = NULL, noccasions = NULL, method = c('SRS','local'), xy = NULL,
     alpha = 0.05, loginterval = TRUE) {
 
@@ -189,7 +190,7 @@ derived.external <- function (object, sessnum = NULL, nj, cluster,
             nsess <- length(sessnames)
             output <- vector('list', nsess )
             for (i in 1:nsess) {
-                output[[i]] <- derived.external(object, sessnum = i, nj, cluster,
+                output[[i]] <- derivedExternal(object, sessnum = i, nj, cluster,
                     buffer, mask, noccasions, method, xy, alpha, loginterval)
             }
             names(output) <- sessnames
@@ -223,7 +224,7 @@ derived.external <- function (object, sessnum = NULL, nj, cluster,
             sessnum, noccasions)
         se.esa <- se.deriveesa(1, sessnum, noccasions = noccasions)
 
-        derived.nj (nj, esa.local, se.esa, method, xy, alpha, loginterval)
+        derivednj (nj, esa.local, se.esa, method, xy, alpha, loginterval)
     }
 }
 ####################################################################################

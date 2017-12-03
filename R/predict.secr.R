@@ -6,6 +6,7 @@
 ## 2014-08-19 moved from methods.R
 ## 2015-09-30 fixpmix now done in secr.lpredictor
 ## 2017-04-08 realnames argument
+## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
 ############################################################################################
 predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("response", "link"), se.fit = TRUE,
                           alpha = 0.05, savenew = FALSE, ...) {
@@ -78,7 +79,8 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
 
             secr.lpredictor (formula = models[[x]], newdata = newdata,
                 indx = parindices[[x]], beta = beta, field = x,
-                beta.vcv = beta.vcv, smoothsetup = smoothsetup[[x]])
+                beta.vcv = beta.vcv, smoothsetup = smoothsetup[[x]],
+                contrasts = object$details$contrasts)
         }
     }
     predict <- sapply (realnames, getfield, simplify = FALSE)

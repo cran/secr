@@ -32,7 +32,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
         predicted <- function (beta) {
             temp <- secr.lpredictor (formula = object$model[[parm]], newdata = newdata,
                 indx = object$parindx[[parm]], beta = beta, field = parm,
-                smoothsetup = object$smoothsetup[[parm]])[1,'estimate']
+                smoothsetup = object$smoothsetup[[parm]], contrasts = object$details$contrasts)[1,'estimate']
             untransform(temp, object$link[[parm]])
         }
         #######################
@@ -260,10 +260,10 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             smoothsetup <- object$smoothsetup
             D.designmatrix <- designmatrix (D.modelled, object$mask, object$model$D,
                                             grouplevels, sessionlevels, object$sessioncov,
-                                            smoothsetup$D)
+                                            smoothsetup$D, object$details$contrasts)
             NE.designmatrix <- designmatrix (NE.modelled, object$mask, object$model$noneuc,
                                             grouplevels, sessionlevels, object$sessioncov,
-                                            smoothsetup$noneuc)        
+                                            smoothsetup$noneuc, object$details$contrasts)        
         }
     }
     else {

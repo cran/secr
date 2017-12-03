@@ -240,7 +240,6 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
     #--------------------------------------------------------------------
     # Fixed beta
     beta <- fullbeta(beta, details$fixedbeta)
-
     #--------------------------------------------------------------------
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]

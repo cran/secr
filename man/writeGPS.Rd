@@ -79,8 +79,7 @@ quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
 \dontrun{
 
 datadir <- system.file("extdata", package = "secr")
-possumareafile <- paste0(datadir, "/possumarea.shp")
-possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
 
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)

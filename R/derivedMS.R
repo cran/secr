@@ -9,6 +9,7 @@
 ## 2014-10-28 adjust for linear mask
 ## 2016-09-25 derived() now returns NA instead of crashing when no animals detected in a session
 ## 2017-01-04 updated for telemetry (but needs more work)
+## 2017-11-21 derived as generic method
 ############################################################################################
 
 
@@ -114,9 +115,20 @@ esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.
 
 ############################################################################################
 
-derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
-    se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1) {
+## 2017-11-21
 
+derived.secrlist <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
+                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...) {
+    lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
+           loginterval, distribution, ncores)
+}
+    
+derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
+                     se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...) {
+
+## derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
+##                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1) {
+        
 ## Generate table of derived parameters from fitted secr object
 
 ## modified 2009 07 21 for multiple sessions
@@ -131,22 +143,17 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
 ## groups within sessions
 ## groups to be found in covariates(object$capthist) cf
 
-    if (inherits(object, 'secrlist')) {
-        lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
-               loginterval, distribution, ncores)
+    if (!is.null(distribution)) {
+        if (tolower(distribution) %in% c('poisson','binomial'))
+            object$details$distribution <- distribution
+        else stop ("distribution not recognised")
     }
-    else {
-        if (!is.null(distribution)) {
-            if (tolower(distribution) %in% c('poisson','binomial'))
-                object$details$distribution <- distribution
-            else stop ("distribution not recognised")
-        }
-        if (!inherits(object, 'secr')) {
-            warning ("requires fitted secr model")
-            return (NULL)
-        }
-        else
-
+    if (!inherits(object, 'secr')) {
+        warning ("requires fitted secr model")
+        return (NULL)
+    }
+    else
+        
         if (is.list(object$capthist) & is.null(sessnum)) {
             ## recursive call if MS
             sessnames <- session(object$capthist)
@@ -155,8 +162,8 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
                 clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
                 clusterEvalQ(clust, requireNamespace('secr'))
                 output <- parLapply(clust, jj, derived, object = object, groups = groups,
-                    alpha = alpha, se.esa = se.esa, se.D = se.D, loginterval = loginterval,
-                    distribution = distribution, ncores = 1)
+                                    alpha = alpha, se.esa = se.esa, se.D = se.D, loginterval = loginterval,
+                                    distribution = distribution, ncores = 1)
                 stopCluster(clust)
             }
             else {
@@ -167,127 +174,126 @@ derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = F
             names(output) <- sessnames
             output
         }
-        else {
-
-            se.deriveD <- function (selection, selected.a, asess) {
-                A <-  if (inherits(mask, 'linearmask'))
-                    masklength(mask)
-                else
-                    ## maskarea(object$mask, asess)
-                    maskarea(mask)
-                s2 <- switch (tolower(object$details$distribution),
-                   poisson  = sum (1/selected.a^2),
-                   binomial = sum (( 1 - selected.a / A) / selected.a^2))
-                CLg  <- CLgradient (object, selection, asess, clust=clust)
-                varDn <- CLg %*% object$beta.vcv %*% CLg
-                list(SE=sqrt(s2 + varDn), s2=s2, varDn=varDn)
-            }
-            se.deriveesa <- function (selection, asess) {
-                CLesa  <- esagradient (object, selection, asess, clust=clust)
-                sqrt(CLesa %*% object$beta.vcv %*% CLesa)
-            }
-            weighted.mean <- function (a) {
-                ## allows for varying a 2010-11-30
-                length(a) / sum(1/a)
-            }
-
-            getderived <- function (selection, NT = 0) {
-                if (is.null(sessnum)) sessnum <- 1
-                derivedmean <- derivedSE <- varcomp1 <- varcomp2 <- c(NA, NA)
-                ## 2016-09-25 
-                if (length(selection) > 0) 
-                {
-                    selected.a <- esa(object, sessnum)[selection]
-                    derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
-                    if (se.esa) derivedSE[1] <- se.deriveesa(selection, sessnum)
-                    if (se.D) {
-                        varDlist <- se.deriveD(selection, selected.a, sessnum)
-                        derivedSE[2] <- varDlist$SE
-                        varcomp1[2] <- varDlist$s2
-                        varcomp2[2] <- varDlist$varDn
-                    }
-                }
-                A <-  if (inherits(mask, 'linearmask'))
-                    masklength(mask)
-                else
-                    maskarea(mask)
-
-                temp <- data.frame (
-                                    row.names = c('esa','D'),
-                                    estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below
-                                    SE.estimate = derivedSE)
-
-                temp <- add.cl(temp, alpha, loginterval)
-
-                temp$CVn <- varcomp1^0.5 / temp$estimate
-                temp$CVa <- varcomp2^0.5 / temp$estimate
-                temp$CVD <- temp$SE.estimate / temp$estimate
-                temp$CVD[1] <- NA   ## not for esa
-
-                nmash <- attr(capthist, 'n.mash')
-                ## no need to allow for unmash as Density not a parameter
-                if (!is.null(nmash)) {
-                        temp[2,1:4] <- temp[2,1:4] / length(nmash)
-                        ## message ("D was adjusted for ", length(nmash), " mashed clusters\n")
-                    }
-                temp
-            }
-
-
-            ## mainline
-
-            if (ncores > 1) {
-                clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-                clusterEvalQ(clust, requireNamespace('secr'))
-            }
-            else {
-                clust <- NULL
-            }
-
-            if (is.null(sessnum)) {
-                capthist <- object$capthist
-                mask <- object$mask
-            }
-            else {
-                capthist <- object$capthist[[sessnum]]
-                mask <- object$mask[[sessnum]]
-            }
-            
-            ## ignore unmodelled histories 2017-01-04
-            telem <- telemetered(capthist)
-            
-            if (telemetrytype(traps(capthist)) %in% c('independent','concurrent'))
-                OK <- !allzero(capthist)
+    else {
+        
+        se.deriveD <- function (selection, selected.a, asess) {
+            A <-  if (inherits(mask, 'linearmask'))
+                masklength(mask)
             else
-                OK <- rep(TRUE, nrow(capthist))  ## use all if 'none','dependent'
-
-            OK <- !allzero(capthist)
-            
-            grp <- group.factor(capthist, groups)
-            # NT <- tapply(telem, grp, sum)  ## suppressed 2017-01-05
-            NT <- 0
-            grp <- grp[OK]
-            ind <- (1:nrow(capthist))[OK]
-
-            if (length(ind)>0)
-                individuals <- split (ind, grp)
-            else
-                individuals <-  split (numeric(0), grp) ## list of empty grp levels
-            ngrp <- length(individuals)   ## number of groups
-            
-            if ( ngrp > 1)
-                out <- mapply (getderived, individuals, NT, SIMPLIFY = FALSE)
-            else {
-                if (ngrp == 1)
-                    out <- getderived(individuals[[1]], NT)
-                else
-                    out <- getderived(numeric(0), NT)
-            }
-            if (ncores>1) {
-                stopCluster(clust)
-            }
-            out
+                ## maskarea(object$mask, asess)
+                maskarea(mask)
+            s2 <- switch (tolower(object$details$distribution),
+                          poisson  = sum (1/selected.a^2),
+                          binomial = sum (( 1 - selected.a / A) / selected.a^2))
+            CLg  <- CLgradient (object, selection, asess, clust=clust)
+            varDn <- CLg %*% object$beta.vcv %*% CLg
+            list(SE=sqrt(s2 + varDn), s2=s2, varDn=varDn)
         }
+        se.deriveesa <- function (selection, asess) {
+            CLesa  <- esagradient (object, selection, asess, clust=clust)
+            sqrt(CLesa %*% object$beta.vcv %*% CLesa)
+        }
+        weighted.mean <- function (a) {
+            ## allows for varying a 2010-11-30
+            length(a) / sum(1/a)
+        }
+        
+        getderived <- function (selection, NT = 0) {
+            if (is.null(sessnum)) sessnum <- 1
+            derivedmean <- derivedSE <- varcomp1 <- varcomp2 <- c(NA, NA)
+            ## 2016-09-25 
+            if (length(selection) > 0) 
+            {
+                selected.a <- esa(object, sessnum)[selection]
+                derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
+                if (se.esa) derivedSE[1] <- se.deriveesa(selection, sessnum)
+                if (se.D) {
+                    varDlist <- se.deriveD(selection, selected.a, sessnum)
+                    derivedSE[2] <- varDlist$SE
+                    varcomp1[2] <- varDlist$s2
+                    varcomp2[2] <- varDlist$varDn
+                }
+            }
+            A <-  if (inherits(mask, 'linearmask'))
+                masklength(mask)
+            else
+                maskarea(mask)
+            
+            temp <- data.frame (
+                row.names = c('esa','D'),
+                estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below
+                SE.estimate = derivedSE)
+            
+            temp <- add.cl(temp, alpha, loginterval)
+            
+            temp$CVn <- varcomp1^0.5 / temp$estimate
+            temp$CVa <- varcomp2^0.5 / temp$estimate
+            temp$CVD <- temp$SE.estimate / temp$estimate
+            temp$CVD[1] <- NA   ## not for esa
+            
+            nmash <- attr(capthist, 'n.mash')
+            ## no need to allow for unmash as Density not a parameter
+            if (!is.null(nmash)) {
+                temp[2,1:4] <- temp[2,1:4] / length(nmash)
+                ## message ("D was adjusted for ", length(nmash), " mashed clusters\n")
+            }
+            temp
+        }
+        
+        
+        ## mainline
+        
+        if (ncores > 1) {
+            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+            clusterEvalQ(clust, requireNamespace('secr'))
+        }
+        else {
+            clust <- NULL
+        }
+        
+        if (is.null(sessnum)) {
+            capthist <- object$capthist
+            mask <- object$mask
+        }
+        else {
+            capthist <- object$capthist[[sessnum]]
+            mask <- object$mask[[sessnum]]
+        }
+        
+        ## ignore unmodelled histories 2017-01-04
+        telem <- telemetered(capthist)
+        
+        if (telemetrytype(traps(capthist)) %in% c('independent','concurrent'))
+            OK <- !allzero(capthist)
+        else
+            OK <- rep(TRUE, nrow(capthist))  ## use all if 'none','dependent'
+        
+        OK <- !allzero(capthist)
+        
+        grp <- group.factor(capthist, groups)
+        # NT <- tapply(telem, grp, sum)  ## suppressed 2017-01-05
+        NT <- 0
+        grp <- grp[OK]
+        ind <- (1:nrow(capthist))[OK]
+        
+        if (length(ind)>0)
+            individuals <- split (ind, grp)
+        else
+            individuals <-  split (numeric(0), grp) ## list of empty grp levels
+        ngrp <- length(individuals)   ## number of groups
+        
+        if ( ngrp > 1)
+            out <- mapply (getderived, individuals, NT, SIMPLIFY = FALSE)
+        else {
+            if (ngrp == 1)
+                out <- getderived(individuals[[1]], NT)
+            else
+                out <- getderived(numeric(0), NT)
+        }
+        if (ncores>1) {
+            stopCluster(clust)
+        }
+        out
     }
 }
 ############################################################################################

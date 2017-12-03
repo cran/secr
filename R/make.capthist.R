@@ -73,7 +73,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                 snapXY = snapXY)
         }
         names(capthist) <- levels(session)
-        class(capthist) <- c('list','capthist')
+        class(capthist) <- c('capthist', 'list')
         capthist
     }
 
@@ -179,7 +179,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         nocc <- ifelse (is.null(noccasions), nocc, noccasions)
         if (is.null(detector(traps)))
             stop ("'traps' must have a detector type e.g. 'multi'")
-        if (is.null(cutval) && detector(traps)  %in% c('signal','signalnoise'))
+        if (is.null(cutval) & any(detector(traps)  %in% c('signal','signalnoise')))
             stop ("missing 'cutval' (signal threshold) for signal data")
 
         wout <- NULL

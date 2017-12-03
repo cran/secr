@@ -1,10 +1,10 @@
 \name{empirical.varD}
 \alias{empirical.varD}
-\alias{derived.nj}
-\alias{derived.session}
-\alias{derived.mash}
-\alias{derived.cluster}
-\alias{derived.external}
+\alias{derivednj}
+\alias{derivedSession}
+\alias{derivedMash}
+\alias{derivedCluster}
+\alias{derivedExternal}
 \title{
 Empirical Variance of H-T Density Estimate
 }
@@ -15,7 +15,7 @@ Empirical Variance of H-T Density Estimate
   variance using the empirical spatial variance of the number observed
   in replicate sampling units. Wrapper functions are provided for
   several different scenarios, but all ultimately call
-  \code{derived.nj}. The function \code{derived} also computes
+  \code{derivednj}. The function \code{derived} also computes
   Horvitz-Thompson-like estimates, but it assumes a Poisson or binomial
   distribution of total number when computing the sampling variance.
 
@@ -23,20 +23,20 @@ Empirical Variance of H-T Density Estimate
 
 \usage{
 
-derived.nj ( nj, esa, se.esa, method = c("SRS", "local", "poisson",
+derivednj ( nj, esa, se.esa, method = c("SRS", "local", "poisson",
     "binomial"), xy = NULL, alpha = 0.05, loginterval = TRUE, area =
     NULL )
 
-derived.mash ( object, sessnum = NULL,  method = c("SRS", "local"),
+derivedMash ( object, sessnum = NULL,  method = c("SRS", "local"),
     alpha = 0.05, loginterval = TRUE)
 
-derived.cluster ( object, sessnum = NULL,  method = c("SRS", "local"),
+derivedCluster ( object, sessnum = NULL,  method = c("SRS", "local"),
     alpha = 0.05, loginterval = TRUE)
 
-derived.session ( object,  method = c("SRS", "local"), xy = NULL,
+derivedSession ( object,  method = c("SRS", "local"), xy = NULL,
     alpha = 0.05, loginterval = TRUE )
 
-derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
+derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
     mask = NULL, noccasions = NULL,  method = c("SRS", "local"), xy = NULL,
     alpha = 0.05, loginterval = TRUE)
 
@@ -64,7 +64,7 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
 
 \details{
 
-  \code{derived.nj} accepts a vector of counts (\code{nj}), along with
+  \code{derivednj} accepts a vector of counts (\code{nj}), along with
   \eqn{\hat{a}}{a-hat} and \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}.  The
   argument \code{esa} may include both \eqn{\hat{a}}{a-hat} and
   \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}) - any form will do if it can
@@ -76,19 +76,19 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   `poisson'. For \code{method = 'binomial'} you must specify \code{area}
   (see Examples).
 
-  \code{derived.cluster} accepts a model fitted to data from clustered
+  \code{derivedCluster} accepts a model fitted to data from clustered
   detectors; each \link{cluster} is interpreted as a replicate
   sample. It is assumed that the sets of individuals sampled by
   different clusters do not intersect, and that all clusters have the
   same geometry (spacing, detector number etc.).
   
-  \code{derived.mash} accepts a model fitted to clustered data that have
+  \code{derivedMash} accepts a model fitted to clustered data that have
   been `mashed' for fast processing (see \code{\link{mash}}); each
   cluster is a replicate sample: the function uses the vector of cluster
   frequencies (\eqn{n_j}) stored as an attribute of the mashed
   \code{capthist} by \code{mash}.
 
-  \code{derived.external} combines detection parameter estimates from a
+  \code{derivedExternal} combines detection parameter estimates from a
   fitted model with a vector of frequencies \code{nj} from replicate
   sampling units configured as in \code{cluster}. Detectors in
   \code{cluster} are assumed to match those in the fitted model with
@@ -98,7 +98,7 @@ derived.external ( object, sessnum = NULL, nj, cluster, buffer = 100,
   constructed using the \code{buffer} argument and defaults from
   \code{make.mask}.
 
-  \code{derived.session} accepts a single fitted model that must span
+  \code{derivedSession} accepts a single fitted model that must span
   multiple sessions; each session is interpreted as a replicate sample.
 
   Spatial variance may be calculated assuming simple random sampling
@@ -145,10 +145,6 @@ spatially balanced samples of environmental resources.
 
 \note{
 
-  In versions before 2.1, the functionality of \code{derived.nj} and
-  \code{derived.session} was provided by \code{empirical.VarD}, which
-  has been removed.
-  
   The variance of a Horvitz-Thompson-like estimate of density may be
   estimated as the sum of two components, one due to uncertainty in the
   estimate of effective sampling area (\eqn{\hat{a}}{a-hat}) and the
@@ -197,7 +193,7 @@ signalCH.525 <- subset(signalCH, cutval = 52.5)
 nonzero.counts <- table(substring(rownames(signalCH.525),1,4))
 nj <- c(nonzero.counts, rep(0, 75 - length(nonzero.counts)))
 temp <- derived(ovensong.model.1, se.esa = TRUE)
-derived.nj(nj, temp["esa",1:2])
+derivednj(nj, temp["esa",1:2])
 
 ## The result is very close to that reported by Dawson & Efford
 ## from a 2-D Poisson model fitted by maximizing the full likelihood.
@@ -205,8 +201,8 @@ derived.nj(nj, temp["esa",1:2])
 ## If nj vector has length 1, a theoretical variance is used...
 msk <- ovensong.model.1$mask
 A <- nrow(msk) * attr(msk, "area")
-derived.nj (sum(nj), temp["esa",1:2], method = "poisson")
-derived.nj (sum(nj), temp["esa",1:2], method = "binomial", area = A)
+derivednj (sum(nj), temp["esa",1:2], method = "poisson")
+derivednj (sum(nj), temp["esa",1:2], method = "binomial", area = A)
 
 \dontrun{
 
@@ -238,17 +234,17 @@ plot(capt1, add = TRUE)
 ## as assumed by \code{derived}
 
 derived(fit1)
-derived.mash(fit1)
+derivedMash(fit1)
 
 ## Now simulate a patchy distribution; note the
-## larger (and more credible) SE from derived.mash().
+## larger (and more credible) SE from derivedMash().
 
 popn2 <- sim.popn (D = 5, core = testregion, buffer = 0,
     model2D = "hills", details = list(hills = c(-2,3)))
 capt2 <- sim.capthist(t4.16, popn = popn2)
 fit2 <- secr.fit(mash(capt2), CL = TRUE, trace = FALSE)
 derived(fit2)
-derived.mash(fit2)
+derivedMash(fit2)
 
 ## The detection model we have fitted may be extrapolated to
 ## a more fine-grained systematic sample of points, with
@@ -262,7 +258,7 @@ t1.100 <- make.systematic (cluster = t1, spacing = 100,
 capt2a <- sim.capthist(t1.100, popn = popn2, noccasions = 1)
 ## one way to get number of animals per point
 nj <- attr(mash(capt2a), "n.mash")
-derived.external (fit2, nj = nj, cluster = t1, buffer = 100,
+derivedExternal (fit2, nj = nj, cluster = t1, buffer = 100,
     noccasions = 1)
 
 ## Review plots

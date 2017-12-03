@@ -145,15 +145,12 @@ plot (temptrap, add = TRUE)
 
 ## Using an ESRI polygon shapefile for clipping (shapefile
 ## polygons may include multiple islands and holes).
-## Requires the `maptools' package of Nicholas J. Lewin-Koh, Roger
-## Bivand, and others; `maptools' uses the `sp' package of spatial
-## classes by Ed Pebesma and Roger Bivand.
+## Requires the `rgdal' package of Roger Bivand, Tim Keitt and Barry Rowlingson
 
 \dontrun{
 
 datadir <- system.file("extdata", package = "secr")
-possumareafile <- paste0(datadir, "/possumarea.shp")
-possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
 
 possummask2 <- make.mask(traps(possumCH), spacing = 20,
     buffer = 250, type = "trapbuffer", poly = possumarea)

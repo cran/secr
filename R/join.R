@@ -9,7 +9,8 @@
 ## 2017-03-25 RMarkInput fixed for 3D capthist only
 #############################################################################
 
-join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
+join <- function (object, remove.dupl.sites = TRUE, tol = 0.001, 
+                  interval = NULL, sessions = NULL) {
 
     ####################################################################
     onesession <- function (sess) {
@@ -239,7 +240,15 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001) {
         tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
 
     ## remember previous structure, for MARK-style robust design
-    attr(tempnew, 'interval') <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
+    tmpinterval <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
+    if (!is.null(interval)) {
+        if (length(interval) != sum(tmpinterval>0))
+            stop("invalid interval argument")
+        tmpinterval[tmpinterval>0] <- interval
+    }
+    if (is.null(sessions)) sessions <- names(object)
+    attr(tempnew, 'interval') <- tmpinterval
+    attr(tempnew, 'sessions') <- sessions
 
     ##------------------------------------------------------------------
 
@@ -334,7 +343,7 @@ unjoin <- function (object, interval, ...) {
     for (sess in 1:nsess) {
         newobj[[sess]] <- subset(object, occasions = (session==sess), ...)
     }
-    class (newobj) <- c('list','capthist')
+    class (newobj) <- c('capthist', 'list')
     session(newobj) <- 1:nsess
     return(newobj)
 }

@@ -142,7 +142,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
                  secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
                     indx = object1$parindx[[x]], beta = object1$fit$par,
                     beta.vcv = object1$beta.vcv, field = x,
-                    smoothsetup = object1$smoothsetup[[x]])
+                    smoothsetup = object1$smoothsetup[[x]], contrasts = object1$details$contrasts)
             }
             ## check added 2016-06-16, fixed 2016-11-08
             if (any(unlist(nclusters(object1$capthist))>1))
@@ -300,7 +300,8 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
             secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
                 indx = object1$parindx[[x]], beta = object1$fit$par,
                 beta.vcv = object1$beta.vcv, field = x,
-                smoothsetup = object1$smoothsetup[[x]])
+                smoothsetup = object1$smoothsetup[[x]],
+                contrasts = object1$details$contrasts)
         }
         ## check added 2016-06-16, fixed 2016-11-08
         if (any(unlist(nclusters(object1$capthist))>1))

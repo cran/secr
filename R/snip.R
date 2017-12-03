@@ -3,6 +3,7 @@
 ## snip.R
 ## 2012-12-10,11,12,13 slice transects into small discrete units
 ## 2017-03-13 snip uses all occasions
+## 2017-10-25 update for as.data.frame.traps
 ## uses xyontransect from verify.r
 ## transectX, transect
 ###############################################################################
@@ -115,10 +116,10 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     }
     ############
     ## main line
-
     if (!all(detector(object) %in% c('transect','transectX')))
         stop ("requires 'transect' input")
-    temp <- split(as.data.frame(object), transectID(object))
+    ## drop transectID column for new as.data.frame.traps 2017-10-25 
+    temp <- split(as.data.frame(object)[,-1], transectID(object))
     temp <- lapply(temp, sliceone)
     temp <- do.call(rbind, temp)
     oldID <- as.numeric(do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1])
@@ -148,9 +149,9 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
         temp <- lapply (object, snip, from = from, by = by, length.out = length.out,
                         keep.incomplete = keep.incomplete)
         if (inherits(object,'capthist'))
-            class(temp) <- c('list', 'capthist')
+            class(temp) <- c('capthist', 'list')
         else
-            class(temp) <- c('list', 'traps')
+            class(temp) <- c('traps', 'list')
         return(temp)
     }
     else {

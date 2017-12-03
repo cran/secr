@@ -37,7 +37,7 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL, ...)
 
   \code{region} may be any shape. The \pkg{sp} class
   SpatialPolygonsDataFrame is useful for complex shapes and input from
-  shapefiles using \pkg{maptools} (see Examples). Otherwise,
+  shapefiles using \pkg{rgdal} (see Examples). Otherwise,
   \code{region} should be a dataframe with columns `x' and `y'.
 
   \code{spacing} may be a vector with separate values for spacing in x-
@@ -88,8 +88,7 @@ temp <- make.systematic(c(6, 6), mini, region, plt = TRUE,
 \dontrun{
 
 datadir <- system.file("extdata", package = "secr")
-possumareafile <- paste0(datadir, "/possumarea.shp")
-possumarea <- rgdal::readOGR(dsn = possumareafile, layer = "possumarea")
+possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
 
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)

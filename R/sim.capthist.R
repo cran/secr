@@ -3,6 +3,9 @@
 ## simulate capture histories
 ## 2016-10-08 secr3 3.0
 ## 2016-10-28 NOT YET userdist may be session-specific
+## 2017-11-01 BUG multi and single
+## 2017-12-02 BUG recapfactor; 
+##            lastcapt argument for trappingxxx functions
 ###############################################################################
 
 expands <- function (x, s, default = 1) {
@@ -182,7 +185,7 @@ sim.capthist <- function (
         }
         ########################################################################
 
-        class(output) <- c('list','capthist')
+        class(output) <- c('capthist', 'list')
         names(output) <- 1:nsessions
         output
     }   ## end of multi-session
@@ -329,10 +332,10 @@ sim.capthist <- function (
                 df0 <- lambda0
             }
 
-            sigma <- expands(detectpar$sigma, noccasions)
+            sigma <- matrix(expands(detectpar$sigma, noccasions), ncol = 1)
             z     <- expands(ifelse(detectfn %in% c(5,6),
                 detectpar$w, detectpar$z), noccasions)
-            validatepar(sigma, c(1e-10,Inf))
+            validatepar(sigma[,1], c(1e-10,Inf))
             validatepar(z, c(0,Inf))
         }
 
@@ -365,7 +368,7 @@ sim.capthist <- function (
         }
 
         # Allow general learned response for traps
-        # if (detector(traps) %in% c('single','multi')) 
+        if (detector(traps) %in% c('single','multi')) 
         {
             rfl <- length(detectpar$recapfactor)
             if (!(rfl %in% 1:2))
@@ -373,12 +376,13 @@ sim.capthist <- function (
             if (rfl==1)
                 detectpar$recapfactor <- c(detectpar$recapfactor,1)
             df0 <- cbind(df0, df0 * detectpar$recapfactor[1])
-            sigma <- c(sigma, sigma * detectpar$recapfactor[2])
+            sigma <- cbind(sigma, sigma * detectpar$recapfactor[2])
         }
-        # else {
-            #if (any(detectpar$recapfactor != 1.0))
-             #   stop("learned response available only for 'single', 'multi' detectors")
-        #}
+     
+        else {
+            if (any(detectpar$recapfactor != 1.0))
+                stop("learned response available only for 'single', 'multi' detectors")
+        }
 
         #-----------------------------------------------------------------------------#
         if (!inherits(popn,'popn')) # generate if not provided
@@ -423,31 +427,29 @@ sim.capthist <- function (
         if (length(simfunctionname)>1 & length(simfunctionname)!=noccasions)
             stop("provide one detector name for each occasion")
 
-        w <- array(0, dim=c(noccasions, k, N), dimnames = list(1:noccasions, 1:k, rownames(popn)))
-                
         ## 2016-10-15 vector binomN
         detectpar$binomN <- expandbinomN(detectpar$binomN, dettype)
     
         trappingargs <- list(
-            simfunctionname[1], 
-            # PACKAGE = 'secr',
-            as.double(df0),
-            as.double(sigma),
-            as.double(z),
-            as.integer(noccasions),
-            as.integer(k),
-            as.integer(N),
-            as.double(animals),
-            as.double(unlist(traps)),
-            as.double(distmat),
-            as.double(usge),
-            as.integer(detectfn),
-            as.double(truncate^2),
-            as.integer(detectpar$binomN),
-            n = integer(1),
-            caught = integer(N),
-            value = integer(N*noccasions*k),
-            resultcode = integer(1)
+            simfunctionname[1],                 # 1
+            as.double(df0),                     # 2
+            as.double(sigma),                   # 3
+            as.double(z),                       # 4
+            as.integer(noccasions),             # 5
+            as.integer(k),                      # 6
+            as.integer(N),                      # 7
+            as.double(animals),                 # 8
+            as.double(unlist(traps)),           # 9 
+            as.double(distmat),                 # 10
+            as.double(usge),                    # 11
+            as.integer(detectfn),               # 12 
+            as.double(truncate^2),              # 13
+            as.integer(detectpar$binomN),       # 14 
+            as.integer(rep(0,N)),               # 15
+            n = integer(1),                     # 16
+            caught = integer(N),                # 17
+            value = integer(noccasions*k*N),    # 18  
+            resultcode = integer(1)             # 19
         )
 
 # 'count' includes presence
@@ -455,7 +457,7 @@ sim.capthist <- function (
         ## remember: output from trappingxxxx is sorted so captured animals
         ## precede all others
         ## caught[] contains capture sequence for each of N animals
-        if (all(detector(traps) %in% c('single','multi','proximity','count'))) {
+        if (all(detector(traps) %in% c('single','multi','proximity','count', 'capped'))) {
             
             ## BUG IN THIS CODE 2016-10-18 Observations assigned to wrong detectors
             # if (length(unique(detector(traps)))==1) {
@@ -483,42 +485,49 @@ sim.capthist <- function (
             #     }
             # }
             # else 
-                for(s in 1:noccasions)   ## about 25% slower with one occasion at a time
+            # w <- array(0, dim=c(noccasions, k, N), dimnames = list(1:noccasions, 1:k, rownames(popn)))
+            w <- array(0, dim=c(N, noccasions, k), dimnames = list(rownames(popn), 1:noccasions, 1:k))
+            
+            ## 2017-12-02
+            ## external tracking of previous captures is needed to allow single-occasion calls to trappingxxx
+            ## functions; I hope this also works with multi-occasion calls (currently disabled)
+            lastcapt <- rep(0, N)
+            
+            for(s in 1:noccasions)   ## about 25% slower with one occasion at a time
             {
                 sm <- dettype[s] %in% c(-1,0)    # single, multi
                 k1 <- if (sm) 1 else k
                 trappingargs[[1]] <- simfunctionname[s]
                 trappingargs[[2]] <- as.double(df0[s,])
-                trappingargs[[3]] <- as.double(sigma[s])
+                trappingargs[[3]] <- as.double(sigma[s,])
                 trappingargs[[5]] <- as.integer(1)  ## noccasions
-                trappingargs[[11]] <- as.double(usge[,s])  ## usage on occasion s
+                trappingargs[[11]] <- as.double(usge[,s])    ## usage on occasion s
                 trappingargs[[14]] <- as.integer(detectpar$binomN[s])
-                trappingargs[[17]] <- integer (N * k1)  ## output
-            
+                trappingargs[[15]] <- as.integer(lastcapt)   ## 2017-12-02
+                trappingargs[[17]] <- integer(N)             ## 2017-12-02
+                trappingargs[[18]] <- integer (N * k1)  ## output
+
                 temp <- do.call(.C, trappingargs)
                 stopiferror(temp$resultcode, simfunctionname[s])
                 # if any animals caught...
                 if (temp$n > 0) {
                     if (sm) {
                         # maximum 1 capture/animal/occasion
-                        temp$value <- temp$value[1:temp$n] 
-                        occ <- rep(s-1, temp$n)
-                        trp <- temp$value[1:temp$n]-1
-                        id <- which(temp$caught>0)-1
-                        index <- (id * k + trp) * noccasions + occ + 1
-                        w[index] <- 1
+                        occ <- rep(s, sum(temp$caught>0))
+                        trp <- temp$value[temp$caught]
+                        id <- (1:N)[temp$caught>0]
+                        w[cbind(id, occ, trp)] <- 1
+                        lastcapt[temp$caught>0] <- s    ## for recap
                     }
                     else {
-                        occ <- rep(s-1, temp$n*k)
-                        trp <- rep(0:(k-1), temp$n)
-                        id <- rep(which(temp$caught>0)-1, each = k)
-                        index <- (id * k + trp) * noccasions + occ + 1
-                        
-                        w[index] <- temp$value[1:(temp$n*k)]
+                        occ <- rep(s, N*k)
+                        trp <- rep(1:k, each = N)
+                        id <- rep(1:N, k)
+                        w[cbind(id, occ, trp)] <- temp$value
+                        # lastcapt not updated because recapfactor does not apply
                     }
                 }
             }
-            w <- aperm(w, c(3,1,2))
             w <- w[apply(w,1,sum)>0,,, drop = FALSE]
             class(w) <- 'capthist'
             traps(w) <- traps
@@ -752,7 +761,7 @@ sim.capthist <- function (
         ##-----------------------------------------------------------------------
 
         if (!is.null(covariates(popn))) {
-            if (all(detector(traps) %in% c('single','multi','proximity','count'))) 
+            if (all(detector(traps) %in% c('single','multi','proximity','count','capped'))) 
                 covariates(w) <- covariates(popn)[row.names(w),, drop=F]
             else
                 covariates(w) <- covariates(popn)[as.logical(temp$caught),, drop=F]
@@ -780,10 +789,10 @@ sim.capthist <- function (
         #     if (!is.na(chulltol))
         #      if (chulltol >= 0) w <- refreshMCP(w, chulltol)
 
-        if (renumber && (nrow(w)>0)) 
+        if (renumber & (nrow(w)>0)) 
             rownames(w) <- 1:nrow(w)
         else {
-            if (!all(detector(traps) %in% c('single','multi','proximity','count'))) {
+            if (!all(detector(traps) %in% c('single','multi','proximity','count','capped'))) {
                 rown <- rownames(popn)[temp$caught > 0]
                 caught <- temp$caught[temp$caught>0]
                 rownames(w) <- rown[order(caught)]

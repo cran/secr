@@ -169,7 +169,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
         sesscapt <- lapply(sesscapt, replicate, chat)
 
     attr(sesscapt,'seed') <- RNGstate   ## save random seed
-    class(sesscapt) <- c('list', 'secrdata')
+    class(sesscapt) <- c('secrdata', 'list')
     sesscapt
 }
 ############################################################################################
@@ -216,7 +216,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
             ncores = 1)
     }
     else {
-        if (any(class(data) != c('list','secrdata')))
+        if (any(class(data) != c('secrdata', 'list')))
             stop("invalid data")
     }
     fitmodel <- function (sc) {
@@ -255,7 +255,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
         output <- data.frame(output)
     }
     else {
-        class(output) <- c('list','secrlist')
+        class(output) <- c('secrlist', 'list')
     }
 
     attr(output,'seed') <- attr(data,'seed')
@@ -290,7 +290,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             for (i in 1:nsession)
                 output[[i]] <- dummycapthist (capthist[[i]],
                     pop=pop[i], fillvalue = fillvalue)
-            class(output) <- c('list','capthist')
+            class(output) <- c('capthist', 'list')
             session(output) <- session(capthist)   ## 2010 03 10
             output
         }
@@ -381,7 +381,8 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     if (btype > 0) {
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
-            object$groups, object$hcov, object$dframe, ignoreusage = object$details$ignoreusage)
+            object$groups, object$hcov, object$dframe, ignoreusage = object$details$ignoreusage, 
+            contrasts = object$details$contrasts)
         realparval1 <- makerealparameters (design1, beta, object$parindx, object$link,
             object$fixed)  # caught before
     }
@@ -519,7 +520,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             resultcode = integer(1)
         )
         if (temp$resultcode != 0) {
-          if ((temp$resultcode == 2) && (any(dettype %in% c(6,7))))
+          if ((temp$resultcode == 2) & (any(dettype %in% c(6,7))))
               stop (">100 detections per animal per polygon per occasion")
           else
               stop ("simulated detection failed, code ", temp$resultcode)
@@ -566,7 +567,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         
         ##---------------------
         ## signal
-        if (any(dettype %in% c(5,12)) && (temp$n>0)) {
+        if (any(dettype %in% c(5,12)) & (temp$n>0)) {
             nd <- sum(abs(w))
             signal(w) <- temp$signal[1:nd]
             if ((object$detectfn==12) || (object$detectfn==13))
@@ -579,7 +580,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         }
         ##---------------------
         ## polygon or transect
-        if (any(dettype %in% c(3,4,6,7)) && (temp$n>0)) {
+        if (any(dettype %in% c(3,4,6,7)) & (temp$n>0)) {
             if (dettype %in% c(3,4))
                 nd <- sum(abs(w)>0)
             else
@@ -600,7 +601,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     if (nsession==1) output <- output[[1]]
     else {
         names(output) <- sessionlevels
-        class(output) <- c('list','capthist')
+        class(output) <- c('capthist', 'list')
     }
     output
 }

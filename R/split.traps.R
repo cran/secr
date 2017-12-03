@@ -46,7 +46,7 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
           tmp
       }
       out <- lapply(splitusgt, sessiontraps)
-      class(out) <- c('list','traps')
+      class(out) <- c('traps', 'list')
       out
   }
 
@@ -69,7 +69,7 @@ split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...
               spacing(out[[i]]) <- spacing(out[[i]], recalculate = TRUE)
           }
       }
-      class (out) <- c('list', 'traps')
+      class (out) <- c('traps', 'list')
       out
   }
 }

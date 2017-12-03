@@ -65,6 +65,7 @@
 /* 2017-04-03 only precompute gk0 if gsb0val differs from gsbval (behavioural effects) */
 /* 2017-04-04 hdotpoly replaces pdotpoly */
 /* 2017-06-04 speed up prwipoint for count detectors */
+/* 2017-10-29 trial of capped proximity detectors introduced: detect[s] == 8 */
 
 /*
         detect[s] may take values -
@@ -76,6 +77,7 @@
         5  signal detector
         6  polygon detector
         7  transect detector
+        8  capped proximity detector (October 2017)
 	10 unmarked
 	11 presence/absence
      	12 signalnoise
@@ -133,6 +135,14 @@ int anyexclusive (int detect[], int ss) {
 	    exclusive = 1;
     return exclusive;
 }
+int anycapped (int detect[], int ss) {
+    int s;
+    int capped = 0;
+    for (s=0; s<ss; s++) 
+	if (detect[s]==8)
+	    capped = 1;
+    return capped;
+}
 int anypolygon (int detect[], int ss) {
     int s;
     int polygon = 0;
@@ -178,11 +188,19 @@ int allpoint (int detect[], int ss, int allowsignal, int allowtelem) {
     int point;
     int OK = 1;
     for (s=0; s<ss; s++) {
-	point = (detect[s]==0) || (detect[s]==1) || (detect[s]==2)
+	point = (detect[s]==0) || (detect[s]==1) || (detect[s]==2) || detect[s] == 8
 	    || (detect[s]==10) || (detect[s]==11)
 	    || (allowsignal && ((detect[s]==5) || (detect[s]==12)))
-	    || (allowtelem && ((detect[s]==13) || (detect[s]==8)));
+	    || (allowtelem && ((detect[s]==13)));
 	OK = OK && point;
+    }
+    return OK;
+}
+int allcapped  (int detect[], int ss) {
+    int s;
+    int OK = 1;
+    for (s=0; s<ss; s++) {
+	OK = OK && (detect[s] == 8);
     }
     return OK;
 }
@@ -246,7 +264,7 @@ double pndot (int m, int n, int markocc[], int x, int ncol, int PIA0[],
 		    Tski = Tsk[s * nk + k];
 		    /* expect binomN = 1 if not count detector */
 		    if (fabs(Tski-1) > 1e-10) {                  /* effort <> 1.0 */
-			if ((detect[s] < 8) & (detect[s] != 5))  {
+			if ((detect[s] < 9) & (detect[s] != 5))  {
 			    if (binomN[s] == 0)
 				p0 = exp(-Tski *  hk0[gi]);      /* Poisson count or polygon detr */
 			    else
@@ -315,7 +333,6 @@ double prwipoint
 		if (htemp < fuzz) { result = 0; break; }
 		w0 = i3(n, s, 0, nc, ss);
 		if (w[w0] != 0) {                                /* Captured */
-		    // if(m==0) Rprintf("n %5d s %5d  w[w0] %5d  \n", n, s, w[w0]);
 		    if (w[w0] < 0) dead = 1;  
 		    k = abs(w[w0])-1;
 		    Tski = Tsk[s * kk + k];
@@ -348,8 +365,8 @@ double prwipoint
 			    else
 				g1 = 1 - pow(1 - g1, Tski);
 			}
-/*2017-06-05		if (detect == 1 ) {                            binary proximity    */
-			if ((detect == 1) || (count==0)) {            /* binary proximity    */
+                        /*2017-10-29  if ((detect == 1) || (count==0)) {  binary proximity    */
+			if ((detect == 1) || (detect == 8) || (count==0)) {  /* binary or capped */
 			    if (count)                                /* Bernoulli count 0/1 */
 				result *= g1 * pI;
 			    else 
@@ -1238,6 +1255,7 @@ void precompute(
         5  signal detector
         6  polygon detector
         7  transect detector
+        8 capped proximity detectors
      	12 signalnoise
 	13 telemetry
     */
@@ -1249,6 +1267,7 @@ void precompute(
     double H = 1;
     gfnLptr gfnL;
     double *ex; 
+
     gfnL = getgfnL(fn); 
 
     /* allowtelem = 1 */
@@ -1604,7 +1623,7 @@ int nval(int detect0, int nc1, int cc, int ss, int nk) {
     else if (detect0==12)    /* signalnoise */
         nval = 6 + nc1 * ss * nk;
     else
-        nval = ss + nc1;    /* default for (possibly mixed) 0,1,2,13 */
+        nval = ss + nc1;    /* default for (possibly mixed) 0,1,2,8,13 */
     return(nval);
 }
 /*=============================================================*/
@@ -1895,6 +1914,34 @@ void zerok (int detect[], int nc, int ss, int nk, int w[]) {
 }
 /*=============================================================*/
 
+void zeron (int detect[], int nc, int ss, int nk, int w[]) {
+    /* Bring any capture to n=0 for capped-detector occasions */
+    /* It saves time to do this once, rather than for each mask point */
+    int n, s, k, w0;
+    int wi = 0;
+
+    for (k=0; k<nk; k++) {
+	for (s=0; s<ss; s++) {
+	    if (detect[s]==8) {
+		n = 0;
+		do {
+		    wi = i3(n, s, k, nc, ss);
+		    n++;
+		}
+		while ((w[wi] == 0) && (n<nc));
+		    
+		if (w[wi] != 0) {                              /* Captured */
+		    w0 = i3(0, s, k, nc, ss);
+		    if (w[wi]<0) w[w0] = -n;           /* save animal number */
+		    else w[w0] = n; 
+		    Rprintf("k %5d s %5d  w[w0] %5d  \n", k, s, w[w0]);
+		}
+	    }
+	}
+    }
+}
+/*=============================================================*/
+
 void sumwsk (int w[], int nc, int ss, int nk, double musk[]) {
     int n,s,k;
     for (n=0;n<nc; n++)
@@ -2147,6 +2194,7 @@ void secrloglik (
     /*---------------------------------------------------------*/
 
     /* Number per group */
+    if ((*gg>1) && anycapped(detect, *ss)) error("groups not implemented for capped detectors");
     ng = (int *) S_alloc(*gg, sizeof(int));
     ntelem = (int *) S_alloc(*gg, sizeof(int));
     nzero = (int *) S_alloc(*gg, sizeof(int));
@@ -2277,7 +2325,48 @@ void secrloglik (
 
     precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc, nk, cumk,    
 	       traps, dist2, mask, gsbval, miscparm, detspec, gk, hk, *debug); 
+
+    /*----------------------------------------------------------*/
+    /* trial code to reset gk for capped detectors */
+    /* revise gk, gk0 */
+    /* problematic if learned response or other between-animal variation */
+    /* or if detector varies among occasions */
+    /* OK if variable density or detection varies between occasions or detectors */
+    /* Assumes all capped, because changes all gk, hk */
+
+    if (anycapped(detect,*ss)) {  
+	int c,k,m,gi;
+        double H;        // detector-specific total hazard for capped detectors
+        double pHH;      // probability of at least one detection / H
+        if (*like == 1) error("cannot use conditional likelihood with capped detectors");
+	if (!allcapped(detect, *ss)) error("cannot combine capped and uncapped detectors");
+	for (c=0; c < *cc; c++) {
+	    for (k=0; k<nk; k++) {
+		H = 0;
+		for (m=0; m< *mm; m++) {
+		    gi = i3(c,k,m, *cc,nk);
+		    H += hk[gi] * Dmask[m] * *area;   // ultimately allow groups
+		}
+                pHH = (1 - exp(-H))/H;
+		for (m=0; m<*mm; m++) {
+		    gi = i3(c,k,m, *cc,nk);
+		    if (*debug && m==528 && k==45)
+			Rprintf("H %8.6f pHH %8.6f m %5d gk[gi] %8.6f gk[gi]mod %8.6f \n",
+			    H, pHH, m, gk[gi], pHH * hk[gi]); 
+		    gk[gi] = pHH * hk[gi];
+		}
+	    }
+	}
+        // outside k loop to avoid messing up hk
+	for (i=0; i< (*cc * *mm * nk); i++)
+	    hk[i] = -log(1-gk[i]);
+    } 
+    
+    /*----------------------------------------------------------*/
+
     if (anyb(gsbval, gsb0val, *cc, gpar)) {
+	if (anycapped(detect,*ss))
+	    error("cannot combine capped detectors and learned response");
 	precompute(detect, *fn, binomN, *ss, *kk, *mm, *cc0, nk, cumk,   
 		   traps, dist2, mask, gsb0val, miscparm, detspec, gk0, hk0, *debug); 
     }
@@ -2293,7 +2382,6 @@ void secrloglik (
     if (anytelem)  {
 	gethr(detect, *fn, *ss, *mm, *cc, nd, mask, xy, gsbval, hr, *telemscale);
     }
-    /* getfirstocc2(*ss, nk, *nc, w, grp, detect, firstocc, ntelem, telem, nzero, allzero); */
     getfirstocc2(*ss, nk, *nc, w, grp, knownclass, detect, firstocc, ntelem, telem, 
 		 nzero, kcnzero, allzero);
     if (*debug>2) for (x=0;x<(*nmix+1);x++) Rprintf("x %4d kcnzero[x] %5d\n", x, kcnzero[x]);
@@ -3463,9 +3551,8 @@ void fxIHP (
         hx = (double *) S_alloc (1, sizeof(double));
     }
 
-    getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss,     /* complete filling of detspecx */
+    getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss,   /* complete filling of detspecx */
 		*kk, *xx, PIA, miscparm, start, detspecx);
-
 
     R_CheckUserInterrupt();
 

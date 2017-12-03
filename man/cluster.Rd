@@ -58,7 +58,7 @@ clustertrap(object) <- value
 \seealso{
 
 \code{\link{traps}}, \code{\link{trap.builder}}, \code{\link{mash}},
-\code{\link{derived.cluster}}, \code{\link{cluster.counts}},
+\code{\link{derivedCluster}}, \code{\link{cluster.counts}},
 \code{\link{cluster.centres}}
 
 }

@@ -19,13 +19,14 @@ extern void pdotpoint(void *, void *, void *, void *, void *, void *, void *, vo
 extern void hdotpoly(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void secrloglik(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void simdetect(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void trappingcount(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void trappingmulti(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void trappingsingle(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void trappingmulti(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void trappingproximity(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void trappingcount(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
+extern void trappingcapped(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingpolygon(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingpolygonX(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void trappingproximity(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingsignal(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
-extern void trappingsingle(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingtelemetry(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingtransect(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
 extern void trappingtransectX(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *);
@@ -51,13 +52,14 @@ static const R_CMethodDef CEntries[] = {
     {"hdotpoly",          (DL_FUNC) &hdotpoly,          12},
     {"secrloglik",        (DL_FUNC) &secrloglik,        42},
     {"simdetect",         (DL_FUNC) &simdetect,         28},
-    {"trappingcount",     (DL_FUNC) &trappingcount,     17},
-    {"trappingmulti",     (DL_FUNC) &trappingmulti,     17},
+    {"trappingsingle",    (DL_FUNC) &trappingsingle,    18},
+    {"trappingmulti",     (DL_FUNC) &trappingmulti,     18},
+    {"trappingproximity", (DL_FUNC) &trappingproximity, 18},
+    {"trappingcount",     (DL_FUNC) &trappingcount,     18},
+    {"trappingcapped",    (DL_FUNC) &trappingcapped,    18},
     {"trappingpolygon",   (DL_FUNC) &trappingpolygon,   19},
     {"trappingpolygonX",  (DL_FUNC) &trappingpolygonX,  17},
-    {"trappingproximity", (DL_FUNC) &trappingproximity, 17},
     {"trappingsignal",    (DL_FUNC) &trappingsignal,    21},
-    {"trappingsingle",    (DL_FUNC) &trappingsingle,    17},
     {"trappingtelemetry", (DL_FUNC) &trappingtelemetry, 16},
     {"trappingtransect",  (DL_FUNC) &trappingtransect,  19},
     {"trappingtransectX", (DL_FUNC) &trappingtransectX, 17},

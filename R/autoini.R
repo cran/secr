@@ -138,7 +138,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
           resultcode=integer(1))
       )
 
-      if (temp$resultcode != 0)
+      if (inherits(temp, 'try-error') | temp$resultcode != 0)
           stop ("error in external function 'integralprw1'; ",
                 "possibly the mask is too large")
       temp$a
@@ -175,7 +175,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (!all(dettype %in% c(-1:5,8)))
         list(D=NA, g0=NA, sigma=NA)
     else {
-        prox     <- any(detector(trps) %in% c('proximity', 'count','signal','times'))
+        prox     <- any(detector(trps) %in% c('proximity', 'count','signal','capped'))
         ## wt is the number of opportunities for capture given binary usage
         wt <- apply(usge>0, 1, sum)
 

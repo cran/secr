@@ -2,9 +2,10 @@
 ## package 'secr'
 ## rbind.traps.R
 ## Last changed 2017-03-25 checkdet bug: erroneous warning
+## 2017-10-25 name suffix option
 #############################################################################
 
-rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE ) {
+rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE, suffix = TRUE ) {
     # combine 2 or more traps objects
     # what if multi-session?
     allargs <- list(...)
@@ -21,7 +22,6 @@ rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE ) 
     checkdetect <- function (x) {
         identical(detector(x), detector(allargs[[1]]))
     }
-
     if (length(allargs) <= 1) {
         if (length(allargs)==1 & ms(allargs[[1]])) {
             allargs <- allargs[[1]]
@@ -47,7 +47,6 @@ rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE ) 
     }
     class(temp) <- c('traps', 'data.frame')
     detector(temp) <- detector(allargs[[1]])
-    
     ## code for originating traps object
     ## uses 'polyID = transectID' behaviour of polyID()
     if (all(detector(temp) %in% .localstuff$polydetectors)) {
@@ -63,7 +62,6 @@ rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE ) 
     tempcov <- lapply(tempcov, function(x) x[,common, drop = FALSE])
     covariates(temp) <- do.call(rbind, tempcov)
     timevaryingcov(temp) <- timevaryingcov(allargs[[1]])
-    
     ## clusters  2011-04-12
     tempclus <- lapply(allargs, clusterID)
     if (!is.null(tempclus[[1]])) {
@@ -149,7 +147,13 @@ rbind.traps <- function (..., renumber = TRUE, addusage, checkdetector = TRUE ) 
             row.names(temp) <- 1:nrow(temp)
     }
     else {
-        for (i in 1:length(tn)) tn[[i]] <- paste(tn[[i]],i,sep='.')
+        if (any(duplicated(unlist(tn)))) {
+            if (!suffix) warning("trap ID suffix added to avoid duplication")
+            suffix <- TRUE
+        }
+        if (suffix) {
+            for (i in 1:length(tn)) tn[[i]] <- paste(tn[[i]],i,sep='.')
+        }
         row.names(temp) <- unlist(tn)
     }
     #    }

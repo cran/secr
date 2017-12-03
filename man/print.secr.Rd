@@ -40,6 +40,7 @@ Detector number \tab number of detectors \cr
 Average spacing \tab \cr
 x-range         \tab \cr
 y-range         \tab \cr
+New detector type \tab as fitted when details$newdetector specified \cr
 N animals       \tab number of distinct animals detected \cr
 N detections    \tab number of detections \cr
 N occasions     \tab number of sampling occasions \cr

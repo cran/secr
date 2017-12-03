@@ -19,8 +19,7 @@ counts(CHlist, counts = "M(t+1)")
 
 \arguments{
   \item{object }{ \code{\link{capthist}} object }
-  \item{terse }{ logical; provide only summary counts for multi-session
-  object }
+  \item{terse }{ logical; if TRUE return only summary counts }
   \item{x }{ \code{summary.capthist} object }
   \item{\dots}{ arguments passed to other functions }
 
@@ -43,8 +42,7 @@ From \code{summary.capthist}, an object of class
   \item{dbar }{mean recapture distance }
   \item{RPSV }{root pooled spatial variance }
 
-  or, when \code{terse = TRUE} and \code{object} contains multiple
-  sessions, a dataframe of counts per session.
+or, when \code{terse = TRUE}, a vector (single session) or dataframe (multiple sessions) of counts (Occasions, Detections, Animals, Detectors).
   
 }
 

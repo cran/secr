@@ -11,7 +11,7 @@
 
 ## Robert J. Hijmans & Jacob van Etten (2011). raster: Geographic
 ##  analysis and modeling with raster data. R package version 1.9-33.
-##  http://CRAN.R-project.org/package=raster
+##  https://CRAN.R-project.org/package=raster
 
 ## Csardi G, Nepusz T: The igraph software package for complex network
 ##  research, InterJournal, Complex Systems 1695. 2006.
@@ -44,7 +44,7 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         temp <- lapply(mask, randomHabitat, p = p, A = A, directions = directions,
                        minpatch = minpatch, drop = drop, covname = covname, plt = plt,
                        seed = NULL)
-        class(temp) <- c('list','mask')
+        class(temp) <- c('mask', 'list')
         attr(temp,'seed') <- RNGstate   ## save random seed
         temp
     }

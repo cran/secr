@@ -46,6 +46,9 @@
 ## 2016-10-16 makerealparameters shifted here
 ## 2016-10-28 userdist may be session-specific; may be called by (character) name
 ## 2017-02-06 xy2CH multi-session enabled
+## 2017-10-18 detectorcode 8 ('capped')
+## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
+## 2017-11-16 secr.lpredictor in utility.R: contrasts argument
 #######################################################################################
 
 # Global variables in namespace
@@ -58,19 +61,17 @@
 .localstuff$packageType <- '' 
 .localstuff$validdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
-                                'unmarked','presence','telemetry')
-.localstuff$simpledetectors <- c('single','multi','proximity','count')
+                                'unmarked','presence','telemetry', 'capped')
+.localstuff$simpledetectors <- c('single','multi','proximity','count', 'capped')
 .localstuff$individualdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 
-                                     'telemetry')
+                                     'telemetry', 'capped')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
-    'signal', 'signalnoise', 'unmarked','presence')
+    'signal', 'signalnoise', 'unmarked','presence','capped')
 .localstuff$polydetectors <- c('polygon','transect','polygonX','transectX')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
 ## 'signal' is not a count detector 2011-02-01
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked','telemetry')
-.localstuff$detectors3D <- c('proximity','count','signal','signalnoise','polygon',
-                             'transect','unmarked','presence','telemetry')
 .localstuff$iter <- 0   ## counter 1
 .localstuff$iter2 <- 0  ## counter 2
 .localstuff$detectionfunctions <-
@@ -320,6 +321,8 @@ detectorcode <- function (object, MLonly = TRUE, noccasions = NULL) {
         signal = 5,
         polygon = 6,
         transect = 7,
+        # capped = 1,         # treat capped (8) as binary proximity (1) for now 2017-10-25
+        capped = 8,
         unmarked = 10,
         presence = 11,
         signalnoise = 12,
@@ -838,15 +841,17 @@ distancetotrap <- function (X, traps) {
     }
     else if (all(detecttype %in% .localstuff$polydetectors)) {
         ## approximate only
+
         traps <- split(traps, polyID(traps))
-        trpi <- function (i, n=100) {
+        trpi <- function (i, n = 100) {
             intrp <- function (j) {
-                tmp <- data.frame(traps[[i]][j:(j+1),])
+                tmp <- as.data.frame(traps[[i]][j:(j+1),])[,-1]   # modified 2017-11-29 to allow for as.data.frame method
                 if (tmp$x[1] == tmp$x[2])
                     data.frame(x=rep(tmp$x[1], n),
                                y=seq(tmp$y[1], tmp$y[2], length=n))
-                else
-                    data.frame(approx(tmp, n=n))
+                else {
+                    data.frame(approx(tmp, n = n))
+                }
             }
             tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)
             do.call(rbind, tmp)
@@ -1257,7 +1262,7 @@ getbinomN <- function (binomN, detectr) {
 xy2CH <- function (CH, inflation = 1e-8) {
     if (ms(CH)) {
         out <- lapply(CH, xy2CH, inflation)
-        class(out) <- c('list','capthist')
+        class(out) <- c('capthist', 'list')
         out
     }
     else {
@@ -1427,7 +1432,7 @@ gamsetup <- function(formula, data, ...) {
 }
 ############################################################################################
 
-general.model.matrix <- function (formula, data, gamsmth = NULL, ...) {
+general.model.matrix <- function (formula, data, gamsmth = NULL, contrasts = NULL, ...) {
 
     ## A function to compute the design matrix for the model in
     ## 'formula' given the data in 'data'. This is merely the result
@@ -1447,7 +1452,9 @@ general.model.matrix <- function (formula, data, gamsmth = NULL, ...) {
     ##  head(eval(parse(text = attr(terms(~ poly(x,y, degree=2)),
     ##  'term.labels')[1]), env=possummask))
 
-    ## 2014-08-24, 2014-09-09
+    ## 2014-08-24, 2014-09-09, 2017-11-30
+   
+    dots <- list(...)
 
     if (any(polys(formula)))
         stop ("orthogonal polynomials are temporarily blocked")  ## 2014-09-12
@@ -1468,16 +1475,17 @@ general.model.matrix <- function (formula, data, gamsmth = NULL, ...) {
     }
     else {
         ## model.matrix(formula, data, ...)
-        model.matrix(formula, data)
+        model.matrix(formula, data = data, contrasts.arg = contrasts)
     }
 }
 ###############################################################################
 
 secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
-                             smoothsetup = NULL) {
+                             smoothsetup = NULL, contrasts = NULL) {
     ## form linear predictor for a single 'real' parameter
     ## smoothsetup should be provided whenever newdata differs from
     ## data used to fit model and the model includes smooths from gam
+    
     vars <- all.vars(formula)
     ## improved message 2015-01-29
     OK <- vars %in% names(newdata)
@@ -1491,10 +1499,7 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata), dimnames = list(NULL,c('estimate','se')))
 
-    ## 2014-08-19
-    ## mat <- model.matrix(model, data = newdata)
-    
-    mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup)
+    mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup, contrasts = contrasts)
     if (nrow(mat) < nrow(newdata))
         warning ("missing values in predictors?")
 
@@ -1534,6 +1539,10 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
     else {
         vcv <- beta.vcv[indx,indx, drop = FALSE]
+        
+        ## 2017-11-16
+        vcv[is.na(vcv)] <- 0
+        
         nrw <- nrow(mat)
         vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
             mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
@@ -1631,7 +1640,7 @@ deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
             stop ("lists of polygons not implemented in 'make.mask'")
         temp <- lapply (mask, deleteMaskPoints, onebyone = onebyone, add = add,
                         poly = poly, poly.habitat = poly.habitat, ...)
-        class (temp) <- c('list', 'mask')
+        class (temp) <- c('mask', 'list')
         temp
     }
     else {

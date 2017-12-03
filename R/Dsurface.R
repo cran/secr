@@ -133,10 +133,9 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
-            ## 2014-08-19,22
-            ## mat <- model.matrix(object$model$D, data = newdata)
             mat <- general.model.matrix(object$model[[parameter]], data = newdata, 
-                                        object$smoothsetup[[parameter]])
+                                        gamsmth = object$smoothsetup[[parameter]], 
+                                        contrasts = object$details$contrasts)
             lpred <- mat %*% betaD
             temp <- untransform(lpred, object$link[[parameter]])
             temp <- pmax(temp, 0) / n.clust
@@ -239,7 +238,7 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
     }
     if (ms(mask)) {
         ## drop 'data.frame' because fools ms(), but worrying...
-        class (mask) <- c('list', 'Dsurface', 'mask')
+        class (mask) <- c('Dsurface', 'mask', 'list')
         for (i in 1:length(mask))
             class(mask[[i]]) <- c('Dsurface','mask', 'data.frame')
     }

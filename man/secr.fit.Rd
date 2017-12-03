@@ -128,6 +128,7 @@ autoini \tab session to use for starting values (default 1) \cr
 centred \tab centre x-y coordinates\cr
 chat \tab overdispersion of sighting counts Tu, Tm \cr
 chatonly \tab compute overdispersion for Tu and Tm, then exit \cr
+contrasts \tab coding of factor predictors \cr
 distribution \tab binomial vs Poisson N\cr
 fixedbeta \tab specify fixed beta parameter(s)\cr
 hessian \tab variance method\cr
@@ -136,6 +137,7 @@ intwidth2 \tab controls optimise when only one parameter\cr
 knownmarks \tab known or unknown number of marked animals in sighting-only model \cr
 LLonly \tab compute one likelihood for values in \code{start} \cr
 miscparm \tab starting values for extra parameters fitted via userdist function \cr
+newdetector \tab detector type to override detector(traps(capthist)) \cr
 nsim \tab number of simulations to compute overdispersion \cr
 param \tab optional parameterisation code\cr
 savecall \tab optionally suppress saving of call\cr

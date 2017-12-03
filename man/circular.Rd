@@ -26,10 +26,10 @@ differ.
 \usage{
 
 circular.r (p = 0.95, detectfn = 0, sigma = 1, detectpar = NULL, hazard
-= TRUE, ...) 
+= TRUE, upper = Inf, ...) 
 
 circular.p (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard
-= TRUE, ...) 
+= TRUE, upper = Inf, ...) 
 
 }
 
@@ -43,6 +43,7 @@ circular.p (r = 1, detectfn = 0, sigma = 1, detectpar = NULL, hazard
   \item{detectpar}{named list of detection function parameters }
   \item{hazard}{logical; if TRUE the transformation \eqn{-log(1-g(d))}
     is applied before integration}
+    \item{upper}{numeric upper limit of integration}
   \item{\dots}{other arguments passed to \code{\link{integrate}}}
 }
 
@@ -65,12 +66,15 @@ default. Rather than integrating \eqn{g(d)} itself, it may be more
 appropriate to integrate \eqn{g(d)} transformed to a hazard i.e. \eqn{1
 - log(-g(d))}. This is selected with \code{hazard = TRUE}.
 
-Integration may fail with the message "maximum number of subdivisions
-reached". See Examples for how to increase the number of subdivisions.
+Integration may also fail with the message ``roundoff error is detected in the extrapolation table''. 
+Setting \code{upper} to a large number less than infinity sometimes corrects this.
+
 }
 
 \value{
+
 Vector of values for the required radii or probabilities.
+
 }
 
 \seealso{
@@ -115,7 +119,7 @@ scale (detectfn = 14) OR 2.24 sigma on the probability scale (detectfn = 0)).
 
 ## Calhoun and Casby (1958) p 3.
 ## give p = 0.3940, 0.8645, 0.9888
-circular.p(1:3)
+circular.p(1:3, hazard = FALSE)
 
 ## halfnormal, hazard-rate and exponential
 circular.r ()
@@ -139,7 +143,6 @@ legend (2.8, 0.3, legend = c("halfnormal","hazard-rate, z = 4", "exponential"),
 ## in this example, a more interesting comparison would use
 ## sigma = 0.58 for the exponential curve.
 
-% removed dontrun example with subdivisions because it no longer works 2014-03-25
 }
 
 \keyword{ models }

@@ -114,7 +114,7 @@ called directly.
 \value{
 
 For \code{simulate.secr}, a list of data sets (`capthist' objects). This
-list has class \code{c("list","secrdata")}; the initial state of the random
+list has class \code{c("secrdata", "list")}; the initial state of the random
 number generator (roughly, the value of .Random.seed) is stored as the
 attribute `seed'.
 
@@ -123,7 +123,7 @@ returns a numeric vector of length \code{n.extract} then the value is a
 matrix with \code{dim = c(nsim, n.extract)} (i.e., the matrix has one
 row per replicate and one column for each extracted value). Otherwise,
 the value returned by \code{sim.secr} is a list with one component per
-replicate (strictly, an object of class = \code{c("list","secrlist")}). Each
+replicate (strictly, an object of class = \code{c("secrlist", "list")}). Each
 simulated fit may be retrieved \emph{in toto} by specifying
 \code{extractfn = identity}, or slimmed down by specifying
 \code{extractfn = NULL} or \code{extractfn = trim}, which are

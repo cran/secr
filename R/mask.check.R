@@ -206,7 +206,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 c('esa','LL','D-hat','se(D-hat)'), spacing=spacings)
             if (!is.null(file)) {
                 mask.check.fit <- vector(mode = 'list')
-                class(mask.check.fit) <- c('list','secrlist')
+                class(mask.check.fit) <- c('secrlist', 'list')
             }
             cat('Fitting models... \n')
         }

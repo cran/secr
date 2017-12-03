@@ -48,6 +48,7 @@ method is called when no specific method is available (i.e. class not
   \item No live detections
   \item Missing values not allowed in capthist
   \item Live detection(s) after reported dead
+  \item Empty detection histories (except concurrent telemetry and all-sighting data)
   \item More than one capture in single-catch trap(s)
   \item More than one detection per detector per occasion at proximity detector(s)
   \item Signal detector signal(s) less than threshold or invalid threshold

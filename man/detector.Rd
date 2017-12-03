@@ -9,6 +9,8 @@
 \alias{multi}
 \alias{proximity}
 \alias{count}
+\alias{capped}
+
 % \alias{signal}
 
 \title{ Detector Type }
@@ -30,7 +32,7 @@ detector(object) <- value
 
 \details{
 
-Valid detector types are `single', `multi', `proximity', `count',
+Valid detector types are `single', `multi', `proximity', `count', `capped',
 `signal', `polygon', `transect', `polygonX', and `transectX'. The
 detector type is stored as an attribute of a \code{traps} object.
 Detector types are mostly described by Efford et al. (2009a,b; see also
@@ -40,6 +42,7 @@ for area and linear searches as described in
 detector type is used for acoustic data as described in
 \href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}.
 
+The `capped' detector type refers to binary proximity data in which no more than one individual may be detected at a detector on any occasion. The type is partially implemented in \pkg{secr} 3.1.1: data may be simulated and manipulated, but for model fitting these are treated as proximity data by \code{secr.fit()}.
 }
 
 \value{
