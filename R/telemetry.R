@@ -57,7 +57,7 @@ telemetry.LT <- function(CH, detectfn, realparval, PIA,
         realparval[pind,'pmix', drop = FALSE]
     }
 
-    detectfn <- valid.detectfn(detectfn, 14:18)
+    detectfn <- valid.detectfn(detectfn, 14:19)
     dfn <- getdfn (detectfn)
     Nrealparval <- t(apply(realparval, 1, normalize))  ## adjust lambda0, complete pars
 
@@ -110,7 +110,7 @@ telemetry.LC <- function(CH, detectfn, detectpar, mask, bvn = TRUE) {
     J <- dim(CH)[2]
     traps <- traps(CH)
     K <- ndetector(traps)
-    detectfn <- valid.detectfn(detectfn, 14:18)
+    detectfn <- valid.detectfn(detectfn, 14:19)
     detectpar <- detectpar[c('lambda0','sigma','z')] ## ensure order correct
     g <- getdfn (detectfn)
     xylist <- telemetryxy(CH)

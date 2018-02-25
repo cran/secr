@@ -9,57 +9,15 @@
 ## 2010 08 28 fix bug with T
 ## 2011 11 28 user dframe factors now covered
 ## 2015-10-08 'ts'
+## 2017-12-18 all.levels argument
 ## Create (neutral) design data suitable for 'predict'
 ############################################################################################
 
-secr.make.newdata <- function (object) {
+secr.make.newdata <- function (object, all.levels = FALSE) {
 
-    findvars.MS <- function (cov, vars, dimcov, use.all) {
-        ## function to add covariates to a design data frame 'dframe'
-        ## cov may be a dataframe or list of dataframes, one per session (R > 1),
-        ## if list, then require predictors to appear in all sessions
-        ## uses pad1 and insertdim from functions.R
-        ## NOT to be used to add group variables
-        ## Does not yet standardize numeric covariates if (!is.factor(vals)) vals <- scale(vals)
-
-        if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
-        else {
-            found <- ''
-            if (!is.data.frame(cov)) {   ## therefore assume is a list
-                if (!is.list(cov) | (R==1))
-                    stop ('irregular covariates - check multisession structure')
-                covnames <- lapply(cov, names)
-                varincov <- sapply(covnames, function(nam) vars %in% nam)
-                if (length(vars)>1) found <- vars[apply(varincov,1,all)]
-                else found <- vars[all(varincov)]
-
-                for (variable in found) {
-                    ## use first occurrence!
-                    vals <- unlist(lapply(cov, function(x) rep(x[1,variable],
-                        dims[dimcov])))
-                    newdata[,variable] <<- insertdim (vals, dimcov, dims)
-                }
-            }
-            else
-            {
-                found <- names(cov) %in% vars
-                if (is.data.frame(cov) & any(found)) {
-                    found <- names(cov)[found]
-                    values <- as.data.frame(cov[,found])
-                    names(values) <- found
-                    if (length(values)>0) {
-                        for (variable in found) {
-                            if (use.all) vals <- values[,variable]
-                            else  vals <- values[1,variable]
-                            newdata[,variable] <<- insertdim (vals, dimcov, dims)
-                        }
-                    }
-                }
-            }
-            vars <<- vars[!(vars %in% found)]
-        }
-    }
-
+    # Session treated separately later
+    autovars <- c('g','x','y','x2','y2','xy','session',
+              't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')
     capthist <- object$capthist
     mask <- object$mask
     vars <- object$vars
@@ -79,73 +37,98 @@ secr.make.newdata <- function (object) {
     R <- length(sessions)
     dims <- c(R, ngrp, nmix)
 
-    basevars <- list(session = sessions)
-    if (ngrp>1) basevars$g <- factor(grouplevels)
-    if (nmix>1) basevars[mixvar] <- list(h.levels(capthist, hcov, nmix))
-    newdata <- expand.grid(basevars)
-    nr <- nrow(newdata)  ## one row for each session, group and mixture
-    if (ngrp==1)
-        findvars.MS (covariates(capthist), vars, 1, FALSE) ## check for indiv cov
-    for (v in vars) {
-        if (v=='x') newdata$x <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-        if (v=='y') newdata$y <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'y']
-        if (v=='x2') newdata$x2 <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-        if (v=='y2') newdata$y2 <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'y']
-        if (v=='xy') newdata$xy <- rep(0,nr)   # mean attr(mask,'meanSD')[1,'x']
-        if (v=='t') newdata$t <- rep(factor(1, levels=1:nocc), nr)   ## mod 2009 09 03
-        if (v=='ts') newdata$ts <- rep(factor('marking', levels=c('marking','sighting')), nr)   ## 2015-10-08
-        if (v=='T') newdata$T <- rep(0, nr)   ## 2010 08 28
-        if (v=='b') newdata$b <- rep(factor(0, levels=c(0,1)),nr)    # naive
-        if (v=='B') newdata$B <- rep(factor(0, levels=c(0,1)),nr)    # naive
-        if (v=='bk') newdata$bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
-        if (v=='Bk') newdata$Bk <- rep(factor(0, levels=c(0,1)),nr)   # naive
-        if (v=='k') newdata$k <- rep(factor(0, levels=c(0,1)),nr)    # naive
-        if (v=='K') newdata$K <- rep(factor(0, levels=c(0,1)),nr)    # naive
-        if (v=='bkc') newdata$bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
-        if (v=='Bkc') newdata$Bkc <- rep(factor('None', levels=c('None','Self','Other','Both')),nr)
-        if (v=='tcov') {
-            timecov <- object$timecov
-            if (is.factor(timecov)) {
-                newdata$tcov <- rep(factor(levels(timecov)[1], levels = levels(timecov)))
-            }
-            else
-                newdata$tcov <- rep(0,nr)        # ideally use mean or standardize?
-        }
-        if (v=='kcov') {
-            kcov <- covariates(traps(object$capthist))[,1]
-            if (is.factor(kcov)) {
-                newdata$kcov <- rep(factor(levels(kcov)[1], levels = levels(kcov)))
-            }
+    onesession <- function(session) {
+        findvars <- function (basevars, cov) {
+            ## function to add covariates to a list
+            ## cov should be dataframe or list of dataframes, one per session (R > 1),
+            if (!is.data.frame(cov)) cov <- cov[[session]] ## assume multisession list
+            if (is.null(cov) | (length(cov)==0) | (length(sessvars)==0)) return(basevars)
             else {
-                newdata$kcov <- rep(0,nr)        # ditto
+                found <- ''
+                for (v in sessvars) {
+                    if (v %in% names(cov)) {
+                        vals <- cov[,v]
+                        if (is.character(vals)) vals <- factor(vals)
+                        basevars[[v]] <- if (is.factor(vals))
+                            factor(levels(vals), levels = levels(vals))
+                        else
+                            unique(vals)
+                        
+                        found <- c(found, v)
+                    }
+                }
+                sessvars <<- sessvars[!(sessvars %in% found)]
+                return(basevars)
             }
         }
-        if (v=='Session') newdata$Session <- as.numeric( factor(newdata$session,
-            levels = session(capthist) ) ) - 1    # based on sequence in capthist
+        sessvars <- vars
+        
+        basevars <- list(session = factor(sessions[session], levels=sessions))
+        if (ngrp>1) basevars$g <- factor(grouplevels)
+        if (nmix>1) basevars[mixvar] <- list(h.levels(capthist, hcov, nmix))
+        
+        for (v in sessvars) {
+            if (v=='x')  basevars$x <- 0     # mean attr(mask,'meanSD')[1,'x']
+            if (v=='y')  basevars$y <- 0     # mean attr(mask,'meanSD')[1,'y']
+            if (v=='x2') basevars$x2 <- 0   # mean attr(mask,'meanSD')[1,'x']
+            if (v=='y2') basevars$y2 <- 0   # mean attr(mask,'meanSD')[1,'y']
+            if (v=='xy') basevars$xy <- 0   # mean attr(mask,'meanSD')[1,'x']
+            if (v=='T')  basevars$T <- 0   
+            
+            if (v=='t')  basevars$t <- factor(1:nocc)
+            if (v=='ts') basevars$ts <- factor(c('marking','sighting'))
+            if (v=='b')  basevars$b <- factor(0:1)
+            if (v=='B')  basevars$B <- factor(0:1)
+            if (v=='bk') basevars$bk <- factor(0:1)
+            if (v=='Bk') basevars$Bk <- factor(0:1) 
+            if (v=='k')  basevars$k <- factor(0:1)
+            if (v=='K')  basevars$K <- factor(0:1)
+            NSOB <- c('None','Self','Other','Both')
+            if (v=='bkc') basevars$bkc <- factor(NSOB, levels = NSOB)
+            if (v=='Bkc') basevars$Bkc <- factor(NSOB, levels = NSOB)
+            
+            if (v=='tcov') {
+                timecov <- object$timecov
+                if (is.factor(timecov)) {
+                    basevars$tcov <- unique(timecov)
+                }
+                else
+                    basevars$tcov <- 0        # ideally use mean or standardize?
+            }
+            if (v=='kcov') {
+                kcov <- covariates(traps(object$capthist))[,1]
+                if (is.factor(kcov)) {
+                    basevars$kcov <- unique(kcov)
+                }
+                else {
+                    basevars$kcov <- 0   
+                }
+            }
+        }
+        ## all autovars except Session should now have been dealt with
+        sessvars <- sessvars[!sessvars %in% autovars]
+        if (ngrp==1) 
+        basevars <- findvars (basevars, covariates(capthist)) ## individual covariates
+        basevars <- findvars (basevars, sessioncov)
+        basevars <- findvars (basevars, timecov)
+        basevars <- findvars (basevars, covariates(traps(capthist)))
+        basevars <- findvars (basevars, covariates(mask))
+        
+        ## revert to first level (original default)
+        if (length(v)>0) {
+            if (!all.levels & !(v %in% c('session', 'g', 'h2','h3'))) {
+                basevars[[v]] <- basevars[[v]][1] 
+            }
+        }
+        
+        expand.grid(basevars)
     }
-
-    ## all autovars should now have been dealt with
-    vars <- vars[!vars %in% c('g','x','y','x2','y2','xy','session','Session',
-        't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')]
-
-    findvars.MS (sessioncov, vars, 1, TRUE)
-    findvars.MS (timecov, vars, 1, FALSE)
-    findvars.MS (covariates(traps(capthist)), vars, 1, FALSE)
-    ## added 2011-11-14
-    findvars.MS (covariates(mask), vars, 1, FALSE)
-
-    ## 2011-11-28
-    if (!is.null(object$dframe)) {
-        dframevars <- names(object$dframe)
-        for (v in dframevars)
-            newdata[,v] <- rep(object$dframe[1,v], nr)
-        vars <- vars[!vars %in% dframevars]
-    }
-
-    ## default all remaining vars to numeric zero
-    for (v in vars) newdata[,v] <- rep(0,nr)
-
+    newdata <- lapply(1:length(sessions), onesession)
+    newdata <- do.call(rbind, newdata)
+    if ('Session' %in% vars) 
+        newdata$Session <- as.numeric(newdata$session) - 1   
     newdata
+    
 }
 ############################################################################################
 

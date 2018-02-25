@@ -218,16 +218,3 @@ telemetered <- function (object) {
     }
 }
 ############################################################################################
-
-allzero <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-    if (ms(object)) {
-        lapply(object, allzero)
-    }
-    else {
-        telemocc <- detector(traps(object))=='telemetry'
-        apply(object[,!telemocc,,drop=FALSE],1,sum)==0
-    }
-}
-############################################################################################

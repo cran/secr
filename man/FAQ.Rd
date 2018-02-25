@@ -45,11 +45,11 @@ Thirdly, you can display various \pkg{secr} documents listed in
 \code{\link{secr-package}}.
 
 Tip: to search all secr help pages open the pdf version of the manual in
-Acrobat Reader (\href{../doc/secr-manual.pdf}{secr-manual.pdf}; see also ?secr) and use
+Acrobat Reader (\href{http://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf}; see also ?secr) and use
 <ctrl> F.
 
 There is a support forum at \url{http://www.phidot.org/forum} under
-`DENSITY|secr'. Please read the FAQ there before posting. See below for
+`DENSITY|secr' and another at \href{https://groups.google.com/forum/#!forum/secrgroup}{secrgroup}. See below for
 more \R tips. Some specific problems with \code{secr.fit} are covered in
 \link{Troubleshooting}.
 
@@ -58,11 +58,10 @@ more \R tips. Some specific problems with \code{secr.fit} are covered in
 \section{ How should I report a problem? }{
 
 If you get really stuck or find something you think is a bug then please
-report the problem.
+report the problem to one of the online lists.
 
 You may be asked to send an actual dataset - ideally, the simplest one
-that exhibits the problem. The correct address for this is
-\email{density.software@otago.ac.nz}. Use \code{\link{save}} to wrap
+that exhibits the problem. Use \code{\link{save}} to wrap
 several \R objects together in one .RData file, e.g.,
 \code{save("captdata", "secrdemo.0", "secrdemo.b", file =
 "mydata.RData")}. Also, paste into the text of your message the output
@@ -90,7 +89,8 @@ minprob), whereas Density has no explicit limit.
 
 \section{ How can I speed up model fitting and model selection?}{
 
-  There are many ways - see \link{Speed tips}.
+  There are many ways - see \link{Speed tips} and 
+  \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}.
 
 }
 
@@ -111,7 +111,7 @@ minprob), whereas Density has no explicit limit.
 
   Yes. See ?timevaryingcov. However, a more direct way to control for
   varying effort is provided - see the `\link{usage}' atribute, which
-  now allows continuous measure of effort
+  now allows a continuous measure of effort
   (\href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf}). A tip: covariate models fit
   more quickly when the covariate takes only a few different values.
   

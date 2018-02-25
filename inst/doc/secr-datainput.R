@@ -5,9 +5,10 @@
 
 ## ---- message=FALSE------------------------------------------------------
 library(secr)
-setwd (system.file('extdata', package = 'secr'))
-stoatCH <- read.capthist('stoatcapt.txt', 'stoattrap.txt',
-    detector = 'proximity')
+datadir <- system.file('extdata', package = 'secr')
+captfile <- paste0(datadir, '/stoatcapt.txt')
+trapfile <- paste0(datadir, '/stoattrap.txt')
+stoatCH <- read.capthist(captfile, trapfile, detector = 'proximity')
 summary(stoatCH)
 
 ## ----download, echo = TRUE-----------------------------------------------

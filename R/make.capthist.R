@@ -300,7 +300,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     signl <- captures[,5]
                 signl <- signl[detectionOrder]
                 signal(wout) <- signl
-                if (detector(traps) %in% 'signalnoise') {
+                if (detector(traps)[1] %in% 'signalnoise') {
                     if (fmt=='XY')
                         nois <- captures[,7]
                     else

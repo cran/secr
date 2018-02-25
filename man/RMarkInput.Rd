@@ -14,6 +14,7 @@ passed directly to RMark.
 \usage{
 
 RMarkInput(object, grouped = FALSE, covariates = TRUE)
+
 unRMarkInput(df, covariates = TRUE)
 
 }
@@ -28,7 +29,7 @@ unRMarkInput(df, covariates = TRUE)
   \item{covariates}{logical or character vector; see Details}
   
   \item{df}{dataframe with fields `ch' and `freq' }
-  
+
 }
 \details{
 
@@ -57,7 +58,7 @@ unRMarkInput(df, covariates = TRUE)
   The dataframe also includes individual covariates specified with
   \code{covariates}.
 
-  The attribute `interval' is copied from `object', if present;
+  The attribute `intervals' is copied from `object', if present;
   otherwise it is set to a vector of zeros (indicating a
   closed-population sample).
 
@@ -66,7 +67,7 @@ unRMarkInput(df, covariates = TRUE)
   A single-session capthist object with no traps attribute and hence no
   detector type (i.e. non-spatial capture histories). Covariates are
   copied as requested.
-
+  
 }
 
 \references{
@@ -106,9 +107,10 @@ RMarkInput(deermouse.ESG, covariates = TRUE)
 
 \dontrun{
 ## fit robust-design model in RMark (MARK must be  installed)
+## may need to set MarkPath, e.g., MarkPath <- 'c:/MARK'
 library(RMark)
 ovenRD.data <- process.data(ovenRD, model = "Robust",
-    time.interval = attr(ovenRD, "interval"))
+    time.interval = attr(ovenRD, "intervals"))
 ovenRD.model <- mark(data = ovenRD.data, model = "Robust",
     model.parameters = list(p = list(formula = ~1, share = TRUE),
     GammaDoublePrime = list(formula = ~1),

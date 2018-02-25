@@ -272,11 +272,7 @@ km^2^, multiply by 100. Density in linear habitats (see package **secrlinear**) 
 
 The primary documentation for **secr** is in the help pages that accompany the package. Help for a function is obtained in the usual way by typing a question mark at the R prompt, followed by the function name. Note the 'Index' link at the bottom of each help page -- you will probably need to scroll down to find it. The index may also be accessed with `help(package = secr)`.
 
-The consolidated help pages are also distributed as the file [secr-manual.pdf]. Searching this text is a powerful way to locate a function for a particular task. It may be accessed from within R using
-
-```{r, eval=FALSE}
-RShowDoc ("secr-manual", package = "secr")
-```
+The consolidated help pages are in the file [secr-manual.pdf]. Searching this text is a powerful way to locate a function for a particular task. 
 
 Other documentation, in the form of pdf vignettes built with **knitr**,  will be added from time to time. The 'User guides...' link in the package help index lists available files. The vignettes in Table 4 are included in **secr** 3.1 or may be found on the Density website.
 
@@ -291,6 +287,7 @@ Other documentation, in the form of pdf vignettes built with **knitr**,  will be
 | [secr-datainput.pdf] | data formats and input functions |
 | [secr-tutorial.pdf] | tutorial using Burnham and Cushwa snowshoe hare data) |
 | [secr-habitatmasks.pdf] | habitat masks, buffer width and related topics|
+| [secr-models.pdf] | general description of models in **secr**|
 | [secr-troubleshooting.pdf] | problems with `secr.fit`, including speed issues |
 |   |   |
 | [secr-densitysurfaces.pdf] | modelling density surfaces |
@@ -312,7 +309,7 @@ news (package = "secr")
 
 #Defining models with the 'model' argument of secr.fit
 
-By default, the parameters of SECR models are assumed to be constant. We specify more interesting, and often better-fitting, models with the 'model' argument of `secr.fit`.  Here 'models' relates to variation in the parameters that may be explained by known factors and covariates. Read [Appendix 5](#appendix5) to make sense of this statement. If you just want to know how to use models, read on.
+By default, the parameters of SECR models are assumed to be constant. We specify more interesting, and often better-fitting, models with the 'model' argument of `secr.fit`.  Here 'models' relates to variation in the parameters that may be explained by known factors and covariates. The explanation in [secr-models.pdf] may help. If you just want to know how to use models, read on.
 
 Models are defined symbolically in **secr** using R formula notation. A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and
 **secr** uses that term because it will be familiar to biologists.
@@ -809,6 +806,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 | `derivedExternal` | variance from replicated sampling units |
 | `ellipse.secr` | confidence ellipses for estimated parameters |
 | `fxi.secr`       | probability density of home-range centre |
+| `LLsurface`* | compute likelihood surface and plot contours |
 | `logLik`*	| log-likelihood of fitted model |
 |	`LR.test`	| likelihood-ratio test of two models |
 |	`model.average`	| combine estimates using AIC or AICc weights |
@@ -905,44 +903,6 @@ Multi-session lizard (*Oligosoma infrapunctatum* and *O. lineoocellatum*) pitfal
 
 Stoat *Mustela erminea* hair tube DNA data from Matakitaki Valley, South Island, New Zealand (Efford, Borchers and Byrom 2009).
 
-\pagebreak
-
-#Appendix 5. More on models in **secr** {#appendix5}
-
-A family of capture--recapture models, such as the Cormack-Jolly-Seber models for survival, may include submodels[^submodel] that allow for variation in core ('real') parameters, including the effects of covariates. Annual survival, for example, may vary with the severity of winter weather, so it often makes sense to include a measure of winter severity as a covariate. Gary White's MARK software has been particularly successful in packaging open-population models for biologists, and **secr** aims for similar flexibility.
-
-[^submodel]:This use of 'submodel' is non-standard -- maybe we'll find a better term.
-  
-The language of generalised linear models is convenient for describing submodels (e.g. Huggins 1989, Lebreton et al. 1992). Each parameter is treated as a linear combination of predictor variables on its transformed ('link') scale. This is useful for combining effects
-because, given a suitable link function, any combination maps to a feasible value of the parameter. The logit scale has this property for probabilities in (0, 1), and the natural log scale works for positive parameters i.e. (0, $+\infty$). These are the link functions used most often in **secr**, but there are others, including the identity (null) link. Set link functions with the 'link' argument of `secr.fit`.
-
-Submodels are defined symbolically in **secr** using R formula notation.  A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and **secr** uses that term because it will be familiar to biologists.  Three real parameters are commonly modelled in **secr**; these are denoted D (for density), g0, and sigma. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an `secr` object with the function `derived` or one of its siblings (`derivedCluster` etc.). 
-
-Other 'real' parameters appear in particular contexts. 'z' is a shape parameter that is used only when the detection function has three parameters (annular halfnormal, cumulative gamma, hazard-rate etc. -- see `?detectfn`). 'lambda0' substitutes for 'g0' when the detection function is defined in terms of cumulative hazard. 'pmix' represents the mixing proportion in finite mixture models (or e.g., the sex ratio in hybrid mixture models with 'hcov').
-
-For each real parameter there is a linear predictor of the form $\vec{y} = \vec{X} \vec{\beta}$, where $\vec{y}$ is a vector of parameter values on the link scale, $\vec{X}$ is a design matrix of predictor values, and $\vec{\beta}$ is a vector of coefficients.  Each element of $\vec{y}$ and corresponding row of $\vec{X}$ relates to the value of the real parameter in a particular circumstance (e.g. density at a particular point in space, or detection probability of an animal on a particular occasion). The elements of $\vec{\beta}$ are coefficients estimated when we fit the model. In MARK these are called 'beta parameters' to distinguish them from the transformed 'real' parameter values in $\vec{y}$. **secr** acknowledges this usage, but also refers to beta parameters as 'coefficients' and real parameters as 'fitted values', a usage more in line with other statistical modelling in R.  $\vec{X}$ has one column for each element of $\vec{\beta}$.  Design matrices are described in more detail in the next section.
-
-**Design matrices**
-
-A design matrix is specific to a 'real' parameter. Each design matrix $\vec{X}$ contains a column of '1's (for the constant or intercept term) and additional columns as needed to describe the effects in the submodel for the parameter.  Depending on the model, these may be
-continuous predictors (e.g. air temperature to predict occasion-to-occasion variation in g0), indicator variables (e.g. 1 if animal $i$ was caught before occasion $s$, 0 otherwise), or coded factor levels.  Within `secr.fit`, each design matrix is constructed automatically from the input data and the model formula in a 2-stage process.
-
-First, a data frame is built containing 'design data' with one column for each variable in the formula.  Second, the R function `model.matrix` is used to construct the design matrix.  This
-process is hidden from the user.  The design matrix will have at least one more column than the design data; there may be more if the formula includes interactions or factors with more than two levels.  For a good description of this general approach see the documentation for RMark (Laake and Rexstad 2014).  The necessary design data are either extracted from the inputs or generated automatically, as explained in later sections.  'Real' parameters fall into two groups: density (D) and detection (g0, sigma and z).  Density and detection parameters are subject to different effects, so they use different design matrices as described in the next three sections.
-
-**Detection submodels**
-
-For SECR, we want to model the detection of each individual $i$ on occasion $s$ at detector $k$.  Given $n$ observed individuals on $S$ occasions at $K$ detectors, there are therefore $nSK$ detection probabilities of interest.  We treat these as elements in a 3-dimensional array. Strictly, we are also interested in the detection probabilities of unobserved individuals, but these are estimated only by extrapolation from those observed so we do not include them in the array.
-
-In a null model, all $nSK$ detection probabilities are assumed to be the same.  The conventional sources of variation in capture probability (Otis et al. 1978) appear as variation either in the $n$ dimension (`individual heterogeneity' h), or in the $S$ dimension ('time variation' t), or as a particular interaction in these two dimensions ('behavioural response to capture' b).  Combined effects are possible. 
-
-SECR introduces additional complexity. Detection probability in SECR is no longer a scalar (even for a particular animal-occasion-detector combination); it is described by a
-'detection function'. The detection function may have two parameters (e.g. g0, sigma for a half-normal function), or three parameters (e.g. g0, sigma, z).  Any of the parameters of the detection function may vary with respect to individual (subscript $i$), occasion (subscript $s$) or detector (subscript $k$).
-
-The full design matrix for each detection submodel has one row for each combination of $i$, $s$ and $k$.  Allowing a distinct probability for each animal (the $n$ dimension) may seem excessive, and truly individual-specific covariates are feasible only when a model is fitted by maximizing the conditional likelihood (cf Huggins 1989). However, the full $nSK$ array is convenient for coding both group membership (Lebreton et al. 1992, Cooch and White 2014) and experience of capture, even when individual-specific covariates cannot be modelled.
-
-The programming gets even more complex. Analyses may combine data from several independent samples, dubbed `sessions'. This adds a fourth dimension of length equal to the number of sessions.  When finite mixture models are used for detection parameters there is even a fifth dimension, with the preceding structure being replicated for each mixture class. Fortunately, **secr** handles all this out of view: as a user you only need to know how to specify the detection model.
-
 [schematicfigure]: schematic3.png
 
 [secr-manual.pdf]: http://www.otago.ac.nz/density/pdfs/secr-manual.pdf
@@ -952,6 +912,7 @@ The programming gets even more complex. Analyses may combine data from several i
 [secr-finitemixtures.pdf]: http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf
 [secr-habitatmasks.pdf]: http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf
 [secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
+[secr-models.pdf]: http://www.otago.ac.nz/density/pdfs/secr-models.pdf
 [secr-multisession.pdf]: http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf
 [secr-noneuclidean.pdf]: http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf
 [secr-parameterisations.pdf]: http://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf
@@ -962,7 +923,7 @@ The programming gets even more complex. Analyses may combine data from several i
 [secr-troubleshooting.pdf]: http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf
 [secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
 
-[secrdesign-vignette.pdf]: http://cran.r-project.org/web/packages/secrdesign/vignettes/secrdesign-vignette.pdf
+[secrdesign-vignette.pdf]: http://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf
 [secrlinear-vignette.pdf]: http://cran.r-project.org/web/packages/secrlinear/vignettes/secrlinear-vignette.pdf
 
 [phidot]: http://www.phidot.org/forum

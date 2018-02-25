@@ -49,16 +49,21 @@ plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
             draw (x, y+spc/2, FALSE, !inmask(x, y+spc))
         )
     }
-    if (plt & !add)
-        plot(mask, dots = FALSE)
-    spc <- spacing(mask)
-    ## assumes mask has integer x,y resolution
-    maskvector <- apply(round(mask),1,paste, collapse='.')
-    coord <- apply(mask, 1, onecell)
-    xy <- matrix(coord, nrow = 4)
-    xy <- xy[,!apply(xy, 2, function(z) any(is.na(z)))] # drop NA
-    if (plt) segments(xy[1,], xy[2,], xy[3,],xy[4,], ...)
-    invisible(xy)
+    if (ms(mask)) {
+        out <- lapply(mask, plotMaskEdge, plt=plt, add = add, ...)
+        invisible(out)
+    } else {
+        if (plt & !add)
+            plot(mask, dots = FALSE)
+        spc <- spacing(mask)
+        ## assumes mask has integer x,y resolution
+        maskvector <- apply(round(mask),1,paste, collapse='.')
+        coord <- apply(mask, 1, onecell)
+        xy <- matrix(coord, nrow = 4)
+        xy <- xy[,!apply(xy, 2, function(z) any(is.na(z)))] # drop NA
+        if (plt) segments(xy[1,], xy[2,], xy[3,],xy[4,], ...)
+        invisible(xy)
+    }
 }
 
 #########################################

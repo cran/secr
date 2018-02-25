@@ -262,7 +262,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     if ('Session' %in% vars) {
         dframe$Session <- insertdim (0:(R-1), 1, dims)
     }
-
+    
     #--------------------------------------------------------------------------
     ## t, T, tcov, ts
 

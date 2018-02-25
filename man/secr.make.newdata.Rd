@@ -13,11 +13,12 @@ for the base levels of all predictors in an secr object.
 }
 
 \usage{
-secr.make.newdata(object)
+secr.make.newdata(object, all.levels = FALSE)
 }
 
 \arguments{
   \item{object}{fitted secr model object}
+  \item{all.levels}{logical; if TRUE then all levels of factors are included}
 }
 
 \details{

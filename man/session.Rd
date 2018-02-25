@@ -51,10 +51,6 @@ models are therefore generally simpler to implement. On the other hand,
 sessions offer more flexibility in defining and evaluating
 between-session models, including trend models.
 
-Sessions are a recent addition to \pkg{secr} and the documentation and
-testing of session capability is therefore less advanced than for other
-features.
-
 }
 
 \seealso{ 

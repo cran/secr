@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 3.1.3\cr
-Date: \tab 2017-12-02\cr
+Version: \tab 3.1.5\cr
+Date: \tab 2018-02-25\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -51,10 +51,12 @@ help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
 General interest \tab \cr
-  \href{../doc/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
-  \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{https://CRAN.R-project.org/package=secr/vignettes/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
+  \href{https://CRAN.R-project.org/package=secr/vignettes/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
+  \href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} \tab linear models in \pkg{secr} \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}  \tab problems with secr.fit, including speed issues \cr
 \cr
 \cr
@@ -69,7 +71,6 @@ More specialised topics \tab \cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf} \tab analysing data from microphone arrays\cr
   \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
 }
-The help pages are also available as  \href{../doc/secr-manual.pdf}{secr-manual.pdf}.
 
 The datasets \link{possum}, \link{skink}, \link{ovenbird},
 \link{housemouse}, \link{deermouse}, \link{ovensong},
@@ -84,7 +85,7 @@ as stream networks
 enables the assessment of alternative study designs by Monte Carlo
 simulation; scenarios may differ in detector (trap) layout, sampling
 intensity, and other characteristics
-(\href{https://cran.r-project.org/package=secrdesign/vignettes/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}).
+(\href{http://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}).
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see
@@ -92,7 +93,7 @@ Density (see
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
 \href{http://www.phidot.org/forum}{www.phidot.org} and
-the Google group `secr'. Feedback
+the Google group \href{https://groups.google.com/forum/#!forum/secrgroup}{secrgroup}. Feedback
 on the software is also welcome, including suggestions for additional
 documentation or new features consistent with the overall design.
 

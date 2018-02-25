@@ -60,7 +60,7 @@ Function \tab Default \tab Saved attribute \tab Note \cr
 
 Setting \code{seed = NULL} in any of these functions has the effect of continuing the existing random number stream; it is not the same as calling \code{set.seed(NULL)}.
 
-When several cores are used for parallel processing (ncores > 1) the L'Ecuyer pseudorandom generator is used to provide a separate random number stream for each core (see \code{\link[parallel]{clusterSetRNGStream}}).
+When several cores are used for parallel processing (ncores > 1) the L'Ecuyer pseudorandom generator is used to provide a separate random number stream for each core (see \code{\link{clusterSetRNGStream}}).
 
 }
 

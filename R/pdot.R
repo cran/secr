@@ -70,7 +70,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     if (any(detector(traps) %in% c('polygon','polygonX','transect', 'transectX'))) {
         if (!is.null(userdist))
             stop("userdist incompatible with polygon-like detectors")
-        if (!(detectfn %in% 14:18))
+        if (!(detectfn %in% 14:19))
             stop("pdot requires hazard detectfn for polygon-type detectors")
         k <- table(polyID(traps))   ## also serves transectID
         K <- length(k)              ## number of polygons/transects
@@ -131,7 +131,7 @@ hdot <- function (X, traps, detectfn = 14, detectpar = list(lambda0 = 0.2, sigma
     
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
-    if ((detectfn < 14) | (detectfn>18))
+    if ((detectfn < 14) | (detectfn>19))
         stop ("requires hazard detectfn")
     if (ms(traps))
         stop ("requires single-session traps")
@@ -363,7 +363,7 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
     if (ms(traps)) {
         if (length(noccasions) == 1)
             noccasions <- rep(noccasions,length(traps))
-        output <- mapply(pdot.contour, traps, detectpar, noccasions,
+        output <- mapply(pdot.contour, traps, detectpar=detectpar, noccasions=noccasions,
                          MoreArgs = list(border = border, nx = nx,
                          detectfn = detectfn, binomN = binomN,
                          levels = levels, poly = poly, plt = plt, add = add, ...))

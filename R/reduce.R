@@ -14,6 +14,8 @@
 ## 2017-03-25 debug for reduce from transect to count
 ## 2017-10-20 introducing 'capped' detector
 ## 2017-11-14 purged unused code for seltrap, selused
+## 2018-01-22 made safe for nonspatial data
+## 2018-01-25 multisession intervals passed through
 ############################################################################################
 
 # From (row) To (column)
@@ -325,13 +327,19 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             ...)
         class(temp) <- c('capthist', 'list')
         if (length(temp) == 1) temp <- temp[[1]]
+        interv <- intervals(object)
+        if (!is.null(interv)) {   ## 2018-01-25
+            cumi <- cumsum(interv)
+            newinterv <- diff(c(0,cumi)[sessions])
+            intervals(temp) <- newinterv 
+        }
+        sessionlabels(temp) <- sessionlabels(object)[sessions]
         return(temp)
     }
     else {
         select <- match.arg(select)
         polygons <- c('polygon','polygonX')
         transects <- c('transect','transectX')
-        ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
         nrw <- nrow(object)
         if (is.null(newoccasions)) {
             if (tolower(by) == 'all') by <- ncol(object)
@@ -340,7 +348,15 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
                 warning ("number of occasions is not a multiple of 'by'")
         }
 
-        inputdetector <- detector(traps(object))
+        if (!is.null(traps(object))) {
+            ntrap <- ndetector(traps(object))  ## npoly if 'polygon' or 'transect'
+            inputdetector <- detector(traps(object))
+        }
+        else {
+            ntrap <- 1
+            inputdetector <- 'nonspatial'
+            outputdetector <- 'nonspatial'
+        }
         if (length(unique(inputdetector))>1)
             stop("reduce.capthist does not yet handle mixed input detector types")
         inputdetector <- inputdetector[1]
@@ -352,7 +368,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
                 outputdetector <- unlist(outputdetector[1])
             }
 
-        if (!(outputdetector %in% .localstuff$validdetectors))
+        if (!(outputdetector %in% c(.localstuff$validdetectors, 'nonspatial')))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
         if ((!(inputdetector %in% c('signal','signalnoise'))) & (outputdetector == 'signal'))
@@ -396,13 +412,19 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         ####################################
         ## check and build newtraps
-        trps <- traps(object)
-        reducetraps <- !is.null(newtraps) | !is.null(span) | (length(newoccasions) != ncol(object))
-        if (reducetraps) {
-            trps <- reduce(trps, newtraps = newtraps, newoccasions = newoccasions,
-                           span = span, rename = rename, ...)
-            newtrapID <- attr(trps, 'newtrap')
-            ntrap <- ndetector(trps)
+        if (outputdetector != 'nonspatial') {
+            trps <- traps(object)
+            reducetraps <- !is.null(newtraps) | !is.null(span) | (length(newoccasions) != ncol(object))
+            if (reducetraps) {
+                trps <- reduce(trps, newtraps = newtraps, newoccasions = newoccasions,
+                               span = span, rename = rename, ...)
+                newtrapID <- attr(trps, 'newtrap')
+                ntrap <- ndetector(trps)
+            }
+        }
+        else {
+            trps <- NULL
+            reducetraps <- FALSE
         }
 
         ####################################
@@ -471,9 +493,10 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         else
             if ((inputdetector %in% transects) & !(outputdetector %in% transects))
                 traps(tempnew) <- transect2point(trps)
-        else
+        else if (outputdetector != 'nonspatial')
             traps(tempnew) <- trps
-        detector(traps(tempnew)) <- outputdetector
+        if (outputdetector != 'nonspatial') 
+            detector(traps(tempnew)) <- outputdetector
 
         ################################
         ## covariates and ancillary data
@@ -526,13 +549,21 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         ##################################
         ## optionally drop unused detectors
-        if (nrow(tempnew) > 0)
-            dimnames(tempnew)[[1]] <- 1:nrow(tempnew)  ## temporary, for animalID in subset
-        if (dropunused & !is.null(usage(traps(tempnew)))) {
-            OK <- apply(usage(traps(tempnew)), 1, sum) > 0
-            tempnew <- subset(tempnew, traps = OK)
+        if (outputdetector != 'nonspatial') {
+            if (nrow(tempnew) > 0)
+                dimnames(tempnew)[[1]] <- 1:nrow(tempnew)  ## temporary, for animalID in subset
+            if (dropunused & !is.null(usage(traps(tempnew)))) {
+                OK <- apply(usage(traps(tempnew)), 1, sum) > 0
+                tempnew <- subset(tempnew, traps = OK)
+            }
+            tempnew[is.na(tempnew)] <- 0
         }
-        tempnew[is.na(tempnew)] <- 0
+
+        interv <- intervals(object) ## 2018-01-25
+        if (!is.null(interv)) {
+            if (!is.null(newoccasions)) warning ("intervals not carried forward")   
+            else intervals(tempnew) <- interv
+        }
 
         ################################
         ## dimnames

@@ -115,11 +115,12 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
 # polygon detectors
 {
     makepart <- function (vert) {
-        vert <- data.frame(vert)
+        ## as.matrix to avoid as.data.frame.traps
+        vert <- data.frame(as.matrix(vert))
         if ((ncol(vert)==2) & !all(c('x','y') %in% names(vert)))
             names(vert) <- c('x','y')
         if (any(tail(vert,1) != vert[1,]))   ## close polygon
-            vert <- rbind(vert, vert[1,])
+            vert <- rbind(vert, vert[1,,drop = FALSE])
         vert
     }
 
@@ -129,7 +130,6 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
     ##        requireNamespace('sp')
     ##        ...
     ##    }
-
     if (is.null(polylist)) polylist <- list(data.frame(x=x,y=y))
     if (is.null(names(polylist))) names(polylist) <- 1:length(polylist)
     grid <- lapply (polylist, makepart)

@@ -254,8 +254,6 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
 
 collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     alpha = 0.05, perm = 1:4, fields = 1:4) {
-
-
     ## 2013-04-20
     object <- secrlist(...)
     if (!is.null(names(object)))

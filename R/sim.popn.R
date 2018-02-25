@@ -18,6 +18,7 @@
 ## 2015-02-18 multisession sim.popn updated for Nbuffer
 ## 2016-09-21 model2D = "even" option
 ## 2017-06-07 missing D becomes NULL
+## 2018-02-21 multinomial recruitment
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -79,7 +80,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             sample (c(trunc(x), trunc(x)+1), size=1, prob=c(1-fr, fr))
         }
         ## session.popn <- function (s, D, Nbuffer) {
-        session.popn <- function (s, D=NULL, Nbuffer=NULL) {
+        session.popn <- function (s, D=NULL, Nbuffer=NULL, Ndist) {
             ## independent population
             if (s > 1) seed <- NULL   ## 2015-02-18
             if (!is.null(Nbuffer))
@@ -94,10 +95,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ## assume lambda lacks process variance
             ## ideally lambda lognormal
             ## need 'wrap' option for toroidal wrapping of 'rect' locations
-            newstart <- max(as.numeric(rownames(oldpopn))) + 1
+            # newstart <- max(as.numeric(rownames(oldpopn))) + 1
             if (turnoverpar$survmodel=='binomial') {
                 survive <- sample (c(FALSE, TRUE), nrow(oldpopn), replace = TRUE,
-                    c(1-turnoverpar$phi[t],turnoverpar$phi[t]))
+                                   c(1-turnoverpar$phi[t],turnoverpar$phi[t]))
                 nsurv <- sum(survive)
             }
             else {   ## assume 'discrete'
@@ -107,34 +108,42 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
             
             ## 2017-06-07 newpopn <- subset.popn(oldpopn, subset=survive)
-            newpopn <- subset(oldpopn, subset=survive)
-            if (turnoverpar$sigma.m[t] > 0) {
-                newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
-                                                  sd = turnoverpar$sigma.m[t])
-                if (turnoverpar$wrap)
-                    newpopn <- toroidal.wrap(newpopn)
+            if (turnoverpar$sigma.m[t] < 0) {
+                newpopn <- sim.popn(D = D, core = core, buffer = buffer,
+                                    model2D = model2D, buffertype = buffertype, poly = poly,
+                                    covariates = covariates, Ndist = 'specified', Nbuffer = nsurv,
+                                    nsessions = 1, details = details)
+                row.names(newpopn) <- row.names(oldpopn)[survive]
+            }
+            else {
+                newpopn <- subset(oldpopn, subset=survive)
+                if (turnoverpar$sigma.m[t] > 0) {
+                    newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
+                                                      sd = turnoverpar$sigma.m[t])
+                    if (turnoverpar$wrap)
+                        newpopn <- toroidal.wrap(newpopn)
+                }
             }
             gam <- turnoverpar$lambda[t] - turnoverpar$phi[t]
             if (gam<0)
                 stop ("invalid gamma in turnover")
+
             nrecruit <- switch (turnoverpar$recrmodel,
-                constantN = nrow(oldpopn) - nsurv,
-                discrete = discrete(gam * nrow(oldpopn)),
-                binomial = rbinom(1, nrow(oldpopn), gam),
-                poisson = rpois (1, gam * nrow(oldpopn)))
-                ## under Pradel model members of superpopulation have binomial
-                ## probability of entry at this point?
-                ## cf Schwarz & Arnason betas
+                                constantN = nrow(oldpopn) - nsurv,
+                                discrete = discrete(gam * nrow(oldpopn)),
+                                binomial = rbinom(1, nrow(oldpopn), gam),
+                                poisson = rpois (1, gam * nrow(oldpopn)),
+                                multinomial = Nrecruits[t+1],
+                                -1)
+            if (nrecruit<0) stop ("unrecognised recruitment model",turnoverpar$recrmodel)
             if (nrecruit>0) {
-              ## 2015-04-06 using Nbuffer
-              recruits <- sim.popn(D = D, core = core, buffer = buffer,
-                                   model2D = model2D, buffertype = buffertype, poly = poly,
-                                   covariates = covariates, number.from = newstart,
-                                   Ndist = 'specified', Nbuffer = nrecruit,
-                                   nsessions = 1, details = details)
-              ## danger: resets random seed
-              # newpopn <- rbind.popn(newpopn, recruits, renumber = FALSE)
-              newpopn <- rbind(newpopn, recruits, renumber = FALSE)
+                recruits <- sim.popn(D = D, core = core, buffer = buffer,
+                                     model2D = model2D, buffertype = buffertype, poly = poly,
+                                     covariates = covariates, number.from = lastnumber + 1, 
+                                     Ndist = 'specified', Nbuffer = nrecruit,
+                                     nsessions = 1, details = details)
+                lastnumber <<- lastnumber + nrecruit
+                newpopn <- rbind(newpopn, recruits, renumber = FALSE)
             }
             class(newpopn) <- class(MSpopn[[1]])
             attr(newpopn, 'mask') <- attr(MSpopn[[1]], 'mask')
@@ -142,19 +151,22 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             attr(newpopn, 'losses') <- nrow(oldpopn)-nsurv
             attr(newpopn, 'recruits') <- nrecruit
             newpopn
-        }
-        turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, wrap = TRUE,
-                            survmodel = 'binomial', recrmodel = 'poisson')
+        }   ## end of turnover fn
         expands <- function (param, s) {
-            if (!is.null(param)) {
-                param <- rep(param,s)[1:s]
-            }
-            param
+            if (is.null(param)) NULL
+            else rep(param, length.out = s)
         }
-        turnoverpar <- replace (turnoverpar, names(details), details)
+        getbeta <- function (phi, lambda) {
+            J <- length(phi)                 ## nsessions
+            Nj <- cumprod(c(1,lambda[-J]))   ## relative number
+            B <- Nj - c(0, (phi * Nj)[-J])   ## relative recruits
+            B / sum(B)                       ## beta
+        }
+        
+        #---------------------------------------------------------------------------------
         
         if (is.null(details$lambda)) {
-            ## independent
+            ## independent populations
             ## MSpopn <- lapply (1:nsessions, session.popn)
             ## 2014-04-18, 2015-02-18
             if (missing(D))
@@ -170,15 +182,35 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             else
                 if (length(Nbuffer) != nsessions) stop ("length(Nbuffer) should equal nsessions")
 
-            MSpopn <- mapply (session.popn, 1:nsessions, D, Nbuffer, SIMPLIFY = FALSE)
+            MSpopn <- mapply (session.popn, 1:nsessions, D, Nbuffer, Ndist, SIMPLIFY = FALSE)
         }
         else {
-            ## projected
-            MSpopn <- vector(nsessions, mode = 'list')
-            MSpopn[[1]] <- session.popn(1, D, Nbuffer)
+            ## projected population
+            turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, wrap = TRUE,
+                                survmodel = 'binomial', recrmodel = 'poisson')
+            turnoverpar <- replace (turnoverpar, names(details), details)
             turnoverpar$lambda  <- expands(turnoverpar$lambda, nsessions)
             turnoverpar$phi     <- expands(turnoverpar$phi, nsessions)
             turnoverpar$sigma.m <- expands(turnoverpar$sigma.m, nsessions)
+            MSpopn <- vector(nsessions, mode = 'list')
+         
+            if (turnoverpar$recrmodel == "multinomial") {
+                beta <- getbeta(turnoverpar$phi, turnoverpar$lambda)
+                if (is.null(details$superN)) {
+                    ## infer superN from a trial initial population
+                    ## this may introduce some variation
+                    N <- nrow(session.popn(1, D, Nbuffer, Ndist))
+                    details$superN <- N/beta[1]
+                    warning("multinomial recruitment superN not specified, using ", 
+                            round(details$superN,1))
+                }
+                Nrecruits <- rmultinom(1, details$superN, beta)
+                MSpopn[[1]] <- session.popn(1, D, Nrecruits[1], Ndist="specified")
+            }
+            else {
+                MSpopn[[1]] <- session.popn(1, D, Nbuffer, Ndist)
+            }
+            lastnumber <- nrow(MSpopn[[1]])
             for (i in 2:nsessions) {
                 MSpopn[[i]] <- turnover(MSpopn[[i-1]], i-1)
             }

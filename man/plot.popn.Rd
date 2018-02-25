@@ -9,7 +9,7 @@ Display animal locations from a \code{popn} object.
 
 \usage{
 \method{plot}{popn}(x, add = FALSE, frame = TRUE,  
-    circles = NULL, ...)
+    circles = NULL, collapse = FALSE, seqcol = NULL, ...)
 }
 
 \arguments{
@@ -18,8 +18,11 @@ Display animal locations from a \code{popn} object.
   \item{frame}{ logical to add frame or polygon within which points were
       simulated}
   \item{circles}{ vector giving the radii if circles are to be plotted }
+  \item{collapse}{ logical; if TRUE them multiple sessions are overlaid }
+  \item{seqcol}{ color used for first detection when collapse = TRUE (optional) }
   \item{\dots}{ arguments passed to \code{eqscplot} and \code{points} or
   \code{symbols}}
+  
 }
 
 \details{
@@ -27,6 +30,14 @@ Display animal locations from a \code{popn} object.
   plotted for each animal using the \code{symbols} function. The
   arguments \code{fg} and \code{bg} may be used to control the colour of
   the perimeter and the fill of each circle (see Examples).
+  
+  For a multi-session popn with \code{\link{turnover}}, \code{collapse = TRUE} 
+  allows successive locations to be joined with (\code{type = 'o'} or \code{type = 'l'}).
+  
+  \code{seqcol} may be a single color, a vector of colours (one per session), 
+  or a vector of two colours, one for the first and one for all later sessions 
+  in which each animal was detected. 
+  
 }
 
 \seealso{ \code{\link{popn}}, \code{\link{sim.popn}} }

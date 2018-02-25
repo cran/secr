@@ -44,7 +44,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
                 1 - exp(-detectpar$lambda0 * exp(-r/detectpar$sigma)),
                 1 - exp(-detectpar$lambda0 * exp(-(r-detectpar$w)^2/2/detectpar$sigma^2)),
                 1 - exp(-detectpar$lambda0 * ( 1 - pgamma(r, shape = detectpar$z,
-                    scale = detectpar$sigma/detectpar$z)))
+                    scale = detectpar$sigma/detectpar$z))),
+                1 - exp(-detectpar$lambda0 * exp(-(r/detectpar$sigma)^detectpar$z))
           )
     }
 

@@ -74,7 +74,7 @@ available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
 others that appear in the \code{covariates} of the input data. See also
 \code{\link{usage}} for varying effort, \code{\link{timevaryingcov}} to
-construct other time-varying detector covariates, and \link{secr models}
+construct other time-varying detector covariates, and \href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf}
 and \href{../doc/secr-overview.pdf}{secr-overview.pdf} for more on
 defining models.
 

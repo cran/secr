@@ -75,7 +75,6 @@
 #  trace      -  logical; if TRUE output each likelihood as it is calculated
 #  ...        -  other arguments passed to nlm() or optim()
 
-
     #################################################
     ## Remember start time
     ptm  <- proc.time()
@@ -100,7 +99,6 @@
 
     if (!inherits(capthist, 'capthist'))
         stop ("requires 'capthist' object")
-
     detectortype <- unlist(detector(traps(capthist)))
     anycount <- any(detectortype %in% .localstuff$countdetectors)
     anypoly  <- any(detectortype %in% c('polygon',  'polygonX'))
@@ -142,7 +140,7 @@
         else if (allpresence)
             detectfn <- valid.detectfn(detectfn, 0:8)
         else  if (anypoly | anytrans)
-            detectfn <- valid.detectfn(detectfn, 14:18)  ## 2017-04-04
+            detectfn <- valid.detectfn(detectfn, 14:19)  ## 2017-04-04
         else
             detectfn <- valid.detectfn(detectfn)
     }
@@ -361,7 +359,7 @@
     ## intercept and fix certain models with bad defaults
     model <- updatemodel(model, detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
     model <- updatemodel(model, detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
-    model <- updatemodel(model, detectfn, 14:18, 'g0', 'lambda0')
+    model <- updatemodel(model, detectfn, 14:19, 'g0', 'lambda0')
 
     #################################################
     ## which real parameters are fixed?
@@ -735,8 +733,8 @@
         if (detectfn %in% c(7)) {
             default$z <- default$sigma/5
         }
-        if (detectfn %in% c(8, 18)) {
-            default$z <- 1    ## cumulative gamma
+        if (detectfn %in% c(8, 18, 19)) {
+            default$z <- 1    ## cumulative gamma HCG, HVP
         }
         if (anypoly | anytrans) {
 

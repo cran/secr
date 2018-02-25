@@ -31,22 +31,25 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
   \item{savenew}{ logical for whether newdata should be saved }
-  \item{\dots}{ other arguments }
+  \item{\dots}{ other arguments passed to \code{\link{secr.make.newdata}} }
   \item{byclass}{ logical; if TRUE values are returned for each latent
   class in a mixture model, or class in a hybrid mixture (hcov) model}
 }
 \details{
   
 The variables in the various linear predictors are described in
-\link{secr models} and listed for the particular model in the
+\href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} and listed for the particular model in the
 \code{vars} component of \code{object}.
 
 Optional \code{newdata} should be a dataframe with a column for each of
 the variables in the model (see `vars' component of \code{object}).  If
 \code{newdata} is missing then a dataframe is constructed automatically.
+
 Default \code{newdata} are for a naive animal on the first occasion;
 numeric covariates are set to zero and factor covariates to their base
-(first) level.
+(first) level. From secr 3.1.4 the argument `all.levels' may be passed 
+to \code{secr.make.newdata}; if TRUE then the default newdata includes 
+all factor levels.
 
 \code{realnames} may be used to select a subset of parameters.
 
@@ -115,10 +118,12 @@ Lebreton, J.-D., Burnham, K. P., Clobert, J. and Anderson, D. R. (1992) Modeling
 ## and extract estimates of `real' parameters for both
 ## naive (b = 0) and previously captured (b = 1) animals
 
-predict (secrdemo.b, newdata = data.frame(b=0:1))
+predict (secrdemo.b, newdata = data.frame(b = 0:1))
 
-temp <- predict (secrdemo.b, newdata = data.frame(b=0:1), 
-    save = TRUE)
+## OR from secr 3.1.4 
+predict (secrdemo.b, all.levels = TRUE)
+
+temp <- predict (secrdemo.b, all.levels = TRUE, save = TRUE)
 attr(temp, "newdata")
 
 detectpar(secrdemo.0)

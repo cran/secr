@@ -62,8 +62,6 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         n <- nx * ny
 
         ## create rasterLayer
-##        if (!require(raster))
-##            stop ("unable to load raster package")
         layer <- raster(nrows = ny, ncols = nx, xmn = minx, xmx = maxx,
                                 ymn = miny, ymx = maxy)
 

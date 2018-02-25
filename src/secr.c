@@ -66,6 +66,7 @@
 /* 2017-04-04 hdotpoly replaces pdotpoly */
 /* 2017-06-04 speed up prwipoint for count detectors */
 /* 2017-10-29 trial of capped proximity detectors introduced: detect[s] == 8 */
+/* 2017-12-06 bug in prwipoint 3.0.0-3.1.3 for binomial counts with binomN=1 (from usage) */
 
 /*
         detect[s] may take values -
@@ -359,21 +360,20 @@ double prwipoint
 			g1 = gk[gi];
 			Tski = Tsk[s * kk + k];
 
-			if (fabs(Tski-1) > 1e-10) {                   /* not unity */ 
-			    if (Tski < 1e-10)                         /* 2014-11-10 */
-				g1 = 0;
-			    else
+                        /* significant changes here to fix bug in 3.0.0-3.1.3 
+                           for binomial counts detect = 2 and binomN = 1; 
+                           see archived versions */
+
+			if ((detect == 1) || (detect == 8)) {         /* binary or capped */
+			    if (fabs(Tski-1) > 1e-10) {               /* not unity; adjust g1 */ 
 				g1 = 1 - pow(1 - g1, Tski);
-			}
-                        /*2017-10-29  if ((detect == 1) || (count==0)) {  binary proximity    */
-			if ((detect == 1) || (detect == 8) || (count==0)) {  /* binary or capped */
+			    }
 			    if (count)                                /* Bernoulli count 0/1 */
 				result *= g1 * pI;
 			    else 
-				result *= (1 - g1 * pI);
+				result *= 1 - g1 * pI;
 			}
-			else {                                        /* count proximity */
-
+			else { /* detect == 2 */                      /* count proximity */
 			    if (binomN[s] == 0) {                     /* Poisson */
 				if (count == 0) 
 				    result *= expmin(-Tski * hk[gi] * pI);
@@ -384,10 +384,12 @@ double prwipoint
 				result *= countp (count, round(Tski), g1 * pI);
 			    }
 			    else if (binomN[s] > 1) {                 /* Binomial, specified size */
-				if (fabs(Tski-1) > 1e-10)             /* not unity */
+				if (fabs(Tski-1) > 1e-10) {           /* not unity, adjust g1 */
 				    g1 = 1 - pow(1 - g1, Tski);
+				}
 				result *= countp (count, binomN[s], g1 * pI);
 			    }
+			    else error("binomN < 1 not allowed");
 			}
 			if (result < minp) {result = minp; break;}    /* truncate */
 		    }
@@ -985,8 +987,8 @@ void pdotpoint (double *xy, int *nxy, double *traps, double *dist2,
     }
     /*-----------------------------------------------------------*/
 
-    if (*fn>18)
-        error("pdotpoint requires detectfn < 18");
+    if (*fn>19)
+        error("pdotpoint requires detectfn < 20");
     g0 = par[0];
     sigma = par[1];
     if (!((*fn == 0) || (*fn == 2) || (*fn == 4) || (*fn == 9) 
@@ -1062,8 +1064,8 @@ void hdotpoint (double *xy, int *nxy, double *traps, double *dist2,
 	squaredist(*kk, *nxy, dist2);
     }
     /*-----------------------------------------------------------*/
-    if ((*fn<14) || (*fn>18))
-        error("hdotpoint requires detectfn 14-18");
+    if ((*fn<14) || (*fn>19))
+        error("hdotpoint requires detectfn 14-19");
     lambda0 = par[0];
     sigma = par[1];
     if (!((*fn == 14) || (*fn == 16))) z = par[2];
@@ -1172,7 +1174,7 @@ void getdenom (int *fn, double *miscparm, double *mask, int *mm, double *scale,
     int checkinterval = 100;
     /*---------------------------------------------------------*/
     /* normalization 2013-11-10 */
-    if (((*fn == 4) || ((*fn >= 14) && (*fn <= 18))) && (fabs(miscparm[0]) > 0.5)) {
+    if (((*fn == 4) || ((*fn >= 14) && (*fn <= 19))) && (fabs(miscparm[0]) > 0.5)) {
 	sigma2 =  sigma * sigma;
 	for (m=0; m<*mm; m++) {
 	    im = 2 * *mm + m;
@@ -1188,6 +1190,7 @@ void getdenom (int *fn, double *miscparm, double *mask, int *mm, double *scale,
 		else if (*fn == 16) lam = exp(-d / sigma);
 		else if (*fn == 17) lam = exp(-(d-z)*(d-z) / 2 / sigma2);
 		else if (*fn == 18) lam = pgamma(d,z,sigma/z,0,0);
+		else if (*fn == 19) lam = exp(- pow(d /sigma , z));
 		else error("unrecognised fn");
 		mask[im] += lam * expzj;
 	    }

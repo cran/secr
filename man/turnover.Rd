@@ -1,4 +1,4 @@
-\name{sim.popn details}
+\name{turnover}
 \alias{turnover}
 
 \title{ Specifying a Dynamic Population }
@@ -19,6 +19,7 @@ Component \tab Description \tab Default \cr
 \code{survmodel} \tab probability model for number of survivors \tab "binomial" \cr
 \code{lambda} \tab finite rate of increase \eqn{\lambda = N_{t+1} / N_t} \tab none \cr
 \code{recrmodel} \tab probability model for number of recruits \tab "poisson" \cr
+\code{superN} \tab optional superpopulation size for multinomial recruitment model\tab see below \cr
 \code{sigma.m} \tab spatial scale of movement kernel \tab 0 \cr
 \code{wrap} \tab logical: should toroidal wrapping be applied? \tab TRUE \cr
 }
@@ -33,22 +34,29 @@ Survival is usually thought of as a Bernoulli process (outcome 0 or 1 for each i
 
 \section{Population growth and recruitment}{
 
-Per capita recruitment (\eqn{\gamma}) is the difference between lambda and phi (\eqn{\gamma = \lambda - \phi}), which must be non-negative (phi > lambda causes an error). The number of recruits B is a random variable whose probability distribution is controlled by details$recrmodel:
+Per capita recruitment (\eqn{f}) is the difference between lambda and phi (\eqn{f = \lambda - \phi}), which must be non-negative (phi > lambda causes an error). The number of recruits B is a random variable whose probability distribution is controlled by details$recrmodel:
 \tabular{ll}{
 Value \tab Probability model \cr
 "constantN" \tab Exact replacement of animals that die (B = \eqn{N_t - S})\cr
-"binomial" \tab Binomial number of recruits (B ~ bin(\eqn{N_t, \gamma}) \cr
-"poisson" \tab Poisson number of recruits (B ~ pois(\eqn{\gamma N_t})) \cr
+"binomial" \tab Binomial number of recruits (B ~ bin(\eqn{N_t, f}) \cr
+"poisson" \tab Poisson number of recruits (B ~ pois(\eqn{f N_t})) \cr
 "discrete" \tab Minimum-variance number of recruits (see Survival) \cr
+"multinomial" \tab The POPAN model, conditioning on superpopulation size (e.g., Schwarz and Arnason 1996)) \cr
 }
 
-In the case of binomial recruitment there is a maximum of one recruit per existing individual, so lambda <= (phi+1).
+In the case of binomial recruitment there is a maximum of one recruit per existing individual, so lambda <= (phi+1). Multinomial recruitment requires a value for the superpopulation size. This may be provided as the details component "superN". If not specified directly, a value is inferred by projecting a trial initial (simulated) population using the specified phi and lambda.
 
 }
 
 \section{Movement}{
 
-Individuals may shift their home range centre between sessions. Movement probability is governed by a circular bivariate normal kernel with scale sigma.m. If movement takes an animal across the boundary of the arena then by default it is toroidally wrapped i.e. re-joins the population on the opposing edge. No movement is applied when sigma.m = 0.
+Individuals may shift their home range centre between sessions. Movement probability is governed by a circular bivariate normal (Gaussian) kernel with scale sigma.m. If movement takes an animal across the boundary of the arena in \code{sim.popn} then by default it is toroidally wrapped i.e. re-joins the population on the opposing edge. The alternative allows centres outside the buffered area.
+
+sigma.m is also used to indicate two special cases:
+
+sigma.m = 0 indicates no change in home range centres between sessions.
+
+sigma.m < 0 causes a new home range centre for each animal to be drawn at random from within the buffered area.
 
 }
 

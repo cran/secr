@@ -242,7 +242,6 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
         
         
         ## mainline
-        
         if (ncores > 1) {
             clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
             clusterEvalQ(clust, requireNamespace('secr'))

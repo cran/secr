@@ -49,6 +49,7 @@
 ## 2017-10-18 detectorcode 8 ('capped')
 ## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
 ## 2017-11-16 secr.lpredictor in utility.R: contrasts argument
+## 2018-02-14 allzero moved from addtelemetry.R
 #######################################################################################
 
 # Global variables in namespace
@@ -57,14 +58,14 @@
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
-#.localstuff$packageType <- ' pre-release' 
-.localstuff$packageType <- '' 
+#.localstuff$packageType <- ' pre-release'
+.localstuff$packageType <- ''
 .localstuff$validdetectors <- c('single','multi','proximity','count',
     'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
                                 'unmarked','presence','telemetry', 'capped')
 .localstuff$simpledetectors <- c('single','multi','proximity','count', 'capped')
 .localstuff$individualdetectors <- c('single','multi','proximity','count',
-    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect', 
+    'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
                                      'telemetry', 'capped')
 .localstuff$pointdetectors <- c('single','multi','proximity','count',
     'signal', 'signalnoise', 'unmarked','presence','capped')
@@ -93,10 +94,12 @@
       'hazard hazard rate',
       'hazard exponential',
       'hazard annular normal',
-      'hazard cumulative gamma')
+      'hazard cumulative gamma',
+      'hazard variable power')
 
 .localstuff$DFN <- c('HN', 'HR', 'EX', 'CHN', 'UN', 'WEX', 'ANN', 'CLN', 'CG',
-                     'BSS', 'SS', 'SSS', 'SN', 'SNS', 'HHN', 'HHR', 'HEX', 'HAN', 'HCG')
+                     'BSS', 'SS', 'SSS', 'SN', 'SNS',
+                     'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP')
 
 detectionfunctionname <- function (fn) {
     .localstuff$detectionfunctions[fn+1]
@@ -131,16 +134,16 @@ parnames <- function (detectfn) {
         c('lambda0','sigma'),
         c('lambda0','sigma','w'),
         c('lambda0','sigma','z'),
-        ,
+        c('lambda0','sigma','z'),
         c('g0','sigma')    ## 20
     )
 }
 getdfn <- function (detectfn) {
     switch (detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS,
-                       SN, SNS, HHN, HHR, HEX, HAN, HCG)
+                       SN, SNS, HHN, HHR, HEX, HAN, HCG, HVP)
 }
 
-valid.detectfn <- function (detectfn, valid = c(0:3,5:18)) {
+valid.detectfn <- function (detectfn, valid = c(0:3,5:19)) {
 # exclude 4 uniform: too numerically flakey
     if (is.null(detectfn))
         stop ("requires 'detectfn'")
@@ -210,7 +213,8 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
         c('lambda0','sigma','z'),  # 15 hazard hazard rate
         c('lambda0','sigma'),      # 16 hazard exponential
         c('lambda0','sigma','w'),  # 17
-        c('lambda0','sigma','z'))  # 18
+        c('lambda0','sigma','z'),  # 18
+        c('lambda0','sigma','z'))  # 19
 
     if (details$param %in% c(2,6))
         pnames[1] <- 'esa'
@@ -240,7 +244,7 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
 valid.userdist <- function (userdist, detector, xy1, xy2, mask, sessnum) {
     if (is.null(userdist)) {
         ## default to Euclidean distance
-        result <- edist(xy1, xy2) 
+        result <- edist(xy1, xy2)
     }
     else {
         if (any(detector %in% .localstuff$polydetectors)) {
@@ -258,7 +262,7 @@ valid.userdist <- function (userdist, detector, xy1, xy2, mask, sessnum) {
             if (is.character(userdist)) {
                 userdist <- get(userdist, pos=-1)
             }
-                
+
             if (is.list(userdist) & !is.data.frame(userdist)) {
                 if (missing(sessnum))
                     stop("This use does not yet allow for session-specific userdist")
@@ -312,38 +316,42 @@ new.param <- function (details, model, CL) {
 detectorcode <- function (object, MLonly = TRUE, noccasions = NULL) {
     ## numeric detector code from a traps object
     detcode <- sapply(detector(object), switch,
-        single = -1,
-        multi = 0,
-        proximity = 1,
-        count = 2,
-        polygonX = 3,
-        transectX = 4,
-        signal = 5,
-        polygon = 6,
-        transect = 7,
-        # capped = 1,         # treat capped (8) as binary proximity (1) for now 2017-10-25
-        capped = 8,
-        unmarked = 10,
-        presence = 11,
+        single      = -1,
+        multi       = 0,
+        proximity   = 1,
+        count       = 2,
+        polygonX    = 3,
+        transectX   = 4,
+        signal      = 5,
+        polygon     = 6,
+        transect    = 7,
+        capped      = 8,
+        unmarked    = 10,
+        presence    = 11,
         signalnoise = 12,
-        telemetry = 13,
+        telemetry   = 13,
         -2)
     if (MLonly) {
         detcode <- ifelse (detcode==-1, rep(0,length(detcode)), detcode)
         if (any(detcode<0))
             stop ("Unrecognised detector type")
     }
-    
+
     if (!is.null(noccasions) & (length(detcode)==1))
         detcode <- rep(detcode, noccasions)
     detcode
 }
 
 expanddet <- function(CH) {
-    det <- detector(traps(CH))
-    if (length(det)<ncol(CH))
-        rep(det[1], ncol(CH))
-    else det
+    trps <- traps(CH)
+    if (is.null(trps))
+        return ('nonspatial')
+    else {
+        det <- detector(trps)
+        if (length(det)<ncol(CH))
+            rep(det[1], ncol(CH))
+        else det
+    }
 }
 
 ## 2013-06-16
@@ -361,7 +369,9 @@ discreteN <- function (n, N) {
 }
 
 ndetector <- function (traps) {
-    if (all(detector(traps) %in% .localstuff$polydetectors))
+    if (is.null(traps))
+        return(1)
+    else if (all(detector(traps) %in% .localstuff$polydetectors))
         length(levels(polyID(traps)))
     else
         nrow(traps)
@@ -407,7 +417,7 @@ padarray <- function (x, dims) {
     temp <- array(dim=dims)
     dimx <- dim(x)
     # condition added 2016-10-01
-    if (all(dimx>0)) {   
+    if (all(dimx>0)) {
         if (length(dimx)<2 | length(dimx)>3)
             stop ("invalid array")
         if (length(dimx)>2) temp[1:dimx[1], 1:dimx[2], 1:dimx[3]] <- x
@@ -690,7 +700,7 @@ leadingzero <- function (x) {
     w <- max(nchar(xc))
     n0 <- function(n) paste(rep('0',n), collapse='')
     paste(sapply(w-nchar(xc), n0), x, sep='')
-    
+
     ## or, 2016-01-15, 2016-02-20 BUT DOESN'T HANDLE NON-INTEGER 2016-05-10
     #     if (is.character(x)) x <- as.numeric(x)
     #     sprintf(paste("%0", w, "d", sep = ""), x)
@@ -793,11 +803,15 @@ HEX <- function (r, pars, cutval) {
 }
 HAN <- function (r, pars, cutval) {
     lambda0 <- pars[1]; sigma <- pars[2]; w <- pars[3]
-    lambda0 * exp (-(r-w)^2 / 2 / sigma^2)
+    1 - exp(-lambda0 * exp (-(r-w)^2 / 2 / sigma^2))
 }
 HCG <- function (r, pars, cutval) {
     lambda0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
     lambda0 * pgamma(r, shape=z, scale=sigma/z, lower.tail = FALSE)
+}
+HVP <- function (r, pars, cutval) {
+    lambda0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
+    1 - exp(-lambda0 * exp(-(r/sigma)^z))
 }
 
 ############################################################################################
@@ -942,9 +956,6 @@ se.untransform <- function (beta, sebeta, link) {
 
 mlogit.untransform <- function (beta, latentmodel) {
     if (!missing(latentmodel)) {
-        ## this old code disordered the returned values; 2013-10-28
-        ## tmp <- split(beta, latentmodel)
-        ## unlist(lapply(tmp, mlogit.untransform))
         for (i in unique(latentmodel))
             beta[latentmodel==i] <- mlogit.untransform(beta[latentmodel==i])
         beta
@@ -953,8 +964,7 @@ mlogit.untransform <- function (beta, latentmodel) {
         ## beta should include values for all classes (mixture components)
         nmix <- length(beta)
         if (sum(is.na(beta)) != 1) {
-            ## replaced 2013-06-06
-            ## stop ("require NA for a single reference class in mlogit.untransform")
+            ## require NA for a single reference class
             rep(NA, length(beta))
         }
         else {
@@ -969,8 +979,6 @@ mlogit.untransform <- function (beta, latentmodel) {
 }
 
 clean.mlogit <- function(x) {
-## bad line removed 2013-05-09
-##    x <- x/sum(x)
     ## 2014-08-19 for robustness...
     if (is.na(x[2])) x[2] <- 1-x[1]
     x[1] <- NA   ## assumed reference class
@@ -1066,7 +1074,7 @@ group.levels <- function (capthist, groups, sep='.') {
                       "from covariates")
             temp <- as.data.frame(covariates(capthist)[,groups])
             # omit null combinations, sort as with default of factor levels
-            sort(levels(interaction(temp, drop=T, sep=sep)))  
+            sort(levels(interaction(temp, drop=T, sep=sep)))
         }
     }
 }
@@ -1272,17 +1280,17 @@ xy2CH <- function (CH, inflation = 1e-8) {
         n <- length(xylist)
         neach <- sapply(xylist, nrow)
         allxy <- do.call(rbind, xylist)
-        
+
         trps <-  allxy[chull(allxy),]
         trps <- rbind(trps, trps[1,,drop=F])
         trps <- inflate(trps, 1 + inflation)  ## see also telemetry.R
-        
+
         trps <- as.data.frame(trps)
         dimnames(trps) <- list(1:nrow(trps), c('x','y'))
         class(trps) <- c("traps","data.frame")
         detector(trps) <- "polygon"
         polyID(trps) <- factor(rep(1,nrow(trps)))
-        
+
         rown <- rep(names(xylist), neach)
         newCH <- array(neach, dim = c(n, 1, 1))
         attr(newCH, "detectedXY") <- allxy
@@ -1453,7 +1461,7 @@ general.model.matrix <- function (formula, data, gamsmth = NULL, contrasts = NUL
     ##  'term.labels')[1]), env=possummask))
 
     ## 2014-08-24, 2014-09-09, 2017-11-30
-   
+
     dots <- list(...)
 
     if (any(polys(formula)))
@@ -1480,12 +1488,72 @@ general.model.matrix <- function (formula, data, gamsmth = NULL, contrasts = NUL
 }
 ###############################################################################
 
+## shifted from secrloglik 2016-10-16
+makerealparameters <- function (design, beta, parindx, link, fixed) {
+    modelfn <- function(i) {
+        ## linear predictor for real parameter i
+        Yp <- design$designMatrices[[i]] %*% beta[parindx[[i]]]
+        if (names(link)[i] == 'pmix') {
+            ## 2013-04-14 index of class groups (pmix sum to 1.0 within latentmodel)
+            cols <- dimnames(design$designMatrices[[i]])[[2]]
+            h2 <- grep('.h2', cols, fixed=T)
+            h3 <- grep('.h3', cols, fixed=T)
+            h2c <- grep(':h2', cols, fixed=T)
+            h3c <- grep(':h3', cols, fixed=T)
+            h.cols <- c(h2,h3,h2c,h3c)
+            tmp <- design$designMatrices[[i]][,-h.cols, drop = FALSE]
+            tmph <- design$designMatrices[[i]][,h.cols, drop = FALSE]
+            ## 2018-02-23 why as.numeric()? 
+            latentmodel <- as.numeric(factor(apply(tmp,1,paste, collapse='')))
+            refclass <- apply(tmph,1,sum) == 0
+            Yp[refclass] <- NA
+            Yp <- mlogit.untransform(Yp, latentmodel)
+            Yp[design$parameterTable[,i]]
+        }
+        else {
+            Yp <- untransform(Yp, link[[i]])
+            Yp[design$parameterTable[,i]]   ## replicate as required
+        }
+    }
+    ## construct matrix of detection parameters
+    nrealpar  <- length(design$designMatrices)
+    parindx$D <- NULL ## detection parameters only
+    link$D    <- NULL ## detection parameters only
+    parindx$noneuc <- NULL ## detection parameters only
+    link$noneuc    <- NULL ## detection parameters only
+    detectionparameters <- names(link)
+    fixed.dp <- fixed[detectionparameters[detectionparameters %in% names(fixed)]]
+    
+    if (length(fixed.dp)>0)
+        for (a in names(fixed.dp))  ## bug fixed by adding this line 2011-09-28
+            link[[a]] <- NULL
+    if (length(link) != nrealpar)
+        stop ("number of links does not match design matrices")
+    
+    if (nrealpar == 0) {
+        return(matrix(unlist(fixed.dp),nrow = 1))
+    }
+    
+    temp <- sapply (1:nrealpar, modelfn)
+    if (nrow(design$parameterTable)==1) temp <- t(temp)
+    nrw <- nrow(temp)
+    ## make new matrix and insert columns in right place
+    temp2 <- as.data.frame(matrix(nrow = nrw, ncol = length(detectionparameters)))
+    names(temp2) <- detectionparameters
+    temp2[ , names(design$designMatrices)] <- temp          ## modelled
+    if (!is.null(fixed.dp) & length(fixed.dp)>0)
+        temp2[ , names(fixed.dp)] <- sapply(fixed.dp, rep, nrw)    ## fixed
+    as.matrix(temp2)
+    
+}
+############################################################################################
+
 secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
                              smoothsetup = NULL, contrasts = NULL) {
     ## form linear predictor for a single 'real' parameter
     ## smoothsetup should be provided whenever newdata differs from
     ## data used to fit model and the model includes smooths from gam
-    
+
     vars <- all.vars(formula)
     ## improved message 2015-01-29
     OK <- vars %in% names(newdata)
@@ -1503,46 +1571,47 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     if (nrow(mat) < nrow(newdata))
         warning ("missing values in predictors?")
 
-    ## drop pmix beta0 column from design matrix (always zero)
     nmix <- 1
-    
     if (field=='pmix') {
+        ## drop pmix beta0 column from design matrix (always zero)
         mat <- mat[,-1,drop=FALSE]
         if ('h2' %in% names(newdata)) nmix <- 2
         if ('h3' %in% names(newdata)) nmix <- 3
+        mixfield <- c('h2','h3')[nmix-1]
     }
-    lpred[,1] <- mat %*% beta[indx]
-
-    ## 2015-09-30 new code for pmix based on old fixpmix function in utility.R
-    ## deals with mlogit link always used by pmix
-    if ((nmix > 1) & (field == 'pmix')) {
-        ## partial check 2016-03-31 - needs refinement
-        if (((nrow(lpred)) %% nmix) != 0)
-            stop ("all mixture levels must appear in newdata")
-        ## 2016-08-23 this makes unwarranted assumption about ordering of h2,h3 levels
-        ## see email of Ben Stevenson
-        temp <- matrix(lpred[,1], ncol = nmix)
-        if (nmix==2) temp[,newdata[,'h2']] <- lpred[,1]
-        if (nmix==3) temp[,newdata[,'h3']] <- lpred[,1]
-        temp2 <- apply(temp, 1, clean.mlogit)
-        lpred[,1] <- as.numeric(t(temp2))
+    
+    ###############################
+    Yp <- mat %*% beta[indx]
+    ###############################
+    
+    ## 2018-02-23 another attempt to get this right, following makerealparameters
+    
+    ## A latent model comprises one row for each latent class.
+    ## Back transformation of pmix in mlogit.untransform() requires all rows of 
+    ## each latent model. That function splits vector Yp by latent model.
+    
+    if (field == 'pmix') {
+        nonh <- newdata[, names(newdata) != mixfield, drop = FALSE]
+        latentmodel <- factor(apply(nonh, 1, paste, collapse = ''))
+        refclass <- as.numeric(newdata[, mixfield]) == 1
+        Yp[refclass] <- NA
+        Yp <- mlogit.untransform(Yp, latentmodel)
+        Yp <- logit(Yp)  # return to logit scale for later untransform!
         if (nmix==2) {
             h2.1 <- as.numeric(newdata$h2)==1
             h2.2 <- as.numeric(newdata$h2)==2
-            lpred[h2.1,2] <- lpred[h2.2,2]
         }
-        else
-            lpred[,2] <- rep(NA, nrow(lpred))   ## don't know how
     }
-    ## 2015-09-30 end of new code
+    lpred[,1] <- Yp
+    ## 2018-02-23 end of new code
 
     if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
     else {
         vcv <- beta.vcv[indx,indx, drop = FALSE]
-        
+
         ## 2017-11-16
         vcv[is.na(vcv)] <- 0
-        
+
         nrw <- nrow(mat)
         vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
             mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
@@ -1560,7 +1629,6 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
         return(temp)
     }
 }
-
 ############################################################################################
 
 ## 2014-10-06
@@ -1619,8 +1687,8 @@ updatemodel <- function (model, detectfn, detectfns, oldvar, newvar, warn = FALS
         for (i in 1:length(oldvar)) {
             if (oldvar[i] %in% names(model)) {
                 names(model)[names(model) == oldvar[i]] <- newvar[i]
-                if (warn) 
-                    warning ("replacing ", oldvar[i], " by ", newvar[i], 
+                if (warn)
+                    warning ("replacing ", oldvar[i], " by ", newvar[i],
                              " in model for detectfn ", detectfn)
             }
         }
@@ -1788,10 +1856,10 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum, control) {
         Tval <- attr(capthist,T)
         tmp <- if ((control[[T]]=='ignore') | is.null(Tval))
             NULL
-        else 
+        else
             if (control[[T]]=='sum')
                 sum(Tval)
-        else 
+        else
             if (control[[T]]=='bydetector') {
                 if (is.matrix(Tval)) {
                     apply(Tval, 1, sum)
@@ -1815,7 +1883,7 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum, control) {
     defaultcontrol <- list(Tu='as.is', Tm='as.is', Tn='ignore')
     # possible control values
     #   ignore
-    #   as.is 
+    #   as.is
     #   bydetector
     #   sum
     control <- replacedefaults(defaultcontrol, control)
@@ -1828,26 +1896,26 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum, control) {
     else {
         allsighting <- !any(markocc>0)
         anysighting <- any(markocc<1)
-        
+
         if (CL) control$Tu <- 'ignore'
         if (!any(markocc==0)) control$Tm <- 'ignore'
-        
-        
-        ## risk of double counting: 
+
+
+        ## risk of double counting:
         ## consider Tn only when markocc[s] = -1
         ## there should be no Tu on those occasions
         if (any(markocc<0)) control$Tn <- 'as.is'
-        
+
         if (!is.null(fixed$pID)) {
             if (fixed$pID == 1) control$Tm <- 'ignore'
         }
         if(is.null(fixed$pID) & control$Tm == 'ignore')
             warning("Set fixed = list(pID=1) if no sightings of unidentified marked animals Tm")
-            
+
         Tu <- getsight('Tu')
         Tm <- getsight('Tm')
         Tn <- getsight('Tn')
-        
+
         ## special case: unmarked or presence/absence detector
         detect <- detector(traps(capthist))
         if (any(detect %in% c('unmarked','markocc'))) {
@@ -1887,8 +1955,8 @@ markresight <- function (capthist, mask, CL, fixed, chat, sessnum, control) {
         }
     }
 
-    list(markocc = markocc, Tu = Tu, Tm = Tm, Tn = Tn, 
-         anysighting = anysighting, allsighting = allsighting, 
+    list(markocc = markocc, Tu = Tu, Tm = Tm, Tn = Tn,
+         anysighting = anysighting, allsighting = allsighting,
          chat = chat, pi.mask = pi.mask)
 }
 
@@ -1947,7 +2015,7 @@ addzeroCH <- function (CH, nzero, cov = NULL) {
 expandbinomN <- function (binomN, detectorcodes) {
     # assumes detectorcodes is a vector of length = noccasions
     binomN <- ifelse (detectorcodes %in% c(2,6,7), binomN, 1)
-    if (any(is.na(binomN))) stop ("NA value in binomN") 
+    if (any(is.na(binomN))) stop ("NA value in binomN")
     binomN
 }
 ############################################################################################
@@ -1963,7 +2031,7 @@ check3D <- function (object) {
             warning("secr 3.0 requires 3-D capthist; using updateCH() to convert")
             updateCH(object)
         }
-        else { 
+        else {
             object
         }
     }
@@ -1974,65 +2042,6 @@ updateCH <- function(object) {
     if (!inherits(object, 'capthist'))
         stop ("requires capthist object")
     reduce(object, dropunused = FALSE)
-}
-############################################################################################
-
-## shifted from secrloglik 2016-10-16
-makerealparameters <- function (design, beta, parindx, link, fixed) {
-    modelfn <- function(i) {
-        ## linear predictor for real parameter i
-        Yp <- design$designMatrices[[i]] %*% beta[parindx[[i]]]
-        if (names(link)[i] == 'pmix') {
-            ## 2013-04-14 index of class groups (pmix sum to 1.0 within latentmodel)
-            cols <- dimnames(design$designMatrices[[i]])[[2]]
-            h2 <- grep('.h2', cols, fixed=T)
-            h3 <- grep('.h3', cols, fixed=T)
-            h2c <- grep(':h2', cols, fixed=T)
-            h3c <- grep(':h3', cols, fixed=T)
-            h.cols <- c(h2,h3,h2c,h3c)
-            tmp <- design$designMatrices[[i]][,-h.cols, drop = FALSE]
-            tmph <- design$designMatrices[[i]][,h.cols, drop = FALSE]
-            latentmodel <- as.numeric(factor(apply(tmp,1,paste, collapse='')))
-            refclass <- apply(tmph,1,sum) == 0
-            Yp[refclass] <- NA
-            Yp <- mlogit.untransform(Yp, latentmodel)
-            Yp[design$parameterTable[,i]]
-        }
-        else {
-            Yp <- untransform(Yp, link[[i]])
-            Yp[design$parameterTable[,i]]   ## replicate as required
-        }
-    }
-    ## construct matrix of detection parameters
-    nrealpar  <- length(design$designMatrices)
-    parindx$D <- NULL ## detection parameters only
-    link$D    <- NULL ## detection parameters only
-    parindx$noneuc <- NULL ## detection parameters only
-    link$noneuc    <- NULL ## detection parameters only
-    detectionparameters <- names(link)
-    fixed.dp <- fixed[detectionparameters[detectionparameters %in% names(fixed)]]
-    
-    if (length(fixed.dp)>0)
-        for (a in names(fixed.dp))  ## bug fixed by adding this line 2011-09-28
-            link[[a]] <- NULL
-    if (length(link) != nrealpar)
-        stop ("number of links does not match design matrices")
-    
-    if (nrealpar == 0) {
-        return(matrix(unlist(fixed.dp),nrow = 1))
-    }
-    
-    temp <- sapply (1:nrealpar, modelfn)
-    if (nrow(design$parameterTable)==1) temp <- t(temp)
-    nrw <- nrow(temp)
-    ## make new matrix and insert columns in right place
-    temp2 <- as.data.frame(matrix(nrow = nrw, ncol = length(detectionparameters)))
-    names(temp2) <- detectionparameters
-    temp2[ , names(design$designMatrices)] <- temp          ## modelled
-    if (!is.null(fixed.dp) & length(fixed.dp)>0)
-        temp2[ , names(fixed.dp)] <- sapply(fixed.dp, rep, nrw)    ## fixed
-    as.matrix(temp2)
-    
 }
 ############################################################################################
 
@@ -2078,3 +2087,17 @@ shareFactorLevels <- function (object, columns = NULL) {
     }
     object
 }
+############################################################################################
+
+allzero <- function (object) {
+    if (!inherits(object, 'capthist'))
+        stop ("requires 'capthist' object")
+    if (ms(object)) {
+        lapply(object, allzero)
+    }
+    else {
+        telemocc <- detector(traps(object))=='telemetry'
+        apply(object[,!telemocc,,drop=FALSE],1,sum)==0
+    }
+}
+############################################################################################

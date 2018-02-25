@@ -109,6 +109,9 @@ A special use of the \code{by} argument is to combine all occasions into
 one for each session in a multi-session dataset. This is done by setting
 \code{by = "all"}.
 
+\code{reduce.capthist} may be used with non-spatial capthist objects 
+(NULL 'traps' attribute) by setting \code{verify = FALSE}.
+
 }
 
 \value{
@@ -188,6 +191,40 @@ newtrap <- attr(new, "newtrap")
 plot(old, border = 10)
 plot(new, add = TRUE, detpar = list(pch = 16), label = TRUE)
 segments (new$x[newtrap], new$y[newtrap], old$x, old$y)
+
+\dontrun{
+
+# compare binary proximity with collapsed binomial count
+# expect TRUE for each year
+for (y in 1:5) {
+    CHA <- abs(ovenCHp[[y]])   ## abs() to ignore one death
+    usage(traps(CHA)) <- matrix(1, 44, ncol(CHA))
+    CHB <- reduce(CHA, by = 'all', output = 'count')
+    # summary(CHA, terse = TRUE)
+    # summary(CHB, terse = TRUE)
+    fitA <- secr.fit(CHA, buffer = 300, trace = FALSE)
+    fitB <- secr.fit(CHB, buffer = 300, trace = FALSE, binomN = 1, biasLimit = NA)
+    A <- predict(fitA)[,-1] 
+    B <- predict(fitB)[,-1]
+    cat(y, ' ', all(abs(A-B)/A < 1e-5), '\n')
+}
+## multi-session fit
+## expect TRUE overall
+CHa <- ovenCHp
+for (y in 1:5) {
+    usage(traps(CHa[[y]])) <- matrix(1, 44, ncol(CHa[[y]]))
+    CHa[[y]][,,] <- abs(CHa[[y]][,,])
+}
+CHb <- reduce(CHa, by = 'all', output = 'count')
+summary(CHa, terse = TRUE)
+summary(CHb, terse = TRUE)
+fita <- secr.fit(CHa, buffer = 300, trace = FALSE)
+fitb <- secr.fit(CHb, buffer = 300, trace = FALSE, binomN = 1, biasLimit = NA)
+A <- predict(fita)[[1]][,-1] 
+B <- predict(fitb)[[1]][,-1]
+all(abs(A-B)/A < 1e-5)
+
+}
 
 }
 

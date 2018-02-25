@@ -6,6 +6,7 @@
 ## 2017-11-01 BUG multi and single
 ## 2017-12-02 BUG recapfactor; 
 ##            lastcapt argument for trappingxxx functions
+## 2018-02-23 BUG mixed detector types simfunctionname 
 ###############################################################################
 
 expands <- function (x, s, default = 1) {
@@ -135,7 +136,7 @@ sim.capthist <- function (
 
         #####################################################################
         ## session-specific detection 2015-04-01
-        if (detectfn %in% c(0:7, 14:18)) {
+        if (detectfn %in% c(0:7, 14:19)) {
             df0name <- if (detectfn %in% (0:7)) 'g0' else 'lambda0'
             dfzname <- if (detectfn %in% (5:6)) 'x' else 'z'
             df0 <- expands(detectpar[[df0name]], nsessions, default = NULL)
@@ -168,7 +169,7 @@ sim.capthist <- function (
             trps <- if (ms(traps)) traps[[t]] else traps
 
             ## session-specific detection parameters
-            if (detectfn %in% c(0:7, 14:18)) {
+            if (detectfn %in% c(0:7, 14:19)) {
                 detectpar[[df0name]] <- df0[t]
                 detectpar[['sigma']] <- sigma[t]
                 detectpar[[dfzname]] <- dfz[t]
@@ -273,8 +274,9 @@ sim.capthist <- function (
         ##   14  hazard halfnormal
         ##   15  hazard hazard-rate
         ##   16  hazard exponential
-        ##   17  annular normal
-        ##   18  cumulative gamma??
+        ##   17  hazard annular normal
+        ##   18  hazard cumulative gamma
+        ##   19  hazard variable power
 
         ## 2012-12-23
         if (!is.null(usage(traps))) {
@@ -295,7 +297,7 @@ sim.capthist <- function (
             tx = 'identity')
         if (detectfn %in% c(10,11))  defaults <- list(beta0 = 90, beta1=-0.2,
             sdS = 2, cutval = 60, sdM = 0, tx = 'identity')
-        if (detectfn %in% c(14:16))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 1)
+        if (detectfn %in% c(14:16,19))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 1)
         if (detectfn %in% c(17))  defaults <- list(lambda0 = 0.2, sigma = 25, w =10)
         if (detectfn %in% c(18))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 5)
 
@@ -315,7 +317,7 @@ sim.capthist <- function (
         
         detectpar <- replacedefaults(defaults, detectpar)
 
-        if (detectfn %in% c(0:7, 14:18)) {
+        if (detectfn %in% c(0:7, 14:19)) {
             if (detectfn %in% (0:7)) {
                 g0    <- expandsk(detectpar$g0, s = noccasions, k = ndetector(traps))
                 if (any(detector(traps) %in% .localstuff$countdetectors)) {
@@ -368,7 +370,7 @@ sim.capthist <- function (
         }
 
         # Allow general learned response for traps
-        if (detector(traps) %in% c('single','multi')) 
+        if (any(detector(traps) %in% c('single','multi'))) 
         {
             rfl <- length(detectpar$recapfactor)
             if (!(rfl %in% 1:2))
@@ -421,6 +423,8 @@ sim.capthist <- function (
         animals <- as.matrix(popn)
         k <- nrow(traps)
         dettype <- detectorcode(traps, noccasions = noccasions)
+        ## 2018-02-23 bug fix
+        ## simfunctionname <- paste0('trapping', detector(traps)[1])
         simfunctionname <- paste0('trapping', detector(traps))
         if (length(simfunctionname)==1 & noccasions>1)
             simfunctionname <- rep(simfunctionname, noccasions)
@@ -451,8 +455,7 @@ sim.capthist <- function (
             value = integer(noccasions*k*N),    # 18  
             resultcode = integer(1)             # 19
         )
-
-# 'count' includes presence
+        ## 'count' includes presence
         ##-----------------------------------------------------------------
         ## remember: output from trappingxxxx is sorted so captured animals
         ## precede all others
@@ -826,7 +829,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     K <- ndetector(traps)
     allsighting <- !any(markocc>0)
     unres <- markocc == -1
-    proximityocc <- detector(traps) %in% 'proximity'
+    proximityocc <- any(detector(traps) %in% 'proximity')
 
     dettype <- detectorcode(traps, MLonly = FALSE, noccasions = S)
     if (!all(dettype[markocc<1] %in% c(1,2,6,7)))

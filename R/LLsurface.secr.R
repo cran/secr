@@ -27,7 +27,7 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
                 if (any(names(centre) != object$betanames))
                     stop ("names of 'centre' do not match 'object$betanames'")
         }
-        if (object$detectfn %in% 14:18 & "g0" %in% betapar) {
+        if (object$detectfn %in% 14:19 & "g0" %in% betapar) {
             betapar[betapar=="g0"] <- "lambda0"
             warning ("substituting lambda0 for g0 to match detectfn")
         }
@@ -108,4 +108,4 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
 }
 
 ## data(secrdemo)
-## LLsurface.secr(secrdemo.0)
+## LLsurface(secrdemo.0)

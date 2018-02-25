@@ -189,7 +189,6 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                 meshcol, ppoly = ppoly, polycol = polycol, legend = legend, ...)
     }
     else {
-     
         buff <- c(-border,+border)
         if (!add) {
             eqscplot (x$x, x$y,
@@ -260,9 +259,14 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         if (legend & !is.null(covariate)) {
             legendtext <- levels(covfactor)[1:ncolour]
             if (dots) {
-                args <- formals(legend)
-                newargs <- list(x = 'right', legend = rev(legendtext), pch = 16,
-                       col = rev(col[1:ncolour]), title = covariate)
+                args <- formals(graphics::legend)    # untidy 2017-12-15 but graphics::legend fails??
+                args$merge <- FALSE    # to dodge do.lines
+                args$pt.cex <- args$cex
+                args$pt.lwd <- args$lwd
+                args$title.col <- args$text.col
+                newargs <- list(x = 'right', legend = rev(legendtext), pch = NA,
+                       col = rev(col[1:ncolour]), title = covariate,
+                       fill = rev(col[1:ncolour]))
                 args <- replace(args, names(newargs), newargs)
                 args <- replace(args, names(dotsargs), dotsargs)           
                 if ('xy' %in% names(allargs))
@@ -284,7 +288,6 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                 do.call(strip.legend, args)
             }
         }
-
         if (!is.null(covariate))
             invisible(levels(covfactor)[1:ncolour])
     }

@@ -1,6 +1,7 @@
 \name{secr.design.MS}
 \alias{secr.design.MS}
 \alias{make.lookup}
+\alias{insertdim}
 
 \title{ Construct Detection Model Design Matrices and Lookups }
 \description{
@@ -12,6 +13,9 @@ secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL,
     keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, contrasts = NULL, ...)
 
 make.lookup (tempmat)
+
+insertdim (x, dimx, dims) 
+
 }
 \arguments{
   \item{capthist}{ \code{capthist} object }
@@ -39,6 +43,11 @@ make.lookup (tempmat)
   \item{\dots}{ other arguments passed to the \R function
     \code{\link{model.matrix}} }
   \item{tempmat}{matrix for which row lookup required}
+  
+  \item{x}{vector of character, numeric or factor values }
+  \item{dimx}{vector of notional dimensions for x to fill in target array}
+  \item{dims}{vector of notional dimensions of target array}
+  
 }
 \details{
 
@@ -94,6 +103,9 @@ data argument of \code{model.matrix}).
   \item{lookup}{ matrix of unique rows}
   \item{index}{ indices in lookup of the original rows}
   
+  For \code{insertdim}, a vector with length prod(dims) containing the 
+  values replicated according to dimx.
+  
 }
 
 \examples{
@@ -112,6 +124,10 @@ temp <- secr.design.MS (captdata, models = list(g0 = ~bk),
     keep.dframe = TRUE)
 a1 <- temp$dframe$animal == 1 &  temp$dframe$detector \%in\% 8:10
 temp$dframe[a1,]
+
+## place values 1:6 in different dimensions
+insertdim(1:6, 1:2, c(2,3,6))
+insertdim(1:6, 3, c(2,3,6))
 
 }
 

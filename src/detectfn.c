@@ -64,7 +64,7 @@ fn 15 hazard hazard rate           zhhr       zhhrr       ghhr      ghhrr      g
 fn 16 hazard exponential           zhex       zhexr       ghex      ghexr      ghexL
 fn 17 hazard annular normal        zhan       zhanr       ghan      ghanr      ghanL
 fn 18 hazard cumulative gamma      zhcg       zhcgr       ghcg      ghcgr      ghcgL
-
+fn 19 hazard variable power        zhvp etc.
 */
 
 // Also
@@ -177,6 +177,8 @@ fnptr gethfn (int fn)
         return(han);
     else if (fn == 18)
         return(hcg);
+    else if (fn == 19)
+        return(hvp);
     else (error("unknown or invalid detection function"));
     return(hn);
 }
@@ -221,6 +223,8 @@ fnptr getgfnr (int fn)
         return(ghanr);
     else if (fn == 18)
         return(ghcgr);
+    else if (fn == 19)
+        return(ghvpr);
     else (error("unknown or invalid detection function"));
     return(ghnr);
 }
@@ -265,6 +269,8 @@ fnptr getzfnr (int fn)
         return(zhanr);
     else if (fn == 18)
         return(zhcgr);
+    else if (fn == 19)
+        return(zhvpr);
     else (error("unknown or invalid detection function"));
     return(ghnr);
 }
@@ -310,6 +316,8 @@ gfnptr getgfn (int fn)
         return(ghan);
     else if (fn == 18)
         return(ghcg);
+    else if (fn == 19)
+        return(ghvp);
     else (error("unknown or invalid detection function"));
     return(ghn);
 }
@@ -354,6 +362,8 @@ zfnptr getzfn (int fn)
         return(zhan);
     else if (fn == 18)
         return(zhcg);
+    else if (fn == 19)
+        return(zhvp);
     else (error("unknown or invalid detection function"));
     return(zhn);
 }
@@ -398,6 +408,8 @@ gfnLptr getgfnL (int fn)
         return(ghanL);
     else if (fn == 18)
         return(ghcgL);
+    else if (fn == 19)
+        return(ghvpL);
     else (error("unknown or invalid detection function"));
     return(ghnL);
 }
@@ -519,6 +531,11 @@ double zhanr (double param [], double r) {
 /* hazard cumulative gamma */
 double zhcgr (double param [], double r) {
     return ((1 - exp( - param[0] * exp(-r / param[1]))));
+}
+
+/* hazard variable power */
+double zhvpr (double param [], double r) {
+    return (param[0] * exp( - pow(r / param[1], param[2]))) ;
 }
 
 /*====================================================================*/
@@ -803,6 +820,20 @@ double ghcg
 }
 /*====================================================================*/
 
+/* hazard variable power */
+double ghvp
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+     double mask[], int kk, int mm, double miscparm [])
+{
+    double d, lambda0, sigma, z;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    lambda0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    z = gsbval[cc * 2 + c];
+    return (1 - exp(- lambda0 * exp(- pow(d /sigma , z))));
+}
+/*--------------------------------------------------------------------*/
+
 /* halfnormal */
 double zhn
     (int k, int m, int c, double gsbval[], int cc, double traps[],
@@ -1085,6 +1116,21 @@ double zhcg
     return (lambda0 * pgamma(d,z,sigma/z,0,0)); 
 }
 /*====================================================================*/
+
+/* hazard variable power */
+double zhvp
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+     double mask[], int kk, int mm, double miscparm [])
+{
+    double d, lambda0, sigma, z;
+    d = sqrt(d2(k,m,traps,mask,kk,mm));
+    lambda0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    z = gsbval[cc * 2 + c];
+    return (lambda0 * exp(- pow(d /sigma , z)));
+}
+/*--------------------------------------------------------------------*/
+
 
 /* halfnormal */
 double ghnL
@@ -1372,6 +1418,22 @@ double ghcgL
 }
 /*--------------------------------------------------------------------*/
 
+/* hazard variable power */
+double ghvpL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+     int kk, double miscparm [])
+{
+    double d, lambda0, sigma, z;
+    double invdenom = 1.0;
+    /* if (fabs(miscparm[0]) > 0.5) invdenom = mask[2*mm+m]; */
+    d = sqrt(d2L(k, m, dist2, kk));
+    lambda0 = gsbval[c];
+    sigma = gsbval[cc + c];
+    z = gsbval[cc * 2 + c];
+    return (1 - exp(- lambda0 * invdenom * exp(- pow(d /sigma , z))));
+}
+/*--------------------------------------------------------------------*/
+
 double mufn (
     int k,
     int m,
@@ -1556,3 +1618,10 @@ double ghcgr (double param [], double r) {
     return (1 - exp( - (1 - exp( - param[0] * exp(-r / param[1])))));
 }
 /*--------------------------------------------------------------------*/
+
+/* hazard variable power */
+double ghvpr (double param [], double r) {
+    return(1 - exp( - param[0] * exp(- pow(r / param[1], param[2]))));
+}
+/*--------------------------------------------------------------------*/
+

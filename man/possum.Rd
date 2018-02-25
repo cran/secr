@@ -9,7 +9,6 @@
 \alias{possum.model.0}
 \alias{possum.model.b}
 \alias{possum.model.Ds}
-
 % \alias{possum.model.h2}
 % \alias{possum.model.D}
 
@@ -77,9 +76,9 @@ another polygon, the nominal removal area of Efford et al. (2005 Fig. 1)
   possumremovalarea \tab nominal boundary of removal region \cr
   possum.model.0 \tab fitted secr model -- null \cr
   possum.model.b \tab fitted secr model -- trap response g0 \cr
+  possum.model.Ds \tab fitted secr model -- distance to shore \cr
 %  possum.model.h2 \tab fitted secr model -- heterogeneity g0, sigma\cr
 %  possum.model.D \tab fitted secr model -- quadratic surface \cr
-  possum.model.Ds \tab fitted secr model -- distance to shore \cr
 }
 
 }
@@ -141,6 +140,7 @@ AIC(possum.model.0, possum.model.b, possum.model.Ds)
 model.average(possum.model.0, possum.model.b, possum.model.Ds)
 
 \dontrun{
+
 ## Roughly estimate tag-loss error by dropping dubious histories
 ## i.e. restrict to "not previously tagged"
 NPT <- !covariates(possumCH)$prev.tagged
@@ -151,7 +151,5 @@ predict(possum.model.0)[1,2]/ predict(possum.model.0.NPT)[1,2]
 }
 
 }
-
-\note{Models combining h2 and density were dropped from secr 2.9.0}
 
 \keyword{datasets}

@@ -8,8 +8,9 @@
 single-session objects, or a multi-session capthist object.  }
 
 \usage{ 
-join(object, remove.dupl.sites = TRUE, tol = 0.001, interval = NULL, sessions = NULL) 
-unjoin(object, interval, ...)
+join(object, remove.dupl.sites = TRUE, tol = 0.001, intervals = NULL,
+    sessionlabels = NULL) 
+unjoin(object, intervals, ...)
 }
 
 \arguments{
@@ -23,9 +24,9 @@ retained for each trap site used in multiple input sessions }
   \item{tol}{ absolute distance in metres within which sites are
 considered identical }
 
-  \item{interval}{ vector of times between sessions (join) or occasions (unjoin; zero indicates same session) }
+  \item{intervals}{ vector of times between sessions (join) or occasions (unjoin; zero indicates same session) }
   
-  \item{sessions}{ vector of session names }
+  \item{sessionlabels}{ vector of session names }
 
   \item{...}{ other arguments passed to \code{\link{subset.capthist}} }
 }
@@ -50,20 +51,20 @@ Attributes xy and signal are handled appropriately, as is trap usage.
 \item{\code{unjoin}}{
 
 The input grouping of occasions (columns) into sessions is specified via
-\code{interval}. This is a vector of length one less than the number of
+\code{intervals}. This is a vector of length one less than the number of
 occasions (columns) in \code{object}. Elements greater than zero
 indicate a new session.
 
-The \code{interval} argument may be omitted if \code{object} has a
-valid `interval' attribute, as in the output from \code{join}.
+The \code{intervals} argument may be omitted if \code{object} has a
+valid `intervals' attribute, as in the output from \code{join}.
 }
 }
 }
 \value{
 
-For \code{join}, a single-session capthist object. The vector attribute `interval' records the
+For \code{join}, a single-session capthist object. The vector attribute `intervals' records the
 distinction between occasions that are adjacent in the input (interval =
-0) and those that are in consecutive sessions (interval = 1); `interval'
+0) and those that are in consecutive sessions (e.g., interval = 1); `intervals'
 has length one less than the number of occasions.
 
 For \code{unjoin}, a multi-session capthist object. Sessions are named
@@ -99,7 +100,7 @@ algorithm using `tol'; the older algorithm is still used if the traps differ.
 
 joined.ovenCH <- join (ovenCH)
 summary(joined.ovenCH)
-attr(joined.ovenCH, "interval")
+attr(joined.ovenCH, "intervals")
 
 summary(unjoin(joined.ovenCH))
 

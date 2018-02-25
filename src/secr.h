@@ -663,6 +663,7 @@ double ghhrr (double param [], double r);
 double ghexr (double param [], double r);
 double ghanr (double param [], double r);
 double ghcgr (double param [], double r);
+double ghvpr (double param [], double r);
 
 double zhnr (double param [], double r);
 double zhrr (double param [], double r);
@@ -681,6 +682,7 @@ double zhhrr (double param [], double r);
 double zhexr (double param [], double r);
 double zhanr (double param [], double r);
 double zhcgr (double param [], double r);
+double zhvpr (double param [], double r);
 
 /*---------------------------------------------------------------*/
 
@@ -746,7 +748,10 @@ double ghan
     double mask[], int kk, int mm, double miscparm[]);
 double ghcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double miscparm[]);
+     double mask[], int kk, int mm, double miscparm[]);
+double ghvp
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+     double mask[], int kk, int mm, double miscparm[]);
 
 /*---------------------------------------------------------------*/
 double zhn
@@ -811,7 +816,10 @@ double zhan
     double mask[], int kk, int mm, double miscparm[]);
 double zhcg
     (int k, int m, int c, double gsbval[], int cc, double traps[],
-    double mask[], int kk, int mm, double miscparm[]);
+     double mask[], int kk, int mm, double miscparm[]);
+double zhvp
+    (int k, int m, int c, double gsbval[], int cc, double traps[],
+     double mask[], int kk, int mm, double miscparm[]);
 
 /*---------------------------------------------------------------*/
 /* distance lookup versions */
@@ -877,7 +885,10 @@ double ghanL
     int kk, double miscparm[]);
 double ghcgL
     (int k, int m, int c, double gsbval[], int cc, double dist2[],
-    int kk, double miscparm[]);
+     int kk, double miscparm[]);
+double ghvpL
+    (int k, int m, int c, double gsbval[], int cc, double dist2[],
+     int kk, double miscparm[]);
 /*---------------------------------------------------------------*/
 
 double pfn (int fn, double d2val, double g0, double sigma, double z,

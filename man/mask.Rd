@@ -5,7 +5,8 @@
 \title{ Mask Object }
 
 \description{
-Encapsulate a habitat mask for spatially explicit capture--recapture.
+Encapsulate a habitat mask for spatially explicit capture--recapture. See also \href{http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf}.
+
 }
 
 \details{
@@ -64,10 +65,11 @@ generated automatically if none is provided. You should be aware of this
 and check that the default settings (e.g. \code{buffer}) are
 appropriate.  }
 
-\seealso{ \code{\link{make.mask}}, \code{\link{read.mask}},
+\seealso{ 
+  \code{\link{make.mask}}, \code{\link{read.mask}},
   \code{\link{mask.check}}, \code{\link{esa.plot}},
-  \code{\link{suggest.buffer}}, \code{\link{secr.fit}},
-  \code{\link{secr density models}} }
+  \code{\link{suggest.buffer}}, \code{\link{secr.fit}}
+}
 
 \keyword{ classes }
 

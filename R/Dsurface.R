@@ -203,7 +203,6 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
         if (any(names(mask) != sessionlevels))
             stop("names(object$mask) conflicts with session(object$capthist)")
     }
-    
     for (session in sessionlevels) {
         if (ms(mask))
             sessmask <- mask[[session]]

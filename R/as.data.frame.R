@@ -19,12 +19,21 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         n <- nrow(x)
         S <- ncol(x)
         xname <- deparse(substitute(x), control=NULL)
-        det <- detector(traps(x))  # may be vector...
         
         ID <- animalID(x)
         occ <- occasion(x)
-        trap <- as.character(trap(x))
-        trapn <- trap(x, names = FALSE)
+        
+        if (is.null(traps(x))) {
+            det <- 0
+            trap <- rep('1', length(ID))
+            trapn <- rep(1, length(ID))
+        }
+        else {
+            det <- detector(traps(x))  # may be vector...
+            trap <- as.character(trap(x))
+            trapn <- trap(x, names = FALSE)
+        }
+        
         session <- rep(session(x),length(ID))
         
         if (det[1] %in% c('polygon','transect','polygonX','transectX')) {

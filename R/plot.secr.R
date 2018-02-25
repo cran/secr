@@ -17,6 +17,7 @@
 ## 2017-05-24 BUG label of plot.secr 'Detection lambda' suppressed
 ## 2017-10-16 plot.secr confidence limits for detection functions 14:18 use 
 ##            log(hazard) scale to match output of predict.secr for g(0)
+## 2018-01-16 HVP detection function
 ############################################################################################
 
 plot.secrlist <- function (x, newdata=NULL, add = FALSE,
@@ -160,7 +161,7 @@ plot.secr <- function (x, newdata = NULL, add = FALSE,
             ylim <- c(0, 1)
         }
         else {
-            if (x$detectfn %in% 14:18)
+            if (x$detectfn %in% 14:19)
                 yname <- 'lambda0'
             else
                 yname <- 'g0'
@@ -252,7 +253,7 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
 
-    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3,5,5,2,3,2,3,3)[detectfn+1]
+    needp <- c(2,3,2,3,2,3,3,3,3,2,3,3,5,5,2,3,2,3,3,3)[detectfn+1]
 
     if (ncol(pars) != needp)
         stop ("require ", needp, " parameters for ",

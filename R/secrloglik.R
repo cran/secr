@@ -120,7 +120,7 @@ reparameterize.a0 <- function (realparval, detectfn, linear) {
     a0index <- match('a0', realnames)
     if (! all (c('a0','sigma') %in% realnames))
         stop ("'param = 3 or 5 ' requires both 'a0' and 'sigma' in model")
-    if (!(detectfn %in% c(0:8, 14:18)))
+    if (!(detectfn %in% c(0:8, 14:19)))
         stop ('invalid combination of param = 3 or 5 and detectfn')
 
     if (linear)
@@ -247,7 +247,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
 
     realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
     realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
-
+    
     #--------------------------------------------------------------------
     # Density
  
@@ -332,7 +332,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         ##############################################
         
         ## 2013-11-10
-        if ((detectfn %in% 14:18) & details$normalize) {
+        if ((detectfn %in% 14:19) & details$normalize) {
             if (!is.null(details$userdist))
                 stop("normalization incompatible with userdist")
             miscparm[1] <- 1   ## normalize
@@ -721,7 +721,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
                        as.integer(nrow(Xrealparval)),            # number of rows in lookup table
                        as.integer(nrow(Xrealparval0)),           # ditto, naive
                        as.integer(PIA),                          # index nc,S,K,mix to rows Xrealparval
-                       as.integer(PIA0),                      # index ngroup,S,K,mix to rows Xrealparval0
+                       as.integer(PIA0),                         # index ngroup,S,K,mix to rows Xrealparval0
                        as.double(getcellsize(session.mask)),      # mask cell area or length
                        as.double(miscparm),                       # miscellaneous parameter
                        as.integer(detectfn),

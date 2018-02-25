@@ -26,7 +26,7 @@ then all will complete in about the time required to run the longest.
   \code{\link{mask.check}} \tab spacing x buffer \tab moderate-large \tab no file output, suppresses messages \cr
   \code{\link{sim.secr}} \tab replicate \tab large \tab all models, suppresses messages \cr
   \code{\link{ip.secr}} \tab replicate \tab large \tab  \cr
-  \code{\link{LLsurface.secr}} \tab parameter combination \tab large \tab  \cr
+  \code{\link{LLsurface}} \tab parameter combination \tab large \tab  \cr
   \code{\link{par.secr.fit}} \tab model \tab large \tab  \cr
   \code{\link{par.derived}} \tab fitted model \tab large \tab  \cr
   \code{\link{par.region.N}} \tab fitted model \tab large \tab  \cr
@@ -150,7 +150,7 @@ for (i in 1:8)
 #   0.46    0.08   35.91 
  
 for (i in 1:8)
-    print(system.time(LLsurface.secr(secrdemo.0, ncores = i)))
+    print(system.time(LLsurface(secrdemo.0, ncores = i)))
     
 #Evaluating log likelihood across grid of 121 points...
 #   user  system elapsed 

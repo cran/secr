@@ -1,20 +1,29 @@
-\name{LLsurface.secr}
+\name{LLsurface}
+\alias{LLsurface}
 \alias{LLsurface.secr}
-\title{
-Plot likelihood surface
-}
+
+\title{Plot Likelihood Surface}
+
 \description{
-Calculate log likelihood over a grid of values of two beta parameters
-from a fitted secr model and optionally make an approximate contour plot of the log
-likelihood surface.
+
+LLsurface is a generic function to calculate log likelihood over a grid of values of 
+two coefficients (beta parameters) from a fitted model and optionally make an 
+approximate contour plot of the log likelihood surface.
+
+A method is provided for secr objects.
+
 }
 \usage{
-LLsurface.secr(object, betapar = c("g0", "sigma"), xval = NULL,
+
+LLsurface(object, ...)
+
+\method{LLsurface}{secr}(object, betapar = c("g0", "sigma"), xval = NULL,
     yval = NULL, centre = NULL, realscale = TRUE, plot = TRUE,
     plotfitted = TRUE, ncores = 1, ...)
 }
+
 \arguments{
-  \item{object}{\code{secr} object output from \code{secr.fit}}
+  \item{object}{fitted model, \code{secr} object output from \code{secr.fit}}
   \item{betapar}{character vector giving the names of two beta parameters}
   \item{xval}{vector of numeric values for x-dimension of grid}
   \item{yval}{vector of numeric values for y-dimension of grid}
@@ -53,7 +62,7 @@ grid point
 
 \note{
 
-  \code{LLsurface.secr} works for named `beta' parameters rather than
+  \code{LLsurface} works for named `beta' parameters rather than
   `real' parameters. The default \code{realscale = TRUE} only works for
   beta parameters that share the name of the real parameter to which
   they relate i.e. the beta parameter for the base level of the real
@@ -66,14 +75,16 @@ grid point
 }
 
 \examples{
+
 \dontrun{
-LLsurface.secr(secrdemo.CL, xval = seq(0.16,0.40,0.02),
+
+LLsurface(secrdemo.CL, xval = seq(0.16,0.40,0.02),
     yval = 25:35, nlevels = 20)
 
 ## now verify MLE
 ## click on MLE and apparent `peak'
 xy <- locator(2)
-temp <- LLsurface.secr(secrdemo.CL, xval = xy$x,
+temp <- LLsurface(secrdemo.CL, xval = xy$x,
      yval = xy$y, plot = FALSE)
 temp
 }

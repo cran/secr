@@ -17,13 +17,13 @@ may also be used (as a quoted string).
 Choice of detection function is usually not critical, and the default
 `HN' is usually adequate.
 
-Functions (14)--(18) are parameterised in terms of the expected number
+Functions (14)--(19) are parameterised in terms of the expected number
 of detections \eqn{\lambda}, or cumulative hazard, rather than
 probability. `Exposure' (e.g. Royle and Gardner 2011) is another term
 for cumulative hazard. This parameterisation is natural for the `count'
 \link{detector} type or if the function is to be interpreted as a
 distribution of activity (home range). When one of the functions
-(14)--(18) is used to describe detection probability (i.e., for the binary
+(14)--(19) is used to describe detection probability (i.e., for the binary
 detectors `single', `multi',`proximity',`polygonX' or
 `transectX'), the expected number of detections is internally
 transformed to a binomial probability using \eqn{g(d) =
@@ -105,6 +105,11 @@ exponential function.
   (d; k, \theta) \} }; \eqn{g(d) = 1-\exp(-\lambda(d))}{g(d) = 1-exp(-\lambda(d))}
  \cr
 
+19 HVP \tab hazard variable power \tab lambda0, sigma, z \tab \eqn{ \lambda(d)
+  = \lambda_0 \exp \{ -(^d/_\sigma)^{z} \} }{ \lambda(d) =
+  \lambda0 exp(- (d / \sigma)^z) }; \eqn{g(d) = 1-\exp(-\lambda(d))}{g(d) = 1-exp(-\lambda(d))} \cr
+ 
+
 }
 
 Functions (1) and (15), the "hazard-rate" detection functions described by Hayes and Buckland
@@ -141,6 +146,10 @@ distances less than 1 m is given by \eqn{g(d) = 1 - F \lbrace(c -
   \beta_0) / sdS \rbrace}{ g(d) = 1 - F\{(c - beta0) / sdS \} }
 
 Functions (12) and (13) are undocumented methods for sound attenuation.
+
+Function (19) has been used in some published papers and is included for 
+comparison (see e.g. Ergon and Gardner 2014).
+
 }
 
 \references{
@@ -153,6 +162,11 @@ Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
 array. \emph{Ecology} \bold{90}, 2676--2682.
 
+Ergon, T. and Gardner, B. (2014) Separating mortality and emigration: 
+modelling space use, dispersal and survival with robust-design spatial 
+capture--recapture data. \emph{Methods in Ecology and Evolution} \bold{5}, 
+1327--1336.
+
 Hayes, R. J. and Buckland, S. T. (1983) Radial-distance models for the
 line-transect method. \emph{Biometrics} \bold{39}, 29--42.
 
@@ -164,7 +178,7 @@ Tokyo.  Pp. 163--190.
 
 }
 
-\seealso{ \code{\link{detectfnplot}}, \code{\link{secr detection models}} }
+\seealso{ \code{\link{detectfnplot}} }
 
 \note{
     

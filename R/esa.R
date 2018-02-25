@@ -145,7 +145,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                 PIA <- PIA[group.factor(capthists, object$groups),,,]
             }
             
-            ## ncolPIA <- dim(object$design0$PIA)[2]
             ncolPIA <- n
             
             ## trick to allow for changed data 2009 11 20
@@ -188,7 +187,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         if (is.null(normalize))
             normalize <- FALSE
         miscparm <- numeric(4)
-        if ((object$detectfn %in% 14:18) & normalize) {
+        if ((object$detectfn %in% 14:19) & normalize) {
             if (!is.null(object$details$userdist))
                 stop("normalization incompatible with userdist")
             miscparm <- c(1,0,1,0)

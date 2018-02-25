@@ -7,6 +7,9 @@
 ## 2015-09-30 fixpmix now done in secr.lpredictor
 ## 2017-04-08 realnames argument
 ## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
+## 2017-12-18 dots argument passed to secr.make.newdata
+## 2018-02-23 revamp pmix code
+
 ############################################################################################
 predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("response", "link"), se.fit = TRUE,
                           alpha = 0.05, savenew = FALSE, ...) {
@@ -17,8 +20,7 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
     }
     type <- match.arg(type)
 
-    if (is.null(newdata)) newdata <- secr.make.newdata (object)
-
+    if (is.null(newdata)) newdata <- secr.make.newdata (object, ...)
     if (is.null(realnames))
         realnames <- object$realnames
     else {
@@ -83,6 +85,7 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
                 contrasts = object$details$contrasts)
         }
     }
+    
     predict <- sapply (realnames, getfield, simplify = FALSE)
   
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
@@ -93,7 +96,7 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
         for (varname in realnames)
             out[,varname] <- rep(NA,nrow(out))
     }
-    
+  
     for (new in 1:nrow(newdata)) {
         lpred  <- sapply (predict, function(x) x[new,'estimate'])
         if (type == "response")

@@ -58,6 +58,7 @@ These counts are reported by \code{summary.capthist}
   traps visited \tab number of detectors at which at least one detection was recorded \cr
   traps set \tab number of detectors, excluding any `not set' in \code{usage} attribute of \code{traps} attribute \cr
 }
+The last two rows are dropped if the data are nonspatial (object has no traps attribute).
 
 \code{counts} may be used to return the specified counts in a compact 
 session x occasion table. If more than one count is named then a list is returned
