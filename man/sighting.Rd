@@ -66,7 +66,7 @@ Tn(object) <- value
   \code{\link{traps}},
   \code{\link{addSightings}},
   \code{\link{sightingPlot}},
-  \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf}
+  \href{https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf}
   
 }
 

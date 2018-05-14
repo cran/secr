@@ -12,7 +12,7 @@ stoatCH <- read.capthist(captfile, trapfile, detector = 'proximity')
 summary(stoatCH)
 
 ## ----download, echo = TRUE-----------------------------------------------
-download.file("http://www.otago.ac.nz/density/examples/stoat.xlsx",
+download.file("https://www.otago.ac.nz/density/examples/stoat.xlsx",
               "stoat.xlsx", quiet = TRUE, mode = "wb")
 
 ## ----readxl, warning = FALSE---------------------------------------------

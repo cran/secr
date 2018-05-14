@@ -67,7 +67,7 @@ Arguments \code{unmarked}, \code{nonID}, \code{uncertain} provide data for attri
   \code{\link{Tm}},
   \code{\link{Tu}},
   \code{\link{Tn}},
-  \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
+  \href{https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
   
 }
 

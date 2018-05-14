@@ -78,3 +78,20 @@ CVa <- function (object, sessnum = 1, ...) {
     pmix <- sapply(pred, '[[', 'pmix','estimate')
     round(CV(a, pmix),8)
 }
+
+#msk <- make.mask(traps, buffer = buffer, ...)
+
+CVpdot <- function (..., conditional = FALSE) {
+    p <- pdot (...)
+    if (conditional) {
+        fx <- p/sum(p)    # distribution of captured animals
+        mu <- sum(p * fx)
+        CV <- sqrt(sum(p^2 * fx) - mu^2)/mu
+    }
+    else {
+        mu <- sum(p) / length(p)  # average over all X, assuming uniform
+        CV <- sqrt(sum(p^2/length(p)) - mu^2)/mu
+    }
+    c(meanpdot = mu, CVpdot = CV)
+    
+}

@@ -29,7 +29,7 @@ usage(object) <- value
   the duration of sampling by Borchers and Efford (2008). Effort is
   modelled as a known linear coefficient of detection probability on the
   hazard scale
-  (\href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf};
+  (\href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf};
   Efford et al. 2013).
   
   For replacement of usage, various forms are possible for \code{value}:

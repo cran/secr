@@ -5,7 +5,7 @@
 \title{ Mask Object }
 
 \description{
-Encapsulate a habitat mask for spatially explicit capture--recapture. See also \href{http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf}.
+Encapsulate a habitat mask for spatially explicit capture--recapture. See also \href{https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf}.
 
 }
 

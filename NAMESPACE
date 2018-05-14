@@ -246,6 +246,7 @@ export (Rsurface)
 export (CV)
 export (CVa)
 export (CVa0)
+export (CVpdot)
 export (plotMCP)
 export (xy2CH)
 

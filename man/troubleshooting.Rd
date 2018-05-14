@@ -12,7 +12,7 @@ problems of identifiability, as described for capture--recapture models
 in general by Gimenez et al. (2004). Here are some tips that may help
 you.
 
-This page has largely been superceded by \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}.
+This page has largely been superceded by \href{https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}.
 
 }
 
@@ -65,7 +65,7 @@ fixing the value of a difficult-to-estimate parameter (argument
 }
 
 See also the section `Potential problems' in
-\href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}.
+\href{https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}.
 
 }
 
@@ -110,7 +110,7 @@ See also the section `Potential problems' in
 
 \section{Estimates from mixture models appear unstable}{ These models
   have known problems due to multimodality of the likelihood. See
-  \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf}.
+  \href{https://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf}.
   }
 
 \seealso{\code{\link{secr.fit}}, \code{\link[base]{Memory-limits}} }

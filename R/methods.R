@@ -87,6 +87,7 @@
 ## 2018-01-10 AIC-related functions moved to AIC.R
 ## 2018-01-22 trap() tweaked to return 1's for nonspatial
 ## 2018-02-05 plot.popn moved to plot.popn.R
+## 2018-05-14 timevaryingcov allows capthist object (for openCR)
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -214,7 +215,9 @@ covariates.default <- function (object, ...)  {
 }
 
 timevaryingcov.default <- function (object, ...)  {
-    if (ms(object)) lapply(object, timevaryingcov.default, ...)
+    if (ms(object)) {
+        lapply(object, timevaryingcov.default, ...)
+    }
     else attr(object,'timevaryingcov')
 }
 
@@ -1014,7 +1017,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'timevaryingcov<-' <- function (object, value) {
-## 2012-10-31, modified 2013-02-07
+## 2012-10-31, modified 2013-02-07, 2018-05-14
     if (is.null(value))
         structure (object, timevaryingcov = NULL)
     else {
@@ -1027,16 +1030,22 @@ flip.default <- function (object, lr=F, tb=F, ...) {
             temp
         }
         else {
-            if (!inherits(object, 'traps'))
-                stop("timevaryingcov is for traps objects")
+            # if (!inherits(object, 'traps'))
+            #     stop("timevaryingcov is for traps objects")
             if (!is.list(value) | is.null(names(value)))
                 stop("value should be a list of one or more named vectors")
             if (!is.null(usage(object))) {
-                OK <- sapply(value, function(x)
-# bug fixed 2013-02-07       (ncol(usage) == length(x)))
-                             (ncol(usage(object)) == length(x)))
+                ## traps object with usage
+                OK <- sapply(value, function(x) ncol(usage(object)) == length(x))
                 if (any(!OK))
                     warning ("mismatch between number of occasions in usage and timevaryingcov")
+            }
+            else if (inherits(object, 'capthist')) {
+                ## capthist object
+                nsessions <- length(unique(primarysessions(intervals(object))))
+                OK <- sapply(value, function(x) nsessions == length(x))
+                if (any(!OK))
+                    warning ("mismatch between number of primary sessions in object and timevaryingcov")
             }
             if (is.character(value))
                 if (!all(value %in% names(covariates(object))))
@@ -1206,7 +1215,6 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 'traps<-' <- function (object, value) {
     if (!is(value,'traps'))
         stop ("'traps' object required for replacement")
-
     ## MODIFIED 2010 04 27
     if (ms(object)) {
         nsess <- length(object)
@@ -1705,10 +1713,14 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         class(temp) <- c('capthist', 'list')
         if (length(temp) == 1) temp <- temp[[1]]  ## 2009 09 25
         interv <- intervals(x)
-        if (!is.null(interv)) {   ## 2018-01-25
+        if (!is.null(interv)) {     ## 2018-01-25
             cumi <- cumsum(interv)
             newinterv <- diff(c(0,cumi)[sessions])
             intervals(temp) <- newinterv
+        }
+        slabels <- sessionlabels(x)
+        if (!is.null(slabels)) {    ## 2018-05-10
+            sessionlabels(temp) <- slabels[sessions]
         }
 
         return(temp)
@@ -1959,6 +1971,17 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             cumi <- cumsum(interv)
             newinterv <- diff(c(0,cumi)[occasions])
             intervals(temp) <- newinterv
+        }
+        ################################################
+        slabels <- sessionlabels(x)
+        if (!is.null(slabels)) {    ## 2018-05-10
+            if (is.null(intervals(temp))) {
+                warning ("sessionlabels but no intervals specified;",
+                         " all intervals set to 1.0")
+                intervals(temp) <- rep(1, ncol(temp)-1)
+            }
+            sessions <- unique(primarysessions(intervals(x))[occasions])
+            sessionlabels(temp) <- slabels[sessions]
         }
         ################################################
 

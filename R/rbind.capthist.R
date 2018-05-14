@@ -4,7 +4,7 @@
 ## 2015-01-11 tweak rownames in rbind.capthist (default component names)
 ## 2015-01-23 replace long object names (>100ch)
 ## 2017-07-26 revise to make rbind.capthist S3 method
-
+## 2018-05-11 MS.capthist handles intervals, sessionlabels
 ###############################################################################
 
 flatten <- function(x) {
@@ -21,7 +21,7 @@ flatten <- function(x) {
                           return(list(y))
                       }
                  )
-    unlist(temp, recursive=F)
+    unlist(temp, recursive = FALSE)
 }
 ###############################################################################
 
@@ -38,7 +38,16 @@ MS.capthist <- function (...) {
     dots <- match.call(expand.dots = FALSE)$...
     ##    oldsess <- unlist(sapply(list(...), session))
     MS <- flatten(list(...))
+    
+    interv <- lapply(list(...), intervals)
+    if (length(interv)>1) {
+        ## insert bridging interval
+        for (i in 1:(length(interv)-1)) 
+            interv[[i]] <- c(interv[[i]], NA)
+    }
     class(MS) <- c('capthist', 'list')
+    intervals(MS) <- unlist(interv)
+    sessionlabels(MS) <- unlist(lapply(list(...), sessionlabels))
     if (is.null(names(MS))) {
         names(MS) <- rep("",length(MS))
         dots2 <- substitute(list(...))[-1]    ## 2017-11-13

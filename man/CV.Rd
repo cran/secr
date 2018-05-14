@@ -79,7 +79,7 @@ capture--recapture data. \emph{Ecology} \bold{95}, 1341--1348.
 
 \seealso{
 
-  \code{\link{details}}
+  \code{\link{details}}, \code{\link{CVpdot}}
   
 }
 

@@ -301,7 +301,7 @@ Other documentation, in the form of pdf vignettes built with **knitr**,  will be
 | [secr-telemetry.pdf] | analysing combined telemetry and capture--recapture data|
 | [secr-varyingeffort.pdf] | variable effort (usage) in SECR models |
 
-The web page http://www.otago.ac.nz/density/ should be checked for news of bug fixes and new releases. New versions will be posted on [CRAN], but there may be a delay of a few days. Help may be sought at [phidot]; see also the FAQ there for DENSITY and **secr**. Another forum intended for both software issues and wider discussion is [secrgroup]. For information on changes in each version, type at the R prompt:
+The web page https://www.otago.ac.nz/density/ should be checked for news of bug fixes and new releases. New versions will be posted on [CRAN], but there may be a delay of a few days. Help may be sought at [phidot]; see also the FAQ there for DENSITY and **secr**. Another forum intended for both software issues and wider discussion is [secrgroup]. For information on changes in each version, type at the R prompt:
 
 ```{r, eval=FALSE} 
 news (package = "secr") 
@@ -556,7 +556,7 @@ Efford, M. G. (2004) Density estimation in live-trapping studies. *Oikos* **106*
 Efford, M. G. (2011) Estimation of population density by spatially explicit capture--recapture analysis of data from area searches. *Ecology* **92**, 2202--2207.
 
 Efford, M. G. (2012) *DENSITY 5.0: software for spatially explicit capture--recapture*.  Department of Mathematics and Statistics, University of Otago, Dunedin, New Zealand
-  http://www.otago.ac.nz/density.
+  https://www.otago.ac.nz/density.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation by spatially explicit capture--recapture: likelihood-based methods. In: D. L. Thomson, E. G. Cooch,
   M. J. Conroy (eds) *Modeling Demographic Processes in Marked Populations*. Springer. Pp 255--269.
@@ -905,26 +905,26 @@ Stoat *Mustela erminea* hair tube DNA data from Matakitaki Valley, South Island,
 
 [schematicfigure]: schematic3.png
 
-[secr-manual.pdf]: http://www.otago.ac.nz/density/pdfs/secr-manual.pdf
-[secr-overview.pdf]: http://www.otago.ac.nz/density/pdfs/secr-overview.pdf
-[secr-datainput.pdf]: http://www.otago.ac.nz/density/pdfs/secr-datainput.pdf
-[secr-densitysurfaces.pdf]: http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf
-[secr-finitemixtures.pdf]: http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf
-[secr-habitatmasks.pdf]: http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf
-[secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
-[secr-models.pdf]: http://www.otago.ac.nz/density/pdfs/secr-models.pdf
-[secr-multisession.pdf]: http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf
-[secr-noneuclidean.pdf]: http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf
-[secr-parameterisations.pdf]: http://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf
-[secr-polygondetectors.pdf]: http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
-[secr-sound.pdf]: http://www.otago.ac.nz/density/pdfs/secr-sound.pdf
-[secr-telemetry.pdf]: http://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
-[secr-tutorial.pdf]: http://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf
-[secr-troubleshooting.pdf]: http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf
-[secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
+[secr-manual.pdf]: https://www.otago.ac.nz/density/pdfs/secr-manual.pdf
+[secr-overview.pdf]: https://www.otago.ac.nz/density/pdfs/secr-overview.pdf
+[secr-datainput.pdf]: https://www.otago.ac.nz/density/pdfs/secr-datainput.pdf
+[secr-densitysurfaces.pdf]: https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf
+[secr-finitemixtures.pdf]: https://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf
+[secr-habitatmasks.pdf]: https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf
+[secr-markresight.pdf]: https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
+[secr-models.pdf]: https://www.otago.ac.nz/density/pdfs/secr-models.pdf
+[secr-multisession.pdf]: https://www.otago.ac.nz/density/pdfs/secr-multisession.pdf
+[secr-noneuclidean.pdf]: https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf
+[secr-parameterisations.pdf]: https://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf
+[secr-polygondetectors.pdf]: https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
+[secr-sound.pdf]: https://www.otago.ac.nz/density/pdfs/secr-sound.pdf
+[secr-telemetry.pdf]: https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
+[secr-tutorial.pdf]: https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf
+[secr-troubleshooting.pdf]: https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf
+[secr-varyingeffort.pdf]: https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
 
-[secrdesign-vignette.pdf]: http://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf
-[secrlinear-vignette.pdf]: http://cran.r-project.org/web/packages/secrlinear/vignettes/secrlinear-vignette.pdf
+[secrdesign-vignette.pdf]: https://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf
+[secrlinear-vignette.pdf]: https://CRAN.R-project.org/package=secrlinear/vignettes/secrlinear-vignette.pdf
 
 [phidot]: http://www.phidot.org/forum
 [secrgroup]: <https://groups.google.com/forum/#!forum/secrgroup>

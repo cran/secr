@@ -134,7 +134,7 @@ The result will also be a list if \code{object} is an `secrlist'.
 }
 
 \references{
-Borchers, D. L. and Efford, M. G. (2007) Supplements to Biometrics paper. Available online at \url{http://www.otago.ac.nz/density}.
+Borchers, D. L. and Efford, M. G. (2007) Supplements to Biometrics paper. Available online at \url{https://www.otago.ac.nz/density}.
 
 Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum likelihood methods for capture--recapture studies. \emph{Biometrics}, \bold{64}, 377--385.
 

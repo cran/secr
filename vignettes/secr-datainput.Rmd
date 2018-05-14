@@ -233,10 +233,10 @@ Some data do not neatly import with `read.capthist`. You may need to first const
 
 Input from spreadsheets to R has been problematic. The package **readxl** (Wickham and Bryan 2017) appears now to provide a stable and general solution. From **secr** 3.0.2 onwards `read.traps` and `read.capthist` use **readxl** to read Excel workbooks (.xls or .xlsx files). 
 
-We demonstrate with an Excel workbook containing the stoat data that is provided at http://www.otago.ac.nz/density/examples and here downloaded to the working directory:
+We demonstrate with an Excel workbook containing the stoat data that is provided at https://www.otago.ac.nz/density/examples and here downloaded to the working directory:
 
 ```{r download, echo = TRUE}
-download.file("http://www.otago.ac.nz/density/examples/stoat.xlsx",
+download.file("https://www.otago.ac.nz/density/examples/stoat.xlsx",
               "stoat.xlsx", quiet = TRUE, mode = "wb")
 ```
 
@@ -437,7 +437,7 @@ likelihood methods for capture--recapture studies. *Biometrics* **64**,
 
 Efford, M. G. (2012) *DENSITY 5.0: software for spatially
     explicit capture--recapture*.  University of Otago, Dunedin, New
-  Zealand http://www.otago.ac.nz/density.
+  Zealand https://www.otago.ac.nz/density.
 
 Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population
 density estimated from locations of individuals on a passive detector
@@ -512,9 +512,9 @@ Spatially explicit capture--recapture, an inclusive term
   entered whereas groups may be defined on the fly (see
   `?secr.fit`).
 
-[secr-polygondetectors.pdf]: http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
-[secr-varyingeffort.pdf]: http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
-[secr-markresight.pdf]: http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
-[secr-telemetry.pdf]: http://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
-[secr-sound.pdf]: http://www.otago.ac.nz/density/pdfs/secr-sound.pdf
+[secr-polygondetectors.pdf]: https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
+[secr-varyingeffort.pdf]: https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
+[secr-markresight.pdf]: https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf
+[secr-telemetry.pdf]: https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
+[secr-sound.pdf]: https://www.otago.ac.nz/density/pdfs/secr-sound.pdf
 [simpolyfigure]: simpoly.png

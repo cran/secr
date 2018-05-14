@@ -36,6 +36,15 @@ toroidal.wrap <- function (pop) {
     pop$y <- ifelse (pop$y<ymin, ymax - remainder (ymin - pop$y, yrange), pop$y)
     pop
 }
+drop.outside <- function (pop) {
+    bb <- attr(pop, 'boundingbox')
+    xmin <- min(bb$x)
+    xmax <- max(bb$x)
+    ymin <- min(bb$y)
+    ymax <- max(bb$y)
+    OK <- (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
+    subset(pop, OK)
+}
 tile <- function (popn, method = "reflect") {
     bbox <- attr(popn, 'boundingbox')
     if (method== "reflect") {
@@ -64,7 +73,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL,
     ...)  {
     if (missing(D)) D <- NULL
-  
     model2D <- match.arg(model2D)
     Ndist <- match.arg(Ndist)
     buffertype <- match.arg(buffertype)
@@ -120,8 +128,11 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 if (turnoverpar$sigma.m[t] > 0) {
                     newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
                                                       sd = turnoverpar$sigma.m[t])
-                    if (turnoverpar$wrap)
+                    ## if (turnoverpar$wrap)   2018-03-31
+                    if (turnoverpar$edgemethod == "wrap")
                         newpopn <- toroidal.wrap(newpopn)
+                    else if (turnoverpar$edgemethod == "clip") 
+                        newpopn <- drop.outside(newpopn)
                 }
             }
             gam <- turnoverpar$lambda[t] - turnoverpar$phi[t]
@@ -186,8 +197,12 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         else {
             ## projected population
-            turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, wrap = TRUE,
+            turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, edgemethod = "wrap",   # wrap = TRUE,
                                 survmodel = 'binomial', recrmodel = 'poisson')
+            if (!is.null(details$wrap)) {
+                warning("details option 'wrap' is deprecated; using edgemethod = 'wrap' if TRUE")
+                if (details$wrap) details$edgemethod = 'wrap'
+            }
             turnoverpar <- replace (turnoverpar, names(details), details)
             turnoverpar$lambda  <- expands(turnoverpar$lambda, nsessions)
             turnoverpar$phi     <- expands(turnoverpar$phi, nsessions)

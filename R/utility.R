@@ -50,6 +50,8 @@
 ## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
 ## 2017-11-16 secr.lpredictor in utility.R: contrasts argument
 ## 2018-02-14 allzero moved from addtelemetry.R
+## 2018-05-13 primarysessions and secondarysessions are copied here from openCR
+##            for use in subset.capthist and reduce.capthist, but not exported
 #######################################################################################
 
 # Global variables in namespace
@@ -2101,3 +2103,16 @@ allzero <- function (object) {
     }
 }
 ############################################################################################
+
+primarysessions <- function(intervals) {
+    primarysession <- cumsum(c(0,intervals))
+    match(primarysession, unique(primarysession))
+}
+############################################################################################
+
+secondarysessions <- function(intervals) {
+    primary <- primarysessions(intervals)
+    unname(unlist(sapply(table(primary), seq_len)))  
+}
+############################################################################################
+

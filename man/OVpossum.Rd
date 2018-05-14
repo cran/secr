@@ -87,7 +87,7 @@ Efford, M. G. (1998) Demographic consequences of sex-biased dispersal in
 Efford, M. G. (2012) DENSITY 5.0: software for spatially explicit
      capture-recapture. Department of Mathematics and Statistics,
      University of Otago, Dunedin, New
-     Zealand. \url{http://www.otago.ac.nz/density}
+     Zealand. \url{https://www.otago.ac.nz/density}
 
 Efford, M. G. and Cowan, P. E. (2004) Long-term population trend of
      \emph{Trichosurus vulpecula} in the Orongorongo Valley, New

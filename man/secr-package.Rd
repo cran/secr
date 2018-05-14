@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 3.1.5\cr
-Date: \tab 2018-02-25\cr
+Version: \tab 3.1.6\cr
+Date: \tab 2018-05-14\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -53,23 +53,23 @@ help index. Several vignettes complement the help pages:
 General interest \tab \cr
   \href{https://CRAN.R-project.org/package=secr/vignettes/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
   \href{https://CRAN.R-project.org/package=secr/vignettes/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} \tab linear models in \pkg{secr} \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}  \tab problems with secr.fit, including speed issues \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} \tab linear models in \pkg{secr} \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}  \tab problems with secr.fit, including speed issues \cr
 \cr
 \cr
 More specialised topics \tab \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} \tab mark-resight data and models \cr
-    \href{http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} \tab multi-session capthist objects and models \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf}{secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf} \tab analysing data from microphone arrays\cr
-  \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf} \tab modelling density surfaces \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf}{secr-finitemixtures.pdf} \tab mixture models for individual heterogeneity \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} \tab mark-resight data and models \cr
+    \href{https://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} \tab multi-session capthist objects and models \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf} \tab non-Euclidean distances \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf}{secr-parameterisations.pdf} \tab alternative parameterisations sigmak, a0 \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} \tab using polygon and transect detector types \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf} \tab analysing data from microphone arrays\cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
 }
 
 The datasets \link{possum}, \link{skink}, \link{ovenbird},
@@ -85,11 +85,11 @@ as stream networks
 enables the assessment of alternative study designs by Monte Carlo
 simulation; scenarios may differ in detector (trap) layout, sampling
 intensity, and other characteristics
-(\href{http://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}).
+(\href{https://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf}{secrdesign-vignette.pdf}).
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see
-\href{http://www.otago.ac.nz/density}{www.otago.ac.nz/density}
+\href{https://www.otago.ac.nz/density}{www.otago.ac.nz/density}
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
 \href{http://www.phidot.org/forum}{www.phidot.org} and

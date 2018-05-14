@@ -7,6 +7,8 @@
 ## 2017-12-02 BUG recapfactor; 
 ##            lastcapt argument for trappingxxx functions
 ## 2018-02-23 BUG mixed detector types simfunctionname 
+## 2018-05-04 df0 not assigned for signal detectors (Ben Stevenson)
+##            assignment of trappingargs now conditional on detectfn
 ###############################################################################
 
 expands <- function (x, s, default = 1) {
@@ -143,7 +145,9 @@ sim.capthist <- function (
             sigma <- expands(detectpar[['sigma']], nsessions, default = NULL)
             dfz <- expands(detectpar[[dfzname]], nsessions, default = NULL)
         }
-
+        # detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
+        # detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
+        
         ########################################################################
         ## loop over sessions
         for (t in 1:nsessions) {
@@ -174,6 +178,8 @@ sim.capthist <- function (
                 detectpar[['sigma']] <- sigma[t]
                 detectpar[[dfzname]] <- dfz[t]
             }
+            # detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
+            # detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
 
             ## recursive call for each session
             ## we have set the seed above
@@ -192,7 +198,6 @@ sim.capthist <- function (
     }   ## end of multi-session
 
     else {
-
         ##################
         ## set random seed
         ## copied from simulate.lm
@@ -340,9 +345,12 @@ sim.capthist <- function (
             validatepar(sigma[,1], c(1e-10,Inf))
             validatepar(z, c(0,Inf))
         }
+        # detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
+        # detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
 
         # Acoustic detection function parameters
         if (detectfn %in% c(10,11,12,13)) {
+            df0 <- 1   ## dummy value - not used
             tx <- detectpar$tx
             cutval <- detectpar$cutval
             sdM <- detectpar$sdM
@@ -434,7 +442,8 @@ sim.capthist <- function (
         ## 2016-10-15 vector binomN
         detectpar$binomN <- expandbinomN(detectpar$binomN, dettype)
     
-        trappingargs <- list(
+        if (detectfn %in% c(0:7, 14:19)) {
+            trappingargs <- list(
             simfunctionname[1],                 # 1
             as.double(df0),                     # 2
             as.double(sigma),                   # 3
@@ -454,12 +463,14 @@ sim.capthist <- function (
             caught = integer(N),                # 17
             value = integer(noccasions*k*N),    # 18  
             resultcode = integer(1)             # 19
-        )
+            )
+        }
         ## 'count' includes presence
         ##-----------------------------------------------------------------
         ## remember: output from trappingxxxx is sorted so captured animals
         ## precede all others
         ## caught[] contains capture sequence for each of N animals
+        
         if (all(detector(traps) %in% c('single','multi','proximity','count', 'capped'))) {
             
             ## BUG IN THIS CODE 2016-10-18 Observations assigned to wrong detectors

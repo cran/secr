@@ -38,9 +38,9 @@ detector type is stored as an attribute of a \code{traps} object.
 Detector types are mostly described by Efford et al. (2009a,b; see also
 \href{../doc/secr-overview.pdf}{secr-overview.pdf}). Polygon and transect detector types are
 for area and linear searches as described in
-\href{http://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} and Efford (2011). The `signal'
+\href{https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf}{secr-polygondetectors.pdf} and Efford (2011). The `signal'
 detector type is used for acoustic data as described in
-\href{http://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}.
+\href{https://www.otago.ac.nz/density/pdfs/secr-sound.pdf}{secr-sound.pdf}.
 
 The `capped' detector type refers to binary proximity data in which no more than one individual may be detected at a detector on any occasion. The type is partially implemented in \pkg{secr} 3.1.1: data may be simulated and manipulated, but for model fitting these are treated as proximity data by \code{secr.fit()}.
 }

@@ -72,7 +72,6 @@ tail.traps <- function (x, n=6L, ...) {
         temp
     }
     else {
-        browser()
         stopifnot(length(n) == 1L)
         nrx <- nrow(x)
         n <- if (n < 0L)

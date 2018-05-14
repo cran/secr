@@ -141,8 +141,10 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     if (snapXY) {
                         ## snap to site
                         dtrap <- distancetotrap(captures[,4:5], traps)
-                        if (any(dtrap>tol))
+                        if (any(dtrap>tol)) {
+                            print(captures[dtrap>tol,1:5])                       
                             stop("capture XY greater than distance tol from nearest trap")
+                        }
                         captTrap <- nearesttrap(captures[,4:5], traps)                      
                     }
                     else {

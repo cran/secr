@@ -6,6 +6,7 @@
 ## 2014-03-18 fixedbeta allowed
 ## 2014-10-13 predictD generalized for noneuc
 ## 2016-05-13 plot.Dsurface no longer requires 'covariate' specified for multisession input
+## 2018-04-29 drop dim of predictD output
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
@@ -122,7 +123,6 @@ predictD <- function (object, regionmask, group, session,
 
         indx <- object$parindx[[parameter]]
         betaD <- beta[indx]
-    
         if (object$model[[parameter]] == ~1) {
             D <- untransform(betaD, object$link[[parameter]])
             D <- max(D,0) / n.clust
@@ -136,7 +136,8 @@ predictD <- function (object, regionmask, group, session,
             mat <- general.model.matrix(object$model[[parameter]], data = newdata, 
                                         gamsmth = object$smoothsetup[[parameter]], 
                                         contrasts = object$details$contrasts)
-            lpred <- mat %*% betaD
+            ## lpred <- mat %*% betaD
+            lpred <- as.numeric(mat %*% betaD)   ## 2018-04-29 drop matrix class, dim attribute
             temp <- untransform(lpred, object$link[[parameter]])
             temp <- pmax(temp, 0) / n.clust
 

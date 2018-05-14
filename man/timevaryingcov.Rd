@@ -2,10 +2,10 @@
 \alias{timevaryingcov}
 \alias{timevaryingcov<-}
 
-\title{ Time-varying Detector Covariates }
+\title{ Time-varying Covariates }
 
 \description{
-  Extract or replace time varying trap covariates
+  Extract or replace time varying covariates
 }
 
 \usage{
@@ -14,17 +14,19 @@ timevaryingcov(object) <- value
 }
 
 \arguments{
-  \item{object}{ an object of class \code{traps} }
+  \item{object}{ an object of class \code{traps} or \code{capthist}}
   \item{value}{ a list of named vectors }
   \item{\dots}{ other arguments (not used) }
 }
 
 \details{
 
-  The timevaryingcov attribute of a traps object is a list of one or
-  more named vectors. Each vector identifies a subset of columns of
-  covariates(object), one for each occasion. If character values are
-  used they should correspond to covariate names.
+  The timevaryingcov attribute is a list of one or more named vectors. 
+  Each vector identifies a subset of columns of covariates(object), one for each occasion. If character values are used they should correspond to covariate names.
+
+In \pkg{secr} models, time-varying covariates are restricted to traps objects.  
+Time-varying (session-specific) individual covariates may be used in \pkg{openCR}. 
+The following remarks apply to time-varying traps covariates.
 
   The name of the vector may be used in a model formula; when the model
   is fitted, the value of the trap covariate on a particular occasion is
@@ -34,6 +36,10 @@ timevaryingcov(object) <- value
   attribute, the length of each vector in \code{value} must match exactly
   the number of columns in \code{usage(object)}.
   
+  When converting a multi-session capthist object into a robust-design ``single-session'' object with function \code{join} the argument `timevaryingcov' is used to collate 
+  covariate values across sessions in a form suitable for inclusion in 
+  \pkg{openCR} models (see \code{\link{join}}).
+  
 }
 
 \value{
@@ -41,16 +47,21 @@ timevaryingcov(object) <- value
   \code{object} (may be NULL).
 }
 
+\seealso{
+
+\code{\link{join}}
+
+}
+
 \note{
 
 It is usually better to model varying effort directly, via the \link{usage}
-attribute (see \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf}).
+attribute (see \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf}).
 
 Models for data from detectors of type `multi', `polygonX' or `transectX' take much
 longer to fit when detector covariates of any sort are used.
 
-See \href{http://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} for input of detector covariates
-from a file.
+See \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} for input of detector covariates from a file.
 
 }
 

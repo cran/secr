@@ -172,7 +172,7 @@ int anytelemetry (int detect[], int ss) {
     int s;
     int telemetry = 0;
     for (s=0; s<ss; s++) 
-	if ((detect[s]==13))
+	if (detect[s]==13)
 	    telemetry = 1;
     return telemetry;
 }

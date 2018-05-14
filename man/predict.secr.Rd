@@ -38,7 +38,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 \details{
   
 The variables in the various linear predictors are described in
-\href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} and listed for the particular model in the
+\href{https://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} and listed for the particular model in the
 \code{vars} component of \code{object}.
 
 Optional \code{newdata} should be a dataframe with a column for each of

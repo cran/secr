@@ -60,7 +60,7 @@ nedist(xy1, xy2, mask, inf = Inf, ...)
   results! Point pairs that are completely separated receive the
   distance +Inf unless a finite value is provided for the argument
   `inf'. See
-  \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}
+  \href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}
   for uses of \code{nedist}.
   
   

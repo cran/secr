@@ -16,6 +16,7 @@
 ## 2017-11-14 purged unused code for seltrap, selused
 ## 2018-01-22 made safe for nonspatial data
 ## 2018-01-25 multisession intervals passed through
+## 2018-05-12 faster handling of 'alive'
 ############################################################################################
 
 # From (row) To (column)
@@ -429,7 +430,6 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
 
         ####################################
         ## build dataframe of observations
-
         df <- data.frame(
             trap = trap(object, names = F),
             occ = occasion(object),
@@ -471,16 +471,23 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         ## build new object
         validrows <- (1:nrow(object)) %in% df$ID   ## or newID??? 2012-12-12
         df$trap <- factor(df$trap, levels = 1:ntrap)  ## bug fixed 2017-03-27
+        ## drop any records with missing data - just to be sure
+        df <- df[!apply(df,1,function(x) any(is.na(x))),, drop = FALSE]
         tempnew <- table(df$newID, df$newocc, df$trap)
-        alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
-        alivesign[is.na(alivesign)] <- TRUE
-        alivesign <- alivesign * 2 - 1
         if (! (outputdetector %in% .localstuff$countdetectors)
             & (length(tempnew)>0)) {
             ## convert 'proximity' and 'signal' to binary
             tempnew[tempnew>0] <- 1
         }
-        tempnew <- tempnew * alivesign
+
+        # alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
+        # alivesign[is.na(alivesign)] <- TRUE
+        # alivesign <- alivesign * 2 - 1
+        # tempnew <- tempnew * alivesign
+        ## 2018-05-12  faster...
+        i <- cbind(as.character(df$newID), df$newocc, as.character(df$trap))
+        tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
+        
 
         ################################
         ## general attributes
@@ -559,12 +566,27 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             tempnew[is.na(tempnew)] <- 0
         }
 
+        ################################
         interv <- intervals(object) ## 2018-01-25
         if (!is.null(interv)) {
-            if (!is.null(newoccasions)) warning ("intervals not carried forward")   
+            if (!is.null(newoccasions)) {  ## 2018-05-10
+                ## using last-first
+                # inti <- sapply(newoccasions, tail, 1)
+                # intervals(tempnew) <- interv[inti[-length(inti)]]
+                ## using first-first
+                cumint <- c(0,cumsum(interv))
+                int1 <- sapply(newoccasions, '[', 1)
+                intervals(tempnew) <- diff(cumint[int1])
+            }
+            #warning ("intervals not carried forward")   
             else intervals(tempnew) <- interv
         }
-
+        ################################
+        slabels <- sessionlabels(object)  ## 2018-05-10
+        if (!is.null(slabels) & !is.null(interv)) {
+            sessionlabels(tempnew) <- slabels[unique(primarysessions(interv))]
+        }
+        
         ################################
         ## dimnames
         if (nrow(tempnew) > 0) {

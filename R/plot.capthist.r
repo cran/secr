@@ -199,6 +199,10 @@ plot.capthist <- function(x, rad = 5,
         type <- match.arg(type)
         traps <- traps(x)
         detectr <- expanddet(x)
+        if (is.null(rownames(x))) {
+            warning ("capthist has no rownames; using 1:nrow")
+            rownames(x) <- 1:nrow(x)
+        }
         if (all(detectr == 'telemetry')) {
             type <- 'telemetry'
             # warning("assuming type = 'telemetry' as all data from telemetry")

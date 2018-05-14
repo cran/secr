@@ -78,7 +78,7 @@ information needed by the algorithm.
 
 Full documentation of the \pkg{secr} capability for non-Euclidean
 distances is in the separate document
-\href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf},
+\href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf},
 which includes example code for the analysis of Sutherland et
 al. (2015).
 

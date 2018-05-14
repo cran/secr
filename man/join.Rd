@@ -8,9 +8,13 @@
 single-session objects, or a multi-session capthist object.  }
 
 \usage{ 
-join(object, remove.dupl.sites = TRUE, tol = 0.001, intervals = NULL,
-    sessionlabels = NULL) 
+
+join(object, remove.dupl.sites = TRUE, tol = 0.001, sites.by.name = FALSE,
+    drop.sites = FALSE, intervals = NULL, sessionlabels = NULL, 
+    timevaryingcov = NULL) 
+    
 unjoin(object, intervals, ...)
+
 }
 
 \arguments{
@@ -24,9 +28,15 @@ retained for each trap site used in multiple input sessions }
   \item{tol}{ absolute distance in metres within which sites are
 considered identical }
 
+  \item{sites.by.name}{ logical; if TRUE and \code{remove.dupl.sites} then duplicate sites are inferred from row names rather than x-y coordinates}
+  
+  \item{drop.sites}{logical; if TRUE then site information is discarded}
+
   \item{intervals}{ vector of times between sessions (join) or occasions (unjoin; zero indicates same session) }
   
   \item{sessionlabels}{ vector of session names }
+  
+  \item{timevaryingcov}{ character vector of covariate names }
 
   \item{...}{ other arguments passed to \code{\link{subset.capthist}} }
 }
@@ -43,8 +53,14 @@ considered identical }
   The number of occasions (columns) in the output is equal to the sum of
 the number of occasions in each input.
 
+Duplicates may be defined either as sites within a given distance (\code{tol}) or sites with the same name (\code{sites.by.name = TRUE}). Using site names is faster.
+
+For non-spatial analyses it is efficient to drop the third dimension and discard the traps attribute (\code{drop.sites = TRUE}).
+
 A new dataframe of individual covariates is formed using the covariates
-for the first occurrence of each animal.
+for the first occurrence of each animal. 
+
+If \code{timevaryingcov} is given then for each name a new covariate is generated for each session and populated with values observed in that session, or NA if the animal was not detected. A `timevaryingcov' (list) attribute is created that associates each set of new session-specific columns with the corresponding old name, so that it may be used in formulae (see \code{\link{timevaryingcov}}).
 
 Attributes xy and signal are handled appropriately, as is trap usage.
 }
@@ -103,6 +119,21 @@ summary(joined.ovenCH)
 attr(joined.ovenCH, "intervals")
 
 summary(unjoin(joined.ovenCH))
+
+\dontrun{
+
+## suppose the 5-year ovenbird covariates include a column for weight
+## (here generated as random numbers)
+for (i in 1:5) covariates(ovenCH[[i]])$wt <- runif(nrow(ovenCH[[i]]))
+## construct single-session version of data for openCR
+## identify 'wt' as varying across years
+ovenCHj <- join(ovenCH, timevaryingcov = 'wt')
+head(covariates(ovenCHj))
+timevaryingcov(ovenCHj)
+## Use example: openCR.fit(ovenCHj, model = p~wt)
+
+}
+
 
 }
 

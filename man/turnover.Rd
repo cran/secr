@@ -16,12 +16,13 @@ Multi-session populations are generated in \code{sim.popn} whenever its argument
 \tabular{lll}{
 Component \tab Description \tab Default \cr
 \code{phi} \tab per capita survival rate \eqn{\phi} \tab 0.7 \cr
-\code{survmodel} \tab probability model for number of survivors \tab "binomial" \cr
+\code{survmodel} \tab probability model for number of survivors \tab ``binomial" \cr
 \code{lambda} \tab finite rate of increase \eqn{\lambda = N_{t+1} / N_t} \tab none \cr
-\code{recrmodel} \tab probability model for number of recruits \tab "poisson" \cr
+\code{recrmodel} \tab probability model for number of recruits \tab ``poisson" \cr
 \code{superN} \tab optional superpopulation size for multinomial recruitment model\tab see below \cr
 \code{sigma.m} \tab spatial scale of movement kernel \tab 0 \cr
-\code{wrap} \tab logical: should toroidal wrapping be applied? \tab TRUE \cr
+\code{edgemethod} \tab treatment of animals that cross the boundary \tab ``wrap" \cr
+\code{wrap} \tab deprecated in 3.1.6; use edgemethod \tab TRUE i.e. edgemethod = ``wrap" \cr
 }
 
 }
@@ -50,7 +51,7 @@ In the case of binomial recruitment there is a maximum of one recruit per existi
 
 \section{Movement}{
 
-Individuals may shift their home range centre between sessions. Movement probability is governed by a circular bivariate normal (Gaussian) kernel with scale sigma.m. If movement takes an animal across the boundary of the arena in \code{sim.popn} then by default it is toroidally wrapped i.e. re-joins the population on the opposing edge. The alternative allows centres outside the buffered area.
+Individuals may shift their home range centre between sessions. Movement probability is governed by a circular bivariate normal (Gaussian) kernel with scale sigma.m. 
 
 sigma.m is also used to indicate two special cases:
 
@@ -58,6 +59,7 @@ sigma.m = 0 indicates no change in home range centres between sessions.
 
 sigma.m < 0 causes a new home range centre for each animal to be drawn at random from within the buffered area.
 
+If movement takes an animal across the boundary of the arena in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard) and ``none" (allow centres outside the buffered area).
 }
 
 \seealso{

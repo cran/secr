@@ -1,5 +1,6 @@
 \name{pdot}
 \alias{pdot}
+\alias{CVpdot}
 
 \title{ Net Detection Probability }
 
@@ -14,6 +15,8 @@ at given coordinates.
 pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
     sigma = 25, z = 1), noccasions = NULL, binomN = NULL,
     userdist = NULL) 
+    
+CVpdot(..., conditional = FALSE)    
 
 }
 
@@ -26,6 +29,10 @@ pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
   \item{binomN}{ integer code for discrete distribution (see
     \code{\link{secr.fit}}) }
   \item{userdist}{user-defined distance function or matrix (see \link{userdist})}
+  
+  \item{\dots}{arguments passed to \code{pdot}}
+  \item{conditional}{logical; if TRUE then computed mean and CV are conditional on detection}
+  
 }
 \details{
 
@@ -51,21 +58,51 @@ transect or transectX. if \code{userdist} is a function requiring
 covariates or values of parameters `D' or `noneuc' then \code{X} must
 have a covariates attribute with the required columns.
 
+\code{CVpdot} returns the expected mean and CV of pdot across the points listed in \code{X}, assuming uniform population density. \code{X} is usually a habitat mask. See Notes for details.
+
 }
 
 \value{
-A vector of probabilities, one for each row in X.
+
+For \code{pdot}, a vector of probabilities, one for each row in X.
+
+For \code{CVpdot}, a named vector with elements `meanpdot' and `CVpdot'.
+
 }
 
-\seealso{ \code{\link{secr}}, \code{\link{make.mask}},
-  \code{\link{Detection functions}}, \code{\link{pdot.contour}} }
+\seealso{ 
+  \code{\link{secr}}, 
+  \code{\link{make.mask}},
+  \code{\link{Detection functions}}, 
+  \code{\link{pdot.contour}},
+  \code{\link{CV}}}
+
+\section{Notes}{
+
+\code{CVpdot} computes the mean \eqn{\mu} and variance \eqn{V} of the location-specific overall detection probability \eqn{p.(\mathbf{X})}{p.(X)} as follows.
+
+\deqn{\mu = \int p.(\mathbf{X}) f(\mathbf{X}) d\mathbf{X},}{\mu = \int p.(X) f(X) dX, }
+\deqn{V = \int p.(\mathbf{X})^2 f(\mathbf{X}) d\mathbf{X} - \mu^2.}{V = \int p.(X)^2 f(X) dX - \mu^2. }
+
+For uniform density and \code{conditional = FALSE}, \eqn{f(\mathbf{X})}{f(X)} is merely a scaling factor independent of \eqn{\mathbf{X}}{X}. 
+
+If \code{conditional = TRUE} then \eqn{f(\mathbf{X}) = p.(\mathbf{X}) / \int p.(\mathbf{X}) d\mathbf{X}}{f(X) = p.(X) /  \int p.(X) dX}. 
+
+The coefficient of variation is CV = \eqn{\sqrt{V}/\mu}{sqrt(V)/\mu}.
+}
 
 \examples{
+
   temptrap <- make.grid()
   ## per-session detection probability for an individual centred
   ## at a corner trap. By default, noccasions = 5.
   pdot (c(0,0), temptrap, detectpar = list(g0 = 0.2, sigma = 25),
     noccasions = 5)
+    
+  msk <- make.mask(temptrap, buffer = 100)
+  CVpdot(msk, temptrap, detectpar = list(g0 = 0.2, sigma = 25),
+    noccasions = 5)
+    
 }
 
 \keyword{ manip }

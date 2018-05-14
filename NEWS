@@ -1,3 +1,18 @@
+Changes in version 3.1.6 (2018-05-14)
+
+New features or changed behaviour of old functions
+    o   sim.popn() details (turnover) argument "wrap" deprecated; use "edgemethod"
+    o   plot method for capthist object copes with missing rownames
+    o   CVpdot() new function for CV of p. across mask
+    o   improved handling of attributes (intervals and sessionlabels) in subset and reduce
+        methods for capthist objects
+    o   join() allows site matching by name, which is faster
+    o   timevaryingcov() extended to capthist objects for openCR - see ?join
+    
+Bugs fixed
+    o   internal fn predictD returned matrix instead of vector, causing problems in region.N
+    o   sim.capthist() failed for signal detectors (df0 error reported by Ben S)
+
 Changes in version 3.1.5 (2018-02-25)
 
 New features or changed behaviour of old functions

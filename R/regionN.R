@@ -458,7 +458,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
                 miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
                 attr(mask, 'miscparm') <- coef(object)[miscindx, 1]
             }
-
             distmat <- valid.userdist (object$details$userdist,
                                        detector(trps),
                                        xy1 = trps,

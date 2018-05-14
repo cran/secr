@@ -7,23 +7,26 @@
 ## 2016-10-10 secr3
 ## 2017-01-29 telemetry fixes
 ## 2017-12-23
+## 2018-05-12 join uses attr() to avoid copying, and 
 #############################################################################
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
-                  intervals = NULL, sessionlabels = NULL) {
+                  sites.by.name = FALSE, drop.sites = FALSE, intervals = NULL, 
+                  sessionlabels = NULL, timevaryingcov = NULL) {
 
     ####################################################################
     onesession <- function (sess) {
         ## form CH as a dataframe
         CH <- object[[sess]]
+        if (drop.sites) attr(CH, 'traps') <- NULL   ## 2018-05-12
         newID <- animalID(CH)
         newocc <- occasion(CH) + before[sess]
         df <- data.frame(newID = newID, newocc = newocc, newtrap = newocc,   # dummy to hold place
                          alive = alive(CH), sess = rep(sess, length(newID)),
                          stringsAsFactors = FALSE)
         if (is.null(traps(CH)))
-            df$newtrap <-  rep(1,nrow(df))
-        else
+            df$newtrap <- rep(1,nrow(df))
+        else 
             df$newtrap <- trap(CH)
         if (!is.null(xy(CH)))
             df[,c('x','y')] <- xy(CH)
@@ -95,7 +98,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     ##------------------------------------------------------------------
     ## resolve traps
     ## first check whether all the same (except usage)
-    if (!is.null(traps(object))) {
+    if (!(drop.sites | is.null(traps(object)))) {
         temptrp <- lapply(traps(object), function(x) {usage(x) <- NULL; x})
         sametrp <- all(sapply(temptrp[-1], identical, temptrp[[1]]))
         telemetrytrap <- function (ch) {
@@ -132,12 +135,21 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
                 temptrp <- c(temptrp, list(newteltrap))
             }
             else {
-                df$newtrap <- paste(df$newtrap,df$sess, sep=".")
+                if (!sites.by.name) df$newtrap <- paste(df$newtrap,df$sess, sep=".")
             }
-
             temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), SIMPLIFY = FALSE)
             temptrp <- temptrp[!sapply(temptrp, is.null)]
-            newtraps <- do.call(rbind, c(temptrp, renumber = FALSE, checkdetector = FALSE))
+            
+            ## 2018-05-11
+            ## workaround for large datasets
+            if (sites.by.name) {
+                temptrp <- do.call(rbind, lapply(temptrp, as.matrix))
+                newtraps <- as.data.frame(temptrp[!duplicated(row.names(temptrp)),])
+            }
+            else {
+                newtraps <- do.call(rbind, c(temptrp, renumber = FALSE, checkdetector = FALSE))
+            }
+            ## end workaround
             detector(newtraps) <- outputdetector
             class(newtraps) <- c("traps", "data.frame")
         }
@@ -152,20 +164,27 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     ##------------------------------------------------------------------
     ## ensure retain all occasions
     df$newocc <- factor(df$newocc, levels = 1:nnewocc)
-
+    ## drop any records with missing data
+    df <- df[!apply(df,1,function(x) any(is.na(x))),, drop = FALSE]
     ##------------------------------------------------------------------
     ## construct new capthist matrix or array from positive detections
     tempnew <- table(df$newID, df$newocc, df$newtrap, useNA = "no")
-    alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
-    alivesign[is.na(alivesign)] <- TRUE
-    alivesign <- alivesign * 2 - 1
-    tempnew <- tempnew * alivesign
+    i <- cbind(as.character(df$newID), df$newocc, as.character(df$newtrap))
+    tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
+
+    # alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$newtrap),all)
+    # alivesign[is.na(alivesign)] <- TRUE
+    # alivesign <- alivesign * 2 - 1
+    # tempnew <- tempnew * alivesign
 
     ##------------------------------------------------------------------
     ## pile on the attributes...
     class(tempnew) <- 'capthist'
-    if (!is.null(traps(object))) traps(tempnew) <- newtraps
-    session(tempnew) <- 1
+    if (!(drop.sites || is.null(traps(object)))) {
+        # traps(tempnew) <- newtraps
+        attr(tempnew, 'traps') <- newtraps
+    }
+    attr(tempnew, 'session') <- 1
     neworder <- order (df$newocc, df$newID, df$newtrap)
 
     ##------------------------------------------------------------------
@@ -179,7 +198,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     ##------------------------------------------------------------------
     ## unmarked and nonID sightings
     ## not yet implemented for varying traps
-    if (sametrp & remove.dupl.sites) {
+    if (sametrp & remove.dupl.sites & !drop.sites) {
         ## retain unmarked sightings and nonID sightings if present
         ## ignore if NULL
         Tu <- Tu(object)
@@ -206,14 +225,31 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
 
     ##------------------------------------------------------------------
     ## covariates, xy, signal attributes
-    if (!is.null(covariates(object))) {
-        tempcov <- do.call(rbind, covariates(object))
+
+    covobj <- covariates(object)
+    if (!is.null(covobj)) {
+        
+        tempcov <- do.call(rbind, covobj)
         if (!is.null(tempcov)) {
             IDcov <- unlist(lapply(object,rownames))
             ## use first match
             tempcov <- tempcov[match(rownames(tempnew), IDcov),,drop = FALSE]
             rownames(tempcov) <- rownames(tempnew)
-            covariates(tempnew) <- tempcov
+            if (!is.null(timevaryingcov)) {
+                tcv <- vector('list')
+                for (i in timevaryingcov) {
+                    for (j in 1:nsession) {
+                        covname <- paste(i,j,sep=".")
+                        tempcov[,covname] <- rep(NA, nrow(tempcov))
+                        id <- rownames(object[[j]])
+                        tempcov[match(id, rownames(tempcov)),covname] <- covobj[[j]][,i]
+                    }
+                    tcv[[i]] <- paste(i, 1:nsession, sep='.')
+                }
+                attr(tempnew, 'timevaryingcov') <- tcv
+            }
+            attr(tempnew, 'covariates') <- tempcov
+            
         }
     }
 
@@ -242,7 +278,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
 
     ##------------------------------------------------------------------
     ## purge duplicate sites, if requested
-    if (remove.dupl.sites & !sametrp)
+    if (remove.dupl.sites & !sametrp & !sites.by.name)
         tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
 
     ## remember previous structure, for MARK-style robust design
@@ -260,8 +296,8 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     }
     if (is.null(sessionlabels)) sessionlabels <- sessionlabels(object)
     if (is.null(sessionlabels)) sessionlabels <- session(object)
-    intervals(tempnew) <- tmpintervals
-    sessionlabels(tempnew) <- sessionlabels
+    attr(tempnew, 'intervals') <- tmpintervals
+    attr(tempnew, 'sessionlabels') <- sessionlabels
 
     ##------------------------------------------------------------------
 

@@ -13,7 +13,6 @@ RMarkInput <- function (object, grouped = FALSE, covariates = TRUE) {
     if (ms(object))
         stop ("requires single-session capthist object - use 'join'")
     # object <- check3D(object)
-    
     CH <- apply(object, 1:2, function(x) as.numeric(any(abs(x)>0)))
     ntimes <- ncol(object)
     alive <- apply(object,1,function(x) all(x>=0))

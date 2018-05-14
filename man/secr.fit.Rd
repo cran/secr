@@ -74,7 +74,7 @@ available for use in linear predictors includes some that are
 constructed automatically (t, T, b, B, bk, Bk, k, K), group (g), and
 others that appear in the \code{covariates} of the input data. See also
 \code{\link{usage}} for varying effort, \code{\link{timevaryingcov}} to
-construct other time-varying detector covariates, and \href{http://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf}
+construct other time-varying detector covariates, and \href{https://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf}
 and \href{../doc/secr-overview.pdf}{secr-overview.pdf} for more on
 defining models.
 
@@ -150,7 +150,7 @@ userdist \tab user-provided distance function or matrix \cr
 
 A mark-resight model is fitted if the \code{\link{markocc}} attribute of the capthist 
 `traps' object includes sighting occasions. See the vignette 
-\href{http://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
+\href{https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf}{secr-markresight.pdf} 
 for a full account.
 
 If \code{method = "Newton-Raphson"} then \code{\link[stats]{nlm}} is

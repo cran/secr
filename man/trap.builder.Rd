@@ -185,14 +185,15 @@ tempgrid <- trap.builder (n = 10, method = "SRS",
 ## edgemethod = "allinside" avoids truncation at edge
 minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
     detector = "proximity")
-if (require(spsurvey)) {
+    
+if (requireNamespace('spsurvey')) {
   tempgrid <- trap.builder (n = 20, cluster = minigrid,
     method = "GRTS", edgemethod = "allinside", region =
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
     plt = TRUE)
 }
 ## as before, but excluding detectors from a polygon
-if (require(spsurvey)) {
+if (requireNamespace('spsurvey')) {
   tempgrid <- trap.builder (n = 40, cluster = minigrid,
     method = "GRTS", edgemethod = "allinside", region =
     cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),

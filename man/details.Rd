@@ -35,7 +35,7 @@ overdispersion statistics for sighting counts Tu and Tm to be estimated and
 returned as a vector or 2-column matrix (multi-session models), with no further
 model fitting.
 
-\code{details$contrasts} may be used to specify the coding of factor predictors. The value should be suitable for the 'contrasts.arg' argument of \code{\link[stats]{model.matrix}}. See `Trend across sessions' in \href{http://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} for an example.
+\code{details$contrasts} may be used to specify the coding of factor predictors. The value should be suitable for the 'contrasts.arg' argument of \code{\link[stats]{model.matrix}}. See `Trend across sessions' in \href{https://www.otago.ac.nz/density/pdfs/secr-multisession.pdf}{secr-multisession.pdf} for an example.
 
 \code{details$debug} is an integer code used to control the printing of intermediate 
 values (1,2) and to switch on the R code browser (3). In ordinary use it should not be 
@@ -169,7 +169,7 @@ character vector of names for the required covariates of `mask',
 possibly including the dynamically computed density `D` and a parameter
 `noneuc' that will be fitted. A slightly expanded account is at
 \link{userdist}, and full documentation is in the separate
-document \href{http://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}.
+document \href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}.
 
 **Do not use `userdist' for polygon or transect detectors**
 
