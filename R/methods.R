@@ -88,6 +88,7 @@
 ## 2018-01-22 trap() tweaked to return 1's for nonspatial
 ## 2018-02-05 plot.popn moved to plot.popn.R
 ## 2018-05-14 timevaryingcov allows capthist object (for openCR)
+## 2018-06-26 subset.popn failed for multi-session populations
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -1637,11 +1638,18 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
             if (is.list(subset))
                 sset <- subset[[i]]
             else
-                sset <- subset
-            if (is.null(subset))  ## 2015-03-17
+                ## sset <- subset
+                ## 2018-06-26
+                sset <- rep(list(subset), length(x))
+            if (is.null(subset)) { ## 2015-03-17
                 out[[i]] <- x[[i]]
-            else
-                out[[i]] <- subset(x[[i]], subset[[i]], NULL, renumber, ...)
+            }
+            else {
+                ## 2018-06-26
+                ## out[[i]] <- subset(x[[i]], subset[[i]], NULL, renumber, ...)
+                out[[i]] <- subset(x[[i]], subset = sset[[i]], sessions = NULL, 
+                                   renumber = renumber, ...)
+            }
         }
         class(out) <- c('popn', 'list')
         out
@@ -1661,6 +1669,7 @@ subset.popn <- function (x, subset = NULL, sessions = NULL, poly = NULL,
                 OK <- !OK
             subset <- subset[OK]
         }
+        
         #-------------------------
         # apply subsetting
         pop <- x[subset,]

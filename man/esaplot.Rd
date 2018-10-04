@@ -12,8 +12,8 @@ Plot effective sampling area (Borchers and Efford 2008) as a function of increas
 
 esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
     detectfn, detectpar, noccasions, binomN = NULL, thin = 0.1,
-    poly = NULL, session = 1, plt = TRUE, as.density = TRUE, n = 1,
-    add = FALSE, overlay = TRUE, ...)
+    poly = NULL, session = 1, plt = TRUE, type = c('density', 'esa', 'meanpdot', 
+    'CVpdot'), n = 1, add = FALSE, overlay = TRUE, conditional = FALSE, ...)
 
 }
 
@@ -33,11 +33,13 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
     coordinates of a bounding polygon (optional) }
   \item{session}{vector of session indices (used if \code{object} spans multiple sessions)}
   \item{plt}{ logical to plot results }
-  \item{as.density}{ logical; if TRUE the y-axis is n / esa }
+  \item{type}{ character, what to plot }
   \item{n}{ integer number of distinct individuals detected }
   \item{add}{ logical to add line to an existing plot }
   \item{overlay}{ logical; if TRUE then automatically \code{add = TRUE}
   for plots after the first }
+  \item{conditional}{logical; if TRUE the reported mean and CV are conditional on detection 
+      (see \code{\link{CVpdot}})}
   \item{\dots}{ graphical arguments passed to plot() and lines()}
 }
 
@@ -54,7 +56,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   \eqn{d_k(\mathbf{X}) <= \mbox{buffer}}{dk(X) <= buffer}, where \eqn{c}
   is the area associated with each cell.
 
-  The default (\code{as.density = TRUE}) is to plot the reciprocal of esa
+  The default (\code{type = 'density'}) is to plot the reciprocal of esa
   multiplied by \code{n}; this is on a more familiar scale (the density
   scale) and hence is easier to interpret.
   
@@ -85,6 +87,9 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   \item{density}{ n/esa } 
   \item{pdot}{ \eqn{p.(\mathbf{X})}{p.(X)} }
   \item{pdotmin}{ cumulative minimum  (\eqn{p.(\mathbf{X})}{p.(X)}) }
+  \item{meanpdot}{ expected pdot across mask (see \code{\link{CVpdot}})}
+  \item{CVpdot}{ CV of pdot across mask (see \code{\link{CVpdot}})}
+  
   If \code{plt = TRUE} the dataframe is returned invisibly.
 
 }
@@ -94,6 +99,9 @@ The response of effective sampling area to buffer width is just one
 possible mask diagnostic; it's fast, graphic, and often
 sufficient. \code{\link{mask.check}} performs more intensive checks,
 usually for a smaller number of buffer widths.
+
+The old argument 'as.density' was superceded by 'type' in 3.1.7.
+
 }
 
 \references{
@@ -104,7 +112,7 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 }
 
-\seealso{ \code{\link{mask}}, \code{\link{pdot}},
+\seealso{ \code{\link{mask}}, \code{\link{pdot}}, \code{\link{CVpdot}},
   \code{\link{make.mask}}, \code{\link{mask.check}},
   \code{\link{Detection functions}} }
 

@@ -16,7 +16,7 @@
 ## 2017-11-14 purged unused code for seltrap, selused
 ## 2018-01-22 made safe for nonspatial data
 ## 2018-01-25 multisession intervals passed through
-## 2018-05-12 faster handling of 'alive'
+## 2018-05-12 faster handling of 'alive'; bug fixed 2018-06-23 3.1.7
 ############################################################################################
 
 # From (row) To (column)
@@ -484,10 +484,12 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         # alivesign[is.na(alivesign)] <- TRUE
         # alivesign <- alivesign * 2 - 1
         # tempnew <- tempnew * alivesign
-        ## 2018-05-12  faster...
-        i <- cbind(as.character(df$newID), df$newocc, as.character(df$trap))
-        tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
         
+        ## 2018-05-12 faster...
+        ## 2018-06-23 Bug in 3.1.6 because newocc selects non-existent columns
+        ## 2018-06-23 fix by enclosing df$newocc in as.character()
+        i <- cbind(as.character(df$newID), as.character(df$newocc), as.character(df$trap))
+        tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
 
         ################################
         ## general attributes

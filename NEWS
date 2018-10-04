@@ -1,3 +1,25 @@
+Changes in version 3.1.7 (2018-10-03)
+
+New features or changed behaviour of old functions
+    o   esa.plot() computes CVpdot for varying buffer width 
+    o   esa.plot 'as.density' argument replaced with 'type' and new argument 'conditional'
+    o   sim.popn() edgemethod new options 'stop' and 'reflect'
+    
+Bugs fixed
+    o   OVpossumCH dataset Ageclass covariate placed 1-year-olds in >=2 year class
+    o   join() detector attribute not expanded correctly for some inputs
+    o   reduce.capthist() bug introduced in 3.1.6
+    o   subset.popn() failed for multi-session populations
+    o   region.N() gave misleading R.N for models with individual variation in detection, 
+        including h2
+    o   trap.builder() failed when projection specified for 'region'
+    o   addTelemetry() failed with mark-resight data
+    o   write.capthist() lost non-numeric detector names (since 2017-11-30)
+
+Other
+    o   secr-manual.pdf is no longer distributed with package - see 
+    https://www.otago.ac.nz/density/pdf/secr-manual.pdf or https://CRAN.R-project.org/package=secr/secr.pdf.
+
 Changes in version 3.1.6 (2018-05-14)
 
 New features or changed behaviour of old functions

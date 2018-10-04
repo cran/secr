@@ -59,7 +59,8 @@ sigma.m = 0 indicates no change in home range centres between sessions.
 
 sigma.m < 0 causes a new home range centre for each animal to be drawn at random from within the buffered area.
 
-If movement takes an animal across the boundary of the arena in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard) and ``none" (allow centres outside the buffered area).
+If movement takes an animal across the boundary of the arena in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal) and ``none" (allow centres outside the buffered area).
+
 }
 
 \seealso{
@@ -79,13 +80,13 @@ plot(pop)
 
 ## movement only
 pop2 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
-    details = list(lambda = 1, phi = 1, sigma.m = 10, wrap = TRUE))
+    details = list(lambda = 1, phi = 1, sigma.m = 10, edgemethod = "wrap"))
 pop3 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
-    details = list(lambda = 1, phi = 1, sigma.m = 10, wrap = FALSE))
+    details = list(lambda = 1, phi = 1, sigma.m = 10, edgemethod = "clip"))
 sapply(pop2, nrow)  ## how many individuals?
 plot(pop2)
 
-## show effect of toroidal wrapping --
+## show effect of edgemethod --
 tracks <- function (pop, ...) {
     rn <- unlist(lapply(pop, rownames))
     plot(pop[[1]], pch = 16)

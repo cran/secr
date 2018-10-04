@@ -21,6 +21,9 @@
 ## 2015-10-04 markocc argument for integralprw1
 ## 2015-11-19 dropped param argument for integralprw1
 ## 2016-10-28 userdist may be session-specific
+## 2018-08-22 code edited
+## 2018-08-22 all calls of sumDpdot use only first element, ignoring individual variation
+
 ############################################################################################
 
 region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -248,22 +251,21 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         if (all(det %in% .localstuff$individualdetectors)) {
             noneuc <- predictD (object, regionmask, group, session, parameter = 'noneuc')
             RN.method <- tolower(RN.method)
-            if (RN.method == 'mspe') {
+            if (RN.method %in% c('mspe', 'poisson')) {
                 notdetected <- sumDpdot (object, sessnum, regionmask, D, noneuc,
                     cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
                 RN <- n + notdetected
-                ## evaluate gradient of RN wrt betas at MLE
-                dNdbeta <- nlme::fdHess (object$fit$par, betaRN, object = object,
-                    region = regionmask)$gradient
-                ## compute variance from gradient & vcv
-                pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta
-                seRN <- (notdetected + pdotvar)^0.5
-            }
-            else if (RN.method == 'poisson') {
-                notdetected <- sumDpdot (object, sessnum, regionmask, D, noneuc,
-                    cell, constant = FALSE, oneminus = TRUE, pooled = pooled.RN)[1]
-                RN <- n + notdetected
-                seRN <- (seEN^2 - EN)^0.5
+                if (RN.method == 'mspe') {
+                    ## evaluate gradient of RN wrt betas at MLE
+                    dNdbeta <- nlme::fdHess (object$fit$par, betaRN, object = object,
+                                             region = regionmask)$gradient
+                    ## compute variance from gradient & vcv
+                    pdotvar <- dNdbeta %*% object$beta.vcv %*% dNdbeta
+                    seRN <- (notdetected + pdotvar)^0.5
+                }
+                else if (RN.method == 'poisson') {
+                    seRN <- (seEN^2 - EN)^0.5
+                }
             }
             ## RN.method = 'EN'
             else {
@@ -333,7 +335,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
 
     ## allow for fixed beta parameters 2014-03-18
     beta <- complete.beta(object)
-
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
     noccasions <- s
@@ -349,6 +350,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
     dettype <- detectorcode(trps, noccasions = s)
     nmix    <- getnmix(object$details)
     knownclass <- getknownclass(capthists, nmix, object$hcov)
+    groups <- object$groups  ## 2018-08-22
 
     ##############################################
     ## marking occasions 2015-10-04
@@ -407,7 +409,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
 
         realparval0 <- makerealparameters (object$design0, beta,
             object$parindx, object$link, object$fixed)  # naive
-
+        
         ## 2014-09-08
         if (!is.null(object$fixed$D))
             Dtemp <- object$fixed$D
@@ -479,11 +481,13 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             as.integer(dettype),
             as.double(Xrealparval0),
             as.integer(rep(1,n)),           ## dummy groups 2012-11-13; 2013-06-24
+            ## as.integer(getgrpnum (capthists, groups)),   ## testing 2018-08-22
             as.integer(n),
             as.integer(s),
             as.integer(k),
             as.integer(m),
             as.integer(1),                  ## dummy ngroups 2012-11-13
+            ## as.integer(length(group.levels(capthists, groups))),         ## testing 2018-08-22
             as.integer(nmix),
             as.integer(knownclass),
             as.double(unlist(trps)),
@@ -501,21 +505,30 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cell, constant = TRU
             as.integer(useD),
             a = double(n),
             resultcode = integer(1)
-       )
-       if (temp$resultcode != 0)
-           stop ("error in external function 'integralprw1'")
+        )
+        if (temp$resultcode != 0)
+            stop ("error in external function 'integralprw1'")
 
-       ## constant density case, D not passed to integralprw1
-       if (length(D) == 1) {
-           temp$a <- temp$a * D
-       }
-
-       if (oneminus) {
-           sumD <- ifelse (length(D) == 1, D * nrow(mask), sum(D))
-           return(sumD * cell - temp$a)
-       }
-       else
-           return(temp$a)
+        #############################################
+        ## insertion to fix discrepancy EN, RN
+        ## previously used only first temp$a
+        ## now use harmonic mean as in CLmeanesa
+        ## 2018-08-22
+        temp$a <- length(temp$a) / sum (1/temp$a)
+        ## replace temp$a to minimise code disruption
+        #############################################
+        
+        ## constant density case, D not passed to integralprw1
+        if (length(D) == 1) {
+            temp$a <- temp$a * D
+        }
+        
+        if (oneminus) {
+            sumD <- ifelse (length(D) == 1, D * nrow(mask), sum(D))
+            return(sumD * cell - temp$a)
+        }
+        else
+            return(temp$a)
     }
 }
 ############################################################################################

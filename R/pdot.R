@@ -21,6 +21,9 @@
 ## 2015-05-15 fill argument for contours
 ## 2016-11-12 pdotpoint, markocc
 ## 2017-04-04 replaced pdotpoly with hdotpoly
+## 2018-06-01 esa.plot type replaces as.density
+##            esa.plot conditional argument
+##            esa.plot CVpdot
 ###############################################################################
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
@@ -198,19 +201,20 @@ hdot <- function (X, traps, detectfn = 14, detectpar = list(lambda0 = 0.2, sigma
 
 esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL, detectfn,
                       detectpar, noccasions, binomN = NULL, thin = 0.1, poly = NULL, session = 1,
-                      plt = TRUE, as.density = TRUE, n = 1, add = FALSE, overlay = TRUE, ...) {
-
+                      plt = TRUE, type = c('density', 'esa','meanpdot', 'CVpdot'), 
+                      n = 1, add = FALSE, overlay = TRUE, conditional = FALSE, ...) {
+    type <- match.arg(type)
     if (inherits(object, 'secr')) {
         esa.plot.secr (object, max.buffer, max.mask, thin, poly, session, plt,
-                       as.density, add, overlay, ...)
+                       type, add, overlay, conditional, ...)
     }
     else {
         
         if (inherits(object, 'secrlist')) {
             output <- vector('list')
             arg <- list(max.buffer = max.buffer, max.mask = max.mask, thin = thin, 
-                        poly = poly, session = session, plt = plt, as.density = as.density, 
-                        add = add)
+                        poly = poly, session = session, plt = plt, type = type, 
+                        add = add, conditional = conditional)
             extra <- list(...)
             if (!('col' %in% names(extra)))
                 extra$col <- c("#000000", rainbow(length(object)))
@@ -241,6 +245,7 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
                     spacing <- spacing(object)/3
                 max.mask <- make.mask (object, max.buffer, spacing,,, 'trapbuffer', poly)
             }
+            nmask <- nrow(max.mask)
             detectfn <- valid.detectfn(detectfn)
             binomN <- getbinomN (binomN, detector(object))   ## must now be traps object
             a <- pdot (max.mask, object, detectfn, detectpar, noccasions, binomN)
@@ -248,14 +253,38 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
             ord <- order(d,a)
             cellsize <-  attr(max.mask, 'spacing')^2/10000
             a <- a[ord]
+            
+            ## CV 2018-06-01
+            mu <- cumsum(a) / (1:nmask) 
+            cv <- sqrt(cumsum(a^2)/(1:nmask) - mu^2)/mu
+            cumcv <- function(n) {
+                an <- a[1:n]
+                fx <- an/sum(an)
+                mucond <- sum(an * fx)
+                cvcond <- sqrt(sum(an^2 * fx) - mucond^2)/mucond
+                c(mucond, cvcond)
+            }
+            ## debug check
+            ## tmp <- CVpdot(max.mask, object, detectfn=detectfn, detectpar=detectpar, 
+            ##   noccasions = noccasions, conditional = TRUE)
+            ###################################################
             output <- data.frame(buffer = d[ord], esa =  cumsum(a) * cellsize,
-                                 density = n /  cumsum(a) / cellsize, pdot = a, pdotmin = cummin(a))
+                                 density = n /  cumsum(a) / cellsize, 
+                                 pdot = a, pdotmin = cummin(a),
+                                 meanpdot = mu, CVpdot = cv)
+            
             maxesa <- max(output$esa)
-            thinned <- seq(1,  nrow(max.mask), 1/thin)
+            thinned <- seq(1,  nmask, 1/thin)
             output <- output[thinned,]
             
+            if (conditional) {
+                cv <- sapply(thinned, cumcv)
+                output$meanpdot <- cv[1,]
+                output$CVpdot <- cv[2,]
+            }
+
             if (plt) {
-                if (as.density) {
+                if (type == 'density') {
                     if (add)
                         lines(output$buffer, n/output$esa, ...)
                     else {
@@ -270,13 +299,28 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
                                  ylim= n / maxesa * c(0.9, 1.2))
                     }
                 }
-                else {
+                else if (type == 'esa') {
                     if (add)
                         lines(output$buffer, output$esa, ...)
                     else
                         plot(output$buffer, output$esa, type = 'l',
                              xlab = 'Buffer width  m', ylab = 'esa(buffer)  ha', ...)
                 }
+                else if (type == 'meanpdot') {
+                    if (add)
+                        lines(output$buffer, output$meanpdot, ...)
+                    else
+                        plot(output$buffer, output$meanpdot, type = 'l',
+                             xlab = 'Buffer width  m', ylab = 'meanpdot(buffer)', ...)
+                }
+                else if (type == 'CVpdot') {
+                    if (add)
+                        lines(output$buffer, output$CVpdot, ...)
+                    else
+                        plot(output$buffer, output$CVpdot, type = 'l',
+                             xlab = 'Buffer width  m', ylab = 'CVpdot(buffer)', ...)
+                }
+                
                 invisible(output)
             }
             else output
@@ -287,8 +331,8 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
 ###############################################################################
 
 esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
-    thin = 0.1, poly = NULL, session = 1, plt = TRUE, as.density = TRUE,
-    add = FALSE, overlay = TRUE, ...) {
+    thin = 0.1, poly = NULL, session = 1, plt = TRUE, type = 'density',
+    add = FALSE, overlay = TRUE, conditional = FALSE, ...) {
 
     if (!inherits(object,'secr'))
         stop("require secr object")
@@ -309,8 +353,8 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
             addthisone <- ifelse (add | (overlay & (i != session[1])),
                                   TRUE, FALSE)
             esa.plot.outputs[[i]] <- esa.plot.secr (object, max.buffer,
-                max.mask, thin, poly, i, plt, as.density, addthisone,
-                overlay, ...)
+                max.mask, thin, poly, i, plt, type, addthisone,
+                overlay, conditional, ...)
         }
         if (plt)
             invisible(esa.plot.outputs)
@@ -347,7 +391,8 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
         }
         binomN <- object$details$binomN
         esa.plot (trps, max.buffer, spacg, max.mask, object$detectfn, detpar,
-                  nocc, binomN, thin, poly, session, plt, as.density, n, add, overlay, ...)
+                  nocc, binomN, thin, poly, session, plt, type, n, add, overlay, 
+                  conditional, ...)
     }
 }
 

@@ -19,6 +19,7 @@
 ## 2016-09-21 model2D = "even" option
 ## 2017-06-07 missing D becomes NULL
 ## 2018-02-21 multinomial recruitment
+## 2018-06-26 stop.at.edge
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -45,6 +46,91 @@ drop.outside <- function (pop) {
     OK <- (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
     subset(pop, OK)
 }
+
+## Based on 
+## https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
+## Returns c(NA,NA) if the lines do not intersect, otherwise x,y vector of intersection point
+get.line.intersection <- function (p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
+{
+    s1.x <- p1.x - p0.x
+    s1.y <- p1.y - p0.y
+    s2.x <- p3.x - p2.x
+    s2.y <- p3.y - p2.y
+    
+    s <- (-s1.y * (p0.x - p2.x) + s1.x * (p0.y - p2.y)) / (-s2.x * s1.y + s1.x * s2.y)
+    t <- ( s2.x * (p0.y - p2.y) - s2.y * (p0.x - p2.x)) / (-s2.x * s1.y + s1.x * s2.y)
+    
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        ## Collision detected
+        i.x <- p0.x + (t * s1.x)
+        i.y <- p0.y + (t * s1.y)
+        return (c(i.x, i.y))
+    }
+    return (c(NA,NA))  ## No collision
+}
+
+## vectorized
+get.line.intersection.v <- function (p0.x, p0.y, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
+{
+    s1.x <- p1.x - p0.x
+    s1.y <- p1.y - p0.y
+    s2.x <- p3.x - p2.x
+    s2.y <- p3.y - p2.y
+    s <- (-s1.y * (p0.x - p2.x) + s1.x * (p0.y - p2.y)) / (-s2.x * s1.y + s1.x * s2.y)
+    t <- ( s2.x * (p0.y - p2.y) - s2.y * (p0.x - p2.x)) / (-s2.x * s1.y + s1.x * s2.y)
+    out <- cbind(i.x = p0.x + (t * s1.x), i.y = p0.y + (t * s1.y))
+    OK <- (s >= 0 & s <= 1 & t >= 0 & t <= 1)
+    out[!OK,] <- NA
+    out
+}
+
+stop.at.edge <- function (old, pop, tol = 1e-6) {
+    ## animals that stop at the edge are shifted tol m towards centre 
+    ## so they don't get 'stuck'
+    update<- function(pop1, pop2) {
+        stopped <- !is.na(pop1[,1])
+        if (any(stopped))
+            pop2[stopped, ] <- pop1[stopped,]
+        pop2
+    }
+    bb <- attr(pop, 'boundingbox')
+    xmin <- min(bb$x)
+    xmax <- max(bb$x)
+    ymin <- min(bb$y)
+    ymax <- max(bb$y)
+    ## warning("get.line.intersection.v not working 2018-06-26")
+    left <- get.line.intersection.v(pop$x, pop$y, old$x, old$y, xmin, ymin, xmin, ymax)
+    right <- get.line.intersection.v(pop$x, pop$y, old$x, old$y, xmax, ymin, xmax, ymax)
+    top <- get.line.intersection.v(pop$x, pop$y, old$x, old$y, xmin, ymax, xmax, ymax)
+    bottom <- get.line.intersection.v(pop$x, pop$y, old$x, old$y, xmin, ymin, xmax, ymin)
+    left[,1] <- left[,1] + tol
+    right[,1] <- right[,1] - tol
+    top[,2] <- top[,2] - tol
+    bottom[,2] <- bottom[,2] + tol
+    pop <- update(left, pop)
+    pop <- update(right, pop)
+    pop <- update(top, pop)
+    pop <- update(bottom, pop)
+    pop
+}
+
+reflect <- function (pop) {
+    bb <- attr(pop, 'boundingbox')
+    xmin <- min(bb$x)
+    xmax <- max(bb$x)
+    ymin <- min(bb$y)
+    ymax <- max(bb$y)
+    OK <- (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
+    if (!all(OK)) {
+        while (any(pop$x < xmin)) pop$x <- ifelse(pop$x<xmin, 2*xmin-pop$x, pop$x)
+        while (any(pop$x > xmax)) pop$x <- ifelse(pop$x>xmax, 2*xmax-pop$x, pop$x)
+        while (any(pop$y < ymin)) pop$y <- ifelse(pop$y<ymin, 2*ymin-pop$y, pop$y)
+        while (any(pop$y > ymax)) pop$y <- ifelse(pop$y>ymax, 2*ymax-pop$y, pop$y)
+    }
+    pop
+}
+
 tile <- function (popn, method = "reflect") {
     bbox <- attr(popn, 'boundingbox')
     if (method== "reflect") {
@@ -126,6 +212,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             else {
                 newpopn <- subset(oldpopn, subset=survive)
                 if (turnoverpar$sigma.m[t] > 0) {
+                    oldposition <- newpopn  ## remember starting position
                     newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
                                                       sd = turnoverpar$sigma.m[t])
                     ## if (turnoverpar$wrap)   2018-03-31
@@ -133,6 +220,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                         newpopn <- toroidal.wrap(newpopn)
                     else if (turnoverpar$edgemethod == "clip") 
                         newpopn <- drop.outside(newpopn)
+                    else if (turnoverpar$edgemethod == "stop") 
+                        newpopn <- stop.at.edge(oldposition, newpopn)
+                    else if (turnoverpar$edgemethod == "reflect") 
+                        newpopn <- reflect(newpopn)
                 }
             }
             gam <- turnoverpar$lambda[t] - turnoverpar$phi[t]

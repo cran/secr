@@ -9,6 +9,7 @@
 ## 2017-01-27 revised addTelemetry
 ## 2017-03-25 check for compatible covariates in addTelemetry
 ## 2017-04-10 bug fixed in preceding check
+## 2018-09-30 extended to handle mark-resight data
 ###############################################################################
 
 ## add telemetry occasion(s) to follow existing occasions
@@ -17,7 +18,7 @@ addTelemetry <- function (detectionCH, telemetryCH,
                           type = c('concurrent','dependent','independent'), 
                           collapsetelemetry = TRUE,
                           verify = TRUE) {
-   
+
     ## combine capture histories from telemetry and hair snags etc.
     if (ms(detectionCH) | ms(telemetryCH)) {
         if (!(ms(detectionCH) & ms(telemetryCH)))
@@ -80,9 +81,27 @@ addTelemetry <- function (detectionCH, telemetryCH,
         ## no need for message about differing detector types
         traps(newCH) <- suppressWarnings(rbind(oldtraps, nulltraps))
         
+        
+        #################################
+        ## 2018-09-30
+        if (!is.null(markocc(oldtraps))) {
+            markocc(traps(newCH)) <- c(markocc(oldtraps), 1)
+            refillT <- function (T) {
+                if (is.matrix(T)) {
+                    newT <- matrix(0, nrow=nrow(traps(newCH)), ncol = ncol(newCH))
+                    newT[1:nrow(oldtraps), 1:ncol(detectionCH)] <- T
+                }
+                else newT <- T   ## assume summed or NULL
+                newT
+            }
+            Tu(newCH) <- refillT(Tu(detectionCH))
+            Tm(newCH) <- refillT(Tm(detectionCH))
+            Tn(newCH) <- refillT(Tn(detectionCH))
+        }
+        #################################
+        
         ## detector type
         detector(traps(newCH)) <- c(capdet, teldet)
-        
         newusge <- matrix(0, nrow=nrow(traps(newCH)), ncol = ncol(newCH))
         oldusge <- usage(detectionCH)
         if (is.null(oldusge)) 
@@ -93,11 +112,12 @@ addTelemetry <- function (detectionCH, telemetryCH,
         newusge[nrow(newusge), (ncold+1) : ncol(newusge)] <- 1
         usage(traps(newCH)) <- newusge
         telemetrytype(traps(newCH)) <- type
-        
+   
         zerohistcov <- covariates(telemetryCH)[is.na(OK),,drop = FALSE]
         diffcov <- (is.null(zerohistcov) != is.null(covariates(detectionCH))) |
             !(ncol(covariates(detectionCH)) == ncol(zerohistcov)) | 
             !all(names(covariates(detectionCH)) == names(zerohistcov))
+        
         if (diffcov | !all(names(zerohistcov) == names(covariates(detectionCH)))) {
             warning ("covariates in telemetryCH do not match detectionCH",
                      " so covariates discarded")

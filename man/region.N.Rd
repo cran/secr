@@ -6,13 +6,17 @@
 
 \title{Population Size}
 
-\description{Estimate the expected and realised populations in a region,
+\description{
+
+Estimate the expected and realised populations in a region,
 using a fitted spatially explicit capture--recapture model. Density is
 assumed to follow an inhomogeneous Poisson process in two
 dimensions. Expected \eqn{N} is the volume under a fitted density
 surface; realised \eqn{N} is the number of individuals within the region
 for the current realisation of the process (cf Johnson et al. 2010; see
-Note). }
+Note). 
+
+}
 
 
 \usage{

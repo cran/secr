@@ -11,12 +11,9 @@ trapfile <- paste0(datadir, '/stoattrap.txt')
 stoatCH <- read.capthist(captfile, trapfile, detector = 'proximity')
 summary(stoatCH)
 
-## ----download, echo = TRUE-----------------------------------------------
-download.file("https://www.otago.ac.nz/density/examples/stoat.xlsx",
-              "stoat.xlsx", quiet = TRUE, mode = "wb")
-
 ## ----readxl, warning = FALSE---------------------------------------------
-CH <- read.capthist ("stoat.xlsx", sheet = c("stoatcapt", "stoattrap"), skip = 1,
+xlsname <- paste0(datadir, '/stoat.xlsx')
+CH <- read.capthist (xlsname, sheet = c("stoatcapt", "stoattrap"), skip = 1,
                      detector = "proximity")
 summary(CH)
 

@@ -2,8 +2,11 @@
 \alias{esa.plot.secr}
 
 \title{
+
 Mask Buffer Diagnostic Plot (internal)
+
 }
+
 \description{
   
 Internal function used to plot effective sampling area (Borchers and
@@ -15,8 +18,8 @@ object
 \usage{
 
 esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
-    thin = 0.1, poly = NULL, session = 1, plt = TRUE, as.density
-    = TRUE, add = FALSE, overlay = TRUE, ...)
+    thin = 0.1, poly = NULL, session = 1, plt = TRUE, type = "density", 
+    add = FALSE, overlay = TRUE, conditional = FALSE, ...)
 
 }
 
@@ -29,10 +32,11 @@ esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
     coordinates of a bounding polygon (optional) }
   \item{session}{vector of session indices (used if \code{object} spans multiple sessions)}
   \item{plt}{ logical to plot results }
-  \item{as.density}{ logical; if TRUE the y-axis is n / esa }
+  \item{type}{ character; see \code{\link{esa.plot}}}
   \item{add}{ logical to add line to an existing plot }
   \item{overlay}{ logical; if TRUE then automatically \code{add = TRUE}
   for plots after the first }
+  \item{conditional}{logical; see \code{\link{esa.plot}}}
   \item{\dots}{ graphical arguments passed to plot() and lines()}
 }
 

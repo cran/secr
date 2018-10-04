@@ -1,9 +1,10 @@
 ############################################################################################
 ## package 'secr'
 ## write.traps.R
-## last changed 2009 06 11 2009 11 17 2010 04 30
+## last changed 2009 06 11 2009 11 17 2010 04 30 2018-10-02
 ## Write detector locations to text file in DENSITY format
 ## should remove conflict between row and ...
+## 2018-10-02 fixed bug in write.traps from as.data.frame applied to traps
 ############################################################################################
 
 write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 2,
@@ -33,6 +34,7 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
     }
     else {
         temp <- object
+        class(temp) <- "data.frame"  ## 2018-10-02
         if (!is.null(usage(object))) temp <- cbind(temp,usage(object))
     }
 

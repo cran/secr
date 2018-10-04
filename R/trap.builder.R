@@ -14,6 +14,7 @@
 ## 2014-10-25 revamp polygon requirement for grts
 ## 2014-12-11 set proj4string to NA
 ## 2014-12-11 method = "GRTS" changed to method == "GRTS" !
+## 2018-09-27 coerce CRS of region to CRS()
 ###############################################################################
 
 ## spsurvey uses sp
@@ -29,7 +30,7 @@ boundarytoSPDF <- function (boundary) {
     SpatialPolygonsDataFrame(SpP, attr)
 }
 boundarytoSP <- function (boundary) {
-    ## build sp SpatialPolygonsDataFrame object
+    ## build sp SpatialPolygons object
     ## input is 2-column matrix for a single polygon
     ## requires package sp
     Sr1 <- Polygon(boundary)
@@ -43,7 +44,6 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     c("clip", "allowoverlap", "allinside"), samplefactor = 2, ranks =
     NULL, rotation = NULL, detector, exclude = NULL, exclmethod =
     c("clip", "alloutside"), plt = FALSE, add = FALSE) {
-
     ## region may be -
     ## matrix x,y
     ## sp SpatialPolygonsDataFrame object
@@ -64,24 +64,25 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     method <- match.arg(method)
     edgemethod <- match.arg(edgemethod)
     exclmethod <- match.arg(exclmethod)
-
     allinside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy))
+        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
         ## 2014-10-25 polygons() works with both SP and SPDF
         !any(is.na(sp::over (xy, polygons(region))))
     }
 
     alloutside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy))
+        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
         ## 2014-10-25 polygons() works with both SP and SPDF
         all(is.na(sp::over (xy, polygons(exclude))))
     }
 
     position <- function (i, cluster) {
+        #newtraps <- secr::shift(cluster, origins[i,])
         newtraps <- shift(cluster, origins[i,])
         if (!is.null(rotation)) {
             if (rotation<0)
                 rotation <- runif(1) * 360
+            #bnewtraps <- secr::rotate(newtraps, rotation, apply(newtraps,2,mean))
             newtraps <- rotate(newtraps, rotation, apply(newtraps,2,mean))
         }
         i <- .local$clusteri
@@ -125,8 +126,6 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         if (SP) {
             ## spsurvey requires SPDF
             if ((method == 'GRTS') & (!inherits(region, 'SpatialPolygonsDataFrame'))) {
-                ## 2014-12-11
-                proj4string(region) <- CRS()
                 attr <- data.frame(a = 1, row.names = "s1")
                 region <- SpatialPolygonsDataFrame(region, attr)
             }
@@ -136,15 +135,13 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             region <- rbind (region, region[1,])  # force closure of polygon
             region <- boundarytoSPDF(region)
         }
-        if (SPx) {
-            ## 2014-12-11
-            proj4string(exclude) <- CRS()
-        }
-        else if (!is.null(exclude)) {
+        
+        if (!is.null(exclude) & !SPx) {
             exclude <- matrix(unlist(exclude), ncol = 2)
             exclude <- rbind (exclude, exclude[1,])  # force closure of polygon
             exclude <- boundarytoSP(exclude)
         }
+        
         if (plt & !add) {
             plot(region)
             if (!is.null(exclude))
@@ -165,6 +162,10 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
 
     ntrial <- max(n * samplefactor, 5)
+    ## 2018-09-27
+    if (!is.null(region))  proj4string(region) <- CRS()
+    if (!is.null(exclude)) proj4string(exclude) <- CRS()
+    
     ####################################
     if (method == 'SRS') {
         if (is.null(frame)) {
@@ -268,12 +269,12 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     ## drop excluded sites, if requested
     if (edgemethod == 'clip') {
-        xy <- SpatialPoints(as.matrix(traps))
+        xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
         OK <- sp::over (xy, polygons(region))
         traps <- subset(traps, subset = !is.na(OK))
     }
     if (!is.null(exclude) & (exclmethod == 'clip')) {
-        xy <- SpatialPoints(as.matrix(traps))
+        xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
         notOK <- sp::over (xy, polygons(exclude))
         traps <- subset(traps, subset = is.na(notOK))
     }
@@ -320,8 +321,6 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     SP <- inherits(region, "SpatialPolygons")
     if (SP) {
         region <- polygons(region)
-        ## 2014-12-11
-        proj4string(region) <- CRS()
     }
     else{
         ## convert to SpatialPolygons
@@ -330,6 +329,9 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         region <- rbind (region, region[1,])  # force closure of polygon
         region <- boundarytoSP(region)
     }
+    ## 2018-09-27
+    proj4string(region) <- CRS()
+
     wd <- diff(bbox(region)[1,])
     ht <- diff(bbox(region)[2,])
 
@@ -377,7 +379,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     centres <- expand.grid (
         x = seq(0, by = rx, len = nx) + origin[1],
         y = seq(0, by = ry, len = ny) + origin[2])
-    centres <- SpatialPoints(as.matrix(centres))
+    centres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
     OK <- !is.na(sp::over (centres, region))
     centres <- coordinates(centres[OK,])
     trap.builder (cluster = cluster, frame = centres, region = region,
