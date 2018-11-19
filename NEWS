@@ -1,3 +1,19 @@
+Changes in version 3.1.8 (2018-11-19)
+
+New features or changed behaviour of old functions
+    o   make.systematic() saves origin and centres as attributes
+    o   make.systematic() new argument bufferorigin controls random origin
+    o   summary method for secr objects, with print and AIC methods for summary (may change)
+    o   clone.popn() rownames consistent with clone.capthist() (1.1, 1.2...)
+    
+Bugs fixed
+    o   make.mask() not using keep.poly and check.poly arguments for multi-session masks
+    o   detector usage not correctly included in some models with detector type "multi"
+    o   clone methods not robust - freq now rounded to avoid quirky behaviour of rep()
+
+Other
+    o   some models (e.g., g0~bk with detector type "multi") fit more quickly than before
+
 Changes in version 3.1.7 (2018-10-03)
 
 New features or changed behaviour of old functions

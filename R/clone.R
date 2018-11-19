@@ -1,7 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## clone.R
-## last changed 2016-11-29
+## last changed 2016-11-29, 2018-11-16
 ############################################################################################
 
 clone <- function (object, type, ...) UseMethod("clone")
@@ -23,6 +23,7 @@ clone.default <- function (object,  type, ...)       {
             freq <- rnbinom(n, ...)
         else
             stop("unrecognised type")
+        freq <- round(freq)
         index <- rep(1:n, freq)
         object[index,,drop = FALSE]
     }
@@ -49,10 +50,20 @@ clone.popn <- function (object, type, ...) {
                 freq <- rnbinom(n, ...)
             else
                 stop("unrecognised type")
+            freq <- round(freq)
             index <- rep(1:n, freq)
             out <- object[index,,drop = FALSE]
-            if (!is.null(covariates(object)))
+            
+            ## 2018-11-16
+            seqn <- unlist(lapply(freq[freq>0], seq, from = 1))
+            seqn <- leadingzero(seqn)
+            rown <- paste(rep(rownames(object), freq), seqn, sep='.')
+            rownames(out) <- rown
+            
+            if (!is.null(covariates(object))) {
                 covariates(out) <- covariates(object)[index,,drop = FALSE]
+                rownames(covariates(out)) <- rown
+            }
             attr (out, 'freq') <- freq
         }
         out
@@ -80,12 +91,12 @@ clone.capthist <- function (object, type, ...) {
                 freq <- rnbinom(n, ...)
             else
                 stop("unrecognised type")
+            freq <- round(freq)
             index <- rep(1:n, freq)
             if (length(dim(object))==2)
                 out <- object[index,,drop = FALSE]
             else
                 out <- object[index,,,drop = FALSE]
-
             seqn <- unlist(lapply(freq[freq>0], seq, from = 1))
             seqn <- leadingzero(seqn)
             rown <- paste(rep(rownames(object), freq), seqn, sep='.')

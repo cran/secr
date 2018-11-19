@@ -1,41 +1,32 @@
+import(sp)
+import(parallel)
+
+importFrom(abind, "abind")
 importFrom(graphics, ".filled.contour", "abline", "contour", "hist", "lines", "locator",
            "mtext", "par", "persp", "points", "polygon", "rect", "segments", "strheight",
            "strwidth", "symbols", "text", "legend")
 importFrom(grDevices, "chull", "contourLines", "grey", "palette", "terrain.colors",
            "topo.colors", "rainbow")
+importFrom(MASS, "ginv", "eqscplot")
 importFrom(methods, "as", "is", "Ops", "Math")
+importFrom(mgcv, "gam", "s", "te", "formula.gam")
+importFrom(nlme, "fdHess")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
-           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", "integrate",
-           "lm", "logLik", "model.matrix", "nlm", "nls", "optim", "optimise", "optimize",
-           "pchisq", "pgamma", "plnorm", "pnorm", "predict", "qchisq", "qnorm", "rbeta",
-           "rbinom", "rmultinom", "rnbinom", "rnorm", "rpois", "runif", "sd", "simulate",
-           "smooth.spline", "terms", "uniroot", "update", "update.formula", "var", "vcov")
-importFrom(utils, "count.fields", "flush.console", "getS3method", "head", "packageDescription",
-           "packageVersion", "read.csv", "read.table", "tail", "write.table")
-importFrom(tools, "file_ext")
+           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", 
+           "integrate", "lm", "logLik", "model.matrix", "nlm", "nls", "optim", 
+           "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "predict", 
+           "qchisq", "qnorm", "rbeta", "rbinom", "rmultinom", "rnbinom", "rnorm", 
+           "rpois", "runif", "sd", "simulate", "smooth.spline", "terms", "uniroot", 
+           "update", "update.formula", "var", "vcov")
 importFrom(stringr, "str_pad", "str_length")
+importFrom(tools, "file_ext")
+importFrom(utils, "count.fields", "flush.console", "getS3method", "head", 
+           "packageDescription", "packageVersion", "read.csv", "read.table", 
+           "tail", "write.table")
 
-importFrom(MASS, ginv)
-importFrom(MASS, eqscplot)
-importFrom(abind, abind)
-importFrom(nlme, fdHess)
-importFrom(mgcv, gam)
-importFrom(mgcv, s)
-importFrom(mgcv, te)
-importFrom(mgcv, formula.gam)
-
-import(sp)
-import(parallel)
-
-## importFrom(rgeos, gArea, gIntersection)
-
-importFrom(raster, 'values<-')
-importFrom(raster, values)
-importFrom(raster, clump)
-importFrom(raster, adjacent)
+importFrom(raster, "values<-", "values", "clump", "adjacent")
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
-# exportClasses(mask, Dsurface)   NOT WORKING 2016-10-07
 exportMethods(raster)
 
 export (secr.fit)
@@ -343,7 +334,6 @@ S3method(sort, capthist)
 S3method(rotate, capthist)
 S3method(rbind, capthist)
 
-
 S3method(subset, mask)
 S3method(rbind, mask)
 S3method(plot, mask)
@@ -354,6 +344,9 @@ S3method(shift, mask)
 S3method(sort, mask)
 
 S3method(print, secr)
+S3method(summary, secr)
+S3method(print, summary.secr)
+S3method(AIC, summary.secr)
 S3method(plot, secr)
 S3method(predict, secr)
 S3method(vcov, secr)

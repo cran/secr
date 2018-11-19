@@ -685,7 +685,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
             }
             #####################################################################
             if (details$debug>=3) browser()
-            
+          
             temp <- .C('secrloglik', # PACKAGE = 'secr',
                        as.integer(like),          # 0 = full, 1 = CL, 2 = full, splitmarked,
                        # 3 = concurrent, 4 = concurrent  ????

@@ -205,7 +205,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
     min.detections <- 1
     .localstuff$iter2 <- 0   
 
-    if (detector(traps(object$capthist)) == 'single') {
+    if (any(detector(traps(object$capthist)) == 'single')) {
         memo ('multi-catch likelihood used for single-catch traps', tracelevel>0)
     }
     
@@ -318,7 +318,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
 
     if ('telemetry' %in% unlist(detector(traps(object$capthist))))
         stop("telemetry models are not supported in simulate.secr")
-
     ## --------------------------------------------------------------------
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)
@@ -349,9 +348,22 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     ## real parameter values for naive animals
 
     ## new approach using existing design to save time in secr.design.MS
-    design0 <- object$design0
-    dim0 <- dim(design0$PIA)
-    design0$PIA <- array (0, dim = c(dim0[1], max(N), dim0[3:5]))
+    ## massaged 2018-10-11
+    if (length(unique(object$design0$PIA)) == 1) {
+        design0 <- object$design0
+        dim0 <- dim(design0$PIA)
+        design0$PIA <- array (1, dim = c(dim0[1], max(N), dim0[3:5]))
+        dummyCH <- NULL
+    }
+    else {
+        dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
+        design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
+                                   object$groups, object$hcov, object$dframe, 
+                                   naive = TRUE,
+                                   ignoreusage = object$details$ignoreusage, 
+                                   contrasts = object$details$contrasts)
+    }
+    
     ## uniform over individuals
     ## C code uses individual-specific PIA even in full-likelihood case
     ## cf secr.fit which has one row per group
@@ -379,7 +391,8 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     ## (realised) detection histories
 
     if (btype > 0) {
-        dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
+        if (is.null(dummyCH))
+            dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
             object$groups, object$hcov, object$dframe, ignoreusage = object$details$ignoreusage, 
             contrasts = object$details$contrasts)
@@ -418,7 +431,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                                         session.mask, session.traps, Dtemp, s)
         Xrealparval1 <- reparameterize (realparval1, object$detectfn, object$details,
                                         session.mask, session.traps, Dtemp, s)
-
         ##------------------------------------------
         session.animals <- popnlist[[sessnum]]
         if (userd) {
@@ -606,4 +618,3 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     output
 }
 ############################################################################################
-

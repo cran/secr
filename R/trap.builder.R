@@ -312,7 +312,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 ###############################################################################
 
 make.systematic <- function (n, cluster, region, spacing = NULL,
-    origin = NULL, ...) {
+    origin = NULL, bufferorigin = TRUE, ...) {
 
 ## 'cluster' is a traps object for one module
 ## 'region' is a rectangular survey region
@@ -353,8 +353,8 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     if (!is.null(spacing)) {
         rx <- spacing[1]
         ry <- ifelse(length(spacing)>1, spacing[2], rx)
-        nx <- round ((wd-2*wx)/rx)
-        ny <- round ((ht-2*wy)/ry)
+        nx <- round ((wd-2*wx)/rx) + 1  ## extra to ensure coverage 2018-10-13
+        ny <- round ((ht-2*wy)/ry) + 1  ## extra to ensure coverage 2018-10-13
     }
     else {
         if (length(n)>1) {
@@ -371,19 +371,25 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         ry <- (ht - 2*wy) / ny
     }
     rxy <- c(rx,ry)
-    if (is.null(origin))
-        origin <- runif(2) * rxy + bbox(region)[,1] + c(wx,wy)
+    if (is.null(origin)) {
+        origin <- runif(2) * rxy + bbox(region)[,1]
+        if (bufferorigin) origin <- origin + c(wx,wy)  ## standard before 3.1.8 2018-10-13
+    }
     else {
         origin <- origin + rxy * trunc((bbox(region)[,1] - origin) / rxy)
     }
     centres <- expand.grid (
         x = seq(0, by = rx, len = nx) + origin[1],
         y = seq(0, by = ry, len = ny) + origin[2])
-    centres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
-    OK <- !is.na(sp::over (centres, region))
-    centres <- coordinates(centres[OK,])
-    trap.builder (cluster = cluster, frame = centres, region = region,
+    spcentres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
+    OK <- !is.na(sp::over (spcentres, region))
+    centres <- coordinates(spcentres[OK,])
+    traps <- trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)
+    ## new 2018-10-12
+    attr(traps, 'origin') <- origin
+    attr(traps, 'centres') <- centres
+    traps
 }
 
 ###############################################################################

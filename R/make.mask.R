@@ -52,10 +52,10 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     if (ms(traps)) {         ## a list of traps objects
         if (inherits(poly, 'list') & (!is.data.frame(poly)))
             stop ("lists of polygons not implemented in 'make.mask'")
-        ## 2014-09-20 now passes keep.poly and check.poly
+        ## 2014-09-20 2018-10-11 now passes keep.poly and check.poly
         temp <- lapply (traps, make.mask, buffer = buffer, spacing = spacing, nx = nx, ny = ny,
-                        type = type, poly = poly, poly.habitat = poly.habitat, keep.poly = TRUE,
-                        check.poly = TRUE,  pdotmin = pdotmin, random.origin = random.origin, ...)
+                        type = type, poly = poly, poly.habitat = poly.habitat, keep.poly = keep.poly,
+                        check.poly = check.poly,  pdotmin = pdotmin, random.origin = random.origin, ...)
         class (temp) <- c('mask', 'list')
         temp
       }

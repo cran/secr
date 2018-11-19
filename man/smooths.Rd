@@ -70,7 +70,7 @@ See also the example in \href{https://www.otago.ac.nz/density/pdfs/secr-densitys
   Setting the intercept of a smooth to zero is not a canned option in
   \pkg{mgcv}, and is not offered in \pkg{secr}. It may be achieved by
   placing a knot at zero and hacking the matrix of basis functions to
-  drop the corresponding column, plus some more \href{http://bit.ly/1rcIsQ6}{jiggling}.
+  drop the corresponding column, plus some more \href{https://bit.ly/1rcIsQ6}{jiggling}.
 
 }
 

@@ -68,6 +68,9 @@
 /* 2017-10-29 trial of capped proximity detectors introduced: detect[s] == 8 */
 /* 2017-12-06 bug in prwipoint 3.0.0-3.1.3 for binomial counts with binomN=1 (from usage) */
 
+/* 2018-11-09 bug in geth - fixed in replacement function geth2 */
+ 
+ 
 /*
         detect[s] may take values -
         0  multi-catch traps
@@ -1478,98 +1481,109 @@ void getdetspec (int detect[], int fn, int nc,  int nc1,
 }
 /*=============================================================*/
 
-void geth (int nc1, int cc, int nmix, int nk, int ss, int mm, 
-	   int PIA[], int hc0[], double hk[], double Tsk[],
-		 double h[], int hindex[]) {
-
-    /* total hazard for animal n on occasion s wrt mask point m */
-    /* construct index 'hindex' to values in 'h'                */
-    /* 'bk' model results in within-trap variation dependent on */
-    /* n.s, so h must be recalc each time                       */
-    /* c0 -- index of parameters for trap 0, mixture 0          */
-    /* hc0[c0] -- maps c0 to sequential index 'next'            */
-    /* next -- new index of parameters for each n,s             */
-    /* h -- array of computed hazard for [m,next]               */
-
-    /* mixtures are group-specific for full likelihood, and     */
-    /* individual-specific for conditional likelihood           */
-
-    int fullns = 0;
-    int next = 0;
-    int c,c0,i,m,n,s,k,x,gi,hi;
-    int PIAval0, PIAvalk;   /* added 2012-12-12 */
-    double Tski;            /* added 2012-12-17 */
-
-    /* Recognise when not fully specified by n.s, c  */
-    /* this arises when model = bk, Bk               */
-    /* and when detector covariates vary by time     */
-    /* Modified for speed 2012-12-12 by excluding    */
-    /* case that detectors are not used PIA < 0      */
+void geth2 (int nc1, int cc, int nmix, int nk, int ss, int mm, 
+            int PIA[], double hk[], double Tsk[], double h[], 
+            int hindex[]) {
     
-    for (n=0; n < nc1; n++) {
-        for (s=0; s < ss; s++) {
-	    PIAval0 = PIA[i4(n,s,0,0, nc1, ss, nk)];
-	    for (k=1; k<nk; k++) {
-                PIAvalk = PIA[i4(n,s,k,0, nc1, ss, nk)];
-		if (PIAval0 < 0)
-		    PIAval0 = PIAvalk;
-		else if (PIAvalk>0) {
-		    if (PIAval0 != PIAvalk) {
-			fullns = 1;
-			break;
-		    } 
-		}              
-	    } 
-	    if (fullns) break;
-	}
-	if (fullns) break;
-    }
-    /* Rprintf("fullns %5d \n", fullns); */
+    // This function fills a vector h representing a 4-D (x,m,n,s) array with
+    // the total hazard (summed across traps) for animal n on occasion s 
+    // wrt mask point m and latent class x
+    
+    // Computation is limited to combinations of n, s with unique parameter combinations 
+    // (values in PIA and Tsk) and the returned n x s matrix 'hindex' contains the index for
+    // each n, s to the unique total in h (for given x, m).
+    
+    // adapted from gethcpp in openCR 2018-11-09
+    // replaces defective geth
+    
+    int c,i,m,n,k,x,gi,hi,s;
+    double Tski;          
+    double *xmat;
+    double *ymat;
+    int row, col;
+    int nrow, ncol;
+    int *uniquerows;
+    int *resultcode;
+    size_t memrequest;  // "size_t is defined in stddef.h which the header defining R_alloc..."
+    nrow = nc1*ss;
+    ncol = nk*(nmix+1);
+    memrequest = nrow * ncol;
+    uniquerows = (int *) S_alloc(1, sizeof(int));
+    resultcode = (int *) S_alloc(1, sizeof(int));
 
-    for (i=0; i<cc; i++) hc0[i] = -1;
-    next = 0;        
-    for (n=0; n < nc1; n++) {
-	for (s=0; s < ss; s++) {
-	    hi = s*nc1 + n;
-	    /* Case 1. within-trap variation */
-	    if (fullns) {
-		for (k=0; k < nk; k++) {
-		    Tski = Tsk[s * nk + k];
-		    for (x = 0; x < nmix; x++) {
-			c = PIA[i4(n,s,k,x, nc1, ss, nk)]-1; 
-			for (m = 0; m < mm; m++) { 
-			    if (c >= 0) {
-				gi = i3(c,k,m,cc,nk);
-				h[i3(x,m,hi,nmix, mm)] += Tski * hk[gi];
-			    }
-			}
-		    }
-		}
-		hindex[hi] = hi;   
-	    }
-	    /* Case 2. no within-trap variation */
-	    else {
-		c0 = PIA[i4(n,s,0,0, nc1, ss, nk)] - 1;                    
-		if (hc0[c0] < 0) {
-		    hc0[c0] = next;
-		    next ++;
-		    for (k=0; k < nk; k++) {
-			Tski = Tsk[s * nk + k];
-			for (x = 0; x < nmix; x++) {
-			    c = PIA[i4(n,s,k,x, nc1, ss, nk)]-1; 
-			    for (m=0; m< mm; m++) { 
-				if (c >= 0) {
-				    gi = i3(c,k,m,cc,nk);
-				    h[i3(x,m, hc0[c0],nmix, mm)] += Tski * hk[gi];
-				}
-			    }
-			}
-		    }
-		}
-		hindex[hi] = hc0[c0];
-	    }
-	}
+    //---------------------------------------
+    // find unique combinations
+    xmat = (double *) R_alloc(memrequest, sizeof (double));
+    ymat = (double *) R_alloc(memrequest, sizeof (double));
+    for (n=0; n<nc1; n++) {
+        for (s=0; s<ss; s++) {
+            row = nc1*s+n;
+            for (k=0; k<nk; k++) {                         
+                for(x=0; x<nmix; x++) {
+                    col = x * nk + k;
+                    xmat[col * nrow + row] = PIA[i4(n,s,k,x, nc1, ss, nk)];
+                }
+		col = nmix * nk + k;  // append usage for this trap and occasion
+                xmat[col * nrow + row] = Tsk[s * nk + k];		
+            }
+        }
     }
+    makelookup(xmat, &nrow, &ncol, uniquerows, ymat, hindex, resultcode);
+    // need zero-based index 
+    for (i=0; i< nrow; i++) hindex[i]--;
+
+    //---------------------------------------
+    // check code
+    /* Rprintf("\n"); */
+    /* for (n=0; n<nc1; n++) { */
+    /*     for (s=0; s<ss; s++) { */
+    /* 	    Rprintf("%4d ", hindex[s*nc1+n]); */
+    /* 	} */
+    /* 	Rprintf("\n"); */
+    /* } */
+    /* Rprintf("\n"); */
+    //---------------------------------------
+
+    // zero array for accumulated hazard h
+    for (i=0; i<(*uniquerows * mm * nmix); i++) h[i] = 0;
+    
+    // search hindex for each row index in turn, identifying first n,s with the index
+    // fill h[] for this row
+    hi = 0;
+    for (s=0; s < ss; s++) {    // scan by occasion as new hi appear in column order
+	for (n=0; n < nc1; n++) {
+            if (hindex[s*nc1 + n] == hi) {
+                for (k=0; k < nk; k++) {
+                    Tski = Tsk[s * nk + k];
+                    for (x=0; x<nmix; x++) {
+                        c = PIA[i4(n,s,k,x, nc1, ss, nk)]-1;
+                        // c<0 (PIA=0) implies detector not used on this occasion
+                        if (c >= 0) {
+                            for (m=0; m<mm; m++) {
+                                gi = i3(c,k,m,cc,nk);
+                                h[i3(x,m,hi, nmix, mm)] += Tski * hk[gi];
+                            }
+                        }
+                    }
+                }
+                hi++;
+            } 
+            if (hi >= *uniquerows) break;
+        }
+        if (hi >= *uniquerows) break;
+    }   
+
+    //---------------------------------------
+    // check code
+    /* Rprintf("Total hazard for each combination at m = 500\n"); */
+    /* x = 0; */
+    /* m = 500; */
+    /* for (i=0; i< *uniquerows; i++) { */
+    /* 	Rprintf("%4d %7.4f \n", i, h[i3(x,m,i,nmix,mm)]); */
+    /* } */
+    /* Rprintf("\n"); */
+    //---------------------------------------
+
 }
 /*=============================================================*/
 
@@ -2135,8 +2149,7 @@ void secrloglik (
     double *detspec = NULL;
     int    *start = NULL;
 
-    /* total hazard computation */
-    int    *hc0 = NULL;        
+    /* total hazard computation for exclusive detectors */
     int    *hindex = NULL;     
     double *h = NULL;          
 
@@ -2398,10 +2411,9 @@ void secrloglik (
 
     if (anyexclusive(detect,*ss)) {   /* exclusive detectors require hazard */ 
 	zerok (detect, *nc, *ss, nk, w);
-        hc0 = (int *) R_alloc (*cc, sizeof(int));
         hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
 	h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
-	geth (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hc0, hk, Tsk, h, hindex);
+	geth2 (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hk, Tsk, h, hindex);
     } 
 
    /* complete filling of detspec */
@@ -3358,11 +3370,9 @@ void fxIHP (
 
 //    double *hr = NULL;
 
-    int    *hc0 = NULL;        
     int    *hindex = NULL;     
     double *h = NULL;          
 
-    int    *hc0x;
     int    *hindexx;
     double *hx;            /* 2011-11-15 */ 
     int    *start = NULL;
@@ -3505,10 +3515,9 @@ void fxIHP (
 		   traps, dist2, mask, gsbval, miscparm, detspec, gk, hk, 0); 
 	/* space allocation and precomputation for exclusive detector types (traps) */
 	if (anyexclusive(detect,*ss)) {
-	    hc0 = (int *) R_alloc (*cc, sizeof(int));
 	    hindex = (int *) S_alloc (nc1 * *ss, sizeof(int));
 	    h = (double *) S_alloc (nc1 * *ss * *mm * *nmix, sizeof(double)); 
-	    geth (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hc0, hk, Tsk, h, hindex);
+	    geth2 (nc1, *cc, *nmix, nk, *ss, *mm, PIA, hk, Tsk, h, hindex);
 	} 
 	getdetspec (detect, *fn, *nc, nc1, *cc, *nmix, nd, nk, *ss,  /* complete fill of detspec */
 		    *kk, *mm, PIA, miscparm, start, detspec);
@@ -3543,13 +3552,11 @@ void fxIHP (
 
     /* space allocation and precomputation for exclusive detector types (traps) */
     if (anyexclusive(detect,*ss)) {
-        hc0x = (int *) R_alloc (*cc, sizeof(int));
         hindexx = (int *) S_alloc (nc1 * *ss, sizeof(int));
         hx = (double *) S_alloc (nc1 * *ss * *xx * *nmix, sizeof(double));
-	geth (nc1, *cc, *nmix, nk, *ss, *xx, PIA, hc0x, hkx, Tsk, hx, hindexx);
+	geth2 (nc1, *cc, *nmix, nk, *ss, *xx, PIA, hkx, Tsk, hx, hindexx);
     }
     else {
-        hc0x = (int *) R_alloc (1, sizeof(int));
         hindexx = (int *) S_alloc (1, sizeof(int));
         hx = (double *) S_alloc (1, sizeof(double));
     }

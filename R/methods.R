@@ -2907,6 +2907,8 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
     }
 
     # scale newdata covariates... NOT FINISHED 10 05 08
+    ## 2018-10-14 NOTE maybe this was never finished!
+    ## remove at next maintenance?
     meanSD <- attr(x$mask,'meanSD',exact = TRUE)
     if (!is.null(newdata)) {
          for (i in 1:length(newdata)) {
@@ -2919,6 +2921,8 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
     cat ('\n')
     cat ('Fitted (real) parameters evaluated at base levels of covariates', '\n')
 
+    ## 2018-10-14 NOTE realpar is redundant, never used
+    ## to be removed at next maintenance
     if (!is.null(x$realpar))
         print( x$realpar )
     else {

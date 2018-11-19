@@ -4,7 +4,6 @@
 # Based on Otis et al. 1978, C code of Anne Chao etc.
 # modified 2010-09-05 for AICcwt
 # modified 2011-05-04 for only non-ML estimators
-# source('d:\\density secr 1.4\\secr\\r\\closedN.R')
 
 ############################################################################
 

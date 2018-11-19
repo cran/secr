@@ -542,6 +542,7 @@ sim.capthist <- function (
                     }
                 }
             }
+            ## drop empty histories
             w <- w[apply(w,1,sum)>0,,, drop = FALSE]
             class(w) <- 'capthist'
             traps(w) <- traps

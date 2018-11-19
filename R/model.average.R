@@ -239,7 +239,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
         ## 2011-11-05; 2012-02-16 bug fix
         if (type == 'real') {
             stop("sorry - covar not available at present",
-                 " for model-averaged real paramaters")
+                 " for model-averaged real parameters")
             dimnames(vcv) <- list (rownames, rownames, parnames)
             output <- list (ma = output, rowvcv = vcv)
         }

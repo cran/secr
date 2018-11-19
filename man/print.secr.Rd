@@ -1,29 +1,34 @@
 \name{print.secr}
 \alias{print.secr}
+\alias{summary.secr}
 
-\title{ Print secr Object }
+\title{ Print or Summarise secr Object }
 
 \description{
-  Print results from fitting a spatially explicit capture--recapture model.
+
+  Print results from fitting a spatially explicit capture--recapture model or
+  generate a list of summary values.
+
 }
 
 \usage{
-\method{print}{secr} (x, newdata = NULL, alpha = 0.05, deriv = FALSE,
-call = TRUE, ...)
+\method{print}{secr} (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = TRUE, ...)
+\method{summary}{secr} (object, newdata = NULL, alpha = 0.05, deriv = FALSE, ...)
 }
 
 \arguments{
   \item{x}{ \code{secr} object output from \code{secr.fit} }
+  \item{object}{ \code{secr} object output from \code{secr.fit} }
   \item{newdata}{ optional dataframe of values at which to evaluate model }
   \item{alpha}{ alpha level }
   \item{deriv}{ logical for calculation of derived D and esa }
   \item{call}{ logical; if TRUE the call is printed }
-  \item{...}{ other arguments (not used currently) }
+  \item{...}{ other arguments optionally passed to derived.secr }
 }
 
 \details{
 
-Results are potentially complex and depend upon the analysis (see
+Results from \code{print.secr} are potentially complex and depend upon the analysis (see
 below). Optional \code{newdata} should be a dataframe with a column for
 each of the variables in the model. If \code{newdata} is missing then a
 dataframe is constructed automatically.  Default \code{newdata} are for
@@ -63,8 +68,30 @@ Derived parameters (see \code{\link{derived}}) are computed only if
 \code{deriv = TRUE}.
 
 }
+
+\value{
+
+The \code{summary} method constructs a list of outputs similar to those printed by the \code{print} method, but somewhat more concise and re-usable:
+
+\tabular{ll}{
+versiontime     \tab secr version, and date and time fitting started \cr
+
+traps           \tab detector summary \cr
+capthist        \tab capthist summary \cr
+mask            \tab mask summary \cr
+modeldetails    \tab miscellaneous model characteristics (CL etc.) \cr
+AICtable        \tab single-line output of AIC.secr \cr
+coef            \tab table of fitted coefficients with CI \cr
+predicted       \tab predicted values (`real' parameter estimates) \cr
+derived         \tab output of derived.secr (optional) \cr
+}
+
+}
+
 \references{ 
+
 Burnham, K. P. and Anderson, D. R. (2002) \emph{Model selection and multimodel inference: a practical information-theoretic approach}. Second edition. New York: Springer-Verlag.
+
 }
 
 \seealso{ \code{\link{AIC.secr}}, \code{\link{secr.fit}} }
@@ -74,9 +101,17 @@ Burnham, K. P. and Anderson, D. R. (2002) \emph{Model selection and multimodel i
 ## load & print previously fitted null (constant parameter) model
 print(secrdemo.0)
 
+summary(secrdemo.0)
+
+## combine AIC tables from list of summaries
+do.call(AIC, lapply(list(secrdemo.b, secrdemo.0), summary))
+
 \dontrun{
+
 print(secrdemo.CL, deriv = TRUE)
+
 }
+
 }
 
 \keyword{ print }

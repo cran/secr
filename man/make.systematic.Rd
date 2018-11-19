@@ -1,17 +1,18 @@
 \name{make.systematic}
 \alias{make.systematic}
 
-\title{
-Construct Systematic Detector Design
-}
+\title{ Construct Systematic Detector Design }
 
 \description{
+
 A rectangular grid of clusters within a polygonal region.
+
 }
 
 \usage{
 
-make.systematic(n, cluster, region, spacing = NULL, origin = NULL, ...)
+make.systematic(n, cluster, region, spacing = NULL, origin = NULL, 
+    bufferorigin = TRUE, ...)
 
 }
 
@@ -29,6 +30,8 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL, ...)
 
   \item{origin}{vector giving x- and y-cooordinates of fixed grid origin
     (origin is otherwise random)}
+    
+  \item{bufferorigin}{ logical; see Details}
    
   \item{\dots}{ arguments passed to \code{trap.builder} }
 }
@@ -54,6 +57,9 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL, ...)
   arguments `rotation', `edgemethod', `plt', and `detector' to be
   passed. Setting the \code{trap.builder} arguments \code{frame},
   \code{method}, and \code{samplefactor} has no effect.
+  
+  
+  If \code{bufferorigin = FALSE} and \code{origin} is not specified then a random uniform origin is chosen within a box (width = spacing) placed with its bottom left corner at the bottom left of the bounding box of \code{region}. If \code{bufferorigin = TRUE} and \code{origin} is not specified then the origin box is displaced c(+spacing/2, +spacing/2). The default \code{bufferorigin = TRUE} was the behaviour in versions before 3.1.8, but often it makes more sense to use \code{bufferorigin = FALSE} with \code{trap.builder} \code{edgemethod = 'clip'}.   
   
 }
 
