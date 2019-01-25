@@ -1,3 +1,30 @@
+Changes in version 3.2.0 (2019-01-25)
+
+New features or changed behaviour of old functions
+    o   derivednj() extended for weighted variance (R2, R3), with subtle argument changes
+    o   derivednj() and dependent functions return 2-line dataframe (rows 'esa', 'D') as for derived()
+    o   derivedSession() extended for weighted variance
+    o   derivedCluster() extended for weighted variance
+    o   derived() for secr and secrlist objects acquires argument 'bycluster'
+    o   split method for mask objects (split.mask)
+    o   trap.builder() new edgemethod and exclmethod options "anyinside", "centreinside" etc.
+    o   derived.secr() improved handling of sessions with zero detections
+    o   derivedSystematic() implements Fewster 2011 variance for systematic cluster designs
+    o   make.systematic() acquires argument "chequerboard", saves originbox, 
+        argument 'originoffset' replaces 'bufferorigin'
+    o   spacing.traps() returns numeric(0) instead of NULL for 1-trap arrays
+    o   write.traps() removed single quotes around objectname
+    o   secr.fit() allows mixture models when detector 1 unused on occasion 1
+    o   make.mask() more explicit warning when nrow = 0
+    o   plot.traps() gridlines = TRUE respected for add = TRUE (default gridlines = !add)
+    o   pdot.contour() and related functions acquire argument 'poly.habitat'
+    o   summary method for capthist objects (summary.capthist) optionally reports movements
+
+Bugs fixed
+    o   make.systematic() grid didn't span extremes of some region polygons
+    o   sighting-only did not allow unidentified marked sightings
+    o   reduce.traps() failed for reduced number of occasions when both usage and markocc specified
+
 Changes in version 3.1.8 (2018-11-19)
 
 New features or changed behaviour of old functions

@@ -52,6 +52,8 @@
 ## 2018-02-14 allzero moved from addtelemetry.R
 ## 2018-05-13 primarysessions and secondarysessions are copied here from openCR
 ##            for use in subset.capthist and reduce.capthist, but not exported
+## 2018-12-29 boundarytoSPDF and boundarytoSP moved from trap.builder
+
 #######################################################################################
 
 # Global variables in namespace
@@ -2115,4 +2117,36 @@ secondarysessions <- function(intervals) {
     unname(unlist(sapply(table(primary), seq_len)))  
 }
 ############################################################################################
+
+boundarytoSPDF <- function (boundary) {
+    ## build sp SpatialPolygonsDataFrame object
+    ## input is 2-column matrix for a single polygon
+    ## requires package sp
+    Sr1 <- Polygon(boundary)
+    Srs1 <- Polygons(list(Sr1), "s1")
+    SpP <- SpatialPolygons(list(Srs1))
+    attr <- data.frame(a = 1, row.names = "s1")
+    SpatialPolygonsDataFrame(SpP, attr)
+}
+boundarytoSP <- function (boundary) {
+    ## requires package sp
+    if (is.null(boundary)) {
+        return(NULL)
+    }
+    else {
+        if (inherits(boundary, 'SpatialPolygons')) {
+            polygons(boundary)
+        }
+        else {
+            ## input is 2-column matrix for a single polygon
+            ## convert to SpatialPolygons
+            boundary <- matrix(unlist(boundary), ncol = 2)
+            boundary <- rbind (boundary, boundary[1,])  ## force closure of polygon
+            Sr1 <- Polygon(boundary)
+            Srs1 <- Polygons(list(Sr1), "s1")
+            SpatialPolygons(list(Srs1))
+        }
+    }
+}
+###############################################################################
 

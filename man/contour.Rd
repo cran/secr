@@ -18,10 +18,11 @@ adds a conventional `boundary strip' to a detector (trap) array, where
 pdot.contour(traps, border = NULL, nx = 64, detectfn = 0,
     detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = NULL,
     binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly =
-    NULL, plt = TRUE, add = FALSE, fill = NULL, ...)
+    NULL, poly.habitat = TRUE, plt = TRUE, add = FALSE, fill = NULL, ...)
 
 buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
-     plt = TRUE, add = FALSE, poly = NULL, fill = NULL, ...)
+     plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE, 
+     fill = NULL, ...)
 
 }
 
@@ -39,6 +40,7 @@ buffer.contour(traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
   \item{levels}{ vector of levels for p.(X)}
   \item{poly}{ matrix of two columns, the x and y
     coordinates of a bounding polygon (optional) }
+  \item{poly.habitat}{ logical as in \code{\link{make.mask}} }
   \item{plt}{ logical to plot contours }
   \item{add}{ logical to add contour(s) to an existing plot }
   \item{fill}{ vector of colours to fill contours (optional)}

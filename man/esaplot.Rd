@@ -12,8 +12,9 @@ Plot effective sampling area (Borchers and Efford 2008) as a function of increas
 
 esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
     detectfn, detectpar, noccasions, binomN = NULL, thin = 0.1,
-    poly = NULL, session = 1, plt = TRUE, type = c('density', 'esa', 'meanpdot', 
-    'CVpdot'), n = 1, add = FALSE, overlay = TRUE, conditional = FALSE, ...)
+    poly = NULL, poly.habitat = TRUE, session = 1, plt = TRUE, 
+    type = c('density', 'esa', 'meanpdot', 'CVpdot'), n = 1, add = FALSE, 
+    overlay = TRUE, conditional = FALSE, ...)
 
 }
 
@@ -31,6 +32,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   \item{thin}{ proportion of mask points to retain in plot and output}
   \item{poly}{ matrix of two columns interpreted as the x and y
     coordinates of a bounding polygon (optional) }
+  \item{poly.habitat}{logical as in \code{\link{make.mask}} }
   \item{session}{vector of session indices (used if \code{object} spans multiple sessions)}
   \item{plt}{ logical to plot results }
   \item{type}{ character, what to plot }

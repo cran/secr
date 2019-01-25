@@ -237,8 +237,16 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
         }
 
         ## 2012 04 10 revised limits for bounding box
-        xl <- range(mask$x) + spacing/2 * c(-1,1)
-        yl <- range(mask$y) + spacing/2 * c(-1,1)
+        ## 2019-01-20 conditional on nrows>0
+        if (nrow(mask)>0) {
+            xl <- range(mask$x) + spacing/2 * c(-1,1)
+            yl <- range(mask$y) + spacing/2 * c(-1,1)
+        }
+        else {
+            warning("no points in mask")
+            xl <- c(-Inf,Inf)
+            yl <- c(-Inf,Inf)
+        }
 
         attr(mask,'type')        <- type
         attr(mask,'meanSD')      <- getMeanSD (mask)

@@ -101,7 +101,8 @@ plot.secr <- function (x, newdata = NULL, add = FALSE,
                 grad <- matrix(nrow = length(xval), ncol = length(x$fit$par))  ## beta pars
                 if (is.null(newdata)) newdata <- secr.make.newdata (x)
                 parnamvec <- parnames(x$detectfn)
-                if (!parnamvec[1] %in% c('g0','lambda0'))
+                ## 2019-01-25 added beta0
+                if (!parnamvec[1] %in% c('g0','lambda0','beta0'))
                     stop ("first detection parameter not g0 or lambda0")
                 
                 lkdfn <- function (beta, r) {

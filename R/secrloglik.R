@@ -631,9 +631,7 @@ secr.loglikfn <- function (beta, parindx, link, fixedpar, designD, designNE, des
         ## typical call (not 'presence' or 'unmarked')
         ##--------------------------------------------
         else {
-            if (usge[1]==0 & nmix>1)
-                stop ("mixture models fail when the first detector is not ","
-                        used on the first day")
+            # 2019-01-19 removed old error message re no detections on first day
             
             #######################################################################
             ## option to estimate sighting overdispersion by simulation and exit */

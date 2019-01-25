@@ -5,6 +5,7 @@
 ## Write detector locations to text file in DENSITY format
 ## should remove conflict between row and ...
 ## 2018-10-02 fixed bug in write.traps from as.data.frame applied to traps
+## 2019-01-09 removed single quotes around objectname
 ############################################################################################
 
 write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 2,
@@ -63,7 +64,7 @@ write.traps <- function (object, file='', deblank = TRUE, header = TRUE, ndec = 
     }
 
     if (header) {
-        cat ("# Detector locations exported from '", objectname, "' \n",
+        cat ("# Detector locations exported from ", objectname, "\n",
              sep = "", file = file)
         cat ('#', format(Sys.time(), "%a %b %d %X %Y"), '\n', append = TRUE,
              file = file)

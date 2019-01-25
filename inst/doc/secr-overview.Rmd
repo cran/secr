@@ -1,5 +1,5 @@
 ---
-title: '**secr** 3.1 - spatially explicit capture--recapture in R'
+title: '**secr** 3.2 - spatially explicit capture--recapture in R'
 author: "Murray Efford"
 date: "`r Sys.Date()`"
 output: 
@@ -15,7 +15,7 @@ vignette: >
 
 \vspace{12pt}
 
-This document provides an overview of **secr** 3.1, an R package for spatially explicit capture--recapture analysis (SECR).  It includes some background on SECR, an outline of the package, and a more detailed description of how models are implemented.  See [secr-tutorial.pdf] for an introductory tutorial.  For details of how to use **secr** see the help pages and vignettes. 
+This document provides an overview of **secr** 3.2, an R package for spatially explicit capture--recapture analysis (SECR).  It includes some background on SECR, an outline of the package, and a more detailed description of how models are implemented.  See [secr-tutorial.pdf] for an introductory tutorial.  For details of how to use **secr** see the help pages and vignettes. 
 
 Two add-on packages extend the capability of **secr** and are documented separately. **secrlinear** enables the estimation of linear density (e.g., animals per km) for populations in linear habitats such as stream networks ([secrlinear-vignette.pdf][]). **secrdesign** enables the assessment of alternative study designs by  Monte Carlo simulation; scenarios may differ in detector (trap) layout, sampling intensity, and other characteristics ([secrdesign-vignette.pdf][]).
 
@@ -274,11 +274,11 @@ The primary documentation for **secr** is in the help pages that accompany the p
 
 The consolidated help pages are in the file [secr-manual.pdf]. Searching this text is a powerful way to locate a function for a particular task. 
 
-Other documentation, in the form of pdf vignettes built with **knitr**,  will be added from time to time. The 'User guides...' link in the package help index lists available files. The vignettes in Table 4 are included in **secr** 3.1 or may be found on the Density website.
+Other documentation, in the form of pdf vignettes built with **knitr**,  will be added from time to time. The 'User guides...' link in the package help index lists available files. The vignettes in Table 4 are included in **secr** 3.2 or may be found on the Density website.
 
 \vspace{12pt}
 
-**Table 4.** Vignettes for **secr** 3.1.
+**Table 4.** Vignettes for **secr** 3.2.
 
 | Vignette            | Topic                                            |
 |---------------------|--------------------------------------------------|
@@ -314,7 +314,7 @@ By default, the parameters of SECR models are assumed to be constant. We specify
 Models are defined symbolically in **secr** using R formula notation. A separate linear predictor is used for each core parameter.  Core parameters are 'real' parameters in the terminology of MARK, and
 **secr** uses that term because it will be familiar to biologists.
 
-Three real parameters are commonly modelled in **secr** 3.1; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derivedCluster` etc.). 
+Three real parameters are commonly modelled in **secr** 3.2; these are denoted 'D' (for density), 'g0' (or 'lambda0') and 'sigma'. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (`CL = TRUE` in `secr.fit`).  D is then a derived parameter that is computed from an **secr** object with the function `derived` or one of its siblings (`derivedCluster` etc.). 
 
 Here is a simple example of the model argument in use:
 ```{r, eval=FALSE}
@@ -493,7 +493,7 @@ See the separate document [secr-varyingeffort.pdf] and Efford et al. (2013) for 
 
 ##Mark--resight
 
-Mark--resight data include sampling occasions on which previously marked animals were recorded, but new animals were not distinguished from each other. \textbf{secr} 3.1 provides a suite of spatial models for these data, as documented in [secr-markresight.pdf]. Two general classes of spatial mark--resight model are included: those in which the marking process is modelled (we call these spatial capture--mark--resight models), and those in which the process is not modelled and pre-marked animals are assumed to follow some distribution (e.g., uniform across a known area) (sighting-only or mark--resight models). Mark--resight models in \textbf{secr} 3.1 discard some spatial information in the unmarked sightings -- information that is used in the models of Chandler and Royle (2013) and Sollmann et al. (2013). This results in some (probably small) loss of precision, and requires an adjustment for overdispersion to ensure confidence intervals have good coverage properties. The vignette [secr-markresight.pdf] should be consulted.
+Mark--resight data include sampling occasions on which previously marked animals were recorded, but new animals were not distinguished from each other. \textbf{secr} 3.2 provides a suite of spatial models for these data, as documented in [secr-markresight.pdf]. Two general classes of spatial mark--resight model are included: those in which the marking process is modelled (we call these spatial capture--mark--resight models), and those in which the process is not modelled and pre-marked animals are assumed to follow some distribution (e.g., uniform across a known area) (sighting-only or mark--resight models). Mark--resight models in \textbf{secr} 3.2 discard some spatial information in the unmarked sightings -- information that is used in the models of Chandler and Royle (2013) and Sollmann et al. (2013). This results in some (probably small) loss of precision, and requires an adjustment for overdispersion to ensure confidence intervals have good coverage properties. The vignette [secr-markresight.pdf] should be consulted.
 
 ##Detector clusters
 
@@ -606,7 +606,7 @@ Stanley, T. R. and Burnham, K. P. (1999) A closure test for time-specific captur
 
 &#9702; incomplete or inferior implementation.
 
-|                   Feature                   | DENSITY 5.0 | **secr** 3.1 |
+|                   Feature                   | DENSITY 5.0 | **secr** 3.2 |
 |---------------------------------------------|-------------|---------------|
 | **General**                                 | | | |
 | Graphical interface                         | &#8226; | &#9702; |
@@ -695,7 +695,7 @@ b. Not recommended because of heavy tail
 
 #Appendix 2. Core functions of **secr** {#appendix2}
 
-These are the core functions of **secr** 3.1 -- the ones that you are most likely to use. S3 methods are marked with an asterisk.
+These are the core functions of **secr** 3.2 -- the ones that you are most likely to use. S3 methods are marked with an asterisk.
 
 |  Function       | Purpose                                           |
 |-----------------|---------------------------------------------------|
@@ -752,7 +752,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 | `sim.capthist`	| simulate capture histories |
 | `sightingPlot`	| bubble plot of sightings in capthist object |
 | `snip`     	| split transect(s) into equal sections |
-| `split`*     	| split a single-session capthist by various criteria |
+| `split`*     	| split a single-session capthist or mask by various criteria |
 | `subset`*     	| filter 'capthist', 'traps' or 'mask' |
 | `summary`*     	| summarise 'capthist', 'traps' or 'mask' |
 | `tail`*     	| last rows of 'capthist', 'traps' or 'mask' |

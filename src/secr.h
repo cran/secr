@@ -1168,15 +1168,15 @@ int markresightini (
 
 /*---------------------------------------------------------------------*/
 
-void incmusk (double Dprwi, int n, int m, int x, int w[], int PIA[], double gk[], double hk[], 
-	      int binomN[], int cc, int nc, int nk, int ss, int nmix, 
+void incmusk (double Dprwi, int n, int m, int x, int PIA[], double gk[], double hk[], 
+	      int binomN[], int cc, int ncol, int nk, int ss, int nmix, 
 	      double gsbval[], double Tsk[], int markocc[], int firstocc,
-	      int detect[], double musk[]);
+	      int detect[], double musk[], int debug);
 
 /*---------------------------------------------------------------------*/
 
 void finmusk (int ss, int nk, double tmpmusk[], double musk[], double sumDprwi, 
-              double pID[], double mult);
+              double pID[], double mult, int debug);
 
 /*---------------------------------------------------------------------*/
 

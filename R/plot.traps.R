@@ -13,7 +13,7 @@ plot.traps <- function(x,
                        detpar=list(),
                        txtpar=list(),
                        bg = 'white',
-                       gridlines = TRUE,
+                       gridlines = !add,
                        gridspace = 100,
                        gridcol = 'grey',
                        markused = FALSE,
@@ -33,8 +33,13 @@ plot.traps <- function(x,
     else {
         trappar <- list(...)
         buff <- c(-border,+border)
-        xl <- range(x$x)+buff
-        yl <- range(x$y)+buff
+        if (add) {
+            xl <-  par()$usr[1:2]  
+            yl <-  par()$usr[3:4]  
+        } else {
+            xl <- range(x$x)+buff
+            yl <- range(x$y)+buff
+        }
         offsety <- ifelse (length(offset)==2, offset[2], offset[1])
         dcol <- 'red'
         detpar <- replacedefaults (list(col=dcol, pch=3, cex=0.8), detpar)
@@ -58,32 +63,6 @@ plot.traps <- function(x,
             ## axes = FALSE blocks bty = 'o' 2011-05-08
             eqscplot (x$x, x$y, xlim=range(x$x)+buff, ylim=range(x$y)+buff,
                       xlab='', ylab='', type='n', axes=F, ...)
-            if (gridlines) {
-                strtx <- gridspace * floor(xl[1]/gridspace)
-                strty <- gridspace * floor(yl[1]/gridspace)
-                finx  <- gridspace * (floor(xl[2]/gridspace) + 1)
-                finy  <- gridspace * (floor(yl[2]/gridspace) + 1)
-                # for (xi in seq(strtx, finx, gridspace))
-                #     segments(xi, strty, xi, finy, col=gridcol)
-                # for (yi in seq(strty, finy, gridspace))
-                #     segments(strtx, yi, finx, yi, col=gridcol)
-                for (xi in seq(strtx, finx, gridspace)) {
-                    if (xi>=xl[1] & xi<= xl[2]) {
-                        x1 <- x2 <- xi
-                        y1 <- max(strty, yl[1])
-                        y2 <- min(finy, yl[2])
-                        segments(x1, y1, x2, y2, col = gridcol)
-                    }
-                }
-                for (yi in seq(strty, finy, gridspace)) {
-                    if (yi>=yl[1] & yi<=yl[2]) {
-                        y1 <- y2 <- yi
-                        x1 <- max(strtx, xl[1])
-                        x2 <- min(finx, xl[2])
-                        segments(x1, y1, x2, y2, col = gridcol)
-                    }
-                }
-            }
             if (!is.null(trappar$bty)) {
                 if (trappar$bty=='o') rect(xl[1],yl[1],xl[2],yl[2])
             }
@@ -94,6 +73,28 @@ plot.traps <- function(x,
             else
                 i <- 1:nrow(df)
             points(df$x[i], df$y[i], pch = detpar$pch, bg = bg, col=detpar$col)
+        }
+        if (gridlines) {
+            strtx <- gridspace * floor(xl[1]/gridspace)
+            strty <- gridspace * floor(yl[1]/gridspace)
+            finx  <- gridspace * (floor(xl[2]/gridspace) + 1)
+            finy  <- gridspace * (floor(yl[2]/gridspace) + 1)
+            for (xi in seq(strtx, finx, gridspace)) {
+                if (xi>=xl[1] & xi<= xl[2]) {
+                    x1 <- x2 <- xi
+                    y1 <- max(strty, yl[1])
+                    y2 <- min(finy, yl[2])
+                    segments(x1, y1, x2, y2, col = gridcol)
+                }
+            }
+            for (yi in seq(strty, finy, gridspace)) {
+                if (yi>=yl[1] & yi<=yl[2]) {
+                    y1 <- y2 <- yi
+                    x1 <- max(strtx, xl[1])
+                    x2 <- min(finx, xl[2])
+                    segments(x1, y1, x2, y2, col = gridcol)
+                }
+            }
         }
         
         if (!hidetr) {

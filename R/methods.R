@@ -89,6 +89,7 @@
 ## 2018-02-05 plot.popn moved to plot.popn.R
 ## 2018-05-14 timevaryingcov allows capthist object (for openCR)
 ## 2018-06-26 subset.popn failed for multi-session populations
+## 2019-01-09 spacing.traps returns NA instead of NULL for 1-trap arrays
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -267,10 +268,20 @@ spacing.traps <- function (object, ..., recalculate = FALSE)    {
         }
         else {
             temp <- attr(object,'spacing')
-            if ((is.null(temp) | recalculate) & (nrow(object)>1)) {
-                spacing <- as.matrix(dist(object))
-                sp <- apply(spacing,1,function(x) min(x[x>0]))
-                mean(sp)
+            # if ((is.null(temp) | recalculate) & (nrow(object)>1)) {
+            #     spacing <- as.matrix(dist(object))
+            #     sp <- apply(spacing,1,function(x) min(x[x>0]))
+            #     mean(sp)
+            # }
+            ## 2019-01-16
+            if (is.null(temp) | recalculate) {
+                if (nrow(object)>1) {
+                    spacing <- as.matrix(dist(object))
+                    sp <- apply(spacing,1,function(x) min(x[x>0]))
+                    mean(sp)
+                }
+                else
+                    numeric(0) # NA
             }
             else
                 temp
@@ -1063,7 +1074,8 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'spacing<-' <- function (object, value) {
-    if (!(is.numeric(value)))
+    ## if (!(is.numeric(value)))
+    if (!(is.na(value) || is.numeric(value)))   ## allow NA 2019-01-22
         stop ("non-numeric spacing")
     if (ms(object)) {
         stop ("not sure how to replace spacing of ms object")
@@ -1989,7 +2001,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
                          " all intervals set to 1.0")
                 intervals(temp) <- rep(1, ncol(temp)-1)
             }
-            sessions <- unique(primarysessions(intervals(x))[occasions])
+            sessions <- unique(primarysessions(intervals(temp))[occasions])
             sessionlabels(temp) <- slabels[sessions]
         }
         ################################################
@@ -2184,41 +2196,43 @@ print.capthist <- function (x,..., condense = FALSE, sortrows = FALSE)
 }
 ############################################################################################
 
-summary.capthist <- function(object, terse = FALSE, ...) {
+summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
     ## recursive if list of capthist
     if (ms(object)) {
         if (terse) {
-            object <- check3D(object)
-            n     <- sapply(object, nrow)        # number caught
-            nocc  <- sapply(object, ncol)        # number occasions
-            ncapt <- sapply(object, function (xx) sum(abs(xx)))
-            if (!is.null(traps(object))) {
-                ndet  <- sapply(traps(object), ndetector) # number traps
-                temp  <- as.data.frame(rbind(nocc, ncapt, n, ndet))
-                names(temp) <- names(object)
-                rownames(temp) <- c('Occasions','Detections','Animals','Detectors')
-            }
-            else {
-                temp  <- as.data.frame(rbind(nocc, ncapt, n))
-                names(temp) <- names(object)
-                rownames(temp) <- c('Occasions','Detections','Animals')
-
-            }
-            temp
+            # simplify 2019-01-22
+            # object <- check3D(object)
+            # n     <- sapply(object, nrow)        # number caught
+            # nocc  <- sapply(object, ncol)        # number occasions
+            # ncapt <- sapply(object, function (xx) sum(abs(xx)))
+            # if (!is.null(traps(object))) {
+            #     ndet  <- sapply(traps(object), ndetector) # number traps
+            #     temp  <- as.data.frame(rbind(nocc, ncapt, n, ndet))
+            #     names(temp) <- names(object)
+            #     rownames(temp) <- c('Occasions','Detections','Animals','Detectors')
+            # }
+            # else {
+            #     temp  <- as.data.frame(rbind(nocc, ncapt, n))
+            #     names(temp) <- names(object)
+            #     rownames(temp) <- c('Occasions','Detections','Animals')
+            # 
+            # }
+            # temp
+            sapply (object, summary, terse = TRUE, moves = moves, ...)
         }
         else
-            lapply (object, summary.capthist, ...)
+            lapply (object, summary, terse = FALSE, moves = moves, ...)
     }
     else {
-
         object <- check3D(object)
         trps <- traps(object)
         nd <- ndetector(trps)
-        if (terse) {   ## 2017-11-06
+        if (terse) {   ## 2017-11-06, 2019-01-22
             c(Occasions = ncol(object),
               Detections = sum(abs(object)),
               Animals = nrow(object),
-              Detectors = nd)
+              Detectors = nd,
+              Moves = if (moves) sum(unlist(sapply(moves(object), function(y) y>0))) else NULL)
         }
         else {
             detector <- expanddet(object) # detector(traps)
@@ -2266,6 +2280,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
 
             PSV <-  NULL
             dbar <- NULL
+            movesummary <- NULL
 
             if (is.null(trps)) {
                 trapsum <- NULL
@@ -2278,6 +2293,12 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                         PSV <- RPSV(object)
                     if (all(detector(trps) %in% .localstuff$exclusivedetectors))
                         dbar <- dbar(object)
+                    if (moves) {
+                        mov <- moves(object)
+                        mov <- lapply(mov, function(x) x[x>0])
+                        movesummary <- list (peranimal = table(sapply(mov, length)),
+                                         distance = summary(unlist(mov)))
+                    }
                 }
                 trapsum <- summary(trps)
                 if (all(detector == 'signal'))
@@ -2374,6 +2395,7 @@ summary.capthist <- function(object, terse = FALSE, ...) {
                 zeros = zeros,
                 dbar = dbar,
                 RPSV = PSV,
+                moves = movesummary,
                 cutval = cutval,        # signal, signalnoise only
                 signalsummary = signalsummary,
                 telemsummary = telemsummary,
@@ -2419,6 +2441,13 @@ print.summary.capthist <- function (x, ...) {
     print(x$counts, ...)
     if (x$zeros>0)
         cat ('\nEmpty histories : ', x$zeros, '\n')
+    
+    if (!is.null(x$moves)) {
+        cat ('\nNumber of movements per animal')
+        print(x$moves$peranimal)
+        cat ('\nDistance moved, excluding zero (m)\n')
+        print(x$moves$distance)
+    }
 
     if (!nonspatial) {
         if (all(x$detector %in% c('signal', 'signalnoise'))) {

@@ -17,6 +17,7 @@
 ## 2018-01-22 made safe for nonspatial data
 ## 2018-01-25 multisession intervals passed through
 ## 2018-05-12 faster handling of 'alive'; bug fixed 2018-06-23 3.1.7
+## 2019-01-16 bug: clash between usage and markocc in reduce.traps FIXED
 ############################################################################################
 
 # From (row) To (column)
@@ -139,9 +140,6 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
             newxy <- as.data.frame(newxy)
             class (newxy)   <- c('traps', 'data.frame')
 
-            detector(newxy) <- detector(object)
-            markocc(newxy) <- markocc(object)
-
             sp <- spacing(newxy, recalculate = TRUE)
             if (!is.null(sp)) spacing(newxy) <- sp
             temp <- as.numeric(levels(splitfactor)[splitfactor])
@@ -152,6 +150,11 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
 
         #############################################################
         ## what if occasions collapsed?
+
+        newdetector <- detector(object)
+        newmarkocc <- markocc(object)
+        newusage <- usage(object)
+        
         if (!is.null(newoccasions)) {
             ## return one detector type per new occasion
             validdet <- function(occ) {
@@ -164,7 +167,8 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
                     tempdet[1]
                 }
             }
-            detector(newxy) <- sapply(newoccasions, validdet)
+            ##detector(newxy) <- sapply(newoccasions, validdet)
+            newdetector <- sapply(newoccasions, validdet)
 
             ## return one markocc per new occasion
             if (!is.null(markocc(object))) {
@@ -174,7 +178,8 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
                         stop("cannot combine occasions with differing markocc code")
                     tempmocc[1]
                 }
-                markocc(newxy) <- sapply(newoccasions, validmocc)
+                ## markocc(newxy) <- sapply(newoccasions, validmocc)
+                newmarkocc <- sapply(newoccasions, validmocc)
             }
         }
         #############################################################
@@ -185,25 +190,24 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
             #     newusagenames <- rownames(usage(object))
             # }
             # else {
-                usagelist <- split(as.data.frame(usage(object)), splitfactor)
-                newusagenames <- newtrapnames
-                if (any (splitfactor == 0)) usagelist <- usagelist[-1]  ## drop unwanted traps
-#            }
-            tempusage <- lapply(usagelist, function(x) apply(x,2,sum))
-            tempusage <- do.call(rbind, tempusage)
-            tempusage <- as.matrix(tempusage)
-            dimnames(tempusage) <- list(newusagenames, 1:ncol(tempusage))
-
-            daily <- as.data.frame(tempusage)
+            usagelist <- split(as.data.frame(usage(object)), splitfactor)
+            newusagenames <- newtrapnames
+            if (any (splitfactor == 0)) usagelist <- usagelist[-1]  ## drop unwanted traps
+            #            }
+            newusage <- lapply(usagelist, function(x) apply(x,2,sum))
+            newusage <- do.call(rbind, newusage)
+            newusage <- as.matrix(newusage)
+            dimnames(newusage) <- list(newusagenames, 1:ncol(newusage))
+            
+            daily <- as.data.frame(newusage)
             names(daily) <- paste('occ', names(daily), sep='')
-
+            
             if (!is.null(newoccasions)) {
-                tempusage <- collapseocc (newoccasions, tempusage)
+                newusage <- collapseocc (newoccasions, newusage)
             }
-          usage(newxy) <- tempusage
-
+            
         }
-        #############################################################
+        
         # return to consider covariates when traps combined,
         # using 'daily' from preceding
 
@@ -232,6 +236,10 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
         }
         #############################################################
 
+        markocc(newxy)  <- NULL   ## to avoid clash in next line; replaced below
+        usage(newxy)    <- newusage
+        detector(newxy) <- newdetector
+        markocc(newxy)  <- newmarkocc
         newxy
     }
 }

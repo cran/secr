@@ -28,6 +28,7 @@ the number of detections of each individual (Jett and Nichols 1987: 889).
 dispersion of the locations at which individual animals are detected,
 pooled over individuals (cf Calhoun and Casby 1958, Slade and Swihart 1983).
 
+\code{moves} reports the distance between successive detections of each animal.
 
 }
 
@@ -35,8 +36,8 @@ pooled over individuals (cf Calhoun and Casby 1958, Slade and Swihart 1983).
 dbar(capthist, userdist = NULL, mask = NULL)
 MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask = NULL)
 ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, mask = NULL)
-moves(capthist, userdist = NULL, mask = NULL, names = FALSE)
 RPSV(capthist, CC = FALSE)
+moves(capthist, userdist = NULL, mask = NULL, names = FALSE)
 }
 
 \arguments{
@@ -100,9 +101,13 @@ non-Euclidean distances.
 If \code{capthist} comprises standalone telemetry data (all detector 'telemetry') 
 then calculations are performed on the telemetry coordinates.
 
+Movements are reliably reported by \code{moves} only if there is a maximum of one detection per animal per occasion. The sequence of detections within any occasion is not known; where these occur the sequence used by \code{moves} is arbitrary (sequence follows detector index).
+
 }
 
 \value{
+
+For \code{dbar}, \code{MMDM}, \code{ARL} and \code{RPSV} --
 
 Scalar distance in metres, or a list of such values if \code{capthist}
 is a multi-session list.
@@ -110,6 +115,10 @@ is a multi-session list.
 The \code{full} argument may be used with \code{MMDM} and \code{ARL} to
 return more extensive output, particularly the observed range length for
 each detection history.
+
+For \code{moves} --
+
+List with one component for each animal, a vector of distances, or numeric(0) if the animal is detected only once. A list of such lists if \code{capthist} is a multi-session list.
 
 }
 

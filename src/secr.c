@@ -69,7 +69,10 @@
 /* 2017-12-06 bug in prwipoint 3.0.0-3.1.3 for binomial counts with binomN=1 (from usage) */
 
 /* 2018-11-09 bug in geth - fixed in replacement function geth2 */
- 
+
+/* 2019-01-05 *like = 5 and *like = 6 reworked */
+/* 2019-01-05 incmusk arg 'w' unused and removed */
+/* 2019-01-05 incmusk and finmusk acquire arg 'debug' */
  
 /*
         detect[s] may take values -
@@ -1589,6 +1592,19 @@ void geth2 (int nc1, int cc, int nmix, int nk, int ss, int mm,
 
 /* no need to return gpar 2015-10-10 */
 
+int firstk (int n, int x,  int nc, int ss, int nk,  int PIA[]) {
+    /* return index of first detector for which PIA is non-zero */
+    int wxi;
+    int k=-1;
+    do {
+	k++;
+	wxi = i4(n,0,k,x,nc,ss,nk);
+    }
+    while ((PIA[wxi] == 0) && (k<nk));
+    if (k>=nk)  error ("no detector used on first occasion? error in getpmix");  /* 2019-01-19 */
+    return(k);
+}
+
 void getpmix(int gpar, int nc1, int nmix, int knownclass[], int nc, int cc, int ss, 
             int nk, int grp[], int PIA[], double gsbval[], double pmixg[], 
             double pmixn[]){
@@ -1604,7 +1620,8 @@ void getpmix(int gpar, int nc1, int nmix, int knownclass[], int nc, int cc, int 
         gpar++;
         for (n=0; n<nc1; n++) {
             for (x=0; x<nmix; x++) {
-                wxi = i4(n,0,0,x,nc,ss,nk);
+                // wxi = i4(n,0,0,x,nc,ss,nk);
+                wxi = i4(n,0,firstk(n,x,nc,ss,nk,PIA),x,nc,ss,nk);
                 c = PIA[wxi] - 1;
 		if (c<0) error ("c<0 error in getpmix");  /* 2017-02-08 */
 		pmix = gsbval[cc * (gpar-1) + c];  /* last column in gsbval */
@@ -1702,7 +1719,7 @@ int filla0 (int like, int n, int markocc[], int ncol, int PIA0[],
 		a0[x] += pimask[m] * pdt * area * mm;  
 	    }
 	    if (a0[x] < 0) {    // changed from <= 2015-12-31
-		// Rprintf("bad a0 in filla0\n");
+		// Rprintf("a0[x]<0 in filla0\n");
 		return(6);
 	    }
 	}
@@ -2108,7 +2125,8 @@ void secrloglik (
     double Tmlik = 0.0;
     double Tnlik = 0.0;
     int    allsighting = 0;
-    double numerator = 1;
+    double numerator = 1.0;
+    double denominator = 0.0;
     double a0[maxnmix];
     double *Tumu = NULL;
     double *Tmmu = NULL;
@@ -2125,7 +2143,8 @@ void secrloglik (
     int     nonzero;   
 
     /* switch between Tm likelihoods: 0 shorter (unconditional) 1 longer (conditional) */
-    int Tmswitch = 1;      
+    /* See Efford & Hunter 2018 Section 3.3 */
+    int Tmswitch = 1;      /* hardwire conditional version */
     int *nmarked = NULL;      
 
     /* stored pdot for allsighting */
@@ -2242,7 +2261,7 @@ void secrloglik (
     gpar = markresightini (*ss, *nmix, markocc, nk, ncol, PIA, *cc, gsbval,
 			   pID, gpar);
     allsighting = (*like >= 5);
-    if (Tu[0]>=0) {
+    if (Tu[0]>=0 || Tm[0]>=0) {   // Tm check added 2019-01-05 for clarity
         /* storage for Pr(marked on or before s) */
 	pdots = (double *)  S_alloc(*ss * *nmix * *mm, sizeof (double));
     }
@@ -2516,9 +2535,10 @@ void secrloglik (
 			    if (*debug>1 &&  m==400) 
 				Rprintf("m %5d n %4d f %12.10f prwi %12.10f sum prwi %12.10f\n",
 					m,n,f,prwi,temp);
+                            /* accumulate for Efford & Hunter eqn 8 */
 			    if (Tm[0]>=0  && Tmswitch) { 
-				incmusk (temp, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
-					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+				incmusk (temp, n, m, x, PIA, gk, hk, binomN, *cc, ncol, nk, *ss,
+  				   *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk, 0);
 			    }
 			}
 		    }
@@ -2528,7 +2548,10 @@ void secrloglik (
 		}
 	    }    /* end of loop over mixture classes */
 
-            if (Tm[0]>=0 && Tmswitch) finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1); 
+	    /* finalise Efford & Hunter eqn 8 */
+            if (Tm[0]>=0 && Tmswitch) {
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1, 0); 
+	    }
 
             /* 2017-02-07 let templog go NaN if it wants... */
 	    templog = log(tempsum * *area);
@@ -2568,11 +2591,12 @@ void secrloglik (
 	    if (!Tmswitch) {
                 /* standalone calculation of Tmmu */
 		*resultcode = expectedTmTu (*like, *distrib, 0, *nc, *ss, nk,
-					  *cc0, *nmix, pmixg, *mm, Dmask, pimask,
+					    *cc0, *nmix, pmixg, *mm, Dmask, pimask,
 					    *area, markocc, pdots, ncol, PIA0, gk0, hk0, 
 					    binomN, detect, Tsk, nmarked, asum, pID, Tmmu);
 		if (*resultcode>0) return;
 	    }
+            /* otherwise use Tmmu we have already prepared... */
 	    *resultcode = Tsightinglik (Tm, *ss, nk, markocc, ncol, detect, Tsk, Tmmu,
 					 *debug, &Tmlik);
 	    if (*debug>=1) {
@@ -2673,17 +2697,19 @@ void secrloglik (
    
 			    tempsum += tempp;                             /* sumDprwi */
 			    /* for unidentified marked sightings, increment each mu_sk */
+                            /* accumulate for Efford & Hunter eqn 8 */
 			    if (Tm[0]>=0 && Tmswitch) { 
-				incmusk (tempp, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
-					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+				incmusk (tempp, n, m, x, PIA, gk, hk, binomN, *cc, ncol, nk, *ss,
+				      *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk, 0);
 			    }
 			}
 		    }
 		}
 	    }
             /* for unidentified marked sightings */	        
+	    /* finalise Efford & Hunter eqn 8 */
 	    if (Tm[0]>=0 && Tmswitch) {
-		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1);		
+		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1, 0);		
 	    }
 	    templog = log(tempsum);
 	    if (!R_FINITE(templog)) *resultcode = 9;
@@ -2876,6 +2902,7 @@ void secrloglik (
 	if (timing) ticks = timestamp(ticks, &counter);
         /*-----------------------------------------------------------*/
 
+        // filla0: a0[x] += pimask[m] * pdt * area * mm; unknown n marked (*like == 6)
 	*resultcode = filla0 (*like, 0, markocc, ncol, PIA0, gk0, hk0, detect, binomN, Tsk, 
 			      *ss, nk, *mm, *cc0, *nmix, gsb0val, allsighting, pimask, 
 			      *area, a0);
@@ -2888,7 +2915,7 @@ void secrloglik (
 	    Rprintf("nc = %4d\n", *nc);
 	/* Loop over individuals... */
 	for (n=0; n<*nc; n++) {                      /* CH numbered 0 <= n < *nc */
-	    tempsum = 0;
+	    denominator = 0.0;   
 	    if (Tm[0] >= 0 && Tmswitch) {
 		for(i=0; i<(*ss * nk); i++) tmpmusk[i] = 0;
 	    }
@@ -2902,62 +2929,73 @@ void secrloglik (
 			    prwfn (m, n, x, w, xy, signal, PIA, gk, hk, binomN, 
 				    detspec, h, hindex, *cc, *nc, nk, *ss, *mm, *nmix,
 				    zfn, gsbval, traps, dist2, Tsk, mask, *minprob, pID);
-			if ((Tm[0]>=0) && Tmswitch && (firstocc[n] < *ss)) { 
-			    incmusk (numerator, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
-					 *nmix, gsbval, Tsk, markocc, firstocc[n], detect, tmpmusk);
+			if ((Tm[0]>=0) && Tmswitch) { 
+			    /* accumulate for Efford & Hunter eqn 12 */
+                            /* 2019-01-05 assume available from occasion 0, not firstocc[n] */
+			    incmusk (numerator, n, m, x, PIA, gk, hk, binomN, *cc, ncol, nk, *ss,
+				     *nmix, gsbval, Tsk, markocc, -1, detect, tmpmusk, 
+				     *debug);
 			}
-			if (*like == 5)
-			    temp += numerator;
-			else if (a0[x]>0)
-			    temp += numerator / a0[x];  
+                        // divisor a0[x] as Efford & Hunter eqn 13
+                        // a0[x] = 1 for *like = 5
+			denominator += numerator / a0[x];  
 		    }
 		}
-		tempsum += temp;
-	        /* Rprintf("%5d tempsum %12.8f asum[x] %9.6f \n",
-		   n, tempsum, asum[x]);   */
 	    }    /* end of loop over mixture classes */
 
-/* MOVE INSIDE X LOOP TO ALLOW FOR NMIX>1 */
+	    /* finalise for Efford & Hunter eqn 12 */
 	    if (Tm[0] >= 0 && Tmswitch) {
-		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, 1);		
+		finmusk (*ss, nk, tmpmusk, Tmmu, denominator, pID, 1, 0);		
 	    }
 
-	    templog = log(tempsum * *area);    
+	    templog = log(denominator * *area);    
 	    if (!R_FINITE(templog)) *resultcode = 9;
 	    if (*resultcode == 9) return;
 	    comp[0] += templog;
 	    R_CheckUserInterrupt();
 	}        /* end of loop over individuals */
 
-        /* separately compute for nzero all-zero detection histories */
+        /*****************************************************************/
+        /* separately compute for nzero all-zero detection histories     */
         /* of pre-marked animals. There are nzero of these observed when */
-        /* like == 5; the number is estimated when like == 6 */
+        /* like == 5; the number is estimated when like == 6             */
+        /* see Efford & Hunter 2018 eqn 8, 11 etc.                       */
+        /* 2019-01-05 TESTING                   */
 
-	if ((Tm[0]>0) && Tmswitch && (*like == 6)) { 
-	    error("allsighting Tm not ready yet");
-/*
-	    tempsum = 0.0;   
+	if ((Tm[0]>0) && Tmswitch && (*like == 5 || *like == 6)) {   
+            // error("allsighting Tm not ready yet");  
+	    if (*debug) Rprintf("starting like 5/6 unsighted animals\n");
+	    denominator = 0.0;   
             for(i=0; i<(*ss * nk); i++) tmpmusk[i] = 0;
 	    for (x = 0; x < *nmix; x++) {
-		temp = 0;
-		pmixnx = 1 / *nmix;    // TEMPORARY FUDGE - NEED PMIX 
+		pmixnx = pmixn[x];
 		if (pmixnx > 1e-6) {
 		    for (m=0; m< *mm; m++) {
-			numerator = pmixnx * pimask[m] * prwi0(m,x,PIA etc.);
-			temp += numerator / a0[x];  
-			incmusk (numerator, n, m, x, w, PIA, gk, hk, binomN, *cc, *nc, nk, *ss,
-					 *nmix, gsbval, Tsk, markocc, 0, detect, tmpmusk);
+			pdt = pndot (m, 0, markocc, x, ncol, PIA0, gk0, hk0, detect, binomN, 
+				     Tsk, *ss, nk, *cc0, *nmix, gsb0val, allsighting);		
+                        // pdt = exp(-H(m))
+			numerator = pmixnx * pimask[m] * (1-pdt);
+			if (*debug) 
+			    Rprintf("m %4d numerator (m) %10.8f  1-pdt(m) %10.8f\n", 
+				    m, numerator, 1-pdt);
+                        // divisor a0[x] as Efford & Hunter eqn 13
+                        // a0[x] = 1 for *like = 5
+			denominator += numerator / a0[x]; 
+			/* 2019-01-05 assume available from occasion 0, not firstocc[n] */
+			incmusk (numerator, 0, m, x, PIA0, gk0, hk0, binomN, *cc, ncol, nk, *ss, 
+			 	 *nmix, gsb0val, Tsk, markocc, -1, detect, tmpmusk, *debug); 
 		    }		    
+		    if (*debug) Rprintf("all sighting zero histories denominator %10.8f\n", 
+					denominator);
 		}
-		tempsum += temp;
 	    } 
+            /* add expected values for all-zero histories to others in Tmmu */
 	    if (*like == 5)
-		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, nzero);		
+		finmusk (*ss, nk, tmpmusk, Tmmu, denominator, pID, (double)*nzero, *debug);
 	    else 
-		finmusk (*ss, nk, tmpmusk, Tmmu, tempsum, pID, *nc/a0[0] - *nc);
-	    // note preceding fudge when we don't know a0[x] 
-	    */
+		finmusk (*ss, nk, tmpmusk, Tmmu, denominator, pID, *nc/a0[0] - *nc, *debug);    
 	}
+        /****************************************************************/
 
     /* sighting matrices */
 
@@ -2982,9 +3020,9 @@ void secrloglik (
 	        if (*resultcode>0) return;
 	    }
 	    *resultcode = Tsightinglik (Tm, *ss, nk, markocc, ncol, detect, Tsk, Tmmu,
-                                 *debug, &Tmlik);
-                                 if (*resultcode>0) return;
-                                 comp[5] = Tmlik / chat[1];
+					*debug, &Tmlik);
+	    if (*resultcode>0) return;
+	    comp[5] = Tmlik / chat[1];
 	}
 	/* if (Tn[0] > 0) error ("unresolved sightings incompatible with all-sighting"); */
 	/* NOTE: Tn not an option for sighting only */
@@ -3411,7 +3449,7 @@ void fxIHP (
     if (*gg > 1)
 	error("fxi does not allow for groups");
     ng = (int *) R_alloc(*gg, sizeof(int));
-    fillng(*nc, *gg, grp, ng);                                    /* number per group */
+    fillng(*nc, *gg, grp, ng);                                     /* number per group */
 
     nk = fillcumk(detect, *ss, kk, cumk);                          /* detections per polygon */
 

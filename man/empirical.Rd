@@ -5,9 +5,14 @@
 \alias{derivedMash}
 \alias{derivedCluster}
 \alias{derivedExternal}
+\alias{derivedSystematic}
+
 \title{
+
 Empirical Variance of H-T Density Estimate
+
 }
+
 \description{
 
   Compute Horvitz-Thompson-like estimate of population density from a
@@ -23,29 +28,32 @@ Empirical Variance of H-T Density Estimate
 
 \usage{
 
-derivednj ( nj, esa, se.esa, method = c("SRS", "local", "poisson",
-    "binomial"), xy = NULL, alpha = 0.05, loginterval = TRUE, area =
-    NULL )
+derivednj ( nj, esa, se.esa = NULL, method = c("SRS", "R2", "R3", "local",
+    "poisson", "binomial"), xy = NULL, alpha = 0.05, loginterval = TRUE, 
+    area = NULL, independent.esa = FALSE )
 
 derivedMash ( object, sessnum = NULL,  method = c("SRS", "local"),
     alpha = 0.05, loginterval = TRUE)
 
-derivedCluster ( object, sessnum = NULL,  method = c("SRS", "local"),
+derivedCluster ( object, method = c("SRS", "R2", "R3", "local", "poisson", "binomial"),
     alpha = 0.05, loginterval = TRUE)
 
-derivedSession ( object,  method = c("SRS", "local"), xy = NULL,
-    alpha = 0.05, loginterval = TRUE )
+derivedSession ( object,  method = c("SRS", "R2", "R3", "local", "poisson", "binomial"), 
+    xy = NULL, alpha = 0.05, loginterval = TRUE, area = NULL, independent.esa = FALSE )
 
 derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
     mask = NULL, noccasions = NULL,  method = c("SRS", "local"), xy = NULL,
     alpha = 0.05, loginterval = TRUE)
+
+derivedSystematic( object, xy, design = list(), basenx = 10, df = 9, extrapolate = TRUE,
+    alpha = 0.05, loginterval = TRUE, independent.esa = FALSE, keep = FALSE)
 
 }
 
 \arguments{
   \item{object}{fitted secr model }
   \item{nj}{ vector of number observed in each sampling unit (cluster)}
-  \item{esa}{scalar estimate of effective sampling area (\eqn{\hat{a}}{a-hat})}
+  \item{esa}{estimate of effective sampling area (\eqn{\hat{a}}{a-hat})}
   \item{se.esa}{ estimated standard error of effective sampling
     area (\eqn{\widehat{SE}(\hat{a})}{SE-hat(a-hat)})}
   \item{method}{ character string `SRS' or `local' }
@@ -53,6 +61,7 @@ derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
   \item{alpha}{ alpha level for confidence intervals }
   \item{loginterval}{ logical for whether to base interval on log(N)}
   \item{area}{ area of region for method = "binomial" (hectares) }
+  \item{independent.esa}{logical; controls variance contribution from esa (see Details) }
   \item{sessnum}{ index of session in object$capthist for which output required }
   \item{cluster}{ `traps' object for a single cluster}
   \item{buffer}{ width of buffer in metres (ignored if \code{mask}
@@ -60,21 +69,31 @@ derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
   \item{mask}{ mask object for a single cluster of detectors }
   \item{noccasions}{number of occasions (for \code{nj}) }
   
+  \item{design}{list specifying systematic design (see Details)}
+  \item{basenx}{integer number of basis grid points in x-dimension}
+  \item{df}{integer number of degrees of freedom for gam}
+  \item{extrapolate}{ logical; if FALSE then boxlet p values are inferred from nearest point inside convex hull of grid}
+  \item{keep}{logical; if TRUE then derivedSystematic saves key intermediate values as attributes }
 }
 
 \details{
 
   \code{derivednj} accepts a vector of counts (\code{nj}), along with
   \eqn{\hat{a}}{a-hat} and \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}.  The
-  argument \code{esa} may include both \eqn{\hat{a}}{a-hat} and
-  \eqn{\widehat{SE}(\hat{a})}{SE(a-hat)}) - any form will do if it can
-  be coerced to a vector of length 2. In the special case that \code{nj}
+  argument \code{esa} may be a scalar or (if se.esa is NULL) 
+  a 2-column matrix with \eqn{\hat{a_j}}{a_j-hat} and
+  \eqn{\widehat{SE}(\hat{a_j})}{SE(a_j-hat)} for each replicate \eqn{j} (row). 
+  In the special case that \code{nj}
   is of length 1, or \code{method} takes the values `poisson' or
   `binomial', the variance is computed using a theoretical variance
   rather than an empirical estimate. The value of \code{method}
   corresponds to `distribution' in \code{\link{derived}}, and defaults to
   `poisson'. For \code{method = 'binomial'} you must specify \code{area}
   (see Examples).
+
+  If \code{independent.esa} is TRUE then independence is assumed among 
+  cluster-specific estimates of esa, and esa variances are summed. The default 
+  is a weighted sum leading to higher overall variance.
 
   \code{derivedCluster} accepts a model fitted to data from clustered
   detectors; each \link{cluster} is interpreted as a replicate
@@ -101,31 +120,57 @@ derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
   \code{derivedSession} accepts a single fitted model that must span
   multiple sessions; each session is interpreted as a replicate sample.
 
-  Spatial variance may be calculated assuming simple random sampling
-  (\code{method = "SRS"}) or using the neighbourhood variance estimator
-  recommended by Stevens and Olsen (2003) for generalized random
-  tessellation stratified (GRTS) samples and implemented in package
-  \pkg{spsurvey} (\code{method = "local"}). For `local' variance
+  Spatial variance is calculated by one of these methods
+  
+  \tabular{llll}{
+  Method \tab Description \cr
+
+\code{"SRS"} \tab simple random sampling with identical clusters \cr
+\code{"R2"} \tab variable cluster size cf Thompson (2002:70) estimator for line transects \cr
+\code{"R3"} \tab variable cluster size cf Buckland et al. (2001)\cr
+\code{"local"} \tab neighbourhood variance estimator (Stevens and Olsen 2003) \cr 
+\code{"poisson"} \tab theoretical (model-based) variance \cr
+\code{"binomial"} \tab theoretical (model-based) variance in given \code{area}\cr
+}
+
+The weighted options R2 and R3 substitute \eqn{\hat{a_j}}{a_j-hat} for line length \eqn{l_k}{l_k} in the corresponding formulae of Fewster et al. (2009, Eq 3,5). Density is estimated by \eqn{D = n/A}{\hat D = n/A} where \eqn{A = \sum a_j}{A = \sum a_j}. The variance of \eqn{A} is estimated as the sum of the cluster-specific variances, assuming independence among clusters. Fewster et al. (2009) found that an alternative estimator for line transects derived by Thompson (2002) performed better when there were strong density gradients correlated with line length (R2 in Fewster et al. 2009, Eq 3).
+
+The neighborhood variance estimator is implemented in package \pkg{spsurvey} and was originally proposed for  generalized random tessellation stratified (GRTS) samples.  For `local' variance
   estimates, the centre of each replicate must be provided in \code{xy},
-  except where centres may be inferred from the data. The options
-  \code{method = "poisson"} and \code{method = "binomial"} use
-  theoretical (model-based) variance rather than the empirical spatial
-  variance.
-   
-  }
+  except where centres may be inferred from the data. It is unclear whether `local' can or should be used when clusters vary in size.
+
+\code{derivedSystematic} implements the 'boxlet' variance estimator of Fewster (2011) for systematic designs using clustered detectors (an alternative to \code{derivedCluster} and \code{derivedSessions}). The method is experimental in secr 3.2.0 and may change. The `design' argument is a list with components corresponding to arguments of \code{\link{make.systematic}}, (\code{n} and \code{origin} are ignored if provided):
+
+\tabular{llll}{
+Component \tab Description \cr
+\code{cluster} \tab traps object for a single cluster \cr
+\code{region} \tab 2-column matrix or SpatialPolygons \cr
+\code{spacing} \tab spacing between cluster origins \cr
+\code{...} \tab other arguments passed to \code{\link{trap.builder}} \cr
+\tab e.g. \code{edgemethod}, \code{exclude}, \code{exclmethod} \cr
+}
+
+If \code{region} is omitted from \code{design} then an attempt will be made to retrieve it from the mask attribute of \code{object} (this works if the call to \code{\link{make.mask}} used \code{keep.poly = TRUE}).
+
+}
 
 \value{
 
-  A dataframe with one row and the columns --
-\item{estimate }{Horvitz-Thompson-like estimate of population density}
-\item{SE.estimate }{SE of density estimate}
-\item{lcl}{lower 100(1--alpha)\% confidence limit}
-\item{ucl}{upper 100(1--alpha)\% confidence limit}
-\item{CVn }{relative SE of number observed (across sampling units) }
-\item{CVa }{relative SE of effective sampling area }
-\item{CVD }{relative SE of density estimate}
+Dataframe with one row for each derived parameter (`esa', `D') and
+columns as below
+
+\tabular{ll}{
+estimate    \tab estimate of derived parameter \cr
+SE.estimate \tab standard error of the estimate \cr
+lcl         \tab lower 100(1--alpha)\% confidence limit \cr
+ucl         \tab upper 100(1--alpha)\% confidence limit \cr
+CVn         \tab relative SE of number observed (across sampling units) \cr
+CVa         \tab relative SE of effective sampling area \cr
+CVD         \tab relative SE of density estimate \cr
+}
 
 }
+
 \references{
 
 Buckland, S. T., Anderson, D. R., Burnham, K. P., Laake, J. L., Borchers,
@@ -133,9 +178,18 @@ D. L. and Thomas, L. (2001) \emph{Introduction to Distance Sampling:
 Estimating Abundance of Biological Populations}. Oxford University
 Press, Oxford.
 
+Fewster, R. M. (2011) Variance estimation for systematic designs in spatial 
+  surveys. \emph{Biometrics} \bold{67}, 1518--1531.
+
+Fewster, R. M., Buckland, S. T., Burnham, K. P., Borchers, D. L., Jupp, P. E., 
+Laake, J. L. and Thomas, L. (2009) Estimating the encounter rate variance in 
+distance sampling. \emph{Biometrics} \bold{65}, 225--236. 
+
 Stevens, D. L. Jr and Olsen, A. R. (2003) Variance estimation for
 spatially balanced samples of environmental resources.
 \emph{Environmetrics} \bold{14}, 593--610.
+
+Thompson, S. K. (2002) \emph{Sampling}. 2nd edition. Wiley, New York.
 
 }
 
@@ -277,6 +331,12 @@ plot (capt2a, add = TRUE,title = "Extensive survey")
 base.plot()
 plot(capt2, add = TRUE, title = "Intensive survey")
 par(mfrow = c(1,1), xpd = FALSE, xaxs = "r", yaxs = "r")  ## defaults
+
+
+## Weighted variance
+
+derivedSession(ovenbird.model.1, method = "R2")
+
 }
 
 }

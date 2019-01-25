@@ -18,8 +18,9 @@ popIDsplit <- function (pop) {
 }
 
 plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL, ...) {
-    
-    if (ms(x)) {
+    ## 2018-11-28 move dots to position 2 to allow more than one argument... deferred
+    ## plot.popn <- function (x, ..., add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL) {
+        if (ms(x)) {
         nsess <- length(x)
         temp <- do.call(rbind, lapply(x, function(y) attr(y,'boundingbox')))
         vertices <- apply(temp,2,range)

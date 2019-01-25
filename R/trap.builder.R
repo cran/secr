@@ -15,35 +15,21 @@
 ## 2014-12-11 set proj4string to NA
 ## 2014-12-11 method = "GRTS" changed to method == "GRTS" !
 ## 2018-09-27 coerce CRS of region to CRS()
+## 2018-12-18 clipping left to trap.builder()
+## 2018-12-19 make.systematic() grid of centres expanded
+## 2018-12-29 boundarytoSPDF and boundarytoSP moved to utility.R
+## 2018-12-29 make.systematic() argument 'chequerboard'
+
 ###############################################################################
 
 ## spsurvey uses sp
 
-boundarytoSPDF <- function (boundary) {
-    ## build sp SpatialPolygonsDataFrame object
-    ## input is 2-column matrix for a single polygon
-    ## requires package sp
-    Sr1 <- Polygon(boundary)
-    Srs1 <- Polygons(list(Sr1), "s1")
-    SpP <- SpatialPolygons(list(Srs1))
-    attr <- data.frame(a = 1, row.names = "s1")
-    SpatialPolygonsDataFrame(SpP, attr)
-}
-boundarytoSP <- function (boundary) {
-    ## build sp SpatialPolygons object
-    ## input is 2-column matrix for a single polygon
-    ## requires package sp
-    Sr1 <- Polygon(boundary)
-    Srs1 <- Polygons(list(Sr1), "s1")
-    SpatialPolygons(list(Srs1))
-}
-###############################################################################
-
 trap.builder <- function (n = 10, cluster, region = NULL, frame =
     NULL, method = c("SRS", "GRTS", "all", "rank"), edgemethod =
-    c("clip", "allowoverlap", "allinside"), samplefactor = 2, ranks =
-    NULL, rotation = NULL, detector, exclude = NULL, exclmethod =
-    c("clip", "alloutside"), plt = FALSE, add = FALSE) {
+    c("clip", "allowoverlap", "allinside", "anyinside", "centreinside"), 
+    samplefactor = 2, ranks = NULL, rotation = NULL, detector, 
+    exclude = NULL, exclmethod = c("clip", "alloutside", "anyoutside", "centreoutside"), 
+    plt = FALSE, add = FALSE) {
     ## region may be -
     ## matrix x,y
     ## sp SpatialPolygonsDataFrame object
@@ -70,10 +56,32 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         !any(is.na(sp::over (xy, polygons(region))))
     }
 
+    anyinside <- function (xy) {
+        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
+        any(!is.na(sp::over (xy, polygons(region))))
+    }
+
+    centreinside <- function (xy) {
+        xy <- apply(as.matrix(xy),2,mean)
+        xy <- SpatialPoints(matrix(xy, ncol=2), proj4string = CRS())
+        !is.na(sp::over (xy, polygons(region)))
+    }
+
     alloutside <- function (xy) {
         xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
         ## 2014-10-25 polygons() works with both SP and SPDF
         all(is.na(sp::over (xy, polygons(exclude))))
+    }
+
+    anyoutside <- function (xy) {
+        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
+        any(is.na(sp::over (xy, polygons(exclude))))
+    }
+
+    centreoutside <- function (xy) {
+        xy <- apply(as.matrix(xy),2,mean)
+        xy <- SpatialPoints(matrix(xy, ncol=2), proj4string = CRS())
+        is.na(sp::over (xy, polygons(exclude)))
     }
 
     position <- function (i, cluster) {
@@ -136,9 +144,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             region <- boundarytoSPDF(region)
         }
         
-        if (!is.null(exclude) & !SPx) {
-            exclude <- matrix(unlist(exclude), ncol = 2)
-            exclude <- rbind (exclude, exclude[1,])  # force closure of polygon
+        if (!is.null(exclude)) {
             exclude <- boundarytoSP(exclude)
         }
         
@@ -194,8 +200,8 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ####################################
     else if (method == 'all') {
-        if (is.null(frame)) {
-            stop ("'all' requires finite frame")
+        if (is.null(frame) || (nrow(frame)==0)) {
+            stop ("method = 'all' requires finite frame")
         }
         origins <- as.matrix(frame)
     }
@@ -215,9 +221,11 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         frame <- frame[frameorder,]
         origins <- as.matrix(frame)
     }
-    else
+    else {
         stop ("method not recognised")
-
+    }
+    rownames(origins) <- 1:nrow(origins)
+    
     #######################################################
     ## centre cluster on (0,0)
     if (nrow(cluster)>1)
@@ -235,30 +243,27 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     else {
         traps <- lapply(1:(ntrial), position, cluster)
     }
-
-    if (!(edgemethod %in% c('clip','allowoverlap','allinside')))
-        stop ("edgemethod not recognised")
-
-    if (!(exclmethod %in% c('clip','alloutside')))
-        stop ("exclmethod not recognised")
-
-    if ((edgemethod == 'allinside') | (exclmethod == 'alloutside')) {
-        if (edgemethod %in% c('allinside')) {
-            if (is.null(region))
-                stop ("allinside requires 'region'")
-            OK <- sapply(traps, allinside)
+    ## subset whole clusters
+    if ((edgemethod %in% c('allooutside', 'allinside', 'anyinside', 'centreinside')) | 
+        (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside'))) {
+        
+        if (edgemethod %in% c('allinside', 'anyinside', 'centreinside')) {
+            if (is.null(region)) stop ("'edgemethod' requires 'region'")
+            OK <- sapply(traps, edgemethod) 
         }
-        else OK <- length(traps)
-        if (!is.null(exclude) & (exclmethod=='alloutside'))
-            OK <- OK & sapply(traps, alloutside)
+        else OK <- rep(TRUE, length(traps)) ## 2018-12-18
+        
+        if (!is.null(exclude) & (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside')))
+            OK <- OK & sapply(traps, exclmethod)
+
         if (method == 'all')
             n <- sum(OK)
         if (sum(OK) < n)
             stop ("not enough clusters inside polygon")
-        traps <- traps[OK]
+        
+        traps <- traps[OK]  ## subset whole clusters
     }
     traps <- traps[1:n]   ## first n usable clusters
-
     ## convert list of clusters to flat traps object
     if (n == 1)
         traps <- traps[[1]]
@@ -266,20 +271,20 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         traps$renumber <- FALSE
         traps <- do.call(rbind, traps)
     }
-
     ## drop excluded sites, if requested
-    if (edgemethod == 'clip') {
+    if (edgemethod %in% c('clip', 'centreinside')) {
         xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
         OK <- sp::over (xy, polygons(region))
         traps <- subset(traps, subset = !is.na(OK))
     }
-    if (!is.null(exclude) & (exclmethod == 'clip')) {
+    if (!is.null(exclude) & (exclmethod %in% c('clip', 'centreoutside'))) {
         xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
         notOK <- sp::over (xy, polygons(exclude))
         traps <- subset(traps, subset = is.na(notOK))
     }
 
     ## renumber clusters
+    oldnames <- unique(clusterID(traps))
     if (attr(cluster,'detector') %in% .localstuff$polydetectors) {
         npoly <- ndetector(traps)
         npercluster <- nrow(cluster)
@@ -298,6 +303,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
                 row.names(cluster)[clustertrap(traps)], sep='.')
         row.names(traps) <- newnames
     }
+    attr(traps, 'centres') <- origins[oldnames,]
 
     ####################################
     ## optional plot
@@ -309,15 +315,17 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         traps
     ####################################
 }
+
 ###############################################################################
 
 make.systematic <- function (n, cluster, region, spacing = NULL,
-    origin = NULL, bufferorigin = TRUE, ...) {
+    origin = NULL, originoffset = c(0,0), chequerboard = c('all','black','white'), ...) {
 
 ## 'cluster' is a traps object for one module
 ## 'region' is a rectangular survey region
 ## ... arguments passed to trap.builder (rotate, detector)
-
+    
+    chequerboard <- match.arg(chequerboard)
     SP <- inherits(region, "SpatialPolygons")
     if (SP) {
         region <- polygons(region)
@@ -329,6 +337,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         region <- rbind (region, region[1,])  # force closure of polygon
         region <- boundarytoSP(region)
     }
+    
     ## 2018-09-27
     proj4string(region) <- CRS()
 
@@ -364,31 +373,55 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         else {
             area <- sum(sapply(region@polygons, function(x) x@area))
             cell <- sqrt(area / n)
-            nx <- round ((wd - 2*wx) / cell)
+            nx <- round ((wd - 2*wx) / cell) 
             ny <- round ((ht - 2*wy) / cell)
         }
         rx <- (wd - 2*wx) / nx
         ry <- (ht - 2*wy) / ny
     }
     rxy <- c(rx,ry)
+    
+    minxy <- bbox(region)[,1]
     if (is.null(origin)) {
-        origin <- runif(2) * rxy + bbox(region)[,1]
-        if (bufferorigin) origin <- origin + c(wx,wy)  ## standard before 3.1.8 2018-10-13
+        origin <- runif(2) * rxy + minxy + originoffset
+        originbox <- data.frame(
+            x = minxy[1] + originoffset[1] + c(0,0,rx,rx),
+            y = minxy[2] + originoffset[2] + c(0,ry,ry,0))
+        ## originoffset = c(wx,wy) was standard before 3.1.8 2018-10-13
     }
     else {
-        origin <- origin + rxy * trunc((bbox(region)[,1] - origin) / rxy)
+        origin <- unlist(origin)  ## 2018-12-28
+        ## unnecessary 2018-12-29
+        ## origin <- origin + rxy * floor((minxy - origin) / rxy)
+        originbox <- NULL
     }
-    centres <- expand.grid (
-        x = seq(0, by = rx, len = nx) + origin[1],
-        y = seq(0, by = ry, len = ny) + origin[2])
-    spcentres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
-    OK <- !is.na(sp::over (spcentres, region))
-    centres <- coordinates(spcentres[OK,])
+
+    ## 2018-12-29
+    rowcol <- expand.grid(row = 0:(ny+1), col = 0:(nx+1))
+    centres <- data.frame(x = rowcol$col * ry + origin[1],
+                          y = rowcol$row * rx + origin[2])
+    if (chequerboard != 'all') {
+        whitesquares <- trunc(rowcol$row + rowcol$col + 0.1) %% 2L == 1L
+        if (chequerboard == 'white')
+            centres <- centres[whitesquares,]
+        else 
+            centres <- centres[!whitesquares,]
+    }
+    
+    # blocked 2018-12-18; restored 2018-12-24 because NULL clusters not clipped in trap.builder
+    args <- list(...)
+    if (!is.null(args$edgemethod)) {
+        if (args$edgemethod %in% c('allinside', 'centreinside')) {
+            spcentres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
+            OK <- !is.na(sp::over (spcentres, region))
+            centres <- coordinates(spcentres[OK,])
+        }
+    }
+    
     traps <- trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)
-    ## new 2018-10-12
     attr(traps, 'origin') <- origin
-    attr(traps, 'centres') <- centres
+    attr(traps, 'originbox') <- originbox
     traps
 }
 

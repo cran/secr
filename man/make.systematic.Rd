@@ -12,7 +12,7 @@ A rectangular grid of clusters within a polygonal region.
 \usage{
 
 make.systematic(n, cluster, region, spacing = NULL, origin = NULL, 
-    bufferorigin = TRUE, ...)
+    originoffset = c(0,0), chequerboard = c('all','black','white'), ...)
 
 }
 
@@ -31,7 +31,9 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   \item{origin}{vector giving x- and y-cooordinates of fixed grid origin
     (origin is otherwise random)}
     
-  \item{bufferorigin}{ logical; see Details}
+  \item{originoffset}{ numeric; 2-vector (x,y offsets); see Details}
+  
+  \item{chequerboard}{ logical; if not `all' then alternate clusters are omitted }
    
   \item{\dots}{ arguments passed to \code{trap.builder} }
 }
@@ -59,12 +61,24 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   \code{method}, and \code{samplefactor} has no effect.
   
   
-  If \code{bufferorigin = FALSE} and \code{origin} is not specified then a random uniform origin is chosen within a box (width = spacing) placed with its bottom left corner at the bottom left of the bounding box of \code{region}. If \code{bufferorigin = TRUE} and \code{origin} is not specified then the origin box is displaced c(+spacing/2, +spacing/2). The default \code{bufferorigin = TRUE} was the behaviour in versions before 3.1.8, but often it makes more sense to use \code{bufferorigin = FALSE} with \code{trap.builder} \code{edgemethod = 'clip'}.   
+  If \code{origin} is not specified then a random uniform origin is chosen within a box (width = spacing) placed with its bottom left corner at the bottom left of the bounding box of \code{region}, shifted by \code{originoffset}. Before version 3.1.8 the behaviour of \code{make.systematic} was equivalent to \code{originoffset = c(wx,wy)} where \code{wx,wy} are the cluster half widths.   
+  
+  \code{chequerboard = "black"} retains black `squares' and \code{chequerboard = "white"} retains white `squares', where the lower left cluster in the candidate rectangle of cluster origins is black, as on a chess board. The effect is the same as increasing spacing by sqrt(2) and rotating through 45 degrees.
   
 }
 
 \value{
+
 A single-session `traps' object.
+
+From 3.2.0 these additional attributes are set --
+
+\tabular{lll}{
+origin \tab coordinates of grid origin \cr
+centres \tab coordinates of true cluster centres (cf \code{\link{cluster.centres}}) \cr
+originbox \tab vertices of rectangular spatial sampling frame for random origin \cr
+}
+
 }
 
 \seealso{

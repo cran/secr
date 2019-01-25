@@ -18,7 +18,7 @@ Display animal locations from a \code{popn} object.
   \item{frame}{ logical to add frame or polygon within which points were
       simulated}
   \item{circles}{ vector giving the radii if circles are to be plotted }
-  \item{collapse}{ logical; if TRUE them multiple sessions are overlaid }
+  \item{collapse}{ logical; if TRUE then multiple sessions are overlaid }
   \item{seqcol}{ color used for first detection when collapse = TRUE (optional) }
   \item{\dots}{ arguments passed to \code{eqscplot} and \code{points} or
   \code{symbols}}

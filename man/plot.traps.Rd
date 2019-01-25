@@ -10,7 +10,7 @@
 \usage{
 \method{plot}{traps}(x, border = 100, label = FALSE, offset = c(6,6), add = FALSE,
   hidetr = FALSE, detpar = list(), txtpar = list(), bg = "white",
-  gridlines = TRUE, gridspace = 100, gridcol = "grey", 
+  gridlines = !add, gridspace = 100, gridcol = "grey", 
   markused = FALSE, markvarying = FALSE, markvertices = FALSE,
   labelclusters = FALSE, ...)
 }

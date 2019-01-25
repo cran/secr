@@ -17,11 +17,12 @@ across space, possibly at a probability sample of points.
 
 \usage{
 
-trap.builder (n = 10, cluster, region = NULL, frame = NULL, method =
-c("SRS", "GRTS", "all", "rank"), edgemethod = c("clip", "allowoverlap",
-"allinside"), samplefactor = 2, ranks = NULL, rotation = NULL, detector,
-exclude = NULL, exclmethod = c("clip", "alloutside"), plt = FALSE, add =
-FALSE)
+trap.builder (n = 10, cluster, region = NULL, frame = NULL, 
+    method = c("SRS", "GRTS", "all", "rank"), 
+    edgemethod = c("clip", "allowoverlap", "allinside", "anyinside", "centreinside"), 
+    samplefactor = 2, ranks = NULL, rotation = NULL, detector,
+    exclude = NULL, exclmethod = c("clip", "alloutside", "anyoutside", "centreoutside"), 
+    plt = FALSE, add = FALSE)
 
 mash (object, origin = c(0,0), clustergroup = NULL, \dots)
 
@@ -89,14 +90,21 @@ cluster.centres (object)
   which should have length equal to the number of rows in
   \code{frame}; ties are resolved by drawing a site at random.
   
-  \code{edgemethod} may be "clip" (reject individual detectors),
-  "allowoverlap" (no action) or "allinside" (reject whole cluster if any
-  component is outside \code{region}). Similarly, \code{exclmethod} may
-  be "clip" (reject individual detectors) or "alloutside" (reject whole cluster if any
-  component is outside \code{exclude}). Sufficient additional samples
-  (\code{(samplefactor--1) * n}) must be drawn to allow for replacement
-  of any rejected clusters; otherwise, an error is reported (`not enough
-  clusters within polygon').
+  Options for \code{edgemethod} are --
+  \tabular{llll}{
+  \code{edgemethod} \tab Description\cr
+  \code{"clip"} \tab reject any individual detectors outside \code{region} \cr
+  \code{"allowoverlap"} \tab no action \cr
+  \code{"allinside"} \tab reject whole cluster if any component is outside \code{region} \cr
+  \code{"anyinside"} \tab reject whole cluster if no component is inside \code{region}\cr
+  \code{"centreinside"} \tab reject whole cluster if centre outside \code{region}, and clip to \code{region}
+  }
+
+  Similarly, \code{exclmethod} may be "clip" (reject individual detectors), 
+  "alloutside" (reject whole cluster if any component is outside \code{exclude}) etc. 
+  Sufficient additional samples (\code{(samplefactor--1) * n}) must be drawn to 
+  allow for replacement of any rejected clusters; otherwise, an error is reported 
+  (`not enough clusters within polygon').
   
   The package \pkg{sp} is required. GRTS samples require function
   \code{grts} in package \pkg{spsurvey} of Olsen and Kincaid. Much more
@@ -117,6 +125,8 @@ cluster.centres (object)
   \code{cluster.counts} returns the number of \emph{distinct}
   individuals detected per cluster in a single-session multi-cluster
   capthist object.
+
+  \code{cluster.centres} returns the centroid of the detector locations in each cluster. When clusters have been truncated these differ from the attribute \code{centres} set by \code{\link{make.systematic}}.
 
 }
 

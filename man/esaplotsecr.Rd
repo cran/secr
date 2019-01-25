@@ -18,8 +18,8 @@ object
 \usage{
 
 esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
-    thin = 0.1, poly = NULL, session = 1, plt = TRUE, type = "density", 
-    add = FALSE, overlay = TRUE, conditional = FALSE, ...)
+    thin = 0.1, poly = NULL, poly.habitat = TRUE, session = 1, plt = TRUE, 
+    type = "density", add = FALSE, overlay = TRUE, conditional = FALSE, ...)
 
 }
 
@@ -30,6 +30,7 @@ esa.plot.secr (object, max.buffer = NULL, max.mask = NULL,
   \item{thin}{ proportion of mask points to retain in plot and output}
   \item{poly}{ matrix of two columns interpreted as the x and y
     coordinates of a bounding polygon (optional) }
+  \item{poly.habitat}{logical as in \code{\link{make.mask}} }
   \item{session}{vector of session indices (used if \code{object} spans multiple sessions)}
   \item{plt}{ logical to plot results }
   \item{type}{ character; see \code{\link{esa.plot}}}

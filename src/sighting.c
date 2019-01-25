@@ -144,18 +144,20 @@ void getpdots (int m, int n, int markocc[], int x, int ncol,
 /*===============================================================*/
    
 
-void incmusk (double Dprwi, int n, int m, int x, int w[], int PIA[], double gk[], 
-	      double hk[], int binomN[], int cc, int nc, int nk, int ss, int nmix, 
+void incmusk (double Dprwi, int n, int m, int x, int PIA[], double gk[], 
+	      double hk[], int binomN[], int cc, int ncol, int nk, int ss, int nmix, 
 	      double gsbval[], double Tsk[], int markocc[], int firstocc, 
-	      int detect[], double tmpmusk[]) {
+	      int detect[], double tmpmusk[], int debug) {
 /*
   Increment expected number of sightings of _marked_ animals at each occasion s and 
   detector k.
 
   Function is called for each animal n at each mask point m.
 
+  Argument w unused and removed 2019-01-05
+
   Intended for like < 5 (i.e. not allsighting), but prob OK for like 5 (known-n)
-  if pi.prwi provided instead of Dprwi
+  if H(m).pi(m) provided instead of Dprwi
 
 */
 
@@ -171,7 +173,7 @@ void incmusk (double Dprwi, int n, int m, int x, int w[], int PIA[], double gk[]
 	if (markocc[s] <= 0) {  /* sighting occasions */
 	    for (k = 0; k < nk; k++) {
 		H = 0;
-		wxi = i4(n,s,k,x,nc,ss,nk);
+		wxi = i4(n,s,k,x,ncol,ss,nk);
 		c = PIA[wxi] - 1;
 		if (c >= 0) {    /* drops unset traps */
 		    gi = i3(c,k,m,cc,nk);
@@ -299,14 +301,18 @@ void getfirstocc2(int ss, int nk, int nc, int w[], int grp[], int knownclass[],
 /* or for multiple all-zero histories (mult>1) */
 /* DOES NOT YET ALLOW FOR MIXTURES */
 void finmusk (int ss, int nk, double tmpmusk[], double musk[], double sumDprwi, 
-	      double pID[], double mult)
+	      double pID[], double mult, int debug)
 {
     int s;
     int k;
-    for (s = 0; s < ss; s++) {
-	for (k = 0; k < nk; k++) {
-	    musk[s * nk + k] += (1-pID[s]) * tmpmusk[s * nk + k] * 
-		mult / sumDprwi;
+    if (mult>0) {
+	for (s = 0; s < ss; s++) {
+	    for (k = 0; k < nk; k++) {
+		if (debug) Rprintf("s %4d k %4d pID %6.4f tmpmusk %8.5f mult %8.5f \n",
+			s,k,pID[s],tmpmusk[s*nk+k],mult);
+		musk[s * nk + k] += (1-pID[s]) * tmpmusk[s * nk + k] * 
+		    mult / sumDprwi;
+	    }
 	}
     }
 }   
@@ -356,7 +362,7 @@ int expectedTmTu (int like, int distrib, int TmTu, int nc, int ss, int nk,
 	if (markocc[s] < 1) {     /* sighting occasions only */
 	    for (k=0; k < nk; k++) {
                 /* add 1 to index because element 1 is reserved for nval */
-		musk[k + s * nk] = 0;                          
+		musk[s * nk + k] = 0;                          
 		Tski = Tsk[s * nk + k];         /* effort; no relation to Tusk! */
 		for (x=0; x<nmix; x++) {
 		    mu1 = 0;
@@ -365,11 +371,8 @@ int expectedTmTu (int like, int distrib, int TmTu, int nc, int ss, int nk,
 		    if (c >= 0) {                   /* drops unset traps */
 			for (m=0; m < mm; m++) {
 
-			    if ((binomN[s] == 0) & (detect[s] == 2 || detect[s] == 10))
-				Hskx = Tski *  hk0[i3(c,k,m,cc0,nk)];  /* Poisson count detector */
-			    else
-//				Hskx = Tski *  gk0[i3(c,k,m,cc0,nk)];  /* Bernoulli, and cum hazard poly */
-				Hskx = Tski *  hk0[i3(c,k,m,cc0,nk)];  /* Bernoulli, and cum hazard poly */
+			    Hskx = Tski *  hk0[i3(c,k,m,cc0,nk)]; 
+
 			    if (like < 5) {          /* like  0,2 */
 				if ((markocc[s]==0) && (s>0))
 				/* otherwise -1 = unresolved and pdots not needed*/
@@ -396,16 +399,18 @@ int expectedTmTu (int like, int distrib, int TmTu, int nc, int ss, int nk,
 					return(51);
 				    }
 				    if (TmTu == 0) mu1 += Dmarked * Hskx;    /* Tm */    
-				    else  mu1 += (D[m]-Dmarked) * Hskx;  /* Tu, Tn */
+				    else  mu1 += (D[m] - Dmarked) * Hskx;  /* Tu, Tn */
 				}
 			    }
 			    else error ("unknown like");
 			}  /* end m loop */
 		    }
-		    if (TmTu==0) 
-			mu1*= (1-pID[s]);
+		    if (TmTu == 0) {
+			/* Rprintf("mu1 %8.5f pID[s] %8.5f\n", mu1, pID[s]); */
+			mu1 *= (1-pID[s]);
+		    }
 
-		    musk[k + s * nk] += mu1 * pmix[x] * area;    
+		    musk[s * nk + k] += mu1 * pmix[x] * area;    
 		}  /* end x loop */		
 	    }  /* end k loop */    
 	}    
@@ -471,6 +476,7 @@ int Tsightinglik (int T[], int ss, int nk, int markocc[], int ncol,
 		    /* add 1 to index because element 1 is reserved for nval */
 		    TCsk = T[s * nk + k + 1];
 		    if ((TCsk>0) && (tempmu<=0)) {
+			// Rprintf("TCsk = %d tempmu = %8.4f\n", TCsk, tempmu);
 			// Rprintf ("zero sighting probability when T number >0\n");
 		       return(53);
 		    }

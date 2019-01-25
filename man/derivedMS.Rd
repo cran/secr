@@ -11,12 +11,19 @@ Compute derived parameters of spatially explicit capture-recapture model.
 Density is a derived parameter when a model is fitted by maximizing the conditional likelihood. So also is the effective sampling area (in the sense of Borchers and Efford 2008).
 }
 \usage{
+
 derived(object, ...)
+
 \method{derived}{secr}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
-    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...)
+    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, 
+    ncores = 1, bycluster = FALSE, ...)
+
 \method{derived}{secrlist}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
-    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, ...)
+    se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, 
+    ncores = 1, bycluster = FALSE, ...)
+
 esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
+
 }
 
 \arguments{
@@ -30,6 +37,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
   \item{loginterval}{ logical for whether to base interval on log(D)}
   \item{distribution}{ character string for distribution of the number of individuals detected }
   \item{ncores}{integer number of cores available for parallel processing}
+  \item{bycluster}{logical; if TRUE results are reported separately for each cluster of detectors}
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
   \item{noccasions}{ integer number of sampling occasions (see Details) } 
