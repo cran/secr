@@ -1,3 +1,14 @@
+Changes in version 3.2.1 (2019-06-01)
+
+New features or changed behaviour of old functions
+    o   sim.popn() allows exponential and t2D movement between sessions
+    o   sim.popn() new details arguments movemodel, move.a; sigma.m deprecated
+
+Bugs fixed
+    o   make.capthist() with transect data gave error when points did not lie on transect
+    o   moves() failed with nonspatial capthist (also summary.capthist(moves = T) etc.)
+    o   plot.popn() ignored frame argument when collapse = TRUE
+    
 Changes in version 3.2.0 (2019-01-25)
 
 New features or changed behaviour of old functions

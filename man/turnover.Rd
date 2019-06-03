@@ -20,8 +20,12 @@ Component \tab Description \tab Default \cr
 \code{lambda} \tab finite rate of increase \eqn{\lambda = N_{t+1} / N_t} \tab none \cr
 \code{recrmodel} \tab probability model for number of recruits \tab ``poisson" \cr
 \code{superN} \tab optional superpopulation size for multinomial recruitment model\tab see below \cr
-\code{sigma.m} \tab spatial scale of movement kernel \tab 0 \cr
+\code{movemodel} \tab ``static", ``uncorrelated", ``normal", ``exponential" or ``t2D" \tab ``static" \cr
+\code{move.a} \tab first parameter of movement kernel (replacing sigma.m) \tab 0 \cr
+\code{move.b} \tab second parameter of movement kernel \tab 1 \cr
+
 \code{edgemethod} \tab treatment of animals that cross the boundary \tab ``wrap" \cr
+\code{sigma.m} \tab deprecated in 3.2.1; use move.a \tab 0 \cr
 \code{wrap} \tab deprecated in 3.1.6; use edgemethod \tab TRUE i.e. edgemethod = ``wrap" \cr
 }
 
@@ -51,20 +55,38 @@ In the case of binomial recruitment there is a maximum of one recruit per existi
 
 \section{Movement}{
 
-Individuals may shift their home range centre between sessions. Movement probability is governed by a circular bivariate normal (Gaussian) kernel with scale sigma.m. 
+Individuals may shift their home range centre between sessions. Movement probability is governed by a circular kernel specified by `movemodel' and the parameter values `move.a' and `move.b' (optional). By default there is no movement between sessions (movemodel = "static"). Other options are
 
-sigma.m is also used to indicate two special cases:
+\tabular{ll}{
+``uncorrelated" \tab individuals are randomly assigned a new, independent location within the buffered area\cr
+``normal" \tab bivariate normal (Gaussian) kernel with parameter move.a (previously called sigma.m)\cr
+``exponential" \tab negative exponential (Laplace) kernel with parameter move.a \cr
+``t2D" \tab 2-dimensional t-distribution with scale parameter move.a and shape parameter move.b (2Dt of Clark et al. 1999).\cr
+}
 
-sigma.m = 0 indicates no change in home range centres between sessions.
+The package \pkg{openCR} >=1.4.0 provides functions for constructing and plotting these kernels and summarising their properties (\code{make.kernel}; \code{plot} and \code{summary} methods for kernel objects).
 
-sigma.m < 0 causes a new home range centre for each animal to be drawn at random from within the buffered area.
+In \pkg{secr} <3.2.1 sigma.m was also used to indicate two special cases; these continue to work but may be discontinued in the future:
 
-If movement takes an animal across the boundary of the arena in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal) and ``none" (allow centres outside the buffered area).
+sigma.m = 0 corresponds to movemodel = `static'
+
+sigma.m < 0 corresponds to movemodel = `uncorrelated'
+
+If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal) and ``none" (allow centres outside the buffered area).
 
 }
 
 \seealso{
   \code{\link{sim.popn} }
+}
+
+\references{
+
+Clark, J. S, Silman, M., Kern, R., Macklin, E. and HilleRisLambers, J. (1999) Seed dispersal near and far: patterns across temperate and tropical forests. \emph{Ecology} \bold{80}, 1475--1494.
+
+Nathan , R., Klein, E., Robledo-Arnuncio, J. J. and Revilla, E. (2012) 
+Dispersal kernels: a review. In: J Clobert et al. \emph{Dispersal Ecology and Evolution}. Oxford University Press. Pp 187--210.
+
 }
 
 \examples{
@@ -74,28 +96,29 @@ par (mfrow = c(2,3), mar = c(1,1,1,1))
 ## birth and death only
 grid <- make.grid(nx = 7, ny = 4, detector = 'proximity', spacing = 10)
 pop <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
-    details = list(lambda = 0.8, phi = 0.6, sigma.m = 0))
+    details = list(lambda = 0.8, phi = 0.6))
 sapply(pop, nrow)  ## how many individuals?
 plot(pop)
 
 ## movement only
 pop2 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
-    details = list(lambda = 1, phi = 1, sigma.m = 10, edgemethod = "wrap"))
+    details = list(lambda = 1, phi = 1, movemodel = 'normal', 
+    move.a = 10, edgemethod = "wrap"))
 pop3 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 6,    
-    details = list(lambda = 1, phi = 1, sigma.m = 10, edgemethod = "clip"))
+    details = list(lambda = 1, phi = 1, movemodel = 'normal', 
+    move.a = 10, edgemethod = "clip"))
+pop4 <- sim.popn (Nbuffer = 100, core = grid, nsessions = 10,    
+    details = list(lambda = 1, phi = 1, movemodel = 'normal', 
+    move.a = 10, edgemethod = "stop"))
 sapply(pop2, nrow)  ## how many individuals?
 plot(pop2)
 
 ## show effect of edgemethod --
-tracks <- function (pop, ...) {
-    rn <- unlist(lapply(pop, rownames))
-    plot(pop[[1]], pch = 16)
-    for (i in unique(rn))
-       lines(t(sapply(pop, '[', i, 1:2)), ...)
-}
+## first session blue, last session red
+cols <- c('blue',rep('white',4),'red')
 par (mfrow=c(1,2))
-tracks(pop2, type = 'o')
-tracks(pop3, type = 'o')
+plot(pop2, collapse = TRUE, seqcol = cols)
+plot(pop3, collapse = TRUE, seqcol = cols)
 
 }
 \keyword{ datagen }

@@ -84,40 +84,45 @@ moves <- function (capthist, userdist = NULL, mask = NULL, names = FALSE) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
         traps <- traps(capthist)
-        det <- expanddet(capthist)
-        distmat <- valid.userdist(userdist, det, traps, traps, mask)
-        if (!all(det %in% .localstuff$individualdetectors))
-            stop ("require individual detector type for moves")
-        
-        if (all(det %in% 'telemetry')) {
-            lxy <- telemetryxy(capthist)
-            if (is.null(lxy))
-                NA
-            else {
-                lapply (lxy, movexy)
-            }
-        }
-        else if (all(det %in% .localstuff$polydetectors)) {
-            if (is.null(xy(capthist)))
-                NA
-            else {
-#                lxy <- split (xy(capthist), animalID(capthist))
-                lxy <- split (xy(capthist), animalID(capthist, names = names))
-                lapply (lxy, movexy)
-            }
+        if (is.null(traps)) {
+            ## return empty vector if nonspatial 2019-04-04
+            nam <- rownames(capthist)
+            if (is.null(nam)) nam <- 1:nrow(capthist)
+            sapply(nam, function(x) numeric(0), simplify = FALSE)
         }
         else {
-            ## order is essential 2016-10-08
-            if (any(det %in% 'telemetry')) {
-                capthist <- subset(capthist, 
-                                   occasions = det != 'telemetry', 
-                                   traps = 1:(nrow(traps(capthist)-1)))
+            det <- expanddet(capthist)
+            distmat <- valid.userdist(userdist, det, traps, traps, mask)
+            if (!all(det %in% .localstuff$individualdetectors))
+                stop ("require individual detector type for moves")
+            
+            if (all(det %in% 'telemetry')) {
+                lxy <- telemetryxy(capthist)
+                if (is.null(lxy))
+                    NA
+                else {
+                    lapply (lxy, movexy)
+                }
             }
-#            ord <- order(animalID(capthist), occasion(capthist))
-#            w <- split(trap(capthist, names=F)[ord], animalID(capthist)[ord])
-            ord <- order(animalID(capthist, names = names), occasion(capthist))
-            w <- split(trap(capthist, names = FALSE)[ord], animalID(capthist, names = names)[ord])
-            lapply(w,movex)
+            else if (all(det %in% .localstuff$polydetectors)) {
+                if (is.null(xy(capthist)))
+                    NA
+                else {
+                    lxy <- split (xy(capthist), animalID(capthist, names = names))
+                    lapply (lxy, movexy)
+                }
+            }
+            else {
+                ## order is essential 2016-10-08
+                if (any(det %in% 'telemetry')) {
+                    capthist <- subset(capthist, 
+                                       occasions = det != 'telemetry', 
+                                       traps = 1:(nrow(traps(capthist)-1)))
+                }
+                ord <- order(animalID(capthist, names = names), occasion(capthist))
+                w <- split(trap(capthist, names = FALSE)[ord], animalID(capthist, names = names)[ord])
+                lapply(w,movex)
+            }
         }
     }
 }

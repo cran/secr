@@ -15,7 +15,7 @@ importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coe
            "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", 
            "integrate", "lm", "logLik", "model.matrix", "nlm", "nls", "optim", 
            "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson", 
-           "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rmultinom", "rnbinom", 
+           "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", "rnbinom", 
            "rnorm", "rpois", "runif", "sd", "simulate", "smooth.spline", "terms", 
            "uniroot", "update", "update.formula", "var", "vcov")
 importFrom(stringr, "str_pad", "str_length")

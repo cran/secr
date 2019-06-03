@@ -202,7 +202,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
             
             ## 2017-06-07 newpopn <- subset.popn(oldpopn, subset=survive)
-            if (turnoverpar$sigma.m[t] < 0) {
+            
+            ## 2019-05-30 c('static','uncorrelated','normal','exponential', 't2D')
+            ## if (turnoverpar$move.a[t] < 0) {
+             if (turnoverpar$movemodel == 'uncorrelated') {
                 newpopn <- sim.popn(D = D, core = core, buffer = buffer,
                                     model2D = model2D, buffertype = buffertype, poly = poly,
                                     covariates = covariates, Ndist = 'specified', Nbuffer = nsurv,
@@ -211,10 +214,26 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
             else {
                 newpopn <- subset(oldpopn, subset=survive)
-                if (turnoverpar$sigma.m[t] > 0) {
+                ##if (turnoverpar$move.a[t] > 0) {
+                if (!turnoverpar$movemodel %in% c('static','uncorrelated')) {
                     oldposition <- newpopn  ## remember starting position
-                    newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
-                                                      sd = turnoverpar$sigma.m[t])
+                    
+                    if (turnoverpar$movemodel == 'normal') {
+                        newpopn[,] <- newpopn[,] + rnorm (2*nsurv, mean = 0,
+                                                      sd = turnoverpar$move.a[t])
+                    }
+                    else if (turnoverpar$movemodel == 'exponential') {
+                        newpopn[,] <- newpopn[,] + rexp (2*nsurv, rate = 1/turnoverpar$move.a[t])
+                    }
+                    else if (turnoverpar$movemodel == 't2D') {
+                        p <- turnoverpar$move.b[t]
+                        alpha <- turnoverpar$move.a[t] * rgamma(nsurv, p) / p
+                        newpopn[,1] <- newpopn[,1] + rnorm(nsurv, mean = 0, sd = alpha)
+                        newpopn[,2] <- newpopn[,2] + rnorm(nsurv, mean = 0, sd = alpha)
+                    }
+                    else
+                        warning("unsupported movement model ", turnoverpar$movemodel, " ignored")
+                    
                     ## if (turnoverpar$wrap)   2018-03-31
                     if (turnoverpar$edgemethod == "wrap")
                         newpopn <- toroidal.wrap(newpopn)
@@ -288,16 +307,30 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         else {
             ## projected population
-            turnoverpar <- list(lambda = NULL, phi = 0.7, sigma.m = 0, edgemethod = "wrap",   # wrap = TRUE,
+            turnoverpar <- list(lambda = NULL, phi = 0.7, movemodel = 'static', sigma.m = 0, 
+                                move.a = NULL, move.b = 1, edgemethod = "wrap",   # wrap = TRUE,
                                 survmodel = 'binomial', recrmodel = 'poisson')
             if (!is.null(details$wrap)) {
                 warning("details option 'wrap' is deprecated; using edgemethod = 'wrap' if TRUE")
                 if (details$wrap) details$edgemethod = 'wrap'
             }
             turnoverpar <- replace (turnoverpar, names(details), details)
+
+            if (is.null(turnoverpar$move.a)) {
+                ## allow legacy input as sigma.m
+                turnoverpar$move.a <- turnoverpar$sigma.m
+            }
+            if (turnoverpar$movemodel == 'static' & turnoverpar$move.a != 0) {
+                ## restore default from version < 3.2.1
+                turnoverpar$movemodel <- 'normal'
+            }
+                
             turnoverpar$lambda  <- expands(turnoverpar$lambda, nsessions)
             turnoverpar$phi     <- expands(turnoverpar$phi, nsessions)
-            turnoverpar$sigma.m <- expands(turnoverpar$sigma.m, nsessions)
+            ## turnoverpar$sigma.m <- expands(turnoverpar$sigma.m, nsessions)
+            ## consistent
+            turnoverpar$move.a <- expands(turnoverpar$move.a, nsessions)
+            turnoverpar$move.b <- expands(turnoverpar$move.b, nsessions)
             MSpopn <- vector(nsessions, mode = 'list')
          
             if (turnoverpar$recrmodel == "multinomial") {

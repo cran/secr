@@ -9,6 +9,7 @@
 ## 2013-10-29 noccasions derived from usage
 ## 2015-11-03 Improved handling of 'noncapt' with 'validcapt' - no need for dummy trapID etc
 ## 2017-01-11 adjusted for direct input of telemetry
+## 2019-03-11 transect bug fixed (capttrap order)
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
@@ -129,8 +130,8 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     else
                         captTrap <- xyontransect(captures[,4:5], traps, tol)
                     if (any(captTrap==0)) {
+                        captures <- captures[captTrap>0,]  ## first!! 2019-03-11
                         captTrap <- captTrap[captTrap>0]
-                        captures <- captures[captTrap>0,]
                         warning ("detections with coordinates not on ",
                                  "any transect were dropped")
                     }

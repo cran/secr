@@ -20,14 +20,26 @@ popIDsplit <- function (pop) {
 plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL, ...) {
     ## 2018-11-28 move dots to position 2 to allow more than one argument... deferred
     ## plot.popn <- function (x, ..., add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL) {
-        if (ms(x)) {
+    if (ms(x)) {
         nsess <- length(x)
         temp <- do.call(rbind, lapply(x, function(y) attr(y,'boundingbox')))
         vertices <- apply(temp,2,range)
+        
         if (collapse) {
             if (!add)  {
                 eqscplot (0,0, xlab='', ylab='', xlim=vertices[,1],
                           ylim = vertices[,2], type='n', axes = FALSE)
+                if (frame) {    ## 2019-05-31
+                    if (!is.null(attr(x[[1]],'polygon'))) {
+                        poly <- attr(x[[1]],'polygon')
+                        if (inherits(poly, "SpatialPolygons"))
+                            plot(poly, add = TRUE)
+                        else
+                            polygon (poly)
+                    }
+                    else
+                        polygon (attr(x[[1]], 'boundingbox'))   
+                }
             }
             # plot(grid, border=2, bty='o', gridlines=F)
             sid <- popIDsplit(x)

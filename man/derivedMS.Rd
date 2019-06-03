@@ -10,6 +10,7 @@
 Compute derived parameters of spatially explicit capture-recapture model. 
 Density is a derived parameter when a model is fitted by maximizing the conditional likelihood. So also is the effective sampling area (in the sense of Borchers and Efford 2008).
 }
+
 \usage{
 
 derived(object, ...)
