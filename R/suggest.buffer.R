@@ -184,7 +184,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
 }
 
 suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasions = NULL,
-    ignoreusage = FALSE,  RBtarget = 0.001, interval = NULL, binomN = NULL, ...) {
+    ignoreusage = FALSE,  ncores = NULL, RBtarget = 0.001, interval = NULL, binomN = NULL, ...) {
     if (ms(object)) {
         if (inherits(object,'secr')) {
             nsess <- length(object$capthist)
@@ -237,6 +237,8 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 else
                     ignoreusage <- FALSE
             }
+            if (!is.null(object$details$grain))
+                grain <- object$details$grain
         }
         else {
             if (inherits(object, 'capthist')) {
@@ -245,7 +247,7 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 if (is.null(detectpar)) {
                     tempmask <- make.mask (traps, buffer = 5*RPSV(object, CC = TRUE))
                     detectpar <- autoini (object, tempmask,
-                        ignoreusage = ignoreusage)[parnames(0)]
+                        ignoreusage = ignoreusage, ncores = ncores)[parnames(0)]
                     tempdp <- lapply(detectpar,formatC,4)
                     warning ("using automatic 'detectpar' ",
                         paste(names(detectpar), "=", tempdp, collapse=", "),
@@ -289,15 +291,11 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
     }
 }
 
-## shifted from secr.fit 2014-03-12
-
 bufferbiascheck <- function (output, buffer, biasLimit) {
-
     ############################################
     ## buffer bias check
     ## not for polygon & transect detectors
     ############################################
-
     capthist <- output$capthist
     validbiasLimit <- !is.null(biasLimit)
     validbiasLimit <- validbiasLimit & is.finite(biasLimit)
@@ -338,7 +336,7 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
                                 binomN = output$details$binomN) )
             if (inherits(bias, 'try-error')) {
                 warning('could not perform bias check')
-                bias <- 0  ## 2012-12-18 suppresses second message
+                bias <- 0  ## suppresses second message
             }
             else
                 bias <- bias$RB.D

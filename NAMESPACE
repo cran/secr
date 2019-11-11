@@ -12,22 +12,37 @@ importFrom(methods, "as", "is", "Ops", "Math")
 importFrom(mgcv, "gam", "s", "te", "formula.gam", "predict.gam")
 importFrom(nlme, "fdHess")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
-           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust", 
-           "integrate", "lm", "logLik", "model.matrix", "nlm", "nls", "optim", 
-           "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson", 
-           "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", "rnbinom", 
-           "rnorm", "rpois", "runif", "sd", "simulate", "smooth.spline", "terms", 
+           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
+           "integrate", "lm", "logLik", "model.matrix", "nlm", "nls", "optim",
+           "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
+           "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", "rnbinom",
+           "rnorm", "rpois", "runif", "sd", "simulate", "smooth.spline", "terms",
            "uniroot", "update", "update.formula", "var", "vcov")
 importFrom(stringr, "str_pad", "str_length")
 importFrom(tools, "file_ext")
-importFrom(utils, "count.fields", "flush.console", "getS3method", "head", 
-           "packageDescription", "packageVersion", "read.csv", "read.table", 
-           "tail", "write.table")
+importFrom(utils, "count.fields", "flush.console", "getS3method", "head",
+           "object.size", "packageDescription", "packageVersion", "read.csv",
+           "read.table", "tail", "write.table")   ## "winDialog"
 
 importFrom(raster, "values<-", "values", "clump", "adjacent")
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
 exportMethods(raster)
+
+importFrom (Rcpp, "evalCpp")
+importFrom (RcppParallel, "RcppParallelLibs", "setThreadOptions", "defaultNumThreads")
+
+## suggested packages
+## importFrom (rgdal, "readOGR", "project")
+## importFrom (sp, "SpatialPoints", "proj4string", "over", "CRS")
+## importFrom (readxl, "read_excel")
+## importFrom (rgeos, "gArea","gIntersection", "gBuffer)
+## importFrom (spsurvey, "total.est", "grts")
+## importFrom (nnet, "which.is.max")
+## importFrom (maptools, "unionSpatialPolygons")
+
+## importFrom (mvtnorm, "dmvnorm")
+## importFrom (gdistance, "transition", "geocorrection", "costDistance")
 
 export (secr.fit)
 export (par.secr.fit)
@@ -75,6 +90,7 @@ export (logit)
 export (invlogit)
 export (write.captures)
 export (write.traps)
+export (write.mask)
 export (score.test)
 export (score.table)
 export (LR.test)
@@ -111,8 +127,6 @@ export (ellipse.secr)
 export (ellipse.bvn)
 export (closure.test)
 export (closedN)
-export (read.SPACECAP)
-export (write.SPACECAP)
 export (read.DA)
 export (write.DA)
 export (logmultinom)
@@ -303,6 +317,7 @@ export (deleteMaskPoints)
 export (pmixProfileLL)
 export (updateCH)
 export (shareFactorLevels)
+export (RSE)
 
 S3method(print, traps)
 S3method(plot, traps)
@@ -323,6 +338,8 @@ S3method(shift, popn)
 S3method(plot, popn)
 S3method(subset, popn)
 S3method(rbind, popn)
+S3method(summary, popn)
+S3method(print, summary.popn)
 
 S3method(print, capthist)
 S3method(plot, capthist)
@@ -380,4 +397,7 @@ S3method(print, Rsurface)
 S3method(print, secrtest)
 S3method(plot, secrtest)
 
-useDynLib (secr, .registration = TRUE)
+useDynLib (secr)
+## DEBUGGING ONLY (cpp functions not documented)
+## exportPattern("*cpp")
+

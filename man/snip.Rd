@@ -57,8 +57,8 @@ plot (snip(temptrans, by = 200), markvertices = 1)
 
 ## simulate some captures
 tempcapt <- sim.capthist(temptrans, popn = list(D = 2,
-   buffer = 300), detectpar = list(g0 = 0.5, sigma = 50),
-   binomN = 0)
+   buffer = 300), detectfn = 'HHN', binomN = 0,
+   detectpar = list(lambda0 = 0.5, sigma = 50))
 
 ## snip capture histories
 tempCH <- snip(tempcapt, by = 20)

@@ -10,7 +10,7 @@
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
-    if (!(inherits(object, 'mask') | inherits(object, 'traps')))
+  if (!(inherits(object, 'mask') | inherits(object, 'traps')))
         ## stop ("require mask or traps object")
         object <- matrix(unlist(object), ncol = 2)
     if (!ms(object) & ms(spatialdata))
@@ -29,7 +29,6 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
         out
     }
     else {
-
         if (is.character(spatialdata))
             type <- "shapefile"
         else if (inherits(spatialdata, "SpatialPolygonsDataFrame"))

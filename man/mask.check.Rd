@@ -14,7 +14,7 @@ Mask Diagnostics
 \usage{
 mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
     LLonly = TRUE, realpar = NULL, session = 1, file = NULL,
-    drop = "", tracelevel = 0, ncores = 1, ...)
+    drop = "", tracelevel = 0, ...)
 }
 
 \arguments{
@@ -29,7 +29,6 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   \item{file}{name of output file (optional)}
   \item{drop}{character vector: names of fitted secr object to omit}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
-  \item{ncores}{integer number of cores available for parallel processing}
   \item{\dots}{other arguments passed to secr.fit}
 }
 \details{
@@ -62,7 +61,7 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   separately; a model formula that refers to session or uses session
   covariates will cause an error.
   
-  If \code{file} is specified and \code{ncores = 1} then detailed
+  If \code{file} is specified then detailed
   results (including each model fit when \code{LLonly = FALSE}) are
   saved to an external .RData file. Loading this file creates or
   overwrites object(s) in the workspace: \code{mask.check.output} if
@@ -77,10 +76,6 @@ mask.check(object, buffers = NULL, spacings = NULL, poly = NULL,
   \code{tracelevel>0} causes more verbose reporting of progress during
   execution.
   
-  If \code{ncores > 1} the \pkg{parallel} package is used to create
-  processes on multiple cores (see \link{Parallel} for more), progress
-  messages are suppressed, and nothing is output to \code{file}.
-
   The \dots argument may be used to override existing settings in
   \code{object} - for example, a conditional likelihood fit (\code{CL =
   T}) may be selected even if the original model was fitted by

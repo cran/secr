@@ -72,7 +72,8 @@ discretize(object, spacing = 5, outputdetector = c("proximity", "count", "multi"
 
 ## generate some polygon data
 pol <- make.poly()
-CH <- sim.capthist(pol, popn = list(D = 30), detectpar = list(g0 = 0.3))
+CH <- sim.capthist(pol, popn = list(D = 30), detectfn = 'HHN', 
+   detectpar = list(lambda0 = 0.3))
 plot(CH, border = 10, gridl = FALSE, varycol = FALSE)
 
 ## discretize and plot

@@ -8,7 +8,7 @@
 ## fit CL model with range of fixed beta values for mixing proportion
 ## ... arguments passed to secr.fit
 pmixProfileLL <- function (CH, model = list(g0~h2, sigma~h2), CL = TRUE,
-                           pmvals = seq(0.01, 0.99, 0.01), pmi = 5, ncores = 1, ...) {
+                           pmvals = seq(0.01, 0.99, 0.01), pmi = 5, ...) {
     oneLL <- function (pm, args, pmi) {
         ## CL = TRUE, model = list(g0~h2, sigma~h2)
         args$details$fixedbeta[pmi] <- logit(pm)
@@ -45,15 +45,8 @@ pmixProfileLL <- function (CH, model = list(g0~h2, sigma~h2), CL = TRUE,
     args$model <- model
     args$CL <- CL
     args$details$fixedbeta <- rep(NA, pmi)  #! assume last
-
     npm <- length(pmvals)
-    if (ncores == 1)
-        outCL <- lapply(pmvals, oneLL, args, pmi)
-    else {
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-        outCL <- parLapply(clust, pmvals, oneLL, args, pmi)
-        stopCluster(clust)
-    }
+    outCL <- lapply(pmvals, oneLL, args, pmi)
     sapply(outCL, logLik)
 }
 

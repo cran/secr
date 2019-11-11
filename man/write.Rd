@@ -1,11 +1,12 @@
 \name{write.captures}
 \alias{write.captures}
 \alias{write.traps}
+\alias{write.mask}
 
 \title{ Write Data to Text File }
 
 \description{
-  Export detections or detector layout to a text file in format suitable
+  Export detections or detector layout or mask to a text file in format suitable
   for input to DENSITY. 
 }
 
@@ -17,6 +18,8 @@ write.captures(object, file = "", deblank = TRUE, header = TRUE,
 
 write.traps(object, file = "", deblank = TRUE,  header = TRUE,
     ndec = 2, covariates = FALSE, ...)
+
+write.mask(object, file = "", header = TRUE, ndec = 2, covariates = TRUE, ...)
 
 }
 \arguments{
@@ -46,6 +49,8 @@ write.traps(object, file = "", deblank = TRUE,  header = TRUE,
   are repeated for each detection of an individual. Factor covariates
   are coerced to numeric before export.
   
+  For \code{write.mask}, \code{header = TRUE} also causes column names to be exposed.
+  
 }
 \value{
 
@@ -57,6 +62,8 @@ None
 }
 
 \examples{
+
   write.captures (captdata)
+
 }
 \keyword{ IO }

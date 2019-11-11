@@ -3,15 +3,6 @@
 
 \alias{housemouse}
 \alias{Coulombe}
-\alias{housemouse.0}
-\alias{housemouse.ampm}
-\alias{housemouse.ampmh2h2}
-\alias{morning.0}
-\alias{morning.0h2}
-\alias{morning.b}
-\alias{morning.h2}
-\alias{morning.h2h2}
-\alias{morning.t}
 
 \title{ House mouse live trapping data  }
 
@@ -32,7 +23,7 @@ evening, for 5 days.
 
 The dataset was described by Otis et al. (1978) and distributed with
 their CAPTURE software (now available from
-\url{http://www.mbr-pwrc.usgs.gov/software.html}). Otis et
+\url{https://www.mbr-pwrc.usgs.gov/software.html}). Otis et
 al. (1978 p. 62, 68) cite Coulombe's unpublished 1965 master's thesis
 from the University of California, Los Angeles, California.
 
@@ -56,10 +47,7 @@ the distributed data objects.
 
 Otis et al. (1978) report various analyses including a closure test on
 the full data, and model selection and density estimation on data from
-the mornings only. We include several secr models fitted to the
-`morning' data (\code{morning.0}, \code{morning.b} etc.). Of these, a model
-including individual heterogeneity in both g0 and sigma has the lowest
-AIC.
+the mornings only. 
 
 \tabular{ll}{
   Object \tab Description \cr
@@ -105,8 +93,6 @@ known.sex <- subset(housemouse, !is.na(covariates(housemouse)$sex))
 
 ## reveal multiple captures
 table(trap(housemouse), occasion(housemouse))
-
-AIC(morning.0, morning.b, morning.t, morning.h2, morning.0h2, morning.h2h2)
 
 ## assess need to distinguish morning and afternoon samples
 \dontrun{

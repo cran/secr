@@ -2,11 +2,15 @@
 \alias{read.mask}
 
 \title{ Read Habitat Mask From File }
+
 \description{
   Read coordinates of points on a habitat mask from a text file.
 }
+
 \usage{
+
 read.mask(file = NULL, data = NULL, spacing = NULL, columns = NULL, ...)
+
 }
 
 \arguments{
@@ -14,7 +18,7 @@ read.mask(file = NULL, data = NULL, spacing = NULL, columns = NULL, ...)
   \item{data}{ dataframe } 
   \item{spacing}{ spacing of grid points in metres }
   \item{columns}{ character vector naming the columns to save as covariates}
-  \item{...}{ other arguments to pass to \code{read.table} }
+  \item{...}{ other arguments to pass to \code{read.table}}
 }
 \details{
 
@@ -54,9 +58,6 @@ region. If the `sessions' relate to different regions you will need to
 construct a multi-session mask as a list of single-session
 masks (e.g. \code{mask <- list(mask1, mask2, mask3)}).
 
-The package \pkg{SPACECAP} uses a `state-space' file in `csv' text
-format with columns `X_COORD', `Y_COORD' and `HABITAT'. Such a file may
-be input directly to \code{read.mask}; rows with HABITAT != 1 are dropped.
 }
 
 \examples{

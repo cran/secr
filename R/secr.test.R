@@ -20,8 +20,7 @@
 ############################################################################################
 
 secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
-                       ncores = 1, tracelevel = 1) {
-
+                       ncores = NULL, tracelevel = 1) {
     summarise <- function (CH.or.secr, sims1) {
         observed <- statfn(CH.or.secr)
         simulated <- sapply(sims1, statfn)
@@ -38,13 +37,12 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
         list(simulated = simulated, observed = observed, p = p)
     }
     
-    sims <- simulate(object = object, nsim = nsim, ncores = ncores, seed = seed)
+    sims <- simulate(object = object, nsim = nsim, seed = seed)
 
     if (fit) {
         if (missing(statfn))
             ## object is secr fit
             statfn <- function(object) c(devdf = deviance(object) / df.residual(object))
-        ## 2017-07-26 tweaked seed = seed to seed = NULL
         fitted <- sim.secr(object, nsim = nsim, extractfn = trim, seed = NULL,
                            data = sims, start = object$fit$par, ncores = ncores,
                            tracelevel = tracelevel)

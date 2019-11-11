@@ -2,30 +2,34 @@
 ## package 'secr'
 ## sim.secr.R
 ## uses Dsurface.R, utility.R, secrloglik.R
-## Copyright (C) 2009, 2010, 2014 Murray Efford
-## 2009 11 03 nullval
-## 2010 02 05 removed 'spherical' argument (now detectfn 11)
-## 2010 03 10 debugged simsecr in secr.c
-## 2010 03 10 debugged dummyCH
-## 2010 06 30 memory allocation error in sim.detect
-## 2011 09 26 detector checks use .localstuff
-## 2011 11 08 uses getDensityArray and predictDsurface
-## 2011 11 28 new behavioural resposne models
-## 2014-08-01 ncores arg for simulate
-## 2014-08-01 sim.detect exported (but this may be unnecessary)
-## 2014-08-08 simulate.secr uses hcov
-## 2014-08-07 sim.detect streamlined (about 20x faster in some cases)
-##            BUT relying on old code for groups and behavioural response
-##            fix requires investigation of C code simsecr
-## 2014-08-20 removed argument beta from sim.detect
-## 2014-08-28 C function simsecr renamed simdetect
-## 2014-09-07 simulate.secr modified for linearmask
-## 2016-01-09 use .localstuff$iter2 instead of global variable i
-## 2017-03-25 updated sim.detect for 3D exclusive detectors, nocc[sessnum]
+## Copyright (C) 2019 Murray Efford
+## 2019-10-05 converted to cpp
+
+## 2019-10-06 yet to fix: groups?
+
+## 2019-10-06 excludes: knownclass (hcov, h2)
+## 2019-10-06 excludes: mixed detector types
+## 2019-10-06 excludes: individual covariates
+## 2019-10-06 excludes: telemetry
+
+############################################################################################
+
+disinteraction <- function (capthist, groups, sep='.') {
+  ngv <- length(groups)
+  grouplevels <- group.levels(capthist, groups, sep=sep)
+  if (ngv>1)
+    temp <- matrix(unlist(strsplit(as.character(grouplevels), sep, fixed=TRUE)),
+                   byrow = T, ncol = ngv)
+  else temp <- grouplevels
+  temp <- data.frame(temp)
+  names(temp) <- groups
+  temp
+}
+
 ############################################################################################
 
 simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat = 1,
-                           ncores = 1, ...)
+                           ...)
 ## if CL, condition on n? what about distribution of covariates over n?
 ## locate according to IHP with lambda(X) controlled by f(X|covar), assuming homog Poisson
 ## i.e. use f(X|covar)/max(f(X|covar)) to reject until meet quota n?
@@ -37,9 +41,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 ## mashed?
 
 {
-
     ##  check input
-
     if (any(c("bn", "bkn", "bkc", "Bkc") %in% tolower(object$vars)))
         stop ("simulate works only with binary behavioural responses")
 
@@ -78,11 +80,8 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
     ##################
 
     ## loop over replicates
-    ## changed from simple for loop 2014-08-01
-    ## to enable multiple cores
-
-    runone <- function(i) {
-        ## argument i is unused dummy
+    runone <- function(r) {
+        ## argument r is unused dummy
         sesspopn <- list()
         for (sessnum in 1:nsession) {
             if (nsession==1) mask <- object$mask
@@ -147,26 +146,14 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
                 }
                 ## ------------------------------------------------------------------
             }
-            ##sesspopn[[sessnum]] <- rbind.popn(popn)   ## combine groups in one popn object
-            ## 2017-07-25 to work with new rbind.popn
             sesspopn[[sessnum]] <- do.call(rbind, popn)   ## combine groups in one popn object
         }
         sim.detect(object, sesspopn, maxperpoly)
     }
-    if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-        clusterSetRNGStream(clust, seed)
-        clusterEvalQ(clust, requireNamespace('secr'))
-        sesscapt <- parLapply(clust, 1:nsim, runone)
-        stopCluster(clust)
-    }
-    else {
-        sesscapt <- lapply(1:nsim, runone)
-    }
+    sesscapt <- lapply(1:nsim, runone)
 
     ## experimental
-    if (chat>1)
-        sesscapt <- lapply(sesscapt, replicate, chat)
+    if (chat>1) sesscapt <- lapply(sesscapt, replicate, chat)
 
     attr(sesscapt,'seed') <- RNGstate   ## save random seed
     class(sesscapt) <- c('secrdata', 'list')
@@ -177,7 +164,7 @@ simulate.secr <- function (object, nsim = 1, seed = NULL, maxperpoly = 100, chat
 sim.secr <- function (object, nsim = 1, extractfn = function(x)
     c(deviance=deviance(x), df=df.residual(x)), seed = NULL,
     maxperpoly = 100, data = NULL, tracelevel = 1, hessian =
-    c('none','auto','fdHess'), start = object$fit$par, ncores = 1) {
+    c('none','auto','fdHess'), start = object$fit$par, ncores = NULL) {
 
 ## parametric bootstrap simulations based on a fitted secr object
 ## extractfn is a required function to extract values from an secr fit
@@ -212,8 +199,7 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
     if (is.null(data)) {
         memo ('sim.secr simulating detections...', tracelevel>0)
         ## use multiple cores only for model fitting 2015-12-02
-        data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly,
-            ncores = 1)
+        data <- simulate(object, nsim = nsim, seed = seed, maxperpoly = maxperpoly)
     }
     else {
         if (any(class(data) != c('secrdata', 'list')))
@@ -233,22 +219,13 @@ sim.secr <- function (object, nsim = 1, extractfn = function(x)
                 timecov = object$timecov, sessioncov = object$sessioncov,
                 groups = object$groups, dframe = object$dframe, details = details,
                 method = object$fit$method, verify = FALSE, biasLimit = NA,
-                ncores = 1) )
+                ncores = ncores) )
             extractfn(tempfit)
         }
         else if (is.list(test)) list() else rep(NA, n.extract)
     }
     
-    if (ncores > 1) {
-        memo ('sim.secr fitting models on multiple cores...', tracelevel > 0)
-        tracelevel <- 0  ## do not attempt to display
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-        clusterEvalQ(clust, requireNamespace('secr'))
-        output <- parLapply(clust, data, fitmodel)
-        stopCluster(clust)
-    }
-    else
-        output <-  lapply (data, fitmodel)
+    output <-  lapply (data, fitmodel)
 
     if (is.numeric(test)) {
         output <- do.call(rbind, output)
@@ -279,6 +256,25 @@ print.secrlist <- function(x,...) {
 }
 ############################################################################################
 
+## mixture proportions for representative animal 
+## (i.e. assuming no individual or group variation)       
+## assume dim(PIA)[1] == 1
+getpmixall <- function(PIA, realparval)
+{
+    nc <- dim(PIA)[2]
+    k <- dim(PIA)[4]
+    nmix <- dim(PIA)[5]
+    pmix <- 1   ## default single class
+    if (nmix>1) {
+        # index of first non-missing occasion s and detector k
+        fsk <- firstsk(PIA[1,1,,,1, drop = FALSE])
+        kc <- as.vector((fsk-1) %/% k + 1)[1]
+        sc <- as.vector((fsk-1) %/% k + 1)[1]
+        pmix <- PIA[cbind(1,1,sc,kc,1:nmix)]
+    }
+    pmix
+}
+
 sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
 ## popnlist is always a list of popn objects, one per session
 {
@@ -289,7 +285,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             output <- list()
             for (i in 1:nsession)
                 output[[i]] <- dummycapthist (capthist[[i]],
-                    pop=pop[i], fillvalue = fillvalue)
+                    pop = pop[i], fillvalue = fillvalue)
             class(output) <- c('capthist', 'list')
             session(output) <- session(capthist)   ## 2010 03 10
             output
@@ -308,7 +304,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             output
         }
     }
-
     ## --------------------------------------------------------------------
     ## Exclusions
     ## see also below dettype %in% c(-1,0,1,2,5,6,7)
@@ -318,6 +313,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
 
     if ('telemetry' %in% unlist(detector(traps(object$capthist))))
         stop("telemetry models are not supported in simulate.secr")
+    
     ## --------------------------------------------------------------------
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)
@@ -338,8 +334,12 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     ndet <- if(ms(object)) sapply(traps(object$capthist), nrow) else nrow(traps(object$capthist))
     sessionlevels <- session(object$capthist)   ## was names(capthist) 2009 08 15
     nsession <- length(sessionlevels)
+    sessmask <- object$mask
+    if (!ms(sessmask)) sessmask <- list(sessmask)  ## always a list
+    grplevels <- group.levels(object$capthist, object$groups, sep=".")
     beta <- object$fit$par
     userd <- is.null(object$details$userdist)
+    
     ##------------------------------------------
     ## detection parameters for each session, animal, occasion, detector
     ## realparval is lookup table of values,
@@ -347,8 +347,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
 
     ## real parameter values for naive animals
 
-    ## new approach using existing design to save time in secr.design.MS
-    ## massaged 2018-10-11
+    ## using existing design to save time in secr.design.MS...
     if (length(unique(object$design0$PIA)) == 1) {
         design0 <- object$design0
         dim0 <- dim(design0$PIA)
@@ -365,8 +364,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     }
     
     ## uniform over individuals
-    ## C code uses individual-specific PIA even in full-likelihood case
-    ## cf secr.fit which has one row per group
+    ## C++ code uses individual-specific PIA even in full-likelihood case
     for (i in 1:nsession) {
         if (is.null(object$groups)) {
             ## all animals the same...
@@ -405,6 +403,22 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     }
     ##------------------------------------------
 
+    # see loglikhelperfn.R for getD
+    # Density
+    if (!object$CL ) {
+        D <- getD (object$designD, beta, sessmask, 
+                   object$parindx, object$link, object$fixed,
+                   grplevels, sessionlevels, 
+                   parameter = 'D')
+    }
+    # Non-Euclidean distance parameter
+    NE <- getD (object$designNE, beta, sessmask, 
+                object$parindx, object$link, object$fixed,
+                grplevels, sessionlevels, 
+                parameter = 'noneuc')
+    
+    #--------------------------------------------------------------------
+    
     output <- list()
     for (sessnum in 1:nsession) {
         ## in multi-session case must get session-specific data from lists
@@ -416,6 +430,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             Dtemp <- if (object$details$param %in% c(4:6))
                     predict(object)[[sessnum]]['D','estimate']
                 else NA
+            nmash <- attr(object$capthist[[sessnum]], 'n.mash')
         }
         else {
             s <- ncol(object$capthist)
@@ -424,6 +439,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                 object$mask else NULL
             Dtemp <- if (object$details$param %in% c(4:6)) predict(object)['D','estimate']
                 else NA
+            nmash <- attr(object$capthist, 'n.mash')
         }
 
         ## function reparameterize is in secrloglik.R
@@ -433,31 +449,21 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                                         session.mask, session.traps, Dtemp, s)
         ##------------------------------------------
         session.animals <- popnlist[[sessnum]]
-        if (userd) {
-            ## pre-compute distances from detectors to animals
-            ## pass miscellaneous unmodelled parameter(s) 2015-02-21
-            nmiscparm <- length(object$details$miscparm)
-            if (nmiscparm > 0) {
-                miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
-                attr(session.mask, 'miscparm') <- coef(object)[miscindx, 1]
-            }
-            distmat <- valid.userdist (object$details$userdist,
-                                       detector(session.traps),
-                                       xy1 = session.traps,
-                                       xy2 = session.animals,
-                                       mask = session.mask,
-                                       sessnum = sessnum)
-        }
-        else {
-            distmat <- -1
-        }
 
+        ## pre-compute distances from detectors to animals
+        ## pass miscellaneous unmodelled parameter(s)
+        nmiscparm <- length(object$details$miscparm)
+        if (nmiscparm > 0) {
+            miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
+            attr(session.mask, 'miscparm') <- coef(object)[miscindx, 1]
+        }
+        
         ##------------------------------------------
 
         dettype <- detectorcode(session.traps, MLonly = FALSE, noccasions = nocc[sessnum])
-        if (! all(dettype %in% c(-1,0,1,2,5,6,7)))
+        if (! all(dettype %in% c(-1,0,1,2,3,4,5,6,7)))
             stop ("detector type ",
-                  detector(session.traps),
+                  paste(detector(session.traps)),
                   " not implemented")
 
         binomN <- expandbinomN(object$details$binomN, dettype)
@@ -470,8 +476,8 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             k <- nrow(session.traps)
             K <- k
         }
-        trps  <- unlist(session.traps, use.names=F)
-        sessg <- min (sessnum, design0$R)
+        ## no obvious reason to retain this; using sessnum 2019-10-20
+        ## sessg <- min (sessnum, design0$R)
 
         #------------------------------------------
         ## simulate this session...
@@ -486,87 +492,121 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         }
         else {
             # safety margin : average detections per animal per detector per occasion
-            ## 2011-09-26 make this user argument maxperpoly
             maxdet <- NR * s * K * maxperpoly
         }
         if ((object$detectfn==12) || (object$detectfn==13)) {
             ## muN, sdN
             object$details$miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
         }
-        ## 2014-08-08
         ## requires session.animals has covariate named 'hcov'
         knownclass <- getknownclass(session.animals, object$details$nmix, object$hcov)
+        
+        ## get fixed pmix for each class
+        pmix <- getpmixall(design0$PIA, Xrealparval0)
 
         ## TO BE FIXED
         if (length(unique(dettype))>1 | length(unique(binomN))>1)
             stop("simulation not yet updated for varying detector type")
         
-        temp <- .C('simdetect', # PACKAGE = 'secr',
-            as.integer(dettype[1]),
-            as.double(Xrealparval0),
-            as.double(Xrealparval1),
-            as.integer(nrow(Xrealparval0)),                # number of rows in lookup table, naive
-            as.integer(nrow(Xrealparval1)),                # ditto, caught before
-            as.integer(design0$PIA[sessg,1:NR,1:s,1:K,]),  # index of N,S,K to rows in Xrealparval0
-            as.integer(design1$PIA[sessg,1:NR,1:s,1:K,]),  # index of N,S,K to rows in Xrealparval1
-            as.integer(NR),
-            as.integer(s),
-            as.integer(k),
-            as.integer(object$details$nmix),
-            as.integer(knownclass),
-            as.double(unlist(session.animals)),
-            as.double(trps),
-            as.double(distmat),
-            as.double(usge),
-            as.integer(btype),
-            as.integer(Markov),
-            as.integer(binomN[1]),                # used only for count detector checked 2010-12-01
-            as.double(object$details$miscparm),
-            as.integer(object$detectfn),
-            as.integer(maxperpoly),
-            n = integer(1),
-            caught = integer(NR),
-            detectedXY = double (maxdet*2),
-            signal = double (maxdet*2),
-            value = integer(NR*s*K),
-            resultcode = integer(1)
-        )
+        if (all(dettype %in% c(-1,0,1,2,5,8))) {
+            if (is.function(object$details$userdist)) {
+                ## only use of NE in this fn
+                noneuc <- getmaskpar(!is.null(NE), NE, nrow(session.mask), sessnum, FALSE, NULL)
+                density <- getmaskpar(!object$CL, D, nrow(session.mask), sessnum, 
+                                      object$details$unmash, nmash)
+                distmat2 <- getuserdist(session.traps, session.animals, object$details$userdist, sessnum, 
+                                        noneuc[,1], density[,1], object$details$miscparm)
+            }
+            else {
+                distmat2 <- getdistmat2 (session.traps, session.animals, object$details$userdist)
+            }
+            ## precompute gk, hk for point detectors
+            gkhk0 <- makegkParallelcpp (as.integer(object$detectfn),
+                                        as.integer(object$details$grain),
+                                        as.matrix(Xrealparval0),
+                                        as.matrix(distmat2),
+                                        as.double(object$details$miscparm))
+            gkhk <- makegkParallelcpp (as.integer(object$detectfn),
+                                       as.integer(object$details$grain),
+                                       as.matrix(Xrealparval1),
+                                       as.matrix(distmat2),
+                                       as.double(object$details$miscparm))
+            if (any(dettype == 8)) {
+                stop("sim.secr not ready for capped detectors")
+                #     gkhk <- cappedgkhkcpp (as.integer(nrow(Xrealparval1)), as.integer(nrow(session.traps)),
+                #                            as.double(getcellsize(session.mask)), as.double(density[,1]), 
+                #                            as.double(gkhk$gk), as.double(gkhk$hk))  
+            }
+        }
+        if (all(dettype %in% c(-1,0,1,2,8))) {
+            temp <- simdetectpointcpp (dettype[1],      ## detector -1 single, 0 multi, 1 proximity, 2 count,... 
+                                       as.integer(NR), 
+                                       as.integer(nrow(Xrealparval1)),
+                                       as.double(gkhk0$gk), 
+                                       as.double(gkhk$gk), 
+                                       as.double(gkhk0$hk), 
+                                       as.double(gkhk$hk), 
+                                       as.integer(design0$PIA[sessnum,1:NR,1:s,1:K,]),       ## naive
+                                       as.integer(design1$PIA[sessnum,1:NR,1:s,1:K,]),       
+                                       as.integer(object$details$nmix),
+                                       as.integer(knownclass),
+                                       as.double(pmix),
+                                       as.matrix(usge),
+                                       as.integer(btype),       ## code for behavioural response  0 none etc. 
+                                       as.integer(Markov),      ## learned vs transient behavioural response 0 learned 1 Markov 
+                                       as.integer(binomN)      ## number of trials for 'count' detector modelled with binomial 
+            )
+        }
+        else if (all(dettype %in% c(3,4,6,7))) {
+            temp <- simdetectpolycpp (
+                as.integer (dettype[1]),       ## detector 3 exclusive polygon, 4 exclusive transect, 6 polygon, 7 transecr
+                as.integer (object$detectfn),  ## code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 = uniform 
+                as.integer (object$details$nmix), ## number of classes 
+                as.integer (btype),            ## code for behavioural response  0 none etc. 
+                as.integer (Markov),           ## learned vs transient behavioural response 0 learned 1 Markov 
+                as.integer (k),                ## number of vertices per polygon (zero-terminated vector)
+                as.matrix  (session.animals),   ## x,y points of animal range centres (first x, then y) 
+                as.matrix  (session.traps),     ## x,y locations of traps (first x, then y) 
+                as.matrix  (Xrealparval0),      ## Parameter values (matrix nr= comb of g0,sigma,b nc=3) [naive animal]
+                as.matrix  (Xrealparval1),      ## Parameter values (matrix nr= comb of g0,sigma,b nc=3) [caught before]
+                as.integer (design0$PIA[sessnum,1:NR,1:s,1:K,]), ## lookup which g0/sigma/b combination to use for given g, S, K [naive animal] 
+                as.integer (design1$PIA[sessnum,1:NR,1:s,1:K,]), ## lookup which g0/sigma/b combination to use for given n, S, K  [caught before] 
+                as.integer (knownclass),       ## known membership of 'latent' classes 
+                as.double  (pmix),             ## membership probabilities
+                as.matrix  (usge),              ## ss x kk array of 0/1 usage codes or effort 
+                as.integer (binomN),            ## number of trials for 'count' detector modelled with binomial 
+                as.integer (maxperpoly)        ##  
+            )
+            if ((temp$resultcode == 2) & (any(dettype %in% c(6,7)))) {
+                stop (">100 detections per animal per polygon per occasion")
+            }
+        }
+        else
+            if (all(dettype %in% c(5))) {
+                if (is.null(object$details$cutval))
+                    stop ("sim.detect for signal model requires object$details$cutval")
+                temp <- simdetectsignalcpp (
+                    as.integer(dettype[1]),
+                    as.integer(object$details$nmix),
+                    as.integer(object$detectfn),
+                    as.integer(object$details$cutval),
+                    as.matrix(Xrealparval0),
+                    as.integer(design0$PIA[sessnum,1:NR,1:s,1:K,]),  # index of N,S,K,x to rows in Xrealparval0
+                    as.integer(pmix),
+                    as.integer(knownclass),
+                    as.matrix(session.animals),
+                    as.matrix(session.traps),
+                    as.matrix(distmat2),
+                    as.matrix(usge),
+                    as.double(object$details$miscparm)
+                )
+            }
         if (temp$resultcode != 0) {
-          if ((temp$resultcode == 2) & (any(dettype %in% c(6,7))))
-              stop (">100 detections per animal per polygon per occasion")
-          else
-              stop ("simulated detection failed, code ", temp$resultcode)
+            stop ("simulated detection failed, code ", temp$resultcode)
         }
-       
-        if (all(dettype %in% c(-1,0,3,4))) {
-            # exclusive detector types
-            # 2017-03-25 updated for 3-D
-            # leaving simdetect intact and feeding out by trap number
-            
-            
-            # OLD
-            # w <- array(dim=c(s,temp$n), dimnames = list(1:s, NULL))
-            # if (temp$n>0)  w[,] <- temp$value[1:(temp$n*s)]
-            # w <- t(w)
-            
-            # verify index calculation:
-            # i <- expand.grid(n=1:3,s=1:4,k=1:2)
-            # array(i$n + (i$s-1) * 3 + (i$k-1) * (3*4), dim=c(3,4,2))
-            trp <- temp$value[1:(temp$n*s)]
-            trp[trp == 0] <- NA
-            occ <- rep(1:s, temp$n) 
-            animal <- rep(1:temp$n, each = s)
-            index <- animal + (occ-1) * temp$n + (trp-1) * (temp$n * s)
-            index <- index[!is.na(index)]
-            w <- numeric(temp$n * s * K)  ## defaults to zero
-            if (temp$n>0)  w[index] <- 1
-            w <- array(w, dim=c(temp$n,s, K), dimnames = list(NULL,1:s,NULL))
-        }
-        else {
-            w <- array(0, dim=c(s, K, temp$n), dimnames = list(1:s,NULL,NULL))
-            if (temp$n>0)  w[,,] <- temp$value[1:(temp$n*s*K)]
-            w <- aperm(w, c(3,1,2))
-        }
+        w <- array(temp$value, dim=c(s, K, NR), dimnames = list(1:s,NULL,NULL))
+        w <- aperm(w, c(3,1,2))
+        w <- w[apply(w,1,sum)>0,,, drop = FALSE] 
             
         class(w)   <- 'capthist'    # NOT data.frame
         traps(w)   <- session.traps
@@ -592,25 +632,30 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         }
         ##---------------------
         ## polygon or transect
-        if (any(dettype %in% c(3,4,6,7)) & (temp$n>0)) {
-            if (dettype %in% c(3,4))
-                nd <- sum(abs(w)>0)
-            else
-                nd <- sum(abs(w))
-            detectedXY <- data.frame(matrix(ncol = 2, temp$detectedXY[1:(2*nd)]))
+        if (any(dettype %in% c(3,4,6,7))) {
+            nd <- sum(abs(w))
+            if (nd>0)
+                xymat <- temp$detectedXY[1:nd, 1:2, drop = FALSE]
+            else 
+                xymat <- matrix(nrow=0, ncol=2)
+            detectedXY <- data.frame(xymat)
             names(detectedXY) <- c('x','y')
             attr(w, 'detectedXY') <- detectedXY
         }
         else
             attr(w, 'detectedXY') <- NULL
 
-        if (renumber & (temp$n>0)) rownames(w) <- 1:temp$n
-        else rownames(w)          <- (1:N[sessnum])[as.logical(temp$caught)]
+        if (renumber & (temp$n>0)) {
+            rownames(w) <- 1:temp$n
+        }
+        else {
+            rownames(w) <- (1:N[sessnum])[as.logical(temp$caught)]
+        }
         output[[sessnum]] <- w
         
     } ## end of session loop
 
-    if (nsession==1) output <- output[[1]]
+    if (nsession == 1) output <- output[[1]]
     else {
         names(output) <- sessionlevels
         class(output) <- c('capthist', 'list')

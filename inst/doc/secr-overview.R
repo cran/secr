@@ -4,7 +4,7 @@ library(secr)
 ## ---- echo=FALSE, eval=TRUE--------------------------------------------------------
 options(digits=6, width=85)
 
-## ---- echo = FALSE, eval=TRUE, fig.height=3.5, fig.width=7, cache = TRUE-----------
+## ---- echo = FALSE, eval=TRUE, fig.height=3.5, fig.width=7-------------------------
 par(mfrow=c(1,2), pty='s', mar=c(2,1,2,2), cex=1.2, las = 1, bty = 'l',
     xpd=T, cex=1.2, xaxs='i', yaxs='i', lwd=1.5)
 

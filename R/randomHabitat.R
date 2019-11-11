@@ -15,7 +15,7 @@
 
 ## Csardi G, Nepusz T: The igraph software package for complex network
 ##  research, InterJournal, Complex Systems 1695. 2006.
-##  http://igraph.sf.net
+##  https://igraph.org
 
 ## Restrictions
 ##   adjacency for step 'B' is based on a 1-step rook move (direction = 4)

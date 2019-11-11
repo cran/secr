@@ -80,7 +80,8 @@ CvilleGPS <- read.telemetry('CVILLE GPS Combined 4occ.txt')
 CvilleGPSnew <- read.telemetry('CVILLE summer GPS New occasions.txt')
 CvilleBoth <- addTelemetry(CvilleCH, CvilleGPSnew)
 plot(CvilleBoth, border = 400)
-PG(CvilleBoth, buffer = 100, convex = TRUE, plt = TRUE, add = T, col = 'red')
+PG(CvilleBoth, buffer = 100, convex = TRUE, plt = TRUE, add = TRUE, 
+    col = 'red')
 
 ###################################################################
 ## this code computes an area-adjusted density estimate
@@ -128,8 +129,7 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
                                                names(poly)))
     }
     xyl <- telemetryxy(CH)
-    maskarea <- nrow(mask) * attr(mask, 'area')
-    D <- length(xyl) / maskarea
+    D <- length(xyl) / masksize(mask)
     sapply(1:nrepl, onerepl)
 }
 

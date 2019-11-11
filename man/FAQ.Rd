@@ -97,12 +97,9 @@ minprob), whereas Density has no explicit limit.
 \section{ Does secr use multiple cores?}{
   
   Some computations can be run in parallel on multiple processors (most
-  desktops these days have multiple cores), but capability is
-  limited. Check the `ncores' argument of sim.secr() and secr.fit() and
-  ?ncores. The speed gain is significant for parametric bootstrap
-  computations in sim.secr. Parallelisation is also allowed for the
-  session likelihood components of a multi-session model in secr.fit(),
-  but gains there seem to be small or negative.
+  desktops these days have multiple cores). Likelihood calculations in 
+  \code{secr.fit} assign capture histories to multiple parallel threads 
+  whenever possible. 
   
 }
 
@@ -124,7 +121,7 @@ R functions by matching text in their documentation.
 
 There is now a vast amount of \R advice available on the web. For the
 terminally frustrated, `R inferno' by Patrick Burns is recommended
-(\url{http://www.burns-stat.com/pages/Tutor/R_inferno.pdf}). "If you are using
+(\url{https://www.burns-stat.com/pages/Tutor/R_inferno.pdf}). "If you are using
 R and you think you're in hell, this is a map for you".
 
 Method functions for S3 classes cannot be listed in the usual way by

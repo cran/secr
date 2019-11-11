@@ -17,13 +17,14 @@ derived(object, ...)
 
 \method{derived}{secr}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
     se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, 
-    ncores = 1, bycluster = FALSE, ...)
+    ncores = NULL, bycluster = FALSE, ...)
 
 \method{derived}{secrlist}(object, sessnum = NULL, groups = NULL, alpha = 0.05, 
     se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, 
-    ncores = 1, bycluster = FALSE, ...)
+    ncores = NULL, bycluster = FALSE, ...)
 
-esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
+esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, 
+    ncores = NULL)
 
 }
 
@@ -37,7 +38,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
   \item{se.D}{ logical for whether to calculate SE(D-hat) }
   \item{loginterval}{ logical for whether to base interval on log(D)}
   \item{distribution}{ character string for distribution of the number of individuals detected }
-  \item{ncores}{integer number of cores available for parallel processing}
+  \item{ncores}{integer number of cores available for parallel processing (default max-1)}
   \item{bycluster}{logical; if TRUE results are reported separately for each cluster of detectors}
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
@@ -111,9 +112,6 @@ capture (animal not detected previously).
 
 The computation of sampling variances is relatively slow and may be
 suppressed with \code{se.esa} and \code{se.D} as desired.
-
-If \code{ncores > 1} the \pkg{parallel} package is used to create
-processes on multiple cores (see \link{Parallel} for more).
 
 For computing \code{derived} across multiple models in parallel see
 \code{\link{par.derived}}.

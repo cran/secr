@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 3.2.1\cr
-Date: \tab 2019-06-01\cr
+Version: \tab 4.0.2\cr
+Date: \tab 2019-11-11\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -51,8 +51,9 @@ help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
 General interest \tab \cr
-  \href{https://CRAN.R-project.org/package=secr/vignettes/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
-  \href{https://CRAN.R-project.org/package=secr/vignettes/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{../doc/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
+  \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-version4.pdf}{secr-version4.pdf} \tab changes in secr 4.0 \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
@@ -72,10 +73,8 @@ More specialised topics \tab \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} \tab variable effort in SECR models\cr
 }
 
-The datasets \link{possum}, \link{skink}, \link{ovenbird},
-\link{housemouse}, \link{deermouse}, \link{ovensong},
-\link{hornedlizard} and \link{stoatDNA} include examples of fitted
-models.
+The datasets \code{\link{captdata}} and \code{\link{ovenbird}} include examples of fitted
+models. For models fitted to other datasets see \href{https://www.otago.ac.nz/density/pdfs/secr-version4.pdf}{secr-version4.pdf} Appendix 2.
 
 Two add-on packages extend the capability of \pkg{secr} and are
 documented separately. \pkg{secrlinear} enables the estimation of linear
@@ -100,18 +99,6 @@ documentation or new features consistent with the overall design.
 }
 
 \author{ Murray Efford \email{murray.efford@otago.ac.nz} }
-
-\section{Acknowledgements}{
-
-David Borchers made many of these methods possible with his work on the
-likelihood. Deanna Dawson edited some of the documentation (the cleaner
-bits!) and her support and collaboration were important
-throughout. Tiago Marques and Mike Meredith suggested many improvements
-to the documentation and provided valued criticism and support. 
-Erin Peterson and Mathias Tobler made specific suggestions that improved 
-the \code{randomHabitat} and \code{par.secr.fit} functions.
-
-}
 
 \references{
 

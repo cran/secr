@@ -49,7 +49,6 @@ write.DA <- function (capthist, buffer, nzeros = 200, units = 1) {
 read.DA <- function (DAlist, detector = 'polygonX', units = 1, session = 1,
     Y = 'Y', xcoord = 'U1', ycoord = 'U2', xmin = 'Xl', xmax = 'Xu',
     ymin = 'Yl', ymax = 'Yu', buffer = 'delta', verify = TRUE) {
-
     if (!all(detector %in% c('polygon','polygonX')))
         stop ("detector type must be 'polygon' or 'polygonX'")
     ## captures

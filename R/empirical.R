@@ -125,7 +125,7 @@ derivedCluster <- function (object, method = c('SRS', 'R2', 'R3','local',
     # esa-hat are almost certainly non-independent
     
     derivednj(nj, esa = der[,1], se.esa = der[,2], method, centres, alpha, 
-              loginterval, maskarea(object$mask), independent.esa = FALSE)
+              loginterval, masksize(object$mask), independent.esa = FALSE)
 }
 ####################################################################################
 
@@ -134,7 +134,7 @@ derivedExternal <- function (object, sessnum = NULL, nj, cluster,
     method = c('SRS','local'), xy = NULL, alpha = 0.05, loginterval = TRUE) {
 
     se.deriveesa <- function (selection, asess, noccasions) {
-        CLesa  <- esagradient (object, selection, asess, noccasions, clust = NULL)
+        CLesa  <- esagradient (object, selection, asess, noccasions)
         sqrt(CLesa %*% object$beta.vcv %*% CLesa)
     }
 
@@ -197,7 +197,7 @@ derivedSession <- function ( object, method = c('SRS','R2', 'R3','local','poisso
     der <- der[grepl('esa', rownames(der)),1:2]
     nj <- sapply(object$capthist, nrow)    ## animals per session
     if (is.null(area)) 
-        area <- sum(sapply(object$mask, maskarea))  ## assumes non-overlap
+        area <- sum(sapply(object$mask, masksize))  ## assumes non-overlap
     derivednj(nj, der[,'estimate'], der[,'SE.estimate'], 
         method, xy, alpha, loginterval, area, independent.esa)
 }

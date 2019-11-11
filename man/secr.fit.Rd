@@ -21,7 +21,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL, buffer = NULL
     fixed = list(), timecov = NULL, sessioncov = NULL, hcov = NULL,
     groups = NULL, dframe = NULL, details = list(), method =
     "Newton-Raphson", verify = TRUE, biasLimit = 0.01, trace = NULL,
-    ncores = 1, ...)
+    ncores = NULL, ...)
 
 }
 
@@ -53,7 +53,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL, buffer = NULL
   \item{biasLimit}{ numeric threshold for predicted relative bias due to
   buffer being too small }
   \item{trace}{ logical, if TRUE then output each evaluation of the likelihood, and other messages}
-  \item{ncores}{ integer number of cores to be used for parallel processing}
+  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
   \item{\dots}{ other arguments passed to the maximization function }
 }
 
@@ -130,12 +130,15 @@ chat \tab overdispersion of sighting counts Tu, Tm \cr
 chatonly \tab compute overdispersion for Tu and Tm, then exit \cr
 contrasts \tab coding of factor predictors \cr
 distribution \tab binomial vs Poisson N\cr
+fastproximity \tab special handling of binary proximity detectors \cr
 fixedbeta \tab specify fixed beta parameter(s)\cr
+grain \tab grain argument of RcppParallel parallelFor \cr
 hessian \tab variance method\cr
 ignoreusage \tab override usage in traps object of capthist\cr
 intwidth2 \tab controls optimise when only one parameter\cr
 knownmarks \tab known or unknown number of marked animals in sighting-only model \cr
 LLonly \tab compute one likelihood for values in \code{start} \cr
+maxdistance \tab distance threshold for selective mask \cr
 miscparm \tab starting values for extra parameters fitted via userdist function \cr
 newdetector \tab detector type to override detector(traps(capthist)) \cr
 nsim \tab number of simulations to compute overdispersion \cr
@@ -179,21 +182,22 @@ If \code{buffer} is used rather than \code{mask}, and \code{biasLimit}
     negative or NA, or when the detector type is "polygon", "transect",
     "polygonX" or "transectX".
 
-If \code{ncores > 1} the \pkg{parallel} package will be used to create
-processes on multiple cores (see \link{Parallel} for more). Specifying
-extra cores may improve the speed of multi-session analyses (it may also
-slow them down, as data must be copied back and forth). There is
-presently no benefit for single-session analyses.
+Function \code{\link{par.secr.fit}} is a way to fit several models at once.
 
-Function \code{\link{par.secr.fit}} is an alternative and more effective
-way to take advantage of multiple cores when fitting several models.
 }
 
 \value{
-The function \code{secr.fit} returns an object of class secr.  This has
+
+When \code{details$LLonly = TRUE} a single log-likelihood is returned, with attributes 
+
+\item{npar}{ number of parameters to be estimated,} 
+\item{preptime}{ elapsed setup time in seconds,}
+\item{LLtime}{ elapsed time for single likelihood evaluation, exclusive of setup.}
+
+Otherwise, \code{secr.fit} returns an object of class secr representing the fitted SECR model.  This has
 components
 
-  \item{call }{function call (as character string prior to secr 1.5) }
+  \item{call }{function call) }
 
   \item{capthist }{saved input}
   \item{mask }{saved input}
@@ -201,14 +205,14 @@ components
   \item{CL }{saved input}
   \item{timecov }{saved input}
   \item{sessioncov }{saved input}
-  \item{hcov }{saved input (from 2.6.0)}
+  \item{hcov }{saved input}
   \item{groups }{saved input}
   \item{dframe }{saved input}
-  
-  \item{design }{reduced design matrices, parameter table and parameter
+  \item{designD }{design matrix for density model; may be NULL}
+  \item{designNE }{design matrix for noneuc model; may be NULL}
+  \item{design }{reduced design matrices for detection parameters, parameter table and parameter
     index array for actual animals (see \code{\link{secr.design.MS}})}
-  
-  \item{design0 }{reduced design matrices, parameter table and parameter
+  \item{design0 }{reduced design matrices for detection parameters, parameter table and parameter
     index array for `naive' animal (see \code{\link{secr.design.MS}})}
 
   \item{start }{vector of starting values for beta parameters} 
@@ -239,10 +243,7 @@ components
   \item{beta.vcv }{variance-covariance matrix of beta parameters }  
   
   \item{smoothsetup}{list of objects specifying smooths in \pkg{mgcv}}
-
-  \item{N }{ if CL = FALSE, array of predicted number in each group at
-    in each session, summed across mask, dim(N) = c(ngroups, nsessions),
-    otherwise NULL }
+  \item{learnedresponse}{ logical; TRUE if any learned response in detection model}
 
   \item{version }{secr version number }
   \item{starttime }{character string of date and time at start of fit }

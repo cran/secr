@@ -15,7 +15,7 @@ Expected Number of Individuals
 \usage{
 
 expected.n(object, session = NULL, group = NULL, bycluster
-    = FALSE, splitmask = FALSE)
+    = FALSE, splitmask = FALSE, ncores = NULL)
 
 }
 
@@ -26,6 +26,7 @@ expected.n(object, session = NULL, group = NULL, bycluster
   \item{bycluster}{ logical to output the expected number for
   clusters of detectors rather than whole array }
   \item{splitmask}{logical for computation method (see Details)}
+  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
 }
 
 \details{
@@ -59,12 +60,13 @@ variation in density (note Warning).
   performs as indicated here when bycluster = TRUE and
   clusters are not specified.
 
-  Detectors are assumed to be independent (as with detector types
+  Clusters of detectors are assumed to be independent (always true with detector types
   `proximity', `count' etc.). The computed E(n) does not apply when
-  there is competition among detectors, e.g., when detector = `multi'.
+  there is competition among clusters of detectors.
   
 The prediction of density at present considers only the base level of
 density covariates, such as cell-specific habitat variables.
+
 }
 
 \value{
@@ -80,7 +82,7 @@ one per cluster. For multi-session data, a list of such vectors.
 
 \examples{
 
-expected.n(secrdemo.0)
+expected.n(secrdemo.0, ncores = 2)
 
 \dontrun{
 expected.n(secrdemo.0, bycluster = TRUE)

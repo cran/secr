@@ -18,7 +18,7 @@ density estimates (M. Efford unpubl).
 
 \usage{
 suggest.buffer(object, detectfn = NULL, detectpar = NULL, 
-    noccasions = NULL, ignoreusage = FALSE, RBtarget = 0.001,
+    noccasions = NULL, ignoreusage = FALSE, ncores = NULL, RBtarget = 0.001,
     interval = NULL, binomN = NULL, ...)
 
 bias.D (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL,
@@ -35,6 +35,7 @@ bias.D (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL,
   \item{noccasions}{ number of sampling occasions}
   \item{ignoreusage}{logical for whether to discard usage information from
     \code{traps(capthist)}}
+  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
   \item{RBtarget}{ numeric target for relative bias of density estimate }
   \item{interval}{ a vector containing the end-points of the interval to
     be searched }

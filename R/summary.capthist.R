@@ -1,28 +1,14 @@
+#############################################################################
+## package 'secr'
 ## summary.capthist.R
-## moved from methods.R 2019-04-04
+## 2019-04-04 moved from methods.R 
+## 2019-11-10 summary of covariates
+#############################################################################
 
 summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
     ## recursive if list of capthist
     if (ms(object)) {
         if (terse) {
-            # simplify 2019-01-22
-            # object <- check3D(object)
-            # n     <- sapply(object, nrow)        # number caught
-            # nocc  <- sapply(object, ncol)        # number occasions
-            # ncapt <- sapply(object, function (xx) sum(abs(xx)))
-            # if (!is.null(traps(object))) {
-            #     ndet  <- sapply(traps(object), ndetector) # number traps
-            #     temp  <- as.data.frame(rbind(nocc, ncapt, n, ndet))
-            #     names(temp) <- names(object)
-            #     rownames(temp) <- c('Occasions','Detections','Animals','Detectors')
-            # }
-            # else {
-            #     temp  <- as.data.frame(rbind(nocc, ncapt, n))
-            #     names(temp) <- names(object)
-            #     rownames(temp) <- c('Occasions','Detections','Animals')
-            # 
-            # }
-            # temp
             sapply (object, summary, terse = TRUE, moves = moves, ...)
         }
         else
@@ -187,11 +173,17 @@ summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
             }
             else nontarget <- NULL
             
-            ## 2018-01-26 discard detector rows if nonspatial
             if (is.null(trps)) {
                 counts <- counts[1:6,]
             }
             
+            tempcovar <- covariates(object)
+            if (!is.null(tempcovar) && ((nrow(tempcovar)>0) & (ncol(tempcovar)>0))) {
+                covsummary <- summary(tempcovar)
+            }
+            else {
+                covsummary <- NULL
+            }
             temp <- list (
                 detector = detector,
                 ndetector = nd,
@@ -205,7 +197,8 @@ summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
                 signalsummary = signalsummary,
                 telemsummary = telemsummary,
                 sightings = sightings,
-                nontarget = nontarget
+                nontarget = nontarget,
+                covsummary = covsummary
             )
             class(temp) <- 'summary.capthist'
             temp
@@ -274,6 +267,11 @@ print.summary.capthist <- function (x, ...) {
         cat ('\nNon-target interference by occasion \n')
         print(x$nontarget, ...)
         cat ('\n')
+    }
+    if (!is.null(x$covsummary)) {
+        cat ('\nIndividual covariates\n')
+        print (x$covsummary)
+        cat('\n')
     }
     
 }

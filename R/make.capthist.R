@@ -98,7 +98,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             }
         }
         ## end 2017-03-28
-        
+
         uniqueID <- unique(captures[,2])
         ## condition inserted 2015-11-03 to avoid need to specify valid trap for noncapt
         validcapt <- uniqueID != noncapt
@@ -233,7 +233,6 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             }
             #################################
         }
-    
         wout <- abind(wout, w, along=1)
         dimnames(wout)[[2]] <- 1:nocc
         attr(wout,'covariates') <- data.frame() ## default 2015-01-06

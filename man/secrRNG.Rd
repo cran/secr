@@ -58,9 +58,20 @@ Function \tab Default \tab Saved attribute \tab Note \cr
 \code{\link{simulate.secr}} \tab NULL \tab seed or RNGstate \tab S3 method called by \code{sim.secr}\cr
 }
 
-Setting \code{seed = NULL} in any of these functions has the effect of continuing the existing random number stream; it is not the same as calling \code{set.seed(NULL)}.
+Setting \code{seed = NULL} in any of these functions has the effect of continuing the existing random number stream; it is not the same as calling \code{set.seed(NULL)}. Two functions at present do not follow this model: \code{\link{ip.secr}} and \code{\link{par.secr.fit}}.
 
-When several cores are used for parallel processing (ncores > 1) the L'Ecuyer pseudorandom generator is used to provide a separate random number stream for each core (see \code{\link{clusterSetRNGStream}}).
+}
+
+\section{Parallel processing}{
+
+Two models are used for parallel processing in \pkg{secr}, corresponding to multi-threading with package \pkg{RcppParallel} (e.g. \code{\link{secr.fit}}) and parallel cores in package \pkg{parallel} (e.g. \code{\link{ip.secr}}).
+
+In the \pkg{parallel} model the L'Ecuyer pseudorandom generator is used to provide a separate random number stream for each core (see \code{\link{clusterSetRNGStream}}).
+
+When using \pkg{Rcpp} the state of the random number generator is set in C++ with the call 
+\code{RNGScope scope;}that automatically resets the state of the generator on exit (Eddelbuettel 2013 p. 115).
+
+Random number streams in separate \pkg{RcppParallel} threads are (probably) not independent. Thus there are potential issues with RNG calls in multi-threaded code. However, in \pkg{secr} 4.0 all RNG calls in C++ code are outside multi-threaded contexts, with the exception of simulations allowing for overdispersion in mark--resight estimates (Rcpp exported function sightingchatcpp). The implications for mark-resight estimates have not been explored, and it is unclear whether more elaborate solutions are needed.
 
 }
 
@@ -74,6 +85,12 @@ When several cores are used for parallel processing (ncores > 1) the L'Ecuyer ps
   \code{\link{sim.resight}},
   \code{\link{secr.test}},
   \code{\link{simulate.secr}}
+
+}
+
+\references{
+
+Eddelbuettel, D. 2013. Seamless R and C++ integration with Rcpp. Springer.
 
 }
 

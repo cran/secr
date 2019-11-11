@@ -19,7 +19,7 @@
 \usage{
 
 secr.test(object, nsim = 99, statfn, fit = FALSE, seed =
-NULL, ncores = 1, tracelevel = 1)
+NULL, ncores = NULL, tracelevel = 1)
 
 }
 
@@ -37,7 +37,7 @@ NULL, ncores = 1, tracelevel = 1)
  
   \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   
-  \item{ncores}{integer number of cores available for parallel processing}
+  \item{ncores}{integer number of cores available for parallel processing (default max-1)}
   
   \item{tracelevel}{ see \code{\link{sim.secr}} }
   

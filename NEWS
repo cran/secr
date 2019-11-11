@@ -1,3 +1,53 @@
+Changes in version 4.0.2 (2019-11-11)
+
+New features or changed behaviour of old functions
+    o   secr.fit() LLonly = TRUE stores number of parameters and timing information
+    o   secr.fit() LLonly = TRUE uses default or autoini start values if none provided
+    o   summary.secr() versiontime includes elapsed time
+    o   summary.capthist() includes summary of individual covariates
+
+Other
+    o   CRAN release of 4.0
+
+Changes in version 4.0.0 (2019-10-27)
+
+New features or changed behaviour of old functions
+    o   'ncores' argument defaults to NULL in most functions (meaning one less than number
+        of available cores for multi-threading)
+    o   fx functions 'normal' argument dropped
+    o   'ncores' argument dropped from mask.check(), pmixProfileLL() and simulate.secr()
+    o   autoini(), region.N() and suggest.buffer() acquire 'ncores' argument
+    o   fast secr.fit() for binary and count proximity detectors (default details$fastproximity = TRUE)
+    o   make.systematic() new argument 'order' to control cluster sequence
+    o   RSE() extract precision of estimated parameter from fitted model
+    o   par.secr.fit() no longer automatically sets ncores=1 in the separate calls to 'secr.fit'
+    o   secr.fit() details option autoini = 'all' for start values from multi-session data
+    
+Bugs fixed
+    o   sim.secr() with 'multi' detectors slightly understated detection rate owing to mis   
+        -assignment of detection locations 
+    o   make.systematic() and trap.builder() ignored region polygon when cluster not
+        specified (edgemethod set internally to 'allowoverlap'
+
+Other
+    o   converted C code to C++ with multithreading in RcppParallel as appropriate
+    o   some features of earlier versions have yet to be implemented in 4.0
+    o   secr object from secr.fit() includes design matrices for D and noneuc
+    o   functions read.SPACECAP() and write.SPACECAP() removed
+
+Changes in version 3.2.2 (2019-07-02)
+
+New features or changed behaviour of old functions
+    o   summary method for popn objects
+    o   write.mask() function
+
+Bugs fixed
+    o   sim.popn() exponential
+    o   plotMaskEdge() sometimes shows internal lines (non-integer spacing)
+    
+Other
+    o   write.capthist help wrote files to disk; now in \dontrun{}
+
 Changes in version 3.2.1 (2019-06-01)
 
 New features or changed behaviour of old functions

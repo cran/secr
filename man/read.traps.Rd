@@ -102,8 +102,9 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
 \dontrun{
 ## Replace file name with a valid local name 
-read.traps ("c:/myfolder/mytraps.txt", detector = "proximity")
-## "mytraps.txt" should have lines like this 
+filename <- paste0(system.file("extdata", package = "secr"), '/trap.txt')
+read.traps (filename, detector = "proximity")
+## "trap.txt" should have lines like this 
 # 1     365     365
 # 2     365     395
 # 3     365     425

@@ -97,7 +97,6 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
                 break
         }
         if (!allOK) {
-            ## 2015-05-17 replaced with allOK if (attempts >= maxtries) {
             stop ("ip.secr: no successful simulation after ", maxtries,
                   " attempts", call. = FALSE)
         }
@@ -123,10 +122,10 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         }
         if (is.null(mask)) {
             automask <- make.mask(traps, buffer=3*RPSV(capthist, CC = TRUE))
-            start <- unlist(autoini(capthist, automask))
+            start <- unlist(autoini(capthist, automask, ncores = 1))
         }
         else
-            start <- unlist(autoini(capthist, mask))
+            start <- unlist(autoini(capthist, mask, ncores = 1))
         ## ad hoc bias adjustment
         if (detector(traps)[1]=='single')
             start[2] <- invodds(odds(start[2]) * 1.4)

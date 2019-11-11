@@ -9,7 +9,7 @@
   
   These functions are wrappers for \code{\link{secr.fit}}, \code{\link{region.N}} and
   \code{\link{derived}} that allow multiple models to be fitted
-  simultaneously on multi-core machines.
+  simultaneously on multi-core machines (but see Warning).
 
 }
 
@@ -49,8 +49,8 @@ par.region.N (secrlist, ncores = 1, ...)
 
 \details{
 
-  Any attempt in \code{arglist} to set \code{ncores > 1} for a
-  particular secr fit is ignored.
+  From version 4.0, an \code{arglist} may specify \code{ncores} for a
+  particular secr fit (previously ncores was ignored in \code{arglist}). The most efficient option is probably the default (\code{ncores = NULL}). 
 
   \code{trace} overrides any settings in \code{arglist}. Reporting of
   intermediate results is unreliable on Windows when \code{ncores > 1}.
@@ -77,6 +77,12 @@ For \code{par.derived} - a list of dataframes output from
 
 For \code{par.region.N} - a list of dataframes output from
 \code{\link{region.N}}, applied to each model in turn.
+
+}
+
+\section{warning}{
+
+With the introduction of multi-threading in \pkg{secr} 4.0, \code{par.secr.fit} has lost its speed advantage.
 
 }
 

@@ -10,15 +10,13 @@ Rsurface <- function (mask,  sigma, usecov = NULL, alpha2 = 1, detectfn = "HHN",
         tmpmask <- cbind(tmpmask, exp(alpha2 * covariates(mask)[,usecov]))
     }
     miscparm[3] <- scale
-    temp <- .C ( "getdenomext",
+    temp <- getdenomcpp(
                 as.integer(detectfn),
                 as.double (miscparm),
-                as.double(unlist(tmpmask)),
+                as.matrix(tmpmask),
                 as.integer(mm),
                 as.double (sigma),
-                as.double (z),
-                invdenom = double(mm),
-                scale = double(1))
+                as.double (z))
     if (is.null(covariates(mask)))
         covariates(mask) <- data.frame(matrix(nrow = mm, ncol = 0))
     covariates(mask)[,"Resource"] <-

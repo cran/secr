@@ -29,17 +29,17 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = 
             if (!add)  {
                 eqscplot (0,0, xlab='', ylab='', xlim=vertices[,1],
                           ylim = vertices[,2], type='n', axes = FALSE)
-                if (frame) {    ## 2019-05-31
-                    if (!is.null(attr(x[[1]],'polygon'))) {
-                        poly <- attr(x[[1]],'polygon')
-                        if (inherits(poly, "SpatialPolygons"))
-                            plot(poly, add = TRUE)
-                        else
-                            polygon (poly)
-                    }
+            }
+            if (frame) {    ## 2019-05-31
+                if (!is.null(attr(x[[1]],'polygon'))) {
+                    poly <- attr(x[[1]],'polygon')
+                    if (inherits(poly, "SpatialPolygons"))
+                        plot(poly, add = TRUE)
                     else
-                        polygon (attr(x[[1]], 'boundingbox'))   
+                        polygon (poly)
                 }
+                else
+                    polygon (attr(x[[1]], 'boundingbox'))   
             }
             # plot(grid, border=2, bty='o', gridlines=F)
             sid <- popIDsplit(x)

@@ -73,7 +73,7 @@ retained sounds are treated as detected on all microphones. This fails
 when signals are already missing on some channels.
 
 Subsetting is awkward with multi-session input when the criterion is an
-individual covariate. See the Examples for omne way this can be tackled.
+individual covariate. See the Examples for one way this can be tackled.
 
 }
 

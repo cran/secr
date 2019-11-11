@@ -9,7 +9,7 @@ summary.secr <- function (object, newdata = NULL, alpha = 0.05, deriv = FALSE, .
     #     out$call <- object$call
     # }
 
-    out$versiontime <- paste0(object$version, ', run ', object$starttime)
+    out$versiontime <- paste0(object$version, ', run ', object$starttime, ', elapsed ', round(object$proctime,2), ' s')
     if (!is.null(object$details$newdetector)) {
         out$newdetector <- object$details$newdetector
     }

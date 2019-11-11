@@ -4,6 +4,7 @@
 \alias{LLonly}
 \alias{param}
 \alias{miscparm}
+\alias{maxdistance}
 
 \title{ Detail Specification for secr.fit }
 
@@ -16,8 +17,10 @@ to simplify the documentation. They are described here.
 
 \section{Detail components}{
 
-\code{details$autoini} specifies the session from which to compute starting 
-values (multi-session data only; default 1)
+\code{details$autoini} specifies the session number from which to compute starting 
+values (multi-session data only; default 1). From 4.0.0, the character value `all' 
+first forms a single-session capthist using \code{\link{join}}(); this may be slow or not 
+work at all (especially with telemetry data).
 
 \code{details$centred} = TRUE causes coordinates of both traps and mask
 to be centred on the centroid of the traps, computed separately for each
@@ -52,6 +55,8 @@ superpopulation of this size, with consequences for the variance of
 density estimates. This can help to reconcile MLE with Bayesian
 estimates using data augmentation.
 
+\code{details$fastproximity} controls special handling of data from binary proximity detectors. If TRUE and other conditions are met (no temporal variation or groups) then capthist is automatically reduced to a binomial count for a single occasion and further compressed by storing only non-zero counts, which can greatly speed up computation of the likelihood (default TRUE).
+
 \code{details$fixedbeta} may be used to fix values of beta
 parameters. It should be a numeric vector of length equal to the total
 number of beta parameters (coefficients) in the model. Parameters to be
@@ -59,6 +64,9 @@ estimated are indicated by NA. Other elements should be valid values on
 the link scale and will be substituted during likelihood
 maximisation. Check the order of beta parameters in a previously fitted
 model.
+
+\code{details$grain} sets the grain argument for multithreading in RcppParallel parallelFor (default 1). 
+\code{details$grain = 0} suppresses multithreading.
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.
@@ -81,6 +89,8 @@ rather than inferring it from the number of rows in the capthist object.
 
 \code{details$LLonly} = TRUE causes the function to returns a single
 evaluation of the log likelihood at the `start' values.
+
+\code{details$maxdistance} sets a limit to the centroid-to-mask distances considered. The centroid is the geometric mean of detection locations for each individual. If no limit is specified then summation is over all mask points. Specifying \code{maxdistance} can speed up computation; it is up to the user to select a limit that is large enough not to affect the likelihood (\eqn{5\sigma}?).
 
 \code{details$miscparm} (default NULL) is an optional numeric vector of
 starting values for additional parameters used in a user-supplied

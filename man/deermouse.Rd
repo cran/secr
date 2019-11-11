@@ -4,14 +4,6 @@
 \alias{deermouse}
 \alias{deermouse.ESG}
 \alias{deermouse.WSG}
-\alias{ESG.0}
-\alias{ESG.b}
-\alias{ESG.h2}
-\alias{ESG.t}
-\alias{WSG.0}
-\alias{WSG.b}
-\alias{WSG.h2}
-\alias{WSG.t}
 
 \title{ Deermouse Live-trapping Datasets }
 
@@ -22,13 +14,18 @@ Data of V. H. Reid from live trapping of deermice (\emph{Peromyscus
 
 }
 
-\usage{deermouse}
+\usage{
+
+deermouse.ESG
+deermouse.WSG
+
+}
 
 \details{
 
 Two datasets of V. H. Reid were described by Otis et al. (1978) and
 distributed with their CAPTURE software (now available from
-\url{http://www.mbr-pwrc.usgs.gov/software.html}). They have been used in
+\url{https://www.mbr-pwrc.usgs.gov/software.html}). They have been used in
 several other papers on closed population methods (e.g., Huggins 1991,
 Stanley and Richards 2005). This description is based on pages 32 and
 87--93 of Otis et al. (1978).
@@ -75,24 +72,10 @@ include double captures (1 at ESG and 8 at WSG -- see Examples). The true
 detector type therefore falls between `single' and `multi'. Detector
 type is set to `multi' in the distributed data objects.
 
-Some fitted \code{secr} models are included (ESG.0, ESG.b, ESG.t, ESG.h2,
-WSG.0, WSG.b, WSG.t, WSG.h2, each with the indicated effect on g0). Otis
-et al. (1978) draw attention to the tendency of \emph{Peromyscus} to become
-`trap happy', and we observe that models with a behavioural response
-(ESG.b, WSG.b) have the lowest AIC among those fitted here.
-
 \tabular{ll}{
   Object \tab Description \cr
  deermouse.ESG \tab capthist object, East Stuart Gulch \cr
  deermouse.WSG \tab capthist object, Wet Swizer Gulch \cr
- ESG.0 \tab fitted secr model -- ESG null \cr
- ESG.b \tab fitted secr model -- ESG trap response g0 \cr
- ESG.h2 \tab fitted secr model -- ESG finite mixture g0 \cr
- ESG.t \tab fitted secr model -- ESG time-varying g0 \cr
- WSG.0 \tab fitted secr model -- WSG null \cr
- WSG.b \tab fitted secr model -- WSG trap response g0 \cr
- WSG.h2 \tab fitted secr model -- WSG finite mixture g0 \cr
- WSG.t \tab fitted secr model -- WSG time-varying g0 \cr
 }
 
 }

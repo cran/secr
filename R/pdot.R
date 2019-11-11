@@ -25,29 +25,31 @@
 ##            esa.plot conditional argument
 ##            esa.plot CVpdot
 ## 2019-01-21 poly.habitat argument in pdot.contour and buffer.contour functions etc.
+## 2019-07-29 C++
 ###############################################################################
 
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
                   noccasions = NULL, binomN = NULL, userdist = NULL) {
-    
+
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
-    
-    ## added 2010-07-01
+
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
     if ((detectfn > 9) & (detectfn<14) & is.null(detectpar$cutval))
         stop ("requires 'cutval' for detectfn 10:13")
     if (ms(traps))
         stop ("requires single-session traps")
-    
+
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
-    
+
     detectpars <- unlist(detectpar[parnames(detectfn)])
     if ((detectfn>9) & (detectfn<14))  detectpars <- c(detectpars, detectpar$cutval)
-    
+    if (length(detectpars)<3) detectpars <- c(detectpars,0)
+    miscparm <- numeric(4);   ## dummy
+
     if (!is.null(usage(traps))) {
-        usge <- unlist(usage(traps))
+        usge <- usage(traps)
         if (is.null(noccasions)) {
             noccasions <- ncol(usage(traps))
         }
@@ -62,7 +64,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     else {
         if (is.null(noccasions))
             stop("must specify noccasions when traps does not have usage attribute")
-        usge <- rep(1, ndetector(traps) * noccasions)
+        usge <- matrix(1, ndetector(traps), noccasions)
     }
     dettype <- detectorcode(traps, noccasions = noccasions)
     binomN <- getbinomN (binomN, detector(traps))
@@ -79,131 +81,45 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         k <- table(polyID(traps))   ## also serves transectID
         K <- length(k)              ## number of polygons/transects
         k <-  c(k,0)                ## zero terminate
-        temp <- .C('hdotpoly', # PACKAGE = 'secr',
+        temp <- hdotpolycpp (
                    as.double(unlist(X)),
-                   as.integer(nrow(X)),
-                   as.double(unlist(traps)),
+                   as.matrix(traps),
                    as.integer(dettype),
-                   as.double(usge),
+                   as.matrix(usge),
                    as.integer(markocc),
                    as.integer(K),
                    as.integer(noccasions),
                    as.integer(k),
                    as.integer(detectfn),   ## hn
-                   as.double(detectpars),
-                   value = double(nrow(X))
-        )
-        1 - exp(-temp$value)   ## probability detected at least once, given total hazard 
+                   as.double(detectpars))
+        1 - exp(-temp)   ## probability detected at least once, given total hazard
     }
     else {
-        #-------------------------------------------------------------
-        if (is.null(userdist))
-            distmat <- -1
-        else {
-            distmat <- valid.userdist(userdist,
-                                      detector(traps),
-                                      xy1 = traps,
-                                      xy2 = X,
-                                      mask = X)
-        }
-        #-------------------------------------------------------------
-        temp <- .C('pdotpoint', # PACKAGE = "secr",
-                   as.double(unlist(X)),
-                   as.integer(nrow(X)),
-                   as.double(unlist(traps)),
-                   as.double(distmat),                 ## 2014-08-28, 2014-09-01
-                   as.integer(dettype),
-                   as.double(usge),
-                   as.integer(markocc),
-                   as.integer(noccasions),
-                   as.integer(ndetector(traps)),
-                   as.integer(detectfn),
-                   as.double(detectpars),
-                   as.double(truncate^2),
-                   as.integer(expandbinomN(binomN, dettype)),
-                   value = double(nrow(X)))
-        temp$value
-    }
-}
-############################################################################################
+      ## distmat2 <- getdistmat2 (traps, X, userdist)
+      distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, miscparm)
+      #-------------------------------------------------------------
 
-hdot <- function (X, traps, detectfn = 14, detectpar = list(lambda0 = 0.2, sigma = 25, z = 1),
-                  occasions = NULL, userdist = NULL) {
-    
-    ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coord in col 2
-    
-    if (is.character(detectfn))
-        detectfn <- detectionfunctionnumber(detectfn)
-    if ((detectfn < 14) | (detectfn>19))
-        stop ("requires hazard detectfn")
-    if (ms(traps))
-        stop ("requires single-session traps")
-    
-    truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
-    
-    detectpars <- unlist(detectpar[parnames(detectfn)])
-
-    if (!is.null(usage(traps))) {
-        usge <- unlist(usage(traps))
-        if (!is.null(occasions)) {
-            if (length(occasions) < ncol(usage(traps))) {
-                warning ("specified noccasions less than ncol of usage matrix")
-            }
-            if (length(occasions) > ncol(usage(traps)))
-                stop ("specified noccasions exceeds ncol of usage matrix")
-        }
-        else
-            occasions <- rep(1,ncol(usage(traps)))
-    }
-    else {
-        if (is.null(occasions))
-            stop("must specify occasions when traps does not have usage attribute")
-        usge <- rep(1, ndetector(traps) * length(occasions))
-    }
-    dettype <- detectorcode(traps, noccasions = length(occasions))
-    if (!inherits(X, 'mask')) {
-        X <- matrix(unlist(X), ncol = 2)
-    }
-    if (any(detector(traps) %in% c('polygon','polygonX','transect', 'transectX'))) {
-        stop ("not implemented for area or transect search")
-    }
-    else {
-        #-------------------------------------------------------------
-        if (is.null(userdist))
-            distmat <- -1
-        else {
-            distmat <- valid.userdist(userdist,
-                                      detector(traps),
-                                      xy1 = traps,
-                                      xy2 = X,
-                                      mask = X)
-        }
-        #-------------------------------------------------------------
-        temp <- .C('hdotpoint', # PACKAGE = "secr",
-                   as.double(unlist(X)),
-                   as.integer(nrow(X)),
-                   as.double(unlist(traps)),
-                   as.double(distmat),                 
-                   as.integer(dettype),
-                   as.double(usge),
-                   as.integer(occasions),
-                   as.integer(length(occasions)),
-                   as.integer(ndetector(traps)),
-                   as.integer(detectfn),
-                   as.double(detectpars),
-                   as.double(truncate^2),
-                   value = double(nrow(X)))
-        temp$value
-        ## MULTIPLY BY AREA LATER
+      pdotpointcpp(
+        as.matrix(X),
+        as.matrix(traps),
+        as.matrix(distmat2),
+        as.integer(dettype),
+        as.matrix(usge),
+        as.integer(markocc),
+        as.integer(detectfn),
+        as.double(detectpars),
+        as.double(miscparm),
+        as.double(truncate^2),
+        as.integer(expandbinomN(binomN, dettype))
+      )
     }
 }
 ############################################################################################
 
 esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL, detectfn,
-                      detectpar, noccasions, binomN = NULL, thin = 0.1, poly = NULL, 
+                      detectpar, noccasions, binomN = NULL, thin = 0.1, poly = NULL,
                       poly.habitat = TRUE, session = 1,
-                      plt = TRUE, type = c('density', 'esa','meanpdot', 'CVpdot'), 
+                      plt = TRUE, type = c('density', 'esa','meanpdot', 'CVpdot'),
                       n = 1, add = FALSE, overlay = TRUE, conditional = FALSE, ...) {
     type <- match.arg(type)
     if (inherits(object, 'secr')) {
@@ -211,11 +127,11 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
                        type, add, overlay, conditional, ...)
     }
     else {
-        
+
         if (inherits(object, 'secrlist')) {
             output <- vector('list')
-            arg <- list(max.buffer = max.buffer, max.mask = max.mask, thin = thin, 
-                        poly = poly, poly.habitat = poly.habitat, session = session, plt = plt, type = type, 
+            arg <- list(max.buffer = max.buffer, max.mask = max.mask, thin = thin,
+                        poly = poly, poly.habitat = poly.habitat, session = session, plt = plt, type = type,
                         add = add, conditional = conditional)
             extra <- list(...)
             if (!('col' %in% names(extra)))
@@ -223,7 +139,7 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
             arg <- c(arg, extra)
             arg$object <- object[[1]]
             output[[1]] <- do.call( esa.plot.secr, arg)
-                   
+
             if (length(object)>1) {
                 for (i in 2:length(object)) {
                     arg$object <- object[[i]]
@@ -255,9 +171,9 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
             ord <- order(d,a)
             cellsize <-  attr(max.mask, 'spacing')^2/10000
             a <- a[ord]
-            
+
             ## CV 2018-06-01
-            mu <- cumsum(a) / (1:nmask) 
+            mu <- cumsum(a) / (1:nmask)
             cv <- sqrt(cumsum(a^2)/(1:nmask) - mu^2)/mu
             cumcv <- function(n) {
                 an <- a[1:n]
@@ -267,18 +183,18 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
                 c(mucond, cvcond)
             }
             ## debug check
-            ## tmp <- CVpdot(max.mask, object, detectfn=detectfn, detectpar=detectpar, 
+            ## tmp <- CVpdot(max.mask, object, detectfn=detectfn, detectpar=detectpar,
             ##   noccasions = noccasions, conditional = TRUE)
             ###################################################
             output <- data.frame(buffer = d[ord], esa =  cumsum(a) * cellsize,
-                                 density = n /  cumsum(a) / cellsize, 
+                                 density = n /  cumsum(a) / cellsize,
                                  pdot = a, pdotmin = cummin(a),
                                  meanpdot = mu, CVpdot = cv)
-            
+
             maxesa <- max(output$esa)
             thinned <- seq(1,  nmask, 1/thin)
             output <- output[thinned,]
-            
+
             if (conditional) {
                 cv <- sapply(thinned, cumcv)
                 output$meanpdot <- cv[1,]
@@ -322,7 +238,7 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
                         plot(output$buffer, output$CVpdot, type = 'l',
                              xlab = 'Buffer width  m', ylab = 'CVpdot(buffer)', ...)
                 }
-                
+
                 invisible(output)
             }
             else output
@@ -393,7 +309,7 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
         }
         binomN <- object$details$binomN
         esa.plot (trps, max.buffer, spacg, max.mask, object$detectfn, detpar,
-                  nocc, binomN, thin, poly, poly.habitat, session, plt, type, n, add, overlay, 
+                  nocc, binomN, thin, poly, poly.habitat, session, plt, type, n, add, overlay,
                   conditional, ...)
     }
 }
@@ -402,11 +318,10 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
 
 pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-## noccasions = NULL, binomN = NULL, userdist = NULL,
-## no means of passing mask covariates...
-                            noccasions = NULL, binomN = NULL,
+                          noccasions = NULL, binomN = NULL,
                           levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, poly.habitat = TRUE, plt = TRUE, add = FALSE, fill = NULL, ...) {
+
     if (ms(traps)) {
         if (length(noccasions) == 1)
             noccasions <- rep(noccasions,length(traps))
@@ -436,8 +351,8 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
         }
         if (plt) {
             contour (xlevels, ylevels, matrix(z, nrow = nx), add = add, levels = levels, ...)
-            
-            
+
+
             ## optional fillin 2015-05-15
             if (!is.null(fill)) {
                 z[z < (0.999 * min(levels))] <- NA
@@ -445,8 +360,8 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                 .filled.contour(xlevels, ylevels,  matrix(z, nrow = nx), levels= levels,
                                 col = fill)
             }
-            
-            
+
+
             invisible(contourLines(xlevels, ylevels, matrix(z, nrow = nx), levels = levels))
         }
         else
@@ -456,7 +371,7 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
 ############################################################################################
 
 buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
-                            plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE, 
+                            plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE,
                             fill = NULL, ...) {
     oneconvexbuffer <- function (buffer) {
         temp  <- data.frame(x = apply(expand.grid(traps$x, buffer * cos(theta)),1,sum),

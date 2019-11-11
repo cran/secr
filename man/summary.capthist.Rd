@@ -44,6 +44,8 @@ From \code{summary.capthist}, an object of class
   \item{RPSV }{root pooled spatial variance }
 
 or, when \code{terse = TRUE}, a vector (single session) or dataframe (multiple sessions) of counts (Occasions, Detections, Animals, Detectors, and optionally Moves).
+
+A summary of individual covariates is provided if these are present (from \pkg{secr} 4.0.1).
   
 }
 

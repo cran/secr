@@ -6,14 +6,15 @@
 ############################################################################################
 
 LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yval = NULL,
-    centre = NULL, realscale = TRUE, plot = TRUE, plotfitted = TRUE, ncores = 1, ...) {
+    centre = NULL, realscale = TRUE, plot = TRUE, plotfitted = TRUE, ncores = NULL, ...) {
 
     if (inherits(object, 'list')) {
         temp <- list()
         nsecr <- length(object)
         for (i in 1:nsecr) {
             temp[[i]] <- LLsurface.secr (object[[i]], betapar = betapar, xval=xval, yval=yval,
-                centre = centre, realscale = realscale, plot = plot, plotfitted = plotfitted, ...)
+                centre = centre, realscale = realscale, plot = plot, plotfitted = plotfitted, 
+                ncores = ncores, ...)
         }
         invisible(temp)
     }
@@ -71,22 +72,14 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
                 = object$fixed, timecov = object$timecov, sessioncov =
                 object$sessioncov, groups = object$groups, dframe =
                 object$dframe, details = details, method =
-                object$fit$method, verify = FALSE, ncores = 1)
+                object$fit$method, verify = FALSE, ncores = ncores)
                 )
         }
 
         cat ('Evaluating log likelihood across grid of', nrow(grid), 'points...\n')
         flush.console()
 
-        if (ncores > 1) {
-            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-            clusterEvalQ(clust, requireNamespace('secr'))   ## faster with this
-            temp <- parRapply (clust, grid, LL)
-            stopCluster(clust)
-        }
-        else {
-            temp <- apply (grid, 1, LL)
-        }
+        temp <- apply (grid, 1, LL)
 
         temp <- matrix(temp, nrow=length(xval))
         if (realscale) {

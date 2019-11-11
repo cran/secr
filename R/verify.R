@@ -32,28 +32,16 @@ verify.default <- function (object, report, ...) {
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
 
 overlapcells <- function (xy) {
-    vertexinside <- function (a,b) {
-        OK <- FALSE
-        for (k in 1:4) {
-            temp <- .C('inside', # PACKAGE = 'secr',
-                as.double (a[k,]),
-                as.integer (0),
-                as.integer (3),
-                as.integer (5),
-                as.double (b),
-                result = integer(1))
-            if (any(as.logical(temp$result))) OK <- TRUE
-            temp <- .C('inside', # PACKAGE = 'secr',
-                as.double (b[k,]),
-                as.integer (0),
-                as.integer (3),
-                as.integer (5),
-                as.double (a),
-                result = integer(1))
-            if (any(as.logical(temp$result))) OK <- TRUE
-        }
-        OK
+  vertexinside <- function (a,b) {
+    OK <- FALSE
+    for (k in 1:4) {
+      temp <- insidecpp(unlist(a[k,]), 0, 3, as.matrix(b))
+      if (any(temp)) OK <- TRUE
+      temp <- insidecpp(unlist(b[k,]), 0, 3, as.matrix(a))
+      if (any(temp)) OK <- TRUE
     }
+    OK
+  }
     spacex <- attr(xy, 'spacex')
     spacey <- attr(xy, 'spacey')
     fuzz <- 1e-10
@@ -80,34 +68,22 @@ overlapcells <- function (xy) {
 ############################################################################################
 
 overlappoly <- function (xy, polyID) {
-    vertexinside <- function (a,b) {
-        OK <- FALSE
-        n.a <- nrow(a)
-        n.b <- nrow(b)
-        a <- as.matrix(a)
-        b <- as.matrix(b)
-        for (k in 1:n.a) {
-            temp <- .C('inside', # PACKAGE = 'secr',
-                as.double (a[k,]),
-                as.integer (0),
-                as.integer (n.b-1),
-                as.integer (n.b),
-                as.double (b),
-                result = integer(1))
-            if (any(as.logical(temp$result))) OK <- TRUE
-        }
-        for (k in 1:n.b) {
-            temp <- .C('inside', # PACKAGE = 'secr',
-                as.double (b[k,]),
-                as.integer (0),
-                as.integer (n.a-1),
-                as.integer (n.a),
-                as.double (a),
-                result = integer(1))
-            if (any(as.logical(temp$result))) OK <- TRUE
-        }
-        OK
+  vertexinside <- function (a,b) {
+    OK <- FALSE
+    n.a <- nrow(a)
+    n.b <- nrow(b)
+    a <- as.matrix(a)
+    b <- as.matrix(b)
+    for (k in 1:n.a) {
+      temp <- insidecpp(unlist(a[k,]), 0, n.b-1, as.matrix(b))
+      if (any(temp)) OK <- TRUE
     }
+    for (k in 1:n.b) {
+      temp <- insidecpp(unlist(b[k,]), 0, n.a-1, as.matrix(a))
+      if (any(temp)) OK <- TRUE
+    }
+    OK
+  }
 # lxy <- split (xy, levels(polyID))
 # 2016-05-10
     lxy <- split (xy, polyID)
@@ -150,18 +126,13 @@ xyontransect <- function (xy, trps, tol=0.01) {
         ## is point i on transect k?
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
-        temp <- .C('ontransect', # PACKAGE = 'secr',
-            as.double (xy[i,]),
+        ontransectcpp (
+            as.matrix (xy[i,,drop=FALSE]),
+            as.matrix (transectxy),
             as.integer (0),
             as.integer (nr-1),
-            as.integer (nr),
-            as.double (transectxy),
-            as.double (tol),
-            result = integer(1))
-        as.logical(temp$result)
+            as.double (tol))
     }
-# lxy <- split (trps, levels(transectID(trps)))
-# 2016-05-10
     lxy <- split (trps, transectID(trps))
     firsttransect <- function (i) {
         for (k in 1:length(lxy))
@@ -684,7 +655,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 19
-        rownamesOK <- !any(duplicated(rownames(object))) &
+        rownamesOK <- !any(duplicated(rownames(object))) &  
             !is.null(rownames(object)) 
         if (!is.null(rownames(object)))
             rownamesOK <- rownamesOK & !any(is.na(rownames(object)))

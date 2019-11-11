@@ -12,7 +12,7 @@
 }
 
 \usage{
-fx.total(object, sessnum = 1, mask = NULL, ncores = 1, ...)
+fx.total(object, sessnum = 1, mask = NULL, ncores = NULL, ...)
 }
 
 \arguments{

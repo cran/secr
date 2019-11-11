@@ -599,15 +599,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
     # add zcov, sessioncov, timecov, trapcov
 
-    ## corrected 2012-09-21, 2013-03-10 to allow for multiple sessions c(x,1)
     if (!bygroup) findvars.MS (zcov, vars, c(2,1))   ## CL only
     findvars.MS (sessioncov, vars, 1)
     findvars.MS (timecov, vars, c(3,1))      ## session-specific list
     findvars.MS (trapcov, vars, c(4,1))      ## session-specific list
 
     #--------------------------------------------------------------------------
-    # 2012-01-20 time-varying trap covariates
-    # modified 2012-10-31
+    # time-varying trap covariates
     if (MS)
         tvc <- timevaryingcov(trps)
     else
@@ -739,7 +737,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             smoothsetup[[i]] <- gamsetup(models[[i]], temp$lookup)
         }
     }
-
+    
+    #--------------------------------------------------------------------
+        individual <- individualcovariates(PIA)
     #--------------------------------------------------------------------
     if (keep.dframe) {
         ## 2013-03-11
@@ -782,11 +782,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ## dframe <- dframe[,c(5,1:4,6:ncol(dframe))]
         dframe[,1:5] <- dframe[,c(5,1:4)]
         list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
-             dframe = dframe, validdim = validdim, smoothsetup = smoothsetup)
+             dframe = dframe, validdim = validdim, smoothsetup = smoothsetup,
+             individual = individual)
     }
     else
         list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
-             smoothsetup = smoothsetup)
+             smoothsetup = smoothsetup, individual = individual)
 }
 ############################################################################################
 

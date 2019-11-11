@@ -109,7 +109,8 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         if (!(detector %in% .localstuff$pointdetectors))
             stop ("solitary detectors must be of a point detector type")
         cluster <- make.grid(nx = 1, ny = 1, detector = detector)
-        edgemethod <- 'allowoverlap'
+        ## 2019-09-25 block this 
+        ## edgemethod <- 'allowoverlap'
     }
     else {
         if ((attr(cluster,'detector') %in% .localstuff$polydetectors) &
@@ -319,13 +320,14 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 ###############################################################################
 
 make.systematic <- function (n, cluster, region, spacing = NULL,
-    origin = NULL, originoffset = c(0,0), chequerboard = c('all','black','white'), ...) {
+    origin = NULL, originoffset = c(0,0), chequerboard = c('all','black','white'), 
+    order = c('x', 'y', 'xb', 'yb'), ...) {
 
 ## 'cluster' is a traps object for one module
 ## 'region' is a rectangular survey region
 ## ... arguments passed to trap.builder (rotate, detector)
-    
     chequerboard <- match.arg(chequerboard)
+    order <- match.arg(order)
     SP <- inherits(region, "SpatialPolygons")
     if (SP) {
         region <- polygons(region)
@@ -400,6 +402,24 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     rowcol <- expand.grid(row = 0:(ny+1), col = 0:(nx+1))
     centres <- data.frame(x = rowcol$col * ry + origin[1],
                           y = rowcol$row * rx + origin[2])
+    
+    ##-----------------------------------------------------------------
+    ## 2019-09-28  alternative cluster sequence
+    nx2 <- nx+2; ny2 <- ny+2
+    if (order == 'y') temp <- 1:nrow(centres)
+    if (order == 'x') temp <- t(matrix(1:nrow(centres), ncol = nx2))
+    if (order == 'yb') {
+        temp <- matrix(1:(nx2*ny2), ncol = ny2)
+            for (i in seq(2,ny2,2)) temp[,i] <- rev(temp[,i])
+    }
+    if (order == 'xb') {  
+        temp <- t(matrix(1:(nx2*ny2), ncol = nx2))
+        for (i in seq(2,nx2,2)) temp[i,] <- rev(temp[i,])
+    }
+    row.names(centres) <- as.numeric(temp)
+    centres <- centres[order(temp),]   
+    ##-----------------------------------------------------------------
+    
     if (chequerboard != 'all') {
         whitesquares <- trunc(rowcol$row + rowcol$col + 0.1) %% 2L == 1L
         if (chequerboard == 'white')

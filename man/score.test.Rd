@@ -7,7 +7,7 @@
   Compute score tests comparing a fitted model and a more general alternative model.
 }
 \usage{
-score.test(secr, ..., betaindex = NULL, trace = FALSE, ncores = 1, .relStep = 0.001,
+score.test(secr, ..., betaindex = NULL, trace = FALSE, ncores = NULL, .relStep = 0.001,
     minAbsPar = 0.1)
 
 score.table(object, ..., sort = TRUE, dmax = 10)

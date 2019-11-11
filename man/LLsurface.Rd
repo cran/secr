@@ -19,7 +19,7 @@ LLsurface(object, ...)
 
 \method{LLsurface}{secr}(object, betapar = c("g0", "sigma"), xval = NULL,
     yval = NULL, centre = NULL, realscale = TRUE, plot = TRUE,
-    plotfitted = TRUE, ncores = 1, ...)
+    plotfitted = TRUE, ncores = NULL, ...)
 }
 
 \arguments{

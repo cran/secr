@@ -71,7 +71,7 @@ See also the section `Potential problems' in
 
 \section{secr.fit finishes with warning nlm code 3}{
 
-  This condition do not invariably indicate a failure of model
+  This condition does not invariably indicate a failure of model
   fitting. Proceed with caution, checking as suggested in the preceding
   section.
   

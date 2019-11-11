@@ -19,12 +19,12 @@ simulated data.
 \usage{
 
 \method{simulate}{secr}(object, nsim = 1, seed = NULL, maxperpoly = 100,
-    chat = 1, ncores = 1, ...)
+    chat = 1, ...)
 
 sim.secr(object, nsim = 1, extractfn = function(x) c(deviance =
     deviance(x), df = df.residual(x)), seed = NULL, maxperpoly = 100,
     data = NULL, tracelevel = 1, hessian = c("none", "auto", "fdHess"),
-    start = object$fit$par, ncores = 1)
+    start = object$fit$par, ncores = NULL)
 
 sim.detect(object, popnlist, maxperpoly = 100, renumber = TRUE)
 
@@ -37,7 +37,7 @@ sim.detect(object, popnlist, maxperpoly = 100, renumber = TRUE)
   \item{maxperpoly}{ integer maximum number of detections of an individual
   in one polygon or transect on any occasion }
   \item{chat}{real value for overdispersion parameter}
-  \item{ncores}{integer number of cores available for parallel processing}
+  \item{ncores}{integer number of cores used by \code{secr.fit}}
   \item{extractfn}{function to extract output values from fitted model}
   \item{data}{optional list of simulated data saved from previous call to \code{simulate.secr}}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
@@ -97,11 +97,8 @@ value in \code{object\$details}.  Options are "none" (no variances),
 variances or covariances. Logical TRUE and FALSE are interpreted by
 \code{secr.fit} as "auto" and "none".
 
-If \code{ncores > 1} the \pkg{parallel} package is used to create
-processes on multiple cores (see \link{Parallel} for more) and progress
-messages are suppressed. New datasets are generated in the master
-process, so there is no need to manage the random number streams
-in the worker processes. 
+The default number of threads used by \code{secr.fit} (\code{ncores = NULL}) 
+is one less than the number available.
 
 \code{sim.capthist} is a more direct way to simulate data from a null
 model (i.e. one with constant parameters for density and detection), or
@@ -167,8 +164,7 @@ simulate(secrdemo.0, nsim = 2)
 ## The following has been superceded by secr.test()
 
 ## this would take a long time...
-## adjust ncores for your machine (see ?Parallel)
-sims <- sim.secr(secrdemo.0, nsim = 99, ncores = 8)
+sims <- sim.secr(secrdemo.0, nsim = 99)
 deviance(secrdemo.0)
 devs <- c(deviance(secrdemo.0),sims$deviance)
 quantile(devs, probs=c(0.95))
@@ -178,7 +174,7 @@ rank(devs)[1] / length(devs)
 ## adjust ncores for your machine (see ?Parallel)
 extrfn <- function (object) unlist(predict(object)["D",-1])
 sims <- sim.secr(secrdemo.0, nsim = 50, hessian = "auto",
-    extractfn = extrfn, ncores = 8)
+    extractfn = extrfn)
 sims
 
 ## with a larger sample, could get parametric bootstrap CI

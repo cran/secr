@@ -92,7 +92,7 @@ closedN(object, estimator = NULL, level = 0.95, maxN = 1e+07,
   variance of the `chao.th1' and `chao.th2' estimators.
   
   Chao's estimators have been subject to various improvements not
-  included here; please see Chao and Shen (2010) for details.
+  included here (e.g., Chao et al. 2016).
 
 }
 
@@ -114,8 +114,8 @@ animals. \emph{Biometrika} \bold{65}, 625--633.
 Chao, A. (1987) Estimating the population size for capture--recapture
 data with unequal catchability. \emph{Biometrics} \bold{43}, 783--791.
 
-Chao, A. and Shen, T.-J. (2010) Program SPADE (Species Prediction And Diversity
-Estimation). Program and User's Guide available online at \url{http://chao.stat.nthu.edu.tw}.
+Chao, A., Ma, K. H., Hsieh,  T. C. and Chiu, Chun-Huo (2016) SpadeR: Species-Richness Prediction and
+Diversity Estimation with R. R package version 0.1.1. https://CRAN.R-project.org/package=SpadeR
 
 Dorazio, R. M. and Royle, J. A. (2003) Mixture models for estimating the
 size of a closed population when capture rates vary among

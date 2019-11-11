@@ -223,7 +223,11 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                                                       sd = turnoverpar$move.a[t])
                     }
                     else if (turnoverpar$movemodel == 'exponential') {
-                        newpopn[,] <- newpopn[,] + rexp (2*nsurv, rate = 1/turnoverpar$move.a[t])
+                        ## bug 2019-06-10
+                        ## newpopn[,] <- newpopn[,] + rexp (2*nsurv, rate = 1/turnoverpar$move.a[t])
+                        theta <- runif(nsurv, 0, 2 * pi)
+                        r <- rexp(nsurv, rate = 1 / (2 * turnoverpar$move.a[t]))
+                        newpopn[,] <- newpopn[,] + r * cbind(cos(theta), sin(theta))
                     }
                     else if (turnoverpar$movemodel == 't2D') {
                         p <- turnoverpar$move.b[t]

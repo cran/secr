@@ -5,8 +5,8 @@
 ## 2017-07-26 seed default changed from 123 to NULL
 ## 2017-09-20 distinct names for saved intermediate fits
 
-par.secr.fit <- function (arglist, ncores = 1, seed = NULL, trace = TRUE,
-                          logfile = "logfile.txt", prefix = "fit.", 
+par.secr.fit <- function (arglist, ncores = 1, seed = NULL, 
+                          trace = TRUE, logfile = "logfile.txt", prefix = "fit.", 
                           LB = FALSE, save.intermediate = FALSE) {
     ptm  <- proc.time()
 
@@ -61,7 +61,7 @@ par.secr.fit <- function (arglist, ncores = 1, seed = NULL, trace = TRUE,
     ## individual fits must use ncores = 1
     if (ncores > 1) {
         ## force 'ncores' to 1 across all components of arglist
-        arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
+        ## arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
 
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
         clusterSetRNGStream(clust, seed)

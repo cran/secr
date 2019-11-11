@@ -1,26 +1,9 @@
 ############################################################################################
 ## package 'secr'
 ## esa.R
-## last changed 2009 06 29 2009 10 24
-## 2010 02 25 dropped details$spherical
-## 2010 02 26 fixed for nmix>1
-## 2010 03 04 use scaled.detection from functions.R
-## 2010 03 09 fixed bug : need to call scaled.detection when !is.null(real)
-## 2011-04-04 added noccasions; debugged 2011-04-07
-## 2012-10-21 added check to return NA with dettype==13
-## 2012-11-13 updated for groups
-## 2013-06-06 updated for fixed beta
-## 2013-07-20 reparameterize esa,a0
-## 2014-08-27 dist2 optional input to integralprwi set to -1
-## 2014-09-08 esa adjusted for linearmask cell size
-## 2015-10-04 markocc argument for integralprw1
-## 2015-11-19 dropped param
-## 2016-06-04 provisional bug fix in esa
-## 2016-10-12 secr3
-## 2016-10-28 userdist may be session-specific
 ############################################################################################
 
-esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL)
+esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, ncores = NULL)
 
 # Return vector of 'a' for given g0, sigma, [z (if hazard fn) ] and session
 # detectfn is integer code for detection function 0 = halfnormal, 1 = hazard, 2 = exponential
@@ -45,7 +28,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         beta <- object$fit$par
 
     beta <- fullbeta(beta, object$details$fixedbeta)
-
     trps   <- traps(capthists)  ## need session-specific traps
     if (!all(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for esa")
@@ -53,7 +35,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     s       <- ncol(capthists)
     dettype <- detectorcode(trps, noccasions = s)
     constant <- !is.null(noccasions)    ## fix 2011-04-07
-  
+
     if (is.null(noccasions)) {
         noccasions <- s
     }
@@ -71,99 +53,55 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         #not right, but getting there
         #object$capthist <- subset(object$capthist, occasions = (markocc>0))
     }
-
+    #----------------------------------------------------------------------
     nmix    <- getnmix (object$details)
     knownclass <- getknownclass(capthists, nmix, object$hcov)
-
-    if (dettype[1] %in% c(3,6)) {
-        k <- c(table(polyID(trps)),0)
-        K <- length(k)-1
-    }
-    else if (dettype[1] %in% c(4,7)) {
-        k <- c(table(transectID(trps)),0)
-        K <- length(k)-1
-    }
-    else {
-        k <- nrow(trps)
-        K <- k
-    }
+    k <- getk(trps)
+    K <- if (length(k)>1) length(k)-1 else k
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## need session-specific mask...
-    cell   <- getcellsize(mask)           ## length or area
+    cellsize <- getcellsize(mask)       ## length or area
+    #----------------------------------------------------------------------
     if (constant) {
         ## assume constant
         if (is.null(beta))
-            realparval <- detectpar(object)
+            realparval0 <- detectpar(object)
         else {
-            realparval <- makerealparameters (object$design0, beta,
+            realparval0 <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
-            # realparval <- as.list(realparval)
-            # names(realparval) <- parnames(object$detectfn)
+            # realparval0 <- as.list(realparval0)
+            # names(realparval0) <- parnames(object$detectfn)
             ## 2016-11-12
-            realparval <- as.list(realparval[1,])
-            realparval$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
+            realparval0 <- as.list(realparval0[1,])
+            realparval0$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
         }
-        a <- cell * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
-                             detectpar = realparval, noccasions = noccasions))
+        a <- cellsize * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
+                             detectpar = realparval0, noccasions = noccasions))
         return(rep(a,n))
     }
     else {
         if (is.null(beta)) {
             if (is.null(real))
                 stop ("requires real parameter values")
-            PIA <- rep(1, n * s * K * nmix)    ## nmix added 2010 02 25
+            PIA0 <- array(1, dim=c(1,n,s,k,nmix))
             realparval0 <- matrix(rep(real, rep(n,length(real))), nrow = n)   ## UNTRANSFORMED
         }
         else {
-            ## allow for old design object
-            if (length(dim(object$design0$PIA))==4)
-                dim(object$design0$PIA) <- c(dim(object$design0$PIA),1)
-            # replaced 2012-09-21
-            # PIA <- object$design0$PIA[sessnum,,1:s,,,drop=F]
-            
-            ##############################################################
-            ## 2016-06-04
-            ## PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
-            
-            ## scenarios for dim2 = dim(object$design0$PIA)[2]
-            ## object$CL = T
-            ##     dim2 = max over sessions(n), and therefore dim2 >= n
-            ## object$CL = F
-            ##     dim2 = ngrp = max(1, length(object$groups)), usually 1
-            ## 
-            
             if (object$CL) {
-                ## one column for each detected animal
-                PIA <- object$design0$PIA[sessnum,1:n,1:s,1:K,,drop=F]
+                PIA0 <- object$design0$PIA[sessnum,1:n,1:s,1:K,,drop = FALSE]
             }
             else {
                 ## use whatever columns are present as the number of groups
                 ## should be constant over sessions
-                PIA <- object$design0$PIA[sessnum,,1:s,1:K,,drop=F]
-                dim(PIA) <- dim(PIA)[-1]  ## drop session dimension
+                PIA0 <- object$design0$PIA[sessnum,,1:s,1:K,,drop = FALSE]
                 ## fill array with PI appropriate to grouping of i-th animal
-                PIA <- PIA[group.factor(capthists, object$groups),,,]
+                PIA0 <- PIA0[1,group.factor(capthists, object$groups),,,,drop = FALSE]
             }
-            
-            ncolPIA <- n
-            
-            ## trick to allow for changed data 2009 11 20
-            ## nmix>1 needs further testing 2010 02 26
-            ## NOTE 2010-11-26 THIS LOOKS WEAK
-            # if (dim(PIA)[2] != n) {
-            #     # 2012-09-21
-            #     PIA <- array(rep(PIA[1,1,,,],n), dim=c(s,K,nmix,n))
-            #     PIA <- aperm(PIA, c(4,1,2,3))   ## n,s,K,nmix
-            #     ncolPIA <- n     ## 2010 02 26
-            # }
 
-            ##############################################################
-            
             realparval0 <- makerealparameters (object$design0, beta,
                 object$parindx, object$link, object$fixed)  # naive
 
         }
-
         ## not compatible with sigmak parameterizations
         Dtemp <- NA
         Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
@@ -180,107 +118,44 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             used <- (usge > 1e-10) * 1
         }
         if (any(used == 0))
-            PIA <- PIA * rep(rep(t(used),rep(n,s*K)),nmix)
-        ncolPIA <- n
+            PIA0 <- PIA0 * rep(rep(t(used),rep(n,s*K)),nmix)
 
-        normalize <- object$details$normalize
-        if (is.null(normalize))
-            normalize <- FALSE
         miscparm <- numeric(4)
-        if ((object$detectfn %in% 14:19) & normalize) {
-            if (!is.null(object$details$userdist))
-                stop("normalization incompatible with userdist")
-            miscparm <- c(1,0,1,0)
-            if (!is.null(object$details$usecov)) {
-                miscparm[2] <- 1
-                ## following may fail if some parameters fixed
-                alpha2 <- beta[object$parindx[['lambda0']][2]]
-                alpha2 <- ifelse (is.na(alpha2),0, alpha2)
-                z <- covariates(mask)[,object$details$usecov]
-                if (is.null(z))
-                    stop("no valid mask covariate")
-                mask <- cbind(mask, z * alpha2)
-                mask <- as.matrix(mask[,c(1:3,3)]) ## double last col
-            }
-            else {
-                mask <- as.matrix(mask[,c(1:2,2)])
-            }
-        }
-        else
-            miscparm[1] <- object$details$cutval
-        useD <- FALSE
+        miscparm[1] <- object$details$cutval
 
-        ##------------------------------------------
-        ## 2014-09-08, 2014-10-17
-        if (is.null(object$details$userdist))
-            distmat <- -1
-        else {
-
-            userdistnames <- getuserdistnames(object$details$userdist)
-            if (is.null(covariates(mask)))
-                covariates(mask) <- data.frame(row.names = 1:nrow(mask))
-            if ('noneuc' %in% userdistnames) {
-                covariates(mask)$noneuc <- predictD (object, mask,
-                                1, sessnum, parameter = 'noneuc')
-            }
-            if ('D' %in% userdistnames)
-                ## covariates(mask)$D <- D
-                stop ("userdist function requiring D not implemented for esa")
-
-            ## pass miscellaneous unmodelled parameter(s) 2015-02-21
-            nmiscparm <- length(object$details$miscparm)
-            if (nmiscparm > 0) {
-                miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
-                attr(mask, 'miscparm') <- coef(object)[miscindx, 1]
-            }
-
-            distmat <- valid.userdist (object$details$userdist,
-                                       detector(trps),
-                                       xy1 = trps,
-                                       xy2 = mask,
-                                       mask = mask,
-                                       sessnum = sessnum)
-        }
-        ##------------------------------------------
-
-        ## protection added 2012-10-21
+        ## not if first detector type is telemetry
         if (dettype[1] %in% c(13)) {
             return(NA)
         }
         else {
-            
-            temp <- .C("integralprw1", # PACKAGE = 'secr',
-                       as.integer(dettype),
-                       as.double(Xrealparval0),
-                       as.integer(rep(1,n)),           ## dummy groups 2012-11-13..2013-06-24
-                       as.integer(n),
-                       as.integer(s),
-                       as.integer(k),
-                       as.integer(m),
-                       as.integer(1),                  ## dummy ngroups 2012-11-13
-                       as.integer(nmix),
-                       as.integer(knownclass),         ## 2013-04-12
-                       as.double(unlist(trps)),
-                       as.double(distmat),             ## optional dist2 2014-09-08
-
-                       as.double(usge),
-                       as.integer(markocc),
-                       as.double(unlist(mask)),
-                       as.integer(nrow(Xrealparval0)), ## rows in lookup
-                       as.integer(PIA),                ## index of nc*,S,K to rows in realparval0
-                       as.integer(ncolPIA),            ## ncol - if CL, ncolPIA = n,
-                                                       ## else ncolPIA = 1 or ngrp
-                       as.double(cell),                ## cell area (ha) or length (km)
-                       as.double(miscparm),
-                       as.integer(object$detectfn),
-                       as.integer(expandbinomN(binomN, dettype)),             ## 2016-10-14
-                       as.integer(useD),
-                       a=double(n),
-                       resultcode=integer(1)
-                       )
-            if (temp$resultcode != 0)
-                stop ("error in external function 'integralprw1'")
-            return(temp$a)
+          NE <- NULL   ## no NE covariates (yet)
+          pi.density <- matrix(1/m, nrow=m, ncol=1)
+          distmat2 <- getuserdist(trps, mask, object$details$userdist, sessnum, NE, pi.density, miscparm)
+          setNumThreads(ncores)
+          grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+          gkhk <- makegkParallelcpp (as.integer(object$detectfn), grain,
+                                     as.matrix(Xrealparval0), as.matrix(distmat2), miscparm)
+          if (any(dettype==0)) CH0 <- nullCH (c(n,s), FALSE)
+          else CH0 <- nullCH (c(n,s,K), FALSE)
+          binomNcode <- recodebinomN(dettype, binomN, telemcode(trps))
+          pmixn <- getpmix (knownclass, PIA0, Xrealparval0)
+          MRdata <- list(markocc = markocc, firstocc=rep(-1,nrow(CH0)))
+          pID <- getpID(PIA0, Xrealparval0, MRdata)
+          
+          pdot <- integralprw1 (cc0 = nrow(Xrealparval0),
+                                haztemp = gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
+                                gkhk = gkhk,
+                                pi.density = pi.density,
+                                PIA0 = PIA0,
+                                CH0 = CH0,
+                                binomNcode = binomNcode,
+                                MRdata = MRdata,
+                                grp = rep(1,n),
+                                usge = usge,
+                                pmixn = pmixn,
+                                pID = pID,
+                                grain = 1L)
+          pdot * cellsize * m
         }
     }
 }

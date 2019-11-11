@@ -1,10 +1,12 @@
 \name{plot.popn}
 \alias{plot.popn}
 
-\title{ Plot popn Object }
+\title{ Plot Population Object }
 
 \description{
+
 Display animal locations from a \code{popn} object.
+
 }
 
 \usage{

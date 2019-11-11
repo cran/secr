@@ -13,7 +13,7 @@
 ###############################################################################
 
 confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
-    tracelevel = 1, tol = 0.0001, bounds = NULL, ...) {
+    tracelevel = 1, tol = 0.0001, bounds = NULL, ncores = NULL, ...) {
 
     ## profile likelihood interval for estimated secr parameters
     ## cf confint.glm in MASS
@@ -39,52 +39,54 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
         ## case 1 - Lagrange
 
         profileLL.lagrange <- function (gamma, parm) {
-            lagrange <- function (beta2, gamma) {
-                ## return quantity to be maximized
-                templl <- secr.loglikfn (
-                    beta       = beta2,
-                    parindx    = object$parindx,
-                    link       = object$link,
-                    fixedpar   = object$fixed,
-                    designD    = D.designmatrix,
-                    designNE   = NE.designmatrix,
-                    design     = object$design,
-                    design0    = object$design0,
-                    capthist   = object$capthist,
-                    mask       = object$mask,
-                    detectfn   = object$detectfn,
-                    CL         = object$CL,
-                    hcov       = object$hcov,
-                    groups     = object$groups,
-                    details    = details,
-                    logmult    = logmult,
-                    ncores     = 1,
-                    betaw      = max(max(nchar(object$betanames)),8))
-                templl - gamma * predicted (beta2)
-            }
-
-            ## maximize for fixed gamma (equivalent to fixed 'parm')
-            lagrange.fit <- optim (par = object$fit$par, fn = lagrange, gamma = gamma,
+          
+          data <- prepareSessionData(object$capthist, object$mask, object$details$maskusage, 
+                                     object$design, object$design0, object$detectfn, object$groups, 
+                                     object$fixedpar, object$hcov, object$details)
+          
+          allvars <- unlist(lapply(object$model, all.vars))
+          learnedresponse <- any(.localstuff$learnedresponses %in% allvars) ## || !is.null(dframe)
+          
+          lagrange <- function (beta2, gamma) {
+            ## return quantity to be maximized
+            templl <- generalsecrloglikfn(
+              beta       = beta2,
+              parindx    = object$parindx,
+              link       = object$link,
+              fixedpar   = object$fixed,
+              designD    = object$designD,    ## D.designmatrix,
+              designNE   = object$designNE,   ## NE.designmatrix,
+              design     = object$design,
+              design0    = object$design0,
+              CL         = object$CL,
+              detectfn   = object$detectfn,
+              learnedresponse = object$learnedresponse,
+              sessionlevels = session(object$capthist),
+              details    = details,
+              data       = data,
+              betaw      = max(max(nchar(object$betanames)),8))
+            templl - gamma * predicted (beta2)
+          }
+          
+          ## maximize for fixed gamma (equivalent to fixed 'parm')
+          lagrange.fit <- optim (par = object$fit$par, fn = lagrange, gamma = gamma,
                                    hessian = FALSE)
             .localstuff$beta <- lagrange.fit$par
-            lp <- - secr.loglikfn (
+            lp <- -generalsecrloglikfn (
                 beta       = .localstuff$beta,
                 parindx    = object$parindx,
                 link       = object$link,
                 fixedpar   = object$fixed,
-                designD    = D.designmatrix,
-                designNE   = NE.designmatrix,
+                designD    = object$designD,    ## D.designmatrix,
+                designNE   = object$designNE,   ## NE.designmatrix,
                 design     = object$design,
                 design0    = object$design0,
-                capthist   = object$capthist,
-                mask       = object$mask,
-                detectfn   = object$detectfn,
                 CL         = object$CL,
-                hcov       = object$hcov,
-                groups     = object$groups,
+                detectfn   = object$detectfn,
+                learnedresponse = object$learnedresponse,
+                sessionlevels = session(object$capthist),
                 details    = details,
-                logmult    = logmult,
-                ncores     = 1,
+                data       = data,
                 betaw      = max(max(nchar(object$betanames)),8))
             ## cat ('gamma ', gamma, '  coef ', lagrange.fit$estimate, '  lp ', lp,
             ##     '  lp - targetLL ', lp-targetLL, '\n')
@@ -225,6 +227,8 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
     if (userD(object))
         stop ("not implemented for user-defined density function")
 
+    setNumThreads(ncores)
+    
     np <- length(object$betanames)  ## number of beta parameters
 
     ## case 1 - real parameter not 1:1 beta so require lagrange
@@ -258,12 +262,12 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             sessionlevels <- session(object$capthist)
             grouplevels <- group.levels(object$capthist, object$groups)
             smoothsetup <- object$smoothsetup
-            D.designmatrix <- designmatrix (D.modelled, object$mask, object$model$D,
-                                            grouplevels, sessionlevels, object$sessioncov,
-                                            smoothsetup$D, object$details$contrasts)
-            NE.designmatrix <- designmatrix (NE.modelled, object$mask, object$model$noneuc,
-                                            grouplevels, sessionlevels, object$sessioncov,
-                                            smoothsetup$noneuc, object$details$contrasts)        
+            # D.designmatrix <- designmatrix (D.modelled, object$mask, object$model$D,
+            #                                 grouplevels, sessionlevels, object$sessioncov,
+            #                                 smoothsetup$D, object$details$contrasts)
+            # NE.designmatrix <- designmatrix (NE.modelled, object$mask, object$model$noneuc,
+            #                                 grouplevels, sessionlevels, object$sessioncov,
+            #                                 smoothsetup$noneuc, object$details$contrasts)        
         }
     }
     else {

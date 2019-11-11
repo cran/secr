@@ -187,9 +187,11 @@ University of Otago, Dunedin, New Zealand
 
 ## export ovenbird capture histories
 ## the files "ovenCHcapt.txt" and "ovenCHtrap.txt" are
-## placed in the current folder (check with dir())
+## placed in the current folder (check with getwd() or dir())
 
+\dontrun{
 write.capthist(ovenCH)
+}
 
 }
 

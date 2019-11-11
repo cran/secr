@@ -6,8 +6,9 @@
 ## 2017-05-23 markocc argument
 ###############################################################################
 
-make.grid <- function (nx=6, ny=6, spacex = 20, spacey = spacex, spacing=NULL, detector='multi',
-    originxy=c(0,0), hollow=F, ID='alphay', markocc = NULL)
+make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NULL, 
+    detector = 'multi', originxy = c(0,0), hollow = FALSE, ID = 'alphay', 
+    markocc = NULL)
 
 {
     if (!all( detector %in% .localstuff$validdetectors ))
@@ -193,7 +194,7 @@ make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,
 ###############################################################################
 
 make.circle <- function (n = 20, radius = 100, spacing = NULL,
-    detector = 'multi', originxy=c(0,0), IDclockwise = T, markocc = NULL)
+    detector = 'multi', originxy=c(0,0), IDclockwise = TRUE, markocc = NULL)
 {
     if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")

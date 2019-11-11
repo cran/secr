@@ -39,21 +39,28 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     }
     ####################################################################
 
-    condition.usage <- function (trp, i) {
+    condition.usage <- function (trp, i, nocc) {
         if (!is.null(trp)) {
             us <- matrix(0, nrow=nrow(trp), ncol=nnewocc)
+            ## don't understand need for this 2019-10-22
             if ('telemetry' %in% detector(trp)) {
                 occasions <- outputdetector == 'telemetry'
             }
             else {
                 s1 <- c(1, cumsum(nocc)+1)[i]
                 s2 <- cumsum(nocc)[i]
+                if (any(is.na(c(s1,s2)))) {
+                    cat("Houston, we have a problem\n")
+                    browser()
+                }
                 occasions <- s1:s2
             }
-            if (is.null(usage(trp)))
+            if (is.null(usage(trp))) {
                 us[,occasions] <- 1
-            else
+            }
+            else {
                 us[,occasions] <- usage(trp)
+            }
             usage(trp) <- us
         }
         trp
@@ -131,15 +138,18 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
                         trps
                 }
                 newteltrap <- subset(temptrp[[1]],1)
-                temptrp <- mapply(dropteltrap, temptrp, ttraps0)
+                temptrp <- mapply(dropteltrap, temptrp, ttraps0, SIMPLIFY = FALSE)
                 rownames(newteltrap) <- teltrapno
                 temptrp <- c(temptrp, list(newteltrap))
             }
             else {
                 if (!sites.by.name) df$newtrap <- paste(df$newtrap,df$sess, sep=".")
             }
-            temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), SIMPLIFY = FALSE)
-            temptrp <- temptrp[!sapply(temptrp, is.null)]
+            temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), MoreArgs=list(nocc=nocc))  
+            ## 2019-10-22 - attempt to cleanup telemetry
+            # nt <- length(temptrp)
+            # temptrp[1:(nt-1)] <- mapply(condition.usage, temptrp[-nt], 1:(nt-1), MoreArgs=list(nocc=nocc), SIMPLIFY = FALSE)
+            # temptrp <- temptrp[!sapply(temptrp, is.null)]
             
             ## 2018-05-11
             ## workaround for large datasets

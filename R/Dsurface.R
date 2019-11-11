@@ -398,6 +398,7 @@ spotHeight <- function (object, prefix = NULL, dec = 2, point = FALSE, text = TR
         xy <- unlist(locator(1))
         if (is.null(xy))
             break
+        
         maskrow <- nearesttrap(xy, object)
         if (distancetotrap(xy,object[maskrow,]) > (2 * spacing(object)))
             break

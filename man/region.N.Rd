@@ -26,12 +26,12 @@ region.N(object, ...)
 \method{region.N}{secr}(object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
     keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson",
-    pooled.RN = FALSE, ...)
+    pooled.RN = FALSE, ncores = NULL, ...)
     
 \method{region.N}{secrlist}(object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
     keep.region = FALSE, nlowerbound = TRUE, RN.method = "poisson",
-    pooled.RN = FALSE, ...)
+    pooled.RN = FALSE, ncores = NULL, ...)
 
 }
 
@@ -67,6 +67,8 @@ region.N(object, ...)
 
   \item{pooled.RN}{ logical; if TRUE the estimate of realised N for a multi-session
   model is computed as if for combined sampling with all detectors (see Details)}
+  
+  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
 
   \item{...}{ other arguments (not used)}
 
@@ -206,7 +208,7 @@ data. \emph{Biometrics} \bold{66}, 310--318.
 
 \examples{
 
-region.N(secrdemo.0)
+region.N(secrdemo.0, ncores = 2)
 
 \dontrun{
 ## a couple more routine examples

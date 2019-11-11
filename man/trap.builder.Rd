@@ -189,29 +189,6 @@ tempgrid <- trap.builder (n = 10, method = "SRS",
     region = cbind(x = c(0,1000,1000,0),
     y = c(0,0,1000,1000)), plt = TRUE)
 
-## GRTS sample of mini-grids within a rectangle
-## GRTS requires package 'spsurvey' that may be unavailable
-##  on Mavericks
-## edgemethod = "allinside" avoids truncation at edge
-minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
-    detector = "proximity")
-    
-if (requireNamespace('spsurvey')) {
-  tempgrid <- trap.builder (n = 20, cluster = minigrid,
-    method = "GRTS", edgemethod = "allinside", region =
-    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-    plt = TRUE)
-}
-## as before, but excluding detectors from a polygon
-if (requireNamespace('spsurvey')) {
-  tempgrid <- trap.builder (n = 40, cluster = minigrid,
-    method = "GRTS", edgemethod = "allinside", region =
-    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-    exclude = cbind(x = c(3000,7000,7000,3000), y =
-    c(2000,2000,4000,4000)), exclmethod = "alloutside",
-    plt = TRUE)
-}
-
 ## one detector in each 100-m grid cell -
 ## a form of stratified simple random sample
 origins <- expand.grid(x = seq(0, 900, 100),
@@ -236,14 +213,39 @@ cluster.centres(tempgrid)
 ## "mash" the CH
 summary(mash(tempcapt))
 
-## compare timings (estimates are near identical)
 \dontrun{
+
+## GRTS sample of mini-grids within a rectangle
+## GRTS requires package 'spsurvey' that may be unavailable
+##  on Mavericks
+## edgemethod = "allinside" avoids truncation at edge
+minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
+    detector = "proximity")
+    
+if (requireNamespace('spsurvey')) {
+  tempgrid <- trap.builder (n = 20, cluster = minigrid,
+    method = "GRTS", edgemethod = "allinside", region =
+    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
+    plt = TRUE)
+}
+## GRTS as before, but excluding detectors from a polygon
+
+if (requireNamespace('spsurvey')) {
+  newgrid <- trap.builder (n = 40, cluster = minigrid,
+    method = "GRTS", edgemethod = "allinside", region =
+    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
+    exclude = cbind(x = c(3000,7000,7000,3000), y =
+    c(2000,2000,4000,4000)), exclmethod = "alloutside",
+    plt = TRUE)
+}
+
+## compare timings (estimates are near identical)
 tempmask1 <- make.mask(tempgrid, type = "clusterrect",
     buffer = 200, spacing = 10)
-fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 680 s
+fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 24.34 s
 
 tempmask2 <- make.mask(minigrid, spacing = 10)
-fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 6.2 s
+fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 1.01 s
 ## density estimate is adjusted automatically
 ## for the number of mashed clusters (9)
 

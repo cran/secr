@@ -46,7 +46,6 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     poly = NULL, poly.habitat = TRUE, cell.overlap = c("centre","any","all"), 
     keep.poly = TRUE, check.poly = TRUE, pdotmin = 0.001, random.origin = FALSE, ...)
 {
-
     type <- match.arg(type)
     if (missing(traps)) traps <- NULL
     if (ms(traps)) {         ## a list of traps objects

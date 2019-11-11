@@ -18,16 +18,16 @@
 \usage{
 fxi.contour (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE,
-    fitmode = FALSE, plotmode = FALSE, normal = TRUE, fill = NULL,
-    SPDF = FALSE, ncores = 1, ...)
-fxi.secr(object, i = 1, sessnum = 1, X, normal = TRUE, ncores = 1)
-fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
+    fitmode = FALSE, plotmode = FALSE, fill = NULL,
+    SPDF = FALSE, ncores = NULL, ...)
+fxi.secr(object, i = NULL, sessnum = 1, X = NULL, ncores = NULL)
+fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
 }
 
 \arguments{
   \item{object}{ a fitted secr model }
-  \item{i}{ integer or character vector of individuals for which to plot contours,
-  or a single individual as input to other functions }
+  \item{i}{ integer or character vector of individuals (defaults to all in fxi.secr),
+  or a single individual as input to fxi.mode }
   \item{sessnum}{ session number if \code{object$capthist} spans
   multiple sessions}
   \item{border}{ width of blank margin around the outermost detectors }
@@ -38,11 +38,10 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   \item{add}{logical to add contour(s) to an existing plot }
   \item{fitmode}{logical to refine estimate of mode of each pdf}
   \item{plotmode}{logical to plot mode of each pdf}
-  \item{X}{2-column matrix of x- and y- coordinates}
-  \item{normal}{ logical; should values of pdf be normalised?}
+  \item{X}{2-column matrix of x- and y- coordinates (defaults to mask)}
   \item{fill}{ vector of colours to fill contours (optional)}
   \item{SPDF}{ logical; if TRUE the output is a SpatialPolygonsDataFrame}
-  \item{ncores}{ integer number of cores to be used for parallel processing}
+  \item{ncores}{ integer maximum number of cores to be used for parallel processing}
   \item{start}{ vector of x-y coordinates for maximization }
   \item{\dots}{additional arguments passed to \code{contour} or \code{nlm}}
 }
@@ -72,12 +71,12 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ...)
   object$capthist (restricted to the relevant session in the case of a
   multi-session fit); otherwise it will be interpreted as a row number.
   
-  Values of the pdf are optionally normalised by dividing by the
+  Values of the pdf are normalised by dividing by the
   integral of \eqn{\mbox{Pr}(\omega_i|X)\pi(X)}{Pr(\omega_i|X)\pi(X)}
-  over the habitat mask in \code{object}.
+  over the habitat mask in \code{object}. (May differ in secr 4.0).
   
-  If \code{ncores} and length(i) are both greater than 1 then multiple 
-  worker processes will be run in separate cores to speed up the calculations.
+  If \code{ncores} is NULL or greater than 1, and length(i) is greater than 1, then multiple 
+  worker processes will be run in separate threads to speed up the calculations.
   
   If \code{start} is not provided to \code{fit.mode} then (from 2.9.4) the weighted mean of 
   all detector sites is used (see Warning below).
@@ -152,12 +151,12 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \examples{
 
-fxi.secr(secrdemo.0, i = 1, X = c(365,605))
+fxi.secr(secrdemo.0, i = 1, X = c(365,605), ncores = 2)
 
 ## contour first 5 detection histories
 plot(secrdemo.0$capthist)
 fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
-    plotmode = TRUE, drawlabels = FALSE)
+    plotmode = TRUE, drawlabels = FALSE, ncores = 2)
 
 \dontrun{
 
@@ -178,9 +177,10 @@ fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
   spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
       nx = 256, SPDF = TRUE, fitmode = TRUE)
 
-  ## save as ESRI shapefile
-  library(maptools)
-  writeSpatialShape(spdf, fn = "test")
+  ## save as ESRI shapefile test.shp etc.
+  ## replace tempdir() with your own folder name
+  library(rgdal)
+  writeOGR(spdf, dsn = tempdir(), layer = 'test', driver="ESRI Shapefile")
 
   ## plot contours and modes
   plot(spdf)

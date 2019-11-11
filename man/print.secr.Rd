@@ -38,7 +38,7 @@ are 100 (1 -- alpha) \% intervals.
 
 \tabular{ll}{
 call            \tab the function call (optional) \cr
-version,time    \tab secr version, and date and time fitting started \cr
+version,time    \tab secr version, date and time fitting started, and elapsed time \cr
 
 Detector type   \tab `single', `multi', `proximity' etc. \cr
 Detector number \tab number of detectors \cr

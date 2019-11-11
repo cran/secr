@@ -13,11 +13,11 @@
 
 \usage{
 make.grid(nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing = NULL,
-    detector = "multi", originxy = c(0,0), hollow = F,
+    detector = "multi", originxy = c(0,0), hollow = FALSE,
     ID = "alphay", markocc = NULL)
 
 make.circle (n = 20, radius = 100, spacing = NULL, 
-    detector = "multi", originxy = c(0,0), IDclockwise = T, markocc = NULL)
+    detector = "multi", originxy = c(0,0), IDclockwise = TRUE, markocc = NULL)
 
 make.poly (polylist = NULL, x = c(-50,-50,50,50),
     y = c(-50,50,50,-50), exclusive = FALSE, verify = TRUE)

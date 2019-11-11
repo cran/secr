@@ -12,7 +12,8 @@ A rectangular grid of clusters within a polygonal region.
 \usage{
 
 make.systematic(n, cluster, region, spacing = NULL, origin = NULL, 
-    originoffset = c(0,0), chequerboard = c('all','black','white'), ...)
+    originoffset = c(0,0), chequerboard = c('all','black','white'), 
+    order = c('x', 'y', 'xb', 'yb'), ...)
 
 }
 
@@ -34,6 +35,8 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   \item{originoffset}{ numeric; 2-vector (x,y offsets); see Details}
   
   \item{chequerboard}{ logical; if not `all' then alternate clusters are omitted }
+  
+  \item{order}{ character; sort order for clusters (see Details)}
    
   \item{\dots}{ arguments passed to \code{trap.builder} }
 }
@@ -65,6 +68,16 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   
   \code{chequerboard = "black"} retains black `squares' and \code{chequerboard = "white"} retains white `squares', where the lower left cluster in the candidate rectangle of cluster origins is black, as on a chess board. The effect is the same as increasing spacing by sqrt(2) and rotating through 45 degrees.
   
+  \code{order} determines the ordering of clusters in the resulting traps object. The options are a subset of those for \code{ID} argument of \code{\link{make.grid}}:
+  
+    \tabular{ll}{
+     Option \tab Sort order \cr
+     x \tab  column-dominant \cr
+     y \tab  row-dominant \cr
+     xb \tab  column-dominant boustrophedonical (alternate columns reversed) \cr
+     yb \tab  row-dominant boustrophedonical (alternate rows reversed) \cr
+     }
+
 }
 
 \value{

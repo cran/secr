@@ -3,9 +3,8 @@
 
 \alias{stoatDNA}
 \alias{stoatCH}
-\alias{stoat.model.EX}
 \alias{stoat.model.HN}
-\alias{stoat.model.HZ}
+\alias{stoat.model.EX}
 
 \title{ Stoat DNA Data }
 
@@ -16,7 +15,13 @@ New Zealand. Individuals were identified from DNA in hair samples.
 
 }
 
-\usage{stoatDNA}
+\usage{
+
+stoatCH
+stoat.model.HN
+stoat.model.EX
+
+}
 
 \details{
 
@@ -37,18 +42,14 @@ The data are provided as a single-session \code{capthist} object
 `stoatCH'. Hair tubes are `proximity' detectors which allow
 an individual to be detected at multiple detectors on one occasion
 (day), but there are no multiple detections in this dataset and for
-historical reasons the data are provided as detector type `multi'. Three
-pre-fitted models are included: \code{stoat.model.HN},
-\code{stoat.model.HZ}, and \code{stoat.model.EX} (with halfnormal,
-hazard-rate and negative exponential detection functions,
-respectively).
+historical reasons the data are provided as detector type `multi'. Two
+pre-fitted models are included: \code{stoat.model.HN} and \code{stoat.model.EX}.
 
 \tabular{ll}{
   Object \tab Description \cr
   stoatCH \tab capthist object \cr
-  stoat.model.EX \tab fitted secr model -- null, exponential detection function \cr
   stoat.model.HN \tab fitted secr model -- null, halfnormal detection function \cr
-  stoat.model.HZ \tab fitted secr model -- null, hazard-rate detection function \cr
+  stoat.model.EX \tab fitted secr model -- null, exponential detection function \cr
 }
 
 }
@@ -76,7 +77,7 @@ Gleeson, D. M., Byrom, A. E. and Howitt, R. L. J. (2010) Non-invasive
 methods for genotyping of stoats (\emph{Mustela erminea}) in New
 Zealand: potential for field applications. \emph{New Zealand Journal of
 Ecology} \bold{34}, 356--359. Available on-line at
-\url{http://www.newzealandecology.org}.
+\url{https://www.newzealandecology.org}.
 
 }
 
@@ -114,8 +115,6 @@ stoat.model.HN <- secr.fit(stoatCH, buffer = 1000, detectfn = 0)
 
 # this generates an error unless we use biasLimit = NA
 # to suppress the default bias check
-stoat.model.HZ <- secr.fit(stoatCH, buffer = 1000, detectfn = 1,
-    biasLimit = NA)
 
 stoat.model.EX <- secr.fit(stoatCH, buffer = 1000, detectfn = 2)
 confint(stoat.model.HN, "D")
@@ -129,10 +128,9 @@ xv <- seq(0,800,10)
 plot(stoat.model.EX, xval = xv, ylim = c(0,0.12), limits = FALSE,
     lty = 2)
 plot(stoat.model.HN, xval = xv, limits = FALSE, lty = 1, add = TRUE)
-plot(stoat.model.HZ, xval = xv, limits = FALSE, lty = 3, add = TRUE)
 
 ## review density estimates
-collate(stoat.model.HZ, stoat.model.HN, stoat.model.EX,
+collate(stoat.model.HN, stoat.model.EX,
     realnames = "D", perm = c(2,3,4,1))
 ## use secr:: in case of conflicting model.average from RMark
 secr::model.average(stoat.model.HN, stoat.model.EX,

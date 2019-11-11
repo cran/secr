@@ -15,7 +15,13 @@ aurocapilla}) at a site in Maryland, USA.
 
 }
 
-\usage{ovensong}
+\usage{
+
+signalCH
+ovensong.model.1
+ovensong.model.2
+
+}
 
 \details{
 

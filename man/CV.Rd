@@ -54,7 +54,9 @@ CVa(object, sessnum = 1, ...)
 
 }
 \value{
+
   Numeric
+
 }
 
 \note{
@@ -62,7 +64,8 @@ CVa(object, sessnum = 1, ...)
   Do not confuse the function CVa with the estimated relative standard
   error of the estimate of a from \code{\link{derived}}, also labelled CVa
   in the output. The relative standard error RSE is often labelled CV
-  in the literature on capture--recapture, but this is better avoided.
+  in the literature on capture--recapture, but this can cause unnecessary 
+  confusion. See also \code{\link{RSE}}.
 
 }
 
@@ -79,14 +82,25 @@ capture--recapture data. \emph{Ecology} \bold{95}, 1341--1348.
 
 \seealso{
 
-  \code{\link{details}}, \code{\link{CVpdot}}
+  \code{\link{CVpdot}}, 
+  \code{\link{derived}}, 
+  \code{\link{details}}, 
+  \code{\link{RSE}}
   
 }
 
 \examples{
 
+\dontrun{
+
 ## housemouse model
+morning <- subset(housemouse, occ = c(1,3,5,7,9))
+msk <- make.mask((traps(morning)), nx = 32) 
+morning.h2   <- secr.fit(morning, buffer = 20, model = list(g0~h2), mask = msk, 
+    trace = FALSE)
 CVa0(morning.h2 )
+
+}
 
 }
 

@@ -6,7 +6,7 @@ output:
   pdf_document:
     toc: yes
     toc_depth: 2
-vignette: >
+vignette: > 
   %\VignetteIndexEntry{Data input for secr}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}  
@@ -38,8 +38,8 @@ consult the [Glossary](#glossary).
 Input files should be prepared with a text editor, not a word
 processing program. Values are usually separated by blanks or tabs,
 but commas may also be used. Input files with extension '.csv' are
-recognised automatically as comma-delimited. Care should be taken to 
-prefix header information with the comment character (default #).
+recognised automatically as comma-delimited. Each line of header information should 
+start with the comment character (default #).
 
 Input files may also be prepared with spreadsheet software 
 (see later section on [reading Excel files](#readxl)).
@@ -260,19 +260,18 @@ Note that in this case --
 
 The 'proximity' detector type allows at most one detection of each
 individual at a particular detector on any occasion. Detectors that
-allow repeat detections are called 'count' detectors in **secr**. [In
-fact, proximity detectors are a special case of count detectors in
-which the count always has a Bernoulli distribution]. Count data can
+allow repeat detections are called 'count' detectors in **secr**. 
+Binary proximity detectors are a special case of count proximity detectors in
+which the count always has a Bernoulli distribution. Non-binary counts can
 result from devices such as automatic cameras, or from collapsing data
 collected over many occasions (Efford et al. 2009).
 
-Count data are input by repeating each line in the capture data the required number of times. [Yes, it would have been more elegant to code the frequency, but this detector type was an afterthought.] See
+Count data are input by repeating each line in the capture data the required number of times. (Yes, it would have been more elegant to code the frequency, but this detector type was an afterthought.) See
 `?make.capthist` for an example that automatically replicates rows of a capture dataframe according to a frequency vector f (f could be a column in the capture dataframe).
-
 
 ## Signal detectors
 
-Signal strength detectors are described in the document [secr-sound.pdf] (see also Efford et al. 2009). Here we just note that signal strength data may be input with `read.capthist` using a minor
+Signal strength detectors are described in the document [secr-sound.pdf] following Efford et al. (2009). Here we just note that signal strength data may be input with `read.capthist` using a minor
 extension of the DENSITY format: the signal strength for each detection is appended as the fifth ('fmt = trapID') or sixth ('fmt = XY') value in each row of the capture data file. There will usually be
 only one sampling 'occasion' as sounds are ephemeral. The threshold below which signals were classified as 'not detected' must be provided in the 'cutval' argument. Detections with signal strength coded as less than 'cutval' are discarded.
 
@@ -417,10 +416,6 @@ to a traps (detector) or mask object from another spatial data source.
 
 \vspace{12pt}
 
-An alternative function for text file input is
-`read.SPACECAP`. This uses the formats described in the help
-for the R package SPACECAP (Singh et al. 2010).
-
 The function `read.DA` is used to create a capthist
 object from polygon detection data in an R list, structured as input
 for the Bayesian analysis of Royle and Young (2008), using data
@@ -457,13 +452,6 @@ Royle, J. A. and Young, K. V. (2008) A hierarchical model for
   spatial capture--recapture data. *Ecology* **89**,
   2281--2289.
 
-Singh, P., Gopalaswamy, A. M., Royle, A. J., Kumar, N. S. and
-  Karanth, K. U. (2010) *SPACECAP: A program to estimate animal
-    abundance and density using Bayesian spatially explicit
-    capture-recapture models. Version 1.0.* Wildlife Conservation
-  Society - India Program, Centre for Wildlife Studies, Bangalure,
-  India.
-  
 Wickham, H. and Bryan, J. (2017). **readxl**: Read Excel Files. R
   package version 1.0.0. https://CRAN.R-project.org/package=readxl  
 

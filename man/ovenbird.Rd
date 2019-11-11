@@ -5,9 +5,6 @@
 \alias{ovenCH}
 \alias{ovenCHp}
 \alias{ovenbird.model.1}
-\alias{ovenbird.model.1b}
-\alias{ovenbird.model.1T}
-\alias{ovenbird.model.h2}
 \alias{ovenbird.model.D}
 \alias{ovenmask}
 
@@ -19,7 +16,15 @@ Data from a multi-year mist-netting study of ovenbirds (\emph{Seiurus
 aurocapilla}) at a site in Maryland, USA.
 }
 
-\usage{ovenbird}
+\usage{
+
+ovenCH
+ovenCHp
+ovenbird.model.1
+ovenbird.model.D
+ovenmask
+
+}
 
 \details{
 
@@ -73,17 +78,14 @@ the number of detections in any one year was too small to give reliable
 estimates of density; pooling of detection parameters across years
 helped to improve precision.
 
-Included with the data are a mask and four models fitted to \code{ovenCH} as in
+Included with the data are a mask and two models fitted to \code{ovenCH} as in
 Examples. 
 
 \tabular{ll}{
   Object \tab Description \cr
-  ovenCH \tab multi-session capthist object \cr
+  ovenCH \tab multi-session capthist object (as multi-catch) \cr
+  ovenCHp \tab multi-session capthist object (as binary proximity) \cr
   ovenbird.model.1 \tab fitted secr model -- null \cr
-  ovenbird.model.1b \tab fitted secr model -- g0 net shyness \cr
-  ovenbird.model.1T \tab fitted secr model -- g0 time trend within years
-  \cr
-  ovenbird.model.h2 \tab fitted secr model -- g0 finite mixture \cr
   ovenbird.model.D \tab fitted secr model -- trend in density across years
   \cr
   ovenmask \tab mask object \cr
@@ -171,8 +173,6 @@ ovenbird.model.h2 <- secr.fit(ovenCH, mask = ovenmask, model =
     list(g0~h2))
 ovenbird.model.h2
 
-}
-
 ## compare & average pre-fitted models
 AIC (ovenbird.model.1, ovenbird.model.1b, ovenbird.model.1T,
     ovenbird.model.h2)
@@ -182,6 +182,9 @@ model.average (ovenbird.model.1,ovenbird.model.1b, ovenbird.model.1T,
 ## select one year to plot
 plot(ovenbird.model.1b, newdata = data.frame(session = "2005",
     b = 0))
+    
+}
+
 
 }
 

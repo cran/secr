@@ -3,94 +3,8 @@
 ## methods.R
 ## Methods for classes traps, capthist and mask
 ## Last changed
-## 2010 04 27 version 1.4
-## 2010 04 30 scrapped read.captures
-## 2010 05 02 usage may be separated by commas in read.traps
-## 2010 05 03 bugfix in subset.capthist for 'multi' data
-## 2010 06 08 sim.popn moved to own file sim.popn.R
-## 2010 07 01 alphanumeric detectfn option
-## 2010 06 08 fixed bug in insidepoly (wrong call of C fn)
-## 2010 07 03 rbind.mask handles covariates
-## 2010 08 30 print.mask removed
-## 2010 10 10 enabled compound halfnormal in secr.fit
-## 2010 10 10 added function 'detectpar'
-## 2010 10 11 secr.fit default binomN changed to Poisson if detector == count
-## 2010 10 12 covariates<- modified for multi-session data
-## 2010 10 12 plot.mask now handles multi-session mask
-## 2010 10 15 function ms to recognise multisession objects
-## 2010 10 15 make.mask poly clipping extended to all types
-## 2010 10 19 version 1.5
-## 2010-10-21 AIC.secrlist
-## 2010-10-22 predict.secrlistyes## 2010-10-24 multisession detectpar
-## 2010-10-25 revision of all error and warning messages in R code
-## 2010-11-04 logLik.secr
-## 2011-01-04 G&R parameterisation
-## 2011-01-12 cue detector  -- removed 2015-10-01
-## 2011-02-01 remove binomN from traps object attribute list
-## 2011-02-07 major revisions for polygonX, transectX
-## 2011-03-18 unmarked detector
-##            for counts of unidentified animals at points
-## 2011-06-07 rbind.capthist allows for xy, signal
-## 2011-06-17 moved insidepoly to utility.R (renamed to pointsInPolygon 2011-10-21)
-## 2011-06-23 polygon and transect names retain ordering of input dataframe
-##            in make.poly and make.transect
-## 2011-06-24 fixed transectlength, searcharea
-## 2011-07-08 adjust 'class' to 'inherits' in make.mask
-## 2011-08-18 check for null rownames in animalID
-## 2011-09-11 subset.popn commissioned
-## 2011-10-10 make.mask moved to make.mask.R
-## 2011-10-10 make.grid, make.poly etc. moved to make.grid.R
-## 2011-10-20 predict.secr modified for user-supplied D function
-## 2011-10-20 subset.popn gets poly argument
-## 2012-05-14 predict.secr patch for missing 'session' in newdata (cf Deb's problem 7/2/12)
-## 2012-07-28 subset.capthist substantial revision for signals
-## 2012-08-07 spacing methods for traps, mask gets new argument 'recalculate'
-## 2012-08-07 spacing attribute updated after subset, split or rbind of traps
-## 2012-09-14 split.traps now in its own file
-## 2012-09-14 signalframe extract/replace function
-## 2012-10-24 predict.secr drops unused columns of newdata from names of output components
-## 2012-10-25 plot.capthist checks for zero captures and proximity tracks
-## 2012-12-22 extended usage<-
-## 2013-01-16 fixed rbind.traps for usage
-## 2013-02-07 timevaryingcov<- bug fixed
-## 2013-03-14 predict.secr acquires argument 'type'
-## 2013-06-08 print.secr includes Mixture (hcov) :
-## 2013-06-10 plot.capthist has safe on.exit return to old palette
-## 2013-06-15 shift.mask
-## 2013-08-17 subset.capthist hardened so copes with signal detectors with zero rows
-## 2013-08-30 detectpar becomes method
-## 2013-10-29 fixpmix code for predict.secr moved to utility.R
-## 2013-11-20 shifted plot.capthist to separate file
-## 2013-12-15 maskarea function for nrow(mask) * attr(mask,'area')
-## 2014-02-08 trim.secr() added call to default vector of components dropped
-## 2014-02-19 secrlist '[' method
-## 2014-05-31 summary.capthist counts losses when dim>2
-## 2014-05-31 read.mask spurious error msg with columns argument
-## 2014-08-19 predict.secr transferred to predict.secr.r
-## 2014-09-06 summary.mask slightly rearranged, and allows linearmask
-## 2014-09-14 plot.mask moved to plot.mask.r
-## 2014-12-24 print.summary.capthist allows for nonspatial capthist
-## 2015-01-16 print.secr shows userdist type
-## 2015-03-31 parameter count allows for details$miscparm
-## 2015-09-02 change alongtransect to fix occsim: remove 'S' prefix
-## 2015-10-02 summary.capthist reports sightings
-## 2015-10-10 subset.capthist updated for mark-resight data
-## 2016-09-20 plot.pop modified to allow SpatialPolygons polygon attribute
-## 2016-10-08 secr3 3.0
-## 2016-10-10 rbind.traps moved to separate file
-## 2017-01-26 plot.traps moved to plot.traps.R
-## 2017-01-28 subset.capthist updated for telemetry
-## 2017-07-25 rbind.popn moved to rbind.popn.R
-## 2017-07-25 rbind.mask moved to rbind.mask.R
-## 2017-11-13 subset may be function in subset.capthist
-## 2017-11-15 clusterID<- tweak
-## 2018-01-10 AIC-related functions moved to AIC.R
-## 2018-01-22 trap() tweaked to return 1's for nonspatial
-## 2018-02-05 plot.popn moved to plot.popn.R
-## 2018-05-14 timevaryingcov allows capthist object (for openCR)
-## 2018-06-26 subset.popn failed for multi-session populations
-## 2019-01-09 spacing.traps returns NA instead of NULL for 1-trap arrays
-## 2019-04-04 summary.capthist moved to summary.capthist.R
+## 2019-10-25 masksize()
+## 2019-11-10 summary.traps etc. moved to file summary.traps.R
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -127,7 +41,6 @@ intervals  <- function (object, ...) UseMethod("intervals")
 sessionlabels   <- function (object, ...) UseMethod("sessionlabels")
 
 ############################################################################################
-
 
 'intervals<-' <- function (object, value)
     structure (object, intervals = value)
@@ -194,11 +107,13 @@ Tn.default <- function (object, ...)       {
 }
 
 sighting <- function(object) {
-    markocc <- markocc(object)
-    if (is.null(markocc))
+    mocc <- unlist(markocc(object))
+    if (is.null(mocc)) {
         FALSE
-    else
-        any(markocc < 1)
+    }
+    else {
+        any(mocc < 1)   ## unlist added 2019-08-13
+    }
 }
 
 
@@ -369,19 +284,15 @@ xy <- function (object) {
 alongtransect <- function (object, tol = 0.01) {
     ptalongtransect <- function (i) {
         ## where is point i on its transect k?
-
         k <- trans[i]
         transectxy <- as.matrix(lxy[[k]])
         nr <- nrow(transectxy)
-        temp <- .C('alongtransectC',  # PACKAGE = 'secr',
-            as.double (xyi[i,]),
+        alongtransectcpp (
+            as.matrix (xyi[i,,drop=FALSE]),
+            as.matrix (transectxy),
             as.integer (0),
             as.integer (nr-1),
-            as.integer (nr),
-            as.double (transectxy),
-            as.double (tol),
-            result = double(1))
-        temp$result
+            as.double (tol))
     }
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
@@ -1030,7 +941,7 @@ flip.default <- function (object, lr=F, tb=F, ...) {
 }
 
 'timevaryingcov<-' <- function (object, value) {
-## 2012-10-31, modified 2013-02-07, 2018-05-14
+## 2012-10-31, modified 2013-02-07, 2018-05-14, 2019-09-29
     if (is.null(value))
         structure (object, timevaryingcov = NULL)
     else {
@@ -1056,9 +967,11 @@ flip.default <- function (object, lr=F, tb=F, ...) {
             else if (inherits(object, 'capthist')) {
                 ## capthist object
                 nsessions <- length(unique(primarysessions(intervals(object))))
-                OK <- sapply(value, function(x) nsessions == length(x))
-                if (any(!OK))
-                    warning ("mismatch between number of primary sessions in object and timevaryingcov")
+                if (nsessions>1) {    # 2019-09-29
+                    OK <- sapply(value, function(x) nsessions == length(x))
+                    if (any(!OK))
+                        warning ("mismatch between number of primary sessions in object and timevaryingcov")
+                }
             }
             if (is.character(value))
                 if (!all(value %in% names(covariates(object))))
@@ -1491,144 +1404,6 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
 }
 ###############################################################################
 
-summary.traps <- function(object, getspacing = TRUE, ...) {
-
-#### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
-    if (ms(object)) lapply(object, summary.traps, getspacing = getspacing, ...)
-    else {
-        if (is.null(object$x) | is.null(object$y))
-            stop ("not a valid 'traps' object")
-        nd <- nrow(object)
-        np <- NA
-        sumusage <- NULL
-        rangeusage <- NULL
-        sumcovar <- NULL
-
-        if (all(detector(object) %in% .localstuff$polydetectors)) {
-            spacing <- NA
-        }
-        else {
-            spacing <- spacing(object, recalculate = getspacing)
-
-            # unclear why following is not for polydetectors?  FAULTY 2012-12-18
-            if (is.factor(covariates(object))) {
-                susage <- by(usage(object), covariates(object), function(y) apply(y,2,sum))
-                sumusage <- matrix(unlist(susage), byrow = T, nrow = length(susage))
-                dimnames(sumusage) <- list(levels(covariates(object)), names(susage[[1]]))
-            }
-            else if (!is.null(usage(object)))  {
-                sumusage <- apply(usage(object)>0, 2, sum)
-                nocc <- ncol(usage(object))
-                rangeusage <- matrix(apply(usage(object), 2, range), ncol=nocc)
-                dimnames(rangeusage) <- list(c('min','max'), 1:nocc)
-            }
-            tempcovar <- covariates(object)
-
-            if (!is.null(tempcovar))
-                if ((nrow(tempcovar)>0) & (ncol(tempcovar)>0)) ## amended to check ncol 2009 09 18
-                    sumcovar <- summary(tempcovar, ...)
-        }
-
-        ## defaults
-        area <- NA
-        totallength <- NA
-        np = ndetector(object)
-        spacex <- NA
-        spacey <- NA
-        ## unblock these 2010-12-17
-        sumusage <- NULL
-        sumcovar <- NULL
-        xrange <- range(object$x)
-        yrange <- range(object$y)
-        if (all(detector(object) %in% c('polygon', 'polygonX')))
-            area <- searcharea(object)
-        if (all(detector(object) %in% c('transect', 'transectX')))
-            totallength <- transectlength(object)
-        tvc <- timevaryingcov(object)
-        telemdet <- if (any(detector(object) %in% 'telemetry')) 1 else 0
-        temp <- list (
-          detector = detector(object),
-          ndetector = nd - telemdet,
-          npart = np,
-          xrange = xrange,
-          yrange = yrange,
-          spacing = spacing,
-          area  = area,
-          totallength = totallength,
-          usage = sumusage,
-          markocc = markocc(object),
-          telemetrytype = telemetrytype(object),
-          rangeusage = rangeusage,
-          covar = sumcovar,
-          tvc = tvc
-        )
-
-        class(temp) <- 'summary.traps'
-        temp
-    }
-}
-###############################################################################
-
-print.summary.traps <- function (x, terse = FALSE, ...) {
-
-#### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
-
-    if (!terse)
-    cat ('Object class      ', 'traps', '\n')
-    detectorvector <- x$detector
-
-    if (length(unique(detectorvector))==1)
-        detectorvector <- detectorvector[1]
-    cat ('Detector type     ', newstr(x$detector), '\n')
-    if (any(x$detector %in% c('telemetry'))) {
-        cat ('Telemetry type    ', x$telemetrytype, '\n')
-    }
-    if (all(x$detector %in% c('polygon', 'polygonX'))) {
-        cat ('Number vertices   ', x$ndetector-x$npart, '\n')  ## assume each polygon closed
-        cat ('Number polygons   ', x$npart, '\n')
-        cat ('Total area        ', sum(x$area), 'ha \n')
-    }
-    else if (all(x$detector %in% c('transect', 'transectX'))) {
-        cat ('Number vertices   ', x$ndetector, '\n')
-        cat ('Number transects  ', x$npart, '\n')
-        cat ('Total length      ', x$totallength, 'm \n')
-    }
-    else if (!all(x$detector %in% c('telemetry'))) {
-        cat ('Detector number   ', x$ndetector, '\n')
-        cat ('Average spacing   ', x$spacing, 'm \n')
-    }
-    if (!all(x$detector %in% c('telemetry'))) {
-        cat ('x-range           ', x$xrange, 'm \n')
-        cat ('y-range           ', x$yrange, 'm \n')
-    }
-    if (!is.null(x$rangeusage)) {
-        cat ('\n Usage range by occasion\n')
-        print(x$rangeusage, ...)
-    }
-    if (!is.null(x$markocc)) {
-        cat ('\nMarking occasions\n')
-        mo <- matrix(as.numeric(x$markocc), byrow=T, nrow = 1,
-                     dimnames = list('',1:length(x$markocc)))
-        print(mo, ...)
-    }
-    if (!terse) {
-        if (!is.null(x$covar)) {
-            cat ('\n')
-            cat ('Summary of covariates', '\n')
-            print(x$covar, ...)
-        }
-        if (!is.null(x$usage)) {
-            cat ('Usage>0 by occasion', '\n')
-            print(x$usage, ...)
-        }
-        if (!is.null(x$tvc)) {
-            cat ('Time-varying covariate(s) name : columns', '\n')
-            for (i in 1:length(x$tvc)) cat(names(x$tvc)[[i]], ':', x$tvc[[i]], '\n')
-        }
-    }
-}
-
-###############################################################################
 
 ####################################
 ## Class : capthist
@@ -2236,9 +2011,6 @@ subset.mask <- function (x, subset, ...) {
 
 
 read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL, ...)
-## 2010-04-11 SS for 'state-space' from SPACECAP
-## 2011-05-11 data argument added
-## 2011-11-01 re-modelled to add covariates
 {
     if (is.null(data) & !is.null(file)) {
         fl <- nchar(file)
@@ -2377,6 +2149,102 @@ print.summary.mask <- function (x, ...) {
   }
 }
 ############################################################################################
+
+summary.popn <- function(object, collapse = FALSE, ...) {
+  ## 2019-06-10
+  if (ms(object)) {
+      if (collapse) {
+          pop1 <- do.call(rbind, object)
+          temp <- summary(pop1)
+          temp$collapsed <- TRUE
+          # if (!is.null(covariates(pop1))) {
+          #     temp$covar <- summary(covariates(pop1), ...)
+          # } else 
+          temp$covar <- NULL
+          pop2 <- popIDsplit(object)   # dim = c(length(ID), nsess, 2); see plot.popn.R
+          move <- function (sessxy) sqrt(diff(sessxy[,1])^2 + diff(sessxy[,2])^2)
+          m <- t(apply(pop2,1,move))
+          temp$nanimals <- nrow(pop2)
+          temp$nsessions <- ncol(pop2)
+          pop2 <- pop2[,,1]
+          pop2[!is.na(pop2)] <- 1 
+          pop2[is.na(pop2)] <- 0
+          pop2 <- t(apply(pop2, 1, function(x) {x[x==0 & cumsum(x)>0] <- -1; x}))
+          # 0 not yet recruited; 1 alive; -1 dead
+          recruited <- function(x) c(x[1], diff(x) == 1)    # 0 -> 1
+          died <- function(x) c(0, diff(x) == -2)           # 1 -> -1
+          temp$recruits <- apply(apply(pop2,1,recruited),1,sum)
+          temp$deaths <- apply(apply(pop2,1,died),1,sum)
+          temp$movements <- m
+          temp$status <- pop2
+          temp
+      }
+      else {
+          temp <- lapply(object, summary.popn)
+          class(temp) <- c('summary.popn', 'list')
+      }
+      temp
+  }
+  else {
+      if (is.null(object$x) | is.null(object$y))
+          stop ("not a valid popn")
+      nd <- length(object$x)
+      if (length(object$x) != length(object$y))
+          stop  ("not a valid popn")
+
+      if (!is.null(covariates(object))) {
+          sumcovar <- summary(covariates(object), ...)
+      } else sumcovar <- NULL
+      
+      popnclass <- 'popn'
+
+      ## rearranged 2014-09-06
+      temp <- list (
+        popnclass = popnclass,
+        nanimals = nrow(object),
+        xrange = range(object$x),
+        yrange = range(object$y),
+        boundingbox = attr(object, 'boundingbox',exact = TRUE),
+        covar = sumcovar,
+        collapsed = FALSE
+      )
+      class(temp) <- 'summary.popn'
+      temp
+  }
+
+}
+############################################################################################
+
+print.summary.popn <- function (x, ...) {
+    if (ms(x)) {
+        lapply (x, print.summary.popn)
+    }
+    else {
+      cat ('Object class        ', x$popnclass, '\n')
+      cat ('Number of animals   ', x$nanimals, '\n')
+      if (x$collapsed) {
+          cat ('Sessions            ', x$nsessions, '\n')
+          cat ('Animals  by session ', paste(apply(x$status==1,2,sum,na.rm=TRUE), collapse=', '), '\n')
+          cat ('Recruits by session ', paste(x$recruits, collapse = ', '), '\n')
+          cat ('Deaths   by session ', paste(x$deaths, collapse = ', '), '\n')
+          cat ('Average move        ', round(mean(as.numeric(x$movements), na.rm = TRUE),2), '\n')
+          cat ('\n')
+      }      
+      cat ('x-range m        ', x$xrange, '\n')
+      cat ('y-range m        ', x$yrange, '\n')
+      cat ('Bounding box     ','\n')
+      print (x$boundingbox, ...)
+      if (!is.null(x$covar)) {
+          cat ('Summary of covariates', '\n')
+          print(x$covar, ...)
+      }
+      cat('\n')
+  }
+}
+############################################################################################
+
+
+
 
 ####################################################
 ## Class : secr
@@ -2635,9 +2503,6 @@ print.secr <- function (x, newdata = NULL, alpha = 0.05, deriv = FALSE, call = T
 
     cat ('Fixed (real)    : ', fixed.string(x$fixed), '\n')
     cat ('Detection fn    : ', detectionfunctionname(x$detectfn))
-    if (!is.null(x$details$normalize))
-        if (x$details$normalize)
-            cat (', normalized')
     cat ('\n')
     if (!x$CL)
         cat ('Distribution    : ', x$details$distribution, '\n')

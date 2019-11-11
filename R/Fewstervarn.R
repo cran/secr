@@ -103,7 +103,7 @@ Fewstervarn <- function (nj, xy, design, esa, detectfn, detectpar, nocc,
     ## Finally...
 
     A <- sum(esa)
-    regionarea <- maskarea(boxlets)       ## hectares
+    regionarea <- masksize(boxlets)       ## hectares or km
     N <- sum(nj) / A  * regionarea        ## H-T estimate
     out <- 1/B * sum ((N * Qb * (1-Qb) + N^2 * Qb^2) / Ab^2) -
         sum((N * Qb / Ab) / B)^2

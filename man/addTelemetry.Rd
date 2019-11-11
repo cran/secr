@@ -124,7 +124,7 @@ ncapt <- apply(combinedCH,1,sum)
 points(totalpop[row.names(combinedCH)[ncapt==0],], pch = 1)
 points(totalpop[row.names(combinedCH)[ncapt>0],], pch = 16)
 
-# for later comparison of precison we must fix the habitat mask
+# for later comparison of precision we must fix the habitat mask
 mask <- make.mask(tr, buffer = 100)
 fit.tr <- secr.fit(trCH, mask = mask, CL = TRUE, detectfn = "HHN")  ## trapping alone
 fit.te <- secr.fit(teCH, mask = mask, CL = TRUE, start = log(20),   ## telemetry alone

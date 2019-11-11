@@ -1,60 +1,10 @@
 ############################################################################################
 ## package 'secr'
 ## autoini.R
-## last changed 2009 04 21, 2009 07 12 (failure R2.9)
-## 2009 07 17 add f.lower, f.upper to uniroot call for small speed improvement
-## 2009 10 27 changes to dbar for robustness with counts etc.
-## 2009 11    RPSV
-## 2009 12 11 update integralprw1 call for nmix=1
-## 2010 02 14 update integralprw1 call for spherical (no longer used)
-## 2010 08 28 traps renamed to trps
-## 2010 11 01 naivesigma shifted outside autoini
-## 2011 01 24 minor editing
-## 2012 04 19 added bad data check in naivesigma
-## 2012 12 14 computeD added but suppressed for now
-## 2012 12 15 tol argument added
-## 2012 12 24 binomN and adjust.g0 arguments added
-## 2014-08-27 dist2 optional input to integralprwi set to -1
-## 2014-08-29 linear adjustment (mask 'spacing') when no mask 'area'
-## 2015-10-04 markocc argument for integralprw1
-## 2015-11-24 fixed markocc-related bug and use RPSV CC = TRUE
 ############################################################################################
 
-naivesigma <- function (obsRPSV, trps, mask, wt, detectfn, z, tol = 0.001) {
-    naiveRPSVcall <- function (sigma)
-    {
-        temp <- .C ("naiveRPSV", # PACKAGE = 'secr',
-          as.double (sigma),               # Parameter : detection scale
-          as.double (z),                   # Parameter : detection shape (fixed)
-          as.integer(k),
-          as.integer(m),
-          as.integer (wt),
-          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
-          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
-          as.integer (detectfn),           # code 0 = halfnormal
-          value = double(1)                # return value
-        )
-        if (temp$value > 0)
-            obsRPSV - temp$value
-        else
-            obsRPSV                        # dummy value
-    }
-
-    if (is.null(mask))
-        mask <- make.mask(trps, buffer = 10 * obsRPSV, nx=32)
-    k <- nrow(trps)
-    m <- nrow(mask)
-
-    if (obsRPSV <= 0)   ## added 2012-04-19
-        temp <- NA
-    else
-        temp <- try(uniroot (naiveRPSVcall, lower = obsRPSV/10, upper = obsRPSV*10,
-                             tol=tol)$root)
-    ifelse (inherits(temp,'try-error'), NA, temp)
-}
-
 autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
-                     binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE)
+                     binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE, ncores = NULL)
 
 # obtain approximate fit of HN SECR model
 # for use as starting values in MLE
@@ -64,87 +14,51 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 {
     naivedcall <- function (sigma)
     {
-        temp <- .C ("naived",  # PACKAGE = 'secr',
-          as.double (sigma),               # Parameter : detection scale
-          as.integer(k),
-          as.integer(m),
-          as.integer (wt),
-          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
-          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
-          as.integer (detectfn),           # code 0 = halfnormal
-          value = double(1)                # return value
-        )
-        db-temp$value
+      db - naivedcpp(
+        sigma,
+        wt,
+        as.matrix(trps),
+        as.matrix(mask),
+        detectfn)
     }
     naivecap2 <- function (g0, sigma, cap)
-    # using new algorithm for number of captures per animal 2009 04 21
     {
-        temp <- .C ("naivecap2", # PACKAGE = 'secr',
-          as.integer(prox),
-          as.double (g0),                  # Parameter : detection magnitude
-          as.double (sigma),               # Parameter : detection scale
-          as.integer(s),                   # number of occasions
-          as.integer(k),                   # number of traps
-          as.integer(m),                   # number of points in mask
-          as.integer(wt),                  # trap weights
-          as.double (unlist(trps)),        # x,y locations of traps (first x, then y)
-          as.double (unlist(mask)),        # x,y points on mask (first x, then y)
-          as.integer (detectfn),           # code 0 = halfnormal
-          value = double(1)                # return value
-        )
-        cap - temp$value
+        cap - naivecap2cpp(dettype[1], binomN[1], g0, sigma, s, wt, 
+                           as.matrix(trps), 
+                           as.matrix(mask),
+                           detectfn)
     }
     naiveesa <- function (g0, sigma)
     {
       nc <- 1
-      g0sigma0 <- matrix(rep(c(g0,sigma), c(2,2)), nrow = 2)
-      gs0 <- rep(1,2*s*k)
-      #--------------------------------------------
-      # 2012-12-15 allow for incomplete grid
-      if (!is.null(usage(trps))) {
-          ## only considers binary use/non-use
-          gs0[rep(t(usage(trps)==0), each = 2)] <- -1
-      }
-      #--------------------------------------------
-      area <- attr(mask, 'area')  # area of single mask cell
-      if (is.null(area))   ## 2014-08-29 linear
-          area <- attr(mask, 'spacing')/1000
-      miscparm <- c(1,0,0,0)  ## dummy value
-      temp <- try ( .C("integralprw1", # PACKAGE = 'secr',
-          as.integer(dettype),
-          as.double(g0sigma0),
-          as.integer(rep(1,nc)),        # group number 2013-06-24
-          as.integer(nc),
-          as.integer(s),
-          as.integer(k),
-          as.integer(m),
-          as.integer(1),                # number of groups 2012-11-13
-          as.integer(1),
-          as.integer(rep(1,nc)),        # knownclass 2013-04-12, 2013-06-04
-          as.double(unlist(trps)),
-          as.double(-1),                ## optional dist2 2014-08-27
-          as.double(unlist(usge)),
-          as.integer(markocc),          # 2015-10-04
-          as.double(unlist(mask)),
-          as.integer(nrow(g0sigma0)),   # rows in lookup
-          as.integer(gs0),              # index of nc+1,S,K to rows in g0sigma0
-          as.integer(1),
-          as.double(area),
-          as.double(miscparm),
-          as.integer(detectfn),
-          as.integer(expandbinomN(binomN, dettype)),        # binomN
-          as.integer(0),                # useD
-          a=double(nc),
-          resultcode=integer(1))
-      )
-
-      if (inherits(temp, 'try-error') | temp$resultcode != 0)
-          stop ("error in external function 'integralprw1'; ",
-                "possibly the mask is too large")
-      temp$a
+      m <- nrow(mask)
+      realparval0 <- matrix(c(g0,sigma), nrow=1, ncol=2)
+      PIA0 <- array(1, dim=c(1,nc,s,k,1))
+      # allow for binary use/non-use of detectors
+      if (!is.null(usage(trps))) PIA0[t(usage(trps)==0)] <- -1
+      distmat2 <- getdistmat2(trps, mask, NULL)
+      gkhk <- makegkParallelcpp (as.integer(detectfn), as.integer(grain),
+                                 as.matrix(realparval0), as.matrix(distmat2), as.double(0))
+      if (any(dettype==0)) CH0 <- nullCH (c(nc,s), FALSE)
+      else CH0 <- nullCH (c(nc,s,k), FALSE)
+      binomNcode <- recodebinomN(dettype, binomN, 0)
+      pmixn <- matrix(1, nrow=1, ncol=nc)
+      pdot <- integralprw1 (cc0 = nrow(realparval0), 
+                            haztemp = gethazard(m, binomNcode, nrow(realparval0), gkhk$hk, PIA0, usge), 
+                            gkhk = gkhk, 
+                            pi.density = matrix(1/m, nrow=m, ncol=1), 
+                            PIA0 = PIA0, 
+                            CH0 = CH0, 
+                            binomNcode = binomNcode, 
+                            MRdata = list(markocc = rep(1,s), firstocc = -1),  ## all marking
+                            grp = rep(1,nc), 
+                            usge = usge, 
+                            pmixn = pmixn,
+                            pID = matrix(1, nrow=s, ncol=1),
+                            grain = as.integer(grain))
+      pdot * masksize(mask)
     }
-
-    #############
+    ##########################
     ## main line
     computeD <- TRUE
     if (length(tol)==1) tol <- rep(tol,2)
@@ -158,12 +72,31 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (! (detectfn %in% c(0)))
         stop ("only halfnormal detection function implemented in 'autoini'")
 
+    setNumThreads(ncores)
+    grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+    obsRPSV <- RPSV(capthist, CC = TRUE)
+
+    # drop telemetry component
+    ## drop zero histories
+    ## drop occasions with dettype==13
+    ## drop arbitrary telemetry detector
+    # ncapt <- apply(capthist,1,sum)
+    # 
+    # if (any(ncapt==0) || any (dettype==13)) {
+    #     nontelemetry <- dettype != 13
+    #     capthist <- subset(capthist, ncapt>0, occasions = nontelemetry)   ## drop zero histories
+    #     binomN <- binomN[nontelemetry]
+    #     dettype <- dettype[nontelemetry]
+    # }
+    
     trps <- traps(capthist)
     usge <- usage(trps)
-    if (is.null(usge) | ignoreusage)
+    if (is.null(usge) | ignoreusage) {
         ## assuming k = nk i.e. not polygon or transect detector
         usge <- matrix(1, nrow = nrow(trps), ncol = ncol(capthist))
+    }
     dettype <- detectorcode(trps, noccasions = ncol(capthist))
+
     n       <- nrow(capthist)    # number of individuals
     s       <- ncol(capthist)    # number of occasions
     k       <- nrow(trps)
@@ -172,10 +105,10 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         markocc <- rep(1,s)     ## assume all occasions were simple marking occasions
     allsighting <- !any(markocc>0)
 
-    if (!all(dettype %in% c(-1:5,8)))
+    if (!all(dettype %in% c(-1:5,8,13)))
         list(D=NA, g0=NA, sigma=NA)
     else {
-        prox     <- any(detector(trps) %in% c('proximity', 'count','signal','capped'))
+        
         ## wt is the number of opportunities for capture given binary usage
         wt <- apply(usge>0, 1, sum)
 
@@ -187,8 +120,6 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         m        <- nrow(mask)                   # number of points in mask
         cpa     <- sum(abs(capthist))/n      # captures per animal
         
-        obsRPSV <- RPSV(capthist, CC = TRUE)
-
         if (is.na(obsRPSV) | (obsRPSV<1e-10)) {    ## try db
             db <- dbar(capthist)
             if (!is.null(attr(trps,'spacing'))) {
@@ -207,14 +138,11 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
                 tempsigma <- uniroot (naivedcall, lower = db/10, upper = db*10, tol=tol[2])$root
         }
         else {
-            ## 2015-11-24 simpler to use RPSV
-            ## tempsigma <- naivesigma(obsRPSV = obsRPSV, trps = trps, mask = mask, wt = wt,
-            ## detectfn=detectfn, z=1, tol = tol[2])
             tempsigma <- obsRPSV
         }
         if (is.null(usage(trps))) wt <- rep(s,k)
-        low <- naivecap2(0.001, sigma=tempsigma, cap=cpa)
-        upp <- naivecap2(0.999, sigma=tempsigma, cap=cpa)
+        low <- naivecap2(0.00001, sigma=tempsigma, cap=cpa)
+        upp <- naivecap2(0.99999, sigma=tempsigma, cap=cpa)
         badinput <- FALSE
         if (is.na(low) | is.na(upp)) badinput <- TRUE
         else if (sign(low) == sign(upp)) badinput <- TRUE
@@ -225,12 +153,12 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
             warning ("'autoini' failed to find g0; setting initial g0 = 0.1")
             tempg0 <- 0.1
         }
-        else tempg0 <- uniroot (naivecap2, lower=0.001, upper=0.999,
+        else tempg0 <- uniroot (naivecap2, lower=0.00001, upper=0.99999,
                  f.lower = low, f.upper = upp, tol=tol[1],
                  sigma=tempsigma, cap=cpa)$root
         if (computeD) {
             if (allsighting)  ## includes all-zero rows
-                tempD <- n / maskarea(mask)
+                tempD <- n / masksize(mask)
             else {
                 esa <- naiveesa (tempg0, tempsigma)
                 tempD <-  n / esa * thin
@@ -239,7 +167,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         else tempD <- NA
 
         ## 2012-12-18,24 adjust for large effort and/or binomN
-
+        ## when is this needed? 2019-09-03
         if (adjustg0) {
             if (binomN == 0)
                 adjusted.g0 <- tempg0 / usge[usge>0]

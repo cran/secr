@@ -10,7 +10,7 @@
 
 \usage{
 autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001, 
-    binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE)
+    binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE, ncores = NULL)
 }
 
 \arguments{
@@ -34,6 +34,9 @@ autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 
 \item{ignoreusage}{logical for whether to discard usage information from
 \code{traps(capthist)}}
+
+\item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+
 }
 
 \details{
@@ -122,6 +125,6 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 demotraps <- make.grid()
 demomask <- make.mask(demotraps)
 demoCH <- sim.capthist (demotraps, popn = list(D = 5, buffer = 100), seed = 321)
-autoini (demoCH, demomask)
+autoini (demoCH, demomask, ncores = 2)   ## limit to 2 cores for CRAN 
 }
 \keyword{ models }

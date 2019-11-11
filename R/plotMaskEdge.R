@@ -1,33 +1,11 @@
-plotMaskEdgeOld <- function (mask, add = FALSE, ...) {
-    ## plots outer border of a mask, however irregular
-    ## assumes integer x,y OK
-    draw <- function (x,y, vertical) {
-        if (vertical)
-            segments (x, y+spc/2, x, y-spc/2, ...)
-        else
-            segments (x+spc/2, y, x-spc/2, y, ...)
-    }
-    inmask <- function (x,y) {
-        !is.na(match (paste(round(x),round(y),sep='.'), maskvector))
-    }
-    onecell <- function (xy) {
-        x <- xy[1]
-        y <- xy[2]
-        if (!inmask(x-spc, y)) draw (x-spc/2, y, TRUE)
-        if (!inmask(x+spc, y)) draw (x+spc/2, y, TRUE)
-        if (!inmask(x, y-spc)) draw (x, y-spc/2, FALSE)
-        if (!inmask(x, y+spc)) draw (x, y+spc/2, FALSE)
-    }
-    if (!add)
-        plot(mask, dots = FALSE)
-    spc <- spacing(mask)
-    maskvector <- apply(round(mask),1,paste, collapse='.')
-    apply(mask, 1, onecell)
-    invisible()
-}
+############################################################################################
+## package 'secr'
+## plotMaskEdge.R
+############################################################################################
 
 plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
     ## plots outer border of a mask, however irregular
+    ## 2019-07-02 bug partly fixed by changing round(x) etc. to round(x,3) etc.
     draw <- function (x,y, vertical, OK) {
         if (!OK)
             rep(NA,4)
@@ -37,7 +15,7 @@ plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
             c(x+spc/2, y, x-spc/2, y)
     }
     inmask <- function (x,y) {
-        !is.na(match (paste(round(x),round(y),sep='.'), maskvector))
+        !is.na(match (paste(round(x,3),round(y,3),sep='.'), maskvector))
     }
     onecell <- function (xy) {
         x <- xy[1]
@@ -57,7 +35,8 @@ plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
             plot(mask, dots = FALSE)
         spc <- spacing(mask)
         ## assumes mask has integer x,y resolution
-        maskvector <- apply(round(mask),1,paste, collapse='.')
+        ## 2019-07-02 0.001 resolution
+        maskvector <- apply(round(mask,3),1,paste, collapse='.')
         coord <- apply(mask, 1, onecell)
         xy <- matrix(coord, nrow = 4)
         xy <- xy[,!apply(xy, 2, function(z) any(is.na(z)))] # drop NA

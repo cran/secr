@@ -2,16 +2,6 @@
 ## package 'secr'
 ## scoretest.R
 ## score test for secr models
-## last changed 2009 01 19, 2009 07 10, 2009 08 15, 2009 10 07 (q)
-## 2009 08 25 fixed AIC small sample adjustment
-## 2009 08 25 block re-zeroing of AICc vs constrained model
-## requires nlme
-## 2014-02-17 question settings in fdHess call : .relStep = 0.001, minAbsPar = 0.1
-## 2014-02-17 these are now set explicitly as arguments of score.test
-## 2014-06-02 secr.design.MS argument ignoreusage = details$ignoreusage
-## 2015-04-15 acknowledges 'fixed'
-############################################################################################
-## source ('d:\\density secr 1.1\\secr\\R\\scoretest.R')
 ############################################################################################
 
 prepare <- function (secr, newmodel) {
@@ -33,7 +23,6 @@ prepare <- function (secr, newmodel) {
     fixed    <- secr$fixed
     smoothsetup <- secr$smoothsetup
     
-
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
     grouplevels  <- group.levels(capthist, groups)
@@ -42,8 +31,7 @@ prepare <- function (secr, newmodel) {
                               ignoreusage = details$ignoreusage, contrasts = details$contrasts)
     design0 <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
                                ignoreusage = details$ignoreusage, contrasts = details$contrasts,
-                               naive = T, bygroup = !CL)
-    
+                               naive = T)
     D.modelled <- !CL & is.null(fixed$D)
     NE.modelled <- is.function(details$userdist) & is.null(fixed$noneuc)           
     sessionlevels <- session(capthist)
@@ -107,25 +95,18 @@ prepare <- function (secr, newmodel) {
  }   # end of 'prepare'
 ############################################################################################
 
-score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
+score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NULL,
                         .relStep = 0.001, minAbsPar = 0.1) {
 
     if (!inherits(secr, 'secr'))
         stop ("only for 'secr' objects")
     models <- list(...)
+    setNumThreads(ncores)
     if (length(models)>1) { ##  ) {
         # apply to each component of 'model' list
 
-        if (ncores > 1) {
-            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-            score.list <- parLapply (clust, models, score.test, secr = secr,
-                                  betaindex = betaindex, ncores = ncores)
-            stopCluster(clust)
-        }
-        else
-            score.list <- lapply (models, score.test, secr=secr,
-                                  betaindex=betaindex, ncores=ncores)
-
+        score.list <- lapply (models, score.test, secr=secr,
+                            betaindex=betaindex)
         class(score.list) <- c('score.list', class(score.list))
         score.list
     }
@@ -148,7 +129,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         #########################################################
         # check components on which model differs from secr$model
         
-        
         if (length(secr$model) != length(model))
             stop ("models differ in number of real parameters")
         if (any(names(secr$model) != names(model)))
@@ -169,38 +149,42 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         beta1 <- mapbeta(secr$parindx, newsecr$parindx, beta0, betaindex)
         names(beta1) <- newsecr$betanames
 
+        allvars <- unlist(lapply(model, all.vars))
+        learnedresponse <- any(.localstuff$learnedresponses %in% allvars) 
+        
         if (trace) {
             ## .localstuff is environment for temp variables in namespace
             .localstuff$iter <- 0
             cat('Eval     logLik', formatC(newsecr$betanames, format='f', width=11), '\n')
         }
+        
         loglikfn <- function (beta, design) {
-           -secr.loglikfn(
+          # Return the negative log likelihood for spatial capture-recapture model
+            -generalsecrloglikfn(
                beta     = beta,
                parindx  = design$parindx,
                link     = design$link,
-               ## fixedpar = list(), 2015-04-15
                fixedpar = design$fixed,
                designD  = design$D.design,
                designNE = design$NE.design, 
                design   = design$design,
                design0  = design$design0,
-               capthist = design$capthist,
-               mask     = design$mask,
-               detectfn = design$detectfn,
                CL       = design$CL,
-               hcov     = design$hcov,
-               groups   = design$groups,
+               detectfn = design$detectfn,
+               learnedresponse = learnedresponse,
+               sessionlevels = session(design$capthist),
+               data = data,
                details  = design$details,
-               logmult  = design$logmult,
-               ncores   = 1,  # using cores for outer loop
                dig      = 4,
                betaw    = 11)
         }
-
+        data <- prepareSessionData(newsecr$capthist, newsecr$mask, newsecr$details$maskusage, 
+                                   newsecr$design, newsecr$design0, newsecr$detectfn, newsecr$groups, 
+                                   newsecr$fixedpar, newsecr$hcov, newsecr$details)
+        
         # cat('logLik',loglikfn(beta1, design=newsecr), '\n')   ## testing
         # cat('logmult', newsecr$logmult, '\n')
-
+        
         ## fdHess is from package nlme
         grad.Hess <- nlme::fdHess(beta1, fun = loglikfn, design = newsecr,
                             .relStep = .relStep, minAbsPar = minAbsPar)
@@ -214,7 +198,9 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
             warning ("could not invert information matrix")
             score <- NA
         }
-        else  score <- u.star %*% score %*% u.star
+        else  {
+            score <- u.star %*% score %*% u.star
+        }
 
         ## score statistic cf -2(logLik1 - logLik0)
         statistic <- c('X-squared' = as.numeric(score))
@@ -236,7 +222,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = 1,
         AICc  <- ifelse ((n-np-1)>0,
             AIC + 2 * np * (np+1) / (n-np-1),
             NA)
-##        AICc  <- AICc - AICc[1]  # relative to simpler (constrained) model
         names(AIC) <- c('AIC.0','AIC.1')
         names(AICc) <- c('AICc.0','AICc.1')
 

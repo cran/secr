@@ -20,7 +20,7 @@ CLdensity <- function (beta, object, individuals, sessnum)
 # Return the density for given g0, sigma, z in beta
 # Only 1 session
 {
-    sum(1 / esa (object, sessnum, beta)[individuals])
+    sum(1 / esa (object, sessnum, beta, ncores = 2)[individuals])
 }
 ############################################################################################
 
@@ -29,14 +29,14 @@ CLtotalD <- function (beta, object)
 # Return the density summed over sessions for given detection parameters in beta
 {
     onesessionD <- function (sessnum) {
-        sum(1 / esa (object, sessnum, beta))
+        sum(1 / esa (object, sessnum, beta, ncores = 2))
     }
     nsession <- object$design$R
     sum(sapply(1:nsession, onesessionD))
 }
 ############################################################################################
 
-CLgradient <- function (object, individuals, sessnum, eps=0.001, clust)
+CLgradient <- function (object, individuals, sessnum, eps=0.001)
 ## object is a fitted secr object (CL=T)
 ## individuals is vector indexing the subset of a to be used
 {
@@ -64,13 +64,7 @@ CLgradient <- function (object, individuals, sessnum, eps=0.001, clust)
           fplus   <- CLdensity (est, object, individuals, sessnum)
           (fplus - fminus) / (2.0 * delta)
   }
-  if (is.null(clust)) {
-      sapply(1:length(est), grad, est = est, eps = eps)
-  }
-  else {
-      clusterExport(clust, c("esa", "CLdensity","object","individuals","sessnum"), environment())
-      parSapply(clust, 1:length(est), grad, est = est, eps = eps)
-  }
+  sapply(1:length(est), grad, est = est, eps = eps)
 }
 ############################################################################################
 
@@ -83,9 +77,10 @@ CLmeanesa <- function (beta, object, individuals, sessnum, noccasions = NULL)
 ## mean (esa (object, sessnum, beta)[individuals])
 ## modified 2010-11-30 after suggestion of DLB
 
-##  noccasions = NULL added 2011-04-04
-
-    a <- esa (object, sessnum, beta, noccasions=noccasions)[individuals]
+## noccasions = NULL added 2011-04-04
+## ncores=2 for simplicity 2019-10-22
+    
+    a <- esa (object, sessnum, beta, noccasions=noccasions, ncores = 2)[individuals]
     length(a) / sum (1/a)
 }
 ############################################################################################
@@ -95,7 +90,7 @@ CLtotalesa <- function (beta, object)
 # Return the esa summed over sessions for given detection parameters in beta
 {
     onesessionesa <- function (sessnum) {
-        a <- esa (object, sessnum, beta)
+        a <- esa (object, sessnum, beta, ncores = 2)
         length(a) / sum (1/a)
     }
     nsession <- object$design$R
@@ -103,7 +98,7 @@ CLtotalesa <- function (beta, object)
 }
 ############################################################################################
 
-esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.001, clust)
+esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.001)
 ##  noccasions = NULL added 2011-04-04
 {
   beta <- object$fit$par
@@ -131,12 +126,7 @@ esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.
       fplus   <- CLmeanesa (est, object, individuals, sessnum, noccasions)
       (fplus - fminus) / (2.0 * delta)
   }
-  if (is.null(clust))
-      sapply(1:length(est), grad, est=est, eps=eps)
-  else {
-      clusterExport(clust, c("esa", "CLmeanesa","object","individuals","sessnum","noccasions"), environment())
-      parSapply(clust, 1:length(est), grad, est = est, eps = eps)
-  }
+  sapply(1:length(est), grad, est=est, eps=eps)
 }
 
 ############################################################################################
@@ -144,14 +134,14 @@ esagradient <- function (object, individuals, sessnum, noccasions = NULL, eps=0.
 ## 2017-11-21
 
 derived.secrlist <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
-                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, 
+                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = NULL, 
                           bycluster = FALSE, ...) {
     lapply(object, derived, sessnum, groups, alpha, se.esa, se.D,
            loginterval, distribution, ncores, bycluster)
 }
     
 derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
-                     se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1, 
+                     se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = NULL, 
                      bycluster = FALSE, ...) {
 ## derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
 ##                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1) {
@@ -184,39 +174,25 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
             ## recursive call if MS
             sessnames <- session(object$capthist)
             jj <- match (sessnames, session(object$capthist))
-            if (ncores > 1) {
-                clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-                clusterEvalQ(clust, requireNamespace('secr'))
-                output <- parLapply(clust, jj, derived, object = object, groups = groups,
-                                    alpha = alpha, se.esa = se.esa, se.D = se.D, loginterval = loginterval,
-                                    distribution = distribution, ncores = 1, bycluster = bycluster)
-                stopCluster(clust)
-            }
-            else {
-                output <- lapply(jj, derived, object = object, groups = groups,
-                                 alpha = alpha, se.esa = se.esa, se.D = se.D,
-                                 loginterval = loginterval, distribution = distribution, 
-                                 ncores = 1, bycluster = bycluster)
-            }
+            output <- lapply(jj, derived, object = object, groups = groups,
+                             alpha = alpha, se.esa = se.esa, se.D = se.D,
+                             loginterval = loginterval, distribution = distribution, 
+                             ncores = ncores, bycluster = bycluster)
             names(output) <- sessnames
             output
         }
     else {
         se.deriveD <- function (selection, object, selected.a, asess) {
-            A <-  if (inherits(object$mask, 'linearmask'))
-                masklength(object$mask)
-            else
-                ## maskarea(object$mask, asess)
-                maskarea(object$mask)
+            A <-  masksize(object$mask)
             s2 <- switch (tolower(object$details$distribution),
                           poisson  = sum (1/selected.a^2),
                           binomial = sum (( 1 - selected.a / A) / selected.a^2))
-            CLg  <- CLgradient (object, selection, asess, clust=clust)
+            CLg  <- CLgradient (object, selection, asess)
             varDn <- CLg %*% object$beta.vcv %*% CLg
             list(SE=sqrt(s2 + varDn), s2=s2, varDn=varDn)
         }
         se.deriveesa <- function (selection, object, asess) {
-            CLesa  <- esagradient (object, selection, asess, clust=clust)
+            CLesa  <- esagradient (object, selection, asess)
             sqrt(CLesa %*% object$beta.vcv %*% CLesa)
         }
         weighted.mean <- function (a) {
@@ -231,7 +207,7 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
             derivedmean <- derivedSE <- varcomp1 <- varcomp2 <- c(NA, NA)
             if (length(selection) > 0) 
             {
-                selected.a <- esa(object, sessnum)[selection]
+                selected.a <- esa(object, sessnum, ncores=2)[selection]
                 derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
                 if (se.esa) derivedSE[1] <- se.deriveesa(selection, object, sessnum)
                 if (se.D) {
@@ -243,15 +219,11 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
             }
             else {
                 ## 2018-12-19 allow n = 0
-                selected.a <- esa(object, sessnum)[1]
+                selected.a <- esa(object, sessnum, ncores = 2)[1]
                 derivedmean <- c(weighted.mean(selected.a), 0 )
                 if (se.esa) derivedSE[1] <- se.deriveesa(1, object, sessnum)
             }
-            A <-  if (inherits(mask, 'linearmask'))
-                masklength(mask)
-            else
-                maskarea(mask)
-            
+            A <-  masksize(mask, sessnum)  ## area or length
             temp <- data.frame (
                 row.names = c('esa','D'),
                 estimate = derivedmean + c(0,NT/A),  ## NT in 'telemetry' below
@@ -282,14 +254,7 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
         
         
         ## mainline
-        if (ncores > 1) {
-            clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-            clusterEvalQ(clust, requireNamespace('secr'))
-        }
-        else {
-            clust <- NULL
-        }
-        
+
         if (is.null(sessnum)) {
             capthist <- object$capthist
             mask <- object$mask
@@ -349,9 +314,6 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
                     out <- getderived(numeric(0), capthist, mask, NT)
                 }
             }
-        }
-        if (ncores>1) {
-            stopCluster(clust)
         }
         out
     }

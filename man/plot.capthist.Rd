@@ -154,17 +154,13 @@ temp <- plot(capt, title = "Individuals per cluster",
 ## add legend; click on map to place top left corner
 legend (locator(1), pch = 21, pt.bg = temp$colour,
     pt.cex = 1.3, legend = temp$legend, cex = 0.8)
-}
 
-\dontrun{
 ## try varying individual colours - requires RColorBrewer
 library(RColorBrewer)
 plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = T,
     bg = "black", cappar = list(cex = 2), border = 10, rad = 2,
     gridlines=F)
-}
 
-\dontrun{
 ## generate telemetry data
 te <- make.telemetry()
 tr <- make.grid(detector = "proximity")
@@ -175,10 +171,13 @@ teCH <- sim.capthist(te, popn = tepop, renumber=FALSE, detectfn = "HHN",
 plot(teCH, type = 'telemetry', tracks = TRUE)
 
 ## simple "centres" example
-CH <- sim.capthist(make.poly(), nocc = 20, detectpar = list(g0 = 1, sigma = 10))
+## polygon data require 'hazard' detection function 14:19
+CH <- sim.capthist(make.poly(), nocc = 20, detectfn = 'HHN', 
+    detectpar = list(lambda0 = 1, sigma = 10))
 plot(CH, cappar = list(col = 'orange'), varycol = FALSE, border = 10)
 plot(CH, type = 'centres', add = TRUE, rad = 0)
 }
+
 }
 
 \keyword{ hplot }

@@ -7,10 +7,7 @@
 \alias{possumremovalarea}
 \alias{possummask}
 \alias{possum.model.0}
-\alias{possum.model.b}
 \alias{possum.model.Ds}
-% \alias{possum.model.h2}
-% \alias{possum.model.D}
 
 \title{ Brushtail Possum Trapping Dataset }
 
@@ -21,7 +18,16 @@ Island, New Zealand.
 
 }
 
-\usage{possum}
+\usage{
+
+possumCH
+possumarea
+possumremovalarea
+possummask
+possum.model.0
+possum.model.Ds
+
+}
 
 \details{
 
@@ -53,7 +59,7 @@ record in each pair was selected arbitrarily and discarded.
 
 The data are provided as a single-session \code{capthist} object
 `possumCH'.  `possummask' is a matching mask object - see Examples.
-Several fitted models are provided for illustration.
+Two fitted models are provided for illustration.
 
 The dataframe \code{possumarea} contains boundary coordinates of a
 habitat polygon that is used to clip \code{possummask} at the shore
@@ -75,10 +81,7 @@ another polygon, the nominal removal area of Efford et al. (2005 Fig. 1)
   possumarea \tab habitat perimeter \cr
   possumremovalarea \tab nominal boundary of removal region \cr
   possum.model.0 \tab fitted secr model -- null \cr
-  possum.model.b \tab fitted secr model -- trap response g0 \cr
   possum.model.Ds \tab fitted secr model -- distance to shore \cr
-%  possum.model.h2 \tab fitted secr model -- heterogeneity g0, sigma\cr
-%  possum.model.D \tab fitted secr model -- quadratic surface \cr
 }
 
 }
@@ -136,8 +139,8 @@ lines(possumarea)
 summary(possumCH)
 
 ## compare & average pre-fitted models
-AIC(possum.model.0, possum.model.b, possum.model.Ds)
-model.average(possum.model.0, possum.model.b, possum.model.Ds)
+AIC(possum.model.0, possum.model.Ds)
+model.average(possum.model.0, possum.model.Ds)
 
 \dontrun{
 
