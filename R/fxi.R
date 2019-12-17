@@ -44,7 +44,7 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     if (is.null(levels)) {
       temp <- sort(z, decreasing = T)
       cump <- cumsum(temp) / sum(temp)
-      levels <- approx (x = cump, y = temp, xout = p)$y
+      levels <- suppressWarnings(approx (x = cump, y = temp, xout = p)$y)
       labels <- p
     }
     else
@@ -287,23 +287,25 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   ## unmodelled beta parameters, if needed
   miscparm <- getmiscparm(object$details$miscparm, object$detectfn, object$beta, 
                           object$parindx, object$details$cutval)
+
+  gkhk <- makegk (data$dettype, object$detectfn, data$traps, data$mask, object$details, sessnum, NE, D, miscparm, Xrealparval)
   
-  distmat2 <- getuserdist(data$traps, data$mask, object$details$userdist, sessnum, 
-                          NE, D, miscparm)
-  gkhk <- makegkParallelcpp (as.integer(object$detectfn),
-                             as.integer(object$details$grain),
-                             as.matrix(Xrealparval),
-                             as.matrix(distmat2),
-                             as.double(miscparm))
-  
-  if (any(data$dettype==8)) {   ## capped
-    gkhk <- cappedgkhkcpp (
-      as.integer(nrow(Xrealparval)),
-      as.integer(nrow(data$traps)),
-      as.double(attr(data$mask, "area")),
-      as.double(D),
-      as.double(gkhk$gk), as.double(gkhk$hk))  
-  }
+  # distmat2 <- getuserdist(data$traps, data$mask, object$details$userdist, sessnum, 
+  #                         NE, D, miscparm)
+  # gkhk <- makegkPointcpp (as.integer(object$detectfn),
+  #                            as.integer(object$details$grain),
+  #                            as.matrix(Xrealparval),
+  #                            as.matrix(distmat2),
+  #                            as.double(miscparm))
+  # 
+  # if (any(data$dettype==8)) {   ## capped
+  #   gkhk <- cappedgkhkcpp (
+  #     as.integer(nrow(Xrealparval)),
+  #     as.integer(nrow(data$traps)),
+  #     as.double(attr(data$mask, "area")),
+  #     as.double(D),
+  #     as.double(gkhk$gk), as.double(gkhk$hk))  
+  # }
   
   haztemp <- gethazard (data$m, data$binomNcode, nrow(realparval), gkhk$hk, PIA, data$usge)
   prmat <- allhistfxi (data$m, Xrealparval, haztemp, gkhk, pimask, PIA, data$usge,
@@ -316,21 +318,24 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   }
   else {
     nX <- nrow(X)
-    distmatX2 <- getuserdist(data$traps, X, object$details$userdist, sessnum, 
-                             NE, D, miscparm)
-    gkhkX <- makegkParallelcpp (as.integer(object$detectfn),
-                                as.integer(object$details$grain),
-                                as.matrix(Xrealparval),
-                                as.matrix(distmatX2),
-                                as.double(miscparm))
-    if (any(data$dettype==8)) {   ## capped  Not checked 2019-09-08
-      gkhkX <- cappedgkhkcpp (
-        as.integer(nrow(Xrealparval)),
-        as.integer(nrow(data$traps)),
-        as.double(attr(data$mask, "area")),
-        as.double(D),
-        as.double(gkhkX$gk), as.double(gkhkX$hk))  
-    }
+    
+    gkhkX <- makegk (data$dettype, object$detectfn, data$traps, X, object$details, sessnum, NE, D, miscparm, Xrealparval)
+    
+    # distmatX2 <- getuserdist(data$traps, X, object$details$userdist, sessnum, 
+    #                          NE, D, miscparm)
+    # gkhkX <- makegkPointcpp (as.integer(object$detectfn),
+    #                             as.integer(object$details$grain),
+    #                             as.matrix(Xrealparval),
+    #                             as.matrix(distmatX2),
+    #                             as.double(miscparm))
+    # if (any(data$dettype==8)) {   ## capped  Not checked 2019-09-08
+    #   gkhkX <- cappedgkhkcpp (
+    #     as.integer(nrow(Xrealparval)),
+    #     as.integer(nrow(data$traps)),
+    #     as.double(attr(data$mask, "area")),
+    #     as.double(D),
+    #     as.double(gkhkX$gk), as.double(gkhkX$hk))  
+    # }
     
     haztempX <- gethazard (nX, data$binomNcode, nrow(realparval), gkhkX$hk, PIA, data$usge)
     prmatX <- allhistfxi (nX, Xrealparval, haztempX, gkhkX, piX, PIA, data$usge,

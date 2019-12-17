@@ -9,7 +9,6 @@ using namespace RcppParallel;
 //
 struct signalhistories : public Worker {
   // input data
-  int   x;
   int   mm;
   int   nc;
   int   detectfn;
@@ -22,7 +21,7 @@ struct signalhistories : public Worker {
   const RMatrix<double> gsbval;
   const RMatrix<double> dist2;
   const RMatrix<double> density;    // n x g
-  const RVector<int>    PIA;        // 1,n,s,k,x
+  const RVector<int>    PIA;        // 1,n,s,k,1   for given x
   const RVector<double> miscparm;
   const RMatrix<int>    mbool;      // appears cannot use RMatrix<bool>
   
@@ -35,7 +34,6 @@ struct signalhistories : public Worker {
   // Constructor to initialize an instance of Somehistories
   // The RMatrix class can be automatically converted to from the Rcpp matrix type
   signalhistories(
-    int x,
     int mm,
     int nc,
     int detectfn,
@@ -53,7 +51,7 @@ struct signalhistories : public Worker {
     const LogicalMatrix mbool,
     NumericVector output)
     :
-    x(x), mm(mm), nc(nc), detectfn(detectfn), grain(grain), 
+    mm(mm), nc(nc), detectfn(detectfn), grain(grain), 
     binomN(binomN), w(w), signal(signal), group(group), gk(gk), gsbval(gsbval), 
     dist2(dist2), density(density), PIA(PIA), miscparm(miscparm),
     mbool(mbool), output(output) {
@@ -121,15 +119,14 @@ struct signalhistories : public Worker {
     else (stop("unknown or invalid detection function"));
   }
   void prwsignal (const int n, std::vector<double> &pm) {
-    int c, gi, k, m, s, wi, wxi, count;
+    int c, gi, k, m, s, w3, count;
     double sig, mu, sdS;
     for (s=0; s < ss; s++) {   // over occasions
       for (k=0; k<kk; k++) {
-        wxi = i4(n, s, k, x, nc, ss, kk);
-        c = PIA[wxi] - 1;
+          w3 = i3(n, s, k, nc, ss);
+          c = PIA[w3] - 1;
         if (c >= 0) {    // ignore unset traps
-          wi = i3(n, s, k, nc, ss);
-          count = abs(w[wi]);
+          count = abs(w[w3]);
           if (count == 0) {   // not detected at this mic
             for (m=0; m<mm; m++) {
               if (mbool(n,m)) {
@@ -188,7 +185,6 @@ struct signalhistories : public Worker {
 
 // [[Rcpp::export]]
 NumericVector signalhistoriescpp (
-    const int x,
     const int mm,
     const int nc,
     const int detectfn,
@@ -208,7 +204,7 @@ NumericVector signalhistoriescpp (
   NumericVector output(nc);
   
   // Construct and initialise
-  signalhistories somehist (x, mm, nc, detectfn, grain, binomN, w, signal, 
+  signalhistories somehist (mm, nc, detectfn, grain, binomN, w, signal, 
                             group, gk, gsbval, dist2, density, PIA, miscparm, mbool, 
                             output);
   if (grain>0) {

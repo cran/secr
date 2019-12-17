@@ -130,11 +130,11 @@ struct Hckm : public Worker {
 };
 
 // [[Rcpp::export]]
-List makegkParallelcpp (const int detectfn, 
-                        const int grain,
-                        const NumericMatrix& gsbval, 
-                        const NumericMatrix& dist2,
-                        const NumericVector& miscparm
+List makegkPointcpp (const int detectfn, 
+                     const int grain,
+                     const NumericMatrix& gsbval, 
+                     const NumericMatrix& dist2,
+                     const NumericVector& miscparm
 ) 
 {
   NumericVector hk(gsbval.nrow() * dist2.size()); 

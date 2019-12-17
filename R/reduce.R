@@ -496,8 +496,12 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         ## 2018-05-12 faster...
         ## 2018-06-23 Bug in 3.1.6 because newocc selects non-existent columns
         ## 2018-06-23 fix by enclosing df$newocc in as.character()
-        i <- cbind(as.character(df$newID), as.character(df$newocc), as.character(df$trap))
-        tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
+        
+        ## 2019-11-29 bug fix for count
+        if (outputdetector != 'count') {
+            i <- cbind(as.character(df$newID), as.character(df$newocc), as.character(df$trap))
+            tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
+        }
 
         ################################
         ## general attributes

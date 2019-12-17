@@ -47,6 +47,10 @@ AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion = c(
                        as.character(match.call(expand.dots=FALSE)$...) ))
     allargs <- secrlist(object, allargs)
     names(allargs) <- modelnames
+    ## 2019-11-29
+    if (!all(AICcompatible(allargs))) {
+        warning ("models not compatible for AIC")
+    }
     AIC(allargs, sort=sort, k=k, dmax=dmax, criterion=criterion)
 }
 ############################################################################################
@@ -90,4 +94,41 @@ AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion 
     output
 }
 ############################################################################################
+############################################################################################
 
+
+AICcompatible.secrlist <- function(object, ...) {
+    allargs <- list(...)
+    if (length(allargs)>0) {
+        allargs <- secrlist(object, allargs)
+    }
+    else {
+        allargs <- object
+    }
+    stopifnot(inherits(allargs, "secrlist"))
+    if (length(allargs)==1) {
+        dataOK <- groupsOK <- CLOK <- hcovOK <- binomNOK <- TRUE   
+    }
+    else {
+        dataOK <- sapply(allargs[-1], function(x) identical(x$capthist, allargs[[1]]$capthist))
+        groupsOK <- sapply(allargs[-1], function(x) identical(x$groups, allargs[[1]]$groups))
+        CLOK <- sapply(allargs[-1], function(x) identical(x$CL, allargs[[1]]$CL))
+        hcovOK <- sapply(allargs[-1], function(x) identical(x$hcov, allargs[[1]]$hcov))
+        binomNOK <- sapply(allargs[-1], function(x) identical(x$details$binomN, allargs[[1]]$details$binomN))
+    }
+    c(data=all(dataOK),  CL=all(CLOK), groups=all(groupsOK),hcov=all(hcovOK), binomN =all(binomNOK) ) 
+}
+############################################################################################
+
+AICcompatible.secr <- function(object, ...) {
+    allargs <- list(...)
+    if (length(allargs)>0) {
+        allargs <- secrlist(object, allargs)
+    }
+    else {
+        allargs <- secrlist(object)
+    }
+    stopifnot(inherits(allargs, "secrlist"))
+    AICcompatible(allargs)
+}
+############################################################################################

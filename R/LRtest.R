@@ -14,10 +14,15 @@ LR.test <- function (model1, model2) {
         stop ("no logLik method for model")
     if (any(class(model1) != class(model2)))
         stop ("models must have same class")
+    ## 2019-11-29
+    if (inherits(model1, "secr") && !all(AICcompatible(model1, model2))) {
+        stop ("models not compatible for LR.test")
+    }
+    
     statistic <- as.numeric(2 * abs(logLik(model1) - logLik(model2)))
     if (length(statistic) != 1)
         stop ("problem with 'model1' or 'model2'")
-    ## parameter <- abs(length(model1$fit$par) - length(model2$fit$par))
+    
     parameter <- abs(attr(logLik(model1), "df") -  attr(logLik(model2), "df"))
     p.value <- 1 - pchisq(statistic, parameter)
     names(statistic) <- 'X-square'

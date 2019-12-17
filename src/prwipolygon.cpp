@@ -8,7 +8,6 @@ using namespace RcppParallel;
 // 2019-08-19
 struct polygonhistories : public Worker {
   // input data
-  const int             x;
   const int             nc;
   const int             detectfn;
   const int             grain;
@@ -40,7 +39,6 @@ struct polygonhistories : public Worker {
   // Constructor to initialize an instance of Somehistories
   // The RMatrix class can be automatically converted to from the Rcpp matrix type
   polygonhistories(
-    const int           x,
     const int           nc,
     const int           detectfn,
     const int           grain,
@@ -65,7 +63,7 @@ struct polygonhistories : public Worker {
     
     NumericVector output)
     :
-    x(x), nc(nc), detectfn(detectfn), grain(grain), minp(minp), 
+    nc(nc), detectfn(detectfn), grain(grain), minp(minp), 
     binomN(binomN), w(w), xy(xy), start(start), group(group), hk(hk), H(H), gsbval(gsbval), 
     pID(pID), mask(mask), density(density), PIA(PIA), Tsk(Tsk),  h(h), hindex(hindex), mbool(mbool),
     output(output) {
@@ -130,12 +128,12 @@ struct polygonhistories : public Worker {
       {
           int s;   // index of occasion  0 <= s < ss  
           int k;   // index of part 0 <= k < nk  
-          int c, m, wxi, wi, gi;
+          int c, m, w2, w3, gi;
           double hint, Tski, Htemp;
           bool dead = false;
           for (s = 0; s < ss; s++) {   // over occasions
-              wi = s * nc + n;
-              k = w[wi]; 
+              w2 = s * nc + n;
+              k = w[w2]; 
               dead = k < 0;  
               k = abs(k)-1;         // detector number 0..nk-1; k = -1 if not caught 
               // Not found at any detector on occasion s 
@@ -153,8 +151,8 @@ struct polygonhistories : public Worker {
               }
               // detected at detector k on occasion s
               else {
-                  wxi = i4(n, s, k, x, nc, ss, nk);   
-                  c = PIA[wxi] - 1;
+                  w3 = i3(n, s, k, nc, ss);   
+                  c = PIA[w3] - 1;
                   if (c >= 0) {    // ignore unused detectors 
                       Tski = Tsk(k,s);
                       for (m=0; m<mm; m++) {
@@ -162,13 +160,13 @@ struct polygonhistories : public Worker {
                               gi  = i3(c,k,m,cc,nk);
                               Htemp = h(m, hindex(n,s));
                               pm[m] *=  Tski * (1-exp(-Htemp)) *  hk[gi] / Htemp;
-                              if ((grain==0) && (m==1000)) Rprintf("pm[m]  %10.7e \n", pm[m]);
+                              // if ((grain==0) && (m==1000)) Rprintf("pm[m]  %10.7e \n", pm[m]);
                               // for each detection, pdf(xy) | detected 
                               if (pm[m] > minp) {               // avoid underflow 
                                   // retrieve hint = integral2D(zfn(x) over k)) 
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
-                                  pm[m] *= zcpp(start[i3(n,s,k,nc,ss)], m, c, gsbval, xy, mask) / hint;
-                                  if ((grain==0) & (m==1000)) Rprintf("n %4d j %4d pm[m]  %10.7e hint %10.7e with zcpp\n", n, start[i3(n,s,k,nc,ss)], pm[m], hint);
+                                  pm[m] *= zcpp(start[w3], m, c, gsbval, xy, mask) / hint;
+                                  // if ((grain==0) & (m==1000)) Rprintf("n %4d j %4d pm[m]  %10.7e hint %10.7e with zcpp\n", n, start[i3(n,s,k,nc,ss)], pm[m], hint);
                               }
                           }
                           else {
@@ -190,7 +188,7 @@ struct polygonhistories : public Worker {
           int s;   // index of occasion  0 <= s < ss  
           int k;   // index of part 0 <= k < nk  
           int j;   // index of xy record 
-          int c, m, wxi, wi, gi;
+          int c, m, w3, gi;
           long count;
           bool dead = false;
           double hint;
@@ -199,12 +197,11 @@ struct polygonhistories : public Worker {
           for (s=0; s<ss; s++) {  // over occasions
               if (binomN[s] < 0) stop ("negative binomN < 0 not allowed in C++ fn prwpolygon");
               for (k=0; k<nk; k++) {   // over polygons
-                  wi = i3(n,s,k,nc,ss);
-                  count = w[wi];
+                  w3 = i3(n,s,k,nc,ss);
+                  count = w[w3];
                   dead = count<0;
                   count = abs(count);
-                  wxi = i4(n,s,k,x,nc,ss,nk);
-                  c = PIA[wxi] - 1;
+                  c = PIA[w3] - 1;
                   if (c >= 0) {                          // skip if this polygon not used 
                       Tski = Tsk(k,s);
                       for (m=0; m<mm; m++) {
@@ -216,7 +213,7 @@ struct polygonhistories : public Worker {
                               if ((pm[m] > minp) && (count>0)) {       // avoid underflow
                                   // retrieve hint = integral2D(zfn(x) over k)) 
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
-                                  for (j=start[wi]; j < start[wi]+count; j++) {
+                                  for (j=start[w3]; j < start[w3]+count; j++) {
                                       pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
                                   }
                               }
@@ -240,7 +237,7 @@ struct polygonhistories : public Worker {
           int s;   // index of occasion  0 <= s < ss  
           int k;   // index of part 0 <= k < nk  
           int j;   // index of xy record 
-          int c, m, wxi, wi, gi;
+          int c, m, w3, gi;
           long count;
           bool dead = false;
           double hint;
@@ -249,12 +246,11 @@ struct polygonhistories : public Worker {
           for (s=0; s<ss; s++) {  // over occasions
               if (binomN[s] < 0) stop ("negative binomN < 0 not allowed in C++ fn prwitransect");
               for (k=0; k<nk; k++) {   // over transects
-                  wi = i3(n,s,k,nc,ss);
-                  count = w[wi];
+                  w3 = i3(n,s,k,nc,ss);
+                  count = w[w3];
                   dead = count<0;
                   count = abs(count);
-                  wxi = i4(n,s,k,x,nc,ss,nk);
-                  c = PIA[wxi] - 1;
+                  c = PIA[w3] - 1;
                   if (c >= 0) {                          // skip if this transect not used 
                       Tski = Tsk(k,s);
                       for (m=0; m<mm; m++) {
@@ -266,7 +262,7 @@ struct polygonhistories : public Worker {
                               if ((pm[m] > minp) && (count>0)) {       // avoid underflow
                                   // retrieve hint = integral2D(zfn(x) over k)) 
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
-                                  for (j=start[wi]; j < start[wi]+count; j++) {
+                                  for (j=start[w3]; j < start[w3]+count; j++) {
                                       pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
                                   }
                               }
@@ -305,7 +301,6 @@ struct polygonhistories : public Worker {
 
 // [[Rcpp::export]]
 NumericVector polygonhistoriescpp (
-    const int           x,
     const int           nc,
     const int           detectfn,
     const int           grain,
@@ -331,7 +326,7 @@ NumericVector polygonhistoriescpp (
   NumericVector output(nc);
   
   // Construct and initialise
-  polygonhistories somehist (x, nc, detectfn, grain, minp, binomN, w, xy, 
+  polygonhistories somehist (nc, detectfn, grain, minp, binomN, w, xy, 
                              start, group, hk, H, gsbval, pID, mask, density, PIA, Tsk, h, hindex, mbool,
                              output);
   

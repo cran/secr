@@ -1,13 +1,14 @@
-#include <Rcpp.h>
 #include "secr.h"     
-
 using namespace std;
 using namespace Rcpp;
 
 //==============================================================================
 
 // 'naive' functions are used to estimate auto initial values
-// these use only the halfnormal detection function 4/5/08
+
+// 2019-12-08 naivecap3cpp is new, simpler function for expected number of 
+//            detections per detected animal. It is based on the hazard formulae 
+//            Efford & Boulanger 2019.
 
 // [[Rcpp::export]]
 double naivedcpp (
@@ -72,84 +73,54 @@ double naivedcpp (
 //==============================================================================
 
 // [[Rcpp::export]]
-double naivecap2cpp (
-    const int    detect,        // scalar code 0 = multicatch, 1 = proximity, 2 = count
-    const int    binomN,
-    const double g0,            // Parameter : detection magnitude 
-    const double sigma,         // Parameter : detection scale 
-    int    ss,            // number of occasions
-    const IntegerVector &wt,    // integer trap weights 
-    const NumericMatrix &traps, // x,y locations of traps (first x, then y)  
-    const NumericMatrix &mask,  // x,y locations of mask points (first x, then y) 
-    const int    fn                   
+double naivecap3cpp (
+        const int    detect,        // scalar code 0 = multicatch, 1 = proximity, 2 = count
+        const double lambda0,       // Parameter : detection magnitude 
+        const double sigma,         // Parameter : detection scale 
+        const NumericMatrix &Tsk,    // trap usage k x s (applied directly to cumulative hazard)
+        const NumericMatrix &traps, // x,y locations of traps (first x, then y)  
+        const NumericMatrix &mask,  // x,y locations of mask points (first x, then y) 
+        const int    fn             // only hazard halfnormal ()14) is supported at present      
 )
 {
-  int    kk;      // number of traps
-  int    mm;      // number of mask points
-  kk = traps.nrow();
-  mm = mask.nrow();
-  
-  double product;
-  double d2val;
-  double pk;
-  int m,k;
-  double nsum = 0;
-  double psum = 0;
-  int varying = 0;
-  
-  if (fn != 0)
-    stop ("invalid detection function in naivecap2cpp");
-  
-  if (detect==2 && binomN>1)
-      ss = binomN;
-  
-  if (!varying) {
-    for (m=0; m<mm; m++)
-    {
-      product = 1.0;
-      for (k=0; k<kk; k++)
-      {
-        d2val = d2cpp(k, m, traps, mask);
-        pk = g0 * expmin(-d2val / 2 / sigma / sigma);
-        product *= (1 - pk); 
-        if (detect >= 1) nsum += pk;
-      }
-      if (detect == 0) nsum += (1 - product);
-      psum += 1 - pow(product, ss);
-    }
-    if (psum<=0)
-      return(0);    
-    else
-      return(ss * nsum / psum);
-  }
-  else {
+    int kk = traps.nrow();  // number of traps
+    int mm = mask.nrow();   // number of mask points
+    int ss = Tsk.ncol();    // number of occasions
     
-    // abandon multicatch for now as requires more complex allowance for trap competition 
-    // for multicatch need to accumulate Pr(caught) within each occasion, and 
-    //   need entire usage for this 
+    double ls;
+    double Lambdas = 0;
+    double Lambda = 0;
+    double captures = 0;
+    double animals = 0;
+    std::vector<double> h(kk,0);
     
-    for (m=0; m<mm; m++) {
-      pk = 0.0;
-      product = 1.0;
-      for (k=0; k<kk; k++)
-      {
-        if (wt[k] > 0) {
-          d2val = d2cpp(k, m, traps, mask);
-          pk = g0 * expmin(-d2val / 2 / sigma / sigma);
-          nsum += wt[k] * pk;  // wt[k] opportunities, each probability pk
-          if (wt[k] > 1)
-            product *= pow(1 - pk, wt[k]); 
-          else
-            product *= (1 - pk); 
+    if (fn != 14)
+        stop ("invalid detection function in naivecap3cpp");
+    if (detect>2) 
+        stop ("unrecognised detector in naivecap3cpp");
+    
+    for (int m=0; m<mm; m++) {
+        for (int k=0; k<kk; k++) {
+            h[k] = lambda0 * exp(-d2cpp(k, m, traps, mask) / 2 / sigma / sigma);
         }
-      }
-      psum += 1 - product;   // Pr capt animal at m over all traps & times 
+        Lambda = 0;
+        for (int s=0; s<ss; s++) {
+            Lambdas = 0;
+            for (int k=0; k<kk; k++) {
+                ls = h[k] * Tsk(k,s);
+                Lambdas += ls;
+                if (detect==1) captures += 1 - exp(-ls);
+            }
+            if (detect==0) captures += 1 - exp(-Lambdas);
+            else if (detect==2) captures += Lambdas;    // assuming Poisson counts
+            Lambda += Lambdas; 
+        }
+        animals += 1 - exp(-Lambda);
     }
-    if (psum<=0)
-      return(0);    // failed 
+    if (animals<=0)
+        return(0);    
     else
-      return(nsum / psum);
-  }
+        return(captures/ animals);
 }
 
 /*==============================================================================*/

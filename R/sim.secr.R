@@ -358,7 +358,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design0 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
                                    object$groups, object$hcov, object$dframe, 
-                                   naive = TRUE,
+                                   naive = TRUE, CL = object$CL,
                                    ignoreusage = object$details$ignoreusage, 
                                    contrasts = object$details$contrasts)
     }
@@ -393,7 +393,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             dummyCH <- dummycapthist(object$capthist, popnlist, fillvalue = 1)
         design1 <- secr.design.MS (dummyCH, object$model, object$timecov, object$sessioncov,
             object$groups, object$hcov, object$dframe, ignoreusage = object$details$ignoreusage, 
-            contrasts = object$details$contrasts)
+            contrasts = object$details$contrasts, CL = object$CL)
         realparval1 <- makerealparameters (design1, beta, object$parindx, object$link,
             object$fixed)  # caught before
     }
@@ -521,12 +521,12 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                 distmat2 <- getdistmat2 (session.traps, session.animals, object$details$userdist)
             }
             ## precompute gk, hk for point detectors
-            gkhk0 <- makegkParallelcpp (as.integer(object$detectfn),
+            gkhk0 <- makegkPointcpp (as.integer(object$detectfn),
                                         as.integer(object$details$grain),
                                         as.matrix(Xrealparval0),
                                         as.matrix(distmat2),
                                         as.double(object$details$miscparm))
-            gkhk <- makegkParallelcpp (as.integer(object$detectfn),
+            gkhk <- makegkPointcpp (as.integer(object$detectfn),
                                        as.integer(object$details$grain),
                                        as.matrix(Xrealparval1),
                                        as.matrix(distmat2),

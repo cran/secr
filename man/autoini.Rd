@@ -10,7 +10,8 @@
 
 \usage{
 autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001, 
-    binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE, ncores = NULL)
+    binomN = 1, adjustg0 = TRUE, adjustsigma = 1.2, ignoreusage = FALSE, 
+    ncores = NULL)
 }
 
 \arguments{
@@ -31,6 +32,8 @@ autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 
 \item{adjustg0}{logical for whether to adjust g0 for usage (effort) and
   binomN }
+
+\item{adjustsigma}{numeric scalar applied to RPSV(capthist, CC = TRUE) }
 
 \item{ignoreusage}{logical for whether to discard usage information from
 \code{traps(capthist)}}
@@ -54,13 +57,15 @@ other options in e.g. \link{detectfn} and \code{\link{sim.capthist}}).
 \code{autoini} implements a modified version of the algorithm proposed
 by Efford et al. (2004). In outline, the algorithm is
 \enumerate{
-\item Find value of sigma that predicts the 2-D dispersion of individual locations (see \code{\link{RPSV}})
+\item Find value of sigma that predicts the 2-D dispersion of individual locations (see \code{\link{RPSV}}). 
 \item Find value of g0 that, with sigma, predicts the observed mean number of captures per individual (by algorithm of Efford et al. (2009, Appendix 2))
 \item Compute the effective sampling area from g0, sigma, using thinned mask (see \code{\link{esa}})
 \item Compute D = \eqn{n}/esa(g0, sigma), where \eqn{n} is the number of individuals detected
 }
 
 Here `find' means solve numerically for zero difference between the observed and predicted values, using \code{\link{uniroot}}.
+
+Halfnormal sigma is estimated with \code{RPSV(capthist, CC = TRUE)}. The factor \code{adjustsigma} is applied as a crude correction for truncation of movements at the edge of the detector array.
 
 If \code{RPSV} cannot be computed the algorithm tries to use observed
 mean recapture distance \eqn{\bar{d}}{d-bar}. Computation of

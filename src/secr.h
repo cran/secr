@@ -1,7 +1,11 @@
+// include guard
+#ifndef __secr_h_INCLUDED__   // if secr.h hasn't been included yet...
+#define __secr_h_INCLUDED__   // #define this so the compiler knows it has been included
+
 #include <Rcpp.h>
+#include <RcppParallel.h>
 using namespace Rcpp;
 
-#include <math.h>
 #include <R.h>       // random numbers 
 #include <Rmath.h>   // R math functions e.g. dbinom, dpois 
 
@@ -33,11 +37,18 @@ int i4 (int i, int j, int k, int l, int ii, int jj, int kk);
 //------------------------------------------------------
 // detectfn.cpp 
 //------------------------------------------------------
-typedef double (*fnptr)(const NumericVector, const double);
+typedef double (*fnptr)(const Rcpp::NumericVector, const double);
+typedef double (*fnptrC)(const std::vector<double>, const double);
 fnptr getgfnr (int fn);
 fnptr getzfnr (int fn);
-double pfn (const int fn, const double d2val, const NumericVector &gsb,
-    const NumericVector &miscparm, const double w2);
+fnptrC getzfnrC (int fn);
+double pfn (
+        const int fn, 
+        const double d2val, 
+        const Rcpp::NumericVector &gsb,
+        const Rcpp::NumericVector &miscparm, 
+        const double w2);
+
 int par3 (int fn);
 
 //--------------------------------------------------------------------------
@@ -59,8 +70,8 @@ double mufn (
     const int m,
     const double b0,
     const double b1,
-    const NumericMatrix &A1,
-    const NumericMatrix &A2,
+    const Rcpp::NumericMatrix &A1,
+    const Rcpp::NumericMatrix &A2,
     const int spherical);
 
 //---------------------------------------------------------------------
@@ -70,7 +81,7 @@ double mufnL (
     const int m,
     const double b0,
     const double b1,
-    const NumericMatrix &dist2,
+    const Rcpp::NumericMatrix &dist2,
     const int spherical);
 
 //---------------------------------------------------------------------
@@ -97,6 +108,13 @@ rpoint getxy(
     const rpoint line[], 
     const int kk, 
     const double offset);
+
+rpoint getxycpp(
+        const double l, 
+        const std::vector<double> &cumd, 
+        const RcppParallel::RMatrix<double> &line, 
+        const int kk, 
+        const double offset);
 //---------------------------------------------------------------------
 
 double randomtime (double p);
@@ -109,14 +127,14 @@ void probsort (
 //---------------------------------------------------------------------
 
 double gr (
-    const int fn, NumericVector, 
+    const int fn, Rcpp::NumericVector, 
     const rpoint xy, 
     const rpoint animal);
 //---------------------------------------------------------------------
 
 // random point from 2-D radial distribution specified by g function 
 NumericVector gxy (const int fn, 
-    const NumericVector par, 
+    const Rcpp::NumericVector par, 
     const double w);
   
 //---------------------------------------------------------------------
@@ -124,7 +142,7 @@ NumericVector gxy (const int fn,
 double hazard (double pp);
 
 void getdetspec (
-    const IntegerVector &detect, 
+    const Rcpp::IntegerVector &detect, 
     const int fn, 
     const int nc,  
     const int nc1, 
@@ -134,8 +152,8 @@ void getdetspec (
     const int nk, 
     const int ss, 
     const int mm, 
-    const IntegerVector &PIA, 
-    const NumericVector &miscparm, 
+    const Rcpp::IntegerVector &PIA, 
+    const Rcpp::NumericVector &miscparm, 
     const std::vector<int> &start, 
     std::vector<double> &detspec);
 
@@ -144,54 +162,20 @@ void geth2 (
     const int cc, 
     const int nmix, 
     const int mm, 
-    const IntegerVector &PIA, 
+    const Rcpp::IntegerVector &PIA, 
     const std::vector<double> &hk, 
-    const NumericMatrix &Tsk, 
+    const Rcpp::NumericMatrix &Tsk, 
     std::vector<double> &h, 
     std::vector<int> &hindex);
 
-int getstart(
-    const IntegerVector &detect, 
-    std::vector<int> &start, 
-    const int nc1, 
-    const int nc, 
-    const int ss, 
-    const int nk, 
-    const IntegerVector &w);
-
-//---------------------------------------------------------------------
-// polygon.cpp
-//---------------------------------------------------------------------
-
-double integral2Dcpp  (
-    const int fn, 
-    const int m, 
-    const int c, 
-    const NumericMatrix &gsbval, 
-    const NumericMatrix &traps,
-    const NumericMatrix &mask, 
-    const int n1, 
-    const int n2, 
-    double ex[]);
-
-double integral1Dcpp
-  (const int fn, 
-   const int m, 
-   const int c, 
-   const NumericMatrix &gsbval, 
-   const NumericMatrix &traps,
-   const NumericMatrix &mask, 
-   const int n1, 
-   const int n2, 
-   double ex[]);
-
-double hintegralcpp (
-    const int fn, 
-    const NumericVector &gsb);
-
-double hintegral1cpp (
-    const int fn, 
-    const NumericVector &gsb);
+// int getstart(
+//     const Rcpp::IntegerVector &detect, 
+//     std::vector<int> &start, 
+//     const int nc1, 
+//     const int nc, 
+//     const int ss, 
+//     const int nk, 
+//     const Rcpp::IntegerVector &w);
 
 //---------------------------------------------------------------------
 // 
@@ -235,10 +219,10 @@ bool anyb (const NumericMatrix &gsbval, const NumericMatrix &gsb0val);
 
 // miscellaneous functions
 
-std::vector<int> fillcumkcpp(
-    const IntegerVector detect, 
-    const int ss, 
-    const IntegerVector kk);
+// std::vector<int> fillcumkcpp(
+//     const IntegerVector detect, 
+//     const int ss, 
+//     const IntegerVector kk);
   
 int nval(int detect0, int nc1, int cc, int ss, int nk);
 
@@ -249,11 +233,11 @@ NumericMatrix makedist2cpp (
 void squaredistcpp (NumericMatrix &dist2);
 
 bool insidecpp (
-    const NumericVector &xy,
-    const int    n1,
-    const int    n2,
-    const NumericMatrix &poly);
-  
+        const NumericVector &xy,
+        const int    n1,
+        const int    n2,
+        const Rcpp::NumericMatrix &poly);
+
 void fillngcpp(const int nc, 
                const int gg, 
                const IntegerVector &grp, 
@@ -274,3 +258,4 @@ void fy(double *x, int n, void *ex);
 void fx(double *x, int n, void *ex);
 void fx1 (double *x, int n, void *ex);
     
+#endif  // __secr_h_INCLUDED__

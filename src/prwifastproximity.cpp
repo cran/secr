@@ -19,6 +19,7 @@ struct fasthistories : public Worker {
     const int   cc; // number of parameter combinations
     const int   grain;
     const int   binomN;
+    const bool  indiv;
     const RMatrix<int>    w;          // n x k
     const RMatrix<int>    ki;         // n x k
     const RVector<double> gk; 
@@ -45,6 +46,7 @@ struct fasthistories : public Worker {
         const int cc,
         const int grain,                    
         const int binomN,
+        const bool indiv,
         const IntegerMatrix w,
         const IntegerMatrix ki,
         const NumericVector gk, 
@@ -55,32 +57,52 @@ struct fasthistories : public Worker {
         const LogicalMatrix mbool,
         NumericVector pm0,
         NumericMatrix pm0k,
-        // double prw1,
         NumericVector output)    
         : 
         mm(mm), nc(nc), cc(cc), grain(grain), 
-        binomN(binomN),
+        binomN(binomN), indiv(indiv),
         w(w), ki(ki), gk(gk), hk(hk), density(density), PIA(PIA), Tsk(Tsk), mbool(mbool),
         pm0(pm0), pm0k(pm0k), output(output) {
-        
         kk = Tsk.size();
-        pr0(pm0, pm0k); //, prw1);
+        pr0(0, pm0, pm0k);
     }
     //==============================================================================
     
-    void pr0 (NumericVector &pm0, NumericMatrix &pm0k) { 
-        int c, k, m, wxi;
+    void pr0 (const int n, NumericVector &pm0, NumericMatrix &pm0k) { 
+        int c, k, m, w3;
         for (m=0; m<mm; m++) pm0[m] = 1.0;
         for (k=0; k<kk; k++) {
-            wxi =  i3(0, 0, 0, nc, 1);
-            c = PIA[wxi] - 1;
+            // w3 =  i3(0, 0, 0, nc, 1);
+            w3 =  i3(n, 0, k, nc, 1);    // allow individual or trap covariate 2019-12-06
+            c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unset traps
                 for (m=0; m<mm; m++) {
-                  if (binomN==0)
-                    pm0k(k,m) = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
-                  else
-                    pm0k(k,m) = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
-                  pm0[m] *= pm0k(k,m);
+                    if (binomN==0)
+                        pm0k(k,m) = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
+                    else
+                        pm0k(k,m) = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
+                    pm0[m] *= pm0k(k,m);
+                }
+            }
+        }
+    }
+    //==============================================================================
+    
+    // ugly repeat of function definition 2019-12-06
+    void pr0R (const int n, RVector<double> &pm0, RMatrix<double> &pm0k) { 
+        int c, k, m, w3;
+        for (m=0; m<mm; m++) pm0[m] = 1.0;
+        for (k=0; k<kk; k++) {
+            // w3 =  i3(0, 0, 0, nc, 1);
+            w3 =  i3(n, 0, k, nc, 1);    // allow individual or trap covariate 2019-12-06
+            c = PIA[w3] - 1;
+            if (c >= 0) {    // ignore unset traps
+                for (m=0; m<mm; m++) {
+                    if (binomN==0)
+                        pm0k(k,m) = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
+                    else
+                        pm0k(k,m) = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
+                    pm0[m] *= pm0k(k,m);
                 }
             }
         }
@@ -88,13 +110,16 @@ struct fasthistories : public Worker {
     //==============================================================================
     
     void prwL (const int n, std::vector<double> &pm) {
-        int c, i, k, m, wxi;
+        int c, i, k, m, w3;
+        if (n>0 && indiv) {
+            pr0R(n, pm0, pm0k); // update for this animal - expt 2019-12-06
+        }
         for (int m=0; m<mm; m++) pm[m] = pm0[m];  // assumed missed at all sites...
         for (i=0; i<kk; i++) {
             k = ki(n,i);
             if (k<0) break;    // no more sites
-            wxi =  i3(n, 0, k, nc, 1);
-            c = PIA[wxi] - 1;
+            w3 =  i3(n, 0, k, nc, 1);
+            c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unset traps
                 for (m=0; m<mm; m++) {
                   if (mbool(n,m)) {
@@ -117,7 +142,6 @@ struct fasthistories : public Worker {
     double onehistory (int n) {
         std::vector<double> pm(mm);
         prwL (n, pm);           
-            
         for (int m=0; m<mm; m++) {
             pm[m] *= density[m];
         }
@@ -142,6 +166,7 @@ NumericVector fasthistoriescpp (
         const int cc, 
         const int grain, 
         const int binomN,
+        const bool indiv,
         const IntegerMatrix w,
         const IntegerMatrix ki,
         const NumericVector gk, 
@@ -156,8 +181,8 @@ NumericVector fasthistoriescpp (
     NumericMatrix pm0k(Tsk.size(),mm);
 
     // Construct and initialise
-    fasthistories somehist (mm, nc, cc, grain, 
-                            binomN, w, ki, gk, hk,
+    fasthistories somehist (mm, nc, cc, grain, binomN, indiv,
+                            w, ki, gk, hk,
                             density, PIA, Tsk, mbool, pm0, pm0k, output); 
     
     if (grain>0) {

@@ -17,12 +17,14 @@ LR.test(model1, model2)
   The fitted models must be of a class for which there is a logLik
   method (e.g., `secr' or `lm'). Check with \code{methods("logLik")}.
   
+  The models must be nested (no check is performed - this is up to the
+  user), but either model1 or model2 may be the more general model.
+
+  The models must also be compatible by the criteria of \code{\link{AICcompatible}}. 
+
   The test statistic is twice the difference of the maximized
   likelihoods. It is compared to a chi-square distribution with df equal
   to the number of extra parameters in the more complex model. 
-
-  The models must be nested (no check is performed - this is up to the
-  user), but either model1 or model2 may be the more general model.
 
 }
 
@@ -35,7 +37,14 @@ LR.test(model1, model2)
   \item{data.name }{character string with names of models compared }
 }
 
-\seealso{ \code{\link{AIC.secr}}, \code{\link{score.test}}  }
+\seealso{ 
+
+\code{\link{AICcompatible}},
+\code{\link{AIC.secr}}, 
+\code{\link{score.test}}  
+
+}
+
 \examples{
 
 ## two pre-fitted models

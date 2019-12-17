@@ -1,8 +1,9 @@
-#include <Rcpp.h>
-using namespace Rcpp;
+// next two lines must be in order (RcppNumerical precedes secr.h)
+#include <RcppNumerical.h>
 #include "secr.h"
 
 using namespace std;
+using namespace Rcpp;
 
 double minimumexp = -100;
 
@@ -290,6 +291,44 @@ bool insidecpp (
 }
 //--------------------------------------------------------------------------
 
+bool insidecppC (
+        const Numer::Constvec &xy,
+        const int    &n1,
+        const int    &n2,
+        const RcppParallel::RMatrix<double> &poly)
+{
+    // Is point xy inside poly?
+    // Based on contribution on s-news list by Peter Perkins 23/7/96
+    // We assume poly is closed, and in col-major order (x's then y's)
+    
+    double theta = 0;
+    double cutoff = 1e-6;
+    int k;
+    int ns;
+    double N;
+    double d;
+    ns = n2 - n1 + 1;   // number of selected points 
+    std::vector<double> temp((ns+1) * 2);
+    
+    // get & translate to coords centered at each test point 
+    for (k=0; k < ns; k++)
+    {
+        temp[k]      = poly(k + n1,0) - xy[0];    // x 
+        temp[k + ns] = poly(k + n1,1) - xy[1];    // y 
+    }
+    
+    for (k=0; k < (ns-1); k++)
+    {
+        N = temp[k] * temp[k+1 + ns] - temp[k + ns] * temp[k+1];
+        d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];
+        if (fabs(d)>0) { N = N/fabs(d);  d = d/fabs(d); }
+        theta += std::atan2(N, d);
+    }
+    theta = fabs(theta);
+    return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is Rmath.h constant 
+}
+//--------------------------------------------------------------------------
+
 rpoint getxy(
         const double l, 
         double cumd[], 
@@ -312,6 +351,32 @@ rpoint getxy(
         pr = 0;
     xy.x = line[k-1].x + (line[k].x - line[k-1].x) * pr;
     xy.y = line[k-1].y + (line[k].y - line[k-1].y) * pr;
+    return(xy);
+}
+//--------------------------------------------------------------------------
+
+rpoint getxycpp(
+        const double l, 
+        const std::vector<double> &cumd, 
+        const RcppParallel::RMatrix<double> &line, 
+        const int kk, 
+        const double offset) {
+    // return the xy coordinates of point l metres along a transect 
+    // offset is the starting position for this transect 
+    int k;
+    double pr, d, d12;
+    rpoint xy;
+    for (k=offset+1; k<(offset+kk); k++) {
+        if (cumd[k]>l) break;
+    }
+    d = l - cumd[k-1];  // distance along leg 
+    d12 = cumd[k] - cumd[k-1];
+    if (d12>0)
+        pr = d / d12;
+    else
+        pr = 0;
+    xy.x = line(k-1,0) + (line(k,0) - line(k-1,0)) * pr;
+    xy.y = line(k-1,1) + (line(k,1) - line(k-1,1)) * pr;
     return(xy);
 }
 //--------------------------------------------------------------------------
@@ -833,34 +898,34 @@ bool anyb (const NumericMatrix &gsbval, const NumericMatrix &gsb0val) {
     return (!identical);
 }
 //==============================================================================
-
-std::vector<int> fillcumkcpp(
-        const IntegerVector detect, 
-        const int ss, 
-        const IntegerVector kk)
-{
-    // determine number of polygons if polygon detector 
-    // for polygon detectors, kk is vector ending in zero
-    // and first nk+1 elements of vector cumk are filled 
-    int i;
-    int nk = 0;
-    std::vector<int> cumk(maxnpoly);
-    if (anypolygon(detect) || anytransect(detect)) {
-        cumk[0] = 0;
-        for (i=0; i<maxnpoly; i++) {
-            if (kk[i]<=0) break;
-            cumk[i+1] = cumk[i] + kk[i];
-            nk++;
-        }
-        for (i=0; i<nk; i++)                // over parts 
-            if ((cumk[i+1] - cumk[i]) > maxvertices)
-                stop("exceeded maximum number of vertices %d per polygon", maxvertices);
-    }
-    else
-        nk = kk[0];  // return number of detectors unchanged 
-    cumk.resize(nk);
-    return (cumk);
-}
+// 
+// std::vector<int> fillcumkcpp(
+//         const IntegerVector detect, 
+//         const int ss, 
+//         const IntegerVector kk)
+// {
+//     // determine number of polygons if polygon detector 
+//     // for polygon detectors, kk is vector ending in zero
+//     // and first nk+1 elements of vector cumk are filled 
+//     int i;
+//     int nk = 0;
+//     std::vector<int> cumk(maxnpoly);
+//     if (anypolygon(detect) || anytransect(detect)) {
+//         cumk[0] = 0;
+//         for (i=0; i<maxnpoly; i++) {
+//             if (kk[i]<=0) break;
+//             cumk[i+1] = cumk[i] + kk[i];
+//             nk++;
+//         }
+//         for (i=0; i<nk; i++)                // over parts 
+//             if ((cumk[i+1] - cumk[i]) > maxvertices)
+//                 stop("exceeded maximum number of vertices %d per polygon", maxvertices);
+//     }
+//     else
+//         nk = kk[0];  // return number of detectors unchanged 
+//     cumk.resize(nk);
+//     return (cumk);
+// }
 
 //--------------------------------------------------------------------
 
@@ -999,52 +1064,52 @@ void squaredistcpp (
 
 //--------------------------------------------------------------------------
 
-int getstart(
-        const IntegerVector &detect, 
-        std::vector<int> &start, 
-        const int nc1, 
-        const int nc, 
-        const int ss, 
-        const int nk, 
-        const IntegerVector &w) {
-    
-    //------------------------------------------------------------
-    // Identify start positions of ancillary data for each animal 
-    // Telemetry is incompatible with polygon or signal detectors 
-    
-    int nd = 0;
-    int i,s,k,wi,first;
-    
-    if (anytelemetry(detect)) {
-        // assume all telemetry fixes associate with last detector 
-        for (i=0; i< nc; i++) {
-            first = 1;
-            for (s=0; s<ss; s++) {
-                if (first) start[i] = nd;
-                first = 0;
-                wi = i3(i,s,nk-1,nc,ss);
-                nd += abs(w[wi]);
-            }
-        }
-    }
-    else {
-        if (anypolygon(detect) || anytransect(detect) || 
-            anysignal(detect)) {
-            // start[z] indexes the first row in xy (or element in signal)
-            //   for each possible count z, where z is w-order (isk) 
-            for (k=0; k<nk; k++) {
-                for (s=0; s< ss; s++) {
-                    for (i=0; i< nc; i++) {
-                        wi = i3(i,s,k,nc,ss);
-                        start[wi] = nd;
-                        nd += abs(w[wi]);
-                    }
-                }
-            }
-        }
-    }
-    return(nd);
-}
+// int getstart(
+//         const IntegerVector &detect, 
+//         std::vector<int> &start, 
+//         const int nc1, 
+//         const int nc, 
+//         const int ss, 
+//         const int nk, 
+//         const IntegerVector &w) {
+//     
+//     //------------------------------------------------------------
+//     // Identify start positions of ancillary data for each animal 
+//     // Telemetry is incompatible with polygon or signal detectors 
+//     
+//     int nd = 0;
+//     int i,s,k,wi,first;
+//     
+//     if (anytelemetry(detect)) {
+//         // assume all telemetry fixes associate with last detector 
+//         for (i=0; i< nc; i++) {
+//             first = 1;
+//             for (s=0; s<ss; s++) {
+//                 if (first) start[i] = nd;
+//                 first = 0;
+//                 wi = i3(i,s,nk-1,nc,ss);
+//                 nd += abs(w[wi]);
+//             }
+//         }
+//     }
+//     else {
+//         if (anypolygon(detect) || anytransect(detect) || 
+//             anysignal(detect)) {
+//             // start[z] indexes the first row in xy (or element in signal)
+//             //   for each possible count z, where z is w-order (isk) 
+//             for (k=0; k<nk; k++) {
+//                 for (s=0; s< ss; s++) {
+//                     for (i=0; i< nc; i++) {
+//                         wi = i3(i,s,k,nc,ss);
+//                         start[wi] = nd;
+//                         nd += abs(w[wi]);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     return(nd);
+// }
 //=============================================================
 
 void getdetspec (

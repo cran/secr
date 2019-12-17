@@ -56,8 +56,11 @@ processes on multiple cores (see \link{Parallel} for more).
 }
 
 \value{
-Invisibly returns a matrix of the log likelihood evaluated at each
-grid point
+
+A matrix of the log likelihood evaluated at each
+grid point (rows x, columns y), invisibly if \code{plot = TRUE}. 
+Failed evaluations return NA.
+
 }
 
 \note{
@@ -84,9 +87,8 @@ LLsurface(secrdemo.CL, xval = seq(0.16,0.40,0.02),
 ## now verify MLE
 ## click on MLE and apparent `peak'
 xy <- locator(2)
-temp <- LLsurface(secrdemo.CL, xval = xy$x,
-     yval = xy$y, plot = FALSE)
-temp
+LLsurface(secrdemo.CL, xval = xy$x, yval = xy$y, plot = FALSE)
+
 }
 }
 

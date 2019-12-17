@@ -8,7 +8,7 @@
 #--------------------------------------------------------------------------------
 allhistfast <- function (realparval, gkhk, pi.density, PIA, 
                          nk2ch, usge, pmixn, maskusage,
-                         grain, binomN) {
+                         grain, binomN, indiv) {
     nc <- dim(PIA)[2]
     nmix <- dim(PIA)[5]
     m <- length(pi.density)
@@ -20,6 +20,7 @@ allhistfast <- function (realparval, gkhk, pi.density, PIA,
             as.integer(nrow(realparval)),
             as.integer(grain),
             as.integer(binomN),
+            as.logical(indiv),
             matrix(nk2ch[,,1], nrow=nc),
             matrix(nk2ch[,,2], nrow=nc),
             as.double (gkhk$gk),  ## precomputed probability 
@@ -35,9 +36,9 @@ allhistfast <- function (realparval, gkhk, pi.density, PIA,
 #--------------------------------------------------------------------------------
 
 integralprw1fast <- function (realparval0, gkhk, pi.density, PIA0, 
-                              nk2ch0, usge, pmixn, grain, binomN) {
+                              nk2ch0, usge, pmixn, grain, binomN, indiv) {
     nc <- dim(PIA0)[2]
-    nr <- 1    ## nrow(nk2ch0)
+    nr <- nrow(nk2ch0)
     nmix <- dim(PIA0)[5]
     m <- length(pi.density)
     sump <- numeric(nc)
@@ -46,16 +47,17 @@ integralprw1fast <- function (realparval0, gkhk, pi.density, PIA0,
             as.integer(m),
             as.integer(nr),    ## 1 
             as.integer(nrow(realparval0)),
-            as.integer(0),                     ## force grain = 0 as single capture history
+            as.integer(0),                        ##grain
             as.integer(binomN),
+            as.logical(indiv),
             matrix(nk2ch0[,,1], nrow = nr),
             matrix(nk2ch0[,,2], nrow = nr),
             as.double (gkhk$gk),        ## precomputed probability 
             as.double (gkhk$hk),        ## precomputed hazard
             as.double (pi.density),
-            as.integer(PIA0[1,,,,x]),
+            as.integer(PIA0[1,1:nr,,,x]),
             as.integer(usge),
-            as.matrix (matrix(TRUE, nrow = nc, ncol = m)))
+            as.matrix (matrix(TRUE, nrow = nr, ncol = m)))
         sump <- sump + pmixn[x,1:nc] * (1 - temp)
     }
     sump
@@ -146,7 +148,7 @@ fastsecrloglikfn <- function (
         
         ## precompute gk, hk for point detectors
         if (data$dettype[1] %in% c(0,1,2,5,8)) {
-            gkhk <- makegkParallelcpp (as.integer(detectfn),
+            gkhk <- makegkPointcpp (as.integer(detectfn),
                                        as.integer(details$grain),
                                        as.matrix(Xrealparval),
                                        as.matrix(distmat2),
@@ -162,9 +164,9 @@ fastsecrloglikfn <- function (
         }
         prw <- allhistfast (Xrealparval, gkhk, pi.density, PIA, 
                             data$CH, data$usge, pmixn, data$maskusage, 
-                            details$grain, details$binomN)
+                            details$grain, details$binomN, design$individual)
         pdot <- integralprw1fast (Xrealparval, gkhk, pi.density, PIA, 
-                                  data$CH0, data$usge, pmixn, details$grain, details$binomN)
+                                  data$CH0, data$usge, pmixn, details$grain, details$binomN, design$individual)
         
         comp <- matrix(0, nrow = 5, ncol = 1)
         comp[1,1] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw))

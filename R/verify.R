@@ -408,7 +408,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         invisible(list(errors = anyerrors, bysession = temp))
     }
     else {
-        
         ## preliminaries
         object <- check3D(object)
         detectortype <- expanddet(object)  # vector length noccasions
@@ -612,7 +611,7 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         ## 17
         if (transect) {
             xy <- xy(object)
-            ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
+            ## 2019-11-29 unnecessary ID <- as.numeric(animalID(object))   ## does this allow for alpha names?
             ## 16 again
             if (all(detectortype == 'transect'))
                 xyOK <- nrow(xy) == sum(abs(object))

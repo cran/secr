@@ -1,6 +1,5 @@
-#include <Rcpp.h>
+#include "poly.h"
 using namespace Rcpp;
-#include "secr.h"
 
 /*
  trappingXXXX routines perform simulated sampling of 2D popn with various
@@ -646,7 +645,7 @@ List trappingtransect (
   double *workXY;
   int    *sortorder;
   double *sortkey;
-  double *ex;
+  // double *ex;
   double H;
   double Tski;
   
@@ -660,7 +659,7 @@ List trappingtransect (
   workXY = (double*) R_alloc(maxdet*2, sizeof(double));
   sortorder = (int*) R_alloc(maxdet, sizeof(int));
   sortkey = (double*) R_alloc(maxdet, sizeof(double));
-  ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
+  // ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
   
   // coordinates of vertices 
   for (i=0; i<sumk; i++) {
@@ -692,13 +691,19 @@ List trappingtransect (
             gsb(0) = lambda[s];
             gsb(1) = sigma[s];
             gsb(2) = z[s];
-            H = hintegral1cpp(fn, gsb) / gsb(0);
+            H = hintegral1Ncpp(fn, as<std::vector<double>>(gsb)) / gsb(0);
             
             // flaw in following: integral1D can exceed diameter 
             gsbval(0,0) = gsb(0);
             gsbval(0,1) = gsb(1);
             gsbval(0,2) = gsb(2);
-            lambdak = gsb(0) * integral1Dcpp (fn, i, 0, gsbval, traps, animals, n1, n2, ex) / H;
+            
+            // conversions for RMatrix input to integralxDNRcpp
+            const RcppParallel::RMatrix<double> gsbvalR(gsbval);
+            const RcppParallel::RMatrix<double> trapsR(traps);
+            const RcppParallel::RMatrix<double> animalsR(animals);
+            
+            lambdak = gsb(0) * integral1DNRcpp (fn, i, 0, gsbvalR, trapsR, animalsR, n1, n2) / H;
             count = rcount(binomN[s], lambdak, Tski);
             maxg = 0;
             if (count>0) {    // find maximum - approximate 
@@ -961,7 +966,7 @@ List trappingtransectX (
   double *workXY;
   int    *sortorder;
   double *sortkey;
-  double *ex;
+  // double *ex;
   double H;
   double sumhaz;
   double pks;
@@ -979,7 +984,7 @@ List trappingtransectX (
   workXY = (double*) R_alloc(maxdet*2, sizeof(double));
   sortorder = (int*) R_alloc(maxdet, sizeof(int));
   sortkey = (double*) R_alloc(maxdet, sizeof(double));
-  ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
+  // ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
   
   // coordinates of vertices 
   for (i=0; i<sumk; i++) {
@@ -1001,10 +1006,15 @@ List trappingtransectX (
       gsb(0) = lambda[s];
       gsb(1) = sigma[s];
       gsb(2) = z[s];
-      H = hintegral1cpp(fn, gsb);
+      H = hintegral1Ncpp(fn, as<std::vector<double>>(gsb));
       gsbval(0,0) = gsb(0);
       gsbval(0,1) = gsb(1);
       gsbval(0,2) = gsb(2);
+      
+      // conversions for RMatrix input to integralxDNRcpp
+      const RcppParallel::RMatrix<double> gsbvalR(gsbval);
+      const RcppParallel::RMatrix<double> trapsR(traps);
+      const RcppParallel::RMatrix<double> animalsR(animals);
       
       for (i=0; i<N; i++) {                        // each animal 
         animal.x = animals(i,0);
@@ -1017,8 +1027,9 @@ List trappingtransectX (
             
             n1 = cumk[k];
             n2 = cumk[k+1]-1;
-            sumhaz += -log(1 - gsb(0) * integral1Dcpp (fn, i, 0, gsbval, traps, 
-                                                    animals, n1, n2, ex) / H);
+            
+            sumhaz += -log(1 - gsb(0) * integral1DNRcpp (fn, i, 0, gsbvalR, trapsR, 
+                                                    animalsR, n1, n2) / H);
           }
         }
         
@@ -1028,8 +1039,8 @@ List trappingtransectX (
           if (fabs(Tski) > 1e-10) {          // 2012 12 18 
             n1 = cumk[k];
             n2 = cumk[k+1]-1;
-            lambdak = gsb(0) * integral1Dcpp (fn, i, 0, gsbval, traps, 
-                                           animals, n1, n2, ex) / H;
+            lambdak = gsb(0) * integral1DNRcpp (fn, i, 0, gsbvalR, trapsR, 
+                                           animalsR, n1, n2) / H;
             pks = (1 - exp(-sumhaz)) * (-log(1-lambdak)) / sumhaz;
             count = unif_rand() < pks;
             maxg = 0;

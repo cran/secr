@@ -111,7 +111,13 @@ McCrea, R. S. and Morgan, B. J. T. (2011) Multistate mark-recapture
 Morgan, B. J. T., Palmer, K. J. and Ridout, M. S. (2007) Negative score test statistic. \emph{American statistician} \bold{61}, 285--288.
 }
 
-\seealso{ \code{\link{AIC}}, \code{\link{LR.test}} }
+\seealso{ 
+
+\code{\link{AIC}}, 
+\code{\link{LR.test}} 
+
+}
+
 \examples{
 
 \dontrun{

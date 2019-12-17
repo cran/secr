@@ -186,6 +186,43 @@ double zhcgr (const NumericVector param, const double r) {
 double zhvpr (const NumericVector param, const double r) {
     return (param[0] * exp( - pow(r / param[1], param[2]))) ;
 }
+//--------------------------------------------------------------------
+
+// hazard halfnormal 
+double zhhnrC (const std::vector<double> param, const double r) {
+    return(param[0] * exp(- r * r / 2 / param[1] / param[1]));
+}
+//--------------------------------------------------------------------
+
+// hazard hazard rate 
+double zhhrrC (const std::vector<double> param, const double r) {
+    return(param[0] * ( 1 - exp(- pow(r / param[1], -param[2]))));
+}
+//--------------------------------------------------------------------
+
+// hazard exponential 
+double zhexrC (const std::vector<double> param, const double r) {
+    return (param[0] * exp(-r / param[1]));
+}
+//--------------------------------------------------------------------
+
+// hazard annular normal 
+double zhanrC (const std::vector<double> param, const double r) {
+    return (param[0] * exp(-(r-param[2])*(r-param[2]) / 2 /
+            param[1] / param[1]));
+}
+//--------------------------------------------------------------------
+
+// hazard cumulative gamma 
+double zhcgrC (const std::vector<double> param, const double r) {
+    return ((1 - exp( - param[0] * exp(-r / param[1]))));
+}
+
+// hazard variable power 
+double zhvprC (const std::vector<double> param, const double r) {
+    return (param[0] * exp( - pow(r / param[1], param[2]))) ;
+}
+
 
 //====================================================================
 
@@ -443,7 +480,7 @@ fnptr getgfnr (const int fn)
 }
 //--------------------------------------------------------------------
 
-// 2016-01-01 experimental for polygon integral 
+// For polygon integral 
 fnptr getzfnr (const int fn) 
 {
   if (fn == 0)
@@ -486,5 +523,25 @@ fnptr getzfnr (const int fn)
     return(zhvpr);
   else (stop("unknown or invalid detection function"));
   return(ghnr);
+}
+//--------------------------------------------------------------------
+
+// For polygon integral 
+fnptrC getzfnrC (const int fn) 
+{
+    if (fn == 14)
+        return(zhhnrC);
+    else if (fn == 15)
+        return(zhhrrC);
+    else if (fn == 16)
+        return(zhexrC);
+    else if (fn == 17)
+        return(zhanrC);
+    else if (fn == 18)
+        return(zhcgrC);
+    else if (fn == 19)
+        return(zhvprC);
+    else (stop("unknown or invalid detection function"));
+    return(zhhnrC);
 }
 //--------------------------------------------------------------------

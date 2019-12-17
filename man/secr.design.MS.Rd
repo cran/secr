@@ -9,7 +9,7 @@
 }
 \usage{
 secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
-    groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, bygroup = FALSE,
+    groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, CL = FALSE,
     keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, contrasts = NULL, ...)
 
 make.lookup (tempmat)
@@ -29,10 +29,7 @@ insertdim (x, dimx, dims)
     membership in h2 models}
   \item{dframe}{ optional data frame of design data for detection parameters }
   \item{naive}{ logical if TRUE then modelled detection probability is for a naive animal (not caught previously); if FALSE then detection probability is contingent on individual's history of detection }
-  \item{bygroup}{ logical if TRUE then the individual dimension of the
-    parameter matrix is automatically collapsed to one row per group; if
-    FALSE then the full dimensionality is retained (one row per
-    individual) }
+  \item{CL}{ logical; TRUE for model to be fitted by maximizing the conditional likelihood }
   \item{keep.dframe}{logical; if TRUE the dataframe of design data is
     included in the output}
   \item{full.dframe}{logical; if FALSE then padding rows are purged from

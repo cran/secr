@@ -9,6 +9,7 @@
 ## 2014-03-12 bufferbiascheck() shifted from secr.fit
 ## 2014-08-25 comment out lth which was unused and called undefined fn get.pts
 ## 2017-03-29 tweaked to allow character detectfn
+## 2019-12-16 minor changes to suggest.buffer: autoini thin=1; suppress warnings; fix multisession bug
 
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
@@ -192,6 +193,7 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
             detectpar <- detectpar(object)
             detectfn <- object$detectfn
             noccasions <- sapply(object$capthist, ncol)
+            binomN <- object$details$binomN
         }
         else {
             nsess <- length(object)
@@ -210,12 +212,18 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
 
         buffer <- numeric(nsess)
         for (i in 1:nsess) {
-            if (inherits(object,'capthist'))
-                buffer[i] <- suggest.buffer(object[[i]], detectfn,
-                    detectpar[[i]], noccasions[i], ignoreusage, RBtarget, interval, binomN, ...)
-            else
-                buffer[i] <- suggest.buffer(traps[[i]], detectfn,
-                    detectpar[[i]], noccasions[i], ignoreusage, RBtarget, interval, binomN, ...)
+            if (inherits(object,'capthist')) {
+                buffer[i] <- suggest.buffer(object[[i]], detectfn = detectfn,
+                    detectpar = detectpar[[i]], noccasions = noccasions[i], 
+                    ignoreusage = ignoreusage, ncores = ncores, RBtarget = RBtarget, 
+                    interval = interval, binomN = binomN, ...)
+            }
+            else {
+                buffer[i] <- suggest.buffer(traps[[i]], detectfn = detectfn,
+                    detectpar = detectpar[[i]], noccasions = noccasions[i], 
+                    ignoreusage = ignoreusage, ncores = ncores, RBtarget = RBtarget, 
+                    interval = interval, binomN = binomN, ...)
+            }
          }
         buffer
     }
@@ -246,8 +254,9 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                 noccasions <- ncol(object)
                 if (is.null(detectpar)) {
                     tempmask <- make.mask (traps, buffer = 5*RPSV(object, CC = TRUE))
+                    ## thin = 1 specified 2019-12-16
                     detectpar <- autoini (object, tempmask,
-                        ignoreusage = ignoreusage, ncores = ncores)[parnames(0)]
+                        ignoreusage = ignoreusage, ncores = ncores, thin = 1)[parnames(0)]
                     tempdp <- lapply(detectpar,formatC,4)
                     warning ("using automatic 'detectpar' ",
                         paste(names(detectpar), "=", tempdp, collapse=", "),
@@ -271,15 +280,16 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
         }
         detectfn <- valid.detectfn(detectfn)
         detectpar <- valid.detectpar(detectpar, detectfn)
+        
         if (!all(detector(traps) %in% .localstuff$pointdetectors))
             stop ("require passive point detectors (not polygon or transect)")
         if (!all(detector(traps) %in% .localstuff$individualdetectors))
             stop ("require passive individual detectors (not unmarked or presence)")
-
         if (ignoreusage)
             usage(traps) <- NULL
+        ## warnings suppressed 2019-12-16
         fn <- function (w) {
-            bias.D(w, traps, detectfn, detectpar, noccasions, binomN, ...)$RB.D - RBtarget
+            suppressWarnings(bias.D(w, traps, detectfn, detectpar, noccasions, binomN, ...)$RB.D - RBtarget)
         }
         temp <- try(round(uniroot (fn, interval)$root), silent = TRUE)
         if (inherits(temp, 'try-error')) {

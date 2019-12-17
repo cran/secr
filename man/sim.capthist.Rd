@@ -144,20 +144,15 @@ The marked population may be restricted to a subset of the space spanned by \cod
 }
 \value{
 
-For \code{sim.capthist}, an object of class \code{capthist}, a matrix or
-3-dimensional array with additional attributes. Rows represent
-individuals and columns represent occasions; the third dimension, used
-when detector type = `proximity', codes presence or absence at each
-detector. For trap detectors (`single', `multi') each entry in
-\code{capthist} is either zero (no detection) or the sequence number of
-the trap.
+For \code{sim.capthist}, an object of class \code{capthist}, a 3-dimensional array 
+with additional attributes. Rows represent
+individuals and columns represent occasions; the third dimension, codes the number of 
+detections at each detector (zero or one for trap detectors (`single', `multi') and binary proximity detectors.
 
 The initial state of the R random number generator is stored in the
 `seed' attribute.
 
-For \code{sim.resight}, an object of class \code{capthist}, always a
-3-dimensional array, with additional attributes markocc (marking occasions), 
-Tu (sightings of unmarked animals) and Tm (sightings of marked but not 
+For \code{sim.resight}, an object of class \code{capthist} for which the traps object has a markocc attribute (marking occasions), and there are further attributes Tu (sightings of unmarked animals) and Tm (sightings of marked but not 
 identified animals).
 
 }
@@ -211,7 +206,8 @@ Prior to 2.10.0 \code{sim.resight} interpreted length-2 vectors of detection par
 
 \seealso{
     \code{\link{sim.popn}}, \code{\link{capthist}}, \code{\link{traps}},
-    \code{\link{popn}}, \code{\link{Detection functions}}, \code{\link[stats]{simulate}}
+    \code{\link{popn}}, \code{\link{Detection functions}}, \code{\link[stats]{simulate}},
+    \code{\link{Tu}}, \code{\link{Tm}}
 }
 
 \examples{

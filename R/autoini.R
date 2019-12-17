@@ -4,7 +4,8 @@
 ############################################################################################
 
 autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
-                     binomN = 1, adjustg0 = TRUE, ignoreusage = FALSE, ncores = NULL)
+                     binomN = 1, adjustg0 = TRUE, adjustsigma = 1.2, ignoreusage = FALSE, 
+                     ncores = NULL)
 
 # obtain approximate fit of HN SECR model
 # for use as starting values in MLE
@@ -21,13 +22,18 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
         as.matrix(mask),
         detectfn)
     }
-    naivecap2 <- function (g0, sigma, cap)
+    
+    naivecap3 <- function (lambda0, sigma, cap)
     {
-        cap - naivecap2cpp(dettype[1], binomN[1], g0, sigma, s, wt, 
+        cap - naivecap3cpp(dettype[1], 
+                           lambda0, 
+                           sigma, 
+                           as.matrix(usge),
                            as.matrix(trps), 
                            as.matrix(mask),
-                           detectfn)
+                           14)
     }
+    
     naiveesa <- function (g0, sigma)
     {
       nc <- 1
@@ -36,9 +42,11 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
       PIA0 <- array(1, dim=c(1,nc,s,k,1))
       # allow for binary use/non-use of detectors
       if (!is.null(usage(trps))) PIA0[t(usage(trps)==0)] <- -1
+      
       distmat2 <- getdistmat2(trps, mask, NULL)
-      gkhk <- makegkParallelcpp (as.integer(detectfn), as.integer(grain),
+      gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(grain),
                                  as.matrix(realparval0), as.matrix(distmat2), as.double(0))
+      
       if (any(dettype==0)) CH0 <- nullCH (c(nc,s), FALSE)
       else CH0 <- nullCH (c(nc,s,k), FALSE)
       binomNcode <- recodebinomN(dettype, binomN, 0)
@@ -138,14 +146,15 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
                 tempsigma <- uniroot (naivedcall, lower = db/10, upper = db*10, tol=tol[2])$root
         }
         else {
-            tempsigma <- obsRPSV
+            tempsigma <- obsRPSV * adjustsigma  
         }
         if (is.null(usage(trps))) wt <- rep(s,k)
-        low <- naivecap2(0.00001, sigma=tempsigma, cap=cpa)
-        upp <- naivecap2(0.99999, sigma=tempsigma, cap=cpa)
+        low <- naivecap3(0.00001, sigma=tempsigma, cap=cpa)
+        upp <- naivecap3(100, sigma=tempsigma, cap=cpa)
         badinput <- FALSE
         if (is.na(low) | is.na(upp)) badinput <- TRUE
         else if (sign(low) == sign(upp)) badinput <- TRUE
+        
         if (badinput) {
             # not sure what conditions cause this 28/4/2008
             # observed number cap more than expected when g0=1 28/8/2010
@@ -153,9 +162,13 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
             warning ("'autoini' failed to find g0; setting initial g0 = 0.1")
             tempg0 <- 0.1
         }
-        else tempg0 <- uniroot (naivecap2, lower=0.00001, upper=0.99999,
+        else {
+            templambda0 <- uniroot (naivecap3, lower=0.00001, upper=0.99999,
                  f.lower = low, f.upper = upp, tol=tol[1],
                  sigma=tempsigma, cap=cpa)$root
+            tempg0 <- 1 - exp(-templambda0)
+        }
+        
         if (computeD) {
             if (allsighting)  ## includes all-zero rows
                 tempD <- n / masksize(mask)

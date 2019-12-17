@@ -817,11 +817,6 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     dots <- list(...)
     dots$traps <- traps
 
-    # if (!is.null(dots$seed)) {
-        # set.seed(dots$seed)
-        # dots$seed <- NULL
-    # }
-    
     #################################################################
     ## 2017-07-26
     seed <- dots$seed
@@ -1008,7 +1003,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         nzero <- nrow(popnM) - nrow(CH)
         CH <- addzeroCH(CH, nzero)
     }
-
+#browser()
     ############################################################################
     ## add sightings of unmarked animals
     ## apply same sampling to unmarked fraction of population
@@ -1025,6 +1020,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
             x <- x * col(x)   ## x 0/1
             tabulate(x[x>0], nbins = K)
         }
+        
         if (allsighting) {
             Tu <- as.matrix(table(factor(trap(capthistU), levels = trapnames),
                                   factor(occasion(capthistU), levels = 1:S)))

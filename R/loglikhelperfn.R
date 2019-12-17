@@ -218,3 +218,35 @@ getchat <- function (cc0, nc, n.distrib, group, usge, pmixn, pID,
     names(sumchat) <- c('Tu','Tm','Tn')
     return (sumchat)
 }
+
+makegk <- function(dettype, detectfn, trps, mask, details, sessnum, noneuc, D, miscparm, realparval) {
+
+    ## precompute gk, hk for point detectors
+    if (all(dettype %in% c(0,1,2,5,8,13))) {
+        distmat2 <- getuserdist(trps, mask, details$userdist, sessnum, noneuc, D, miscparm)
+        gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(details$grain),
+                                as.matrix(realparval), as.matrix(distmat2), miscparm)
+        if (any(dettype==8)) {   ## capped adjustment Not checked 2019-09-08
+            gkhk <- cappedgkhkcpp (
+                as.integer(nrow(realparval)),
+                as.integer(nrow(trps)),
+                as.double(attr(mask, "area")),
+                as.double(D),
+                as.double(gkhk$gk), as.double(gkhk$hk))  
+        }
+    }
+    ## precompute gk, hk for polygon and transect detectors
+    else if (all(dettype %in% c(3,4,6,7))) {
+        ## k-1 because we have zero-terminated these vectors
+        k <- getk(trps)
+        K <- if (length(k)>1) length(k)-1 else k
+        cumk <- cumsum(c(0,k))[1:length(k)]
+        dimension <- (dettype[1] %in% c(3,6)) + 1   ## 1 = 1D, 2 = 2D
+        convexpolygon <- is.null(details$convexpolygon) || details$convexpolygon
+        gkhk <- makegkPolygoncpp (
+            as.integer(detectfn), as.integer(dimension), as.logical(convexpolygon), 
+            as.integer(details$grain), as.matrix(realparval), as.integer(cumk),
+            as.matrix(trps), as.matrix(mask))
+    }
+    gkhk
+}

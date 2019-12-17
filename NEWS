@@ -1,3 +1,32 @@
+Changes in version 4.1.0 (2019-12-17)
+
+New features or changed behaviour of old functions
+    o   AICcompatible() new S3 method to check models for AIC compatibility
+    o   AIC() warns if secr models not compatible
+    o   LR.test() stops if secr models not compatible
+    o   secr.fit() faster fitting of polygon and transect data
+    o   secr.fit() option details = list(convexpolygon = FALSE) allows non-convex polygons.
+    o   autoini() uses simpler and more robust code; secr.fit() start values differ slightly 
+        from earlier versions; new argument 'adjustsigma'.
+
+Bugs fixed
+    o   reduce.capthist() subtracted dead animals when outputdetector = "count"
+    o   verify.capthist() spurious warning for transect data with character animalID
+    o   derived() bad for polygon and transect data in secr 4.0 because esa() corrupted 
+    o   secr.fit() in secr 4.0 bad likelihood and estimates for some covariate models 
+        (bad indexing of parameter array PIA)
+    o   secr.fit() failed with multi-session mark-resight data (fixed pID, non-null Tm)
+    o   suggest.buffer() failed with input from multi-session fitted model
+
+Other
+    o   RcppNumerical used for numerical integration with polygon and transect detectors
+    o   requires R >= 3.5.0 for obscure reasons (serialization of data objects)
+    o   suppressed new warnings from regularize.values in approx()
+    o   internal function secr.design.MS() argument bygroup replaced with CL
+    o   LLsurface() returns value matrix when plot = FALSE (otherwise invisibly as before) 
+        (NA where likelihood could not be evaluated)
+    o   mark-resight sighting only, partial identification re-enabled
+
 Changes in version 4.0.2 (2019-11-11)
 
 New features or changed behaviour of old functions

@@ -59,13 +59,13 @@ struct simplehistories : public Worker {
     const RVector<int>    markocc;    // s 
     const RVector<int>    firstocc;   // s 
     const RVector<double> pID;        // s 
-    const RVector<int>    w;          // n x s x k or n x s (multi)
+    const RVector<int>    w;          // n,s,k, n,s (multi)
     const RVector<int>    group;      // g
     const RVector<double> gk; 
     const RVector<double> hk; 
-    const RMatrix<double> density;    // n x g
-    const RVector<int>    PIA;
-    const RMatrix<double> Tsk;        // k x s
+    const RMatrix<double> density;    // n,g
+    const RVector<int>    PIA;        // 1,n,s,k,1  for given x
+    const RMatrix<double> Tsk;        // k,s
     const RMatrix<double> h;
     const RMatrix<int>    hindex;
     const RMatrix<int>    mbool;      // appears cannot use RMatrix<bool>
@@ -139,15 +139,13 @@ struct simplehistories : public Worker {
         
         int c = 0;
         int hri = 0; 
-        int i, t, wi, wxi;
+        int i, t, w3;
         int count;
         if (telemstart[n+1] > telemstart[n]) {
-            wi = i3(n, s, kk-1, nc, ss);
-            count = w[wi];  // number of telemetry fixes 
+            w3 = i3(n, s, kk-1, nc, ss);
+            count = w[w3];  // number of telemetry fixes 
             if (count>0) {
-                wxi = i3(n, s, kk-1, nc, ss);
-                c = PIA[wxi] - 1;
-                if (c<0) {
+                c = PIA[w3] - 1;                if (c<0) {
                     stop ("telemetry usage zero on telemetry occasion");
                 }
                 for (i=cumcount; i<(cumcount+count); i++) {
@@ -166,12 +164,12 @@ struct simplehistories : public Worker {
     
     void prwX (const int n, const int s, bool &dead, std::vector<double> &pm) {
         // multi-catch traps
-        int c, k, m, wi, wxi;
+        int c, k, m, w3;
         double H;
         if (allX) {
-            wi = w[s * nc + n];    // all detectors are traps, CH has been compressed to 2-D
-            dead = wi < 0;  
-            k = abs(wi)-1;         // trap number 0..kk-1; k = -1 if not caught 
+            k = w[s * nc + n];    // all detectors are traps, CH has been compressed to 2-D
+            dead = k < 0;  
+            k = abs(k)-1;         // trap number 0..kk-1; k = -1 if not caught 
         }
         else {
             // find site at which trapped
@@ -199,8 +197,8 @@ struct simplehistories : public Worker {
         }
         // Captured in trap k on occasion s
         else {
-            wxi = i3(n, s, k, nc, ss);   
-            c = PIA[wxi] - 1;
+            w3 = i3(n, s, k, nc, ss);   
+            c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unset traps 
                 for (m=0; m<mm; m++) {
                     if (mbool(n,m)) {
@@ -222,16 +220,16 @@ struct simplehistories : public Worker {
     //----------------------------------------------------------------------------
     
     void prw (const int n, const int s, bool &dead, std::vector<double> &pm) {
-        int c, k, m, wxi, count;
+        int c, k, m, w3, count;
         for (k=0; k<kk; k++) {   // over detectors
-            wxi =  i3(n, s, k, nc, ss);
-            c = PIA[wxi] - 1;
+            w3 =  i3(n, s, k, nc, ss);
+            c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unused detectors 
-                count = w[i3(n, s, k, nc, ss)];
+                count = w[w3];
                 if (count<0) {count = -count; dead = true; }
                 for (m=0; m<mm; m++) {
                     if (mbool(n,m)) {
-                        if (m==600 && grain==0 && k==0)
+                        if (m==400 && grain==0 && k==0)
                             Rprintf("n %4d s %4d binomN[s] %4d count %4d pski %8.6e \n ", n,s,binomN[s], count, pski(binomN[s], count, Tsk(k,s), gk[i3(c, k, m, cc, kk)], pID[s]));
                         pm[m] *= pski(binomN[s], count, Tsk(k,s), gk[i3(c, k, m, cc, kk)], pID[s]);  
                     }
@@ -328,7 +326,12 @@ struct simplehistories : public Worker {
             }
             if (dead) break;               // out of s loop
         }
-
+        
+        // temporary debug code
+        if (grain==0) {
+            Rprintf("n %4d pm[400] %8.6e \n ", n, pm[400]);
+        }
+        
         for (int m=0; m<mm; m++) {
             pm[m] *= density(m,group[n]); 
         }

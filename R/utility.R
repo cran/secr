@@ -2,6 +2,7 @@
 ## utility.R
 #######################################################################################
 
+## 2019-11-29 secr 4.1.0
 ## 2019-07-27 secr 4.0.0
 ## 2019-07-27 makelookupcpp replaces makelookup
 ## 2019-08-12 individualcovariates
@@ -795,7 +796,6 @@ distancetotrap <- function (X, traps) {
     ## with x coord in col 1 and y coor in col 2
 
     X <- matrix(unlist(X), ncol = 2)
-
     nxy <- nrow(X)
     detecttype <- detector(traps)
     detecttype <- ifelse (is.null(detecttype), '', detecttype)
@@ -816,7 +816,10 @@ distancetotrap <- function (X, traps) {
                     data.frame(x=rep(tmp$x[1], n),
                                y=seq(tmp$y[1], tmp$y[2], length=n))
                 else {
-                    data.frame(approx(tmp, n = n))
+                    ## 2019-11-30 suppress warnings such as :
+                    ## In regularize.values(x, y, ties, missing(ties)) :
+                    ## collapsing to unique 'x' values
+                    suppressWarnings(data.frame(approx(tmp, n = n)))
                 }
             }
             tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)

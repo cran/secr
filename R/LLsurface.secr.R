@@ -90,13 +90,18 @@ LLsurface.secr <- function (object, betapar = c('g0', 'sigma'), xval = NULL, yva
         }
 
         dimnames(temp) <- list(xval, yval)
+        temp[temp < -1e9] <- NA
+        
         if (plot) {
             contour(x=xval, y=yval, z=temp, xlab=betapar[1], ylab=betapar[2], ...)
             if (plotfitted) {
                 points(centre[betapar[1]], centre[betapar[2]], pch = 3)
             }
+            invisible(temp)
         }
-        invisible(temp)
+        else {
+            temp
+        }
     }
 }
 

@@ -40,7 +40,8 @@ secrlist(...)
 \details{
 
 Models to be compared must have been fitted to the same data and use the
-same likelihood method (full vs conditional).
+same likelihood method (full vs conditional). From version 4.1 a warning is 
+issued if \code{\link{AICcompatible}} reveals a problem.
 
 AIC with small sample adjustment is given by
 
@@ -110,7 +111,7 @@ intervals. \emph{Computational statistics and data analysis} \bold{56},
 \note{
 
 It is not be meaningful to compare models by AIC if they relate to
-different data or habitat masks.
+different data (see \code{\link{AICcompatible}}).
 
 Specifically:
 
@@ -148,7 +149,16 @@ model averaging even when samples are small sizes - Turek and Fletcher
 
 }
 
-\seealso{ \code{\link{model.average}}, \code{\link[stats]{AIC}}, \code{\link{secr.fit}}, \code{\link{print.secr}}, \code{\link{score.test}}, \code{\link{LR.test}}, \code{\link{deviance.secr}} }
+\seealso{ 
+
+\code{\link{AICcompatible}}, 
+\code{\link{model.average}}, 
+\code{\link[stats]{AIC}}, 
+\code{\link{secr.fit}}, 
+\code{\link{print.secr}}, 
+\code{\link{score.test}}, 
+\code{\link{LR.test}}, 
+\code{\link{deviance.secr}} }
 
 \examples{
 ## Compare two models fitted previously

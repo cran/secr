@@ -80,18 +80,38 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
             stop("pdot requires hazard detectfn for polygon-type detectors")
         k <- table(polyID(traps))   ## also serves transectID
         K <- length(k)              ## number of polygons/transects
-        k <-  c(k,0)                ## zero terminate
-        temp <- hdotpolycpp (
-                   as.double(unlist(X)),
-                   as.matrix(traps),
-                   as.integer(dettype),
-                   as.matrix(usge),
-                   as.integer(markocc),
-                   as.integer(K),
-                   as.integer(noccasions),
-                   as.integer(k),
-                   as.integer(detectfn),   ## hn
-                   as.double(detectpars))
+        k <-  c(k,0)                ## zero terminate for 
+        cumk <- cumsum(c(0,table(polyID(traps))))
+        convexpolygon <- TRUE
+        dim <- if (any(detector(traps) %in% c('transect', 'transectX'))) 1 else 2
+            
+        warning("assuming convex polygons in pdot()")
+        grain <- 1
+        # temp <- hdotpolycpp (
+        #     as.matrix(X),
+        #     as.matrix(traps),
+        #     as.integer(dettype),
+        #     as.matrix(usge),
+        #     as.integer(markocc),
+        #     as.integer(K),
+        #     as.integer(noccasions),
+        #     as.integer(k),
+        #     as.integer(detectfn),   ## hn
+        #     as.double(detectpars),
+        #     as.logical(convexpolygon))
+
+        temp <- hdotpolycpp2 (
+            as.matrix(X),
+            as.matrix(traps),
+            as.matrix(usge),
+            as.integer(markocc),
+            as.integer(cumk),
+            as.integer(detectfn),
+            as.double(detectpars),
+            as.logical(convexpolygon),
+            as.integer(dim),
+            as.integer(grain))
+
         1 - exp(-temp)   ## probability detected at least once, given total hazard
     }
     else {

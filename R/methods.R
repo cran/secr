@@ -38,7 +38,8 @@ derived    <- function (object, ...) UseMethod("derived")
 region.N   <- function (object, ...) UseMethod("region.N")
 LLsurface  <- function (object, ...) UseMethod("LLsurface")
 intervals  <- function (object, ...) UseMethod("intervals")
-sessionlabels   <- function (object, ...) UseMethod("sessionlabels")
+sessionlabels <- function (object, ...) UseMethod("sessionlabels")
+AICcompatible <- function (object, ...) UseMethod("AICcompatible")
 
 ############################################################################################
 

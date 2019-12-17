@@ -1,30 +1,14 @@
 ###############################################################################
-## package 'secr'
+## package 'secr' 4.1
 ## secr.design.MS.R
-## 2009 08 20 disable bk, Bk
-## 2009 10 08 sighting # disabled 2015-10-08
-## 2009 12 10 mixtures
-## 2009 12 13 mixtures pmix ~ h2
-## 2011 11 24 re-enable bk, Bk models
-## 2011 11 27 add k, K, bkc, Bkc, bkn, bn models
-## 2012 01 20 preliminary work on time-varying trap covariates
-## 2012 09 10 k, K models did not work with multi-session data
-## 2013 03 10 bug in findvars.MS insertdim calls : c(x,1) as already expanded over sessions
-## 2013-03-11 keep.dframe, full.dframe
-## 2013-03-11 Session only as needed
-## 2013-03-11 check levels do not vary between sessions
-## 2013-03-11 dropped models$phi <- NULL (not needed)
-## 2014-01-25 code rearranged to allow null PIA
-## 2014-06-02 ignoreusage
-## 2014-08-21 adapted for smooth terms in models; save smoothsetup
-## 2015-10-08 added ts for marking and sighting occasions
-## 2016-10-12 secr3 b,bk,bkc adapted for always-3D
-## 2017-01-25 added tt for nontelemetry and telemetry occasions
+
+## 2019-12-03 replaced bygroup with CL
+
 ################################################################################
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                             groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE,
-                            bygroup = FALSE, keep.dframe = FALSE, full.dframe = FALSE,
+                            CL = FALSE, keep.dframe = FALSE, full.dframe = FALSE,
                             ignoreusage = FALSE, contrasts = NULL, ...) {
 
 ## Generate design matrix, reduced parameter array, and parameter index array (PIA)
@@ -32,11 +16,9 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 ## 'capthist' must be of class 'capthist' or 'list'
 ## uses pad1 to pad session-specific covar to constant length with first value,
 ## pad1 defined in 'utility.R'
-
-## bygroup = T results in one row per group instead of one row per individual
-## This setting is used for 'naive' table
+##
 ## groups is a vector of factor names whose intersection defines group
-## groups only defined for CL = FALSE  [corrected 2011-11-27]
+## groups only defined for CL = FALSE  
 ## use of 'g' requires valid groups definition
 ## grouping variables are also added individually to dframe
 
@@ -163,13 +145,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
     if (MS) {
         R <- length(capthist)
-        n <- ifelse (bygroup, ngrp, max(sapply(capthist, nrow))) # max over sessions
+        n <- max(sapply(capthist, nrow))                         # max over sessions
         S <- max(sapply(capthist, ncol))                         # max over sessions
         K <- max(sapply(traps(capthist), ndetector))             # max over sessions
     }
     else {
         R <- 1
-        n <- ifelse (bygroup, ngrp, nrow(capthist))
+        n <- nrow(capthist)
         S <- ncol(capthist)
         K <- ndetector(traps(capthist))
     }
@@ -234,21 +216,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         dframevars <- ""
     }
     else {
-        ## special treatment for design0:
-        ## dframe must be thinned by rejecting rows for repeats from each group
         tempn <- n
-        if (bygroup) {
-            OK <- rep(FALSE, nrow(dframe) )
-            tempn <- length(OK)/(R*S*K*nmix)
-            dim(OK) <- c(R,tempn,S,K,nmix)
-            if (is.null(groups)) {
-                firstofgroup <- 1   ## no groups
-                OK[,firstofgroup,,,] <- TRUE
-                dframe <- dframe[OK,,drop=FALSE]
-            }
-            else
-                stop ("dframe specification does not work with grouping at present, sorry")
-        }
         if (nrow(dframe) !=  dframenrow )
             stop ("dframe should have ", R*tempn*S*K*nmix, " rows ( R*n*S*K*nmix )")
         dframevars <- names(dframe)
@@ -319,46 +287,25 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ################
         # add g factor
 
-        if (bygroup)
-            gvar <- factor(grouplevels)
-        else {
-            gvar <- group.factor(capthist, groups)          # list if MS
-            if (MS) gvar <- lapply(gvar, pad1, n)           # constant length
-        }
+        gvar <- group.factor(capthist, groups)          # list if MS
+        if (MS) gvar <- lapply(gvar, pad1, n)           # constant length
         # by animal within session
         dframe$g <- insertdim ( unlist(gvar), c(2,1), dims)  ## unlist works on factors, too
 
         #################################
         # also add separate group factors
 
-        # if bygroup, just use group levels for each session
-        # else get group membership from covariates(capthist) for each session,
+        # Get group membership from covariates(capthist) for each session,
         # and pad to max(n) if needed
 
-        if (bygroup) {
-            MSlevels <- function (facname) {
-                ## assume all sessions the same without checking
-                if (inherits(capthist, 'list')) levels(zcov[[1]][,facname])
-                else levels(zcov[,facname])
+        for (i in groups) {
+            if (MS) {
+                grouping <- lapply(zcov, function(x) x[,i])
+                grouping <- unlist(lapply(grouping, pad1, n))
             }
-
-            ## list with levels for each grouping factor named in 'groups'
-            grouplist <- lapply(groups, MSlevels)
-            grouping <- expand.grid(grouplist) ## one column per group
-            names(grouping) <- groups
-## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
-            for (i in groups) insertdim(grouping[,i], c(2,1), dims)  ## all sessions the same
-        }
-        else {
-            for (i in groups) {
-                if (MS) {
-                    grouping <- lapply(zcov, function(x) x[,i])
-                    grouping <- unlist(lapply(grouping, pad1, n))
-                }
-                else grouping <- zcov[,i]
-## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
-                insertdim(grouping, c(2,1), dims)
-            }
+            else grouping <- zcov[,i]
+            ## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
+            insertdim(grouping, c(2,1), dims)
         }
     }
     #--------------------------------------------------------------------------
@@ -599,7 +546,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     #--------------------------------------------------------------------------
     # add zcov, sessioncov, timecov, trapcov
 
-    if (!bygroup) findvars.MS (zcov, vars, c(2,1))   ## CL only
+    if (CL) findvars.MS (zcov, vars, c(2,1)) ## CL only
     findvars.MS (sessioncov, vars, 1)
     findvars.MS (timecov, vars, c(3,1))      ## session-specific list
     findvars.MS (trapcov, vars, c(4,1))      ## session-specific list

@@ -86,7 +86,6 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
             buffx <- buffy <- c(-buffer,+buffer)
         }  
             
-
         if (!is.null(poly)) {
             SP <- inherits(poly, "SpatialPolygons")
             if (!SP) {
@@ -162,7 +161,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
 
         mask   <- expand.grid (x=x, y=y)
         attr(mask,'out.attrs') <- NULL   ## added 2009 07 03
-
+        
         if (type=='trapbuffer') {
             ## appropriate convex buffer 2011-01-22
             ## (this re-use of nx may not be appropriate)

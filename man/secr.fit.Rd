@@ -129,6 +129,7 @@ centred \tab centre x-y coordinates\cr
 chat \tab overdispersion of sighting counts Tu, Tm \cr
 chatonly \tab compute overdispersion for Tu and Tm, then exit \cr
 contrasts \tab coding of factor predictors \cr
+convexpolygon \tab allows non-convex polygons (slower) \cr
 distribution \tab binomial vs Poisson N\cr
 fastproximity \tab special handling of binary proximity detectors \cr
 fixedbeta \tab specify fixed beta parameter(s)\cr
