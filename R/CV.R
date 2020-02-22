@@ -70,9 +70,9 @@ CVa <- function (object, sessnum = 1, ...) {
     binomN <- getbinomN(binomN, detector(trps))
     dpar <-  detectpar(object, sessnum=sessnum, ..., byclass = TRUE)
     a1 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[1]],
-               noccasions = ncol(capthists), binomN)
+               noccasions = ncol(capthists), binomN, ncores = 1)
     a2 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[2]],
-               noccasions = ncol(capthists), binomN)
+               noccasions = ncol(capthists), binomN, ncores = 1)
     cellsize <- attr(masks, "spacing")^2/10000
     a <- c(a1 = sum(a1), a2 = sum(a2)) * cellsize
     pmix <- sapply(pred, '[[', 'pmix','estimate')

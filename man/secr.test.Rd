@@ -37,7 +37,7 @@ NULL, ncores = NULL, tracelevel = 1)
  
   \item{seed}{either NULL or an integer that will be used in a call to \code{set.seed}}
   
-  \item{ncores}{integer number of cores available for parallel processing (default max-1)}
+  \item{ncores}{integer number of threads for parallel processing}
   
   \item{tracelevel}{ see \code{\link{sim.secr}} }
   
@@ -70,6 +70,9 @@ vector combining the observed value and simulated values, divided by
 Simulations take account of the usage attribute of detectors in the
 original capthist object, given that usage was defined and ignoreusage was not
 set.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 \code{statfn} may return a vector of statistics for each observed or
 simulated dataset or model: then the value of each statistic will be

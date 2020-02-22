@@ -53,7 +53,7 @@ secr.fit (capthist, model = list(D~1, g0~1, sigma~1), mask = NULL, buffer = NULL
   \item{biasLimit}{ numeric threshold for predicted relative bias due to
   buffer being too small }
   \item{trace}{ logical, if TRUE then output each evaluation of the likelihood, and other messages}
-  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+  \item{ncores}{ integer number of threads to use for parallel processing}
   \item{\dots}{ other arguments passed to the maximization function }
 }
 
@@ -133,7 +133,7 @@ convexpolygon \tab allows non-convex polygons (slower) \cr
 distribution \tab binomial vs Poisson N\cr
 fastproximity \tab special handling of binary proximity detectors \cr
 fixedbeta \tab specify fixed beta parameter(s)\cr
-grain \tab grain argument of RcppParallel parallelFor \cr
+grain \tab grain argument of RcppParallel::parallelFor \cr
 hessian \tab variance method\cr
 ignoreusage \tab override usage in traps object of capthist\cr
 intwidth2 \tab controls optimise when only one parameter\cr
@@ -151,6 +151,9 @@ usecov \tab spatial covariate of use for normalization \cr
 userdist \tab user-provided distance function or matrix \cr
 %maxcallsize \tab limit to size of saved call \cr
 }
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 A mark-resight model is fitted if the \code{\link{markocc}} attribute of the capthist 
 `traps' object includes sighting occasions. See the vignette 
@@ -249,6 +252,9 @@ components
   \item{version }{secr version number }
   \item{starttime }{character string of date and time at start of fit }
   \item{proctime }{processor time for model fit, in seconds }
+  
+The environment variable RCPP_PARALLEL_NUM_THREADS is updated if an integer value is provided for \code{ncores}.
+
 }
 
 \references{

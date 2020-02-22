@@ -248,7 +248,6 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
   m <- nrow(pi.density)
   nmix <- nrow(pmixn)
   if (length(grp)<=1) grp <- rep(1,nc)
-  ngroup <- max(length(unique(grp)),1)
   s <- ncol(usge)
   ngroup <- length(levels(grp))
   sump <- numeric(nc)
@@ -477,7 +476,7 @@ generalsecrloglikfn <- function (
                                    debug = details$debug>3)
         }
         else {
-            stop ("this detector type, or mixed detector types, not available yet in secr 4.1")
+            stop ("this detector type, or mixed detector types, not available yet in secr 4.2")
         }
     }    
         ## polygon types

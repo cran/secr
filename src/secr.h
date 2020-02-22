@@ -39,16 +39,24 @@ int i4 (int i, int j, int k, int l, int ii, int jj, int kk);
 //------------------------------------------------------
 typedef double (*fnptr)(const Rcpp::NumericVector, const double);
 typedef double (*fnptrC)(const std::vector<double>, const double);
-fnptr getgfnr (int fn);
+// fnptr getgfnr (int fn);
 fnptr getzfnr (int fn);
+fnptrC getgfns (int fn);
 fnptrC getzfnrC (int fn);
-double pfn (
-        const int fn, 
-        const double d2val, 
-        const Rcpp::NumericVector &gsb,
-        const Rcpp::NumericVector &miscparm, 
-        const double w2);
+// double pfn (
+//         const int fn, 
+//         const double d2val, 
+//         const Rcpp::NumericVector &gsb,
+//         const Rcpp::NumericVector &miscparm, 
+//         const double w2);
 
+double pfnS (
+        const int fn,
+        const double d2val,
+        const std::vector<double> &gsb,
+        const std::vector<double> &miscparm,
+        const double w2);
+    
 int par3 (int fn);
 
 //--------------------------------------------------------------------------

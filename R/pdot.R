@@ -26,14 +26,31 @@
 ##            esa.plot CVpdot
 ## 2019-01-21 poly.habitat argument in pdot.contour and buffer.contour functions etc.
 ## 2019-07-29 C++
+## 2019-12-28 multithreaded
 ###############################################################################
 
+## pdot is used in --
+
+## CVa
+## CVpdot
+## esa*
+## derivedSystematic* (via Fewstervarn)
+## fx.total*
+## make.mask (pdotmin option)
+## reparameterize.esa
+## [bias.D  disabled]
+## pdot.contour
+
+## * has ncores argument
+
 pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-                  noccasions = NULL, binomN = NULL, userdist = NULL) {
+                  noccasions = NULL, binomN = NULL, userdist = NULL, ncores = NULL) {
 
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
 
+    setNumThreads(ncores)
+    
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
     if ((detectfn > 9) & (detectfn<14) & is.null(detectpar$cutval))
@@ -69,6 +86,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     dettype <- detectorcode(traps, noccasions = noccasions)
     binomN <- getbinomN (binomN, detector(traps))
     markocc <- markocc(traps)
+    grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+    
     if (is.null(markocc)) markocc <- rep(1,noccasions)
     if (!inherits(X, 'mask')) {
         X <- matrix(unlist(X), ncol = 2)
@@ -86,21 +105,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         dim <- if (any(detector(traps) %in% c('transect', 'transectX'))) 1 else 2
             
         warning("assuming convex polygons in pdot()")
-        grain <- 1
-        # temp <- hdotpolycpp (
-        #     as.matrix(X),
-        #     as.matrix(traps),
-        #     as.integer(dettype),
-        #     as.matrix(usge),
-        #     as.integer(markocc),
-        #     as.integer(K),
-        #     as.integer(noccasions),
-        #     as.integer(k),
-        #     as.integer(detectfn),   ## hn
-        #     as.double(detectpars),
-        #     as.logical(convexpolygon))
-
-        temp <- hdotpolycpp2 (
+        temp <- hdotpolycpp (
             as.matrix(X),
             as.matrix(traps),
             as.matrix(usge),
@@ -111,14 +116,12 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
             as.logical(convexpolygon),
             as.integer(dim),
             as.integer(grain))
-
         1 - exp(-temp)   ## probability detected at least once, given total hazard
     }
     else {
       ## distmat2 <- getdistmat2 (traps, X, userdist)
       distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, miscparm)
       #-------------------------------------------------------------
-
       pdotpointcpp(
         as.matrix(X),
         as.matrix(traps),
@@ -130,7 +133,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         as.double(detectpars),
         as.double(miscparm),
         as.double(truncate^2),
-        as.integer(expandbinomN(binomN, dettype))
+        as.integer(expandbinomN(binomN, dettype)),
+        as.integer(grain)
       )
     }
 }

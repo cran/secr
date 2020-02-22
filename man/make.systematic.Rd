@@ -13,10 +13,10 @@ A rectangular grid of clusters within a polygonal region.
 
 make.systematic(n, cluster, region, spacing = NULL, origin = NULL, 
     originoffset = c(0,0), chequerboard = c('all','black','white'), 
-    order = c('x', 'y', 'xb', 'yb'), ...)
+    order = c('x', 'y', 'xb', 'yb'), rotate = 0,  centrexy = 
+    apply(bbox(region),1,mean), keep.design = TRUE, ...)
 
 }
-
 
 \arguments{
   
@@ -37,6 +37,13 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   \item{chequerboard}{ logical; if not `all' then alternate clusters are omitted }
   
   \item{order}{ character; sort order for clusters (see Details)}
+  
+  \item{rotate}{numeric; number of degrees by which to rotate entire design clockwise 
+    about centroid of region bounding box}
+    
+  \item{centrexy}{numeric; 2-vector for centre of rotation, if any }   
+  
+  \item{keep.design}{logical; if TRUE then input argument values are retained}
    
   \item{\dots}{ arguments passed to \code{trap.builder} }
 }
@@ -63,6 +70,8 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
   passed. Setting the \code{trap.builder} arguments \code{frame},
   \code{method}, and \code{samplefactor} has no effect.
   
+  Note the distinction between argument \code{rotate} and the \code{trap.builder} 
+  argument \code{rotation} that is applied separately to each cluster.
   
   If \code{origin} is not specified then a random uniform origin is chosen within a box (width = spacing) placed with its bottom left corner at the bottom left of the bounding box of \code{region}, shifted by \code{originoffset}. Before version 3.1.8 the behaviour of \code{make.systematic} was equivalent to \code{originoffset = c(wx,wy)} where \code{wx,wy} are the cluster half widths.   
   
@@ -78,6 +87,8 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
      yb \tab  row-dominant boustrophedonical (alternate rows reversed) \cr
      }
 
+\code{rotate} rotates the array about the given centre (default is centroid of the bounding box of \code{region}). Rotation requires package \pkg{maptools} to have been installed; non-zero values otherwise result in a warning.
+
 }
 
 \value{
@@ -92,11 +103,15 @@ centres \tab coordinates of true cluster centres (cf \code{\link{cluster.centres
 originbox \tab vertices of rectangular spatial sampling frame for random origin \cr
 }
 
+From 4.2.0 if \code{keep.design} is TRUE then the input argument values are retained in attribute `design' (a list with first component \code{function = 'make.systematic'}).
+
 }
 
 \seealso{
-  \code{\link{trap.builder}}, \code{\link{cluster.centres}},
-  \code{\link[rgdal]{readOGR}}
+  \code{\link{trap.builder}}, 
+  \code{\link{make.lacework}},
+  \code{\link{cluster.centres}}
+  
 }
 
 \note{

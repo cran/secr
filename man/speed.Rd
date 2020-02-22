@@ -85,17 +85,10 @@ grids) then try the function \code{\link{mash}}.
 
 \section{ Use multiple cores when applicable }{
   
-  Some computations can be run in parallel on multiple processors (most
-  desktops these days have multiple cores), but capability is
-  limited. Check the `ncores' argument of sim.secr() and secr.fit() and
-  ?ncores. The speed gain is significant for parametric bootstrap
-  computations in sim.secr. Parallelisation is also allowed for the
-  session likelihood components of a multi-session model in secr.fit(),
-  but gains there seem to be small or negative.
+  Most computers these days have multiple processors and these will be used by \pkg{secr} if the user sets \code{ncores} greater than one in \code{secr.fit}, \code{sim.secr} and some other functions. If \code{ncores = NULL} then the existing value from the environment variable RCPP_PARALLEL_NUM_THREADS is used (see \code{\link{setNumThreads}}).
 
   Functions \code{\link{par.secr.fit}}, \code{\link{par.derived}}, and
-\code{\link{par.secr.fit}} are an alternative and more effective way to
-take advantage of multiple cores when fitting several models.
+\code{\link{par.secr.fit}} are an alternative way to take advantage of multiple cores when fitting several models.
   
 }
 

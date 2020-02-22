@@ -60,6 +60,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## need session-specific mask...
     cellsize <- getcellsize(mask)       ## length or area
+    
     #----------------------------------------------------------------------
     if (constant) {
         ## assume constant
@@ -75,7 +76,8 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
             realparval0$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
         }
         a <- cellsize * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
-                             detectpar = realparval0, noccasions = noccasions))
+                             detectpar = realparval0, noccasions = noccasions, 
+                             ncores = ncores))
         return(rep(a,n))
     }
     else {
@@ -129,36 +131,11 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         else {
           NE <- NULL   ## no NE covariates (yet)
           pi.density <- matrix(1/m, nrow=m, ncol=1)
-          setNumThreads(ncores)
-          
-          gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, NE, pi.density, miscparm, Xrealparval0)
-          
-          # grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
-          # ## precompute gk, hk for point detectors
-          # if (all(dettype %in% c(0,1,2,5,8,13))) {
-          #     distmat2 <- getuserdist(trps, mask, object$details$userdist, sessnum, NE, pi.density, miscparm)
-          #     gkhk <- makegkPointcpp (as.integer(object$detectfn), grain,
-          #                                as.matrix(Xrealparval0), as.matrix(distmat2), miscparm)
-          #     # if (any(data$dettype == 8)) {
-          #     #     # requires density - omit
-          #     #     gkhk <- cappedgkhkcpp (as.integer(nrow(Xrealparval0)), as.integer(nrow(trps)),
-          #     #                            as.double(attr(mask, "area")), as.double(density[,1]), 
-          #     #                            as.double(gkhk$gk), as.double(gkhk$hk))  
-          #     # }
-          # }
-          # ## precompute gk, hk for polygon and transect detectors
-          # else if (all(dettype %in% c(3,4,6,7))) {
-          #     cumk <- cumsum(c(0,k))[1:length(k)]
-          #     dimension <- (dettype[1] %in% c(3,6)) + 1   ## 1 = 1D, 2 = 2D
-          #     convexpolygon <- is.null(object$details$convexpolygon) || object$details$convexpolygon
-          #     gkhk <- makegkPolygoncpp (
-          #         as.integer(object$detectfn), as.integer(dimension), as.logical(convexpolygon), 
-          #         as.integer(grain), as.matrix(Xrealparval0), as.integer(cumk),
-          #         as.matrix(trps), as.matrix(mask))
-          # }
-          
-          
-          if (any(dettype==0)) CH0 <- nullCH (c(n,s), FALSE)
+          setNumThreads(ncores)  
+          grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+          gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, NE, 
+                          pi.density, miscparm, Xrealparval0)
+                    if (any(dettype==0)) CH0 <- nullCH (c(n,s), FALSE)
           else CH0 <- nullCH (c(n,s,K), FALSE)
           binomNcode <- recodebinomN(dettype, binomN, telemcode(trps))
           pmixn <- getpmix (knownclass, PIA0, Xrealparval0)
@@ -177,7 +154,7 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
                                 usge = usge,
                                 pmixn = pmixn,
                                 pID = pID,
-                                grain = 1L)
+                                grain = grain)
           pdot * cellsize * m
         }
     }

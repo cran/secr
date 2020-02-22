@@ -1,5 +1,5 @@
 ###############################################################################
-## package 'secr' 4.1
+## package 'secr' 4.2
 ## secr.design.MS.R
 
 ## 2019-12-03 replaced bygroup with CL

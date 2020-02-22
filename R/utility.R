@@ -2,12 +2,14 @@
 ## utility.R
 #######################################################################################
 
-## 2019-11-29 secr 4.1.0
 ## 2019-07-27 secr 4.0.0
 ## 2019-07-27 makelookupcpp replaces makelookup
 ## 2019-08-12 individualcovariates
 ## 2019-08-14 setNumThreads
-
+## 2019-11-29 secr 4.1.0
+## 2020-01-08 distancetotrap revised for polygon detectors
+## 2020-01-26 selectCHsession
+## 2020-02-21 secr 4.2.0
 #######################################################################################
 
 # Global variables in namespace
@@ -798,12 +800,29 @@ distancetotrap <- function (X, traps) {
     X <- matrix(unlist(X), ncol = 2)
     nxy <- nrow(X)
     detecttype <- detector(traps)
-    detecttype <- ifelse (is.null(detecttype), '', detecttype)
-
-    ## extended from SpatialPolygonsDataFrame 2016-02-17, 2016-10-16
+    detecttype <- ifelse (is.null(detecttype), "", detecttype)
+    
+    ## 2020-01-08
+    if (all(detecttype %in% c('polygon', 'polygonX')) && requireNamespace('rgeos')) {
+        trps <- split(traps, polyID(traps))
+        polys <- lapply(trps, boundarytoSP)
+        xy <- sp::SpatialPoints(X)
+        dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
+        dmat <- matrix(unlist(dlist), ncol = length(dlist))
+        d <- apply(dmat,1,min)
+        return (d)
+    }
+        
     if (inherits(traps, 'SpatialPolygons')) {
-        trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-        warning("using only first polygon of SpatialPolygons")
+        if (requireNamespace('rgeos')) {
+            xy <- sp::SpatialPoints(X)
+            d <- rgeos::gDistance(spgeom1 = xy, spgeom2 = traps, byid = TRUE)
+            return (d)
+        }
+        else {
+            trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
+            warning("using only first polygon of SpatialPolygons")
+        }
     }
     else if (all(detecttype %in% .localstuff$polydetectors)) {
         ## approximate only
@@ -811,7 +830,9 @@ distancetotrap <- function (X, traps) {
         traps <- split(traps, polyID(traps))
         trpi <- function (i, n = 100) {
             intrp <- function (j) {
-                tmp <- as.data.frame(traps[[i]][j:(j+1),])[,-1]   # modified 2017-11-29 to allow for as.data.frame method
+                ## 2020-01-08 dodge issue with polyID in as.data.frame
+                ## tmp <- as.data.frame(traps[[i]][j:(j+1),])[,-1]   
+                tmp <- data.frame(x = traps[[i]]$x[j:(j+1)], y = traps[[i]]$y[j:(j+1)])
                 if (tmp$x[1] == tmp$x[2])
                     data.frame(x=rep(tmp$x[1], n),
                                y=seq(tmp$y[1], tmp$y[2], length=n))
@@ -828,13 +849,14 @@ distancetotrap <- function (X, traps) {
         trps <- do.call(rbind, lapply(1:length(traps), trpi))
         trps <- matrix(unlist(trps), ncol = 2)
     }
-    else
+    else {
         ## 2015-10-18 added protection
         trps <- matrix(unlist(traps), ncol = 2)
+    }
+
     temp <- nearestcpp(as.matrix(X), as.matrix(trps))
     if (all(detecttype %in% c('polygon', 'polygonX'))) {
         inside <- lapply(traps, pointsInPolygon, xy=X)
-        
         inside <- do.call(rbind, inside)
         temp$distance [apply(inside,2,any)] <- 0
     }
@@ -2064,24 +2086,26 @@ individualcovariates <- function (PIA) {
 }
 ##############################################################################
 
-setNumThreads <- function (ncores, stackSize = NULL, maxThreads = Inf) {
-  defaultThreads <- defaultNumThreads()   ## RcppParallel::
-  if (is.null(ncores)) { 
-    ncores <- max(1, min(defaultThreads-1, maxThreads))
-  }
-  else {
-    if (ncores > defaultThreads) 
-      warning("requested number of cores exceeds number available")
+setNumThreads <- function (ncores, ...) {
+    ## environment variable RCPP_PARALLEL_NUM_THREADS is set by RcppParallel::setThreadOptions
+    ## current is NA if variable not previously set
+    current <- as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", ""))
+    if (missing(ncores)) ncores <- NULL
+    if (is.na(current)) {
+        if (is.null(ncores)) {
+            ncores <-  min(RcppParallel::defaultNumThreads(), 2)
+        }
+    }
+    else if (is.null(ncores) || (ncores == current)) {
+        return(current)   ## no need to change 
+    }
+    if (ncores > RcppParallel::defaultNumThreads()) 
+        stop("requested ncores exceeds number available")
     if (ncores<1)
-      stop ("ncores < 1")
-  }
-  if (!is.null(stackSize) && is.numeric(stackSize)) {
-    stackSize <- as.integer(stackSize)
-  }
-  else {
-    stackSize <- "auto"
-  }
-  setThreadOptions(ncores, stackSize) ## RcppParallel::
+        stop ("specified ncores < 1")
+    ncores <- min(ncores, RcppParallel::defaultNumThreads())
+    RcppParallel::setThreadOptions(ncores, ...) 
+    return(as.integer(Sys.getenv("RCPP_PARALLEL_NUM_THREADS", "")))
 }
 ##############################################################################
 
@@ -2110,3 +2134,12 @@ uniquerownames <- function (capthist) {
         capthist
     }
 }
+##############################################################################
+
+selectCHsession <- function(capthist, sessnum) {
+    if (ms(capthist)) 
+        capthist[[sessnum]]
+    else 
+        capthist
+}
+##############################################################################

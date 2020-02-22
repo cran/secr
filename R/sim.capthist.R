@@ -1003,7 +1003,6 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         nzero <- nrow(popnM) - nrow(CH)
         CH <- addzeroCH(CH, nzero)
     }
-#browser()
     ############################################################################
     ## add sightings of unmarked animals
     ## apply same sampling to unmarked fraction of population

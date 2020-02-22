@@ -35,7 +35,7 @@ bias.D (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL,
   \item{noccasions}{ number of sampling occasions}
   \item{ignoreusage}{logical for whether to discard usage information from
     \code{traps(capthist)}}
-  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+  \item{ncores}{ integer number of threads to use for parallel processing}
   \item{RBtarget}{ numeric target for relative bias of density estimate }
   \item{interval}{ a vector containing the end-points of the interval to
     be searched }
@@ -58,6 +58,9 @@ spatial scale of the detection function (usually
 width is not within \code{interval}. This often happens with
 heavy-tailed detection functions (e.g., hazard-rate): choose another
 function, a larger \code{RBtarget} or a wider \code{interval}.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 Convenient alternative input styles are --
 \itemize{
@@ -128,8 +131,10 @@ The potential components of \code{control} are --
   \item{\code{masksample = 1000 }}{ maximum number of points sampled from
     calibration mask }
   
-  \item{\code{spline.df = 10 } }{ effective degrees of freedom for
+  \item{\code{spline.df = 10 }}{ effective degrees of freedom for
     \code{smooth.spline} }
+    
+    \item{\code{ncores = NULL}}{ integer number of cores}
   
 %  \item{\code{use.gpclib = FALSE }}{ logical to use \pkg{gpclib} if
 %    installed } 
@@ -150,6 +155,8 @@ The potential components of \code{control} are --
 
 \examples{
 
+suggest.buffer(secrdemo.0)
+
 \dontrun{
 temptraps <- make.grid()
 detpar <-  list(g0 = 0.2, sigma = 25)
@@ -165,11 +172,13 @@ lines(RB)
 ## compare to esa plot
 esa.plot (temptraps, max.buffer = 150, spacing = 4, detectfn = 0,
   detectpar = detpar, noccasions = 5, type = "density")
-}
 
 ## compare detection histories and fitted model as input
 suggest.buffer(captdata)
 suggest.buffer(secrdemo.0)
+
+}
+
 }
 
 \keyword{ models }

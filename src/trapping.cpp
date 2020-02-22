@@ -62,8 +62,8 @@ List trappingsingle (
   int finished;
   int OK;
   double Tski;
-  NumericVector gsb(3);
-  NumericVector miscparm(4);
+  std::vector<double> gsb(3);
+  std::vector<double> miscparm(4);
 
   // MAIN LINE 
   RNGScope scope;             // Rcpp initialise and finalise random seed 
@@ -86,10 +86,10 @@ List trappingsingle (
         if (fabs(Tski) > 1e-10) {         
           gi = (lastcapt[i]>0) * ss * kk + k * ss + s;
           si = (lastcapt[i]>0) * ss + s;
-          gsb(0) = g0[gi];
-          gsb(1) = sigma[si];
-          gsb(2) = z[s];
-          p = pfn(fn, dist2(k, i), gsb, miscparm, w2); 
+          gsb[0] = g0[gi];
+          gsb[1] = sigma[si];
+          gsb[2] = z[s];
+          p = pfnS(fn, dist2(k, i), gsb, miscparm, w2); 
           if (fabs(Tski-1) > 1e-10)       
             p = 1 - exp(Tski * log(1 - p));
           
@@ -173,8 +173,8 @@ List trappingmulti (
   NumericMatrix h(N, kk);
   NumericVector hsum(N);
   NumericVector cump(kk+1);
-  NumericVector gsb(3);
-  NumericVector miscparm(4);
+  std::vector<double> gsb(3);
+  std::vector<double> miscparm(4);
   
   double runif;
   int    i,j,k,s,gi,si;
@@ -192,10 +192,10 @@ List trappingmulti (
       {
         gi = (lastcapt[i]>0) * ss * kk + k * ss + s;
         si = (lastcapt[i]>0) * ss + s;
-        gsb(0) = g0[gi];
-        gsb(1) = sigma[si];
-        gsb(2) = z[s];
-        p = pfn(fn,  dist2(k, i), gsb, miscparm, w2); 
+        gsb[0] = g0[gi];
+        gsb[1] = sigma[si];
+        gsb[2] = z[s];
+        p = pfnS(fn,  dist2(k, i), gsb, miscparm, w2); 
         Tski = Tsk(k,s);
         //Rprintf("fabs(Tski) %8.6f p %8.6f\n", fabs(Tski), p);
         if (fabs(Tski) > 1e-10) {         
@@ -267,8 +267,8 @@ List trappingcapped (
   int    gi, si;
   int    nc = 0;
   double p;
-  NumericVector gsb(3);
-  NumericVector miscparm(4);
+  std::vector<double> gsb(3);
+  std::vector<double> miscparm(4);
   double Tski;
   
   RNGScope scope;             // Rcpp initialise and finalise random seed 
@@ -281,10 +281,10 @@ List trappingcapped (
         for (i=0; i<N; i++) {
           gi = k * ss + s;
           si = s;
-          gsb(0) = g0[gi];
-          gsb(1) = sigma[si];
-          gsb(2) = z[s];
-          p = pfn(fn, dist2(k, i), gsb, miscparm, w2); 
+          gsb[0] = g0[gi];
+          gsb[1] = sigma[si];
+          gsb[2] = z[s];
+          p = pfnS(fn, dist2(k, i), gsb, miscparm, w2); 
           h[i] = -Tski * log(1 - p);
           hsum += h[i];
         }    
@@ -338,8 +338,8 @@ List trappingproximity (
   int    gi, si;
   int    nc = 0;
   int    count;
-  NumericVector gsb(3);
-  NumericVector miscparm(4);
+  std::vector<double> gsb(3);
+  std::vector<double> miscparm(4);
   double Tski;
   
   int    ss = Tsk.ncol();    // number of occasions 
@@ -358,10 +358,10 @@ List trappingproximity (
         if (fabs(Tski) > 1e-10) {       
           gi = k * ss + s;
           si = s;
-          gsb(0) = g0[gi];
-          gsb(1) = sigma[si];
-          gsb(2) = z[s];
-          theta = pfn(fn, dist2(k, i), gsb, miscparm, w2); 
+          gsb[0] = g0[gi];
+          gsb[1] = sigma[si];
+          gsb[2] = z[s];
+          theta = pfnS(fn, dist2(k, i), gsb, miscparm, w2); 
           if (theta>0) {
             count = rcount (1, theta, Tski);
             if (count>0)
@@ -413,8 +413,8 @@ List trappingcount (
   int    gi, si;
   int    nc = 0;
   int    count;
-  NumericVector gsb(3);
-  NumericVector miscparm(4);
+  std::vector<double> gsb(3);
+  std::vector<double> miscparm(4);
   double Tski;
   
   RNGScope scope;             // Rcpp initialise and finalise random seed 
@@ -425,10 +425,10 @@ List trappingcount (
         if (fabs(Tski) > 1e-10) {          // nonzero 2012 12 18 
           gi = k * ss + s;
           si = s;
-          gsb(0) = g0[gi];
-          gsb(1) = sigma[si];
-          gsb(2) = z[s];
-          theta = pfn(fn, dist2(k, i), gsb, miscparm, w2); 
+          gsb[0] = g0[gi];
+          gsb[1] = sigma[si];
+          gsb[2] = z[s];
+          theta = pfnS(fn, dist2(k, i), gsb, miscparm, w2); 
           if (theta>0) {
             if (binomN[s] == 1) {
               count = rcount (round(Tski), theta, 1);

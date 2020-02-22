@@ -46,7 +46,8 @@ derivedExternal ( object, sessnum = NULL, nj, cluster, buffer = 100,
     alpha = 0.05, loginterval = TRUE)
 
 derivedSystematic( object, xy, design = list(), basenx = 10, df = 9, extrapolate = TRUE,
-    alpha = 0.05, loginterval = TRUE, independent.esa = FALSE, keep = FALSE)
+    alpha = 0.05, loginterval = TRUE, independent.esa = FALSE, keep = FALSE,
+    ncores = NULL)
 
 }
 
@@ -73,7 +74,8 @@ derivedSystematic( object, xy, design = list(), basenx = 10, df = 9, extrapolate
   \item{basenx}{integer number of basis grid points in x-dimension}
   \item{df}{integer number of degrees of freedom for gam}
   \item{extrapolate}{ logical; if FALSE then boxlet p values are inferred from nearest point inside convex hull of grid}
-  \item{keep}{logical; if TRUE then derivedSystematic saves key intermediate values as attributes }
+  \item{keep}{logical; if TRUE then derivedSystematic saves key intermediate values as attributes}
+  \item{ncores}{integer}
 }
 
 \details{

@@ -10,7 +10,8 @@
 ## 2014-08-25 comment out lth which was unused and called undefined fn get.pts
 ## 2017-03-29 tweaked to allow character detectfn
 ## 2019-12-16 minor changes to suggest.buffer: autoini thin=1; suppress warnings; fix multisession bug
-
+## 2020-01-06 bias.D control$ncores defaults to 2 instead of NULL
+## 2020-01-08 note: potential use of rgeos::gLength for perimeter of polygons
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
         if (detectfn == 7) {
@@ -93,10 +94,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
         warning ("bias.D() does not allow for variable effort (detector usage)")
     }
 
-    ntraps <- nrow(traps)
-    trapspacing <- spacing(traps)
     defaultcontrol <- list(bfactor = 20, masksample = 1000, spline.df = 10,
-                           scale = 10000, ntheta = 60, method = 1)
+                           scale = 10000, ntheta = 60, method = 1, ncores = NULL) 
     if (detectfn %in% c(1,2,7))
        defaultcontrol$bfactor <- 200
     if (is.null(control))
@@ -104,16 +103,20 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
     else
         control <- replace (defaultcontrol, names(control), control)
 
+    ntraps <- nrow(traps)
+    trapspacing <- spacing(traps)
+    
     if (FALSE) {
         ## sidelined code
         buffs <- (round(bfactor):round(bfactor*2)) * trapspacing
         wayout <- sweep(cbind(buffs,rep(0,length(buffs))), STAT = unlist(apply(traps,2,max)),
                         MAR=2, FUN='+')
-        pdotwo <- pdot(wayout, traps, detectfn, detectpar, noccasions, binomN)
+        pdotwo <- pdot(wayout, traps, detectfn, detectpar, noccasions, binomN,
+                       ncores = control$ncores)
         tempesa <- esa.plot(traps, max.buffer= trapspacing*control$bfactor,
                        spacing = trapspacing/2, detectfn = detectfn,
                        detectpar=detectpar, noccasions=noccasions,
-                       plt = F, thin = 0.01)
+                       plt = FALSE, thin = 0.01)
         pdotr.spline <- smooth.spline(c(tempesa$buffer,buffs), c(tempesa$pdot, pdotwo),
                                       control$spline.df)
     }
@@ -134,7 +137,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
 #        temp2[,2] <- temp2[,2] * (dy + 2 * buff) + mean(traps$y)
 
         buff <- distancetotrap(temp2, traps)
-        temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions, binomN)
+        temp3 <- pdot(temp2, traps, detectfn, detectpar, noccasions, binomN,
+                      ncores = control$ncores)
         if (control$method == 1) {
             tempfit <- nls ( temp3 ~ (1 - (1 - gr(buff))^ (noccasions*k) ), start=list(k=2))
             if (tempfit$convInfo$isConv)

@@ -1195,7 +1195,7 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
     c(x2,y2)
   }
 
-  if (abs(degrees)>0) {
+  if (abs(degrees)>0 && nrow(object)>0) {
     if (is.null(centrexy)) centrexy <- c(mean(object$x), mean(object$y))
     theta <- 2*pi*degrees/360 # convert to radians
 
@@ -2254,7 +2254,8 @@ print.summary.popn <- function (x, ...) {
 
 ############################################################################################
 
-trim.secr <- function (object, drop = c('call', 'mask','design','design0'), keep = NULL) {
+trim.secr <- function (object, drop = c('call', 'mask', 'designD', 'designNE', 
+                                        'design','design0'), keep = NULL) {
     trim.default(object, drop = drop, keep = keep)
 }
 ############################################################################################

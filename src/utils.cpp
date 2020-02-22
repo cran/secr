@@ -724,10 +724,10 @@ double gr (
         const rpoint xy,
         const rpoint animal) {
     double r;
-    fnptr fnp;
-    fnp = getgfnr(fn);
+    fnptrC fnp;
+    fnp = getgfns(fn);
     r = distance1 (xy, animal);
-    return (fnp(gsb,r));
+    return (fnp(as<std::vector<double>>(gsb),r));
 }
 //----------------------------------------------------------------
 

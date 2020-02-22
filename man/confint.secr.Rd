@@ -25,7 +25,7 @@ tracelevel = 1, tol = 0.0001, bounds = NULL, ncores = NULL, ...)
   \item{tracelevel}{ integer for level of detail in reporting (0,1,2) }
   \item{tol}{ absolute tolerance (passed to \link{uniroot}) }
   \item{bounds}{ numeric vector of outer starting values -- optional }
-  \item{ncores}{ number of cores used for parallel processing }
+  \item{ncores}{ number of threads used for parallel processing }
   \item{\dots}{ other arguments (not used) }
 }
 \details{
@@ -47,7 +47,8 @@ backtransformed from the limits for the relevant beta parameter.
 If \code{bounds} is provided it should be a 2-vector or matrix of 2
 columns and length(parm) rows.
 
-The NULL default value of \code{ncores} is usually faster than alternatives.
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 } 
 

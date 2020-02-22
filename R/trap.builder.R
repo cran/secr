@@ -19,7 +19,8 @@
 ## 2018-12-19 make.systematic() grid of centres expanded
 ## 2018-12-29 boundarytoSPDF and boundarytoSP moved to utility.R
 ## 2018-12-29 make.systematic() argument 'chequerboard'
-
+## 2019-12-20 make.systematic() arguments 'rotate', 'centrexy'
+## 2020-01-27 fix bug (saved n = NULL when n missing)
 ###############################################################################
 
 ## spsurvey uses sp
@@ -321,11 +322,16 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
 make.systematic <- function (n, cluster, region, spacing = NULL,
     origin = NULL, originoffset = c(0,0), chequerboard = c('all','black','white'), 
-    order = c('x', 'y', 'xb', 'yb'), ...) {
+    order = c('x', 'y', 'xb', 'yb'), 
+    rotate = 0, centrexy = apply(bbox(region),1,mean), 
+    keep.design = TRUE, ...) {
+    
+    # NOT GOOD IF REGION IS MATRIX NOT SPDF
 
-## 'cluster' is a traps object for one module
-## 'region' is a rectangular survey region
-## ... arguments passed to trap.builder (rotate, detector)
+    ## 'cluster' is a traps object for one module
+    ## 'region' is a rectangular survey region
+    ## ... arguments passed to trap.builder (rotate, detector)
+    temporigin <- origin
     chequerboard <- match.arg(chequerboard)
     order <- match.arg(order)
     SP <- inherits(region, "SpatialPolygons")
@@ -340,12 +346,20 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         region <- boundarytoSP(region)
     }
     
+    if (rotate != 0) {
+        if (requireNamespace('maptools')) {
+            region <- maptools::elide(region, rotate = -rotate, center = centrexy)
+        }
+        else {
+            warning("install maptools for rotate option in make.systematic")
+        }
+    }
+    
     ## 2018-09-27
     proj4string(region) <- CRS()
 
     wd <- diff(bbox(region)[1,])
     ht <- diff(bbox(region)[2,])
-
     if (missing(cluster)) {
         ## this case is passed to trap builder for single detector placement
         ## if ... does not include detector, detector defaults to 'multi'
@@ -360,12 +374,11 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
 
     wx <- clwd/2
     wy <- clht/2
-
     if (!is.null(spacing)) {
         rx <- spacing[1]
         ry <- ifelse(length(spacing)>1, spacing[2], rx)
-        nx <- round ((wd-2*wx)/rx) + 1  ## extra to ensure coverage 2018-10-13
-        ny <- round ((ht-2*wy)/ry) + 1  ## extra to ensure coverage 2018-10-13
+        nx <- round ((wd-2*wx)/rx + max(spacing)/rx)  ## extra to ensure coverage 2018-10-13
+        ny <- round ((ht-2*wy)/ry + max(spacing)/ry)  ## extra to ensure coverage 2018-10-13
     }
     else {
         if (length(n)>1) {
@@ -400,9 +413,11 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
 
     ## 2018-12-29
     rowcol <- expand.grid(row = 0:(ny+1), col = 0:(nx+1))
-    centres <- data.frame(x = rowcol$col * ry + origin[1],
-                          y = rowcol$row * rx + origin[2])
-    
+    # centres <- data.frame(x = rowcol$col * ry + origin[1],
+    #                       y = rowcol$row * rx + origin[2])
+    ## 2019-12-17 apply rx to columns, ry to rows
+    centres <- data.frame(x = rowcol$col * rx + origin[1],
+                          y = rowcol$row * ry + origin[2])
     ##-----------------------------------------------------------------
     ## 2019-09-28  alternative cluster sequence
     nx2 <- nx+2; ny2 <- ny+2
@@ -440,11 +455,118 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     
     traps <- trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)
-    attr(traps, 'origin') <- origin
-    attr(traps, 'originbox') <- originbox
+    
+    if (keep.design) {
+        design <- list (
+            'function' = 'make.systematic',
+            n = if (missing(n)) NULL else n, 
+            cluster = cluster, 
+            region = region, 
+            spacing = spacing,
+            origin = temporigin, 
+            originoffset = originoffset, 
+            chequerboard = chequerboard,
+            order = order, 
+            rotate = rotate, 
+            centrexy = centrexy)
+        design <- c(design, list(...))
+        attr(traps, 'design') <- design
+    }
+    else {
+        attr(traps, 'origin') <- origin
+        attr(traps, 'originbox') <- originbox
+    }
+    
+    if (rotate != 0 && requireNamespace('maptools')) {
+        ## reverse rotation applied to region polygon
+        ## silently as any maptools warning issued when rotate first encountered
+        traps <- rotate(traps, rotate, centrexy)
+    }
+    
     traps
 }
 
+###############################################################################
+make.lacework <- function (region, spacing = c(100, 20), times = NULL, 
+                           origin = NULL, rotate = 0, 
+                           radius = NULL, detector = "multi", keep.design = TRUE) {
+    spacing <- as.numeric(spacing)
+    if (length(spacing) == 1) {
+        if (is.null(times)) stop("make.lacework requires times if spacing length 1")
+        spacing <- c(spacing * times, spacing)
+    }
+    temporigin <- origin
+    fraction <- 1.0  ## suspended code
+    if (length(spacing) != 2) {
+        stop("invalid spacing 2-vector in make.lacework")
+    }
+    if (inherits(region, 'SpatialPolygons')) {
+        region <- sp::polygons(region)
+    }
+    else {
+        region <- matrix(unlist(region), ncol = 2)
+        region <- rbind (region, region[1,])  # force closure of polygon
+        region <- boundarytoSP(region)
+    }
+    if (rotate != 0) {
+        if (requireNamespace('maptools')) {
+            centrexy <- apply(sp::bbox(region),1,mean)
+            region <- maptools::elide(region, rotate = -rotate, center = centrexy)
+        }
+        else {
+            warning("rotation requires package maptools; not rotated")
+        }
+    }    
+    bbox <- sp::bbox(region)                    ## after rotation
+    if (is.null(origin)) {
+        origin <- bbox[,1]
+        origin <- origin - runif(2)*spacing[1]
+    }
+    rx <- diff(bbox[1,])
+    ry <- diff(bbox[2,])
+    n1 <- ceiling((rx + spacing[1]) / spacing[1]) + 2
+    n2 <- ceiling((ry + spacing[1]) / spacing[2]) + 2
+    gridx <- make.grid(nx=n1, ny=n2, spacex = spacing[1], spacey = spacing[2], originxy = origin, 
+                       detector = detector, ID = 'numxb')
+    n1 <- ceiling((ry + spacing[1]) / spacing[1]) + 2
+    n2 <- ceiling((rx + spacing[1]) / spacing[2]) + 2
+    gridy <- make.grid(ny=n1, nx=n2, spacey = spacing[1], spacex = spacing[2], originxy = origin, 
+                       detector = detector, ID = 'numyb')
+    if (fraction < 1) {
+        OKx <- ((gridx$y-origin[2]) %% spacing[1]) < fraction * spacing[1]
+        OKy <- ((gridy$x-origin[1]) %% spacing[1]) < fraction * spacing[1]
+        gridx <- subset(gridx,OKx)
+        gridy <- subset(gridy,OKy)
+    }
+    grid <- rbind(gridx, gridy, renumber = FALSE, checkdetector = FALSE)
+    dupl <- duplicated(round(grid,5))
+    crossings <- subset(grid, dupl)
+    grid <- subset(grid, !dupl)
+    grid <- subset(grid, pointsInPolygon(grid, region))
+    crossings <- subset(crossings, pointsInPolygon(crossings, region))
+    if (!is.null(radius)) {
+        grid <- subset(grid, distancetotrap(grid, crossings)<=radius)
+    }
+    rownames(grid) <- sapply(lapply(strsplit(rownames(grid), ".", TRUE), rev), paste, collapse='.')
+    if (rotate != 0) {
+        grid <- rotate(grid, degrees = rotate, centrexy = centrexy)
+        crossings <- rotate(crossings, degrees = rotate, centrexy = centrexy)
+    }
+    attr(grid, 'crossings') <- as.matrix(crossings)
+    if (keep.design) {
+        design <- list (
+            'function' = 'make.lacework',
+            region = region, 
+            spacing = spacing,
+            origin = temporigin, 
+            rotate = rotate, 
+            radius = radius,
+            detector = 'multi')
+        attr(grid, 'design') <- design
+    }
+    
+    grid
+}
 ###############################################################################
 
 cluster.counts <- function (object) {
@@ -473,3 +595,9 @@ cluster.centres <- function (object) {
                y = tapply(object$y,clust,mean))
 }
 ###############################################################################
+
+# lacework test
+# library(secr)
+# bx <- data.frame(x=c(0,0,270,270,0), y = c(0,270,270,0,0))
+# plot(make.lacework(bx, c(20,5)), border=10)
+# lines(bx)

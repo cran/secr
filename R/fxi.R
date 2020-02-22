@@ -159,7 +159,7 @@ fx.total <- function (object, sessnum = 1, mask = NULL, ncores = NULL, ...)
   D <- predictDsurface(object, mask = mask)
   D <- covariates(D)$D.0
   pd <- pdot(X = mask, traps = traps(CH), detectfn = object$detectfn,
-             detectpar = detectpar, noccasions = ncol(CH))
+             detectpar = detectpar, noccasions = ncol(CH), ncores = ncores)
   nct <- D * (1 - pd)
   covariates(mask) <- data.frame(D.fx = fxt, D.nc = nct, D.sum = fxt + nct)
   class(mask) <- c("Dsurface", class(mask))
@@ -169,40 +169,91 @@ fx.total <- function (object, sessnum = 1, mask = NULL, ncores = NULL, ...)
 ###############################################################################
 
 allhistfxi <- function (m, realparval, haztemp, gkhk, pi.density, PIA, usge,
-                        CH, binomN, grp, pmixn, cellsize, grain) {
-  nc <- nrow(CH)
-  nmix <- nrow(pmixn)
-  ngroup <- length(levels(grp))
-  ss <- ncol(CH)
-  kk <- dim(PIA)[4]
-  sump <- matrix(0, nrow = nc, ncol = m)
-  for (x in 1:nmix) {
-    hx <- if (any(binomN==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
-    hi <- if (any(binomN==-2)) haztemp$hindex else -1                   ## index to hx
-    temp <- simplehistoriesfxicpp(
-      as.integer(x-1),
-      as.integer(m),
-      as.integer(nc),
-      as.integer(nrow(realparval)),
-      as.integer(grain),
-      as.integer(binomN),
-      as.integer(CH),   
-      as.integer(grp)-1L,
-      as.double (gkhk$gk),     ## precomputed probability 
-      as.double (gkhk$hk),     ## precomputed hazard
-      as.matrix (pi.density),
-      as.integer(PIA),
-      as.matrix(usge),
-      as.matrix (hx),                
-      as.matrix (hi),      
-      as.double (cellsize))
-    sump <- sump + sweep(temp, MARGIN=1, STATS = pmixn[x,], FUN = "*")
-  }
-  sump
+                        CH, binomN, grp, pmixn, grain) {
+    nc <- nrow(CH)
+    nmix <- nrow(pmixn)
+    sump <- matrix(0, nrow = nc, ncol = m)
+    for (x in 1:nmix) {
+        hx <- if (any(binomN==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
+        hi <- if (any(binomN==-2)) haztemp$hindex else -1                   ## index to hx
+        temp <- simplehistoriesfxicpp(
+            as.integer(x-1),
+            as.integer(m),
+            as.integer(nc),
+            as.integer(nrow(realparval)),
+            as.integer(grain),
+            as.integer(binomN),
+            as.integer(CH),   
+            as.integer(grp)-1L,
+            as.double (gkhk$gk),     ## precomputed probability 
+            as.double (gkhk$hk),     ## precomputed hazard
+            as.matrix (pi.density),
+            as.integer(PIA),
+            as.matrix(usge),
+            as.matrix (hx),                
+            as.matrix (hi))
+        sump <- sump + sweep(temp, MARGIN=1, STATS = pmixn[x,], FUN = "*")
+    }
+    sump
 }
 
+allhistpolygonfxi <- function (detectfn, realparval, haztemp, hk, H, pi.density, PIA, 
+                               CH, xy, binomNcode, grp, usge, mask, pmixn, maskusage, 
+                               grain, minprob) {
+    nc <- nrow(CH)
+    nmix <- nrow(pmixn)
+    m <- length(pi.density)
+    s <- ncol(usge)
+    sump <- matrix(0, nrow = nc, ncol = m)
+    for (x in 1:nmix) {
+        hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
+        hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
+        temp <- polygonfxicpp(
+            as.integer(nc),
+            as.integer(detectfn[1]),
+            as.integer(grain),
+            as.double(minprob),          
+            as.integer(binomNcode),   # vector length s
+            as.integer(CH),   
+            as.matrix(xy$xy),
+            as.vector(xy$start),
+            as.integer(as.numeric(grp))-1L,
+            as.double(hk),
+            as.double(H),
+            as.matrix(realparval),
+            matrix(1,nrow=s, ncol=nmix),  ## pID?
+            as.matrix(mask),
+            as.matrix (pi.density),
+            as.integer(PIA[1,,,,x]),
+            as.matrix(usge),
+            as.matrix (hx),                
+            as.matrix (hi),      
+            as.matrix(maskusage)
+        )
+        sump <- sump + sweep(temp, MARGIN=1, STATS = pmixn[x,], FUN = "*")
+    }
+    sump
+}
+
+    # const IntegerVector w,
+    # const NumericMatrix xy,
+    # const IntegerVector start,
+    # const IntegerVector group,
+    # const NumericVector hk,
+    # const NumericVector H,
+    # const NumericMatrix gsbval,
+    # const NumericMatrix pID,
+    # const NumericMatrix mask,
+    # const NumericMatrix density,
+    # const IntegerVector PIA,
+    # const NumericMatrix Tsk,
+    # const NumericMatrix h,
+    # const IntegerMatrix hindex, 
+    # const LogicalMatrix mbool
+
+
 fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
-  ## data for a single session
+    ## data for a single session
   data <- prepareSessionData(object$capthist, object$mask, object$details$maskusage, 
                              object$design, object$design0, object$detectfn, object$groups, 
                              object$fixed, object$hcov, object$details)
@@ -222,16 +273,29 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
     X <- matrix(unlist(X), ncol = 2)
   }
   
-  if (is.null(i))
+  #----------------------------------------
+  # restrict to selected individuals
+  
+  xy <- data$xy 
+  if (is.null(i)) {
     ok <- 1:nrow(data$CH)
-  else
+  }
+  else {
     ok <- i
-  if (length(dim(data$CH)) == 2)
+    if (!is.null(xy)) {
+        xy <- getxy(data$dettype, selectCHsession(subset(object$capthist, ok), sessnum))
+    }
+  }
+  
+  if (length(dim(data$CH)) == 2) {
     CH <- data$CH[ok,,drop=FALSE]
-  else
+  }
+  else {
     CH <- data$CH[ok,,,drop=FALSE]
+  }
   grp <- data$grp[ok]
-  setNumThreads(ncores, maxThreads = nrow(CH))
+
+  setNumThreads(ncores)
   
   #----------------------------------------
   # Density
@@ -288,29 +352,22 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   miscparm <- getmiscparm(object$details$miscparm, object$detectfn, object$beta, 
                           object$parindx, object$details$cutval)
 
-  gkhk <- makegk (data$dettype, object$detectfn, data$traps, data$mask, object$details, sessnum, NE, D, miscparm, Xrealparval)
-  
-  # distmat2 <- getuserdist(data$traps, data$mask, object$details$userdist, sessnum, 
-  #                         NE, D, miscparm)
-  # gkhk <- makegkPointcpp (as.integer(object$detectfn),
-  #                            as.integer(object$details$grain),
-  #                            as.matrix(Xrealparval),
-  #                            as.matrix(distmat2),
-  #                            as.double(miscparm))
-  # 
-  # if (any(data$dettype==8)) {   ## capped
-  #   gkhk <- cappedgkhkcpp (
-  #     as.integer(nrow(Xrealparval)),
-  #     as.integer(nrow(data$traps)),
-  #     as.double(attr(data$mask, "area")),
-  #     as.double(D),
-  #     as.double(gkhk$gk), as.double(gkhk$hk))  
-  # }
-  
+  gkhk <- makegk (data$dettype, object$detectfn, data$traps, data$mask, object$details, sessnum, 
+                  NE, D, miscparm, Xrealparval)
   haztemp <- gethazard (data$m, data$binomNcode, nrow(realparval), gkhk$hk, PIA, data$usge)
-  prmat <- allhistfxi (data$m, Xrealparval, haztemp, gkhk, pimask, PIA, data$usge,
-                       CH, data$binomNcode, grp, pmix, 
-                       getcellsize(data$mask), object$details$grain)
+
+  ## 2020-01-26 conditional on point vs polygon detectors
+  if (data$dettype[1] %in% c(0,1,2,5,8,13)) {
+      prmat <- allhistfxi (data$m, Xrealparval, haztemp, gkhk, pimask, PIA, data$usge,
+                           CH, data$binomNcode, grp, pmix, object$details$grain)
+  }
+  else {
+      # warning ("fxi.secr experimental for polygon detector types")
+      prmat <- allhistpolygonfxi (object$detectfn, Xrealparval, haztemp, gkhk$hk, gkhk$H, pimask, PIA, 
+          CH, xy, data$binomNcode, grp, data$usge, data$mask,
+          pmix, data$maskusage, object$details$grain, object$details$minprob)
+  }
+  
   pisum <- apply(prmat,1,sum)
   
   if (reusemask) {
@@ -318,31 +375,21 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   }
   else {
     nX <- nrow(X)
-    
     gkhkX <- makegk (data$dettype, object$detectfn, data$traps, X, object$details, sessnum, NE, D, miscparm, Xrealparval)
-    
-    # distmatX2 <- getuserdist(data$traps, X, object$details$userdist, sessnum, 
-    #                          NE, D, miscparm)
-    # gkhkX <- makegkPointcpp (as.integer(object$detectfn),
-    #                             as.integer(object$details$grain),
-    #                             as.matrix(Xrealparval),
-    #                             as.matrix(distmatX2),
-    #                             as.double(miscparm))
-    # if (any(data$dettype==8)) {   ## capped  Not checked 2019-09-08
-    #   gkhkX <- cappedgkhkcpp (
-    #     as.integer(nrow(Xrealparval)),
-    #     as.integer(nrow(data$traps)),
-    #     as.double(attr(data$mask, "area")),
-    #     as.double(D),
-    #     as.double(gkhkX$gk), as.double(gkhkX$hk))  
-    # }
-    
     haztempX <- gethazard (nX, data$binomNcode, nrow(realparval), gkhkX$hk, PIA, data$usge)
-    prmatX <- allhistfxi (nX, Xrealparval, haztempX, gkhkX, piX, PIA, data$usge,
-                          CH, data$binomNcode, grp, 
-                          pmix, getcellsize(data$mask), object$details$grain)
+    
+    if (data$dettype[1] %in% c(0,1,2,5,8,13)) {
+        ## point detectors
+        prmatX <- allhistfxi (nX, Xrealparval, haztempX, gkhkX, piX, PIA, data$usge,
+                          CH, data$binomNcode, grp, pmix, object$details$grain)
+    }
+    else {
+        ## polygon-like detectors
+        prmatX <- allhistpolygonfxi (object$detectfn, Xrealparval, haztempX, gkhkX$hk, gkhkX$H, piX, PIA, 
+                             CH, xy, data$binomNcode, grp, data$usge, X,
+                             pmix, data$maskusage, object$details$grain, object$details$minprob)
+    }
     out <- sweep(prmatX, MARGIN=1, STATS=pisum, FUN="/")
-    ##out <- sweep(prmatX, MARGIN=1, STATS=apply(prmatX,1,sum), FUN="/")
   }
   out <- as.list(as.data.frame(t(out)))
   names(out) <- row.names(CH)

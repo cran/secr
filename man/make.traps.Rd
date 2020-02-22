@@ -13,11 +13,12 @@
 
 \usage{
 make.grid(nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing = NULL,
-    detector = "multi", originxy = c(0,0), hollow = FALSE,
-    ID = "alphay", markocc = NULL)
+    detector = "multi", originxy = c(0,0), hollow = FALSE, ID = "alphay", 
+    leadingzero = TRUE, markocc = NULL)
 
 make.circle (n = 20, radius = 100, spacing = NULL, 
-    detector = "multi", originxy = c(0,0), IDclockwise = TRUE, markocc = NULL)
+    detector = "multi", originxy = c(0,0), IDclockwise = TRUE, 
+    leadingzero = TRUE, markocc = NULL)
 
 make.poly (polylist = NULL, x = c(-50,-50,50,50),
     y = c(-50,50,50,-50), exclusive = FALSE, verify = TRUE)
@@ -39,6 +40,7 @@ make.telemetry (xy = c(0,0))
   \item{originxy}{ vector origin for x-y coordinates }
   \item{hollow}{ logical for hollow grid }
   \item{ID}{ character string to control row names }
+  \item{leadingzero}{logical; if TRUE numeric rownames are padded with leading zeros}
   \item{markocc}{integer vector of marking or sighting codes; see \code{\link{markocc}}}
   \item{n}{ number of detectors }
   \item{radius}{ radius of circle  (nominally in metres) }

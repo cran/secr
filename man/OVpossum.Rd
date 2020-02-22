@@ -95,12 +95,18 @@ Efford, M. G. and Cowan, P. E. (2004) Long-term population trend of
      Gliders}. Edited by R. L. Goldingay and S. M. Jackson. Surrey
      Beatty & Sons, Chipping Norton. Pp. 471--483.
      
-Ward, G. D. (1978) Habitat use and home range of radio-tagged opossums \emph{Trichosurus       vulpecula} (Kerr) in New Zealand lowland forest. In: \emph{The ecology of arboreal        folivores}. Edited by G. G. Montgomery. Smithsonian Institute Press. Washington, D.C.
-     Pp. 267--287.
+Ward, G. D. (1978) Habitat use and home range of radio-tagged opossums 
+    \emph{Trichosurus vulpecula} (Kerr) in New Zealand lowland forest. 
+    In: \emph{The ecology of arboreal folivores}. Edited by G. G. Montgomery. 
+    Smithsonian Institute Press. Washington, D.C. Pp. 267--287.
 
 }
 
 \examples{
+
+# This example requires the suggested package rgdal
+
+\dontrun{
 
 summary(OVpossumCH, terse = TRUE)
 ovtrap <- traps(OVpossumCH[[1]])
@@ -121,12 +127,14 @@ ovmask <- make.mask(ovtrap, buffer = 120, type = 'trapbuffer',
 ovmask <- addCovariates(ovmask, OVforest[1:2,])
 
 ## display mask
-par(mar=c(0,0,0,8))
+par(mar = c(0,0,0,8))
 plot(ovmask, covariate = 'forest', dots = FALSE, col = forestcol)
 plot(ovtrap, add = TRUE)
 
 ## add the left bank of the Orongorongo River
 lines(read.table(paste0(datadir,'/leftbank.txt')))
+
+}
 
 }
 

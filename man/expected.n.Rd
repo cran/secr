@@ -26,7 +26,7 @@ expected.n(object, session = NULL, group = NULL, bycluster
   \item{bycluster}{ logical to output the expected number for
   clusters of detectors rather than whole array }
   \item{splitmask}{logical for computation method (see Details)}
-  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+  \item{ncores}{ integer number of threads to be used for parallel processing}
 }
 
 \details{
@@ -44,6 +44,9 @@ expected.n(object, session = NULL, group = NULL, bycluster
 If the \code{bycluster} option is selected and detectors are not, in
 fact, assigned to clusters then each detector will be treated as a
 cluster, with a warning.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 By default, a full habitat mask is used for each cluster. This is the
 more robust option. Alternatively, the mask may be split into subregions
@@ -82,7 +85,7 @@ one per cluster. For multi-session data, a list of such vectors.
 
 \examples{
 
-expected.n(secrdemo.0, ncores = 2)
+expected.n(secrdemo.0)
 
 \dontrun{
 expected.n(secrdemo.0, bycluster = TRUE)

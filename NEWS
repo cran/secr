@@ -1,3 +1,26 @@
+Changes in version 4.2.0 (2020-02-22)
+
+New features or changed behaviour of old functions
+    o   new mechanism for setting number of threads (default 2)
+    o   setNumThreads() new function 
+    o   make.systematic() 'rotate', 'centrexy' and 'keep.design' arguments
+    o   make.lacework() new function
+    o   make.grid() and make.circle() acquire argument 'leadingzero') (default TRUE)
+
+Bugs fixed
+    o   make.systematic() unintended result when spacing of rows and columns differs
+
+Other
+    o   pdot() uses multithreaded C++ function pdotpointcpp2
+    o   pdot() acquires argument ncores
+    o   derivedSystematic() acquires argument ncores
+    o   esa() internal limit on ncores (2) removed
+    o   trim.secr() drops designD, designNE by default (see 4.0.0)
+    o   rotate.traps() checks for zero rows
+    o   suggest.buffer() minor internal changes
+    o   distancetotrap() uses rgeos::gDistance for polygon detectors if available
+    o   fxi.secr() and related functions enabled for polygon detector types
+
 Changes in version 4.1.0 (2019-12-17)
 
 New features or changed behaviour of old functions
@@ -17,6 +40,7 @@ Bugs fixed
         (bad indexing of parameter array PIA)
     o   secr.fit() failed with multi-session mark-resight data (fixed pID, non-null Tm)
     o   suggest.buffer() failed with input from multi-session fitted model
+    o   make.systematic() unintended result when spacing of rows and columns differ
 
 Other
     o   RcppNumerical used for numerical integration with polygon and transect detectors

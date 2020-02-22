@@ -50,7 +50,7 @@ par.region.N (secrlist, ncores = 1, ...)
 \details{
 
   From version 4.0, an \code{arglist} may specify \code{ncores} for a
-  particular secr fit (previously ncores was ignored in \code{arglist}). The most efficient option is probably the default (\code{ncores = NULL}). 
+  particular secr fit (previously ncores was ignored in \code{arglist}). 
 
   \code{trace} overrides any settings in \code{arglist}. Reporting of
   intermediate results is unreliable on Windows when \code{ncores > 1}.
@@ -100,12 +100,12 @@ With the introduction of multi-threading in \pkg{secr} 4.0, \code{par.secr.fit} 
 
 fit0 <- list(capthist = 'captdata', model = g0~1) 
 fitb <- list(capthist = 'captdata', model = g0~b)
-fits <- par.secr.fit (c('fit0','fitb'), ncores = 2)
+fits <- par.secr.fit (c('fit0','fitb'))
 AIC(fits)
 
-par.derived(fits, ncores = 2, se.esa = FALSE)
+par.derived(fits, se.esa = FALSE)
 
-par.region.N(fits, ncores = 2)
+par.region.N(fits)
 
 }
 }

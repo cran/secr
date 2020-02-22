@@ -47,7 +47,7 @@ integralprw1fast <- function (realparval0, gkhk, pi.density, PIA0,
             as.integer(m),
             as.integer(nr),    ## 1 
             as.integer(nrow(realparval0)),
-            as.integer(0),                        ##grain
+            as.integer(grain),
             as.integer(binomN),
             as.logical(indiv),
             matrix(nk2ch0[,,1], nrow = nr),

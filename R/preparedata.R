@@ -37,31 +37,14 @@ getk <- function(traps) {
   }
 }
 #--------------------------------------------------------------------------------
+
 getxy <- function(dettype, capthist) {
   if (all(detector(traps(capthist)) %in% .localstuff$polydetectors)) {
     xy <- xy(capthist)
-    # ID <- animalID(capthist, names = FALSE)
-    # occ <- occasion(capthist)
-    # xy <- xy[order(occ,ID),]
-    # n <- table(ID)
     ## start[z] indexes the first row in xy (or element in signal)
     ## for each possible count z (including zeros), where z is w-order (isk) 
     start <- abs(capthist)
     start <- head(cumsum(c(0,start)),length(start))
-    
-    # startisk <- numeric(length(start))
-    # dimc <- dim(capthist)-1
-    # nd <- 0
-    # for (k in 0:dimc[3]) {
-    #   for (s in 0:dimc[2]) {
-    #     for (i in 0:dimc[1]) {
-    #       wi <- ((dimc[1]+1) * ((dimc[2]+1) * k + s) + i)
-    #       startisk[wi+1] <- nd
-    #       nd <- nd + abs(capthist[wi+1])
-    #     }
-    #   }
-    # }
-
   }
   else {
     if (any(dettype == 13)) {
@@ -308,16 +291,15 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
   ## aslist used internally to determine whether single-session data are wrapped in a list
   if (ms(capthist)) {
       if (!ms(mask)) stop ("expect session-specific mask in prepareSessionData")
-      if (!ms(mask)) stop ("expect session-specific mask in prepareSessionData")
-    if (is.null(maskusage))
-        maskusage <- vector('list', length(capthist))
-    mapply(prepareSessionData, capthist, mask, maskusage,
-           MoreArgs = list(design, design0, detectfn, groups, 
-                           fixedpar, hcov, details, FALSE), SIMPLIFY = FALSE)
+      if (is.null(maskusage))
+          maskusage <- vector('list', length(capthist))
+      mapply(prepareSessionData, capthist, mask, maskusage,
+             MoreArgs = list(design, design0, detectfn, groups, 
+                             fixedpar, hcov, details, FALSE), SIMPLIFY = FALSE)
   }
-  else {
-    nc   <- nrow(capthist)
-    s    <- ncol(capthist)
+    else {
+        nc   <- nrow(capthist)
+        s    <- ncol(capthist)
     m    <- nrow(mask)
     traps   <- traps(capthist)
     dettype <- detectorcode(traps, MLonly = TRUE, noccasions = s)

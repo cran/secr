@@ -229,8 +229,6 @@ struct simplehistories : public Worker {
                 if (count<0) {count = -count; dead = true; }
                 for (m=0; m<mm; m++) {
                     if (mbool(n,m)) {
-                        if (m==400 && grain==0 && k==0)
-                            Rprintf("n %4d s %4d binomN[s] %4d count %4d pski %8.6e \n ", n,s,binomN[s], count, pski(binomN[s], count, Tsk(k,s), gk[i3(c, k, m, cc, kk)], pID[s]));
                         pm[m] *= pski(binomN[s], count, Tsk(k,s), gk[i3(c, k, m, cc, kk)], pID[s]);  
                     }
                     else {
@@ -325,11 +323,6 @@ struct simplehistories : public Worker {
                     fnucpp(n, s, cumcount, pm);
             }
             if (dead) break;               // out of s loop
-        }
-        
-        // temporary debug code
-        if (grain==0) {
-            Rprintf("n %4d pm[400] %8.6e \n ", n, pm[400]);
         }
         
         for (int m=0; m<mm; m++) {

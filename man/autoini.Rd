@@ -38,7 +38,7 @@ autoini(capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
 \item{ignoreusage}{logical for whether to discard usage information from
 \code{traps(capthist)}}
 
-\item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+\item{ncores}{ integer number of threads to be used for parallel processing}
 
 }
 
@@ -91,6 +91,9 @@ usage). Otherwise, the adjustment is on the hazard scale (adjusted.g0 =
 over all non-zero usage values (i.e. over used detectors and times). If
 usage is not specified it is taken to be 1.0.
 
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
+
 }
 
 \value{
@@ -130,6 +133,6 @@ array. \emph{Ecology} \bold{90}, 2676--2682.
 demotraps <- make.grid()
 demomask <- make.mask(demotraps)
 demoCH <- sim.capthist (demotraps, popn = list(D = 5, buffer = 100), seed = 321)
-autoini (demoCH, demomask, ncores = 2)   ## limit to 2 cores for CRAN 
+autoini (demoCH, demomask)
 }
 \keyword{ models }

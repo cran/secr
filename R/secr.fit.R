@@ -1,5 +1,5 @@
 ################################################################################
-## package 'secr' 4.1
+## package 'secr' 4.2
 ## secr.fit.R
 
 ## 2019-08-13, 2019-09-04
@@ -652,6 +652,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
                                groups, fixed, hcov, details)
     
+    setNumThreads(ncores, stackSize = details$stackSize)
+
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed) or a list 
@@ -697,7 +699,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                                    binomN = tempbinomN,
                                    adjustg0 = details$binomN[1]==0 && !details$fastproximity,
                                    ignoreusage = details$ignoreusage,
-                                   ncores = ncores)
+                                   ncores = NULL)   ## use ncores set previously
                 
                 if (any(is.na(unlist(start3)))) {
                     warning ("'secr.fit' failed because initial values not found",
@@ -794,8 +796,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         # start vector completed
         #--------------------------------------------------------------
     }
-    
-    setNumThreads(ncores, details$stackSize)
     
     ############################################
     # Single evaluation option
@@ -990,7 +990,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             args <- replace (args, names(list(...)), list(...))
             
             this.fit <- do.call (nlm, args)
-            
+
             this.fit$par <- this.fit$estimate     # copy for uniformity
             this.fit$value <- this.fit$minimum    # copy for uniformity
             if (this.fit$code > 2)
@@ -1067,7 +1067,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## form output list
     ############################################
     desc <- packageDescription("secr")  ## for version number
-    
+
     ## if density modelled then smoothsetup already contains D,noneuc
     ## otherwise an empty list; now add detection parameters from
     ## secr.design.MS
@@ -1077,7 +1077,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## experimentally do not save environment of model formulae
     
     model <- lapply(model, function(x) {environment(x) <- NULL; x})
-    
+
     output <- list (call = cl,
                     capthist = capthist,
                     mask = mask,

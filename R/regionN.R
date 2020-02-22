@@ -331,7 +331,7 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
             names(real) <- parnames(object$detectfn)
         }
         a <- cellsize * sum(pdot(X = mask, traps = trps, detectfn = object$detectfn,
-                             detectpar = real, noccasions = noccasions))
+                             detectpar = real, noccasions = noccasions, ncores = ncores))
         return(a * D)
     }
     else {
@@ -394,7 +394,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
         #############################################################
         ## across all traps, regardless of clusters
         
-        gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, noneuc, D, miscparm, Xrealparval0)
+        gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, 
+                        noneuc, D, miscparm, Xrealparval0)
             
         # ## precompute gk, hk for point detectors
         # if (all(dettype %in% c(0,1,2,5,8,13))) {

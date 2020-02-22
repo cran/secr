@@ -38,7 +38,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL,
   \item{se.D}{ logical for whether to calculate SE(D-hat) }
   \item{loginterval}{ logical for whether to base interval on log(D)}
   \item{distribution}{ character string for distribution of the number of individuals detected }
-  \item{ncores}{integer number of cores available for parallel processing (default max-1)}
+  \item{ncores}{integer number of threads used for parallel processing}
   \item{bycluster}{logical; if TRUE results are reported separately for each cluster of detectors}
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
@@ -84,6 +84,9 @@ habitat mask.
 The argument \code{noccasions} may be used to vary the number of
 sampling occasions; it works only when detection parameters are constant
 across individuals and across time.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 The effective sampling area `esa' (\eqn{a(\hat{\theta})}{a(theta-hat)})
 reported by \code{derived} is equal to the harmonic mean of the

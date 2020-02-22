@@ -129,7 +129,7 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
                                                names(poly)))
     }
     xyl <- telemetryxy(CH)
-    D <- length(xyl) / masksize(mask)
+    D <- length(xyl) / maskarea(mask)
     sapply(1:nrepl, onerepl)
 }
 

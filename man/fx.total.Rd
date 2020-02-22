@@ -24,7 +24,7 @@ fx.total(object, sessnum = 1, mask = NULL, ncores = NULL, ...)
   \item{mask}{ x- and y- coordinates of points at which density will be
     computed}
     
-  \item{ncores}{ integer number of cores to be used for parallel processing}
+  \item{ncores}{ integer number of threads to be used for parallel processing}
     
   \item{\dots}{ other arguments passed to \code{detectpar} and thence
     to \code{predict.secr}}
@@ -43,6 +43,9 @@ surface: crudely, D.nc(X) = D(X) * ( 1 -- pdot(X)).
 
 The pointwise sum of the two surfaces is sometimes used to represent the
 spatial distrbution of the population, but see Notes.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 }
 

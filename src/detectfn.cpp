@@ -6,49 +6,49 @@ using namespace Rcpp;
 //     2019-07-29 C++ and consolidate
 //     2019-10-13 eliminate unused functions
 // 
-// The function pfn() selects gfnr on the fly.
-// pfn() is used in pdotpoint, naiveRPSV, simdetect, trappingsingle, trappingmulti,
+// The function pfnS() selects gfnr on the fly.
+// pfnS() is used in pdotpoint, naiveRPSV, simdetect, trappingsingle, trappingmulti,
 // trappingproximity, trappingcount
 // 
 // All g--- functions return the detection probability g(x). For count detectors this
 // must be transformed to the cumulative hazard -log(1-g(x)) (see function 'hazard' 
 // in utils.c).
 // 
-// The gfnr is used 
+// The gfns is used 
 // 
 // (i) for polygon and transect detectors, 
-// (ii) for trappingXXX simulations  (via pfn)
+// (ii) for trappingXXX simulations  (via pfnS)
 // 
 // for which the function must be calculated on the fly within the integration algorithm 
 // rather than from a lookup precomputed for a fixed set of trap-mask distances.
 // 
 // For each form there is a corresponding selection function:
 //  getzfnr   polygon.cpp, telemetry.cpp
-//  getgfnr   pdot.cpp, trapping.cpp (pfn)
+//  getgfns   pdot.cpp, trapping.cpp (pfnS)
 //
-//                                    getzfnr    getgfnr
+//                                    getzfnr    getgfns
 //
-//                                    fnptr      fnptr  
+//                                    fnptr      fnptrC  
 //                                              
-// fn 0  halfnormal                   zhnr      ghnr    
-// fn 1  hazard-rate                  zhrr      ghrr    
-// fn 2  exponential                  zexr      gexr    
-// fn 3  compound halfnormal          zhncr     ghncr   
-// fn 4  uniform                      zunr      gunr    
-// fn 5  w-exponential                zhfr      ghfr    
-// fn 6  annular normal               zhanr     ganr    
-// fn 7  cumulative lognormal         zclnr     gclnr   
-// fn 8  cumulative gamma             zcgr      gcgr    
-// fn 9  binary signal strength       zhsigbinr gsigbinr
-// fn 10 signal strength              zhsigr    gsigr   
-// fn 11 signal strength + ss         zhsigsphr gsigsph
-// fn 12 signal strength + noise      --        gsigSNr
-// fn 13 signal strength + ss + noise --        gsigsphSNr 
-// fn 14 hazard halfnormal            zhhnr     ghhnr      
-// fn 15 hazard hazard rate           zhhrr     ghhrr      
-// fn 16 hazard exponential           zhexr     ghexr      
-// fn 17 hazard annular normal        zhanr     ghanr      
-// fn 18 hazard cumulative gamma      zhcgr     ghcgr      
+// fn 0  halfnormal                   zhnr      ghns    
+// fn 1  hazard-rate                  zhrr      ghrs    
+// fn 2  exponential                  zexr      gexs    
+// fn 3  compound halfnormal          zhncr     ghncs   
+// fn 4  uniform                      zunr      guns    
+// fn 5  w-exponential                zhfr      ghfs    
+// fn 6  annular normal               zhanr     gans    
+// fn 7  cumulative lognormal         zclnr     gclns   
+// fn 8  cumulative gamma             zcgr      gcgs    
+// fn 9  binary signal strength       zhsigbinr gsigbins
+// fn 10 signal strength              zhsigr    gsigs   
+// fn 11 signal strength + ss         zhsigsphr gsigsphs
+// fn 12 signal strength + noise      --        gsigSNs
+// fn 13 signal strength + ss + noise --        gsigsphSNs 
+// fn 14 hazard halfnormal            zhhnr     ghhns      
+// fn 15 hazard hazard rate           zhhrr     ghhrs      
+// fn 16 hazard exponential           zhexr     ghexs      
+// fn 17 hazard annular normal        zhanr     ghans      
+// fn 18 hazard cumulative gamma      zhcgr     ghcgs      
 // fn 19 hazard variable power        etc.
 
 //--------------------------------------------------------------------
@@ -283,43 +283,45 @@ double mufnL (
   }
   
 }
-//==============================================================================
+//====================================================================
+//====================================================================
 
-double ghnr (const NumericVector param, const double r) {
+
+double ghns (const std::vector<double> param, const double r) {
     return(param[0] * exp(- r * r / 2 / param[1] / param[1]));
 }
 //--------------------------------------------------------------------
-double ghrr (const NumericVector param, const double r) {
+double ghrs (const std::vector<double> param, const double r) {
     return(param[0] * (1 - exp(- pow(r / param[1], -param[2]))));
 }
 //--------------------------------------------------------------------
-double gexr (const NumericVector param, const double r) {
+double gexs (const std::vector<double> param, const double r) {
     return (param[0] * exp(-r / param[1]));
 }
 //--------------------------------------------------------------------
-double ghncr (const NumericVector param, const double r) {
+double ghncs (const std::vector<double> param, const double r) {
     double temp;
     temp = param[0] * exp(- r * r  / 2 / param[1] / param[1]);
     if (round(param[2]) > 1) temp = 1 - pow(1 - temp, param[2]);
     return (temp);
 }
 //--------------------------------------------------------------------
-double gunr (const NumericVector param, const double r) {
+double guns (const std::vector<double> param, const double r) {
     if (r<param[1]) return (param[0]);
     else return (0);
 }
 //--------------------------------------------------------------------
-double ghfr (const NumericVector param, const double r) {
+double ghfs (const std::vector<double> param, const double r) {
     if (r<param[2]) return (param[0]);
     else return (param[0] * exp(-(r-param[2]) / param[1]));
 }
 //--------------------------------------------------------------------
-double ganr (const NumericVector param, const double r) {
+double gans (const std::vector<double> param, const double r) {
     return (param[0] * exp(-(r-param[2])*(r-param[2]) / 2 /
-        param[1] / param[1]));
+            param[1] / param[1]));
 }
 //--------------------------------------------------------------------
-double gclnr (const NumericVector param, const double r) {
+double gclns (const std::vector<double> param, const double r) {
     double g0, sigma, z, CV2, meanlog, sdlog;
     g0 = param[0];
     sigma = param[1];
@@ -330,13 +332,13 @@ double gclnr (const NumericVector param, const double r) {
     return g0 * R::plnorm(r,meanlog,sdlog,0,0); 
 }
 //--------------------------------------------------------------------
-double gcgr (const NumericVector param, const double r) {
+double gcgs (const std::vector<double> param, const double r) {
     return param[0] * R::pgamma(r,param[2],param[1]/param[2],0,0); 
 }
 //--------------------------------------------------------------------
 
 // binary signal strength - (beta0-c)/sdS, beta1/sdS 
-double gsigbinr  (const NumericVector param, const double r) {
+double gsigbins  (const std::vector<double> param, const double r) {
     double gam, b0, b1;
     b0 = param[0];
     b1 = param[1];
@@ -346,7 +348,7 @@ double gsigbinr  (const NumericVector param, const double r) {
 //--------------------------------------------------------------------
 
 // signal strength - beta0, beta1, sdS 
-double gsigr (const NumericVector param, const double r) {
+double gsigs (const std::vector<double> param, const double r) {
     double mu, gam;
     double beta0, beta1, sdS, cut;
     beta0 = param[0];
@@ -360,7 +362,7 @@ double gsigr (const NumericVector param, const double r) {
 //--------------------------------------------------------------------
 
 // signal strength with spherical spreading - beta0, beta1, sdS 
-double gsigsphr (const NumericVector param, const double r) {
+double gsigsphs (const std::vector<double> param, const double r) {
     double mu, gam;
     double beta0, beta1, sdS, cut;
     beta0 = param[0];
@@ -374,109 +376,112 @@ double gsigsphr (const NumericVector param, const double r) {
 //--------------------------------------------------------------------
 
 // hazard halfnormal 
-double ghhnr (const NumericVector param, const double r) {
+double ghhns (const std::vector<double> param, const double r) {
     // Rprintf("%6.3f %6.3f %6.3f \n", r, param[0], param[1]); 
     return(1 - exp( - param[0] * exp(- r * r / 2 / param[1] / param[1])));
 }
 //--------------------------------------------------------------------
 
 // hazard hazard rate 
-double ghhrr (const NumericVector param, const double r) {
+double ghhrs (const std::vector<double> param, const double r) {
     return(1 - exp( - param[0] * ( 1 - exp(- pow(r / param[1], -param[2])))));
 }
 //--------------------------------------------------------------------
 
 // hazard exponential 
-double ghexr (const NumericVector param, const double r) {
+double ghexs (const std::vector<double> param, const double r) {
     return (1 - exp( - param[0] * exp(-r / param[1])));
 }
 //--------------------------------------------------------------------
 
 // hazard annular normal 
-double ghanr (const NumericVector param, const double r) {
+double ghans (const std::vector<double> param, const double r) {
     return (1 - exp( - param[0] * exp(-(r-param[2])*(r-param[2]) / 2 /
-				   param[1] / param[1])));
+            param[1] / param[1])));
 }
 //--------------------------------------------------------------------
 
 // hazard cumulative gamma 
-double ghcgr (const NumericVector param, const double r) {
+double ghcgs (const std::vector<double> param, const double r) {
     return (1 - exp( - (1 - exp( - param[0] * exp(-r / param[1])))));
 }
 //--------------------------------------------------------------------
 
 // hazard variable power 
-double ghvpr (const NumericVector param, const double r) {
+double ghvps (const std::vector<double> param, const double r) {
     return(1 - exp( - param[0] * exp(- pow(r / param[1], param[2]))));
 }
 //====================================================================
+//====================================================================
 
-double pfn (
-    const int fn,
-    const double d2val,
-    const NumericVector &gsb,
-    const NumericVector &miscparm,
-    const double w2)
+double pfnS (
+        const int fn,
+        const double d2val,
+        const std::vector<double> &gsb,
+        const std::vector<double> &miscparm,
+        const double w2)
 {
-  double p = -1;
-  fnptr gfnr;
-  NumericVector tmp(4);
-  
-  if (d2val > w2) 
-    p = 0;
-  else {
-    gfnr = getgfnr (fn);
-    tmp(0) = gsb(0);
-    tmp(1) = gsb(1);
-    tmp(2) = gsb(2);
-    tmp(3) = miscparm[0];
-    p = gfnr (tmp, sqrt(d2val));
-  }
-  return (p);
+    double p = -1;
+    fnptrC gfns;
+    std::vector<double> tmp(4);
+    
+    if (d2val > w2) 
+        p = 0;
+    else {
+        
+        gfns = getgfns (fn);
+        tmp[0] = gsb[0];
+        tmp[1] = gsb[1];
+        tmp[2] = gsb[2];
+        tmp[3] = miscparm[0];
+        p = gfns (tmp, sqrt(d2val));
+    }
+    return (p);
 }
+//--------------------------------------------------------------------
 
-fnptr getgfnr (const int fn) 
+fnptrC getgfns (const int fn) 
 {
-  if (fn == 0)
-    return(ghnr);
-  else if (fn == 1)
-    return(ghrr);
-  else if (fn == 2)
-    return(gexr);
-  else if (fn == 3)
-    return(ghncr);
-  else if (fn == 4)
-    return(gunr);
-  else if (fn == 5)
-    return(ghfr);
-  else if (fn == 6)
-    return(ganr);
-  else if (fn == 7)
-    return(gclnr);
-  else if (fn == 8)
-    return(gcgr);
-  else if (fn == 9)
-    return(gsigbinr);
-  else if (fn == 10)
-    return(gsigr);
-  else if (fn == 11)
-    return(gsigsphr);
-  else if (fn == 12)
-    return(gsigsphr);
-  else if (fn == 14)
-    return(ghhnr);
-  else if (fn == 15)
-    return(ghhrr);
-  else if (fn == 16)
-    return(ghexr);
-  else if (fn == 17)
-    return(ghanr);
-  else if (fn == 18)
-    return(ghcgr);
-  else if (fn == 19)
-    return(ghvpr);
-  else // stop("unknown or invalid detection function");
-  return(ghnr);
+    if (fn == 0)
+        return(ghns);
+    else if (fn == 1)
+        return(ghrs);
+    else if (fn == 2)
+        return(gexs);
+    else if (fn == 3)
+        return(ghncs);
+    else if (fn == 4)
+        return(guns);
+    else if (fn == 5)
+        return(ghfs);
+    else if (fn == 6)
+        return(gans);
+    else if (fn == 7)
+        return(gclns);
+    else if (fn == 8)
+        return(gcgs);
+    else if (fn == 9)
+        return(gsigbins);
+    else if (fn == 10)
+        return(gsigs);
+    else if (fn == 11)
+        return(gsigsphs);
+    else if (fn == 12)
+        return(gsigsphs);
+    else if (fn == 14)
+        return(ghhns);
+    else if (fn == 15)
+        return(ghhrs);
+    else if (fn == 16)
+        return(ghexs);
+    else if (fn == 17)
+        return(ghans);
+    else if (fn == 18)
+        return(ghcgs);
+    else if (fn == 19)
+        return(ghvps);
+    else // stop("unknown or invalid detection function");
+        return(ghns);
 }
 //--------------------------------------------------------------------
 
@@ -522,7 +527,7 @@ fnptr getzfnr (const int fn)
   else if (fn == 19)
     return(zhvpr);
   else (stop("unknown or invalid detection function"));
-  return(ghnr);
+  return(zhnr);
 }
 //--------------------------------------------------------------------
 

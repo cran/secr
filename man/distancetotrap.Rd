@@ -30,6 +30,11 @@ nearesttrap(X, traps)
 nearest detector in \code{traps}. It may be used to restrict the points
 on a habitat mask.
 
+For traps objects with polygon detector type (polygon, polygonX), and for SpatialPolygons, 
+the function rgeos::gDistance is used internally if the package \pkg{rgeos} is available 
+(from \pkg{secr} 4.2.0). The method is otherwise approximate and uses only 
+the first polygon.
+
 }
 
 \value{
@@ -40,16 +45,6 @@ on a habitat mask.
 }
 
 \seealso{ \code{\link{make.mask}} }
-
-\note{
-
-  It is no longer (from version 2.3.0) necessary for `traps' to be a
-  traps object. It may be any 2-column matrix or dataframe of
-  coordinates. From version 2.6.0 `traps' may also be a simple (one-polygon)
-  SpatialPolygonsDataFrame object from \pkg{sp}, in which case distances
-  are to the boundary vertices (use with care!).
-
-}
 
 \examples{
   ## restrict a habitat mask to points within 70 m of traps  

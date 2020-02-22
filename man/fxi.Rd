@@ -41,7 +41,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
   \item{X}{2-column matrix of x- and y- coordinates (defaults to mask)}
   \item{fill}{ vector of colours to fill contours (optional)}
   \item{SPDF}{ logical; if TRUE the output is a SpatialPolygonsDataFrame}
-  \item{ncores}{ integer maximum number of cores to be used for parallel processing}
+  \item{ncores}{ integer number of threadss to be used for parallel processing}
   \item{start}{ vector of x-y coordinates for maximization }
   \item{\dots}{additional arguments passed to \code{contour} or \code{nlm}}
 }
@@ -75,9 +75,9 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
   integral of \eqn{\mbox{Pr}(\omega_i|X)\pi(X)}{Pr(\omega_i|X)\pi(X)}
   over the habitat mask in \code{object}. (May differ in secr 4.0).
   
-  If \code{ncores} is NULL or greater than 1, and length(i) is greater than 1, then multiple 
-  worker processes will be run in separate threads to speed up the calculations.
-  
+  Setting \code{ncores = NULL} uses the existing value from the environment variable 
+  RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
+
   If \code{start} is not provided to \code{fit.mode} then (from 2.9.4) the weighted mean of 
   all detector sites is used (see Warning below).
 
@@ -135,13 +135,6 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \section{Warnings}{
 
-  Use ncores > 1 only if there is adequate memory available for each
-  worker process. Otherwise processing will slow to a crawl. This is a
-  particular problem in \code{fxi.contour} with fitmode = TRUE. In
-  Windows, check memory usage under the Performace tab of the Task Manager
-  (Ctrl-Alt-Delete). If you abort a parallel job you may need to
-  manually delete the stranded Rscript processes in Task Manager.
-  
   \code{fxi.mode} may fail to find the true mode unless a good starting
   point is provided. Note that the distribution may have multiple modes and 
   only one is reported. The default value of \code{start} before \pkg{secr} 2.9.4 
@@ -151,12 +144,12 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \examples{
 
-fxi.secr(secrdemo.0, i = 1, X = c(365,605), ncores = 2)
+fxi.secr(secrdemo.0, i = 1, X = c(365,605))
 
 ## contour first 5 detection histories
 plot(secrdemo.0$capthist)
 fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
-    plotmode = TRUE, drawlabels = FALSE, ncores = 2)
+    plotmode = TRUE, drawlabels = FALSE)
 
 \dontrun{
 

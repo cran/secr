@@ -4,11 +4,12 @@
 ## make.grid, make.poly, make.transect, make.circle
 ## 2016-10-16 secr 3.0
 ## 2017-05-23 markocc argument
+## 2019-12-29 leadingzero argument
 ###############################################################################
 
 make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NULL, 
     detector = 'multi', originxy = c(0,0), hollow = FALSE, ID = 'alphay', 
-    markocc = NULL)
+    leadingzero = TRUE, markocc = NULL)
 
 {
     if (!all( detector %in% .localstuff$validdetectors ))
@@ -17,10 +18,9 @@ make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NUL
         spacex <- spacing
         spacey <- spacing
     }
-    ## 2011-04-01
+    originxy <- as.numeric(unlist(originxy))  ## 2020-01-02 for robustness
     if ((nx<3) | (ny<3))
         hollow <- FALSE
-
     grid <- expand.grid (x=(0:(nx-1))*spacex + originxy[1], y=(0:(ny-1))*spacey + originxy[2])
 
     allowedID <- c('numx','numy', 'numxb', 'numyb', 'alphax','alphay', 'xy')
@@ -91,6 +91,10 @@ make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NUL
         grid <- grid[order(temp),]
     }
 
+    if (leadingzero && (ID %in% c('numy','numx','numyb','numxb') )) {
+        row.names(grid) <- leadingzero(as.numeric(row.names(grid)))
+    }
+    
     attr(grid, 'detector')    <- detector
     attr(grid, 'class')       <- c('traps', 'data.frame')
     attr(grid, 'spacex')      <- spacex
@@ -194,7 +198,8 @@ make.transect <- function (transectlist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,
 ###############################################################################
 
 make.circle <- function (n = 20, radius = 100, spacing = NULL,
-    detector = 'multi', originxy=c(0,0), IDclockwise = TRUE, markocc = NULL)
+    detector = 'multi', originxy=c(0,0), IDclockwise = TRUE, 
+    leadingzero = TRUE, markocc = NULL)
 {
     if (!all( detector %in% .localstuff$validdetectors ))
         stop ("invalid detector type")
@@ -209,8 +214,11 @@ make.circle <- function (n = 20, radius = 100, spacing = NULL,
 
     if (IDclockwise) sequence  <- c(1, n:2)
     else sequence <- 1:n
-    row.names(object) <- sequence
-
+    if (leadingzero)
+        row.names(object) <- leadingzero(sequence)
+    else 
+        row.names(object) <- sequence
+    
     object <- object[order(sequence),]
     attr(object, 'detector')    <- detector
     attr(object, 'class')       <- c('traps', 'data.frame')

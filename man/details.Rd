@@ -68,7 +68,7 @@ maximisation. Check the order of beta parameters in a previously fitted
 model.
 
 \code{details$grain} sets the grain argument for multithreading in RcppParallel parallelFor (default 1). 
-\code{details$grain = 0} suppresses multithreading.
+\code{details$grain = 0} suppresses multithreading (equivalent to \code{ncores = 1}).
 
 \code{details$hessian} is a character string controlling the computation
 of the Hessian matrix from which variances and covariances are obtained.

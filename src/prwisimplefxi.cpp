@@ -26,7 +26,6 @@ struct simplehistoriesfxi : public Worker {
   const RMatrix<double> Tsk;        // k x s
   const RMatrix<double> h;
   const RMatrix<int>    hindex;
-  const double          cellsize;    
   
   // working variables
   int  kk, ss;
@@ -34,7 +33,7 @@ struct simplehistoriesfxi : public Worker {
   // output likelihoods
   RMatrix<double> output;
   
-  // Constructor to initialize an instance of Somehistories 
+  // Constructor to initialize an instance of simplehistoriesfxi 
   // The RMatrix class can be automatically converted to from the Rcpp matrix type
   simplehistoriesfxi(
     int x, 
@@ -52,12 +51,11 @@ struct simplehistoriesfxi : public Worker {
     const NumericMatrix Tsk,
     const NumericMatrix h,
     const IntegerMatrix hindex, 
-    double cellsize,
     NumericMatrix output)    
     : 
     x(x), mm(mm), nc(nc), cc(cc), grain(grain), 
     binomN(binomN), w(w), group(group), gk(gk), hk(hk), density(density), PIA(PIA), 
-    Tsk(Tsk), h(h), hindex(hindex), cellsize(cellsize), 
+    Tsk(Tsk), h(h), hindex(hindex), 
     output(output) {
     
     // now can initialise these derived counts
@@ -98,7 +96,7 @@ struct simplehistoriesfxi : public Worker {
           }
         }
       }
-      else {  // all other detectors
+      else {  // all other point detectors
         for (k=0; k<kk; k++) {
           wxi =  i4(n, s, k, x, nc, ss, kk);
           c = PIA[wxi] - 1;
@@ -119,15 +117,6 @@ struct simplehistoriesfxi : public Worker {
   }
   //==============================================================================
   
-  double onehistory (int n) {
-    std::vector<double> pm(mm, 1.0);
-    prw (n, pm);           
-    for (int m=0; m<mm; m++) {
-      pm[m] *= density(m,group[n]); 
-    }
-    return std::accumulate(pm.begin(), pm.end(), 0.0); // may be zero 
-  }
-  
   std::vector<double> onehistorymm (int n) {
     std::vector<double> pm(mm, 1.0);
     prw (n, pm);           
@@ -136,6 +125,7 @@ struct simplehistoriesfxi : public Worker {
     }
     return pm;   // mm vector
   }
+  //==============================================================================
   
   // function call operator that works for the specified range (begin/end)
   void operator()(std::size_t begin, std::size_t end) {        
@@ -145,6 +135,8 @@ struct simplehistoriesfxi : public Worker {
       for (int m=0; m<mm; m++) output(n,m) = pm[m];
     }
   }
+  //==============================================================================
+  
 };
 
 // [[Rcpp::export]]
@@ -163,15 +155,15 @@ NumericMatrix simplehistoriesfxicpp (
     const IntegerVector PIA, 
     const NumericMatrix Tsk, 
     const NumericMatrix h,
-    const IntegerMatrix hindex, 
-    const double cellsize) {
+    const IntegerMatrix hindex
+    ) {
   
   NumericMatrix output(nc, mm); 
   
   // Construct and initialise
   simplehistoriesfxi somehist (x, mm, nc, cc, grain, 
                                binomN, w, group, gk, hk, 
-                              density, PIA, Tsk, h, hindex, cellsize, output);
+                              density, PIA, Tsk, h, hindex, output);
   
   if (grain>0) {
     // Run operator() on multiple threads

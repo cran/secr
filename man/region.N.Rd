@@ -68,7 +68,7 @@ region.N(object, ...)
   \item{pooled.RN}{ logical; if TRUE the estimate of realised N for a multi-session
   model is computed as if for combined sampling with all detectors (see Details)}
   
-  \item{ncores}{ integer number of cores to be used for parallel processing (default max-1)}
+  \item{ncores}{ integer number of threads to be used for parallel processing}
 
   \item{...}{ other arguments (not used)}
 
@@ -113,8 +113,11 @@ model in which the region of interest spans several patches (i.e.,
 sampling in each session is localised within \code{region}. This is not
 yet fully implemented.
   
-  Use \code{\link{par.region.N}} to apply \code{region.N} in parallel to
-  several models.
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
+
+Use \code{\link{par.region.N}} to apply \code{region.N} in parallel to
+several models.
 
 }
 
@@ -208,7 +211,7 @@ data. \emph{Biometrics} \bold{66}, 310--318.
 
 \examples{
 
-region.N(secrdemo.0, ncores = 2)
+region.N(secrdemo.0)
 
 \dontrun{
 ## a couple more routine examples

@@ -37,7 +37,7 @@ sim.detect(object, popnlist, maxperpoly = 100, renumber = TRUE)
   \item{maxperpoly}{ integer maximum number of detections of an individual
   in one polygon or transect on any occasion }
   \item{chat}{real value for overdispersion parameter}
-  \item{ncores}{integer number of cores used by \code{secr.fit}}
+  \item{ncores}{integer number of threads used by \code{secr.fit}}
   \item{extractfn}{function to extract output values from fitted model}
   \item{data}{optional list of simulated data saved from previous call to \code{simulate.secr}}
   \item{tracelevel}{integer for level of detail in reporting (0,1,2)}
@@ -97,8 +97,8 @@ value in \code{object\$details}.  Options are "none" (no variances),
 variances or covariances. Logical TRUE and FALSE are interpreted by
 \code{secr.fit} as "auto" and "none".
 
-The default number of threads used by \code{secr.fit} (\code{ncores = NULL}) 
-is one less than the number available.
+If \code{ncores = NULL} then the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS is used (see \code{\link{setNumThreads}}).
 
 \code{sim.capthist} is a more direct way to simulate data from a null
 model (i.e. one with constant parameters for density and detection), or
@@ -171,7 +171,6 @@ quantile(devs, probs=c(0.95))
 rank(devs)[1] / length(devs)
 
 ## to assess bias and CI coverage
-## adjust ncores for your machine (see ?Parallel)
 extrfn <- function (object) unlist(predict(object)["D",-1])
 sims <- sim.secr(secrdemo.0, nsim = 50, hessian = "auto",
     extractfn = extrfn)

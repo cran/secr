@@ -32,7 +32,7 @@ LLsurface(object, ...)
         the untransformed (inverse-link) scale.}
   \item{plot}{logical. If TRUE a contour plot is produced}
   \item{plotfitted}{logical. If TRUE the MLE from \code{object} is shown on the plot (+)}
-  \item{ncores}{integer number of cores available for parallel processing}
+  \item{ncores}{integer number of threads for parallel processing}
   \item{\dots}{other arguments passed to \code{\link{contour}}}
 }
 
@@ -50,8 +50,8 @@ otherwise).
 Contour plots may be customized by passing graphical parameters through
 the \dots argument.
 
-If \code{ncores > 1} the \pkg{parallel} package is used to create
-processes on multiple cores (see \link{Parallel} for more).
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 }
 

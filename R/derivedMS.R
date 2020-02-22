@@ -20,7 +20,7 @@ CLdensity <- function (beta, object, individuals, sessnum)
 # Return the density for given g0, sigma, z in beta
 # Only 1 session
 {
-    sum(1 / esa (object, sessnum, beta, ncores = 2)[individuals])
+    sum(1 / esa (object, sessnum, beta)[individuals])
 }
 ############################################################################################
 
@@ -29,7 +29,7 @@ CLtotalD <- function (beta, object)
 # Return the density summed over sessions for given detection parameters in beta
 {
     onesessionD <- function (sessnum) {
-        sum(1 / esa (object, sessnum, beta, ncores = 2))
+        sum(1 / esa (object, sessnum, beta))
     }
     nsession <- object$design$R
     sum(sapply(1:nsession, onesessionD))
@@ -78,9 +78,8 @@ CLmeanesa <- function (beta, object, individuals, sessnum, noccasions = NULL)
 ## modified 2010-11-30 after suggestion of DLB
 
 ## noccasions = NULL added 2011-04-04
-## ncores=2 for simplicity 2019-10-22
-    
-    a <- esa (object, sessnum, beta, noccasions=noccasions, ncores = 2)[individuals]
+
+    a <- esa (object, sessnum, beta, noccasions=noccasions)[individuals]
     length(a) / sum (1/a)
 }
 ############################################################################################
@@ -90,7 +89,7 @@ CLtotalesa <- function (beta, object)
 # Return the esa summed over sessions for given detection parameters in beta
 {
     onesessionesa <- function (sessnum) {
-        a <- esa (object, sessnum, beta, ncores = 2)
+        a <- esa (object, sessnum, beta)
         length(a) / sum (1/a)
     }
     nsession <- object$design$R
@@ -143,9 +142,7 @@ derived.secrlist <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, s
 derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
                      se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = NULL, 
                      bycluster = FALSE, ...) {
-## derived <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.esa = FALSE,
-##                          se.D = TRUE, loginterval = TRUE, distribution = NULL, ncores = 1) {
-        
+
 ## Generate table of derived parameters from fitted secr object
 
 ## modified 2009 07 21 for multiple sessions
@@ -207,7 +204,7 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
             derivedmean <- derivedSE <- varcomp1 <- varcomp2 <- c(NA, NA)
             if (length(selection) > 0) 
             {
-                selected.a <- esa(object, sessnum, ncores=2)[selection]
+                selected.a <- esa(object, sessnum)[selection]
                 derivedmean <- c(weighted.mean(selected.a), sum(1/selected.a) )
                 if (se.esa) derivedSE[1] <- se.deriveesa(selection, object, sessnum)
                 if (se.D) {
@@ -219,7 +216,7 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
             }
             else {
                 ## 2018-12-19 allow n = 0
-                selected.a <- esa(object, sessnum, ncores = 2)[1]
+                selected.a <- esa(object, sessnum)[1]
                 derivedmean <- c(weighted.mean(selected.a), 0 )
                 if (se.esa) derivedSE[1] <- se.deriveesa(1, object, sessnum)
             }
@@ -255,6 +252,8 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
         
         ## mainline
 
+        setNumThreads(ncores)
+        
         if (is.null(sessnum)) {
             capthist <- object$capthist
             mask <- object$mask
@@ -277,7 +276,7 @@ derived.secr <- function (object, sessnum = NULL, groups=NULL, alpha=0.05, se.es
         if (bycluster) {
             tr <- traps(capthist)
             if (is.null(clusterID(tr)))
-                stop("traps object to have clusterID for bycluster")
+                stop("traps object needs to have clusterID for bycluster")
             if (!is.null(groups))
                 stop ("bycluster is incompatible with groups")
             splitCH <- split(capthist, f = clusterID(tr), bytrap = TRUE)

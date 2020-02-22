@@ -19,8 +19,7 @@ score.table(object, ..., sort = TRUE, dmax = 10)
   \item{...}{ one or more alternative models OR a fitted secr model }
   \item{trace}{ logical. If TRUE then output one-line summary at each
     evaluation of the likelihood }
-  \item{ncores}{integer number of cores available for parallel
-    processing} 
+  \item{ncores}{integer number of threads for parallel processing} 
   \item{.relStep}{see \code{\link[nlme]{fdHess}}}
   \item{ minAbsPar}{see \code{\link[nlme]{fdHess}}}
   \item{betaindex}{ vector of indices mapping fitted values to parameters in the alternative model }
@@ -66,8 +65,8 @@ additional score test objects (note the meaning differs from
 AIC model weights for all models within dmax AICc units of the best
 model.
 
-Multiple cores provide some speed improvment in \code{score.test} when
-comparing more than two models.
+If \code{ncores = NULL} then the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS is used (see \code{\link{setNumThreads}}).
 
 }
 \value{

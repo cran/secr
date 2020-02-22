@@ -14,7 +14,7 @@ at given coordinates.
 \usage{
 pdot(X, traps, detectfn = 0, detectpar = list(g0 = 0.2,
     sigma = 25, z = 1), noccasions = NULL, binomN = NULL,
-    userdist = NULL) 
+    userdist = NULL, ncores = NULL) 
     
 CVpdot(..., conditional = FALSE)    
 
@@ -29,6 +29,7 @@ CVpdot(..., conditional = FALSE)
   \item{binomN}{ integer code for discrete distribution (see
     \code{\link{secr.fit}}) }
   \item{userdist}{user-defined distance function or matrix (see \link{userdist})}
+  \item{ncores}{integer number of threads}
   
   \item{\dots}{arguments passed to \code{pdot}}
   \item{conditional}{logical; if TRUE then computed mean and CV are conditional on detection}
@@ -57,6 +58,9 @@ The calculation is not valid for single-catch traps because
 transect or transectX. if \code{userdist} is a function requiring
 covariates or values of parameters `D' or `noneuc' then \code{X} must
 have a covariates attribute with the required columns.
+
+Setting \code{ncores = NULL} uses the existing value from the environment variable 
+RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 \code{CVpdot} returns the expected mean and CV of pdot across the points listed in \code{X}, assuming uniform population density. \code{X} is usually a habitat mask. See Notes for details.
 
