@@ -21,8 +21,9 @@ writeGPS <- function (xy, o = "garmin", F = "usb:", proj = '+proj=nzmg')  {
             xy <- as.matrix(xy)  ## required by rgdal, not proj4
             latlon <- rgdal::project (xy, inv = TRUE, proj)
         }
-        else
+        else {
             stop ("package 'rgdal' required for writeGPS")
+        }
     }
 
     latlon <- data.frame(latlon)[,c(2,1)] ## need lat first

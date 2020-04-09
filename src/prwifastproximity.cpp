@@ -6,7 +6,8 @@ using namespace Rcpp;
 using namespace RcppParallel;
 
 //==============================================================================
-// 2019-09-05
+// 2019-09-05, 
+// 2020-04-05 fixed bug in indiv option
 // detector type count
 // one occasion, binomial size from integer Tsk
 // no deaths, no groups
@@ -29,10 +30,10 @@ struct fasthistories : public Worker {
     const RVector<int>    Tsk;        // k
     const RMatrix<int>    mbool;      // appears cannot use RMatrix<bool>
     
-    // workarrays
-    RVector<double> pm0;
-    RMatrix<double> pm0k;
-
+    // internal work arrays
+    std::vector<double> pm0base;
+    std::vector<double> pm0kbase;
+    
     int kk;
     
     // output likelihoods
@@ -55,54 +56,34 @@ struct fasthistories : public Worker {
         const IntegerVector PIA,
         const IntegerVector Tsk,
         const LogicalMatrix mbool,
-        NumericVector pm0,
-        NumericMatrix pm0k,
         NumericVector output)    
         : 
         mm(mm), nc(nc), cc(cc), grain(grain), 
         binomN(binomN), indiv(indiv),
         w(w), ki(ki), gk(gk), hk(hk), density(density), PIA(PIA), Tsk(Tsk), mbool(mbool),
-        pm0(pm0), pm0k(pm0k), output(output) {
-        kk = Tsk.size();
-        pr0(0, pm0, pm0k);
+        output(output) {
+        kk = Tsk.size();   // assuming single occasion
+        
+        // initialise base value of pm arrays (for n = 0)
+        pm0base.reserve(mm);   // for std::vector
+        pm0kbase.reserve(kk*mm);
+        pr0(0, pm0base, pm0kbase);
     }
     //==============================================================================
     
-    void pr0 (const int n, NumericVector &pm0, NumericMatrix &pm0k) { 
-        int c, k, m, w3;
-        for (m=0; m<mm; m++) pm0[m] = 1.0;
+    void pr0 (const int n, std::vector<double> &pm0n, std::vector<double> &pm0kn) { 
+            int c, k, m, w3;
+        for (m=0; m<mm; m++) pm0n[m] = 1.0;
         for (k=0; k<kk; k++) {
-            // w3 =  i3(0, 0, 0, nc, 1);
             w3 =  i3(n, 0, k, nc, 1);    // allow individual or trap covariate 2019-12-06
             c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unset traps
                 for (m=0; m<mm; m++) {
                     if (binomN==0)
-                        pm0k(k,m) = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
+                        pm0kn[kk * m + k] = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
                     else
-                        pm0k(k,m) = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
-                    pm0[m] *= pm0k(k,m);
-                }
-            }
-        }
-    }
-    //==============================================================================
-    
-    // ugly repeat of function definition 2019-12-06
-    void pr0R (const int n, RVector<double> &pm0, RMatrix<double> &pm0k) { 
-        int c, k, m, w3;
-        for (m=0; m<mm; m++) pm0[m] = 1.0;
-        for (k=0; k<kk; k++) {
-            // w3 =  i3(0, 0, 0, nc, 1);
-            w3 =  i3(n, 0, k, nc, 1);    // allow individual or trap covariate 2019-12-06
-            c = PIA[w3] - 1;
-            if (c >= 0) {    // ignore unset traps
-                for (m=0; m<mm; m++) {
-                    if (binomN==0)
-                        pm0k(k,m) = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
-                    else
-                        pm0k(k,m) = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
-                    pm0[m] *= pm0k(k,m);
+                        pm0kn[kk * m + k] = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
+                    pm0n[m] *= pm0kn[kk * m + k];
                 }
             }
         }
@@ -111,10 +92,20 @@ struct fasthistories : public Worker {
     
     void prwL (const int n, std::vector<double> &pm) {
         int c, i, k, m, w3;
-        if (n>0 && indiv) {
-            pr0R(n, pm0, pm0k); // update for this animal - expt 2019-12-06
+        
+        std::vector<double> pm0(mm);
+        std::vector<double> pm0k(kk*mm);
+        double pm0ktmp;
+        bool base = (n==0) || !indiv;
+        
+        if (!base) { // (n>0) && indiv) {
+            pr0(n, pm0, pm0k); // update for this animal - expt 2019-12-06, 2020-04-04
         }
-        for (int m=0; m<mm; m++) pm[m] = pm0[m];  // assumed missed at all sites...
+
+        if (base) 
+            for (m=0; m<mm; m++) pm[m] = pm0base[m];
+        else 
+            for (m=0; m<mm; m++) pm[m] = pm0[m];  
         for (i=0; i<kk; i++) {
             k = ki(n,i);
             if (k<0) break;    // no more sites
@@ -122,14 +113,16 @@ struct fasthistories : public Worker {
             c = PIA[w3] - 1;
             if (c >= 0) {    // ignore unset traps
                 for (m=0; m<mm; m++) {
-                  if (mbool(n,m)) {
-                    if (binomN==0)
-                      pm[m] *= gpois (w(n,i), Tsk[k]*hk[i3(c, k, m, cc, kk)], 0) / 
-                        pm0k(k,m);
-                    else
-                      pm[m] *= gbinom (w(n,i), Tsk[k], gk[i3(c, k, m, cc, kk)], 0) / 
-                        pm0k(k,m);
-                  }
+                    if (mbool(n,m)) {
+                        if (base) 
+                            pm0ktmp = pm0kbase[kk * m + k]; 
+                        else 
+                            pm0ktmp = pm0k[kk * m + k];
+                        if (binomN==0)
+                            pm[m] *= gpois (w(n,i), Tsk[k]*hk[i3(c, k, m, cc, kk)], 0) / pm0ktmp;
+                        else
+                            pm[m] *= gbinom (w(n,i), Tsk[k], gk[i3(c, k, m, cc, kk)], 0) / pm0ktmp;
+                    }
                     else {
                         pm[m] = 0.0; 
                     }
@@ -177,13 +170,13 @@ NumericVector fasthistoriescpp (
         const LogicalMatrix mbool) {
     
     NumericVector output(nc); 
-    NumericVector pm0(mm); 
-    NumericMatrix pm0k(Tsk.size(),mm);
 
     // Construct and initialise
     fasthistories somehist (mm, nc, cc, grain, binomN, indiv,
                             w, ki, gk, hk,
-                            density, PIA, Tsk, mbool, pm0, pm0k, output); 
+                            density, PIA, Tsk, mbool, 
+                            //pm0base, pm0kbase, 
+                            output); 
     
     if (grain>0) {
         // Run operator() on multiple threads

@@ -61,7 +61,8 @@
                      'BSS', 'SS', 'SSS', 'SN', 'SNS',
                      'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP')
 
-.localstuff$learnedresponses <- c('b','bk', 'B', 'k')
+.localstuff$learnedresponses <- c('b', 'bk', 'B', 'k', 'Bk')   ## Bk added 2020-02-26
+
 detectionfunctionname <- function (fn) {
     .localstuff$detectionfunctions[fn+1]
 }

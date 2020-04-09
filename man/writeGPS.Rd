@@ -36,9 +36,10 @@ Mapsource database format.
 \code{F} may be "usb:" or "com4:" etc. for upload via USB or serial
 ports, or the name of a file to create.
 
+% 2020-04-05 https://www.nceas.ucsb.edu/scicomp/recipes/projections not working
+
 The \code{proj} argument may be complex. For further information see the
-Examples, \url{https://www.nceas.ucsb.edu/scicomp/recipes/projections} and the
-help for \code{project} in the related package \pkg{rgdal}. If
+Examples and the help for \code{project} in the related package \pkg{rgdal}. If
 \code{proj} is an empty string then coordinates are assumed already to
 be latitudes (column 1) and longitudes (column 2).
 

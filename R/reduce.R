@@ -96,7 +96,6 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
         else {
             if (!all(detector(object) %in% .localstuff$pointdetectors))
                 stop ("reduce.traps with 'span' or 'newtraps' is only for point detectors")
-
             ## allow for vector input, or distance threshold
             if (!is.null(span))
                 newtraps <- cutree (hclust(dist(object), ...), h = span)

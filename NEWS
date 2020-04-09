@@ -1,3 +1,17 @@
+Changes in version 4.2.2 (2020-04-08)
+
+New features or changed behaviour of old functions
+    o   none
+
+Bugs fixed
+    o   individual covariate (CL) models for proximity data failed unless fastproximity = FALSE
+    o   Bk models for proximity data gave error unless fastproximity = FALSE
+    o   join() sometimes failed (circumstances unclear)
+
+Other
+    o   adjusted protection for calls to suggested package rgdal
+    o   suggest.buffer() trivial change to Examples
+
 Changes in version 4.2.0 (2020-02-22)
 
 New features or changed behaviour of old functions

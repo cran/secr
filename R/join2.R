@@ -8,6 +8,7 @@
 ## 2017-01-29 telemetry fixes
 ## 2017-12-23
 ## 2018-05-12 join uses attr() to avoid copying, and 
+## 2020-04-07 join SIMPLIFY = FALSE in call to mapply(condition.usage...)
 #############################################################################
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
@@ -81,7 +82,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
         CH
     }
     ####################################################################
-
     ## mainline
     if (!ms(object) | any(sapply(object, class) != 'capthist'))
         stop("requires multi-session capthist object or list of ",
@@ -145,7 +145,10 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
             else {
                 if (!sites.by.name) df$newtrap <- paste(df$newtrap,df$sess, sep=".")
             }
-            temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), MoreArgs=list(nocc=nocc))  
+            temptrp <- mapply(condition.usage, temptrp, 1:length(temptrp), 
+                              MoreArgs = list(nocc = nocc),
+                              SIMPLIFY = FALSE)  ## SIMPLIFY = FALSE added 2020-04-07
+            
             ## 2019-10-22 - attempt to cleanup telemetry
             # nt <- length(temptrp)
             # temptrp[1:(nt-1)] <- mapply(condition.usage, temptrp[-nt], 1:(nt-1), MoreArgs=list(nocc=nocc), SIMPLIFY = FALSE)
@@ -172,6 +175,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     else {
         sametrp <- FALSE
     }
+    
     ##------------------------------------------------------------------
     ## ensure retain all occasions
     df$newocc <- factor(df$newocc, levels = 1:nnewocc)
@@ -286,7 +290,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     }
     if (!is.null(df$signal))
         signal(tempnew) <- tempdf[!is.na(tempdf$newocc),'signal']
-
     ##------------------------------------------------------------------
     ## purge duplicate sites, if requested
     if (remove.dupl.sites & !sametrp & !sites.by.name)

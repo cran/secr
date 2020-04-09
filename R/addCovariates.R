@@ -45,20 +45,23 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
         if (type == "shapefile") {
             polyfilename <- spatialdata  
 
-            if (!requireNamespace('rgdal', quietly = TRUE))
+            if (!requireNamespace('rgdal', quietly = TRUE)) {
                 stop("package rgdal is required to read shapefiles")
-            isshp <- function(filename) {
-                nch <- nchar(filename)
-                tolower(substring(filename, nch-3,nch)) == ".shp"
             }
-            if (!isshp(polyfilename)) {
-                polyfilename <- paste0(polyfilename, ".shp")
+            else { ## 2020-02-23 placed in 'else'
+                isshp <- function(filename) {
+                    nch <- nchar(filename)
+                    tolower(substring(filename, nch-3,nch)) == ".shp"
+                }
+                if (!isshp(polyfilename)) {
+                    polyfilename <- paste0(polyfilename, ".shp")
+                }
+                spatialdata <- basename(spatialdata)
+                if (isshp(spatialdata)) {
+                    spatialdata <- substring(spatialdata, 1, nchar(spatialdata)-4)
+                }
+                spatialdata <- rgdal::readOGR(dsn = polyfilename, layer = spatialdata)
             }
-            spatialdata <- basename(spatialdata)
-            if (isshp(spatialdata)) {
-                spatialdata <- substring(spatialdata, 1, nchar(spatialdata)-4)
-            }
-            spatialdata <- rgdal::readOGR(dsn = polyfilename, layer = spatialdata)
 
         }
         if (type %in% c("shapefile", "SPDF", "SGDF")) {

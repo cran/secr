@@ -1,6 +1,6 @@
-870d540b4ddd46370409e87b7500c060 *DESCRIPTION
+37084dc1fd017be181fb53e71f017a7b *DESCRIPTION
 5f2e00ff214b97ce3e92ee3819117961 *NAMESPACE
-a608a31ddcbebc3d3fef09ca78b7168b *NEWS
+7541a49a9f50625f760ae1921f4c28b0 *NEWS
 ce98f0c2be9e101fb61addae15cf9a4b *R/AIC.R
 397bd74e27de332008fed46c5d90276f *R/CV.R
 dc4183782e7857ae390e0472e44c6e0c *R/ClosedN.R
@@ -16,7 +16,7 @@ e836c189dc72eef3c209a9f47ade9f62 *R/RMarkInput.R
 8c4a9f5a0bc263c634ccc950f434eabb *R/RSE.R
 e765e7914558e804d3d7fe5d6534b9ff *R/RcppExports.R
 c733013dc940c9620d17a7e7e87e84f4 *R/Rsurface.R
-a379c37d8435b79bfd2f9fa0c9de1ebc *R/addCovariates.R
+137c614e52261e2e6b827b7094c20a5a *R/addCovariates.R
 c615f7c00a4f98826505e83f6a939403 *R/addSightings.R
 5dd1cda9f74e07c06a7adb2cbf2bcc0f *R/addTelemetry.R
 24449367cd0070c90f233017ce2b5e79 *R/as.data.frame.R
@@ -38,7 +38,7 @@ ff0c81eef2ab684436dd10ccc32c800b *R/fxi.R
 81dd9dd28e51a0f2b800dbeff9cf2e32 *R/head.R
 67eda81848d13753e54e7fb019527159 *R/homerange.R
 72a4520f40410d62631617a549dfc6d5 *R/ip.secr.R
-b4da223b4740655a1e7f5551bcc80696 *R/join2.R
+91d636421e70939f216cecd00a248309 *R/join2.R
 00da0bb23e3264daf14ac0a357b64bd5 *R/loglikhelperfn.R
 aaebb2454c41efcc80fc5caaee31e244 *R/logmultinom.R
 c1029ddc226ba7100e5fc8a8ef2b175f *R/make.capthist.R
@@ -69,7 +69,7 @@ bf720f1be51b12d8ca8d218a8a702943 *R/raster.R
 755c12da39ec1fe65b5d42d86bc71d27 *R/rbind.popn.R
 996a42275fdd1405c9306fda3abea78d *R/rbind.traps.R
 f9a47cdaf59ff2fb15d96074129e545a *R/read.traps.R
-fbf27ef8e042898f416e31493ab3163f *R/reduce.R
+5d793d237050743774845abe0a03dad9 *R/reduce.R
 ceb936dd878ea7e223b46e1026c79b6c *R/regionN.R
 8b9f5cc79b3994ad6edf8feadb40c4e9 *R/reparameterize.R
 dce9ab379510ddd117cf28f21857b826 *R/score.test.R
@@ -92,12 +92,12 @@ a0f95f6276840e543eb74027cc572732 *R/superN.R
 83118686414a7a25ea1604339fb779a3 *R/telemetry.R
 cce388266ad577263e9ae18bd82fdc97 *R/trap.builder.R
 fce1c1b883db0d3dd1c286f70913a0b9 *R/usagePlot.R
-82d7edec5829671a01056c90412d321e *R/utility.R
+b43f92d40a82d324ef18f8ecadcca71a *R/utility.R
 39b3f8f96bac39e77a88cf182d515cbb *R/verify.R
 0bb65edf57a08ebd0cce13c4c15edcd7 *R/write.captures.R
 768b187784ea76238c88331d68021153 *R/write.mask.R
 c784fe3b4f5cc8d97e36bab606c45e79 *R/write.traps.R
-46d07cc31ba70780b83f41e404c5098f *R/writeGPS.R
+c04f7f5f28a8954cec8c9223c2ae89b7 *R/writeGPS.R
 bf3bf56485063fa1464abfb10b010d67 *build/vignette.rds
 d6560050446899b6a9087ad9e39d9abe *data/OVpossum.RData
 9575f500dc0f1c5621a6582d868f2384 *data/deermouse.RData
@@ -113,10 +113,10 @@ d9d633e495f9e54e364f469969cd952b *data/ovensong.RData
 902fea886e78fd74a65ab343ed4d2c82 *inst/doc/index.html
 c282c725d9a4d95ce87629495611cfa3 *inst/doc/secr-datainput.R
 d1b86130b662a747390d3bc2eee13c33 *inst/doc/secr-datainput.Rmd
-639ecbf8bd3135e29fc155d159e22f23 *inst/doc/secr-datainput.pdf
+7653b47e270b3eabb395bc4474ebf800 *inst/doc/secr-datainput.pdf
 d5958cd206cf2a2b98fa70503dd09f25 *inst/doc/secr-overview.R
 d6a2dafbd1d2ad1353d838fd5115d91e *inst/doc/secr-overview.Rmd
-45ca45b9ae7f4bbf4b447393720d76a0 *inst/doc/secr-overview.pdf
+6d9c950be964b5569bbdabc0d1e3050e *inst/doc/secr-overview.pdf
 bad38bfcb5f04e8dde8bd7ee982935d2 *inst/extdata/OVforest.dbf
 17a3b48ebb0e2b4c7f84ebec9fc881d1 *inst/extdata/OVforest.shp
 326230b0c0a8e4460e80c7f9ab972202 *inst/extdata/OVforest.shx
@@ -234,7 +234,7 @@ b94b8a89ac2fb9d60d2e703bbe8ae86d *man/rectangularMask.Rd
 bb712e39e843ee3aae63229ad0bc7c45 *man/reduce.capthist.Rd
 c8ec5076e794493d8ac141af6bdb401c *man/region.N.Rd
 5a7d8682be9ba7d755d6ad2944ec993a *man/score.test.Rd
-a68bb1dc92055fa06d3efecc98393de6 *man/secr-package.Rd
+8050baf587e8d306bb0bd3c1c4ce3625 *man/secr-package.Rd
 03bfd0483224ace3d198a3aa5a944db6 *man/secr.design.MS.Rd
 fcae8ddd673b706001953a400a8fc02d *man/secr.fit.Rd
 b6ce356ea6ec60461db709a11d275440 *man/secr.make.newdata.Rd
@@ -263,7 +263,7 @@ e54f3fc31412cde199cde7d7ef57e3af *man/subset.capthist.Rd
 fa5244fadf84f4e8f7703098aa8c303e *man/subset.mask.Rd
 7e23927333d16ff45c1db844ae15d41b *man/subset.popn.Rd
 e0537b82a8f4870cca7775c1c725d8ab *man/subset.traps.Rd
-a6ebb79d31c3590ece2628ab67beaf69 *man/suggest.buffer.Rd
+36450d43ad1c9fcbc88418e058e1d8c1 *man/suggest.buffer.Rd
 b7a8c588a81c5159adbcc017cd931ccf *man/summary.capthist.Rd
 e3ff94e55f0c806643722ae1e0499118 *man/summary.mask.Rd
 f2bf219bda6a312620286a86e8f09d43 *man/summary.popn.Rd
@@ -284,7 +284,7 @@ cbe57aaef6daf88daf64b33150422797 *man/usagePlot.Rd
 be4b002b87f57aadc4f96c7c11960633 *man/vcov.secr.Rd
 d910eeb646d094e7b6a1118d2602a9a5 *man/verify.Rd
 264c94348bbc9b2df1cd522cb76dbdee *man/write.Rd
-4f2ca054ce5f9636240f0cd9131183fc *man/writeGPS.Rd
+332d6fe8a50c2ab174d20387d8e51f9f *man/writeGPS.Rd
 8465ee3c046dc4b929d81033152f5339 *src/Makevars
 1344f2b0991ab305a1a99893493c907d *src/Makevars.win
 e04f4cd7fe97b8245d1fe5c4a925c780 *src/RcppExports.cpp
@@ -298,7 +298,7 @@ bf73f243de59b83e9bb6b2846ccf1b66 *src/makelookup.cpp
 a38bd73d40b0894b66e2847b4e04520a *src/pdot.cpp
 eb45233159c89c26bbdf9989a5d5b68d *src/poly.h
 50ad76a7967521aef77c6c62a613eca9 *src/polygonN.cpp
-afe98a9bf95afcbe426ca7f0475ada8d *src/prwifastproximity.cpp
+fe2cb37b3fb56cce2dc9d96bbaf6025d *src/prwifastproximity.cpp
 cf12276ea2d3181a11595ebb418b282f *src/prwipolygon.cpp
 ddcc5cc51c991a3936831308ea154aa8 *src/prwipolygonfxi.cpp
 91860bf6f961b3bc29e4d2bc67407790 *src/prwisignal.cpp
