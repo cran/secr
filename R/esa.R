@@ -1,6 +1,7 @@
 ############################################################################################
 ## package 'secr'
 ## esa.R
+## 2020-05-13 fixed bug that ignored individual covariates by providing only single-row CH0
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, ncores = NULL)
@@ -26,7 +27,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
 
     if (is.null(beta) & is.null(real))
         beta <- object$fit$par
-
     beta <- fullbeta(beta, object$details$fixedbeta)
     trps   <- traps(capthists)  ## need session-specific traps
     if (!all(detector(trps) %in% .localstuff$individualdetectors))
@@ -60,7 +60,6 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## need session-specific mask...
     cellsize <- getcellsize(mask)       ## length or area
-    
     #----------------------------------------------------------------------
     if (constant) {
         ## assume constant
@@ -135,13 +134,18 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
           grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
           gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, NE, 
                           pi.density, miscparm, Xrealparval0)
-                    if (any(dettype==0)) CH0 <- nullCH (c(n,s), FALSE)
-          else CH0 <- nullCH (c(n,s,K), FALSE)
+          if (any(dettype==0)) {
+              ## CH0 <- nullCH (c(n,s), FALSE)
+              CH0 <- nullCH (c(n,s), object$design0$individual)
+          }
+          else {
+              ## CH0 <- nullCH (c(n,s,K), FALSE)
+              CH0 <- nullCH (c(n,s,K), object$design0$individual)
+          }
           binomNcode <- recodebinomN(dettype, binomN, telemcode(trps))
           pmixn <- getpmix (knownclass, PIA0, Xrealparval0)
           MRdata <- list(markocc = markocc, firstocc=rep(-1,nrow(CH0)))
           pID <- getpID(PIA0, Xrealparval0, MRdata)
-          
           pdot <- integralprw1 (cc0 = nrow(Xrealparval0),
                                 haztemp = gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
                                 gkhk = gkhk,

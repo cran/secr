@@ -34,7 +34,7 @@ This formula is used wherever applicable.
 
 \value{
 
-Named vector of RSE.
+Named vector of RSE, or matrix if newdata has more than one row.
 
 }
 

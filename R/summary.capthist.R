@@ -179,7 +179,7 @@ summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
             
             tempcovar <- covariates(object)
             if (!is.null(tempcovar) && ((nrow(tempcovar)>0) & (ncol(tempcovar)>0))) {
-                covsummary <- summary(tempcovar)
+                covsummary <- summary(stringsAsFactors(tempcovar))   ## force character to factor 2020-07-14 
             }
             else {
                 covsummary <- NULL

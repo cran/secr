@@ -152,6 +152,12 @@ checkcovariatelevels <- function (cov) {
         else
             NULL
     }
+    
+    #############################################
+    ## 2020-05-15 convert all character to factor
+    cov <- lapply(cov, stringsAsFactors)
+    #############################################
+    
     factornames <- sapply(cov, xfactor)
     factornames <- unique(unlist(factornames))
     if (length(factornames) > 0) {

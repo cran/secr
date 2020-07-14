@@ -11,24 +11,27 @@ Factor covariates can give trouble in multi-session models if the levels differ 
 
 \usage{
 
-shareFactorLevels(object, columns = NULL)
+shareFactorLevels(object, columns = NULL, stringsAsFactors = FALSE)
 
 }
 
 \arguments{
   \item{object}{multi-session capthist object or list of traps or mask objects}
   \item{columns}{indices of columns to fix (default all)}
+  \item{stringsAsFactors}{logical; if TRUE then character columns are converted to factor}
 }
 
 \details{
 
-Factor-valued covariates are coerced to use the same set of levels for each session of a multi-session capthist object or each component of a list of traps or masks. The combined level set is the union of all levels in separate sessions. The order of levels follows the default in \code{\link{factor}} (alphabetical).
+Factor-valued covariates are coerced to use the same set of levels for each session of a multi-session capthist object or each component of a list of traps or masks. The combined level set is the union of all levels in separate sessions. The order of levels follows the default in \code{\link{factor}} (alphabetical according to current locale).
+
+Setting \code{stringsAsFactors = TRUE} causes character-valued columns to be converted to factors.
 
 }
 
 \value{
 
-An object of the same class as input.
+An object of the same class as input. A single-session object is passed unchanged except for possible conversion of character values to factor (\code{stringsAsFactors = TRUE}).
 
 }
 

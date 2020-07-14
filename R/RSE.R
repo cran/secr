@@ -1,5 +1,8 @@
 ## extract relative standard error from fitted secr or openCR model
 ## default is vector for all parameters in model
+
+## 2020-05-06 RSE may return matrix of values
+
 RSE <- function (fit, parm = NULL, newdata = NULL) {
     if (is.null(parm)) {
         parm <- names(fit$parindx)
@@ -30,7 +33,11 @@ RSE <- function (fit, parm = NULL, newdata = NULL) {
                 pred[parm, 'SE.estimate'] / pred[parm, 'estimate']
             }
             else if (parm %in% rownames(pred[[1]])) {
-                pred[[1]][parm, 'SE.estimate'] / pred[[1]][parm, 'estimate']
+                # modified 2020-05-06 to return all
+                getone <- function (x) {
+                    x[parm, 'SE.estimate'] / x[parm, 'estimate']
+                }
+                sapply(pred, getone)
             }
             else if (parm %in% names(pred)) {
                 pred[[parm]][1,'SE.estimate'] / pred[[parm]][1,'estimate']

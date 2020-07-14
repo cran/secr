@@ -77,7 +77,7 @@ AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10, criterion 
     if (any(sapply(allargs,class) != 'secr'))
         stop ("components of 'object' must be 'secr' objects")
     
-    output <- data.frame(t(sapply(allargs, oneline.secr, k = k)), stringsAsFactors=F)
+    output <- data.frame(t(sapply(allargs, oneline.secr, k = k)), stringsAsFactors = FALSE)
     for (i in 3:6)
         output[,i] <- as.numeric(output[,i])
     

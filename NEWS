@@ -1,3 +1,22 @@
+Changes in version 4.3.0 (2020-07-14)
+
+New features or changed behaviour of old functions
+    o   RSE() returns matrix with one row for each row of newdata
+    o   shareFactorLevels() gains argument stringsAsFactors to convert character to factor
+
+Bugs fixed
+    o   learned response models (b, B etc.) fitted incorrectly to data from multi-catch traps 
+        (detector 'multi') and exclusive polygon-type detectors (detector 'polygonX', 'transectX')
+    o   esa() ignored individual covariates in models with CL = TRUE, with consequences 
+        for derived() and region.N()
+
+Other
+    o   internal changes for compatibility with R 4.0
+    o   make.capthist() forces character covariates to factor for backward compatibility
+    o   verify() converts character covariates to factor before checking levels consistent 
+        across sessions
+    o   derived() and region.N() now work for models fitted in secr versions before 4.0
+
 Changes in version 4.2.2 (2020-04-08)
 
 New features or changed behaviour of old functions

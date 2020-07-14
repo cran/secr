@@ -4,6 +4,7 @@
 ## likelihood evaluation functions
 ## 2019-10-12 moved helper fn to separate file
 ## 2019-12-04 integralprw1 modified to allow for individual covariate
+## 2020-04-24 learnedresponse bug with multicatch traps fixed
 ###############################################################################
 
 # dettype
@@ -485,6 +486,10 @@ generalsecrloglikfn <- function (
             gkhk <- makegkPolygoncpp (as.integer(detectfn), as.integer(details$grain),
                                       as.matrix(Xrealparval0), as.integer(data$cumk),
                                       as.matrix(data$traps), as.matrix(data$mask))
+            if (all(data$dettype %in% c(3,4))) {
+                ## hazard for exclusive detectors or related bug fix 2020-04-24
+                haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
+            }
         }
         pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
                                   data$CH0, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
@@ -493,9 +498,23 @@ generalsecrloglikfn <- function (
     ## point types
     else {
         if (learnedresponse) {   ## overwrite gk,hk with model for naive animal
-            gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(details$grain),
+            if (!is.null(details$R) && details$R) {   # inserted 2020-04-24 to use R code here, too
+                if (!exists('makegkPointR')) 
+                    stop ("R code makegkPointR not available; source makegk.R")  
+                else {
+                    gkhk <- do.call('makegkPointR', list(detectfn, Xrealparval0, distmat2, miscparm))
+                }
+            }
+            else gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(details$grain),
+                                    
                                        as.matrix(Xrealparval0), as.matrix(distmat2), as.double(miscparm))
             ## no capped adjustment as learned response not compatible
+            
+            if (all(data$dettype %in% c(0,8))) {
+                ## hazard for exclusive detectors or related bug fix 2020-04-24
+                haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
+            }
+            
         }
         pdot <- integralprw1 (nrow(Xrealparval0), haztemp, gkhk, pi.density, PIA0, 
                               data$CH0, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 

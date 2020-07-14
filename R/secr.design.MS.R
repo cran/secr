@@ -31,7 +31,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ## NOT to be used to add group variables
         ## Does NOT standardize numeric covariates:
         ##     if (!is.factor(vals)) vals <- scale(vals)
-
+        
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
         else {
             found <- ''
@@ -41,12 +41,19 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                 ## solution is to pad to max [n,S,K] over sessions
                 if (!is.list(cov) | (R==1))
                     stop ("irregular covariates; check multisession structure")
+                
+                #############################################
+                ## 2020-05-15 convert all character to factor
+                cov <- lapply(cov, stringsAsFactors)
+                #############################################
+                
                 covnames <- lapply(cov, names)
                 varincov <- sapply(covnames, function(nam) vars %in% nam)
                 if (length(vars)>1) found <- vars[apply(varincov,1,all)]
                 else found <- vars[all(varincov)]
                 for (variable in found) {
                     ## if factor, check all levels the same 2013-03-11
+                    ## 2020-05-15 NOTE no check for character covariates
                     if (any(sapply(cov, function(x) is.factor(x[,variable])))) {
                         baselevels <- levels(cov[[1]][,variable])
                         lev <- lapply(cov, function(x) levels(x[,variable]))
@@ -67,6 +74,11 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             }
             else
             {
+                #############################################
+                ## 2020-05-15 convert all character to factor
+                cov <- stringsAsFactors(cov)
+                #############################################
+                
                 found <- names(cov) %in% vars
                 if (is.data.frame(cov) & any(found)) {
                     found <- names(cov)[found]

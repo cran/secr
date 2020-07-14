@@ -195,7 +195,7 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
                 warning(sum(is.na(vals)), " NA set to zero in mask covariate")
                 vals[is.na(vals)] <- 0
             }
-            if (!is.factor(vals) & std)
+            if (!is.factor(vals) && !is.character(vals) && std)  ## 2020-05-15 added is.character, use &&
                 vals <- scale(vals)
             if (ms(mask))
                 ## vals already full length to match nrow(dframe)

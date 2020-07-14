@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Introduction to SECR</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+<!-- Styles for R syntax highlighter -->
+<style type="text/css">
+   pre .operator,
+   pre .paren {
+     color: rgb(104, 118, 135)
+   }
+
+   pre .literal {
+     color: #990073
+   }
+
+   pre .number {
+     color: #099;
+   }
+
+   pre .comment {
+     color: #998;
+     font-style: italic
+   }
+
+   pre .keyword {
+     color: #900;
+     font-weight: bold
+   }
+
+   pre .identifier {
+     color: rgb(0, 0, 0);
+   }
+
+   pre .string {
+     color: #d14;
+   }
+</style>
+
+<!-- R syntax highlighter -->
+<script type="text/javascript">
+var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/</gm,"&lt;")}function f(r,q,p){return RegExp(q,"m"+(r.cI?"i":"")+(p?"g":""))}function b(r){for(var p=0;p<r.childNodes.length;p++){var q=r.childNodes[p];if(q.nodeName=="CODE"){return q}if(!(q.nodeType==3&&q.nodeValue.match(/\s+/))){break}}}function h(t,s){var p="";for(var r=0;r<t.childNodes.length;r++){if(t.childNodes[r].nodeType==3){var q=t.childNodes[r].nodeValue;if(s){q=q.replace(/\n/g,"")}p+=q}else{if(t.childNodes[r].nodeName=="BR"){p+="\n"}else{p+=h(t.childNodes[r])}}}if(/MSIE [678]/.test(navigator.userAgent)){p=p.replace(/\r/g,"\n")}return p}function a(s){var r=s.className.split(/\s+/);r=r.concat(s.parentNode.className.split(/\s+/));for(var q=0;q<r.length;q++){var p=r[q].replace(/^language-/,"");if(e[p]){return p}}}function c(q){var p=[];(function(s,t){for(var r=0;r<s.childNodes.length;r++){if(s.childNodes[r].nodeType==3){t+=s.childNodes[r].nodeValue.length}else{if(s.childNodes[r].nodeName=="BR"){t+=1}else{if(s.childNodes[r].nodeType==1){p.push({event:"start",offset:t,node:s.childNodes[r]});t=arguments.callee(s.childNodes[r],t);p.push({event:"stop",offset:t,node:s.childNodes[r]})}}}}return t})(q,0);return p}function k(y,w,x){var q=0;var z="";var s=[];function u(){if(y.length&&w.length){if(y[0].offset!=w[0].offset){return(y[0].offset<w[0].offset)?y:w}else{return w[0].event=="start"?y:w}}else{return y.length?y:w}}function t(D){var A="<"+D.nodeName.toLowerCase();for(var B=0;B<D.attributes.length;B++){var C=D.attributes[B];A+=" "+C.nodeName.toLowerCase();if(C.value!==undefined&&C.value!==false&&C.value!==null){A+='="'+m(C.value)+'"'}}return A+">"}while(y.length||w.length){var v=u().splice(0,1)[0];z+=m(x.substr(q,v.offset-q));q=v.offset;if(v.event=="start"){z+=t(v.node);s.push(v.node)}else{if(v.event=="stop"){var p,r=s.length;do{r--;p=s[r];z+=("</"+p.nodeName.toLowerCase()+">")}while(p!=v.node);s.splice(r,1);while(r<s.length){z+=t(s[r]);r++}}}}return z+m(x.substr(q))}function j(){function q(x,y,v){if(x.compiled){return}var u;var s=[];if(x.k){x.lR=f(y,x.l||hljs.IR,true);for(var w in x.k){if(!x.k.hasOwnProperty(w)){continue}if(x.k[w] instanceof Object){u=x.k[w]}else{u=x.k;w="keyword"}for(var r in u){if(!u.hasOwnProperty(r)){continue}x.k[r]=[w,u[r]];s.push(r)}}}if(!v){if(x.bWK){x.b="\\b("+s.join("|")+")\\s"}x.bR=f(y,x.b?x.b:"\\B|\\b");if(!x.e&&!x.eW){x.e="\\B|\\b"}if(x.e){x.eR=f(y,x.e)}}if(x.i){x.iR=f(y,x.i)}if(x.r===undefined){x.r=1}if(!x.c){x.c=[]}x.compiled=true;for(var t=0;t<x.c.length;t++){if(x.c[t]=="self"){x.c[t]=x}q(x.c[t],y,false)}if(x.starts){q(x.starts,y,false)}}for(var p in e){if(!e.hasOwnProperty(p)){continue}q(e[p].dM,e[p],true)}}function d(B,C){if(!j.called){j();j.called=true}function q(r,M){for(var L=0;L<M.c.length;L++){if((M.c[L].bR.exec(r)||[null])[0]==r){return M.c[L]}}}function v(L,r){if(D[L].e&&D[L].eR.test(r)){return 1}if(D[L].eW){var M=v(L-1,r);return M?M+1:0}return 0}function w(r,L){return L.i&&L.iR.test(r)}function K(N,O){var M=[];for(var L=0;L<N.c.length;L++){M.push(N.c[L].b)}var r=D.length-1;do{if(D[r].e){M.push(D[r].e)}r--}while(D[r+1].eW);if(N.i){M.push(N.i)}return f(O,M.join("|"),true)}function p(M,L){var N=D[D.length-1];if(!N.t){N.t=K(N,E)}N.t.lastIndex=L;var r=N.t.exec(M);return r?[M.substr(L,r.index-L),r[0],false]:[M.substr(L),"",true]}function z(N,r){var L=E.cI?r[0].toLowerCase():r[0];var M=N.k[L];if(M&&M instanceof Array){return M}return false}function F(L,P){L=m(L);if(!P.k){return L}var r="";var O=0;P.lR.lastIndex=0;var M=P.lR.exec(L);while(M){r+=L.substr(O,M.index-O);var N=z(P,M);if(N){x+=N[1];r+='<span class="'+N[0]+'">'+M[0]+"</span>"}else{r+=M[0]}O=P.lR.lastIndex;M=P.lR.exec(L)}return r+L.substr(O,L.length-O)}function J(L,M){if(M.sL&&e[M.sL]){var r=d(M.sL,L);x+=r.keyword_count;return r.value}else{return F(L,M)}}function I(M,r){var L=M.cN?'<span class="'+M.cN+'">':"";if(M.rB){y+=L;M.buffer=""}else{if(M.eB){y+=m(r)+L;M.buffer=""}else{y+=L;M.buffer=r}}D.push(M);A+=M.r}function G(N,M,Q){var R=D[D.length-1];if(Q){y+=J(R.buffer+N,R);return false}var P=q(M,R);if(P){y+=J(R.buffer+N,R);I(P,M);return P.rB}var L=v(D.length-1,M);if(L){var O=R.cN?"</span>":"";if(R.rE){y+=J(R.buffer+N,R)+O}else{if(R.eE){y+=J(R.buffer+N,R)+O+m(M)}else{y+=J(R.buffer+N+M,R)+O}}while(L>1){O=D[D.length-2].cN?"</span>":"";y+=O;L--;D.length--}var r=D[D.length-1];D.length--;D[D.length-1].buffer="";if(r.starts){I(r.starts,"")}return R.rE}if(w(M,R)){throw"Illegal"}}var E=e[B];var D=[E.dM];var A=0;var x=0;var y="";try{var s,u=0;E.dM.buffer="";do{s=p(C,u);var t=G(s[0],s[1],s[2]);u+=s[0].length;if(!t){u+=s[1].length}}while(!s[2]);if(D.length>1){throw"Illegal"}return{r:A,keyword_count:x,value:y}}catch(H){if(H=="Illegal"){return{r:0,keyword_count:0,value:m(C)}}else{throw H}}}function g(t){var p={keyword_count:0,r:0,value:m(t)};var r=p;for(var q in e){if(!e.hasOwnProperty(q)){continue}var s=d(q,t);s.language=q;if(s.keyword_count+s.r>r.keyword_count+r.r){r=s}if(s.keyword_count+s.r>p.keyword_count+p.r){r=p;p=s}}if(r.language){p.second_best=r}return p}function i(r,q,p){if(q){r=r.replace(/^((<[^>]+>|\t)+)/gm,function(t,w,v,u){return w.replace(/\t/g,q)})}if(p){r=r.replace(/\n/g,"<br>")}return r}function n(t,w,r){var x=h(t,r);var v=a(t);var y,s;if(v){y=d(v,x)}else{return}var q=c(t);if(q.length){s=document.createElement("pre");s.innerHTML=y.value;y.value=k(q,c(s),x)}y.value=i(y.value,w,r);var u=t.className;if(!u.match("(\\s|^)(language-)?"+v+"(\\s|$)")){u=u?(u+" "+v):v}if(/MSIE [678]/.test(navigator.userAgent)&&t.tagName=="CODE"&&t.parentNode.tagName=="PRE"){s=t.parentNode;var p=document.createElement("div");p.innerHTML="<pre><code>"+y.value+"</code></pre>";t=p.firstChild.firstChild;p.firstChild.cN=s.cN;s.parentNode.replaceChild(p.firstChild,s)}else{t.innerHTML=y.value}t.className=u;t.result={language:v,kw:y.keyword_count,re:y.r};if(y.second_best){t.second_best={language:y.second_best.language,kw:y.second_best.keyword_count,re:y.second_best.r}}}function o(){if(o.called){return}o.called=true;var r=document.getElementsByTagName("pre");for(var p=0;p<r.length;p++){var q=b(r[p]);if(q){n(q,hljs.tabReplace)}}}function l(){if(window.addEventListener){window.addEventListener("DOMContentLoaded",o,false);window.addEventListener("load",o,false)}else{if(window.attachEvent){window.attachEvent("onload",o)}else{window.onload=o}}}var e={};this.LANGUAGES=e;this.highlight=d;this.highlightAuto=g;this.fixMarkup=i;this.highlightBlock=n;this.initHighlighting=o;this.initHighlightingOnLoad=l;this.IR="[a-zA-Z][a-zA-Z0-9_]*";this.UIR="[a-zA-Z_][a-zA-Z0-9_]*";this.NR="\\b\\d+(\\.\\d+)?";this.CNR="\\b(0[xX][a-fA-F0-9]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)";this.BNR="\\b(0b[01]+)";this.RSR="!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|\\.|-|-=|/|/=|:|;|<|<<|<<=|<=|=|==|===|>|>=|>>|>>=|>>>|>>>=|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~";this.ER="(?![\\s\\S])";this.BE={b:"\\\\.",r:0};this.ASM={cN:"string",b:"'",e:"'",i:"\\n",c:[this.BE],r:0};this.QSM={cN:"string",b:'"',e:'"',i:"\\n",c:[this.BE],r:0};this.CLCM={cN:"comment",b:"//",e:"$"};this.CBLCLM={cN:"comment",b:"/\\*",e:"\\*/"};this.HCM={cN:"comment",b:"#",e:"$"};this.NM={cN:"number",b:this.NR,r:0};this.CNM={cN:"number",b:this.CNR,r:0};this.BNM={cN:"number",b:this.BNR,r:0};this.inherit=function(r,s){var p={};for(var q in r){p[q]=r[q]}if(s){for(var q in s){p[q]=s[q]}}return p}}();hljs.LANGUAGES.cpp=function(){var a={keyword:{"false":1,"int":1,"float":1,"while":1,"private":1,"char":1,"catch":1,"export":1,virtual:1,operator:2,sizeof:2,dynamic_cast:2,typedef:2,const_cast:2,"const":1,struct:1,"for":1,static_cast:2,union:1,namespace:1,unsigned:1,"long":1,"throw":1,"volatile":2,"static":1,"protected":1,bool:1,template:1,mutable:1,"if":1,"public":1,friend:2,"do":1,"return":1,"goto":1,auto:1,"void":2,"enum":1,"else":1,"break":1,"new":1,extern:1,using:1,"true":1,"class":1,asm:1,"case":1,typeid:1,"short":1,reinterpret_cast:2,"default":1,"double":1,register:1,explicit:1,signed:1,typename:1,"try":1,"this":1,"switch":1,"continue":1,wchar_t:1,inline:1,"delete":1,alignof:1,char16_t:1,char32_t:1,constexpr:1,decltype:1,noexcept:1,nullptr:1,static_assert:1,thread_local:1,restrict:1,_Bool:1,complex:1},built_in:{std:1,string:1,cin:1,cout:1,cerr:1,clog:1,stringstream:1,istringstream:1,ostringstream:1,auto_ptr:1,deque:1,list:1,queue:1,stack:1,vector:1,map:1,set:1,bitset:1,multiset:1,multimap:1,unordered_set:1,unordered_map:1,unordered_multiset:1,unordered_multimap:1,array:1,shared_ptr:1}};return{dM:{k:a,i:"</",c:[hljs.CLCM,hljs.CBLCLM,hljs.QSM,{cN:"string",b:"'\\\\?.",e:"'",i:"."},{cN:"number",b:"\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)"},hljs.CNM,{cN:"preprocessor",b:"#",e:"$"},{cN:"stl_container",b:"\\b(deque|list|queue|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array)\\s*<",e:">",k:a,r:10,c:["self"]}]}}}();hljs.LANGUAGES.r={dM:{c:[hljs.HCM,{cN:"number",b:"\\b0[xX][0-9a-fA-F]+[Li]?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+(?:[eE][+\\-]?\\d*)?L\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+\\.(?!\\d)(?:i\\b)?",e:hljs.IMMEDIATE_RE,r:1},{cN:"number",b:"\\b\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\.\\d+(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"keyword",b:"(?:tryCatch|library|setGeneric|setGroupGeneric)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\.",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\d+(?![\\w.])",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\b(?:function)",e:hljs.IMMEDIATE_RE,r:2},{cN:"keyword",b:"(?:if|in|break|next|repeat|else|for|return|switch|while|try|stop|warning|require|attach|detach|source|setMethod|setClass)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"literal",b:"(?:NA|NA_integer_|NA_real_|NA_character_|NA_complex_)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"literal",b:"(?:NULL|TRUE|FALSE|T|F|Inf|NaN)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"identifier",b:"[a-zA-Z.][a-zA-Z0-9._]*\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"<\\-(?!\\s*\\d)",e:hljs.IMMEDIATE_RE,r:2},{cN:"operator",b:"\\->|<\\-",e:hljs.IMMEDIATE_RE,r:1},{cN:"operator",b:"%%|~",e:hljs.IMMEDIATE_RE},{cN:"operator",b:">=|<=|==|!=|\\|\\||&&|=|\\+|\\-|\\*|/|\\^|>|<|!|&|\\||\\$|:",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"%",e:"%",i:"\\n",r:1},{cN:"identifier",b:"`",e:"`",r:0},{cN:"string",b:'"',e:'"',c:[hljs.BE],r:0},{cN:"string",b:"'",e:"'",c:[hljs.BE],r:0},{cN:"paren",b:"[[({\\])}]",e:hljs.IMMEDIATE_RE,r:0}]}};
+hljs.initHighlightingOnLoad();
+</script>
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<p>\renewcommand{\vec}[1]{\mathbf{#1}}</p>
+
+<p>\vspace{12pt}</p>
+
+<p>This document provides an overview of <strong>secr</strong> 4.3, an R package for spatially explicit capture&ndash;recapture analysis (SECR).  It includes some background on SECR, an outline of the package, and a more detailed description of how models are implemented.  See <a href="https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf">secr-tutorial.pdf</a> for an introductory tutorial.  For details of how to use <strong>secr</strong> see the help pages and vignettes. </p>
+
+<p>NOTE: <strong>secr</strong> was extensively re-written between versions 3.2 and 4.0, but the interface remained unchanged. For many datasets version 4 is significantly faster. Other changes are described in <a href="https://www.otago.ac.nz/density/pdfs/secr-version4.pdf">secr-version4.pdf</a>.</p>
+
+<p>Two add-on packages extend the capability of <strong>secr</strong> and are documented separately. <strong>secrlinear</strong> enables the estimation of linear density (e.g., animals per km) for populations in linear habitats such as stream networks (<a href="https://CRAN.R-project.org/package=secrlinear/vignettes/secrlinear-vignette.pdf">secrlinear-vignette.pdf</a>). <strong>secrdesign</strong> enables the assessment of alternative study designs by  Monte Carlo simulation; scenarios may differ in detector (trap) layout, sampling intensity, and other characteristics (<a href="https://www.otago.ac.nz/density/pdfs/secrdesign-vignette.pdf">secrdesign-vignette.pdf</a>).</p>
+
+<p>Spatial open-population capture&ndash;recapture models are implemented in the R package <strong>openCR</strong> (Efford and Schofield 2019). Other open-population packages due to Ben Augustine and Richard Glennie are available on GitHub (<a href="https://github.com/benaug/OpenPopSCR">https://github.com/benaug/OpenPopSCR</a>; <a href="https://github.com/r-glennie/openpopscr">https://github.com/r-glennie/openpopscr</a>). </p>
+
+<h1>Introduction to SECR</h1>
+
+<p>Spatially explicit capture&ndash;recapture (SECR) is a set of methods for
+modelling animal capture&ndash;recapture data collected with an array of
+&#39;detectors&#39;. The methods are used primarily to estimate population
+density, but they also have advantages over non-spatial methods when
+the goal is to estimate population size (Efford and Fewster
+2013). SECR methods overcome edge effects that are problematic in
+conventional capture&ndash;recapture estimation of animal populations (Otis
+et al. 1978).  Detectors may be live-capture traps, with animals
+uniquely tagged, sticky traps or snags that passively sample hair,
+from which individuals are distinguished by their microsatellite DNA,
+or cameras that take photographs from which individuals are recognized
+by their natural marks. The concept of a detector extends to areas (polygons)
+or transects that are searched for animals or their sign.</p>
+
+<p>The primary data for SECR are (i) the locations of the detectors, and (ii) detections of known individuals on one or more sampling occasions (i.e. their detection histories). The generic terms &#39;detector&#39; and
+&#39;detections&#39; cover several possibilities (see &#39;Detector types&#39; below); we use them interchangeably with the more specific and familiar terms &#39;traps&#39; and &#39;captures&#39;. Table 1 gives a concrete example of trapping data (the structure differs for detectors that are not traps).</p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 1.</strong> Some spatially explicit detection data. Each entry (e.g., A9) records the detector at which a known animal (ID) was observed at each sample time (occasion). &#39;.&#39; indicates no detection. Each detector has known x-y coordinates. Formats for data input are described in <a href="https://www.otago.ac.nz/density/pdfs/secr-datainput.pdf">secr-datainput.pdf</a>.  </p>
+
+<pre><code>              Occasion
+ ID      1     2     3     4     5  
+----- ----- ----- ----- ----- ----- 
+  1     A9     .     .     .     .  
+  2    A12   A12     .     .     .  
+  3      .     .    C6    B5     .  
+  4      .     .    G3     .    F3  
+  etc.       
+</code></pre>
+
+<p>In SECR, a spatial model of the population and a spatial model of the detection process are fitted to the spatial detection histories. The resulting estimates of population density are unbiased by edge effects and incomplete detection (other sources of bias may remain). Inverse prediction (IP SECR) and maximum likelihood (ML SECR) are alternative methods for fitting the spatial detection model (Efford 2004, Borchers and Efford 2008). Of these, ML SECR is the more flexible, with a caveat for data from single-catch traps. Data augmentation and Markov chain Monte Carlo (MCMC) methods have also been used for SECR (Royle and Young 2008, Royle et al. 2009, Singh et al. 2010, Royle and Gardner 2011, Royle et al. 2014), but this approach is much slower than ML SECR; it is not considered here.</p>
+
+<h1>State and observation models</h1>
+
+<p>Like other statistical methods for estimating animal abundance
+(Borchers et al. 2002), SECR combines a state model and an observation
+model. The state model describes the distribution of animal home
+ranges in the landscape, and the observation model (a spatial
+detection model) relates the probability of detecting an individual at
+a particular detector to the distance of the detector from a central
+point in each animal&#39;s home range.  The distances are not observed
+directly (usually we don&#39;t know the range centres), so conventional
+distance sampling methods do not apply.</p>
+
+<h2>Distribution of home-range centres</h2>
+
+<p>The distribution of range centres in the population (Borchers and
+Efford 2008) will usually be treated as a homogeneous Poisson point
+process (Fig. 1a). Density (= intensity) is the sole parameter of a homogeneous Poisson
+process. An inhomogeneous Poisson distribution may also be fitted; this
+provides a means to evaluate the effects of habitat variables on
+density.</p>
+
+<h2>Detection functions</h2>
+
+<p>A detection model describes the decline in detection probability with distance (\(d\))
+from the home-range centre (Fig. 1b). The probability \(g(d)\) is for the &#39;ideal&#39;
+case of just one animal and one detector; the actual probability may differ
+(see discussion of &#39;traps&#39; under Detector Types).</p>
+
+<p>\vspace{8pt}</p>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk unnamed-chunk-3"/></p>
+
+<p><strong>Fig. 1.</strong> (a) Hypothetical Poisson distribution of range centres near an
+  array of detectors. Each dot represents one individual. SECR estimates
+  the density of this distribution. (b) Alternative detection functions. 
+  The halfnormal is defined by \(g(d) = g_0\exp\left(\frac{-d^2}{2\sigma^2}\right)\) 
+  and the exponential by \(g(d) = g_0\exp\left(-\frac{d}{\sigma}\right)\). 
+  See ?detectfn for more (also the list in <a href="#appendix1">Appendix 1</a>).</p>
+
+<h2>Detector types</h2>
+
+<p>The properties of detectors are an important part of the SECR
+observation model (Table 2). Inside <strong>secr</strong>, data are tagged with a
+detector type to ensure they are printed, plotted and analysed
+appropriately.</p>
+
+<p>Some common detectors (camera &#39;traps&#39; and hair snags for DNA) do not
+capture animals, but merely record that an animal has visited a
+site. These &#39;proximity&#39; detectors can be considered to act
+independently of each other. With proximity detectors, each animal
+\(\times\) occasion &#39;cell&#39; of a detection history potentially contains
+several positive records. In the simplest case each cell contains a
+binary vector coding presence or absence at each detector (for such
+binary proximity detectors each observation has a Bernoulli
+distribution). A &#39;count&#39; detector is a generalised proximity detector
+in which the data are vectors of counts, one per detector. Models for
+&#39;count&#39; data will specify a distribution for the counts via the
+&#39;binomN&#39; argument of <code>secr.fit</code> (binomN = 0 indicates Poisson; binomN &gt; 1
+indicates binomial with size = binomN; binomN = 1 indicates binomial
+with size given by the &#39;usage&#39; attribute for the detector and
+occasion).</p>
+
+<p>Detectors that are true traps do not act independently because capture
+of an animal in one trap prevents it being caught in another trap
+until it is released. Traps expose animals to competing risks of
+capture. The per-trap probability of capture may be adjusted for the
+competing risk from other traps by using an additive hazard model
+(Borchers and Efford 2008). However, if the detectors are traps that
+catch only one animal at a time then there is a further level of
+competition &ndash; between animals for traps. Multi-catch and single-catch
+traps therefore represent distinct detector types. No general
+adjustment has been found for the per-trap probability of capture in
+the single-catch case (it&#39;s an open research question), and there is
+strictly no known maximum likelihood estimator. However, density
+estimates using the multi-catch likelihood for single-catch data
+appear only slightly biased (Efford, Borchers and Byrom 2009).</p>
+
+<p>Polygon and transect detectors are for binary or count detection data
+(e.g., number of detections per animal per polygon per occasion)
+supplemented with the x-y coordinates of each detection. 
+When a study uses multiple search areas or multiple transects,
+detections may be either independent or dependent (e.g., maximum one
+per animal per polygon per occasion) as with traps. The dependent or
+&#39;exclusive&#39; type is indicated by the suffix &#39;X&#39;; in this case the
+counts are necessarily binary. Using the &#39;polygonX&#39; or &#39;transectX&#39;
+detector type ensures that a competing-risk model is fitted.</p>
+
+<p>Acoustic &#39;signal strength&#39; detectors produce a binary detection vector
+supplemented by measurements of signal strength, as from an array of
+microphones.</p>
+
+<p>There is limited support in <strong>secr</strong> for the analysis of locational data from telemetry (&#39;telemetry&#39; detector type). Telemetry data are used to augment capture&ndash;recapture data (see <code>addTelemetry</code> and <a href="https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf">secr-telemetry.pdf</a>).</p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 2.</strong> Detector types in <strong>secr</strong></p>
+
+<table><thead>
+<tr>
+<th>Detector</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>single</td>
+<td>traps that catch one animal at a time</td>
+</tr>
+<tr>
+<td>multi</td>
+<td>traps that may catch more than one animal at a time</td>
+</tr>
+<tr>
+<td>proximity</td>
+<td>records presence at a point without restricting movement</td>
+</tr>
+<tr>
+<td>count</td>
+<td>proximity detector allowing &gt;1 detection per animal per time</td>
+</tr>
+<tr>
+<td>capped</td>
+<td>proximity detector with maximum one animal at a time</td>
+</tr>
+<tr>
+<td>polygon</td>
+<td>counts from searching one or more areas</td>
+</tr>
+<tr>
+<td>transect</td>
+<td>counts from searching one or more transects</td>
+</tr>
+<tr>
+<td>polygonX</td>
+<td>binary data from mutually exclusive areas</td>
+</tr>
+<tr>
+<td>transectX</td>
+<td>binary data from mutually exclusive transects</td>
+</tr>
+<tr>
+<td>signal</td>
+<td>detections and signal strengths at multiple microphones</td>
+</tr>
+<tr>
+<td>telemetry</td>
+<td>locations from radiotelemetry</td>
+</tr>
+</tbody></table>
+
+<h1>Origins and outline of the package <strong>secr</strong></h1>
+
+<p>The program DENSITY (Efford et al. 2004, Efford 2012) provides a
+graphical interface to SECR methods that has been accepted by many
+biologists. However, DENSITY has significant drawbacks: it requires
+the Windows operating system, its algorithms are not always transparent or
+well-documented, it fits only homogeneous Poisson models, and it omits
+recent advances in SECR.</p>
+
+<p>The R package <strong>secr</strong> was written to address these weaknesses and allow for further development. It implements almost all the methods described by Borchers and Efford (2008), Efford et al. (2009), Efford (2011), Efford and Fewster (2013), Efford et al. (2013) and Efford and Mowat (2014). <strong>secr</strong> 4.3 uses external C++ code via package <strong>Rcpp</strong> for computationally intensive operations (Eddelbuettel and Francois 2011); Multi-threading on multiple CPUs with <strong>RcppParallel</strong> (Allaire et al. 2019) gives major speed gains. <a href="#appendix1">Appendix 1</a> compares the features of DENSITY and <strong>secr</strong>. The most important functions of <strong>secr</strong> are listed in <a href="#appendix2">Appendix 2</a>.</p>
+
+<h1>How <strong>secr</strong> works</h1>
+
+<p><strong>secr</strong> defines a set of R classes[<sup>1]</sup> and methods for data from
+detector arrays and models fitted to those data. </p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 3.</strong> Essential classes in <strong>secr</strong>.</p>
+
+<table><thead>
+<tr>
+<th>Class</th>
+<th>Data</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>traps</td>
+<td>locations of detectors; detector type (&#39;proximity&#39;, &#39;multi&#39;, etc.)</td>
+</tr>
+<tr>
+<td>capthist</td>
+<td>spatial detection histories, including a &#39;traps&#39; object</td>
+</tr>
+<tr>
+<td>mask</td>
+<td>raster map of habitat near the detectors</td>
+</tr>
+<tr>
+<td>secr</td>
+<td>fitted SECR model</td>
+</tr>
+</tbody></table>
+
+<p>[<sup>1]:Technically,</sup> these are S3 classes. A &#39;class&#39; in R specifies a
+  particular type of data object and the functions (methods) by which
+  it is manipulated (computed, printed, plotted etc). See the R
+  documentation for further explanation.</p>
+
+<p>To perform an SECR analysis you explicitly or implicitly construct each of these objects in turn. Fig. 2 indicates the relationships among the classes.  </p>
+
+<p>\pagebreak</p>
+
+<p>\setkeys{Gin}{height=95mm, width=140mm,keepaspectratio=TRUE}
+<img src="data:image/png;base64,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" alt=""/></p>
+
+<p><strong>Fig. 2.</strong> Essentials of the <strong>secr</strong> package.</p>
+
+<ul>
+<li>Each object class (shaded box) comes with methods to display and manipulate the data it contains (e.g. <code>print</code>, <code>summary</code>, <code>plot</code>, <code>rbind</code>, <code>subset</code>)[<sup>2].</sup> </li>
+<li>The function <code>read.capthist</code> forms a &#39;traps&#39; object from the detector layout data and saves it as an attribute, along with capture data read from another file, in a &#39;capthist&#39; object. </li>
+<li>By default, a habitat mask is generated automatically by <code>secr.fit</code> using a specified buffer around the detectors (traps). The function <code>make.mask</code> gives greater control over this step.</li>
+<li>Any of the objects input to <code>secr.fit</code> (traps, capthist, mask) may include a dataframe of covariates  saved as an attribute. Covariate names may be used in model formulae; the <code>covariates</code> method is used to extract or replace covariates.</li>
+<li>Fitted secr models may be manipulated with the methods shown on the right and others listed in <a href="#appendix3">Appendix 3</a>. </li>
+</ul>
+
+<p>[<sup>2]:Text</sup> in this font refers to R objects that are documented in online help for the <strong>secr</strong> package, or in base R.</p>
+
+<h2>Input</h2>
+
+<p>Data input is covered in the separate document <a href="https://www.otago.ac.nz/density/pdfs/secr-datainput.pdf">secr-datainput.pdf</a>. One option is to use text files in the formats used by DENSITY; these accommodate most types of data. Two files are required, one of detector (trap) locations and one of the detections (captures) themselves; the function <code>read.capthist</code> reads both files and constructs a capthist object. It is also possible to construct the capthist object in two stages, first making a traps object (with <code>read.traps</code>) and a captures dataframe, and then combining these with <code>make.capthist</code>. This more general route may be needed for unusual datasets.</p>
+
+<h2>Output</h2>
+
+<p>The output from the function <code>secr.fit</code> is an object of class
+<code>secr</code>. This is an R list with many components. Assigning the
+output to a named object saves both the fit and the data for further
+manipulation. Typing the name at the R prompt invokes
+<code>print.secr</code> which formats the key results. These include the
+dataframe of estimates from the <code>predict</code> method for
+<code>secr</code> objects. Functions are provided for further computations
+on <code>secr</code> objects (e.g., AIC model selection, model averaging, profile-likelihood confidence
+intervals, and likelihood-ratio tests). Many of these are listed in <a href="#appendix3">Appendix 3</a>.</p>
+
+<p>One system of units is used throughout <strong>secr</strong>. Distances are in
+metres and areas are in hectares (ha). The unit of density for 2-dimensional habitat is animals per hectare. 1 ha = 10000 m<sup>2^</sup> = 0.01 km<sup>2<sup>.</sup></sup> To convert density to animals per
+km<sup>2<sup>,</sup></sup> multiply by 100. Density in linear habitats (see package <strong>secrlinear</strong>) is expressed in animals per km.</p>
+
+<h1>Documentation</h1>
+
+<p>The primary documentation for <strong>secr</strong> is in the help pages that accompany the package. Help for a function is obtained in the usual way by typing a question mark at the R prompt, followed by the function name. Note the &#39;Index&#39; link at the bottom of each help page &ndash; you will probably need to scroll down to find it. The index may also be accessed with <code>help(package = secr)</code>.</p>
+
+<p>The consolidated help pages are in the file <a href="https://www.otago.ac.nz/density/pdfs/secr-manual.pdf">secr-manual.pdf</a>. Searching this text is a powerful way to locate a function for a particular task. </p>
+
+<p>Other documentation, in the form of pdf vignettes built with <strong>knitr</strong>,  will be added from time to time. The &#39;User guides&hellip;&#39; link in the package help index lists available files. The vignettes in Table 4 may be found on the Density website.</p>
+
+<p>\vspace{18pt}</p>
+
+<p><strong>Table 4.</strong> Vignettes for <strong>secr</strong> 4.3.</p>
+
+<table><thead>
+<tr>
+<th>Vignette</th>
+<th>Topic</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-overview.pdf">secr-overview.pdf</a></td>
+<td>introduction (this document)</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-datainput.pdf">secr-datainput.pdf</a></td>
+<td>data formats and input functions</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-version4.pdf">secr-version4.pdf</a></td>
+<td>what&#39;s new in secr 4.x</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf">secr-tutorial.pdf</a></td>
+<td>tutorial using Burnham and Cushwa snowshoe hare data</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf">secr-habitatmasks.pdf</a></td>
+<td>habitat masks, buffer width and related topics</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-models.pdf">secr-models.pdf</a></td>
+<td>general description of models in <strong>secr</strong></td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf">secr-troubleshooting.pdf</a></td>
+<td>problems with <code>secr.fit</code>, including speed issues</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf">secr-densitysurfaces.pdf</a></td>
+<td>modelling density surfaces</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-finitemixtures.pdf">secr-finitemixtures.pdf</a></td>
+<td>mixture models for individual heterogeneity</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf">secr-markresight.pdf</a></td>
+<td>mark&ndash;resight models</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-multisession.pdf">secr-multisession.pdf</a></td>
+<td>data from multiple independent sessions</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf">secr-noneuclidean.pdf</a></td>
+<td>non-Euclidean distance models</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf">secr-parameterisations.pdf</a></td>
+<td>alternative parameterisations of detection</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf">secr-polygondetectors.pdf</a></td>
+<td>using polygon and transect detector types</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-sound.pdf">secr-sound.pdf</a></td>
+<td>analysing data from microphone arrays</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf">secr-telemetry.pdf</a></td>
+<td>analysing combined telemetry and capture&ndash;recapture data</td>
+</tr>
+<tr>
+<td><a href="https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf">secr-varyingeffort.pdf</a></td>
+<td>variable effort (usage) in SECR models</td>
+</tr>
+</tbody></table>
+
+<p>The web page <a href="https://www.otago.ac.nz/density/">https://www.otago.ac.nz/density/</a> should be checked for news of bug fixes and new releases. New versions will be posted on <a href="https://cran.r-project.org/package=secr">CRAN</a>, but there may be a delay of a few days. Help may be sought at <a href="http://www.phidot.org/forum">phidot</a>; see also the FAQ there for DENSITY and <strong>secr</strong>. Another forum intended for both software issues and wider discussion is <a href="https://groups.google.com/forum/#!forum/secrgroup">secrgroup</a>. For information on changes in each version, type at the R prompt:</p>
+
+<pre><code class="r">news (package = &quot;secr&quot;) 
+</code></pre>
+
+<h1>Defining models with the &#39;model&#39; argument of secr.fit</h1>
+
+<p>By default, the parameters of SECR models are assumed to be constant. We specify more interesting, and often better-fitting, models with the &#39;model&#39; argument of <code>secr.fit</code>.  Here &#39;models&#39; relates to variation in the parameters that may be explained by known factors and covariates. The explanation in <a href="https://www.otago.ac.nz/density/pdfs/secr-models.pdf">secr-models.pdf</a> may help. If you just want to know how to use models, read on.</p>
+
+<p>Models are defined symbolically in <strong>secr</strong> using R formula notation. A separate linear predictor is used for each core parameter.  Core parameters are &#39;real&#39; parameters in the terminology of MARK, and
+<strong>secr</strong> uses that term because it will be familiar to biologists.</p>
+
+<p>Three real parameters are commonly modelled in <strong>secr</strong> 4.3; these are denoted &#39;D&#39; (for density), &#39;g0&#39; (or &#39;lambda0&#39;) and &#39;sigma&#39;. Only the last two real parameters, which jointly define the model for detection probability as a function of location, can be estimated directly when the model is fitted by maximizing the conditional likelihood (<code>CL = TRUE</code> in <code>secr.fit</code>).  D is then a derived parameter that is computed from an <strong>secr</strong> object with the function <code>derived</code> or one of its siblings (<code>derivedCluster</code> etc.). </p>
+
+<p>Here is a simple example of the model argument in use:</p>
+
+<pre><code class="r">secr.fit(captdata, model = g0~t)
+</code></pre>
+
+<p>The real parameter g0 is no longer constant, but takes a unique value on each sampling occasion (t).</p>
+
+<p>Other &#39;real&#39; parameters appear in particular contexts. &#39;z&#39; is a shape parameter that is used only when the detection function has three parameters (annular halfnormal, cumulative gamma, hazard-rate etc. &ndash; see <code>?detectfn</code>). Some detection functions primarily model &#39;exposure&#39; or the cumulative hazard of detection, rather than the probability of detection; these use the real parameter &#39;lambda0&#39; in place of &#39;g0&#39; (see ?detectfn). &#39;lambda0&#39; is also used with count detectors. A further &#39;real&#39; parameter is the mixing proportion &#39;pmix&#39;, used in finite mixture models and hybrid mixture models (see ?hcov).</p>
+
+<p>Sometimes it is illuminating and efficient to parameterise the detection function using a function of the primary &#39;real&#39; parameters described above. This gives rise to the surrogate &#39;real&#39; parameters a0 and sigmak; see the vignette <a href="https://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf">secr-parameterisations.pdf</a> for details and references.</p>
+
+<p>Detection parameters and density parameters are modelled separately,
+as we now describe.</p>
+
+<h2>Detection parameters</h2>
+
+<p>Effects on parameters of detection probability are specified via R formulae. The variable names used in formulae are either names for standard effects (Table 5) or the names of user-supplied covariates. Effects &#39;b&#39;, &#39;B&#39;, &#39;bk&#39;, and &#39;Bk&#39; refer to individuals whereas &#39;k&#39; and &#39;K&#39; refer only to sites. Groups (&#39;g&#39;) are used only in models fitted by maximizing the full likelihood; for conditional likelihood models use a factor covariate to achieve the same effect. See also the later section on <a href="#modellingsex">modelling sex differences</a>.</p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 5.</strong> Automatically generated predictor variables used in detection models</p>
+
+<table><thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Notes</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>g</td>
+<td>group</td>
+<td>individual covariates listed in <code>secr.fit</code> argument &#39;groups&#39;</td>
+</tr>
+<tr>
+<td>t</td>
+<td>time factor</td>
+<td>one level for each occasion</td>
+</tr>
+<tr>
+<td>T</td>
+<td>time trend</td>
+<td>linear trend over occasions on link scale</td>
+</tr>
+<tr>
+<td>b</td>
+<td>learned response</td>
+<td>step change after first detection</td>
+</tr>
+<tr>
+<td>B</td>
+<td>transient response</td>
+<td>depends on detection at preceding occasion (Markovian response)</td>
+</tr>
+<tr>
+<td>bk</td>
+<td>animal x site response</td>
+<td>site-specific step change</td>
+</tr>
+<tr>
+<td>Bk</td>
+<td>animal x site response</td>
+<td>site-specific transient response</td>
+</tr>
+<tr>
+<td>k</td>
+<td>site learned response</td>
+<td>site effectiveness changes once any animal caught</td>
+</tr>
+<tr>
+<td>K</td>
+<td>site transient response</td>
+<td>site effectiveness depends on preceding occasion</td>
+</tr>
+<tr>
+<td>session</td>
+<td>session factor</td>
+<td>one level for each session</td>
+</tr>
+<tr>
+<td>Session</td>
+<td>session trend</td>
+<td>linear trend on link scale</td>
+</tr>
+<tr>
+<td>h2</td>
+<td>2-class mixture</td>
+<td>finite mixture model with 2 latent classes</td>
+</tr>
+<tr>
+<td>ts</td>
+<td>marking vs sighting</td>
+<td>two levels (marking and sighting occasions)</td>
+</tr>
+</tbody></table>
+
+<p>Any name in a formula that is not a variable in Table 5 is assumed to refer to a user-supplied covariate. <code>secr.fit</code> looks for user-supplied covariates in data frames embedded in the &#39;capthist&#39; argument, or supplied in the &#39;timecov&#39; and &#39;sessioncov&#39; arguments, or named with the &#39;timevaryingcov&#39; attribute of a traps object, using the first match (Table 6).</p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 6.</strong> Types of user-provided covariate for in detection models. The names
+    of columns in the respective dataframes, and names of components in
+    the &#39;timevaryingcov&#39; attribute, may be used in model formulae</p>
+
+<table><thead>
+<tr>
+<th>Covariate type</th>
+<th>Data source</th>
+<th>Notes</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Individual</td>
+<td>covariates(capthist)</td>
+<td>conditional likelihood only</td>
+</tr>
+<tr>
+<td>Time</td>
+<td>timecov argument</td>
+<td></td>
+</tr>
+<tr>
+<td>Detector</td>
+<td>covariates(traps(capthist))</td>
+<td></td>
+</tr>
+<tr>
+<td>Detector x Time</td>
+<td>covariates(traps(capthist))</td>
+<td>see ?timevaryingcov</td>
+</tr>
+<tr>
+<td>Session</td>
+<td>sessioncov argument</td>
+<td></td>
+</tr>
+</tbody></table>
+
+<p>The formula for any detection parameter (e.g., g0, lambda0 or sigma) may be constant
+(\(\sim\) 1, the default) or some combination of terms in standard R
+formula notation (see ?formula). For example, g0 \(\sim\) b + T
+specifies a model with a learned response and a linear time trend in
+g0; the effects are additive on the link scale. See Table 7 for other examples.</p>
+
+<p>\vspace{12pt}</p>
+
+<p><strong>Table 7.</strong> Some examples of the &#39;model&#39; argument in <code>secr.fit</code></p>
+
+<table><thead>
+<tr>
+<th>Formula</th>
+<th>Effect</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>g0 \(\sim\) 1</td>
+<td>g0 is constant across animals, occasions and detectors</td>
+</tr>
+<tr>
+<td>g0 \(\sim\) b</td>
+<td>learned response affects g0</td>
+</tr>
+<tr>
+<td>list(g0 \(\sim\) b, sigma \(\sim\) b)</td>
+<td>learned response affects both g0 and sigma</td>
+</tr>
+<tr>
+<td>g0 \(\sim\) h2</td>
+<td>2-class finite mixture for heterogeneity in g0</td>
+</tr>
+<tr>
+<td>g0 \(\sim\) b + T</td>
+<td>learned response in g0 combined with trend over occasions</td>
+</tr>
+<tr>
+<td>sigma \(\sim\) g</td>
+<td>detection scale sigma differs between groups</td>
+</tr>
+<tr>
+<td>sigma \(\sim\) g*T</td>
+<td>group-specific trend in sigma</td>
+</tr>
+<tr>
+<td>D \(\sim\) cover</td>
+<td>density varies with &#39;cover&#39;, a variable in covariates(mask)</td>
+</tr>
+<tr>
+<td>list(D \(\sim\) g, g0 \(\sim\) g)</td>
+<td>both density and g0 differ between groups</td>
+</tr>
+<tr>
+<td>D \(\sim\) session</td>
+<td>session-specific density</td>
+</tr>
+</tbody></table>
+
+<p>For other effects, the design matrix for detection parameters may also
+be provided manually in the argument <code>dframe</code> of <code>secr.fit</code>.  This
+feature is untested.</p>
+
+<h2>Inhomogeneous density models</h2>
+
+<p>The SECR log likelihood is evaluated by summing values at points on a
+&#39;habitat mask&#39; (the &#39;mask&#39; argument of <code>secr.fit</code>).
+Each point in a habitat mask represents a grid cell of potentially
+occupied habitat (their combined area may be almost any shape).  The
+full design matrix for density (D) has one row for each point in the
+mask. As for the detection submodels, the design matrix has one column
+for the intercept (constant) term and one for each predictor.</p>
+
+<p>Predictors may be based on Cartesian coordinates (e.g. &#39;x&#39; for an
+east-west trend), a continuous habitat variable (e.g. vegetation
+cover) or a categorical (factor) habitat variable.  Predictors must be
+known for all points in the mask (non-habitat excluded).  The
+variables &#39;x&#39; and &#39;y&#39; are the coordinates of the habitat mask and are
+automatic, as are &#39;x2&#39;, &#39;y2&#39;, and &#39;xy&#39;. Other spatial covariates
+should be named columns in the &#39;covariates&#39; attribute of the
+habitat mask.</p>
+
+<p>Regression splines are particularly effective for modelling spatial trend. For these and general guidance on fitting and displaying density surfaces, see the vignette <a href="https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf">secr-densitysurfaces.pdf</a>.</p>
+
+<h1>Model fitting and estimation</h1>
+
+<p>Models are fitted in <code>secr.fit</code> by numerically maximizing the
+likelihood. The likelihood involves integration over the unknown
+locations of the animals&#39; range centres. This is achieved in practice
+by summation over points in the habitat mask, which has some
+implications for the user. Computation may be slow, especially if
+there are many points in the mask, and estimates may be sensitive to
+the particular choice of mask (either explicitly in <code>make.mask</code>
+or implicitly via the &#39;buffer&#39; argument).</p>
+
+<p>The default maximization algorithm is Newton-Raphson in the function
+<code>stats::nlm</code>. By default, all reported variances, covariances,
+standard errors and confidence limits are asymptotic and based on a
+numerical estimate of the information matrix. The Newton-Raphson
+algorithm is fast, but it sometimes fails to compute the information
+matrix correctly, causing some standard errors to be set to NA; see
+the &#39;method&#39; argument of <code>secr.fit</code> for alternatives. Use
+<code>confint.secr</code> for profile likelihood intervals and <code>sim.secr</code>
+for parametric bootstrap intervals (both are slow).</p>
+
+<h1>Habitat masks</h1>
+
+<p>We have already introduced the idea of a habitat mask. The SECR
+likelihood is evaluated by summing values at points on a
+mask; each point represents a grid cell of potentially occupied
+habitat. Masks may be constructed by placing a buffer of arbitrary
+width around the detectors, possibly excluding known non-habitat. How
+wide should the buffer be? The general answer is &#39;Wide enough not to
+cause bias in estimated densities&#39;. This depends on the scale of
+movement of the animal, and on the chosen detection function. For
+specifics, see the separate vignette on habitat masks <a href="https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf">secr-habitatmasks.pdf</a> 
+and the help for &#39;mask&#39; and the various mask-related functions (<code>make.mask</code>,
+<code>mask.check</code>, <code>suggest.buffer</code>, and <code>esa.plot</code>). Heavy-tailed detection 
+functions such as the hazard-rate and lognormal can be problematic because 
+they require an unreasonably large buffer for stable density estimates.</p>
+
+<h1>Miscellaneous topics</h1>
+
+<h2>Modelling sex differences {#modellingsex}</h2>
+
+<p>There are many ways to model sex differences in <strong>secr</strong>. Here we
+sketch some possibilities, in order of usefulness (your mileage may
+vary).</p>
+
+<ol>
+<li><p>Fit a hybrid mixture model as described in the online help
+(?hcov). This accommodates occasional missing values and estimates
+the sex ratio (pmix).</p></li>
+<li><p>Use conditional likelihood (<code>CL = TRUE</code>) and include a
+categorical (factor) covariate in model formulae (e.g., g0 \(\sim\)
+sex). To get sex-specific densities then specify <code>groups =
+&quot;sex&quot;</code> in <code>derived</code>.</p></li>
+<li><p>Use full likelihood (<code>CL = FALSE</code>) and separate data for
+the two sexes as different sessions (most easily, by coding &#39;female&#39;
+or &#39;male&#39; in the first column of the capture file read with
+<code>read.capthist</code>). Then include a group term &#39;session&#39; in
+relevant model formulae (e.g., g0 \(\sim\) session).</p></li>
+<li><p>Use full likelihood (<code>CL = FALSE</code>), define <code>groups = &quot;sex&quot;</code> or
+similar, and include a group term &#39;g&#39; in relevant formulae (e.g.,
+g0 \(\sim\) g).</p></li>
+</ol>
+
+<p>&#39;CL&#39; and &#39;groups&#39; are arguments of <code>secr.fit</code>. Possibilities 1&ndash;4 should not be mixed for comparing AIC. Sex differences in home-range size (and hence sigma) may be mitigated by compensatory
+variation in g0 or lambda0 (Efford and Mowat 2014).</p>
+
+<h2>Varying effort</h2>
+
+<p>The probability of observing an individual at a particular detector may depend directly on a known quantity such as how long the detector was exposed on a particular occasion. In the extreme, a detector may not have been operated. The terms &#39;effort&#39; and &#39;usage&#39; are used here
+interchangeably for variation in the duration of exposure and similar known effects. Usage is an attribute of the detectors in a traps object (a traps x occasions matrix); it may be entered with the detector coordinates in a trap layout file or added later (see ?usage). Models fitted to data including a usage attribute will adjust automatically for varying usage across detectors and occasions. Usage may take any non-negative value. This simplifies the modelling of data aggregated over varying numbers of occasions or nearby sites.</p>
+
+<p>See the separate document <a href="https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf">secr-varyingeffort.pdf</a> and Efford et al. (2013) for more.</p>
+
+<h2>Mark&ndash;resight</h2>
+
+<p>Mark&ndash;resight data include sampling occasions on which previously marked animals were recorded, but new animals were not distinguished from each other. <strong>secr</strong> 4.3 provides a suite of spatial models for these data, as documented in <a href="https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf">secr-markresight.pdf</a>. Two general classes of spatial mark&ndash;resight model are included: those in which the marking process is modelled (we call these spatial capture&ndash;mark&ndash;resight models), and those in which the process is not modelled and pre-marked animals are assumed to follow some distribution (e.g., uniform across a known area) (sighting-only or mark&ndash;resight models). Mark&ndash;resight models in <strong>secr</strong> 4.3 discard some spatial information in the unmarked sightings &ndash; information that is used in the models of Chandler and Royle (2013) and Sollmann et al. (2013). This results in some (probably small) loss of precision, and requires an adjustment for overdispersion to ensure confidence intervals have good coverage properties. The vignette <a href="https://www.otago.ac.nz/density/pdfs/secr-markresight.pdf">secr-markresight.pdf</a> should be consulted.</p>
+
+<h2>Detector clusters</h2>
+
+<p>For surveying large areas it is efficient to use groups of detectors: within a group the detectors are close enough that animals may be re-detected at multiple points, while groups of detectors may be distributed across a region according to a probability design to sample possible spatial variation in density. <strong>secr</strong> allows for detector groups with the &#39;cluster&#39; data structure. This is an attribute of a traps object that records which detectors belong to which cluster[<sup>3].</sup></p>
+
+<p>[<sup>3]:Clusters</sup> are assumed to share the same geometry (number of detectors,
+within-cluster spacing etc.).</p>
+
+<p>Functions are provided to generate detector arrays with a clustered
+structure (<code>trap.builder</code>, <code>make.systematic</code>), to extract or replace
+the cluster attribute (<code>clusterID</code>), to compute the geometric centres
+and numbers of detections per cluster (<code>cluster.centres</code>,
+<code>cluster.counts</code>), etc.</p>
+
+<p>A lacework design (Efford in prep.) is an alternative to a clustered design that is suitable when the region is intermediate size. Lacework designs may be constructed with <code>make.lacework</code>.</p>
+
+<p>Data from a large, clustered design may often be analysed more quickly
+if the &#39;capthist&#39; object is first collapsed into one using the
+geometry of a single cluster (the object retains a memory of the
+number of individuals from each original cluster in the attribute
+&#39;n.mash&#39;). Use the function <code>mash</code> for this. Functions <code>derived</code>,
+<code>derivedMash</code> and the method <code>predict.secr</code> use &#39;n.mash&#39; to adjust
+their output density, SE, and confidence limits.</p>
+
+<h2>Parallel processing</h2>
+
+<p>On processors with multiple cores it is possible to speed up computation by using cores in parallel. In <strong>secr</strong> 4.3 this happens automatically in <code>secr.fit</code> and a few other functions using the multi-threading paradigm of <strong>RcppParallel</strong> (Allaire et al. 2019). The number of threads may be set directly with the function <code>setNumThreads</code>, or via the &#39;ncores&#39; argument of several functions. </p>
+
+<p>Earlier versions of <strong>secr</strong> relied on parallel processing with the <strong>parallel</strong> package (invoked when the argument ncores was set greater than 1). The benefits of that form of parallel processing were variable (considerable with simulations in <code>sim.secr</code> and <code>ip.secr</code>, but otherwise unimpressive). </p>
+
+<p>The functions <code>par.secr.fit</code>, <code>par.region.N</code> and <code>par.derived</code> allowed models to be fitted or analysed in parallel, one per core. The greater speed of <code>secr.fit</code> in <strong>secr</strong> 4.3 makes <code>par.secr.fit</code> redundant. All three functions now appear to run faster with ncores=1 than with ncores&gt;1. They are retained because it is sometimes useful to process several models at once.</p>
+
+<h2>Regression splines</h2>
+
+<p>The standard models for &#39;real&#39; parameters in <strong>secr</strong> are linear on the link scale, much like a generalised linear model. Semi-parametric &#39;regression spline&#39; smooths provide more flexibility. These are implemented in <strong>secr</strong> using a method suggested by Borchers and Kidney (2014): Simon Wood&#39;s R package <strong>mgcv</strong> is used to parse s() and te() terms in model formulae and construct basis functions that are used like linear covariates within <strong>secr</strong>. Any &#39;real&#39; parameter may be modelled with regression splines (D, lambda0, sigma, noneuc etc.). For details see the help page (?smooths) and the documentation for <strong>mgcv</strong>.</p>
+
+<h2>Non-Euclidean distances</h2>
+
+<p>&#39;Distance&#39; in SECR models usually, and by default, means the
+Euclidean distance \(d = \sqrt{(x_1-x_2)^2 + (y_1 - y_2)^2}\). The
+observation model can be customised by replacing the Euclidean
+distance with one that &#39;warps&#39; space in some ecologically meaningful
+way. There are innumerable ways to do this. Royle et al. (2013)
+envisioned an &#39;ecological distance&#39; that is a function of landscape covariates. Redefining distance is a way to model spatial variation in the size of home ranges, and hence the spatial scale of movement \(\sigma\); Efford et al. (2016) use this to model inverse covariation between density and home range size. Distances measured along a linear habitat network such as a river system are also non-Euclidean (see package <strong>secrlinear</strong>).</p>
+
+<p><strong>secr</strong> provides general tools for specifying and modelling non-Euclidean distance, via the <code>secr.fit</code> details component &#39;userdist&#39;. This may be a user-specified function or a pre-computed matrix. See <a href="https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf">secr-noneuclidean.pdf</a> for a full explanation and examples.</p>
+
+<h1>References</h1>
+
+<p>Allaire, J. J., Francois, R., Ushey, K., Vandenbrouck, G., Geelnard, M. and Intel (2019)
+  RcppParallel: Parallel Programming Tools for &#39;Rcpp&#39;. R package version 4.4.4.
+  <a href="https://CRAN.R-project.org/package=RcppParallel">https://CRAN.R-project.org/package=RcppParallel</a>.</p>
+
+<p>Borchers, D. L., Buckland, S. T. and Zucchini, W. (2002)
+  <em>Estimating animal abundance: closed populations</em>. Springer,
+  London.</p>
+
+<p>Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum likelihood methods for capture&ndash;recapture studies. <em>Biometrics</em> <strong>64</strong>, 377&ndash;385.</p>
+
+<p>Borchers, D. L. and Fewster, R. M. (2016)  Spatial capture&ndash;recapture models.  <em>Statistical Science</em> <strong>31</strong>, 219&ndash;232.</p>
+
+<p>Borchers, D. L. and Kidney, D. (2014) Flexible density surface estimation for spatially explicit capture&ndash;recapture surveys. Technical Report, University of St Andrews.</p>
+
+<p>Chandler, R. B. and Royle, J. A. (2013) Spatially explicit models for inference about density in unmarked or partially marked populations. <em>Annals of Applied Statistics</em> <strong>7</strong>, 936&ndash;954.</p>
+
+<p>Cooch, E. and White, G. (eds) (2014) <em>Program MARK: A Gentle Introduction</em>. 13th edition. Available online at <a href="http://www.phidot.org/software/mark/docs/book/">http://www.phidot.org/software/mark/docs/book/</a>.</p>
+
+<p>Eddelbuettel, D. and Francois, R. (2011) Rcpp: Seamless R and C++ Integration. <em>Journal of
+  Statistical Software</em> <strong>40(8)</strong>, 1&ndash;18. <a href="https://www.jstatsoft.org/v40/i08/">https://www.jstatsoft.org/v40/i08/</a>.</p>
+
+<p>Efford, M. G. (2004) Density estimation in live-trapping studies. <em>Oikos</em> <strong>106</strong>, 598&ndash;610.</p>
+
+<p>Efford, M. G. (2011) Estimation of population density by spatially explicit capture&ndash;recapture analysis of data from area searches. <em>Ecology</em> <strong>92</strong>, 2202&ndash;2207.</p>
+
+<p>Efford, M. G. (2012) <em>DENSITY 5.0: software for spatially explicit capture&ndash;recapture</em>.  Department of Mathematics and Statistics, University of Otago, Dunedin, New Zealand
+  <a href="https://www.otago.ac.nz/density">https://www.otago.ac.nz/density</a>.</p>
+
+<p>Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation by spatially explicit capture&ndash;recapture: likelihood-based methods. In: D. L. Thomson, E. G. Cooch,
+  M. J. Conroy (eds) <em>Modeling Demographic Processes in Marked Populations</em>. Springer. Pp 255&ndash;269.</p>
+
+<p>Efford, M. G., Borchers D. L. and Mowat, G. (2013) Varying effort in capture&ndash;recapture studies. <em>Methods in Ecology and Evolution</em> <strong>4</strong>, 629&ndash;636.</p>
+
+<p>Efford, M. G., Dawson, D. K. and Borchers, D. L. (2009) Population density estimated from locations of individuals on a passive detector array. <em>Ecology</em> <strong>90</strong>, 2676&ndash;2682.</p>
+
+<p>Efford, M. G., Dawson, D. K., Jhala, Y. V. and Qureshi, Q. (2016) Density-dependent home-range size revealed by spatially explicit capture-recapture. Ecography <strong>39</strong>, 676&ndash;688.</p>
+
+<p>Efford, M. G. and Fewster, R. M. (2013) Estimating population size by spatially explicit capture&ndash;recapture. <em>Oikos</em> <strong>122</strong>, 918&ndash;928.</p>
+
+<p>Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in spatially explicit capture&ndash;recapture data. <em>Ecology</em>  <strong>95</strong>, 1341&ndash;1348.</p>
+
+<p>Huggins, R. M. (1989) On the statistical analysis of capture experiments.  <em>Biometrika</em> <strong>76</strong>, 133&ndash;140.</p>
+
+<p>Laake, J. and Rexstad E. (2014) Appendix C. RMark - an alternative approach to building linear models in MARK. In: Cooch, E. and White, G. (eds) <em>Program MARK: A Gentle
+    Introduction</em>. 13th edition. <a href="http://www.phidot.org/software/mark/docs/book/">http://www.phidot.org/software/mark/docs/book/</a>.</p>
+
+<p>Lebreton, J.-D., Burnham, K. P., Clobert, J., and Anderson, D. R. (1992) Modeling survival and testing biological hypotheses using marked animals: a unified approach with case studies. <em>Ecological Monographs</em> <strong>62</strong>, 67&ndash;118.</p>
+
+<p>Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978) Statistical inference from capture data on closed animal populations. <em>Wildlife Monographs</em> <strong>62</strong>.</p>
+
+<p>Royle, J. A., Chandler, R. B., Gazenski, K. D. and Graves, T. A. (2013) Spatial capture&ndash;recapture models for jointly estimating population density and landscape connectivity. <em>Ecology</em> <strong>94</strong> 287&ndash;294.</p>
+
+<p>Royle, J. A., Chandler, R. B., Sollmann, R. and Gardner, B. (2014) <em>Spatial capture&ndash;recapture.</em> Academic Press.</p>
+
+<p>Royle, J. A. and Gardner, B. (2011) Hierarchical spatial capture&ndash;recapture models for estimating density from trapping arrays. In: A.F. O&#39;Connell, J.D. Nichols and K.U. Karanth (eds) <em>Camera Traps in Animal Ecology: Methods and Analyses</em>. Springer, Tokyo.  Pp. 163&ndash;190.</p>
+
+<p>Royle, J. A., Nichols, J. D., Karanth, K. U. and Gopalaswamy, A. M. (2009). A hierarchical model for estimating density in camera-trap studies. <em>Journal of Applied Ecology</em> <strong>46</strong>, 118&ndash;127.</p>
+
+<p>Royle, J. A. and Young, K. V. (2008) A hierarchical model for spatial capture&ndash;recapture data. <em>Ecology</em> <strong>89</strong>, 2281&ndash;2289.</p>
+
+<p>Sollmann, R., Gardner, B., Parsons, A. W., Stocking, J. J., McClintock, B. T., Simons, T. R., Pollock, K. H. and O&#39;Connell, A. F. (2013) A spatial mark&ndash;resight model augmented with telemetry data. <em>Ecology</em> <strong>94</strong>, 553&ndash;559.     </p>
+
+<p>Stanley, T. R. and Burnham, K. P. (1999) A closure test for time-specific capture&ndash;recapture data. <em>Environmental and Ecological Statistics</em> <strong>6</strong>, 197&ndash;209.</p>
+
+<p>\pagebreak</p>
+
+<h1>Appendix 1. Software feature comparisons {#appendix1}</h1>
+
+<p>&#8226; full implementation</p>
+
+<p>&#9702; incomplete or inferior implementation.</p>
+
+<table><thead>
+<tr>
+<th>Feature</th>
+<th>DENSITY 5.0</th>
+<th><strong>secr</strong> 4.3</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><strong>General</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Graphical interface</td>
+<td>&#8226;</td>
+<td>&#9702;</td>
+</tr>
+<tr>
+<td>Inverse prediction (IP SECR)</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Maximum likelihood estimation (ML SECR)</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Non-spatial closed-population estimators</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Simulation of spatial sampling</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Build detector arrays</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Control of random number generator</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Closure tests</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Import or export DENSITY text files</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Convert BUGS data</td>
+<td></td>
+<td>&#9702;</td>
+</tr>
+<tr>
+<td>GIS polygons as habitat mask</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Clustered detector layouts</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Mash data from clustered layouts</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Upload coordinates to GPS (uses GPSBabel)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Multi-threaded C++ for fast model fitting</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td><strong>ML secr</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Density models (inhomogeneous 2-D Poisson)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Regional population size (region.N)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Varying effort (detector usage)</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Fixed parameters</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Parametric bootstrap</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Between-session models</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Profile likelihood confidence intervals</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Mixture models for individual heterogeneity</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Confidence ellipses</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Formula-based model notation</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Plot density models</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Groups (e.g. males &amp; females)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Score tests for model selection</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Model averaging</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Plot likelihood surface</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Empirical variance from replicate units</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Mask diagnostics</td>
+<td>&#9702;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Suggested buffer width</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Contours of detection probability</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Compute pdf for individual&#39;s range centre</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Time-varying detector covariates</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hybrid mixture models (hcov)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Compensation (a0 parameterization)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Density-dependent sigma (sigmak parameterization)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Variance-only mode (method = &#39;none&#39;)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Combined telemetry-detection models</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Regression splines</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Non-Euclidean distance</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Mark&ndash;resight</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td><strong>Detector types</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Single-catch trap<sup>a^</sup></td>
+<td>&#9702;</td>
+<td>&#9702;</td>
+</tr>
+<tr>
+<td>Multi-catch trap</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Proximity</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Signal strength (acoustic)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Count</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Capped</td>
+<td></td>
+<td>&#9702;</td>
+</tr>
+<tr>
+<td>Polygon</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Transect</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Polygon (exclusive)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Transect (exclusive)</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Telemetry</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td><strong>Detection functions</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Halfnormal</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard rate<sup>b^</sup></td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Exponential</td>
+<td>&#8226;</td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Compound halfnormal</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Uniform<sup>a^</sup></td>
+<td>&#9702;</td>
+<td>&#9702;</td>
+</tr>
+<tr>
+<td>w-exponential</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Annular halfnormal</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Binary signal strength</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Signal strength</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Signal strength spherical</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Cumulative lognormal<sup>b^</sup></td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Cumulative gamma</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard halfnormal</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard hazard rate<sup>b^</sup></td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard exponential</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard annular halfnormal</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard cumulative gamma</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+<tr>
+<td>Hazard variable power</td>
+<td></td>
+<td>&#8226;</td>
+</tr>
+</tbody></table>
+
+<p>a. Not fitted by ML secr</p>
+
+<p>b. Not recommended because of heavy tail</p>
+
+<p>\pagebreak</p>
+
+<h1>Appendix 2. Core functions of <strong>secr</strong> {#appendix2}</h1>
+
+<p>These are the core functions of <strong>secr</strong> 4.3 &ndash; the ones that you are most likely to use. S3 methods are marked with an asterisk.</p>
+
+<table><thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code>AIC</code>*</td>
+<td>model selection, model weights</td>
+</tr>
+<tr>
+<td><code>covariates</code></td>
+<td>extract or replace covariates of traps, capthist or mask</td>
+</tr>
+<tr>
+<td><code>derived</code>*</td>
+<td>compute density from conditional likelihood models</td>
+</tr>
+<tr>
+<td><code>make.mask</code></td>
+<td>construct habitat mask (= mesh)</td>
+</tr>
+<tr>
+<td><code>plot</code>*</td>
+<td>plot capthist, traps or mask</td>
+</tr>
+<tr>
+<td><code>read.capthist</code></td>
+<td>input captures and trap layout from Density format, one call</td>
+</tr>
+<tr>
+<td><code>predict</code>*</td>
+<td>compute &#39;real&#39; parameters for arbitrary levels of predictor variables</td>
+</tr>
+<tr>
+<td><code>predictDsurface</code></td>
+<td>evaluate density surface at each point of a mask</td>
+</tr>
+<tr>
+<td><code>region.N</code>*</td>
+<td>compute expected and realised population size in specified region</td>
+</tr>
+<tr>
+<td><code>secr.fit</code></td>
+<td>maximum likelihood fit; result is a fitted &#39;secr&#39; object</td>
+</tr>
+<tr>
+<td><code>summary</code>*</td>
+<td>summarise capthist, traps or mask</td>
+</tr>
+<tr>
+<td><code>traps</code></td>
+<td>extract or replace traps object in capthist</td>
+</tr>
+</tbody></table>
+
+<p>\pagebreak</p>
+
+<h1>Appendix 3. Classified index to <strong>secr</strong> functions {#appendix3}</h1>
+
+<p>Here is an index of <strong>secr</strong> functions classified by use (some minor functions are omitted). S3 methods are marked with an asterisk.</p>
+
+<ul>
+<li><a href="#manipulate">Manipulate core objects</a></li>
+<li><a href="#traps">Attributes of traps object</a></li>
+<li><a href="#capthist">Attributes of capthist object</a></li>
+<li><a href="#detections">Data for each detection</a> </li>
+<li><a href="#operate">Operate on fitted model(s)</a></li>
+<li><a href="#mask">Mask diagnostics</a></li>
+<li><a href="#graphics">Specialised graphics</a></li>
+<li><a href="#convert">Convert or export data</a></li>
+<li><a href="#misc">Miscellaneous</a></li>
+</ul>
+
+<table><thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><a name="manipulate"></a>  <strong>Manipulate data objects</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>addCovariates</code></td>
+<td>add spatial covariates to &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>as.mask</code></td>
+<td>coerce &#39;traps&#39; object to &#39;mask&#39; for specialised plotting</td>
+</tr>
+<tr>
+<td><code>deleteMaskPoints</code></td>
+<td>edit &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>discretize</code></td>
+<td>rasterize area-search capthist data</td>
+</tr>
+<tr>
+<td><code>head</code>*</td>
+<td>first rows of &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>join</code></td>
+<td>combine sessions of multi-session &#39;capthist&#39; object</td>
+</tr>
+<tr>
+<td><code>make.grid</code></td>
+<td>construct detector array</td>
+</tr>
+<tr>
+<td><code>make.capthist</code></td>
+<td>form &#39;capthist&#39; from &#39;traps&#39; and detection data</td>
+</tr>
+<tr>
+<td><code>make.mask</code></td>
+<td>construct habitat mask (mesh)</td>
+</tr>
+<tr>
+<td><code>make.systematic</code></td>
+<td>construct clustered random systematic design</td>
+</tr>
+<tr>
+<td><code>make.lacework</code></td>
+<td>construct lacework random systematic design</td>
+</tr>
+<tr>
+<td><code>MS.capthist</code></td>
+<td>combine &#39;capthist&#39; objects into one multi-session &#39;capthist&#39;</td>
+</tr>
+<tr>
+<td><code>plot</code>*</td>
+<td>plot &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>plotMaskEdge</code></td>
+<td>draw line around mask cells</td>
+</tr>
+<tr>
+<td><code>randomHabitat</code></td>
+<td>generates habitat mask with random landscape</td>
+</tr>
+<tr>
+<td><code>rbind</code>*</td>
+<td>append &#39;capthist&#39;, &#39;traps&#39;, &#39;popn&#39; or &#39;mask&#39; objects</td>
+</tr>
+<tr>
+<td><code>read.capthist</code></td>
+<td>input captures and trap layout from Density format, one call</td>
+</tr>
+<tr>
+<td><code>read.traps</code></td>
+<td>input detector locations from text file</td>
+</tr>
+<tr>
+<td><code>reduce</code>*</td>
+<td>aggregate detectors or occasions; change detector type</td>
+</tr>
+<tr>
+<td><code>sim.capthist</code></td>
+<td>simulate capture histories</td>
+</tr>
+<tr>
+<td><code>sightingPlot</code></td>
+<td>bubble plot of sightings in capthist object</td>
+</tr>
+<tr>
+<td><code>snip</code></td>
+<td>split transect(s) into equal sections</td>
+</tr>
+<tr>
+<td><code>split</code>*</td>
+<td>split a single-session capthist or mask by various criteria</td>
+</tr>
+<tr>
+<td><code>subset</code>*</td>
+<td>filter &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>summary</code>*</td>
+<td>summarise &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>tail</code>*</td>
+<td>last rows of &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39;</td>
+</tr>
+<tr>
+<td><code>trap.builder</code></td>
+<td>construct various complex designs</td>
+</tr>
+<tr>
+<td><code>verify</code>*</td>
+<td>check &#39;capthist&#39;, &#39;traps&#39; or &#39;mask&#39; for internal consistency</td>
+</tr>
+<tr>
+<td><a name="traps"></a> <strong>Attributes of traps object</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>clusterID</code></td>
+<td>cluster identifier</td>
+</tr>
+<tr>
+<td><code>clustertrap</code></td>
+<td>detector number within cluster</td>
+</tr>
+<tr>
+<td><code>covariates</code>*</td>
+<td>detector-level covariates</td>
+</tr>
+<tr>
+<td><code>detector</code>*</td>
+<td>detector type (&#39;multi&#39;, &#39;proximity&#39; etc.)</td>
+</tr>
+<tr>
+<td><code>markocc</code></td>
+<td>vector distinguishing marking and sighting occasions</td>
+</tr>
+<tr>
+<td><code>polyID</code>*</td>
+<td>polygon or transect identifier</td>
+</tr>
+<tr>
+<td><code>timevaryingcov</code></td>
+<td>name time-varying covariate(s)</td>
+</tr>
+<tr>
+<td><code>usage</code>*</td>
+<td>occasion- and detector-specific effort</td>
+</tr>
+<tr>
+<td><a name="capthist"></a> <strong>Attributes of capthist object</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>addSightings</code></td>
+<td>add sighting data to a &#39;proximity&#39;, &#39;count&#39; or &#39;polygon&#39; object</td>
+</tr>
+<tr>
+<td><code>addTelemetry</code></td>
+<td>add telemetry data to a &#39;proximity&#39; or &#39;count&#39; object</td>
+</tr>
+<tr>
+<td><code>covariates</code>*</td>
+<td>individual-level covariates, including grouping factors</td>
+</tr>
+<tr>
+<td><code>session</code>*</td>
+<td>session identifier(s)</td>
+</tr>
+<tr>
+<td><code>signalmatrix</code></td>
+<td>sound x microphone table</td>
+</tr>
+<tr>
+<td><code>telemetryxy</code></td>
+<td>coordinates of telemetry fixes</td>
+</tr>
+<tr>
+<td><code>Tm</code></td>
+<td>counts of marked animals that were not identified</td>
+</tr>
+<tr>
+<td><code>traps</code>*</td>
+<td>embedded traps object(s)</td>
+</tr>
+<tr>
+<td><code>Tu</code></td>
+<td>counts of unmarked animals</td>
+</tr>
+<tr>
+<td><a name="detections"></a> <strong>Data for each detection</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>alive</code></td>
+<td>TRUE/FALSE</td>
+</tr>
+<tr>
+<td><code>animalID</code></td>
+<td>individual ID</td>
+</tr>
+<tr>
+<td><code>clusterID</code></td>
+<td>cluster identifier</td>
+</tr>
+<tr>
+<td><code>clustertrap</code></td>
+<td>detector number within cluster</td>
+</tr>
+<tr>
+<td><code>noise</code></td>
+<td>noise (signal detectors)</td>
+</tr>
+<tr>
+<td><code>occasion</code></td>
+<td>occasion</td>
+</tr>
+<tr>
+<td><code>signal</code></td>
+<td>signal strength (signal detectors)</td>
+</tr>
+<tr>
+<td><code>signalframe</code></td>
+<td>whole signal \</td>
+</tr>
+<tr>
+<td><code>trap</code></td>
+<td>detector</td>
+</tr>
+<tr>
+<td><code>xy</code></td>
+<td>detection coordinates (polygon and transect detectors)</td>
+</tr>
+<tr>
+<td><a name="fit"></a>  <strong>Fit SECR model(s)</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ip.secr</code></td>
+<td>fit simple SECR model by simulation \</td>
+</tr>
+<tr>
+<td><code>par.secr.fit</code></td>
+<td>parallel secr.fit() (several models, using multiple cores)</td>
+</tr>
+<tr>
+<td><code>secr.fit</code></td>
+<td>maximum likelihood fit; result is a fitted <code>secr</code> object</td>
+</tr>
+<tr>
+<td><a name="operate"></a> <strong>Operate on fitted model(s)</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>AIC</code>*</td>
+<td>model selection, model weights</td>
+</tr>
+<tr>
+<td><code>coef</code>*</td>
+<td>&#39;beta&#39; parameters</td>
+</tr>
+<tr>
+<td><code>collate</code></td>
+<td>tabulate estimates from several models</td>
+</tr>
+<tr>
+<td><code>confint</code>*</td>
+<td>profile likelihood confidence intervals</td>
+</tr>
+<tr>
+<td><code>CVa, CVa0</code></td>
+<td>CV of individual detection from fitted mixture model</td>
+</tr>
+<tr>
+<td><code>derived</code>*</td>
+<td>density from conditional likelihood models</td>
+</tr>
+<tr>
+<td><code>deviance</code>*</td>
+<td>model deviance</td>
+</tr>
+<tr>
+<td><code>df.residual</code>*</td>
+<td>degrees of freedom for deviance</td>
+</tr>
+<tr>
+<td><code>derivednj</code></td>
+<td>variance from replicated sampling units</td>
+</tr>
+<tr>
+<td><code>derivedCluster</code></td>
+<td>variance from replicated sampling units</td>
+</tr>
+<tr>
+<td><code>derivedExternal</code></td>
+<td>variance from replicated sampling units</td>
+</tr>
+<tr>
+<td><code>ellipse.secr</code></td>
+<td>confidence ellipses for estimated parameters</td>
+</tr>
+<tr>
+<td><code>fxi.secr</code></td>
+<td>probability density of home-range centre</td>
+</tr>
+<tr>
+<td><code>LLsurface</code>*</td>
+<td>compute likelihood surface and plot contours</td>
+</tr>
+<tr>
+<td><code>logLik</code>*</td>
+<td>log-likelihood of fitted model</td>
+</tr>
+<tr>
+<td><code>LR.test</code></td>
+<td>likelihood-ratio test of two models</td>
+</tr>
+<tr>
+<td><code>model.average</code></td>
+<td>combine estimates using AIC or AICc weights</td>
+</tr>
+<tr>
+<td><code>par.derived</code></td>
+<td>parallel derived()</td>
+</tr>
+<tr>
+<td><code>par.region.N</code></td>
+<td>parallel region.N()</td>
+</tr>
+<tr>
+<td><code>plot</code>*</td>
+<td>plot detection functions with confidence bands</td>
+</tr>
+<tr>
+<td><code>predict</code>*</td>
+<td>&#39;real&#39; parameters for arbitrary levels of predictor variables</td>
+</tr>
+<tr>
+<td><code>predictDsurface</code>*</td>
+<td>evaluate density surface at each point of a mask</td>
+</tr>
+<tr>
+<td><code>region.N</code>*</td>
+<td>expected and realised population size in specified region</td>
+</tr>
+<tr>
+<td><code>RSE</code></td>
+<td>extract precision (relative SE) of &#39;real&#39; parameter estimates</td>
+</tr>
+<tr>
+<td><code>score.test</code></td>
+<td>model selection with score statistic using observed information</td>
+</tr>
+<tr>
+<td><code>secr.test</code></td>
+<td>Monte Carlo goodness-of-fit tests</td>
+</tr>
+<tr>
+<td><code>simulate</code>*</td>
+<td>generate realisations of fitted model</td>
+</tr>
+<tr>
+<td><code>sim.secr</code></td>
+<td>parametric bootstrap</td>
+</tr>
+<tr>
+<td><code>vcov</code>*</td>
+<td>variance-covariance matrix of &#39;beta&#39; or &#39;real&#39; parameters</td>
+</tr>
+<tr>
+<td><a name="mask"></a> <strong>Mask diagnostics</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>esa.plot</code></td>
+<td>cumulative plot esa or \(\hat D\) vs buffer width</td>
+</tr>
+<tr>
+<td><code>mask.check</code></td>
+<td>likelihood or estimates vs. buffer width and spacing</td>
+</tr>
+<tr>
+<td><code>suggest.buffer</code></td>
+<td>find buffer width to keep bias within bounds</td>
+</tr>
+<tr>
+<td><a name="graphics"></a> <strong>Specialised graphics</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>buffer.contour</code></td>
+<td>concave and convex boundary strips</td>
+</tr>
+<tr>
+<td><code>fx.total</code></td>
+<td>summed pdfs of home-range centre pdfs (use with <code>plot.Dsurface</code>)</td>
+</tr>
+<tr>
+<td><code>fxi.contour</code></td>
+<td>contour plot of home-range centre pdf(s)</td>
+</tr>
+<tr>
+<td><code>pdot.contour</code></td>
+<td>contour plot of detection probability</td>
+</tr>
+<tr>
+<td><code>strip.legend</code></td>
+<td>add colour legend to existing plot</td>
+</tr>
+<tr>
+<td><a name="convert"></a> <strong>Convert or export data</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>RMarkInput</code></td>
+<td>convert &#39;capthist&#39; to dataframe for RMark</td>
+</tr>
+<tr>
+<td><code>write.capthist</code></td>
+<td>export &#39;capthist&#39; as text files for DENSITY</td>
+</tr>
+<tr>
+<td><code>write.DA</code></td>
+<td>convert &#39;capthist&#39; for analysis in WinBUGS</td>
+</tr>
+<tr>
+<td><code>writeGPS</code></td>
+<td>upload coordinates to GPS using GPSBabel</td>
+</tr>
+<tr>
+<td><a name="misc"></a> <strong>Miscellaneous</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ARL</code></td>
+<td>asymptotic range length</td>
+</tr>
+<tr>
+<td><code>autoini</code></td>
+<td>generate starting values of D, g0 and sigma for <code>secr.fit</code></td>
+</tr>
+<tr>
+<td><code>clone</code></td>
+<td>replicate points to emulate overdispersion</td>
+</tr>
+<tr>
+<td><code>closure.test</code></td>
+<td>closure tests of Otis et al. (1978) and Stanley \</td>
+</tr>
+<tr>
+<td><code>closedN</code></td>
+<td>closed population size by various conventional estimators</td>
+</tr>
+<tr>
+<td><code>counts</code></td>
+<td>summary data from &#39;capthist&#39; object</td>
+</tr>
+<tr>
+<td><code>CV</code></td>
+<td>coefficient of variation</td>
+</tr>
+<tr>
+<td><code>dbar</code></td>
+<td>mean distance between capture locations</td>
+</tr>
+<tr>
+<td><code>distancetotrap</code></td>
+<td>from an arbitrary set of points</td>
+</tr>
+<tr>
+<td><code>edist</code></td>
+<td>Euclidean distance</td>
+</tr>
+<tr>
+<td><code>MMDM</code></td>
+<td>mean maximum distance moved</td>
+</tr>
+<tr>
+<td><code>moves</code></td>
+<td>distances between capture locations</td>
+</tr>
+<tr>
+<td><code>nearesttrap</code></td>
+<td>from an arbitrary set of points</td>
+</tr>
+<tr>
+<td><code>nedist</code></td>
+<td>Non-Euclidean distance</td>
+</tr>
+<tr>
+<td><code>pdot</code></td>
+<td>location-specific net probability of detection</td>
+</tr>
+<tr>
+<td><code>PG</code></td>
+<td>proportion of telemetry fixes in given polygons</td>
+</tr>
+<tr>
+<td><code>pmixProfileLL</code></td>
+<td>profile likelihood as function of mixing proportion</td>
+</tr>
+<tr>
+<td><code>RPSV</code></td>
+<td>&#39;root pooled spatial variance&#39;, a simple measure of home-range size</td>
+</tr>
+<tr>
+<td><code>setNumThreads</code></td>
+<td>sets environment variable RCPP_PARALLEL_NUM_THREADS</td>
+</tr>
+</tbody></table>
+
+<p>\pagebreak</p>
+
+<h1>Appendix 4. Datasets {#appendix4}</h1>
+
+<p>See each help page for details e.g., ?deermouse. Code for model fitting is in Appendix 2 of <a href="https://www.otago.ac.nz/density/pdfs/secr-version4.pdf">secr-version4.pdf</a>.</p>
+
+<p><code>deermouse</code></p>
+
+<p><em>Peromyscus maniculatus</em> Live-trapping data of V. H. Reid published as a CAPTURE example by Otis et al. (1978) <em>Wildlife Monographs</em> <strong>62</strong> </p>
+
+<p><code>hornedlizard</code>   </p>
+
+<p>Repeated searches of a quadrat in Arizona for flat-tailed horned lizards <em>Phrynosoma mcallii</em> (Royle &amp; Young <em>Ecology</em> <strong>89</strong>, 2281&ndash;2289) </p>
+
+<p><code>housemouse</code>     </p>
+
+<p><em>Mus musculus</em> live-trapping data of H. N. Coulombe published as a CAPTURE example by Otis et al. (1978) <em>Wildlife Monographs</em> <strong>62</strong> </p>
+
+<p><code>ovenbird</code></p>
+
+<p>Multi-year mist-netting study of ovenbirds <em>Seiurus aurocapilla</em> at a site in Maryland, USA.</p>
+
+<p><code>ovensong</code></p>
+
+<p>Acoustic detections of ovenbirds (Dawson &amp; Efford <em>Journal of Applied Ecology</em> <strong>46</strong>, 1201&ndash;1209) </p>
+
+<p><code>OVpossum</code></p>
+
+<p>Brushtail possum <em>Trichosurus vulpecula</em> live trapping in the Orongorongo Valley, Wellington, New Zealand 1996&ndash;1997 (Efford and Cowan In: <em>The Biology of Australian Possums and Gliders</em> Goldingay and Jackson eds. Pp. 471&ndash;483).</p>
+
+<p><code>possum</code></p>
+
+<p>Brushtail possum <em>Trichosurus vulpecula</em> live trapping at Waitarere, North Island, New Zealand April 2002 (Efford et al. 2005 <em>Wildlife Society Bulletin</em> <strong>33</strong>, 731&ndash;738) </p>
+
+<p><code>secrdemo</code></p>
+
+<p>Simulated data &#39;captdata&#39;, and some fitted models </p>
+
+<p><code>skink</code></p>
+
+<p>Multi-session lizard (<em>Oligosoma infrapunctatum</em> and <em>O. lineoocellatum</em>) pitfall trapping data from Lake Station, Upper Buller Valley, South Island, New Zealand (M. G. Efford, B. W. Thomas and N. J. Spencer unpublished). </p>
+
+<p><code>stoatDNA</code>  </p>
+
+<p>Stoat <em>Mustela erminea</em> hair tube DNA data from Matakitaki Valley, South Island, New Zealand (Efford, Borchers and Byrom 2009).</p>
+
+</body>
+
+</html>

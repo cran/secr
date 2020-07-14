@@ -5,6 +5,7 @@
 ## 2014-09-20 strip.legend allows [,)
 ## 2014-09-30 covrange allws NA
 ## 2015-01-14 tweak to format legend text (breaks case)
+## 2020-05-15 inserted explicit conversion of covariate from character to factor
 
 ## suggest: optionally suppress legend text
 ## suggest: optionally use axis()
@@ -216,6 +217,8 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                 covfactor <- factor(covariates(x)[,covariate])
             else if (is.factor(covariates(x)[,covariate]))
                 covfactor <- covariates(x)[,covariate]
+            else if (is.character(covariates(x)[,covariate]))  ## 2020-05-15 inserted explicit conversion 
+                covfactor <- factor(covariates(x)[,covariate])
             else {
               covvalue <- covariates(x)[,covariate]
               if (length(breaks) == 1) {
@@ -279,6 +282,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
                                 legend = legendtext, tileborder = meshcol,
                                 title = covariate)
                 if (is.factor(covariates(x)[,covariate]) |
+                    is.character(covariates(x)[,covariate]) |  ## 2020-05-15
                     is.logical(covariates(x)[,covariate])) {   ## 2016-03-02
                   newargs$legendtype <- 'other'
                   newargs$height <- min(1, length(legendtext) * 0.06)

@@ -272,7 +272,6 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   else {
     X <- matrix(unlist(X), ncol = 2)
   }
-  
   #----------------------------------------
   # restrict to selected individuals
   

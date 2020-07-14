@@ -37,7 +37,6 @@ plot.capthist <- function(x, rad = 5,
                 type = type, cappar = cappar, trkpar = trkpar, labpar = labpar, ...)
     }
     else {
-
         plotproxcapt <- function (xy, occ, icol, emphasis = FALSE) {
             oxy <- order(occ)  # sort by occasion
             xy <- xy[oxy,]
@@ -193,7 +192,6 @@ plot.capthist <- function(x, rad = 5,
         
         ###########
         ## MAINLINE
-
         x <- check3D(x)
         opal <- palette() ; on.exit(palette(opal))
         type <- match.arg(type)

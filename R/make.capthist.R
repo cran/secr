@@ -254,7 +254,9 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             if (all(detector(traps) %in% c('signal'))) startcol <- startcol+1
             if (all(detector(traps) %in% c('signalnoise'))) startcol <- startcol+1
             if (ncol(captures) >= startcol)
-                zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
+                ## zi <- as.data.frame(captures[,startcol:ncol(captures), drop=F])
+                zi <- as.data.frame(captures[,startcol:ncol(captures), drop = FALSE], 
+                                    stringsAsFactors = TRUE)   ## 2020-05-18
             if (!is.null(zi)) {
                 ## find first match of ID with positive value for each covar
                 temp <- zi[1:length(uniqueID),,drop=FALSE]

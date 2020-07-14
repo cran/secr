@@ -1,4 +1,4 @@
-## ---- echo=FALSE, eval=TRUE, message=FALSE-------------------------------
+## ---- echo=FALSE, eval=TRUE, message=FALSE------------------------------------
 library(secr)
 
 ## ---- echo=FALSE, eval=TRUE--------------------------------------------------------

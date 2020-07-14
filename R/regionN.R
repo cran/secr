@@ -3,6 +3,7 @@
 ## regionN.R
 ## population size in an arbitrary region
 ## 2018-08-22 all calls of sumDpdot use only first element, ignoring individual variation
+## 2020-05-13 allow individual variation in sumpdot object$design0$individual
 
 ############################################################################################
 
@@ -460,14 +461,16 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 usge <- usage(temptrap)
                 haztempc <- gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0[,,,clustok,,drop=FALSE], usge)
             }
+            
+            ## 2020-05-16
+            ## object$design0$individual may be NULL (missing)
             if (any(binomNcode == -2)) {
-                CH0 <- nullCH (c(1,s), FALSE)
+                CH0 <- nullCH (c(n,s), object$design0$individual)
             }
             else {
                 K <- nrow(temptrap)
-                CH0 <- nullCH (c(1,s,K), FALSE)
+                CH0 <- nullCH (c(n,s,K), object$design0$individual)
             }
-            
             
             pd <- integralprw1 (cc0 = nrow(Xrealparval0), 
                                 haztemp = if (nclust>1) haztempc else haztemp, 

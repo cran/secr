@@ -10,6 +10,7 @@
 ## 2020-01-08 distancetotrap revised for polygon detectors
 ## 2020-01-26 selectCHsession
 ## 2020-02-21 secr 4.2.0
+## 2020-05-15 stringsAsFactors function
 #######################################################################################
 
 # Global variables in namespace
@@ -398,7 +399,9 @@ stdform <- function (flist) {
     }
     RHS <- function (form) {
         trms <- as.character (form)
-        if (length(trms)==3) as.formula(paste(trms[c(1,3)])) else form
+        # if (length(trms)==3) as.formula(paste(trms[c(1,3)])) else form
+        ## 2020-05-14 for compatibility with R 4.0
+        if (length(trms)==3) as.formula(paste(trms[c(1,3)], collapse = " ")) else form
     }
     lhs <- sapply(flist, LHS)
     temp <- lapply(flist, RHS)
@@ -1910,11 +1913,17 @@ outsidemask <- function(CH, mask, threshold = spacing(mask) / sqrt(2)) {
 }
 ############################################################################################
 
-shareFactorLevels <- function (object, columns = NULL) {
+shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = FALSE) {
+    ## stringsAsFactors added 2020-05-16
     if (ms(object)) {
         if (!is.null(covariates(object))) {
             df <- do.call(rbind, covariates(object))
-            if (is.null(columns)) columns <- 1:ncol(df)
+            if (is.null(columns)) {
+                columns <- 1:ncol(df)
+            }
+            if (stringsAsFactors) {
+                df[,columns] <- stringsAsFactors(df[,columns])
+            }
             for (i in columns) {
                 if (is.factor(df[,i])) {
                     levelsi <- levels(df[,i])
@@ -1925,6 +1934,14 @@ shareFactorLevels <- function (object, columns = NULL) {
                     }
                 }
             }
+        }
+    }
+    else {
+        if (stringsAsFactors) {
+            if (is.null(columns)) {
+                columns <- 1:ncol(object)
+            }
+            object[,columns] <- stringsAsFactors(object[,columns])
         }
     }
     object
@@ -2142,5 +2159,15 @@ selectCHsession <- function(capthist, sessnum) {
         capthist[[sessnum]]
     else 
         capthist
+}
+##############################################################################
+
+stringsAsFactors <- function (DF) {
+    # convert any character columns of a data.frame (or list) to factor
+    if (is.list(DF)) {
+        chr <- sapply(DF, is.character)
+        DF[chr] <- lapply(DF[chr], as.factor)
+    }
+    DF
 }
 ##############################################################################

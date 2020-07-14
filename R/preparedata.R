@@ -113,7 +113,12 @@ recodebinomN <- function (dettype, binomN, telemcode) {
 #--------------------------------------------------------------------------------
 
 nullCH <- function (dimCH, individual) {
-    if (!individual) dimCH[1] <- 1
+    if (is.null(individual)) {
+        individual <- TRUE   ## 2020-05-16 for backward compatibility
+    }
+    if (!individual) {
+        dimCH[1] <- 1
+    }
     array(0, dim = dimCH)
 }
 #--------------------------------------------------------------------------------

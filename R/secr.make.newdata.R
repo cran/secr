@@ -14,10 +14,10 @@
 ############################################################################################
 
 secr.make.newdata <- function (object, all.levels = FALSE) {
-
+    
     # Session treated separately later
     autovars <- c('g','x','y','x2','y2','xy','session',
-              't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')
+                  't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')
     capthist <- object$capthist
     mask <- object$mask
     vars <- object$vars
@@ -26,17 +26,17 @@ secr.make.newdata <- function (object, all.levels = FALSE) {
     sessioncov <- object$sessioncov
     nmix <- object$details$nmix
     hcov <- object$hcov
-
+    
     if(is.null(nmix)) nmix <- 1
     mixvar <- switch(nmix, character(0),'h2','h3')
-
+    
     nocc <- max(n.occasion (capthist))
     grouplevels <- group.levels(capthist, groups)
     ngrp <- max(1, length(grouplevels))
     sessions <- session(capthist)
     R <- length(sessions)
     dims <- c(R, ngrp, nmix)
-
+    
     onesession <- function(session) {
         findvars <- function (basevars, cov) {
             ## function to add covariates to a list
@@ -108,7 +108,7 @@ secr.make.newdata <- function (object, all.levels = FALSE) {
         ## all autovars except Session should now have been dealt with
         sessvars <- sessvars[!sessvars %in% autovars]
         if (ngrp==1) 
-        basevars <- findvars (basevars, covariates(capthist)) ## individual covariates
+            basevars <- findvars (basevars, covariates(capthist)) ## individual covariates
         basevars <- findvars (basevars, sessioncov)
         basevars <- findvars (basevars, timecov)
         basevars <- findvars (basevars, covariates(traps(capthist)))

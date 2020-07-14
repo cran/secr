@@ -220,7 +220,7 @@ getchat <- function (cc0, nc, n.distrib, group, usge, pmixn, pID,
 }
 
 makegk <- function(dettype, detectfn, trps, mask, details, sessnum, noneuc, D, miscparm, realparval) {
-
+    if (is.null(details$grain)) details$grain <- 1   ## 2020-05-16 for backward compatibility
     ## precompute gk, hk for point detectors
     if (all(dettype %in% c(0,1,2,5,8,13))) {
         distmat2 <- getuserdist(trps, mask, details$userdist, sessnum, noneuc, D, miscparm)
