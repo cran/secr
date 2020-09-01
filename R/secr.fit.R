@@ -1,9 +1,10 @@
 ################################################################################
-## package 'secr' 4.2
+## package 'secr' 4.3
 ## secr.fit.R
 
 ## 2019-08-13, 2019-09-04
 ## 2019-12-03 secr.design.MS uses CL argument
+## 2020-08-30 check3D restored for secrlinear arvicola example
 ###############################################################################
 
 secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -43,7 +44,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## Remember start time
     ptm  <- proc.time()
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")
-    
     # gc(verbose = FALSE) ## garbage collection 2019-09-02
     
     if (is.character(capthist)) {
@@ -65,6 +65,10 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     if (!inherits(capthist, 'capthist'))
         stop ("requires 'capthist' object")
+    
+    # restored 2020-08-30 for secrlinear arvicola example
+    capthist <- check3D(capthist) 
+    
     detectortype <- unlist(detector(traps(capthist)))
     anycount <- any(detectortype %in% .localstuff$countdetectors)
     anypoly  <- any(detectortype %in% c('polygon',  'polygonX'))
@@ -531,7 +535,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     # if (anycount) defaultlink$g0 <- 'log'
     link <- replace (defaultlink, names(link), link)
     link[!(names(link) %in% c(fnames,pnames))] <- NULL
-    
+
     ##############################################
     # Prepare detection design matrices and lookup
     ##############################################
@@ -653,7 +657,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                                groups, fixed, hcov, details)
     
     setNumThreads(ncores, stackSize = details$stackSize)
-
+    
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed) or a list 
@@ -870,7 +874,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             }
         }
     }
-    
+  
     ############################################
     ## ad hoc fix for experimental parameters
     ############################################

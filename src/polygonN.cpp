@@ -8,7 +8,7 @@ using namespace Numer;
 //#include <R_ext/Applic.h>
 
 
-// C code for R package 'secr' 
+// C++ code for R package 'secr' 
 // Murray Efford 
 
 // This file contains functions for integration of home range overlap

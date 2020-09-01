@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 4.3.0\cr
-Date: \tab 2020-07-14\cr
+Version: \tab 4.3.1\cr
+Date: \tab 2020-08-31\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -51,8 +51,8 @@ help index. Several vignettes complement the help pages:
 
 \tabular{ll}{
 General interest \tab \cr
-  \href{../doc/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
-  \href{../doc/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-overview.pdf}{secr-overview.pdf} \tab general introduction \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-datainput.pdf}{secr-datainput.pdf} \tab data formats and input functions \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-version4.pdf}{secr-version4.pdf} \tab changes in secr 4.0 \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
@@ -91,7 +91,7 @@ Density (see
 \href{https://www.otago.ac.nz/density}{www.otago.ac.nz/density}
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
-\href{http://www.phidot.org/forum}{www.phidot.org} and
+\href{http://www.phidot.org/forum/}{www.phidot.org} and
 the Google group \href{https://groups.google.com/forum/#!forum/secrgroup}{secrgroup}. Feedback
 on the software is also welcome, including suggestions for additional
 documentation or new features consistent with the overall design.
@@ -140,8 +140,7 @@ Efford, M. G. and Fewster, R. M. (2013) Estimating population
   \bold{122}, 918--928.
   
 Efford, M. G. and Hunter, C. M. (2017) Spatial capture--mark--resight
-estimation of animal population density. \emph{Biometrics} in press
-DOI: 10.1111/biom.12766.
+estimation of animal population density. \emph{Biometrics} \bold{74}, 411--420.
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
 capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.

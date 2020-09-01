@@ -11,6 +11,7 @@
 ## 2020-01-26 selectCHsession
 ## 2020-02-21 secr 4.2.0
 ## 2020-05-15 stringsAsFactors function
+## 2020-07-14 secr 4.3.0
 #######################################################################################
 
 # Global variables in namespace
@@ -1886,7 +1887,32 @@ check3D <- function (object) {
 updateCH <- function(object) {
     if (!inherits(object, 'capthist'))
         stop ("requires capthist object")
-    reduce(object, dropunused = FALSE)
+    # following replaces this old code 2020-08-29
+    # reduce(object, dropunused = FALSE)
+    if (ms(object)) {
+        out <- lapply(object, updateCH)
+        class (out) <- c("capthist", "list")
+        out
+    }
+    else {
+        if (length(dim(object)) == 3) {
+            return(object)
+        }
+        else {
+            K <- ndetector(traps(object))
+            ch <- array(0, dim = c(dim(object), K), dimnames = 
+                    list(rownames(object), colnames(object), 1:K))
+            OK <- as.logical(object!=0)
+            animal <- row(object)[OK]
+            occ <- col(object)[OK] 
+            detn <- object[OK]
+            ch[cbind(animal, occ, detn)] <- 1
+            traps(ch) <- traps(object)
+            class (ch) <- "capthist"
+            session(ch) <- session(object)
+            ch
+        }
+    }
 }
 ############################################################################################
 
@@ -2016,40 +2042,6 @@ firstsk <- function (PIAx) {
 
 ###############################################################################
 
-# masklookup <- function (ch, mask, threshold) {
-#   if (ms(ch)) {
-#     if (!ms(mask)) stop ("masklookup: multisession ch requires multisession mask")
-#     outlist <- mapply(masklookup, ch, mask, MoreArgs = list(threshold = threshold), SIMPLIFY = FALSE)
-#     outlist
-#   }
-#   else {
-#     id <- animalID(ch, names = FALSE)
-#     tr <- trap(ch,names = FALSE)
-#     trps <- traps(ch)
-#     m <- nrow(mask)
-#     if (!is.null(threshold) && all(detector(trps) %in% .localstuff$pointdetectors)) {
-#       df <- data.frame(id = id, x = trps$x[tr], y = trps$y[tr])
-#       x <- tapply(df$x, df$id, mean, na.rm=T)
-#       y <- tapply(df$y, df$id, mean, na.rm=T)
-#       xy <- data.frame(x=x,y=y)
-#       d2 <- edist2cpp(as.matrix(xy), as.matrix(mask))
-#       getone <- function (d2row) {
-#         tmp <- which(d2row < threshold^2)
-#         ok <- length(tmp)
-#         as.integer(c(ok, tmp, rep(0,m-ok)))
-#       }
-#       out <- t(apply(d2,1,getone))
-#     }
-#     else {
-#       ## NULL option
-#       out <- matrix(as.integer(1:m), nrow = nrow(ch), ncol = m, byrow = TRUE)
-#       out <- cbind(as.integer(rep(m,nrow(ch))), out)
-#     }
-#     out
-#     ## stop("masklookup: not for detector type", detector(trps)[1])
-#   }
-# }
-
 maskboolean <- function (ch, mask, threshold) {
   if (ms(ch)) {
     if (!ms(mask)) stop ("masklookup: multisession ch requires multisession mask")
@@ -2164,7 +2156,8 @@ selectCHsession <- function(capthist, sessnum) {
 
 stringsAsFactors <- function (DF) {
     # convert any character columns of a data.frame (or list) to factor
-    if (is.list(DF)) {
+    ## if (is.list(DF)) {
+    if (is.list(DF) && length(DF)>0) {    ## bug fix 2020-08-14
         chr <- sapply(DF, is.character)
         DF[chr] <- lapply(DF[chr], as.factor)
     }

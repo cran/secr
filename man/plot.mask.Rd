@@ -132,7 +132,7 @@ Legend plotting is enabled only when a covariate is specified. It uses
 \note{
 
   \code{plot.mask()} acquired the argument `legend' in version 2.9.0,
-  and other chages (e.g., \code{breaks = 10}) may alter the output.
+  and other changes (e.g., \code{breaks = 10}) may alter the output.
   
   Contouring requires a rectangular grid; if a Dsurface is not
 rectangular then plot.Dsurface with \code{plottype = "contour"} triggers a call to

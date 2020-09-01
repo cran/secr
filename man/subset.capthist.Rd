@@ -112,7 +112,7 @@ split(captdata, f = rep(1:2, 50), bytrap = TRUE)
 
 ## Applying a covariate criterion across all sessions of a
 ## multi-session capthist object e.g. selecting male ovenbirds from the
-## 2005--2009 ovenCH dataset. We include a resriction on occasions
+## 2005--2009 ovenCH dataset. We include a restriction on occasions
 ## to demonstrate the use of 'MoreArgs'. Note that mapply() creates a
 ## list, and the class of the output must be restored manually.
 

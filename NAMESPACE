@@ -13,7 +13,7 @@ importFrom(mgcv, "gam", "s", "te", "formula.gam", "predict.gam")
 importFrom(nlme, "fdHess")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
            "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
-           "integrate", "lm", "logLik", "model.matrix", "nlm", "nls", "optim",
+           "integrate", "lm", "logLik", "median", "model.matrix", "nlm", "nls", "optim",
            "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
            "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", "rnbinom",
            "rnorm", "rpois", "runif", "sd", "simulate", "smooth.spline", "terms",
@@ -85,6 +85,8 @@ export (dbar)
 export (moves)
 export (MMDM)
 export (ARL)
+export (ORL)
+export (centroids)
 export (circular.r)
 export (circular.p)
 export (autoini)

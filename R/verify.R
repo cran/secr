@@ -18,6 +18,9 @@
 
 ## 2017-01-27 future telemetry checks:
 ##                cannot have occasions with no detections    
+## 2020-08-14 bug in checkcovariatelevels caused by bug in stringsAsFactors
+## 2020-08-27 verify.traps did not report markocc checks
+## 2020-08-27 verify.capthist returns capture checks invisibly
 
 ############################################################################################
 
@@ -152,7 +155,6 @@ checkcovariatelevels <- function (cov) {
         else
             NULL
     }
-    
     #############################################
     ## 2020-05-15 convert all character to factor
     cov <- lapply(cov, stringsAsFactors)
@@ -361,8 +363,8 @@ verify.traps <- function (object, report = 2, ...) {
             usagedetectorsOK = usagedetectorsOK,
             usagedetectors2OK = usagedetectors2OK,
             usagenonzeroOK = usagenonzeroOK,
-            markoccOK == markoccOK,
-            markocc2OK == markocc2OK,
+            markoccOK = markoccOK,
+            markocc2OK = markocc2OK,
             areaOK = areaOK,
             polyIDOK = polyIDOK,
             polyconvexOK = polyconvexOK,
@@ -393,13 +395,11 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
 ## -- resighting attributes Tu, Tm compatible if present
 ## -- no resightings on marking occasions, or new animals on resighting occasions
-
     if (!inherits(object, 'capthist'))
         stop ("object must be of class 'capthist'")
     if (inherits(object, 'list')) {
         temp <- lapply (object, verify, report = min(report, 1))
         anyerrors <- any(sapply(temp, function(x) x$errors))
-
         ## check covariate factor levels conform across sessions
         if (!all(sapply(covariates(object), is.null))) {
             if (any(sapply(covariates(object), is.null)))
@@ -898,7 +898,34 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
 
         }
 
-        out <- list(errors = errors, trapcheck = trapcheck)
+        captcheck <- list(
+            detectionsOK = detectionsOK,
+            NAOK = NAOK,
+            cutvalOK = cutvalOK,
+            signalOK = signalOK,
+            deadOK = deadOK,
+            zerohistOK = zerohistOK,
+            binaryOK = binaryOK,
+            singleOK = singleOK,
+            multiOK = multiOK,
+            cappedOK = cappedOK,
+            countOK = countOK,
+            detectornumberOK = detectornumberOK,
+            covariatesOK = covariatesOK,
+            usageoccasionsOK = usageoccasionsOK,
+            usageOK = usageOK,
+            xyOK = xyOK,
+            xyinpolyOK = xyinpolyOK,
+            xyontransectOK = xyontransectOK,
+            rownamesOK = rownamesOK,
+            sightingsOK = sightingsOK,
+            sightingusageOK = sightingusageOK,
+            MOK = MOK,
+            ROK = ROK,
+            telemOK = telemOK
+        )
+        
+        out <- list(errors = errors, trapcheck = trapcheck, captcheck = captcheck)
         if (!is.null(detectorconflcts)) out$detections.at.unused.detectors <- detectorconflcts
         invisible(out)
     }

@@ -4,7 +4,7 @@
 ## 2019-11-10 moved from methods.R
 #############################################################################
 
-summary.traps <- function(object, getspacing = TRUE, ...) {
+summary.traps <- function(object, getspacing = TRUE, covariates = FALSE, ...) {
     
     #### NEED TO HANDLE CLUSTER, CLUSTERTRAP 2011-04-12
     if (ms(object)) lapply(object, summary.traps, getspacing = getspacing, ...)
@@ -37,20 +37,17 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
             }
             tempcovar <- covariates(object)
             
-            if (!is.null(tempcovar))
-                if ((nrow(tempcovar)>0) & ((nrow(tempcovar)>0) & ncol(tempcovar)>0)) 
+            if (!is.null(tempcovar) && covariates) {
+                if (ncol(tempcovar)>0 && nrow(tempcovar)>0) 
                     sumcovar <- summary(tempcovar, ...)
+            }
         }
-        
         ## defaults
         area <- NA
         totallength <- NA
         np = ndetector(object)
         spacex <- NA
         spacey <- NA
-        ## unblock these 2010-12-17
-        sumusage <- NULL
-        sumcovar <- NULL
         xrange <- range(object$x)
         yrange <- range(object$y)
         if (all(detector(object) %in% c('polygon', 'polygonX')))
@@ -68,7 +65,6 @@ summary.traps <- function(object, getspacing = TRUE, ...) {
             spacing = spacing,
             area  = area,
             totallength = totallength,
-            usage = sumusage,
             markocc = markocc(object),
             telemetrytype = telemetrytype(object),
             rangeusage = rangeusage,

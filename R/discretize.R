@@ -105,7 +105,7 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
                 df <- data.frame(
                     trap = factor(trpnum, levels =1:nrow(trps)),
                     occ = factor(occasion(object), levels = 1:ncol(object)),
-                    ID = factor(animalID(object, names = F)),
+                    ID = factor(animalID(object, names = FALSE)),
                     alive = alive(object))
 
                 # if (outputdetector %in% c('multi')) {

@@ -3,13 +3,13 @@ title: '**secr** 4.3 - spatially explicit capture--recapture in R'
 author: "Murray Efford"
 date: "`r Sys.Date()`"
 output: 
-  pdf_document: 
+  pdf_document : 
     toc: yes
     toc_depth: 2
 vignette: > 
   %\VignetteIndexEntry{Spatially explicit capture--recapture in R}
-  %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 
 \renewcommand{\vec}[1]{\mathbf{#1}}
@@ -940,6 +940,6 @@ Stoat *Mustela erminea* hair tube DNA data from Matakitaki Valley, South Island,
 
 [secr-version4.pdf]: https://www.otago.ac.nz/density/pdfs/secr-version4.pdf
 
-[phidot]: http://www.phidot.org/forum
+[phidot]: http://www.phidot.org/forum/
 [secrgroup]: <https://groups.google.com/forum/#!forum/secrgroup>
 [CRAN]: https://cran.r-project.org/package=secr

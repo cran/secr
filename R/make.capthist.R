@@ -10,6 +10,7 @@
 ## 2015-11-03 Improved handling of 'noncapt' with 'validcapt' - no need for dummy trapID etc
 ## 2017-01-11 adjusted for direct input of telemetry
 ## 2019-03-11 transect bug fixed (capttrap order)
+## 2020-08-27 coerce third column of captures dataframe to integer
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
@@ -80,6 +81,9 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
 
     else ## single-session call
     {
+        ## 2020-08-27 in case has been read as character
+        captures[,3] <- as.integer(captures[,3])
+        
         ## 2017-03-28
         ## sort by session, animal & occasion, retaining original order otherwise
         captures <- captures[order(captures[,1], captures[,2], captures[,3]),]
@@ -328,41 +332,3 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
     }   ## end of single-session call
 }
 ############################################################################################
-
-## repeat the detections in x a number of times
-## 'times' must be sorted by trap, occasion and animalID
-## not sure this is useful! 2010-11-21
-rep.capthist <- function (x, times) {
-    if (!inherits(x, 'capthist')) {
-        stop ("requires 'capthist' object")
-    }
-    if (ms(x)) {
-        if (!is.list(times))
-            stop ("multi-session capthist; 'times' should be a list")
-        for (i in 1:length(x))
-            x[[i]] <- rep.capthist(x, times[[i]])
-        x
-    }
-    else {
-        if (detector(traps(x)) %in% c('single','multi')) {
-            stop ("cannot replicate data from this detector type")
-        }
-        if (sum(abs(x)) != length (times)) {
-            stop ("'times' must be equal in length to the number of detections")
-        }
-        if (any(times < 1)) {
-            stop ("'times' must be a positive integer")
-        }
-        ID <- match(animalID(x), dimnames(x)[[1]])
-        occ <- occasion(x)
-        trp <- as.numeric(as.character(trap(x)))
-
-        x[cbind(ID, occ, trp)] <- times
-        if (detector(traps(x))=='proximity') {
-            detector(traps(x)) <- 'count'
-            warning ("detector type changed to 'count'")
-        }
-        # individual covariates unchanged
-        x
-    }
-}

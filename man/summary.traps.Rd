@@ -9,13 +9,14 @@
 }
 
 \usage{
-\method{summary}{traps}(object, getspacing = TRUE, \dots)
+\method{summary}{traps}(object, getspacing = TRUE, covariates = FALSE, \dots)
 \method{print}{summary.traps}(x, terse = FALSE, \dots)
 }
 
 \arguments{
   \item{object}{    \code{\link{traps}} object }
   \item{getspacing}{ logical to calculate spacing of detectors from scratch }
+  \item{covariates}{ logical; if true each covariate is summarised}
   \item{x}{ \code{summary.traps} object }
   \item{terse}{ if TRUE suppress printing of usage and covariate summary }
   \item{\dots}{ arguments passed to other functions }

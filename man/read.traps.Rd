@@ -3,8 +3,7 @@
 \title{ Read Detector Data From File }
 
 \description{
-  Construct an object of class \code{traps} with detector locations from a text file or data frame. Usage per occasion and covariates may be included. Data may also be read from an Excel spreadsheet if the package \pkg{readxl} is installed (see 
-\href{../doc/secr-datainput.pdf}{secr-datainput.pdf}).
+  Construct an object of class \code{traps} with detector locations from a text file or data frame. Usage per occasion and covariates may be included. Data may also be read from an Excel spreadsheet (see \href{../doc/secr-datainput.pdf}{secr-datainput.pdf}).
 
 }
 
@@ -93,6 +92,9 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 
   Detector names, which become row names in the traps object, should not
   contain underscores.
+  
+  Prior to 4.3.1 the function did not read usage or covariates from xls 
+  or data input.
 
 }
 

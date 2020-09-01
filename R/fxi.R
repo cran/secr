@@ -176,6 +176,7 @@ allhistfxi <- function (m, realparval, haztemp, gkhk, pi.density, PIA, usge,
     for (x in 1:nmix) {
         hx <- if (any(binomN==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
         hi <- if (any(binomN==-2)) haztemp$hindex else -1                   ## index to hx
+   
         temp <- simplehistoriesfxicpp(
             as.integer(x-1),
             as.integer(m),
@@ -235,28 +236,16 @@ allhistpolygonfxi <- function (detectfn, realparval, haztemp, hk, H, pi.density,
     sump
 }
 
-    # const IntegerVector w,
-    # const NumericMatrix xy,
-    # const IntegerVector start,
-    # const IntegerVector group,
-    # const NumericVector hk,
-    # const NumericVector H,
-    # const NumericMatrix gsbval,
-    # const NumericMatrix pID,
-    # const NumericMatrix mask,
-    # const NumericMatrix density,
-    # const IntegerVector PIA,
-    # const NumericMatrix Tsk,
-    # const NumericMatrix h,
-    # const IntegerMatrix hindex, 
-    # const LogicalMatrix mbool
-
-
 fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
+    
+    ## temporary fix for lack of fastproximity code
+    object$details$fastproximity <- FALSE   ## 2020-08-30
+    
     ## data for a single session
-  data <- prepareSessionData(object$capthist, object$mask, object$details$maskusage, 
+    data <- prepareSessionData(object$capthist, object$mask, object$details$maskusage, 
                              object$design, object$design0, object$detectfn, object$groups, 
                              object$fixed, object$hcov, object$details)
+    
   sessionlevels <- session(object$capthist)
   beta <- coef(object)$beta
   beta <- fullbeta(beta, object$details$fixedbeta)
@@ -274,7 +263,6 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   }
   #----------------------------------------
   # restrict to selected individuals
-  
   xy <- data$xy 
   if (is.null(i)) {
     ok <- 1:nrow(data$CH)
@@ -285,7 +273,6 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
         xy <- getxy(data$dettype, selectCHsession(subset(object$capthist, ok), sessnum))
     }
   }
-  
   if (length(dim(data$CH)) == 2) {
     CH <- data$CH[ok,,drop=FALSE]
   }
@@ -354,9 +341,10 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   gkhk <- makegk (data$dettype, object$detectfn, data$traps, data$mask, object$details, sessnum, 
                   NE, D, miscparm, Xrealparval)
   haztemp <- gethazard (data$m, data$binomNcode, nrow(realparval), gkhk$hk, PIA, data$usge)
-
+  
   ## 2020-01-26 conditional on point vs polygon detectors
   if (data$dettype[1] %in% c(0,1,2,5,8,13)) {
+      
       prmat <- allhistfxi (data$m, Xrealparval, haztemp, gkhk, pimask, PIA, data$usge,
                            CH, data$binomNcode, grp, pmix, object$details$grain)
   }

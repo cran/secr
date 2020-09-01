@@ -16,7 +16,7 @@
   \item{x}{ \code{traps} object }
   \item{subset}{ vector to subscript the rows of \code{x} }
   \item{occasions}{ vector to subscript columns in \code{usage(x)}}
-  \item{\dots}{ arguments passed to other functions }
+  \item{\dots}{ arguments passed to other functions or to optional subset function (subset.traps)  }
   \item{f}{ factor or object that may be coerced to a factor }
   \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
   \item{prefix}{ a character prefix to be used for component names when

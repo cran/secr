@@ -438,9 +438,9 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         ####################################
         ## build dataframe of observations
         df <- data.frame(
-            trap = trap(object, names = F),
+            trap = trap(object, names = FALSE),
             occ = occasion(object),
-            ID = animalID(object, names = F),
+            ID = animalID(object, names = FALSE),
             alive = alive(object))
         if (reducetraps)
             df$trap <- newtrapID[df$trap]

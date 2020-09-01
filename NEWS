@@ -1,3 +1,32 @@
+Changes in version 4.3.1 (2020-08-31)
+
+New features or changed behaviour of old functions
+    o   subset.traps() allows subset argument to be function, as for 
+        subset.capthist()
+    o   de novo calculation of spacing for traps, mask uses median instead of mean
+    o   read.traps() enables usage and covariate input from data and xls
+    o   summary.traps() new argument 'covariates' for covariate summaries (default FALSE)
+    o   verify() invisible output includes detail on captures
+    o   ORL() new function for observed range length
+    o   centroids() new function for detection centroids
+
+Bugs fixed
+    o   verify() bug on covariates call to stringsAsFactors fn
+    o   moves() lost animal order when animal IDs numeric and names = TRUE
+    o   secr.make.newdata() (and hence predict() etc.) included superfluous 
+        combinations of session covariates
+    o   read.mask() assigned wrong spacing for some unusual configurations
+    o   occasion() could result in wrong sequence, with consequences for various plots 
+        and summaries
+
+Other
+    o   summary.secr() always reports detector percent usage
+    o   plotMaskEdge() increased robustness
+    o   make.capthist() coerces third column of captures dataframe to integer
+    o   updateCH() recoded to avoid reduce.capthist() that now assumes 3-D 
+    o   secr.fit() calls check3D in case data pre-dates secr 3.0
+    o   fxi.secr() and related functions work with models fitted using fastproximity = TRUE
+
 Changes in version 4.3.0 (2020-07-14)
 
 New features or changed behaviour of old functions

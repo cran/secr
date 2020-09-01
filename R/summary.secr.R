@@ -32,7 +32,9 @@ summary.secr <- function (object, newdata = NULL, alpha = 0.05, deriv = FALSE, .
         out$traps <- data.frame (Detector = detector(trp)[1],
                                  Number = nrow(trp),
                                  Spacing = spacing(trp))
-        if (!is.null(usage(trp)))
+        if (is.null(usage(trp)))
+            out$traps$UsagePct <- 100
+        else
             out$traps$UsagePct <- 100 * sum(usage(trp))/length(usage(trp))
         if (length(detector(trp))>1)
             out$detector <- detector(trp)

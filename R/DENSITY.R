@@ -105,7 +105,6 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
 
     fmt <- match.arg(fmt)
     dots <- match.call(expand.dots = FALSE)$...
-
     if (any(detector %in% .localstuff$polydetectors) & !(fmt == 'XY'))
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)

@@ -207,7 +207,6 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     add = FALSE, sigmatick = FALSE, rgr = FALSE, hazard = FALSE, 
     xval = 0:200, ylim = NULL, xlab = NULL, ylab = NULL, ...)
 {
-
     gline <- function (pars) {
         ## here pars is a vector of parameter values
         dfn <- getdfn(detectfn)
@@ -240,7 +239,6 @@ detectfnplot <- function (detectfn, pars, details = NULL,
     }
 
     ### mainline
-
     if (is.list(pars)) {   ## 2010-10-26
         if (is.list(pars[[1]]))
             pars <- matrix(unlist(pars), nrow = length(pars), byrow = T)

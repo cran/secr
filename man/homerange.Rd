@@ -4,6 +4,8 @@
 \alias{MMDM}
 \alias{ARL}
 \alias{moves}
+\alias{centroids}
+\alias{ORL}
 
 \title{ Home Range Statistics }
 
@@ -30,14 +32,21 @@ pooled over individuals (cf Calhoun and Casby 1958, Slade and Swihart 1983).
 
 \code{moves} reports the distance between successive detections of each animal.
 
+\code{centroids} reports the averaged coordinates of each animal's detections
+
+\code{ORL} reports the observed range length of each animal, the maximum 
+distance between any two detections.
+
 }
 
 \usage{
 dbar(capthist, userdist = NULL, mask = NULL)
 MMDM(capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask = NULL)
 ARL(capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL, mask = NULL)
-RPSV(capthist, CC = FALSE)
 moves(capthist, userdist = NULL, mask = NULL, names = FALSE)
+RPSV(capthist, CC = FALSE)
+ORL(capthist, userdist = NULL, mask = NULL)
+centroids(capthist)
 }
 
 \arguments{
@@ -120,6 +129,12 @@ For \code{moves} --
 
 List with one component for each animal, a vector of distances, or numeric(0) if the animal is detected only once. A list of such lists if \code{capthist} is a multi-session list.
 
+For \code{centroids} --
+
+For a single-session capthist, a matrix of two columns, the x- and y-coordinates of the centroid of the detections of each animal. The number of detections is returned as the attribute `Ndetections', a 1-column matrix.
+
+For a multi-session capthist, a 3-D array as before, but with a third dimension for the session. Centroid coordinates are missing (NA) if the animal was not detected in a session. The attribute `Ndetections' with the number of detections per animal and session is a matrix.
+
 }
 
 \references{
@@ -165,16 +180,23 @@ half-normal detection function). Even then, be careful that
 \eqn{\sigma}{sigma} is not `contaminated' with behavioural effects (e.g.
 attraction of animal to detector) or `detection at a distance'.
 
-The argument 'names' was added in 3.0.1. The default \code{names = FALSE} causes a change in behaviour from that version onwards.
+The argument 'names' was added in 3.0.1. The default \code{names = FALSE} 
+causes a change in behaviour from that version onwards.
 
 }
 
 \seealso{ \code{\link{autoini}} }
 
 \examples{
+
 dbar(captdata)
 RPSV(captdata)
 RPSV(captdata, CC = TRUE)
+
+centr <- centroids(captdata)
+plot(traps(captdata))
+text(centr[,1], centr[,2], attr(centr, 'Ndetections'))
+
 }
 
 \keyword{ models }

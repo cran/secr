@@ -6,6 +6,7 @@
 plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
     ## plots outer border of a mask, however irregular
     ## 2019-07-02 bug partly fixed by changing round(x) etc. to round(x,3) etc.
+    ## 2020-08-26 now round(x,4) etc.
     draw <- function (x,y, vertical, OK) {
         if (!OK)
             rep(NA,4)
@@ -15,7 +16,7 @@ plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
             c(x+spc/2, y, x-spc/2, y)
     }
     inmask <- function (x,y) {
-        !is.na(match (paste(round(x,3),round(y,3),sep='.'), maskvector))
+        !is.na(match (paste(round(x,4),round(y,4),sep='.'), maskvector))
     }
     onecell <- function (xy) {
         x <- xy[1]
@@ -36,7 +37,8 @@ plotMaskEdge <- function (mask, plt = TRUE, add = FALSE, ...) {
         spc <- spacing(mask)
         ## assumes mask has integer x,y resolution
         ## 2019-07-02 0.001 resolution
-        maskvector <- apply(round(mask,3),1,paste, collapse='.')
+        ## 2020-08-26 0.0001 resolution
+        maskvector <- apply(round(mask,4),1,paste, collapse='.')
         coord <- apply(mask, 1, onecell)
         xy <- matrix(coord, nrow = 4)
         xy <- xy[,!apply(xy, 2, function(z) any(is.na(z)))] # drop NA

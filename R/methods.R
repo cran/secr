@@ -5,6 +5,8 @@
 ## Last changed
 ## 2019-10-25 masksize()
 ## 2019-11-10 summary.traps etc. moved to file summary.traps.R
+## 2020-08-27 radical revamp of occasion, trap and animalID functions, 
+##            with unified code
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -195,7 +197,9 @@ spacing.traps <- function (object, ..., recalculate = FALSE)    {
                 if (nrow(object)>1) {
                     spacing <- as.matrix(dist(object))
                     sp <- apply(spacing,1,function(x) min(x[x>0]))
-                    mean(sp)
+                    ## 2020-08-25 changed
+                    ## mean(sp)
+                    median(sp)
                 }
                 else
                     numeric(0) # NA
@@ -217,7 +221,9 @@ spacing.mask <- function (object, ..., recalculate = FALSE)    {
             if ((is.null(temp) | recalculate)& (nrow(object)>1) ) {
                 spacing <- as.matrix(dist(object))
                 sp <- apply(spacing,1,function(x) min(x[x>0]))
-                mean(sp)
+                ## 2020-08-25 bug fix
+                ## mean(sp)
+                median(sp)
             }
             else
                 temp
@@ -440,27 +446,6 @@ signalmatrix <- function (object, noise = FALSE, recodezero = FALSE,
     }
 }
 
-occasion <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-    if (ms(object)) {
-        lapply(object, occasion)
-    }
-    else {
-        if (is.matrix(object)) {
-            col(object)[abs(object)>0]
-        }
-        else {
-            apo <- aperm(object,c(2,1,3))
-            temp <- matrix(apo, nrow = dim(apo)[1])
-            temp <- array(row(temp), dim = dim(apo))
-            ## rep(aperm(temp,c(2,1,3)), abs(object))
-            ## 2015-11-03 avoid array when empty
-            as.numeric(rep(aperm(temp,c(2,1,3)), abs(object)))
-        }
-    }
-}
-
 alive <- function (object) {
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
@@ -478,74 +463,89 @@ alive <- function (object) {
     }
 }
 
+captmatrix <- function (object) {
+  # 2020-08-27 
+  # object is 3-D single-session capthist
+  # form a matrix with indices of animalID, occasion and detector
+  # number of rows is product of these dimensions
+  if (length(dim(object)) < 3 ) {
+      stop ("3-D capthist required by animalID(), occasion() and trap()")
+  }
+  tmp <- sapply(1:3, slice.index, x = object)
+  if (!is.matrix(tmp)) tmp <- matrix(tmp, nrow = 1)
+  # add column for number of detections 
+  tmp <- cbind(tmp, as.integer(abs(object)))
+  # drop unused combinations
+  tmp <- tmp[tmp[,4]>0,, drop = FALSE]
+  # construct index with occasion, animalID, detector ordering, and sort
+  ord <- order(tmp[,2], tmp[,1], tmp[,3])
+  tmp[ord,, drop = FALSE]
+}
+
+occasion <- function (object) {
+  if (!inherits(object, 'capthist'))
+    stop ("requires 'capthist' object")
+  if (ms(object)) {
+    lapply(object, occasion)
+  }
+  else {
+      values <- 1:dim(object)[2]    # safer than following
+      # values <- as.numeric(dimnames(object)[[2]])
+      tmp <- captmatrix(object)
+    s <- tmp[,2]    # vector of occasion integer values
+    out <- rep(values[s], tmp[,4])
+    as.numeric(out)
+  }
+}
+
 trap <- function (object, names = TRUE) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-    if (ms(object)) {
-        lapply(object, trap, names=names)
+  if (!inherits(object, 'capthist'))
+    stop ("requires 'capthist' object")
+  if (ms(object)) {
+    lapply(object, trap, names = names)
+  }
+  else {
+    trps <- traps(object)
+    if (is.null(trps)) {
+      out <- rep(1, sum(abs(object)))
     }
     else {
-        trps <- traps(object)
-        if (is.null(trps)) {
-            ch <- abs(object)
-            if (names)
-                return(rep('1', sum(ch)))
-            else
-                return(rep(1, sum(ch)))
-
-        }
-        if (names)
-            values <- row.names(traps(object))
-        else
-            values <- 1:nrow(traps(object))
-        if (is.matrix(object)) {
-            values[abs(object[abs(object)>0])]
-        }
-        else {
-            apo <- aperm(object,c(3,1,2))
-            temp <- matrix(apo, nrow = dim(apo)[1])
-            temp <- array(row(temp), dim = dim(apo))
-            k <- aperm(temp,c(2,3,1))
-            ## rep(values[k], abs(object))
-            ## 2015-11-03
-            if (names)
-                as.character(rep(values[k], abs(object)))
-            else
-                as.numeric(rep(values[k], abs(object)))
-        }
+      if (names) {
+        values <- rownames(trps)  # but what about polyID?
+      }
+      else {
+        values <- 1:dim(object)[3]
+      }
+      tmp <- captmatrix(object)
+      k <- tmp[,3]  # vector of detector ID
+      out <- rep(values[k], tmp[,4])
     }
+    if (names) as.character(out) else as.numeric(out)
+  }
 }
 animalID <- function (object, names = TRUE) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-    if (ms(object)) {
-        lapply(object, animalID, names=names)
+  if (!inherits(object, 'capthist'))
+    stop ("requires 'capthist' object")
+  if (ms(object)) {
+    lapply(object, animalID, names = names)
+  }
+  else {
+    if (nrow(object) == 0) {
+      out <- NULL
     }
     else {
-        if (nrow(object) == 0) {
-           ## ''
-            if (names)
-           character(0)  ## 2011-04-08
-            else
-                numeric(0) ## 2013-09-09
-       }
-        else {
-            if (names & !is.null(row.names(object)))  ## 2011-08-18 null check
-                values <- row.names(object)
-            else
-                values <- 1:nrow(object)
-            if (is.matrix(object)) {
-                detrow <- row(object)[abs(object)>0]
-                values[detrow]
-            }
-            else {
-                temp <- matrix(object, nrow = dim(object)[1])
-                n <- array(row(temp), dim=dim(object))
-                rep(values[n], abs(object))
-            }
-        }
+      if (names & !is.null(row.names(object)))  ## 2011-08-18 null check
+        values <- row.names(object)
+      else
+        values <- 1:nrow(object)
+      tmp <- captmatrix(object)
+      n <- tmp[,1]  # vector of animalID
+      out <- rep(values[n], tmp[,4])
     }
+    if (names) as.character(out) else as.numeric(out)
+  }
 }
+
 detectionindex <- function (object) {
 ## detectionindex is non-exported function 2012-02-11
 ## to which original cell in dim3 capthist object does a detection relate?
@@ -1349,6 +1349,9 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
             else
                 subset <- 1:nrow(x)
         }
+        
+        if (is.function(subset)) subset <- subset(x, ...)   ## 2020-08-12
+        
         ## polygon & transect objects subset by whole polygons or transects
         ## 2011-01-24
         rowsubset <- subset  ## default
@@ -1527,13 +1530,14 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
 
         if (is.matrix(x))
             stop("require updated capthist secr >= 3.0")
-        if (is.null(traps(x))) {
+        trapsx <- secr::traps(x)
+        if (is.null(trapsx)) {
            detector <- 'nonspatial'
            nk <- 1
         }
         else {
             detector <- expanddet(x)   # vector 2017-01-28
-            nk <- ndetector (traps(x))
+            nk <- ndetector (trapsx)
         }
         if (is.logical(subset) & (length(subset) != nrow(x)))
             stop ("if 'subset' is logical its length must match number of animals")
@@ -1546,7 +1550,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         if (is.function(subset)) subset <- subset(x, ...)   ## 2017-11-13
         if (is.null(subset)) subset <- 1:nrow(x)
 
-        # if (dropnullCH & (telemetrytype(traps(x)) %in% c('independent','concurrent')) &
+        # if (dropnullCH & (telemetrytype(trapsx) %in% c('independent','concurrent')) &
         #     any(detector[occasions] == 'telemetry'))
         #     warning("dropnullCH = TRUE is probably a mistake when telemetry ",
         #             "independent or concurrent")
@@ -1555,17 +1559,25 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ## coerce subset, traps, occasions to logical
         if (is.character(subset))
             subset <- dimnames(x)[[1]] %in% subset
-        else
-            if (!is.logical(subset))
+        else {
+            if (!is.logical(subset)) {
                 subset <- (1:nrow(x)) %in% subset
-        if (is.character(traps))
-            traps <- rownames(traps(x)) %in% traps
-        else
-            if (!is.logical(traps))
-                traps <- (1:nk) %in% traps
-        if (!is.logical(occasions))
+            }
+        }
+        
+        if (is.character(traps)) {
+            traps <- rownames(trapsx) %in% traps
+        }
+        else if (is.function(traps)) {
+            traps <- traps(trapsx, ...)
+        }            
+        else if (!is.logical(traps)) {
+            traps <- (1:nk) %in% traps
+        }
+        if (!is.logical(occasions)) {
             occasions <- (1:ncol(x)) %in% occasions
-
+        }
+        
         if (any(detector=='telemetry')) {
             if (any(detector[occasions]=='telemetry')) {
                 if (!traps[nk])
@@ -1573,7 +1585,7 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             }
             else traps[nk] <- FALSE  ## forcibly drop notional telemetry detector
         }
-
+        
         #####################################
         ## signaldf is used later...
         if (all(detector %in% c('signal','signalnoise'))) {
@@ -1612,8 +1624,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         x[is.na(x)] <- 0
         #################################
         ## optionally drop traps never used on the specified occasions
-        if ((detector[1] != 'nonspatial') & dropunused & !is.null(usage(traps(x)))) {
-            used <- apply(usage(traps(x))[,occasions, drop=FALSE],1,sum) > 0
+        if ((detector[1] != 'nonspatial') & dropunused & !is.null(usage(trapsx))) {
+            used <- apply(usage(trapsx)[,occasions, drop=FALSE],1,sum) > 0
             traps <- traps & used
         }
 
@@ -1660,9 +1672,9 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ###################################
         ## attributes
         class(temp) <- 'capthist'
-        if (!is.null(traps(x))) { # spatial data
-            traps(temp) <- subset (traps(x), traps)
-            usage(traps(temp)) <- NULL  ## until we fix markocc
+        if (!is.null(trapsx)) { # spatial data
+            secr::traps(temp) <- subset (trapsx, traps)
+            usage(secr::traps(temp)) <- NULL  ## until we fix markocc
         }
         covariates(temp) <- covariates(x)[subset,,drop = FALSE]
         session(temp) <- session(x)
@@ -1670,8 +1682,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         attr(temp, 'centres') <- attr(x, 'centres',exact = TRUE)
         ###################################
         ## mark-resight
-        if (!is.null(markocc(traps(x)))) {
-            markocc(traps(temp)) <- markocc(traps(x))[occasions]
+        if (!is.null(markocc(trapsx))) {
+            markocc(secr::traps(temp)) <- markocc(trapsx)[occasions]
             if (!is.null(Tu(x))) {
                 if (is.matrix(Tu(x))) {
                     Tu(temp) <- Tu(x)[traps, occasions, drop = FALSE]
@@ -1701,19 +1713,19 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             }
         }
 
-        if (!is.null(traps(temp))) {
-            usage(traps(temp)) <- usage(traps(x))[traps, occasions,
+        if (!is.null(secr::traps(temp))) {
+            usage(secr::traps(temp)) <- usage(trapsx)[traps, occasions,
                   drop = FALSE][,OK2, drop = FALSE]  ## drop null occasions
         }
 
-        if (length(detector(traps(x)))>1)
-            detector(traps(temp)) <- detector(traps(x))[occasions]
+        if (length(detector(trapsx))>1)
+            detector(secr::traps(temp)) <- detector(trapsx)[occasions]
 
         ###################################
         ## telemetry
-        if (!is.null(traps(temp))) {
+        if (!is.null(secr::traps(temp))) {
             xylist <- telemetryxy(x)
-            if (!is.null(xylist) & any (detector(traps(temp)) == 'telemetry')) {
+            if (!is.null(xylist) & any (detector(secr::traps(temp)) == 'telemetry')) {
                 selectoccasions <- function (xy, id) {
                     originalocc <- rep(1:ncol(x), x[id,,nk])
                     xy[originalocc %in% which(occasions),]
@@ -1722,10 +1734,10 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
                 if (!all(occasions))
                     xylist <- mapply(selectoccasions, xylist, names(xylist), SIMPLIFY = FALSE)
                 telemetryxy(temp) <- xylist
-                if (all(detector(traps(temp)) == 'telemetry'))
-                    telemetrytype(traps(temp)) <- "independent"
+                if (all(detector(secr::traps(temp)) == 'telemetry'))
+                    telemetrytype(secr::traps(temp)) <- "independent"
             }
-            else telemetrytype(traps(temp)) <- NULL
+            else telemetrytype(secr::traps(temp)) <- NULL
         }
         ###################################
         ## subset signal of signal capthist
@@ -1984,13 +1996,13 @@ subset.mask <- function (x, subset, ...) {
         stop ("subset of multi-session mask not implemented")
 
     # subset may be numeric index or logical
-    temp <- x[subset,,drop=F]
-    spacing <- attr(x,'spacing',exact = TRUE)
+    temp <- x[subset, , drop = FALSE]
+    spacing <- attr(x,'spacing', exact = TRUE)
     attr(temp,'type')        <- 'subset'
     attr(temp,'meanSD')      <- getMeanSD(temp)
-    attr(temp,'area')        <- attr(x, 'area',exact = TRUE)
-    attr(temp,'SLDF')    <- attr(x, 'SLDF',exact = TRUE)
-    attr(temp, 'graph')  <- attr(x, 'graph',exact = TRUE)
+    attr(temp,'area')        <- attr(x, 'area', exact = TRUE)
+    attr(temp,'SLDF')    <- attr(x, 'SLDF', exact = TRUE)
+    attr(temp, 'graph')  <- attr(x, 'graph', exact = TRUE)
     attr(temp,'spacing')     <- spacing
     if (!is.null(covariates(x))) covariates(temp) <- covariates(x)[subset,,drop=F]
     xl <- range(temp$x) + spacing/2 * c(-1,1)
@@ -2021,8 +2033,9 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL,
             if ('HABITAT' %in% names(data))
                 data <- data[data$HABITAT == 1,]
         }
-        else
+        else {
             data <- read.table (file, ...)
+        }
     }
     else if (is.null(data))
        stop("require one of 'file' or 'data'")
@@ -2054,12 +2067,13 @@ read.mask <- function (file = NULL, data = NULL, spacing = NULL, columns = NULL,
         if (ncol(df)>0)
             covariates(mask) <- df
     }
-
     if (is.null(spacing))
     {
       sp      <- as.matrix(dist(as.matrix(mask)))
       spacing <- apply(sp,1,function(x) min(x[x>0]))
-      spacing <- mean (spacing, na.rm=T)
+      ## 2020-08-25 bug fixed
+      ## spacing <- mean (spacing, na.rm=T)
+      spacing <- median (spacing, na.rm=T)
     }
 
     area    <- spacing^2 / 10000

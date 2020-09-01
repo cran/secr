@@ -143,22 +143,39 @@ nk2 <- function(ch) {
 ## 2-D s x k if capped detector (deferred)
 ## 3-D n x k x 2 (which detector, count of positive records)
 compressCH <- function (CH, binomN, fastproximity) {  
-  if (all(binomN == -2)) {
-    lost <- apply(CH, 1:2, min)<0
-    CH <- abs(CH)
-    CH <- apply(CH, 1:2, which.max) *(apply(CH, 1:2, max)>0)
-    CH[lost] <- -CH[lost]
-  }
-  # else if (all(binomN == -3)) {
-  #   lost <- apply(CH, 2:3, min)<0
-  #   CH <- abs(CH)
-  #   CH <- apply(CH, 2:3, which.max) *(apply(CH, 2:3, max)>0)
-  #   CH[lost] <- -CH[lost]
-  # }
-  else if (fastproximity) {
-    CH <- nk2(CH) 
-  }
-  CH
+    if (all(binomN == -2)) {
+        lost <- apply(CH, 1:2, min)<0
+        CH <- abs(CH)
+        CH <- apply(CH, 1:2, which.max) *(apply(CH, 1:2, max)>0)
+        CH[lost] <- -CH[lost]
+    }
+    # else if (all(binomN == -3)) {
+    #   lost <- apply(CH, 2:3, min)<0
+    #   CH <- abs(CH)
+    #   CH <- apply(CH, 2:3, which.max) *(apply(CH, 2:3, max)>0)
+    #   CH[lost] <- -CH[lost]
+    # }
+    else if (fastproximity) {
+        CH <- nk2(CH) 
+    }
+    CH
+}
+############################################################################################
+
+decompressCH <- function (CH, fastproximity) {  
+    if (fastproximity) {
+        out <- array(0, dim=c(nrow(CH), 1, ncol(CH)))
+        for (i in 1:nrow(CH)) {
+            n <- which(CH[i,,1]>0)
+            k <- CH[i,n,1]
+            count <- CH[i,n,2]
+            out[i,1,k] <- count
+        }
+        return(out)
+    }
+    else {
+        return (CH)
+    }
 }
 ############################################################################################
 
@@ -292,77 +309,77 @@ markresightdata <- function (capthist, mask, fixed, chat, control, knownmarks) {
 ##############################################################################
 
 prepareSessionData <- function (capthist, mask, maskusage, design, design0, detectfn, groups, 
-                                fixedpar, hcov, details, aslist = TRUE) {
-  ## aslist used internally to determine whether single-session data are wrapped in a list
-  if (ms(capthist)) {
-      if (!ms(mask)) stop ("expect session-specific mask in prepareSessionData")
-      if (is.null(maskusage))
-          maskusage <- vector('list', length(capthist))
-      mapply(prepareSessionData, capthist, mask, maskusage,
-             MoreArgs = list(design, design0, detectfn, groups, 
-                             fixedpar, hcov, details, FALSE), SIMPLIFY = FALSE)
-  }
+    fixedpar, hcov, details, aslist = TRUE) {
+    ## aslist used internally to determine whether single-session data are wrapped in a list
+    if (ms(capthist)) {
+        if (!ms(mask)) stop ("expect session-specific mask in prepareSessionData")
+        if (is.null(maskusage))
+            maskusage <- vector('list', length(capthist))
+        mapply(prepareSessionData, capthist, mask, maskusage,
+            MoreArgs = list(design, design0, detectfn, groups, 
+                fixedpar, hcov, details, FALSE), SIMPLIFY = FALSE)
+    }
     else {
         nc   <- nrow(capthist)
         s    <- ncol(capthist)
-    m    <- nrow(mask)
-    traps   <- traps(capthist)
-    dettype <- detectorcode(traps, MLonly = TRUE, noccasions = s)
-    binomNcode <- recodebinomN(dettype, details$binomN, telemcode(traps))
-    
-    ## k-1 because we have zero-terminated these vectors
-    k <- getk(traps)
-    K <- if (length(k)>1) length(k)-1 else k
-    cumk <- cumsum(c(0,k))[1:length(k)]
-
-    ## mark-resight
-    MRdata <- markresightdata(capthist, mask, fixedpar,
-                          details$chat, details$markresight, details$knownmarks)
-    # markocc <- markocc(traps(capthist))
-    # if (is.null(markocc)) markocc <- rep(1,s)
-    # MRdata <- list(markocc = markocc)
-    
-    ## knownclass for hcov mixture models
-    knownclass <- getknownclass(capthist, details$nmix, hcov)
-    
-    ## get static distance matrix
-    distmat2 <- getdistmat2(traps, mask, details$userdist)
-    
-    n.distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
-    
-    signal <- getsignal (dettype, capthist, details$tx)
-    xy <- getxy (dettype, capthist)
-    usge <- usage(traps)
-    if (is.null(usge) | details$ignoreusage) {
-      usge <- matrix(1, nrow = K, ncol = s)
-    }
-    if (is.null(maskusage)) {
-        maskusage <- maskboolean(capthist, mask, details$maxdistance)
-    }
-    else {
-        if (!is.matrix(maskusage) || nrow(maskusage) != nrow(capthist) || ncol(maskusage) != nrow(mask))
-            stop ('specified maskusage should be n x m matrix of logical values')
-        maskusage[] <- as.logical(maskusage)
-    }
-    
-    ## Groups
-    grp  <- group.factor (capthist, groups)
-    if (any(is.na(grp))) {
-        stop("group is missing for at least one animal")
-    }
-    ngroup <- max(1,length(group.levels(capthist, groups)))
-    CH <- compressCH(capthist, binomNcode, details$fastproximity)   
-    CH0 <- nullCH(dim(CH), packageVersion('secr')<'4.0.0' || design0$individual || ngroup>1)   ## all-zero CH
-
-    #####################################################################
-    ## unclear whether this is correct wrt groups
-    if (all(detector(traps) %in% .localstuff$simpledetectors)) {
-      logmult <- logmultinom(capthist, group.factor(capthist, groups))
-    }
-    else {
-      logmult <- 0
-    }
-    #####################################################################
+        m    <- nrow(mask)
+        traps   <- traps(capthist)
+        dettype <- detectorcode(traps, MLonly = TRUE, noccasions = s)
+        binomNcode <- recodebinomN(dettype, details$binomN, telemcode(traps))
+        
+        ## k-1 because we have zero-terminated these vectors
+        k <- getk(traps)
+        K <- if (length(k)>1) length(k)-1 else k
+        cumk <- cumsum(c(0,k))[1:length(k)]
+        
+        ## mark-resight
+        MRdata <- markresightdata(capthist, mask, fixedpar,
+            details$chat, details$markresight, details$knownmarks)
+        # markocc <- markocc(traps(capthist))
+        # if (is.null(markocc)) markocc <- rep(1,s)
+        # MRdata <- list(markocc = markocc)
+        
+        ## knownclass for hcov mixture models
+        knownclass <- getknownclass(capthist, details$nmix, hcov)
+        
+        ## get static distance matrix
+        distmat2 <- getdistmat2(traps, mask, details$userdist)
+        
+        n.distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
+        
+        signal <- getsignal (dettype, capthist, details$tx)
+        xy <- getxy (dettype, capthist)
+        usge <- usage(traps)
+        if (is.null(usge) | details$ignoreusage) {
+            usge <- matrix(1, nrow = K, ncol = s)
+        }
+        if (is.null(maskusage)) {
+            maskusage <- maskboolean(capthist, mask, details$maxdistance)
+        }
+        else {
+            if (!is.matrix(maskusage) || nrow(maskusage) != nrow(capthist) || ncol(maskusage) != nrow(mask))
+                stop ('specified maskusage should be n x m matrix of logical values')
+            maskusage[] <- as.logical(maskusage)
+        }
+        
+        ## Groups
+        grp  <- group.factor (capthist, groups)
+        if (any(is.na(grp))) {
+            stop("group is missing for at least one animal")
+        }
+        ngroup <- max(1,length(group.levels(capthist, groups)))
+        CH <- compressCH(capthist, binomNcode, details$fastproximity)   
+        CH0 <- nullCH(dim(CH), packageVersion('secr')<'4.0.0' || design0$individual || ngroup>1)   ## all-zero CH
+        
+        #####################################################################
+        ## unclear whether this is correct wrt groups
+        if (all(detector(traps) %in% .localstuff$simpledetectors)) {
+            logmult <- logmultinom(capthist, group.factor(capthist, groups))
+        }
+        else {
+            logmult <- 0
+        }
+        #####################################################################
     
     data <- list(
       CH = CH,

@@ -109,11 +109,14 @@ secr.make.newdata <- function (object, all.levels = FALSE) {
         sessvars <- sessvars[!sessvars %in% autovars]
         if (ngrp==1) 
             basevars <- findvars (basevars, covariates(capthist)) ## individual covariates
-        basevars <- findvars (basevars, sessioncov)
+        
+        ## 2020-08-09
+        # basevars <- findvars (basevars, sessioncov)
+
         basevars <- findvars (basevars, timecov)
         basevars <- findvars (basevars, covariates(traps(capthist)))
         basevars <- findvars (basevars, covariates(mask))
-        
+
         ## revert to first level (original default)
         if (length(v)>0) {
             if (!all.levels & !(v %in% c('session', 'g', 'h2','h3'))) {
@@ -125,6 +128,15 @@ secr.make.newdata <- function (object, all.levels = FALSE) {
     }
     newdata <- lapply(1:length(sessions), onesession)
     newdata <- do.call(rbind, newdata)
+
+    ## 2020-08-09
+    if (!is.null(sessioncov)) {
+        for (i in names(sessioncov)) {
+            if ((i %in% vars) & !(i %in% names(newdata)))
+            newdata[,i] <- sessioncov[newdata$session,i]
+        }
+    }
+    
     if ('Session' %in% vars) 
         newdata$Session <- as.numeric(newdata$session) - 1   
     newdata

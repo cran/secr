@@ -452,7 +452,6 @@ generalsecrloglikfn <- function (
         ## hazard for exclusive detectors or related
         haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval), gkhk$hk, PIA, data$usge)
     }
-
     ## model detection histories (prw) conditional on detection (pdot)
     if (data$nc == 0) {
         prw <- 1  ## simple if no animals detected
@@ -477,7 +476,7 @@ generalsecrloglikfn <- function (
                                    debug = details$debug>3)
         }
         else {
-            stop ("this detector type, or mixed detector types, not available yet in secr 4.2")
+            stop ("this detector type, or mixed detector types, not available yet in secr 4.3")
         }
     }    
         ## polygon types
@@ -607,7 +606,6 @@ generalsecrloglikfn <- function (
   
   ###############################################################################################
   ## Main line of generalsecrloglikfn
-  
   nsession <- length(sessionlevels)
   #--------------------------------------------------------------------
   # Fixed beta
