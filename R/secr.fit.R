@@ -40,7 +40,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     #  ...        -  other arguments passed to nlm() or optim()
     
     #################################################
-    
     ## Remember start time
     ptm  <- proc.time()
     starttime <- format(Sys.time(), "%H:%M:%S %d %b %Y")

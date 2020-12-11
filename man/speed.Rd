@@ -138,14 +138,16 @@ Averaging}. Cambridge: Cambridge University Press.
 ## compare timing of combined model with separate single-session models
 ## for 5-session ovenbird mistnetting data: 2977/78 = 38-fold difference
 
-system.time(fit1 <- secr.fit(ovenCH, buffer = 300, model = list(D ~
-    session, g0 ~ session, sigma ~ session)))
-##   user  system elapsed 
-## 2470.99   20.62 2502.11 
+setNumThreads(7)
 
-system.time(fit2 <- lapply (ovenCH, secr.fit, buffer = 300))
+system.time(fit1 <- secr.fit(ovenCH, buffer = 300, trace = FALSE, 
+    model = list(D ~ session, g0 ~ session, sigma ~ session)))
+##    user  system elapsed 
+## 1837.71   31.81  730.56 
+
+system.time(fit2 <- lapply (ovenCH, secr.fit, buffer = 300, trace = FALSE))
 ##   user  system elapsed 
-##   66.05    0.19   66.34 
+##  43.74    0.46   11.13  
 
 ## ratio of density estimates
 collate(fit1)[,1,1,"D"] / sapply(fit2, function(x) predict(x)["D","estimate"])

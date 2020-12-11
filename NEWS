@@ -1,3 +1,31 @@
+Changes in version 4.3.3 (2020-12-12)
+
+New features or changed behaviour of old functions
+    o   subset.capthist() all-negative subset argument indicates exclusion
+    o   shareFactorLevels() default for stringsAsFactors now TRUE
+    o   sim.popn() with movement: new 'normalize' option for edgemethod
+
+Bugs fixed
+    o   multisession hcov failed if only one level present in one or more sessions
+    o   plot.capthist() failed when no detections in session
+    o   plot.mask(..., dots = FALSE) crashed when no points in mask
+    o   secr.fit failed with hcov if only one class present in a session
+    o   region.N() with multisession model failed using 'hcov' and otherwise not reliable
+    o   alive() incorrect order of output
+    o   sim.detect() renumbered multi-session capthist even when renumber = FALSE
+
+Other
+    o   terminal '/' on https://www.otago.ac.nz/density/ in Rd required by CRAN
+    o   verify() suggests shareFactorLevels() when needed
+    o   more robust handling of sessions with zero detections
+    o   join() gives advice when table limit exceeded (2^31 elements)
+    o   output from region.N() with multisession model uses session names
+    o   rectangularMask() rewritten to allow disjunct mask blocks
+    o   character sessioncov used in D~ models automatically converted to factor
+    o   sim.popn() undocumented movement options 'radialexp' and 'radialnorm'
+    o   reduce.capthist() more robust when no detections
+    o   sim.capthist() now accepts character detectfn when nsessions>1
+
 Changes in version 4.3.1 (2020-08-31)
 
 New features or changed behaviour of old functions

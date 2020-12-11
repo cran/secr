@@ -80,7 +80,7 @@ For \code{par.region.N} - a list of dataframes output from
 
 }
 
-\section{warning}{
+\section{Warning}{
 
 With the introduction of multi-threading in \pkg{secr} 4.0, \code{par.secr.fit} has lost its speed advantage.
 

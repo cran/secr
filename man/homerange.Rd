@@ -155,7 +155,7 @@ Otis, D. L., Burnham, K. P., White, G. C. and Anderson, D. R. (1978)
   populations. \emph{Wildlife Monographs} \bold{62}, 1--135.
 
 Slade, N. A. and Swihart, R. K. (1983) Home range indices for the hispid
-cotton rat (Sigmodon hispidus) in Northeastern Kansas. \emph{Journal of
+cotton rat (\emph{Sigmodon hispidus}) in Northeastern Kansas. \emph{Journal of
 Mammalogy} \bold{64}, 580--590.
 
 }
@@ -194,8 +194,10 @@ RPSV(captdata)
 RPSV(captdata, CC = TRUE)
 
 centr <- centroids(captdata)
-plot(traps(captdata))
+plot(traps(captdata), border = 20 )
 text(centr[,1], centr[,2], attr(centr, 'Ndetections'))
+text(centr[,1]+2, centr[,2]+3, rownames(captdata), cex = 0.6,
+    adj = 0)
 
 }
 

@@ -347,7 +347,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     }
     
     if (rotate != 0) {
-        if (requireNamespace('maptools')) {
+        if (requireNamespace('maptools', quietly = TRUE)) {
             region <- maptools::elide(region, rotate = -rotate, center = centrexy)
         }
         else {
@@ -477,7 +477,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         attr(traps, 'originbox') <- originbox
     }
     
-    if (rotate != 0 && requireNamespace('maptools')) {
+    if (rotate != 0 && requireNamespace('maptools', quietly = TRUE)) {
         ## reverse rotation applied to region polygon
         ## silently as any maptools warning issued when rotate first encountered
         traps <- rotate(traps, rotate, centrexy)
@@ -509,7 +509,7 @@ make.lacework <- function (region, spacing = c(100, 20), times = NULL,
         region <- boundarytoSP(region)
     }
     if (rotate != 0) {
-        if (requireNamespace('maptools')) {
+        if (requireNamespace('maptools', quietly = TRUE)) {
             centrexy <- apply(sp::bbox(region),1,mean)
             region <- maptools::elide(region, rotate = -rotate, center = centrexy)
         }

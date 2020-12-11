@@ -5,6 +5,7 @@
 ## 2019-10-12 moved helper fn to separate file
 ## 2019-12-04 integralprw1 modified to allow for individual covariate
 ## 2020-04-24 learnedresponse bug with multicatch traps fixed
+## 2020-10-11 knownclass bug when not all classes present in session fixed
 ###############################################################################
 
 # dettype
@@ -556,12 +557,15 @@ generalsecrloglikfn <- function (
       # adjustment for mixture probabilities when class known
       known <- sum(data$knownclass[ok]>1)
       if (details$nmix>1 && known>0) {
-        nm <- tabulate(data$knownclass[ok], nbins = max(data$knownclass))
-        pmix <- attr(pmixn, 'pmix')
-        for (x in 1:details$nmix) {
-          # need group-specific pmix
-          comp[4,g] <- comp[4,g] + nm[x+1] * log(pmix[x]) 
-        }
+          # 2020-10-11
+          # nm <- tabulate(data$knownclass[ok], nbins = max(data$knownclass))
+          nb <- details$nmix + 1
+          nm <- tabulate(data$knownclass[ok], nbins = nb)
+          pmix <- attr(pmixn, 'pmix')
+          for (x in 1:details$nmix) {
+              # need group-specific pmix
+              comp[4,g] <- comp[4,g] + nm[x+1] * log(pmix[x]) 
+          }
       }
    
       #----------------------------------------------------------------------

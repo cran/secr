@@ -122,7 +122,7 @@ object of class c("capthist", "list") comprising a list of single-session
 
 Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
 capture--recapture}. Department of Mathematics and Statistics,
-University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density}.
+University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density/}.
 
 }
 

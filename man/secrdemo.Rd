@@ -62,7 +62,7 @@ trap saturation Efford et al.  2009). The first is a null model
 
 Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
 capture--recapture}. Department of Mathematics and Statistics,
-University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density}.
+University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density/}.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:

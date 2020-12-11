@@ -22,7 +22,6 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         
         ID <- animalID(x)
         occ <- occasion(x)
-        
         if (is.null(traps(x))) {
             det <- 0
             trap <- rep('1', length(ID))

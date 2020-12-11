@@ -135,8 +135,8 @@ netsites0509 <- read.traps(file = "netsites0509.txt",
     skip = 1, detector = "proximity")
 temp <- read.table("ovencapt.txt", colClasses=c("character",
     "character", "numeric", "numeric", "character"))
-ovenCHp <- make.capthist(temp, netsites0509, covnames=c("Sex"))
-ovenCHp <- updateCH(ovenCHp)   # drop repeat detections
+ovenCHp <- make.capthist(temp, netsites0509, covnames = "Sex")
+ovenCHp <- reduce(ovenCHp, dropunused = FALSE) # drop repeat detections
 }
 
 par(mfrow = c(1,5), mar = c(1,1,4,1))
@@ -151,8 +151,9 @@ counts(ovenCHp, "n")
 ovenCH <- reduce(ovenCHp, outputdetector = "multi", dropunused = FALSE)
 
 ## array constant over years, so build mask only once
-ovenmask <- make.mask(traps(ovenCH)[["2005"]], type="pdot", buffer=400,
-    spacing=15, detectpar=list(g0=0.03, sigma=90), nocc=10)
+ovenmask <- make.mask(traps(ovenCH)[["2005"]], type = "pdot", 
+    buffer = 400, spacing = 15, detectpar = list(g0 = 0.03, 
+    sigma = 90), nocc = 10)
 
 ## fit constant-density model
 ovenbird.model.1 <- secr.fit(ovenCH, mask = ovenmask)

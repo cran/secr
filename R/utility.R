@@ -12,6 +12,7 @@
 ## 2020-02-21 secr 4.2.0
 ## 2020-05-15 stringsAsFactors function
 ## 2020-07-14 secr 4.3.0
+## 2020-09-05 getknownclass factor bug fixed
 #######################################################################################
 
 # Global variables in namespace
@@ -591,8 +592,6 @@ pointsInPolygon <- function (xy, poly, logical = TRUE) {
         mask <- round(mask/sp) + 1
         xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
         xy <- round(xy/sp) + 1
-        ## 2013-03-06 tweak
-        ## xy[xy<0] <- NA
         xy[xy<=0] <- NA
         xy[,1][xy[,1]>max(mask$x, na.rm = TRUE)] <- NA
         xy[,2][xy[,2]>max(mask$y, na.rm = TRUE)] <- NA
@@ -808,7 +807,8 @@ distancetotrap <- function (X, traps) {
     detecttype <- ifelse (is.null(detecttype), "", detecttype)
     
     ## 2020-01-08
-    if (all(detecttype %in% c('polygon', 'polygonX')) && requireNamespace('rgeos')) {
+    if (all(detecttype %in% c('polygon', 'polygonX')) && 
+            requireNamespace('rgeos', quietly = TRUE)) {
         trps <- split(traps, polyID(traps))
         polys <- lapply(trps, boundarytoSP)
         xy <- sp::SpatialPoints(X)
@@ -819,7 +819,7 @@ distancetotrap <- function (X, traps) {
     }
         
     if (inherits(traps, 'SpatialPolygons')) {
-        if (requireNamespace('rgeos')) {
+        if (requireNamespace('rgeos', quietly = TRUE)) {
             xy <- sp::SpatialPoints(X)
             d <- rgeos::gDistance(spgeom1 = xy, spgeom2 = traps, byid = TRUE)
             return (d)
@@ -1161,11 +1161,14 @@ getknownclass <- function(capthist, nmix, hcov) {
     }
     else {
         if ((nmix>1) & (!is.null(hcov))) {
-            tmp <- as.numeric(factor(covariates(capthist)[,hcov])) + 1
-            tmp[is.na(tmp) | (tmp>(nmix+1))] <- 1
-            attr(tmp,'levels') <- levels(factor(covariates(capthist)
-                                                [,hcov]))[1:nmix]
-            tmp
+          ## 2020-09-05 use as.factor() instead of factor() to coerce 
+          ## (if already factor, coercing with factor() loses old levels)
+          var <- as.factor(covariates(capthist)[,hcov])
+          tmp <- as.numeric(var) + 1
+          tmp[is.na(tmp) | (tmp>(nmix+1))] <- 1
+          attr(tmp,'levels') <- levels(factor(covariates(capthist)
+            [,hcov]))[1:nmix]
+          tmp
         }
         else
             rep(1,nrow(capthist))
@@ -1622,7 +1625,7 @@ nedist <- function (xy1, xy2, mask, inf = Inf, ...) {
     defaultargs <- list(transitionFunction = mean, directions = 16)
     args <- replace(defaultargs, names(newargs), newargs)
     args$x <- raster(mask, values = noneuc)
-    if (requireNamespace('gdistance')) {    ## 2015-01-23
+    if (requireNamespace('gdistance', quietly = TRUE)) {    ## 2015-01-23
         tr <- do.call(gdistance::transition, args)
         tr <- gdistance::geoCorrection(tr, type = "c", multpl = FALSE)
         out <- gdistance::costDistance(tr, as.matrix(xy1), as.matrix(xy2))
@@ -1939,7 +1942,7 @@ outsidemask <- function(CH, mask, threshold = spacing(mask) / sqrt(2)) {
 }
 ############################################################################################
 
-shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = FALSE) {
+shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = TRUE) {
     ## stringsAsFactors added 2020-05-16
     if (ms(object)) {
         if (!is.null(covariates(object))) {
@@ -1948,7 +1951,7 @@ shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = FALSE)
                 columns <- 1:ncol(df)
             }
             if (stringsAsFactors) {
-                df[,columns] <- stringsAsFactors(df[,columns])
+                df[,columns] <- stringsAsFactors(df[,columns, drop = FALSE])
             }
             for (i in columns) {
                 if (is.factor(df[,i])) {
@@ -1967,7 +1970,7 @@ shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = FALSE)
             if (is.null(columns)) {
                 columns <- 1:ncol(object)
             }
-            object[,columns] <- stringsAsFactors(object[,columns])
+            object[,columns] <- stringsAsFactors(object[,columns, drop = FALSE])
         }
     }
     object

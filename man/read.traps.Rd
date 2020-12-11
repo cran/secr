@@ -78,7 +78,7 @@ y-coordinates, the detector type (`single', `multi', `proximity',
 
 Efford, M. G. (2012) \emph{DENSITY 5.0: software for spatially explicit
 capture--recapture}. Department of Mathematics and Statistics,
-University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density}.
+University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density/}.
 
 Efford, M. G., Borchers D. L. and Byrom, A. E. (2009) Density estimation
 by spatially explicit capture-recapture: likelihood-based methods. In:
@@ -103,26 +103,28 @@ Demographic Processes in Marked Populations}. Springer, New York. Pp.
 \examples{
 
 \dontrun{
-## Replace file name with a valid local name 
-filename <- paste0(system.file("extdata", package = "secr"), '/trap.txt')
-read.traps (filename, detector = "proximity")
 ## "trap.txt" should have lines like this 
 # 1     365     365
 # 2     365     395
 # 3     365     425
 # etc.
+## in following, replace file name with a valid local name
+filename <- paste0(system.file("extdata", package = "secr"), '/trap.txt')
+tr1 <- read.traps (filename, detector = "proximity")
+summary(tr1)
 
-## If we have a dataframe of coordinates...
-mytrapdf <- data.frame(x = c(365,365,365), y = c(365,395,425), 
-    row.names = c('A','B','C'))
+## Or if we have a dataframe of coordinates...
+mytrapdf <- data.frame(x = c(365,365,365), y = c(365,395,425),
+                       row.names = c('A','B','C'))
 mytrapdf
 #     x   y
 # A 365 365
 # B 365 395
 # C 365 425
 ## ...then we can convert it to a `traps' object with
-tr <- read.traps(data = mytrapdf)
-summary(tr)
+tr2 <- read.traps(data = mytrapdf)
+summary(tr2)
+
 }
 
 }

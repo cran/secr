@@ -6,6 +6,7 @@
 ## 2014-09-30 covrange allws NA
 ## 2015-01-14 tweak to format legend text (breaks case)
 ## 2020-05-15 inserted explicit conversion of covariate from character to factor
+## 2020-09-10 dots = F does not crash when no points in mask
 
 ## suggest: optionally suppress legend text
 ## suggest: optionally use axis()
@@ -192,7 +193,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
     else {
         buff <- c(-border,+border)
         if (!add) {
-            eqscplot (x$x, x$y,
+            MASS::eqscplot (x$x, x$y,
                       xlim = range(x$x) + buff,
                       ylim = range(x$y) + buff,
                       xlab = '', ylab = '',
@@ -209,9 +210,12 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
             else
                 polygon (poly, col = polycol, density = 0)
         }
-
-        if (is.null(covariate))
-            covfactor <- factor(1)
+        if (is.null(covariate)) {
+            if (nrow(x) == 0)
+                covfactor <- factor(character(0))   # 2020-09-10
+            else 
+                covfactor <- factor(1)
+        }
         else {
             if (is.logical(covariates(x)[,covariate]))  ## 2016-03-02
                 covfactor <- factor(covariates(x)[,covariate])

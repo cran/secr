@@ -7,6 +7,7 @@
 ## 2019-11-10 summary.traps etc. moved to file summary.traps.R
 ## 2020-08-27 radical revamp of occasion, trap and animalID functions, 
 ##            with unified code
+## 2020-11-07 alive() rewritten to match preceding
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -446,7 +447,7 @@ signalmatrix <- function (object, noise = FALSE, recodezero = FALSE,
     }
 }
 
-alive <- function (object) {
+aliveold <- function (object) {
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
     if (ms(object)) {
@@ -467,35 +468,65 @@ captmatrix <- function (object) {
   # 2020-08-27 
   # object is 3-D single-session capthist
   # form a matrix with indices of animalID, occasion and detector
-  # number of rows is product of these dimensions
-  if (length(dim(object)) < 3 ) {
-      stop ("3-D capthist required by animalID(), occasion() and trap()")
-  }
-  tmp <- sapply(1:3, slice.index, x = object)
-  if (!is.matrix(tmp)) tmp <- matrix(tmp, nrow = 1)
-  # add column for number of detections 
-  tmp <- cbind(tmp, as.integer(abs(object)))
-  # drop unused combinations
-  tmp <- tmp[tmp[,4]>0,, drop = FALSE]
-  # construct index with occasion, animalID, detector ordering, and sort
-  ord <- order(tmp[,2], tmp[,1], tmp[,3])
-  tmp[ord,, drop = FALSE]
+    # number of rows is product of these dimensions
+    if (length(dim(object)) < 3 ) {
+        # stop ("3-D capthist required by animalID(), occasion() and trap()")
+        if (length(dim(object))==2)
+            object <- array(object, dim=c(dim(object),1))  ## 2020-12-08
+    }
+    if (nrow(object)<1) {
+        stop ("captmatrix expects at least one row in capthist")      
+    }
+    tmp <- sapply(1:3, slice.index, x = object)
+    if (!is.matrix(tmp)) tmp <- matrix(tmp, nrow = 1)
+    # add column for number of detections 
+    tmp <- cbind(tmp, as.integer(abs(object)))
+    # drop unused combinations
+    tmp <- tmp[tmp[,4]>0,, drop = FALSE]
+    # construct index with occasion, animalID, detector ordering, and sort
+    ord <- order(tmp[,2], tmp[,1], tmp[,3])
+    tmp[ord,, drop = FALSE]
 }
 
 occasion <- function (object) {
-  if (!inherits(object, 'capthist'))
-    stop ("requires 'capthist' object")
-  if (ms(object)) {
-    lapply(object, occasion)
-  }
-  else {
-      values <- 1:dim(object)[2]    # safer than following
-      # values <- as.numeric(dimnames(object)[[2]])
-      tmp <- captmatrix(object)
-    s <- tmp[,2]    # vector of occasion integer values
-    out <- rep(values[s], tmp[,4])
-    as.numeric(out)
-  }
+    if (!inherits(object, 'capthist'))
+        stop ("requires 'capthist' object")
+    if (ms(object)) {
+        lapply(object, occasion)
+    }
+    else {
+        if (nrow(object) == 0) {
+            out <- NULL
+        }
+        else {
+            values <- 1:dim(object)[2]    # safer than following
+            # values <- as.numeric(dimnames(object)[[2]])
+            tmp <- captmatrix(object)
+            s <- tmp[,2]    # vector of occasion integer values
+            out <- rep(values[s], tmp[,4])
+        }
+        as.numeric(out)
+    }
+}
+
+alive <- function (object) {
+    # revised 2020-11-07
+    if (!inherits(object, 'capthist'))
+        stop ("requires 'capthist' object")
+    if (ms(object)) {
+        lapply(object, alive)
+    }
+    else {
+        if (nrow(object) == 0) {
+            out <- NULL
+        }
+        else {
+            tmp <- captmatrix(object)
+            temp <- sign(object[tmp[,1:3]]) > 0
+            out <- rep(temp, tmp[,4])
+        }
+        as.logical(out)
+    }
 }
 
 trap <- function (object, names = TRUE) {
@@ -510,16 +541,21 @@ trap <- function (object, names = TRUE) {
       out <- rep(1, sum(abs(object)))
     }
     else {
-      if (names) {
-        values <- rownames(trps)  # but what about polyID?
-      }
-      else {
-        values <- 1:dim(object)[3]
-      }
-      tmp <- captmatrix(object)
-      k <- tmp[,3]  # vector of detector ID
-      out <- rep(values[k], tmp[,4])
-    }
+        if (nrow(object) == 0) {
+            out <- NULL
+        }
+        else {  
+            if (names) {
+                values <- rownames(trps)  # but what about polyID?
+            }
+            else {
+                values <- 1:dim(object)[3]
+            }
+            tmp <- captmatrix(object)
+            k <- tmp[,3]  # vector of detector ID
+            out <- rep(values[k], tmp[,4])
+        }
+    }    
     if (names) as.character(out) else as.numeric(out)
   }
 }
@@ -1560,8 +1596,11 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         if (is.character(subset))
             subset <- dimnames(x)[[1]] %in% subset
         else {
-            if (!is.logical(subset)) {
-                subset <- (1:nrow(x)) %in% subset
+            if (is.numeric(subset)) {
+                if (all(subset<0))   # negative implies excludion 2020-09-03
+                    subset <- !(1:nrow(x)) %in% abs(subset)
+                else
+                    subset <- (1:nrow(x)) %in% subset
             }
         }
         

@@ -11,7 +11,7 @@
 ## 2019-10-06 excludes: mixed detector types
 ## 2019-10-06 excludes: individual covariates
 ## 2019-10-06 excludes: telemetry
-
+## 2020-11-08 bad rownames for sim.detect when renumber = FALSE
 ############################################################################################
 
 disinteraction <- function (capthist, groups, sep='.') {
@@ -307,7 +307,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     ## --------------------------------------------------------------------
     ## Exclusions
     ## see also below dettype %in% c(-1,0,1,2,5,6,7)
-
     if (!is.null(object$groups) & (object$details$param>1))
         stop("simulation does not extend to groups when param>1")
 
@@ -322,7 +321,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
         stop ("all behavioural responses must be of same type in sim.detect")
     if (length(btype) == 0)
         btype <- 0
-
     ## --------------------------------------------------------------------
     ## setup
     if (is.null(object$details$ignoreusage))
@@ -538,6 +536,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                 #                            as.double(gkhk$gk), as.double(gkhk$hk))  
             }
         }
+  
         if (all(dettype %in% c(-1,0,1,2,8))) {
             temp <- simdetectpointcpp (dettype[1],      ## detector -1 single, 0 multi, 1 proximity, 2 count,... 
                                        as.integer(NR), 
@@ -649,7 +648,9 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
             rownames(w) <- 1:temp$n
         }
         else {
-            rownames(w) <- (1:N[sessnum])[as.logical(temp$caught)]
+            ## rownames(w) <- (1:N[sessnum])[as.logical(temp$caught)]
+            ## changed 2020-11-08
+            rownames(w) <- rownames(session.animals)[as.logical(temp$caught)]
         }
         output[[sessnum]] <- w
         

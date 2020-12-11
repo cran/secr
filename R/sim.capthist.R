@@ -65,10 +65,16 @@ sim.capthist <- function (
 
 {
     poplist <- inherits(popn,'popn') & inherits(popn,'list')
+
+    # moved here 2020-12-06
+    if (is.character(detectfn)) {
+        detectfn <- detectionfunctionnumber(detectfn)
+    }
+    
     ##------------------------------------------------------------------------
     ## multi-session loop
     if (poplist | (nsessions > 1)) {
-
+        
         if (poplist & (nsessions>1) & (length(popn) != nsessions))
             stop ("incompatible use of popn list and nsessions>1")
 
@@ -236,8 +242,6 @@ sim.capthist <- function (
                     xrange[2])
         }
 
-        if (is.character(detectfn))
-            detectfn <- detectionfunctionnumber(detectfn)
         if (all(detector(traps) %in% c('signal'))) {
             if (!(detectfn %in% c(10,11))) {
                 warning ("forcing detection function = 10 for signal detectors")
@@ -398,8 +402,10 @@ sim.capthist <- function (
         #-----------------------------------------------------------------------------#
 
         ## user-provided distances
-        if (is.null(userdist))
+        if (is.null(userdist)) {
             distmat2 <- edist2cpp(as.matrix(traps), as.matrix(popn))
+            ## debug distmat2 <- edist(as.matrix(traps), as.matrix(popn))^2
+        }
         else {
             ## move towards IHP/k simulations
             ## mask is NULL unless IHP or linear

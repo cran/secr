@@ -104,6 +104,8 @@ detectors, with a usage attribute formed by concatenating the usage
 columns of the input. This is faster than the previous filtering
 algorithm using `tol'; the older algorithm is still used if the traps differ. 
 
+Problems may be encountered with large datasets. These may be alleviated by setting sites.by.name = TRUE (if matching sites have matching names, avoiding the need for coordinate matching) or drop.sites = TRUE (if only non-spatial data are required for openCR).
+
 }
 
 \seealso{

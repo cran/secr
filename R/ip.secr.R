@@ -51,7 +51,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     if (ncores > 1) {
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
         clusterSetRNGStream(clust, seed)
-        clusterEvalQ(clust, requireNamespace('secr'))
+        clusterEvalQ(clust, requireNamespace('secr', quietly = TRUE))
         clusterExport(clust, c("capthist", "predictorfn", "predictortype",
                                "maxtries", "negloglikM0", "negloglikMb",
                                "jack.est", "M0", "Mb", "Mh", "traps", "pnames",

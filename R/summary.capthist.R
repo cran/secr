@@ -11,8 +11,9 @@ summary.capthist <- function(object, terse = FALSE, moves = FALSE, ...) {
         if (terse) {
             sapply (object, summary, terse = TRUE, moves = moves, ...)
         }
-        else
+        else {
             lapply (object, summary, terse = FALSE, moves = moves, ...)
+        }
     }
     else {
         object <- check3D(object)

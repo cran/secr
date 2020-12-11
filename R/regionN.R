@@ -4,7 +4,9 @@
 ## population size in an arbitrary region
 ## 2018-08-22 all calls of sumDpdot use only first element, ignoring individual variation
 ## 2020-05-13 allow individual variation in sumpdot object$design0$individual
-
+## 2020-11-04 reliance on dim(PIA0)[2] for number of individuals failed in sumDpdot
+##            because PIA0 not trimmed to session-specific n; fixed 2020-11-04
+## 2020-11-04 session names used in output for multi-session data
 ############################################################################################
 
 region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -47,7 +49,6 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
                   constant = FALSE, oneminus = TRUE, pooled = pooled.RN, ncores = ncores)[1]
     }
     ###########################################################
-
     if (is.null(region)) {
         region <- object$mask
         ## warning ("using entire mask as region")
@@ -93,6 +94,7 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
                 keep.region = keep.region, nlowerbound = nlowerbound,
                 RN.method = RN.method, pooled.RN = FALSE)
         }
+        names(out) <- session(object$capthist)   ## 2020-11-04
         out
     }
 
@@ -150,7 +152,6 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
                 object$details$userdist <- NULL
             }
         }
-
         #######################################################
 
         ## region now inherits from mask, so has area attribute
@@ -167,7 +168,6 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         else
             n <- nrow(object$capthist)
         sessnum <- match (session, session(object$capthist))
-
         #######################################################
         ## for conditional likelihood fit,
         if (object$CL) {
@@ -187,7 +187,7 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
             if (is.null(object$model$D) | is.null(object$link$D))
                 stop ("model or link function not found in object")
 
-            if ((object$model$D == ~1) & !userD(object)) {
+            if ((object$model$D == ~1) && !userD(object)) {
                 predicted <- predict(object)
                 if (!is.data.frame(predicted))
                     predicted <- predicted[[1]]
@@ -215,10 +215,12 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         ## realised N
         ## only makes sense for individual detectors (not unmarked or presence)
         ## assume if we have got this far that SE is required
-        if (ms(object))
+        if (ms(object)) {
             det <- detector(traps(object$capthist)[[session]])
-        else
+        }
+        else {
             det <- detector(traps(object$capthist))
+        }
         if (all(det %in% .localstuff$individualdetectors)) {
             noneuc <- predictD (object, regionmask, group, session, parameter = 'noneuc')
             RN.method <- tolower(RN.method)
@@ -302,7 +304,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
     if (!all(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for sumDpdot")
 
-    
     ##############################################
     dettype <- detectorcode(trps, noccasions = s)
     nmix    <- getnmix(object$details)
@@ -336,8 +337,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
         return(a * D)
     }
     else {
-
-        PIA0 <- object$design0$PIA[sessnum,,1:s,,,drop = FALSE]
+        # PIA0 <- object$design0$PIA[sessnum,,1:s,,,drop = FALSE]
+        PIA0 <- object$design0$PIA[sessnum,1:n,1:s,,,drop = FALSE]   ## 2020-11-04
         #############################################
         ## trick to allow for changed data 2009 11 20
         ## nmix>1 needs further testing 2010 02 26

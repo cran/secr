@@ -183,6 +183,16 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     df <- df[!apply(df,1,function(x) any(is.na(x))),, drop = FALSE]
     ##------------------------------------------------------------------
     ## construct new capthist matrix or array from positive detections
+    
+    ## 2020-10-20 following can fail (>= 2^31 elements) because 
+    ##            many distinct newtrap until these are resolved
+    
+    nlevels <- sapply(df[,c('newID','newocc','newtrap')], function(x) 
+        length(levels(factor(x))))
+    if (prod(nlevels) >= 2^31) {
+        stop ("More than 2^31 combinations of newID, newocc, newtrap in join(); ",
+            "try sites.by.name or drop.sites")
+    }
     tempnew <- table(df$newID, df$newocc, df$newtrap, useNA = "no")
     i <- cbind(as.character(df$newID), df$newocc, as.character(df$newtrap))
     tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
@@ -201,7 +211,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     }
     attr(tempnew, 'session') <- 1
     neworder <- order (df$newocc, df$newID, df$newtrap)
-
     ##------------------------------------------------------------------
     ## concatenate marking-and-resighting-occasion vectors
     tempmarkocc <- unlist(markocc(traps(object)))
@@ -294,7 +303,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     ## purge duplicate sites, if requested
     if (remove.dupl.sites & !sametrp & !sites.by.name)
         tempnew <- reduce(tempnew, span=tol, dropunused = FALSE, verify = FALSE)
-
     ## remember previous structure, for MARK-style robust design
     tmpintervals <- unlist(sapply(nocc, function(x) c(1,rep(0,x-1))))[-1]
     if (!is.null(intervals)) {

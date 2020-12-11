@@ -3,7 +3,7 @@ title: "Data input for **secr**"
 author: "Murray Efford"
 date: "`r Sys.Date()`"
 output: 
-  pdf_document:
+  pdf_document:  
     toc: yes
     toc_depth: 2
 vignette: > 

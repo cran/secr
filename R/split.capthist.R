@@ -69,7 +69,8 @@ extract.estimates <- function (x, simplify = FALSE) {
    nsessions <- length(temp)
    parnames <- row.names(temp[[1]])
    nrealpar <- nrow(temp[[1]])
-   temp2 <- data.frame(abind(temp, along = 1), row.names = NULL, stringsAsFactors=F)
+   temp2 <- data.frame(abind(temp, along = 1), row.names = NULL, 
+     stringsAsFactors = FALSE)
    temp2[,1:4] <- sapply(temp2[,1:4], as.numeric)
    temp2$Session <- rep(sessions, rep(nrealpar, nsessions))
    if (simplify) {

@@ -434,7 +434,6 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
             trps <- NULL
             reducetraps <- FALSE
         }
-
         ####################################
         ## build dataframe of observations
         df <- data.frame(
@@ -608,7 +607,10 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         }
         else
             rowname <- NULL
-        dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
+        
+        if (nnew>0) {   ## 2020-11-18 for robustness to zero rows
+            dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
+        }
 
         if (verify) verify(tempnew, report=1)
         tempnew

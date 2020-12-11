@@ -3,7 +3,7 @@ title: '**secr** 4.3 - spatially explicit capture--recapture in R'
 author: "Murray Efford"
 date: "`r Sys.Date()`"
 output: 
-  pdf_document : 
+  pdf_document: 
     toc: yes
     toc_depth: 2
 vignette: > 
@@ -851,6 +851,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 | <a name="misc"></a> **Miscellaneous** | |
 |	`ARL`		| asymptotic range length|
 |	`autoini`	| generate starting values of D, g0 and sigma for `secr.fit` |
+| `centroids` | centroid of each animal's detections |
 | `clone`          | replicate points to emulate overdispersion |
 |	`closure.test`   | closure tests of Otis et al. (1978) and Stanley \| Burnham (1999) |
 |	`closedN`	| closed population size by various conventional estimators |
@@ -863,6 +864,7 @@ Here is an index of **secr** functions classified by use (some minor functions a
 |	`moves`		| distances between capture locations |
 |	`nearesttrap`	| from an arbitrary set of points |
 |    `nedist`        | Non-Euclidean distance |
+|	`ORL`		| observed range length|
 |	`pdot`		| location-specific net probability of detection |
 | `PG`             | proportion of telemetry fixes in given polygons |
 | `pmixProfileLL`  | profile likelihood as function of mixing proportion |

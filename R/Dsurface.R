@@ -7,11 +7,11 @@
 ## 2014-10-13 predictD generalized for noneuc
 ## 2016-05-13 plot.Dsurface no longer requires 'covariate' specified for multisession input
 ## 2018-04-29 drop dim of predictD output
+## 2020-11-05 rectangularMask rewritten to allow disjunct mask blocks
 ############################################################################################
 
 predictD <- function (object, regionmask, group, session,
                 se.D = FALSE, cl.D = FALSE, alpha = 0.05, parameter = c('D','noneuc')) {
-
     ## For one session and group at a time
     ## not exported; used also by region.N()
     parameter <- match.arg(parameter)
@@ -90,7 +90,7 @@ predictD <- function (object, regionmask, group, session,
     }
     ## linear density model on link scale
     else {
-
+      
         newdata <- D.designdata (regionmask, object$model[[parameter]],
              grouplevels, sessionlevels, sessioncov = object$sessioncov,
              meanSD = meanSD)
@@ -133,6 +133,7 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
+            
             mat <- general.model.matrix(object$model[[parameter]], data = newdata, 
                                         gamsmth = object$smoothsetup[[parameter]], 
                                         contrasts = object$details$contrasts)
@@ -163,9 +164,9 @@ predictD <- function (object, regionmask, group, session,
 }
 ############################################################################################
 
-rectangularMask <- function (mask) {
+rectangularMaskold <- function (mask) {
     if (ms(mask)) {
-        lapply(mask, rectangularMask)
+        lapply(mask, rectangularMaskold)
     }
     else {
         temp <- expand.grid (x=sort(unique(mask$x)), y=sort(unique(mask$y)))
@@ -183,6 +184,53 @@ rectangularMask <- function (mask) {
         attr(temp, 'area') <-  attr(mask, 'area')
         attr(temp, 'boundingbox') <- attr(mask, 'boundingbox')
         attr(temp, 'OK') <- !is.na(OK)
+        temp
+    }
+}
+############################################################################################
+
+rectangularMask <- function (mask) {
+    if (ms(mask)) {
+        lapply(mask, rectangularMask)
+    }
+    else {
+        # rewritten 2020-11-05
+        sp <- spacing(mask)
+        minx <- min(mask$x)
+        maxx <- max(mask$x)
+        miny <- min(mask$y)
+        maxy <- max(mask$y)
+        nx1 <- round((maxx-minx)/sp)
+        ny1 <- round((maxy-miny)/sp)
+        
+        # build new mask
+        temp <- expand.grid (x = 0:nx1, y = 0:ny1)
+        temp <- sweep(temp*sp, MARGIN = 2, STATS = c(minx,miny), FUN = "+")
+        temp <- read.mask(data = temp, spacing = sp)
+        
+        # which new points occur in old mask?
+        maski <- data.frame(x = round((mask$x-minx)/sp), y = round((mask$y-miny)/sp))
+        maski <- maski$y * (nx1+1) + maski$x
+        OK <- logical(nrow(temp))
+        OK[maski] <- TRUE
+        
+        # add covariates?
+        if (!is.null(covariates(mask))) {
+            covariates(temp) <- covariates(mask)[rep(1,nrow(temp)),,drop = FALSE]
+            covariates(temp)[,] <- NA
+            covariates(temp)[maski,] <- covariates(mask)[,]
+            rownames(covariates(temp)) <- 1:nrow(temp)
+        }
+        
+        # attributes
+        class(temp) <- class(mask)
+        attr(temp, 'type') <- 'user'
+        attr(temp, 'meanSD') <- attr(mask, 'meanSD')   ## same as old mask? cf getMeanSD(mask)
+        attr(temp, 'polygon') <- attr(mask, 'polygon')           ## same as old mask  
+        attr(temp, 'poly.habitat') <- attr(mask, 'poly.habitat') ## same as old mask
+        attr(temp, 'area') <-  attr(mask, 'area')                ## same as old mask
+        attr(temp, 'boundingbox') <- attr(mask, 'boundingbox')   ## same as old mask
+        attr(temp, 'OK') <- OK
         temp
     }
 }

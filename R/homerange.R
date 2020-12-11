@@ -23,7 +23,7 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
         dbarxy    <- function (xy) {
             sqrt(diff(xy$x)^2 + diff(xy$y)^2)
         }
-
+        if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         det <- expanddet(capthist)
         IDfactor <- factor(animalID(capthist, names = TRUE), levels = rownames(capthist))
@@ -157,6 +157,7 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
         MMDMxy <- function (xy) {
             max(dist(cbind(xy$x, xy$y)))
         }
+        if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         det <- expanddet(capthist)
         IDfactor <- factor(animalID(capthist, names = TRUE), levels = rownames(capthist))
@@ -246,6 +247,7 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask 
         MMDMxy    <- function (xy) {
                 max(dist(cbind(xy$x, xy$y)))
         }
+        if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         det <- expanddet(capthist)
         IDfactor <- factor(animalID(capthist, names = TRUE), levels = rownames(capthist))
@@ -324,7 +326,6 @@ RPSV <- function (capthist, CC = FALSE)
             n <- length(x)
             c(n = n-1, ssx = sum(x^2) - (sum(x))^2/n, ssy = sum(y^2) - (sum(y))^2/n)
         }
-        ## 2014-12-04
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         det <- expanddet(capthist)
@@ -415,6 +416,7 @@ ORL <- function (capthist, userdist = NULL, mask = NULL) {
             else
                 max(dist(cbind(xy$x, xy$y)))
         }
+        if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
         det <- expanddet(capthist)
         if (!all(det %in% .localstuff$individualdetectors))

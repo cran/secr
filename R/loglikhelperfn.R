@@ -28,6 +28,7 @@ gethazard <- function (m, binomN, cc, hk, PIA, usge) {
 getpmix <- function(knownclass, PIA, realparval)
 {
     nc <- dim(PIA)[2]
+    # not needed nc <- length(knownclass)   ## 2020-11-04
     k <- dim(PIA)[4]
     nmix <- dim(PIA)[5]
     pmixn <- matrix(1, nrow = nmix, ncol = nc)

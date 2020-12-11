@@ -11,7 +11,7 @@ Factor covariates can give trouble in multi-session models if the levels differ 
 
 \usage{
 
-shareFactorLevels(object, columns = NULL, stringsAsFactors = FALSE)
+shareFactorLevels(object, columns = NULL, stringsAsFactors = TRUE)
 
 }
 

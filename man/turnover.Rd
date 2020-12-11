@@ -72,7 +72,7 @@ sigma.m = 0 corresponds to movemodel = `static'
 
 sigma.m < 0 corresponds to movemodel = `uncorrelated'
 
-If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal) and ``none" (allow centres outside the buffered area).
+If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal), ``normalize'' (truncate kernel and scale probability to 1.0) and ``none" (allow centres outside the buffered area). The ``normalize'' option (new in \pkg{secr} 4.3.3) can take longer as it repeatedly relocates each individual until its destination lies within the bounding box, up to a maximum of 500 attempts.
 
 }
 

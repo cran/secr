@@ -141,7 +141,6 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
     if ('Session' %in% vars) {
        dframe$Session <- insertdim(0:(R-1), 3, dims)
     }
-    
     #--------------------------------------------------------------------------
     ## all autovars should have now been dealt with
     vars <- vars[!vars %in% c('g', 'x', 'y', 'x2', 'y2', 'xy',
@@ -150,6 +149,10 @@ D.designdata <- function (mask, Dmodel, grouplevels, sessionlevels, sessioncov =
     #--------------------------------------------------------------------------
     ## session covariates
     if (!is.null(sessioncov)) {
+        #############################################
+        ## 2020-11-06 convert all character to factor
+        sessioncov <- stringsAsFactors(sessioncov)   
+        #############################################
         found <- names(sessioncov) %in% vars
         if (is.data.frame(sessioncov) & any(found)) {
             found <- names(sessioncov)[found]
