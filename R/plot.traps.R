@@ -41,8 +41,11 @@ plot.traps <- function(x,
             yl <- range(x$y)+buff
         }
         offsety <- ifelse (length(offset)==2, offset[2], offset[1])
-        dcol <- 'red'
-        detpar <- replacedefaults (list(col=dcol, pch=3, cex=0.8), detpar)
+        if (all(detector(x) %in% c('polygon','polygonX')))
+            dcol <- 'white'
+        else 
+            dcol <- 'red'
+        detpar <- replacedefaults (list(col=dcol, pch=3, cex=0.8, fg='red'), detpar)
         txtpar <- replacedefaults (list(col='blue', cex=0.7), txtpar)
         if (is.logical(markvertices))
             markvertices <- markvertices * 2  ## 0 or 2
@@ -101,7 +104,7 @@ plot.traps <- function(x,
             if (all(detector(x) %in% c('polygon','polygonX'))) {
                 templist <- split (x, levels(polyID(x)), prefix='')
                 lapply(templist, function (y)
-                    polygon (y$x, y$y, col=detpar$col, density=0))
+                    polygon (y$x, y$y, col=detpar$col, density=NA, border=detpar$fg))
                 if (markvertices > 0) {
                     lapply(templist, plotvertices)
                 }

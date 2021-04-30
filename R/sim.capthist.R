@@ -134,8 +134,8 @@ sim.capthist <- function (
             }
         }
         #####################################################################
-        ## session-specific detection 2015-04-01
-        if (detectfn %in% c(0:7, 14:19)) {
+        ## session-specific detection 2015-04-01; extended to HPX 2021-03-25
+        if (detectfn %in% c(0:7, 14:20)) {
             df0name <- if (detectfn %in% (0:7)) 'g0' else 'lambda0'
             dfzname <- if (detectfn %in% (5:6)) 'x' else 'z'
             df0 <- expands(detectpar[[df0name]], nsessions, default = NULL)
@@ -169,8 +169,8 @@ sim.capthist <- function (
             ## select session-specific traps if necessary
             trps <- if (ms(traps)) traps[[t]] else traps
 
-            ## session-specific detection parameters
-            if (detectfn %in% c(0:7, 14:19)) {
+            ## session-specific detection parameters; extended to HPX 2021-03-25
+            if (detectfn %in% c(0:7, 14:20)) {
                 detectpar[[df0name]] <- df0[t]
                 detectpar[['sigma']] <- sigma[t]
                 detectpar[[dfzname]] <- dfz[t]
@@ -256,8 +256,8 @@ sim.capthist <- function (
         }
         
         if (any(detector(traps) %in% .localstuff$polydetectors)) {
-           if (!all(detectfn %in% 14:19)) {
-            stop("polygon and transect detectors use hazard detection functions 14:19 (HHN etc.)")
+           if (!all(detectfn %in% 14:20)) {
+            stop("polygon and transect detectors use hazard detection functions 14:20 (HHN etc.)")
            }
         }
 
@@ -283,6 +283,7 @@ sim.capthist <- function (
         ##   17  hazard annular normal
         ##   18  hazard cumulative gamma
         ##   19  hazard variable power
+        ##   20  hazard pixelar 2021-03-25
 
         if (!is.null(usage(traps))) {
             if (!is.null(noccasions)) {
@@ -302,7 +303,10 @@ sim.capthist <- function (
         if (detectfn %in% c(14:16,19))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 1)
         if (detectfn %in% c(17))  defaults <- list(lambda0 = 0.2, sigma = 25, w =10)
         if (detectfn %in% c(18))  defaults <- list(lambda0 = 0.2, sigma = 25, z = 5)
-
+        
+        # 2021-03-25
+        if (detectfn %in% c(20))  defaults <- list(lambda0 = 0.2, sigma = spacing(traps)/2, z = 1)
+        
         if (detectfn %in% c(12,13))  defaults <- list(beta0 = 90, beta1=-0.2,
             sdS = 2, cutval = 10, muN = 40, sdN = 2, sdM = 0, tx = 'identity')
         else defaults <- c(defaults, list(truncate = 1e+10, recapfactor = 1.0))
@@ -319,7 +323,8 @@ sim.capthist <- function (
         
         detectpar <- replacedefaults(defaults, detectpar)
 
-        if (detectfn %in% c(0:7, 14:19)) {
+        # extended to HPX 2021-03-25
+        if (detectfn %in% c(0:7, 14:20)) {
             if (detectfn %in% (0:7)) {
                 g0    <- expandsk(detectpar$g0, s = noccasions, k = ndetector(traps))
                 if (any(detector(traps) %in% .localstuff$countdetectors)) {
@@ -403,8 +408,7 @@ sim.capthist <- function (
 
         ## user-provided distances
         if (is.null(userdist)) {
-            distmat2 <- edist2cpp(as.matrix(traps), as.matrix(popn))
-            ## debug distmat2 <- edist(as.matrix(traps), as.matrix(popn))^2
+            distmat2 <- getdistmat2(traps, popn, NULL, detectfn==20)
         }
         else {
             ## move towards IHP/k simulations
@@ -428,11 +432,14 @@ sim.capthist <- function (
         
         N <- nrow(popn)
         animals <- as.matrix(popn)
-        k <- nrow(traps)
+        #k <- nrow(traps)
+        k <- ndetector(traps)
         dettype <- detectorcode(traps, noccasions = noccasions)
-        ## 2018-02-23 bug fix
-        ## simfunctionname <- paste0('trapping', detector(traps)[1])
-        simfunctionname <- paste0('trapping', detector(traps))
+        HPXpoly <- (detectfn == 20) && any(detector(traps) %in% .localstuff$polydetectors)
+        if (HPXpoly)
+            simfunctionname <- 'trappingproximity'
+        else
+            simfunctionname <- paste0('trapping', detector(traps))
         if (length(simfunctionname)==1 & noccasions>1)
             simfunctionname <- rep(simfunctionname, noccasions)
         if (length(simfunctionname)>1 & length(simfunctionname)!=noccasions)
@@ -442,18 +449,17 @@ sim.capthist <- function (
         detectpar$binomN <- expandbinomN(detectpar$binomN, dettype)
     
         
-        if (detectfn %in% c(0:7, 14:19)) {
+        if (detectfn %in% c(0:7, 14:20)) {
             trappingargs <- list(
             simfunctionname[1],                 # 1
             as.double(df0),                     # 2
             as.double(sigma),                   # 3
             as.double(z),                       # 4
-            as.matrix(traps),                   # 5 
-            as.matrix(distmat2),                # 6
-            as.matrix(usge),                    # 7
-            as.integer(detectfn),               # 8 
-            as.double(truncate^2),              # 9
-            as.integer(detectpar$binomN)        # 10 
+            as.matrix(distmat2),                # 5   assume ntraps x nanimals
+            as.matrix(usge),                    # 6
+            as.integer(detectfn),               # 7 
+            as.double(truncate^2),              # 8
+            as.integer(detectpar$binomN)        # 9 
             )
         }
         ## 'count' includes presence
@@ -462,7 +468,8 @@ sim.capthist <- function (
         ## precede all others
         ## caught[] contains capture sequence for each of N animals
         
-        if (all(detector(traps) %in% c('single','multi','proximity','count', 'capped'))) {
+        if ((all(detector(traps) %in% c('single','multi','proximity','count', 'capped')))
+            || detectfn==20) {
             
             ## BUG IN THIS CODE 2016-10-18 Observations assigned to wrong detectors
             # if (length(unique(detector(traps)))==1) {
@@ -496,7 +503,6 @@ sim.capthist <- function (
             ## external tracking of previous captures is needed to allow single-occasion calls to trappingxxx
             ## functions; I hope this also works with multi-occasion calls (currently disabled)
             lastcapt <- rep(0, N)
-            
             for(s in 1:noccasions)   ## about 25% slower with one occasion at a time
             {
                 sm <- dettype[s] %in% c(-1,0)    # single, multi
@@ -504,8 +510,8 @@ sim.capthist <- function (
                 trappingargs[[1]] <- simfunctionname[s]
                 trappingargs[[2]] <- as.double(df0[s,])
                 trappingargs[[3]] <- as.double(sigma[s,])
-                trappingargs[[7]] <- as.matrix(usge[,s, drop = FALSE])    ## usage on occasion s
-                trappingargs[[10]] <- as.integer(detectpar$binomN[s])
+                trappingargs[[6]] <- as.matrix(usge[,s, drop = FALSE])    ## usage on occasion s
+                trappingargs[[9]] <- as.integer(detectpar$binomN[s])
                 temp <- do.call(simfunctionname[s], trappingargs[-1])
                 stopiferror(temp$resultcode, simfunctionname[s])
                 # if any animals caught...
@@ -525,12 +531,22 @@ sim.capthist <- function (
                         w[cbind(id, occ, trp)] <- temp$value
                         # lastcapt not updated because recapfactor does not apply
                     }
-                }
+                                    }
             }
             ## drop empty histories
             w <- w[apply(w,1,sum)>0,,, drop = FALSE]
             class(w) <- 'capthist'
             traps(w) <- traps
+
+            if (temp$n > 0 && HPXpoly) {
+                ## put XY coordinates in attribute
+                xy(w) <- data.frame(animals[animalID(w, names = TRUE),])
+            }
+            else {
+                xy(w) <- NULL
+            }
+            
+            
         }
         ##-----------------------------------------------------------------------
         else if (detector(traps)[1] %in% c('polygonX','transectX')) {
@@ -584,7 +600,7 @@ sim.capthist <- function (
             }
             ## drop empty histories
             w <- w[apply(w,1,sum)>0,,, drop = FALSE]
-            
+
             class(w) <- 'capthist'  
             traps(w) <- traps
             
@@ -598,7 +614,6 @@ sim.capthist <- function (
             }
             else
                 xy(w) <- NULL
-
             }
         ##-----------------------------------------------------------------------
         else if (detector(traps)[1] %in% c('polygon','transect','telemetry')) {
@@ -768,7 +783,7 @@ sim.capthist <- function (
         if (renumber & (nrow(w)>0)) 
             rownames(w) <- 1:nrow(w)
         else {
-            if (!all(detector(traps) %in% c('single','multi','proximity','count','capped'))) {
+            if (!all(detector(traps) %in% c('single','multi','proximity','count','capped')) && !HPXpoly) {
                 rown <- rownames(popn)[temp$caught > 0]
                 caught <- temp$caught[temp$caught>0]
                 rownames(w) <- rown[order(caught)]

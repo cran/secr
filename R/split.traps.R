@@ -9,8 +9,9 @@
 split.traps <- function (x, f, drop = FALSE, prefix='S', byoccasion = FALSE, ...) {
   if (!inherits(x, 'traps'))
       stop ("argument to split.traps should have class 'traps'")
-  if (ms(x))
+  if (ms(x)) {
       stop ("'split.traps' is not suitable for multi-session traps")
+  }
 
   options(warn=-1)
   f <- factor(f)

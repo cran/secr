@@ -513,10 +513,14 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                 density <- getmaskpar(!object$CL, D, nrow(session.mask), sessnum, 
                                       object$details$unmash, nmash)
                 distmat2 <- getuserdist(session.traps, session.animals, object$details$userdist, sessnum, 
-                                        noneuc[,1], density[,1], object$details$miscparm)
+                    noneuc[,1], density[,1], object$details$miscparm, object$detectfn==20)
             }
             else {
-                distmat2 <- getdistmat2 (session.traps, session.animals, object$details$userdist)
+                distmat2 <- getdistmat2 (
+                    session.traps, 
+                    session.animals, 
+                    object$details$userdist,
+                    object$detectfn == 20)
             }
             ## precompute gk, hk for point detectors
             gkhk0 <- makegkPointcpp (as.integer(object$detectfn),

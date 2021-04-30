@@ -22,6 +22,8 @@
 ## 2018-06-26 stop.at.edge
 ## 2020-11-09 radialexp, radialnorm undocumented movement options
 ## 2020-12-11 "normalize" option for edgemethod; internal 'disperse' function
+## 2021-02-12 "clipandreplace" edgemethod option; clip can be used with constantN
+## 2021-02-13 corrected bug in "normalize" option for edgemethod
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -39,17 +41,9 @@ toroidal.wrap <- function (pop) {
     pop$y <- ifelse (pop$y<ymin, ymax - remainder (ymin - pop$y, yrange), pop$y)
     pop
 }
-inside <- function(pop) {
-    bb <- attr(pop, 'boundingbox')
-    xmin <- min(bb$x)
-    xmax <- max(bb$x)
-    ymin <- min(bb$y)
-    ymax <- max(bb$y)
-    (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
-}
-drop.outside <- function (pop) {
-    subset(pop, inside(pop))
-}
+# drop.outside <- function (pop) {
+#     subset(pop, inside(pop))
+# }
 
 ## Based on 
 ## https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
@@ -159,7 +153,20 @@ tile <- function (popn, method = "reflect") {
 # see main function sim.popn() for application of edge methods
 disperse <- function (newpopn, turnoverpar, t, core, disp) {
     nsurv <- sum(disp)
-    if (turnoverpar$movemodel == 'normal') {
+    if (is.function(turnoverpar$movemodel)) {
+        f <- formals(turnoverpar$movemodel)
+        if (length(f)==2) {
+            a <- turnoverpar$move.a[t]
+            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, a)
+        }
+        else if (length(f)==3) {
+            a <- turnoverpar$move.a[t]
+            b <- turnoverpar$move.b[t]
+            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, a,b)
+        }
+        else stop ("invalid movement function")
+    }
+    else if (turnoverpar$movemodel == 'normal') {
         newpopn[disp,] <- newpopn[disp,] + rnorm (2*nsurv, mean = 0,
             sd = turnoverpar$move.a[t])
     }
@@ -188,8 +195,9 @@ disperse <- function (newpopn, turnoverpar, t, core, disp) {
         newpopn[disp,1] <- newpopn[disp,1] + rnorm(nsurv, mean = 0, sd = alpha)
         newpopn[disp,2] <- newpopn[disp,2] + rnorm(nsurv, mean = 0, sd = alpha)
     }
-    else
+    else {
         warning("unsupported movement model ", turnoverpar$movemodel, " ignored")
+    }
     newpopn
 }
 
@@ -199,7 +207,23 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     covariates = list(sex = c(M = 0.5,F = 0.5)), number.from = 1, Ndist
     = c('poisson','fixed','specified'), nsessions = 1, details = NULL,
     seed = NULL, keep.mask = model2D %in% c('IHP','linear'), Nbuffer = NULL,
+    age = FALSE,
     ...)  {
+    inside <- function(pop) {
+        if (model2D != 'IHP') {
+        bb <- attr(pop, 'boundingbox')
+        xmin <- min(bb$x)
+        xmax <- max(bb$x)
+        ymin <- min(bb$y)
+        ymax <- max(bb$y)
+        (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
+        }
+        else {
+            # assuming core is a mask
+            pointsInPolygon(pop, core)
+        }
+    }
+    
     if (missing(D)) D <- NULL
     model2D <- match.arg(model2D)
     Ndist <- match.arg(Ndist)
@@ -246,7 +270,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ## 2017-06-07 newpopn <- subset.popn(oldpopn, subset=survive)
             
             ## 2019-05-30 c('static','uncorrelated','normal','exponential', 't2D')
-            if (turnoverpar$movemodel == 'uncorrelated') {
+            if (!is.function(turnoverpar$movemodel) &&
+                    turnoverpar$movemodel == 'uncorrelated') {
                 newpopn <- sim.popn(D = D, core = core, buffer = buffer,
                     model2D = model2D, buffertype = buffertype, poly = poly,
                     covariates = covariates, Ndist = 'specified', Nbuffer = nsurv,
@@ -254,54 +279,90 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 row.names(newpopn) <- row.names(oldpopn)[survive]
             }
             else {
-                newpopn <- subset(oldpopn, subset=survive)
-                if (!turnoverpar$movemodel %in% c('static','uncorrelated')) {
+                newpopn <- subset(oldpopn, subset = survive)
+                if (is.function(turnoverpar$movemodel) || 
+                        !turnoverpar$movemodel %in% c('static','uncorrelated')) {
                     if (turnoverpar$move.a[t] > 0) {      ## condition revived 2020-11-09
                         oldposition <- newpopn  ## remember starting position
                         dispersing <- rep(TRUE, nsurv)
                         #-------------------------------------------------------
                         newpopn <- disperse(newpopn, turnoverpar, t, core, dispersing)
                         #-------------------------------------------------------
-                        if (turnoverpar$edgemethod == "wrap")
+                        if (turnoverpar$edgemethod == "wrap") {
                             newpopn <- toroidal.wrap(newpopn)
-                        else if (turnoverpar$edgemethod == "clip") 
-                            newpopn <- drop.outside(newpopn)
-                        else if (turnoverpar$edgemethod == "stop") 
+                        }
+                        else if (turnoverpar$edgemethod %in% c("clip", "clipandreplace")) {
+                            emigrant <- !inside(newpopn)
+                            if (turnoverpar$edgemethod == "clip") {
+                                newpopn <- subset(newpopn, !emigrant)
+                                # new 2021-02-12 to allow constantN with "clip"
+                                nsurv <- nrow(newpopn)
+                            }
+                            # new 2021-02-12 replace each emigrant with an immigrant at the same spot
+                            if (turnoverpar$edgemethod == "clipandreplace") {
+                                nonempopn <- subset(newpopn, !emigrant)
+                                immpopn <- subset(oldposition, emigrant)
+                                nimm <- nrow(immpopn)
+                                rownames(immpopn) <- lastnumber + (1:nimm)
+                                newpopn <- rbind(nonempopn, immpopn, renumber = FALSE)
+                                lastnumber <<- lastnumber + nimm
+                            }
+                        }
+                        else if (turnoverpar$edgemethod == "stop") {
                             newpopn <- stop.at.edge(oldposition, newpopn)
-                        else if (turnoverpar$edgemethod == "reflect") 
+                        }
+                        else if (turnoverpar$edgemethod == "reflect") {
                             newpopn <- reflect(newpopn)
+                        }
                         else if (turnoverpar$edgemethod == "normalize") {
                             dispersing <- !inside(newpopn)
-                            tries <- 0; maxtries <- 500
+                            tries <- 0; maxtries <- 1000
                             while (any(dispersing) && tries <= maxtries) {
                                 newpopn <- disperse(newpopn, turnoverpar, t,
                                     core, dispersing)  
-                                newpopn[dispersing,] <- oldposition[dispersing,]
+                                # order of following rows reversed 2021-02-13
                                 dispersing <- !inside(newpopn)
+                                newpopn[dispersing,] <- oldposition[dispersing,]
                                 tries <- tries+1
                             }
                         }
+                        else if (turnoverpar$edgemethod == "none") {
+                            ## no action, allow outward drift
+                        }
+                        else stop ("edgemethod ", turnoverpar$edgemethod, " not recognised")
                     }
                 }
             }
+            if (age) {
+                covariates(newpopn)$age <- covariates(newpopn)$age + 1
+            }
             gam <- turnoverpar$lambda[t] - turnoverpar$phi[t]
-            if (gam<0)
+            if ((turnoverpar$recrmodel != 'specified') && (gam<0))
                 stop ("invalid gamma in turnover")
-            
             nrecruit <- switch (turnoverpar$recrmodel,
                 constantN = nrow(oldpopn) - nsurv,
                 discrete = discrete(gam * nrow(oldpopn)),
                 binomial = rbinom(1, nrow(oldpopn), gam),
                 poisson = rpois (1, gam * nrow(oldpopn)),
                 multinomial = Nrecruits[t+1],
+                specified = turnoverpar$Nrecruits[t],   # 2021-04-08
                 -1)
-            if (nrecruit<0) stop ("unrecognised recruitment model",turnoverpar$recrmodel)
+            if (nrecruit<0) stop ("unrecognised recruitment model: ",turnoverpar$recrmodel)
             if (nrecruit>0) {
                 recruits <- sim.popn(D = D, core = core, buffer = buffer,
                     model2D = model2D, buffertype = buffertype, poly = poly,
                     covariates = covariates, number.from = lastnumber + 1, 
                     Ndist = 'specified', Nbuffer = nrecruit,
                     nsessions = 1, details = details)
+                # 2021-04-09
+                if (age) {
+                    if (is.null(covariates(recruits))) {
+                        covariates(recruits) <- data.frame(age = rep(0, nrow(recruits))) 
+                    }
+                    else {
+                        covariates(recruits)$age <- rep(0, nrow(recruits))
+                    }
+                }
                 lastnumber <<- lastnumber + nrecruit
                 newpopn <- rbind(newpopn, recruits, renumber = FALSE)
             }
@@ -346,9 +407,10 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         }
         else {
             ## projected population
-            turnoverpar <- list(lambda = NULL, phi = 0.7, movemodel = 'static', sigma.m = 0, 
-                                move.a = NULL, move.b = 1, edgemethod = "wrap",   # wrap = TRUE,
-                                survmodel = 'binomial', recrmodel = 'poisson')
+            turnoverpar <- list(
+                lambda = NULL, phi = 0.7, movemodel = 'static', sigma.m = 0, 
+                move.a = NULL, move.b = 1, edgemethod = "wrap",  
+                survmodel = 'binomial', recrmodel = 'poisson', Nrecruits = 0)
             if (!is.null(details$wrap)) {
                 warning("details option 'wrap' is deprecated; using edgemethod = 'wrap' if TRUE")
                 if (details$wrap) details$edgemethod = 'wrap'
@@ -359,7 +421,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 ## allow legacy input as sigma.m
                 turnoverpar$move.a <- turnoverpar$sigma.m
             }
-            if (turnoverpar$movemodel == 'static' & turnoverpar$move.a != 0) {
+            if (!is.function(turnoverpar$movemodel) &&
+                    turnoverpar$movemodel == 'static' && turnoverpar$move.a != 0) {
                 ## restore default from version < 3.2.1
                 turnoverpar$movemodel <- 'normal'
             }
@@ -370,6 +433,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ## consistent
             turnoverpar$move.a <- expands(turnoverpar$move.a, nsessions)
             turnoverpar$move.b <- expands(turnoverpar$move.b, nsessions)
+            turnoverpar$Nrecruits <- expands(turnoverpar$Nrecruits, nsessions-1)
             MSpopn <- vector(nsessions, mode = 'list')
          
             if (turnoverpar$recrmodel == "multinomial") {
@@ -389,6 +453,13 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 MSpopn[[1]] <- session.popn(1, D, Nbuffer, Ndist)
             }
             lastnumber <- nrow(MSpopn[[1]])
+            # 2021-04-09
+            if (age) {
+                if (is.null(covariates(MSpopn[[1]])))
+                    covariates(MSpopn[[1]]) <- data.frame(age = rep(0,nrow(MSpopn[[1]])))
+                else 
+                    covariates(MSpopn[[1]])$age <- rep(0,nrow(MSpopn[[1]]))
+            }
             for (i in 2:nsessions) {
                 MSpopn[[i]] <- turnover(MSpopn[[i-1]], i-1)
             }
@@ -674,4 +745,3 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         animals
     }
 }
-

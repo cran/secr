@@ -10,11 +10,20 @@
 ## 2011 11 28 user dframe factors now covered
 ## 2015-10-08 'ts'
 ## 2017-12-18 all.levels argument
+## 2021-03-24 fix all.levels = FALSE bug
 ## Create (neutral) design data suitable for 'predict'
+## generic method make.newdata
 ############################################################################################
 
-secr.make.newdata <- function (object, all.levels = FALSE) {
-    
+make.newdata <- function (object, all.levels = FALSE, ...) UseMethod("make.newdata")
+
+make.newdata.default <- function (object, all.levels = FALSE, ...) {
+    cat ('no make.newdata method for objects of class', class(object), '\n')
+}
+
+# secr.make.newdata <- function (object, all.levels = FALSE) {
+make.newdata.secr <- function (object, all.levels = FALSE, ...) {
+        
     # Session treated separately later
     autovars <- c('g','x','y','x2','y2','xy','session',
                   't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')
@@ -116,9 +125,11 @@ secr.make.newdata <- function (object, all.levels = FALSE) {
         basevars <- findvars (basevars, timecov)
         basevars <- findvars (basevars, covariates(traps(capthist)))
         basevars <- findvars (basevars, covariates(mask))
-
+        
         ## revert to first level (original default)
-        if (length(v)>0) {
+        ## 2021-03-24 repaired in 4.3.4
+        for (v in names(basevars)) {
+            # if (length(v)>0) { 
             if (!all.levels & !(v %in% c('session', 'g', 'h2','h3'))) {
                 basevars[[v]] <- basevars[[v]][1] 
             }

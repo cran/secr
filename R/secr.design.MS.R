@@ -1,5 +1,5 @@
 ###############################################################################
-## package 'secr' 4.3
+## package 'secr' 4.4
 ## secr.design.MS.R
 
 ## 2019-12-03 replaced bygroup with CL
@@ -30,8 +30,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ## uses insertdim from utility.R
         ## NOT to be used to add group variables
         ## Does NOT standardize numeric covariates:
-        ##     if (!is.factor(vals)) vals <- scale(vals)
-        
+
         if (is.null(cov) | (length(cov)==0) | (length(vars)==0)) return()
         else {
             found <- ''
@@ -65,10 +64,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                     ## pad on first dimension
                     vals <- lapply(cov, function(x) pad1(x[,variable], dims[dimcov[1]]))
                     vals <- unlist(vals)
-                    ## suppress this check 2016-08-02 
-                    ## see secrgroup hcov post of Ben Augustine
-                    ## if (any(is.na(vals)))
-                    ##    stop ("covariate missing values not allowed")
                     dframe[,variable] <<- insertdim (vals, dimcov, dims)
                 }
             }
@@ -184,7 +179,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     nmix     <- get.nmix(models, capthist, hcov)
     trps    <- traps(capthist)                 # session-specific trap array
     used    <- usage(trps)                     # session-specific usage
-    ## 2014-06-02
     if (ignoreusage) used <- NULL
     zcov    <- covariates(capthist)            # session-specific individual covariates
     trapcov <- covariates(trps)                # session-specific trap covariates
@@ -506,8 +500,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             prevcapt <- function(x) c(FALSE, cumsum(x[-S])>0)
             if (MS) {
                 temp <- lapply(capthist, makek)
-                # temp <- lapply(temp, padarray, c(n,S,K))
-                # bug fixed 2012-09-10
                 temp <- lapply(temp, padarray, c(S,K))
             }
             else temp <- makek(capthist)  # one session

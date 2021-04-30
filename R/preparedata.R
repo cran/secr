@@ -4,23 +4,6 @@
 ###############################################################################
 
 #--------------------------------------------------------------------------------
-# see also getuserdist
-getdistmat2 <- function (traps, mask, userdist) {
-  ## Static distance matrix
-  ## do not use result if detector is one of
-  ## polygonX, polygon, transectX, transect, telemetry
-  m <- nrow(mask)
-  if (any(detector(traps) %in% .localstuff$polydetectors)) {
-    matrix(0, nrow = nrow(traps), ncol = m)
-  }
-  else if (!is.function(userdist)) {
-    edist2cpp(as.matrix(traps), as.matrix(mask))
-  }
-  else {
-    NULL   ## compute dynamically later
-  }
-}
-#--------------------------------------------------------------------------------
 getk <- function(traps) {
   if (!all(detector(traps) %in% .localstuff$polydetectors)) {
     nrow(traps)
@@ -326,7 +309,8 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
         traps   <- traps(capthist)
         dettype <- detectorcode(traps, MLonly = TRUE, noccasions = s)
         binomNcode <- recodebinomN(dettype, details$binomN, telemcode(traps))
-        
+        HPXpoly <- detectfn == 20 && all(detector(traps) %in% .localstuff$polydetectors)
+        if (HPXpoly) binomNcode[] <- -1
         ## k-1 because we have zero-terminated these vectors
         k <- getk(traps)
         K <- if (length(k)>1) length(k)-1 else k
@@ -343,8 +327,8 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
         knownclass <- getknownclass(capthist, details$nmix, hcov)
         
         ## get static distance matrix
-        distmat2 <- getdistmat2(traps, mask, details$userdist)
-        
+        distmat2 <- getdistmat2(traps, mask, details$userdist, detectfn == 20)
+
         n.distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
         
         signal <- getsignal (dettype, capthist, details$tx)
@@ -373,38 +357,39 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
         
         #####################################################################
         ## unclear whether this is correct wrt groups
-        if (all(detector(traps) %in% .localstuff$simpledetectors)) {
+        if (all(detector(traps) %in% .localstuff$simpledetectors) || HPXpoly) {
             logmult <- logmultinom(capthist, group.factor(capthist, groups))
         }
         else {
             logmult <- 0
         }
         #####################################################################
-    
-    data <- list(
-      CH = CH,
-      CH0 = CH0,
-      nc = nc,
-      s = s,
-      k = k,
-      K = K,
-      cumk = cumk,
-      m = m,
-      traps = traps,
-      dettype = dettype,
-      binomNcode = binomNcode,
-      usge = usge,
-      mask = mask,
-      distmat2 = distmat2,
-      knownclass = knownclass,
-      n.distrib = n.distrib,
-      MRdata = MRdata,
-      signal = signal,
-      xy = xy,
-      grp = grp,
-      maskusage = maskusage,
-      logmult = logmult
-    )
+        
+        data <- list(
+            CH = CH,
+            CH0 = CH0,
+            nc = nc,
+            s = s,
+            k = k,
+            K = K,
+            cumk = cumk,
+            m = m,
+            traps = traps,
+            dettype = dettype,
+            binomNcode = binomNcode,
+            usge = usge,
+            mask = mask,
+            distmat2 = distmat2,
+            knownclass = knownclass,
+            n.distrib = n.distrib,
+            MRdata = MRdata,
+            signal = signal,
+            xy = xy,
+            grp = grp,
+            maskusage = maskusage,
+            logmult = logmult,
+            HPXpoly = HPXpoly
+        )
     if (aslist) list(data=data)
     else data
     #####################################################################

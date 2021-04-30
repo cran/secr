@@ -99,7 +99,10 @@ plot.secr <- function (x, newdata = NULL, add = FALSE,
                 ## delta method variance of g()
 
                 grad <- matrix(nrow = length(xval), ncol = length(x$fit$par))  ## beta pars
-                if (is.null(newdata)) newdata <- secr.make.newdata (x)
+                if (is.null(newdata)) {
+                    # newdata <- secr.make.newdata (x)
+                    newdata <- make.newdata (x)
+                }
                 parnamvec <- parnames(x$detectfn)
                 ## 2019-01-25 added beta0
                 if (!parnamvec[1] %in% c('g0','lambda0','beta0'))

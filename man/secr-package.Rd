@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 4.3.3\cr
-Date: \tab 2020-12-11\cr
+Version: \tab 4.4.1\cr
+Date: \tab 2021-05-01\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -88,7 +88,7 @@ intensity, and other characteristics
 
 The analyses in \pkg{secr} extend those available in the software
 Density (see
-\href{https://www.otago.ac.nz/density}{www.otago.ac.nz/density/}
+\href{https://www.otago.ac.nz/density/}{www.otago.ac.nz/density/}
 for the most recent version of Density).  Help is available on the
 `DENSITY | secr' forum at
 \href{http://www.phidot.org/forum/}{www.phidot.org} and

@@ -660,8 +660,9 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         }
 
         ## 19
-        rownamesOK <- !any(duplicated(rownames(object))) &  
-            !is.null(rownames(object)) 
+        ## 2021-03-03 added condition so OK when no rows 
+        rownamesOK <- (!any(duplicated(rownames(object))) &&  
+            !is.null(rownames(object))) || (nrow(object)>0) 
         if (!is.null(rownames(object)))
             rownamesOK <- rownamesOK & !any(is.na(rownames(object)))
 

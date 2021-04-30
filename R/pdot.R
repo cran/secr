@@ -95,7 +95,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     if (any(detector(traps) %in% c('polygon','polygonX','transect', 'transectX'))) {
         if (!is.null(userdist))
             stop("userdist incompatible with polygon-like detectors")
-        if (!(detectfn %in% 14:19))
+        if (!(detectfn %in% 14:20))
             stop("pdot requires hazard detectfn for polygon-type detectors")
         k <- table(polyID(traps))   ## also serves transectID
         K <- length(k)              ## number of polygons/transects
@@ -120,7 +120,7 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     }
     else {
       ## distmat2 <- getdistmat2 (traps, X, userdist)
-      distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, miscparm)
+      distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, miscparm, detectfn == 20)
       #-------------------------------------------------------------
       pdotpointcpp(
         as.matrix(X),

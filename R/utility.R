@@ -11,8 +11,9 @@
 ## 2020-01-26 selectCHsession
 ## 2020-02-21 secr 4.2.0
 ## 2020-05-15 stringsAsFactors function
-## 2020-07-14 secr 4.3.0
+## 2020-07-14 secr 4.3.0 distmat
 ## 2020-09-05 getknownclass factor bug fixed
+## 2021-04-25 4.4.0
 #######################################################################################
 
 # Global variables in namespace
@@ -21,7 +22,7 @@
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
-##.localstuff$packageType <- ' pre-release'
+#.localstuff$packageType <- ' pre-release'
 .localstuff$packageType <- ''
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
     'polygonX', 'transectX', 'signal', 'polygon', 'transect', 
@@ -34,7 +35,6 @@
     'signal', 'signalnoise', 'unmarked','presence','capped')
 .localstuff$polydetectors <- c('polygon','transect','polygonX','transectX')
 .localstuff$exclusivedetectors <- c('single','multi','polygonX','transectX')
-## 'signal' is not a count detector 2011-02-01
 .localstuff$countdetectors <- c('count','polygon','transect','unmarked','telemetry')
 .localstuff$iter <- 0   ## counter 1
 .localstuff$iter2 <- 0  ## counter 2
@@ -58,11 +58,12 @@
       'hazard exponential',
       'hazard annular normal',
       'hazard cumulative gamma',
-      'hazard variable power')
+      'hazard variable power',
+      'hazard pixelar')
 
 .localstuff$DFN <- c('HN', 'HR', 'EX', 'CHN', 'UN', 'WEX', 'ANN', 'CLN', 'CG',
                      'BSS', 'SS', 'SSS', 'SN', 'SNS',
-                     'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP')
+                     'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP','HPX')
 
 .localstuff$learnedresponses <- c('b', 'bk', 'B', 'k', 'Bk')   ## Bk added 2020-02-26
 
@@ -100,15 +101,15 @@ parnames <- function (detectfn) {
         c('lambda0','sigma','w'),
         c('lambda0','sigma','z'),
         c('lambda0','sigma','z'),
-        c('g0','sigma')    ## 20
+        c('lambda0')    ## 20
     )
 }
 getdfn <- function (detectfn) {
     switch (detectfn+1, HN, HR, EX, CHN, UN, WEX, ANN, CLN, CG, BSS, SS, SSS,
-                       SN, SNS, HHN, HHR, HEX, HAN, HCG, HVP)
+                       SN, SNS, HHN, HHR, HEX, HAN, HCG, HVP, HPX)
 }
 
-valid.detectfn <- function (detectfn, valid = c(0:3,5:19)) {
+valid.detectfn <- function (detectfn, valid = c(0:3,5:19, 20)) {
 # exclude 4 uniform: too numerically flakey
     if (is.null(detectfn))
         stop ("requires 'detectfn'")
@@ -179,7 +180,8 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
         c('lambda0','sigma'),      # 16 hazard exponential
         c('lambda0','sigma','w'),  # 17
         c('lambda0','sigma','z'),  # 18
-        c('lambda0','sigma','z'))  # 19
+        c('lambda0','sigma','z'),  # 19
+        c('lambda0','sigma'))      # 20 hazard pixelar 2021-03-25    
 
     if (details$param %in% c(2,6))
         pnames[1] <- 'esa'
@@ -772,6 +774,11 @@ HVP <- function (r, pars, cutval) {
     lambda0 <- pars[1]; sigma <- pars[2]; z <- pars[3]
     1 - exp(-lambda0 * exp(-(r/sigma)^z))
 }
+HPX <- function (r, pars, cutval) {
+    g0 <- 1-exp(-pars[1])
+    radius <- pars[2]
+    ifelse (r<=radius, g0, 0)  # circular, not square! crude approx
+}
 
 ############################################################################################
 
@@ -797,6 +804,26 @@ gradient <- function (pars, fun, eps=0.001, ...)
 }
 ############################################################################################
 
+distancetopoly <- function (X, traps) {
+    ## X should be 2-column dataframe, mask, matrix or similar
+    ## with x coord in col 1 and y coor in col 2
+    
+    X <- matrix(unlist(X), ncol = 2)
+    nxy <- nrow(X)
+    detecttype <- detector(traps)
+    detecttype <- ifelse (is.null(detecttype), "", detecttype)
+    
+    if (!all(detecttype %in% c('polygon', 'polygonX')))
+        stop("distancetopoly is for polygon detectors only")
+    if (!requireNamespace('rgeos', quietly = TRUE))
+        stop("distancetopoly requires rgeos")
+    trps <- split(traps, polyID(traps))
+    polys <- lapply(trps, boundarytoSP)
+    xy <- sp::SpatialPoints(X)
+    dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
+    matrix(unlist(dlist), ncol = length(dlist))
+}
+    
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
@@ -1602,13 +1629,13 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
 ############################################################################################
 
 edist <- function (xy1, xy2) {
-  nr <- nrow(xy1)
-  nc <- nrow(xy2)
-  x1 <- matrix(xy1[,1], nr, nc)
-  x2 <- matrix(xy2[,1], nr, nc, byrow=T)
-  y1 <- matrix(xy1[,2], nr, nc)
-  y2 <- matrix(xy2[,2], nr, nc, byrow=T)
-  sqrt((x1-x2)^2 + (y1-y2)^2)
+    nr <- nrow(xy1)
+    nc <- nrow(xy2)
+    x1 <- matrix(xy1[,1], nr, nc)
+    x2 <- matrix(xy2[,1], nr, nc, byrow=T)
+    y1 <- matrix(xy1[,2], nr, nc)
+    y2 <- matrix(xy2[,2], nr, nc, byrow=T)
+    sqrt((x1-x2)^2 + (y1-y2)^2)
 }
 
 ############################################################################################
@@ -1820,6 +1847,7 @@ addzerodf <- function (df, oldCH, sess) {
         df0 <- expand.grid(newID = rownames(oldCH)[allzero], newocc = NA,
                            newtrap = trap(oldCH)[1], alive = TRUE, sess = sess,
                            stringsAsFactors = FALSE)
+        df$x <- NULL; df$y <- NULL  ## 2021-04-08
         df <- rbind(df,df0)
         if (!is.null(xy(oldCH))) {
             df$x <- c(xy(oldCH)$x, rep(NA, naz))
@@ -1966,11 +1994,16 @@ shareFactorLevels <- function (object, columns = NULL, stringsAsFactors = TRUE) 
         }
     }
     else {
-        if (stringsAsFactors) {
-            if (is.null(columns)) {
-                columns <- 1:ncol(object)
+        # modified 2021-04-27 to apply to covariates, not object itself
+        if (!is.null(covariates(object))) {
+            if (stringsAsFactors) {
+                df <- covariates(object)
+                if (is.null(columns)) {
+                    columns <- 1:ncol(df)
+                }
+                df[,columns] <- stringsAsFactors(df[,columns, drop = FALSE])
+                covariates(object) <- df
             }
-            object[,columns] <- stringsAsFactors(object[,columns, drop = FALSE])
         }
     }
     object
@@ -2167,3 +2200,41 @@ stringsAsFactors <- function (DF) {
     DF
 }
 ##############################################################################
+
+# see also getuserdist in loglikhelperfn.R
+# 2021-03-30 moved from preparedata.R 
+# 2021-03-30 integrate HPX 
+
+getdistmat2 <- function (traps, mask, userdist, HPX = FALSE) {
+    ## Static distance matrix
+    if (is.function(userdist)) {
+        NULL   ## compute dynamically later
+    }
+    else {
+        if (HPX) {
+            if (any(detector(traps) %in% .localstuff$polydetectors)) {
+                trps <- split(traps, polyID(traps))
+                inside <- t(sapply(trps, pointsInPolygon, xy = mask))
+                d2 <- 1-inside      # 0 inside, 1 outside
+                d2[d2>0] <- 1e10    # 0 inside, 1e10 outside
+                d2
+            }
+            else {
+                # maximum of squared distance in x- or y- directions
+                xydist2cpp(as.matrix(traps), as.matrix(mask))
+            }
+        }
+        else {
+            if (any(detector(traps) %in% .localstuff$polydetectors)) {
+                ## do not use result if detector is one of
+                ## polygonX, polygon, transectX, transect, telemetry
+                matrix(0, nrow = nrow(traps), ncol = nrow(mask))
+            }
+            else {
+                # Euclidean distance
+                edist2cpp(as.matrix(traps), as.matrix(mask))
+            }
+        }
+    }
+}
+#--------------------------------------------------------------------------------

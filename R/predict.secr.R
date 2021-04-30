@@ -9,6 +9,7 @@
 ## 2017-11-16 secr.lpredictor in utility.R: variances & covariances for fixedbeta coef set to zero
 ## 2017-12-18 dots argument passed to secr.make.newdata
 ## 2018-02-23 revamp pmix code
+## 2021-04-25 make.newdata method
 
 ############################################################################################
 predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("response", "link"), se.fit = TRUE,
@@ -20,9 +21,13 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
     }
     type <- match.arg(type)
 
-    if (is.null(newdata)) newdata <- secr.make.newdata (object, ...)
-    if (is.null(realnames))
+    if (is.null(newdata)) {
+      # newdata <- secr.make.newdata (object, ...)
+      newdata <- make.newdata (object, ...)
+    }
+    if (is.null(realnames)) {
         realnames <- object$realnames
+    }
     else {
         if (!all(realnames %in% object$realnames))
             stop ("realnames not in fitted model object")

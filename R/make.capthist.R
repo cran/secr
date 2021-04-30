@@ -52,7 +52,6 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         nsession <- length(capturelist)
         traplist <- inherits(traps, 'list')
         occvector <- length(noccasions)>1
-
         if (traplist & (length(traps) != nsession))
             stop ("multi-session 'traps' list does not match 'captures'")
         if (occvector & (length(noccasions) != nsession))
@@ -88,7 +87,9 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         ## sort by session, animal & occasion, retaining original order otherwise
         captures <- captures[order(captures[,1], captures[,2], captures[,3]),]
         if (any(detector(traps) %in% .localstuff$exclusivedetectors)) {
-            repeated <- duplicated(paste0(captures[,1],captures[,2],captures[,3]))
+            ## repeated <- duplicated(paste0(captures[,1],captures[,2],captures[,3]))
+            ## 2021-01-30 bug fix from Richard Glennie
+            repeated <- duplicated(paste(captures[,1], captures[,2], captures[,3], sep = "."))
             if (any(repeated)) {
                 if (length(detector(traps)) > 1)
                     occasiondetector <- detector(traps)[abs(captures[,3])]

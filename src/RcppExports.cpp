@@ -536,97 +536,92 @@ BEGIN_RCPP
 END_RCPP
 }
 // trappingsingle
-List trappingsingle(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& traps, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
-RcppExport SEXP _secr_trappingsingle(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP trapsSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
+List trappingsingle(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
+RcppExport SEXP _secr_trappingsingle(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector& >::type g0(g0SEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type traps(trapsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type dist2(dist2SEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
     Rcpp::traits::input_parameter< const int >::type fn(fnSEXP);
     Rcpp::traits::input_parameter< const double >::type w2(w2SEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
-    rcpp_result_gen = Rcpp::wrap(trappingsingle(g0, sigma, z, traps, dist2, Tsk, fn, w2, binomN));
+    rcpp_result_gen = Rcpp::wrap(trappingsingle(g0, sigma, z, dist2, Tsk, fn, w2, binomN));
     return rcpp_result_gen;
 END_RCPP
 }
 // trappingmulti
-List trappingmulti(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& traps, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
-RcppExport SEXP _secr_trappingmulti(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP trapsSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
+List trappingmulti(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
+RcppExport SEXP _secr_trappingmulti(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector& >::type g0(g0SEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type traps(trapsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type dist2(dist2SEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
     Rcpp::traits::input_parameter< const int >::type fn(fnSEXP);
     Rcpp::traits::input_parameter< const double >::type w2(w2SEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
-    rcpp_result_gen = Rcpp::wrap(trappingmulti(g0, sigma, z, traps, dist2, Tsk, fn, w2, binomN));
+    rcpp_result_gen = Rcpp::wrap(trappingmulti(g0, sigma, z, dist2, Tsk, fn, w2, binomN));
     return rcpp_result_gen;
 END_RCPP
 }
 // trappingcapped
-List trappingcapped(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& traps, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
-RcppExport SEXP _secr_trappingcapped(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP trapsSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
+List trappingcapped(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
+RcppExport SEXP _secr_trappingcapped(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector& >::type g0(g0SEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type traps(trapsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type dist2(dist2SEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
     Rcpp::traits::input_parameter< const int >::type fn(fnSEXP);
     Rcpp::traits::input_parameter< const double >::type w2(w2SEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
-    rcpp_result_gen = Rcpp::wrap(trappingcapped(g0, sigma, z, traps, dist2, Tsk, fn, w2, binomN));
+    rcpp_result_gen = Rcpp::wrap(trappingcapped(g0, sigma, z, dist2, Tsk, fn, w2, binomN));
     return rcpp_result_gen;
 END_RCPP
 }
 // trappingproximity
-List trappingproximity(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& traps, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
-RcppExport SEXP _secr_trappingproximity(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP trapsSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
+List trappingproximity(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
+RcppExport SEXP _secr_trappingproximity(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector& >::type g0(g0SEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type traps(trapsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type dist2(dist2SEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
     Rcpp::traits::input_parameter< const int >::type fn(fnSEXP);
     Rcpp::traits::input_parameter< const double >::type w2(w2SEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
-    rcpp_result_gen = Rcpp::wrap(trappingproximity(g0, sigma, z, traps, dist2, Tsk, fn, w2, binomN));
+    rcpp_result_gen = Rcpp::wrap(trappingproximity(g0, sigma, z, dist2, Tsk, fn, w2, binomN));
     return rcpp_result_gen;
 END_RCPP
 }
 // trappingcount
-List trappingcount(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& traps, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
-RcppExport SEXP _secr_trappingcount(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP trapsSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
+List trappingcount(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN);
+RcppExport SEXP _secr_trappingcount(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const NumericVector& >::type g0(g0SEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type sigma(sigmaSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type z(zSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type traps(trapsSEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type dist2(dist2SEXP);
     Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
     Rcpp::traits::input_parameter< const int >::type fn(fnSEXP);
     Rcpp::traits::input_parameter< const double >::type w2(w2SEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
-    rcpp_result_gen = Rcpp::wrap(trappingcount(g0, sigma, z, traps, dist2, Tsk, fn, w2, binomN));
+    rcpp_result_gen = Rcpp::wrap(trappingcount(g0, sigma, z, dist2, Tsk, fn, w2, binomN));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -769,6 +764,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// xydist2cpp
+NumericMatrix xydist2cpp(const NumericMatrix& A1, const NumericMatrix& A2);
+RcppExport SEXP _secr_xydist2cpp(SEXP A1SEXP, SEXP A2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type A1(A1SEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type A2(A2SEXP);
+    rcpp_result_gen = Rcpp::wrap(xydist2cpp(A1, A2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // nearestcpp
 List nearestcpp(const NumericMatrix xy, const NumericMatrix traps);
 RcppExport SEXP _secr_nearestcpp(SEXP xySEXP, SEXP trapsSEXP) {
@@ -822,11 +829,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_secr_simdetectpointcpp", (DL_FUNC) &_secr_simdetectpointcpp, 16},
     {"_secr_simdetectpolycpp", (DL_FUNC) &_secr_simdetectpolycpp, 17},
     {"_secr_simdetectsignalcpp", (DL_FUNC) &_secr_simdetectsignalcpp, 13},
-    {"_secr_trappingsingle", (DL_FUNC) &_secr_trappingsingle, 9},
-    {"_secr_trappingmulti", (DL_FUNC) &_secr_trappingmulti, 9},
-    {"_secr_trappingcapped", (DL_FUNC) &_secr_trappingcapped, 9},
-    {"_secr_trappingproximity", (DL_FUNC) &_secr_trappingproximity, 9},
-    {"_secr_trappingcount", (DL_FUNC) &_secr_trappingcount, 9},
+    {"_secr_trappingsingle", (DL_FUNC) &_secr_trappingsingle, 8},
+    {"_secr_trappingmulti", (DL_FUNC) &_secr_trappingmulti, 8},
+    {"_secr_trappingcapped", (DL_FUNC) &_secr_trappingcapped, 8},
+    {"_secr_trappingproximity", (DL_FUNC) &_secr_trappingproximity, 8},
+    {"_secr_trappingcount", (DL_FUNC) &_secr_trappingcount, 8},
     {"_secr_trappingpolygon", (DL_FUNC) &_secr_trappingpolygon, 12},
     {"_secr_trappingtransect", (DL_FUNC) &_secr_trappingtransect, 12},
     {"_secr_trappingpolygonX", (DL_FUNC) &_secr_trappingpolygonX, 11},
@@ -834,6 +841,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_secr_trappingsignal", (DL_FUNC) &_secr_trappingsignal, 12},
     {"_secr_trappingtelemetry", (DL_FUNC) &_secr_trappingtelemetry, 10},
     {"_secr_edist2cpp", (DL_FUNC) &_secr_edist2cpp, 2},
+    {"_secr_xydist2cpp", (DL_FUNC) &_secr_xydist2cpp, 2},
     {"_secr_nearestcpp", (DL_FUNC) &_secr_nearestcpp, 2},
     {"_secr_insidecpp", (DL_FUNC) &_secr_insidecpp, 4},
     {NULL, NULL, 0}

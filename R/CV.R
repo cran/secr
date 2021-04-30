@@ -62,13 +62,15 @@ CVa <- function (object, sessnum = 1, ...) {
     pred <- predict(object, ...)
     param <- row.names(pred[[1]])
     if (!('pmix' %in% param))
-        stop ("pmix not found")
+        stop ("pmix not found; CVa is for mixture models with fitted pmix parameter")
     nmix <- object$details$nmix
     if ((nmix == 1) | (length(pred) != nmix))
         stop ("requires 2- or 3-class mixture")
     trps <- traps(capthists)
     binomN <- getbinomN(binomN, detector(trps))
-    dpar <-  detectpar(object, sessnum=sessnum, ..., byclass = TRUE)
+    # temporary bug fix 2021-01-25
+    # dpar <-  detectpar(object, sessnum=sessnum, ..., byclass = TRUE)
+    dpar <-  detectpar(object, ..., byclass = TRUE)
     a1 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[1]],
                noccasions = ncol(capthists), binomN, ncores = 1)
     a2 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[2]],

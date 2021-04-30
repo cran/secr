@@ -26,7 +26,6 @@ List trappingsingle (
     const NumericVector &g0,        // Parameter : detection magnitude  
     const NumericVector &sigma,     // Parameter : detection scale 
     const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &traps,     // x,y locations of traps (first x, then y)  
     const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
     const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
     const int    fn,               // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
@@ -36,8 +35,8 @@ List trappingsingle (
 {
 
   int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = traps.nrow();  // number of traps 
-  int    N = dist2.ncol(); // number of animals 
+  int    kk = dist2.nrow();  // number of traps 
+  int    N  = dist2.ncol();  // number of animals 
   
   // return values
   std::vector<int> lastcapt(N);  // occasion of last detection; 0 if none 
@@ -152,7 +151,6 @@ List trappingmulti (
     const NumericVector &g0,        // Parameter : detection magnitude  
     const NumericVector &sigma,     // Parameter : detection scale 
     const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &traps,     // x,y locations of traps (first x, then y)  
     const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
     const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
     const int    fn,        // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
@@ -162,8 +160,8 @@ List trappingmulti (
   
 {
   int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = traps.nrow();  // number of traps 
-  int    N = dist2.ncol();   // number of animals 
+  int    kk = dist2.nrow();  // number of traps 
+  int    N  = dist2.ncol();   // number of animals 
 
   // return values
   std::vector<int> lastcapt(N);  // occasion of last detection; 0 if none 
@@ -242,7 +240,6 @@ List trappingcapped (
     const NumericVector &g0,        // Parameter : detection magnitude  
     const NumericVector &sigma,     // Parameter : detection scale 
     const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &traps,     // x,y locations of traps (first x, then y)  
     const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
     const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
     const int    fn,        // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
@@ -252,8 +249,8 @@ List trappingcapped (
   
 {
   int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = traps.nrow();  // number of traps 
-  int    N = dist2.ncol();   // number of animals 
+  int    kk = dist2.nrow();  // number of traps 
+  int    N  = dist2.ncol();   // number of animals 
 
   // return values
   std::vector<int> caught(N);    // caught in session 
@@ -325,7 +322,6 @@ List trappingproximity (
     const NumericVector &g0,        // Parameter : detection magnitude  
     const NumericVector &sigma,     // Parameter : detection scale 
     const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &traps,     // x,y locations of traps (first x, then y)  
     const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
     const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
     const int    fn,            // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
@@ -343,8 +339,8 @@ List trappingproximity (
   double Tski;
   
   int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = traps.nrow();  // number of traps 
-  int    N = dist2.ncol();   // number of animals 
+  int    kk = dist2.nrow();  // number of traps 
+  int    N  = dist2.ncol();   // number of animals 
 
   // return values
   std::vector<int> caught(N);       // caught in session 
@@ -362,6 +358,7 @@ List trappingproximity (
           gsb[1] = sigma[si];
           gsb[2] = z[s];
           theta = pfnS(fn, dist2(k, i), gsb, miscparm, w2); 
+
           if (theta>0) {
             count = rcount (1, theta, Tski);
             if (count>0)
@@ -391,7 +388,6 @@ List trappingcount (
     const NumericVector &g0,        // Parameter : detection magnitude  
     const NumericVector &sigma,     // Parameter : detection scale 
     const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &traps,     // x,y locations of traps (first x, then y)  
     const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
     const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
     const int    fn,        // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
@@ -401,8 +397,8 @@ List trappingcount (
   
 {
   int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = traps.nrow();  // number of traps 
-  int    N = dist2.ncol();   // number of animals 
+  int    kk = dist2.nrow();  // number of traps 
+  int    N  = dist2.ncol();  // number of animals 
 
   // return values
   std::vector<int> caught(N);    // caught in session 
@@ -645,7 +641,6 @@ List trappingtransect (
   double *workXY;
   int    *sortorder;
   double *sortkey;
-  // double *ex;
   double H;
   double Tski;
   
@@ -1129,7 +1124,7 @@ List trappingsignal (
   
   int    ss = Tsk.ncol();    // number of occasions 
   int    kk = traps.nrow();  // number of detectors
-  int    N = animals.nrow(); // number of animals 
+  int    N  = animals.nrow(); // number of animals 
   
   int maxdet = N * ss * kk;
   std::vector<int> caught(N);    // caught in session 

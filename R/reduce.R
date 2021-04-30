@@ -74,24 +74,24 @@ collapseocc <- function (newoccasions, inimatrix) {
 #############################################################################################################
 
 reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = NULL, rename = FALSE,
-                          ...) {
+    newxy = c("mean", "first"), ...) {
     if (ms(object)) {
         out <- lapply(object, reduce, newtraps = newtraps, newoccasions = newoccasions, span = span, rename = rename,
-                      ...)
+            newxy = newxy, ...)
         class(out) <- class(object)
         out
     }
     else {
         if (!inherits(object, 'traps'))
             stop ("requires traps object")
-
+        newxy <- match.arg(newxy)
         splitfactor <- 1:ndetector(object)    # default to status quo
 
         #############################################################
         if (is.null(span) & is.null(newtraps)) {
-            newxy <- object
+            newcoord <- object
             newtrapnames <- levels(polyID(object))
-            attr(newxy, 'newtrap') <- newtrapnames
+            attr(newcoord, 'newtrap') <- newtrapnames
         }
         else {
             if (!all(detector(object) %in% .localstuff$pointdetectors))
@@ -129,21 +129,25 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
             splitfactor[] <- 0
             splitfactor[unlist(newtraps)] <- g             ## levels are indices of groups 1, 2,...
             splitfactor <- factor(splitfactor)
-
             grouped <- split.data.frame(object, splitfactor) ## otherwise calls split.traps
             ## or could use for usage and cov below and save repeat splitting...
             if (any (splitfactor == 0)) grouped <- grouped[-1]  ## drop unwanted traps
             names(grouped) <- newtrapnames
-            grouped <- lapply(grouped, function(df) apply(df,2,mean))
-            newxy <- do.call(rbind, grouped)
-            newxy <- as.data.frame(newxy)
-            class (newxy)   <- c('traps', 'data.frame')
+            if (newxy == 'mean') {
+                grouped <- lapply(grouped, function(df) apply(df,2,mean))
+            }
+            else {
+                grouped <- lapply(grouped, '[', 1,)   ## 2021-04-14
+            }
+            newcoord <- do.call(rbind, grouped)
+            newcoord <- as.data.frame(newcoord)
+            class (newcoord)   <- c('traps', 'data.frame')
 
-            sp <- spacing(newxy, recalculate = TRUE)
-            if (!is.null(sp)) spacing(newxy) <- sp
+            sp <- spacing(newcoord, recalculate = TRUE)
+            if (!is.null(sp)) spacing(newcoord) <- sp
             temp <- as.numeric(levels(splitfactor)[splitfactor])
             temp[temp==0] <- NA
-            attr(newxy, 'newtrap') <- temp
+            attr(newcoord, 'newtrap') <- temp
 
         }
 
@@ -166,7 +170,6 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
                     tempdet[1]
                 }
             }
-            ##detector(newxy) <- sapply(newoccasions, validdet)
             newdetector <- sapply(newoccasions, validdet)
 
             ## return one markocc per new occasion
@@ -177,7 +180,6 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
                         stop("cannot combine occasions with differing markocc code")
                     tempmocc[1]
                 }
-                ## markocc(newxy) <- sapply(newoccasions, validmocc)
                 newmarkocc <- sapply(newoccasions, validmocc)
             }
         }
@@ -220,26 +222,26 @@ reduce.traps <- function (object, newtraps = NULL, newoccasions = NULL, span = N
                     warning("covariates vary within groups; using only first")
                 temp <- lapply(covlist, head, 1)
                 temp <- do.call(rbind, temp)
-                covariates(newxy) <- temp
+                covariates(newcoord) <- temp
                 if (!is.null(usage(object)))
-                    covariates(newxy) <- cbind(covariates(newxy), daily)
+                    covariates(newcoord) <- cbind(covariates(newcoord), daily)
                 else
-                    covariates(newxy)$combined <- sapply(newtraps, length)
+                    covariates(newcoord)$combined <- sapply(newtraps, length)
             }
             else {  ## new covariate dataframe
                 if (!is.null(usage(object)))
-                    covariates(newxy) <- daily
+                    covariates(newcoord) <- daily
                 else
-                    covariates(newxy) <- data.frame(combined = sapply(newtraps, length))
+                    covariates(newcoord) <- data.frame(combined = sapply(newtraps, length))
             }
         }
         #############################################################
 
-        markocc(newxy)  <- NULL   ## to avoid clash in next line; replaced below
-        usage(newxy)    <- newusage
-        detector(newxy) <- newdetector
-        markocc(newxy)  <- newmarkocc
-        newxy
+        markocc(newcoord)  <- NULL   ## to avoid clash in next line; replaced below
+        usage(newcoord)    <- newusage
+        detector(newcoord) <- newdetector
+        markocc(newcoord)  <- newmarkocc
+        newcoord
     }
 }
 #############################################################################################################
@@ -320,6 +322,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
     #----------------------------------------------------------------------------
 
     # main line
+    
     if (ms(object)) {
         if (is.null(sessions)) sessions <- 1:length(object)
         temp <- lapply (object[sessions], reduce,
@@ -507,12 +510,15 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         session(tempnew) <- session(object)
         attr(tempnew, 'n.mash') <- attr(object, 'n.mash')
         attr(tempnew, 'centres') <- attr(object, 'centres')
-        if ((inputdetector %in% polygons) & !(outputdetector %in% polygons))
+        if (outputdetector == 'nonspatial') {
+            # NULL   2021-03-31
+        }
+        else if ((inputdetector %in% polygons) & !(outputdetector %in% polygons))
             traps(tempnew) <- poly2point(trps)
         else
             if ((inputdetector %in% transects) & !(outputdetector %in% transects))
                 traps(tempnew) <- transect2point(trps)
-        else if (outputdetector != 'nonspatial')
+        else 
             traps(tempnew) <- trps
         if (outputdetector != 'nonspatial') 
             detector(traps(tempnew)) <- outputdetector

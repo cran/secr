@@ -95,7 +95,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     nnewocc <- sum(nocc)
     ## cumulative number of preceding occasions
     before <- c(0, cumsum(nocc)[-nsession])
-
     ##------------------------------------------------------------------
     ## combine capthist as one long dataframe
     df <- lapply(1:nsession, onesession)
@@ -175,7 +174,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     else {
         sametrp <- FALSE
     }
-    
     ##------------------------------------------------------------------
     ## ensure retain all occasions
     df$newocc <- factor(df$newocc, levels = 1:nnewocc)
@@ -201,7 +199,6 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
     # alivesign[is.na(alivesign)] <- TRUE
     # alivesign <- alivesign * 2 - 1
     # tempnew <- tempnew * alivesign
-
     ##------------------------------------------------------------------
     ## pile on the attributes...
     class(tempnew) <- 'capthist'

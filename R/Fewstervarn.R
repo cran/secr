@@ -146,7 +146,7 @@ derivedSystematic <- function ( object, xy, design = list(),
     ## or
     ## list(lacework = TRUE, spacing = c(500,50), region = possumarea)
     
-    warning("derivedSystematic is experimental in secr 4.3", call. = FALSE)
+    warning("derivedSystematic is experimental in secr 4.4", call. = FALSE)
     
     if (!inherits (object, 'secr') | !is.null(object$groups))
         stop ("requires fitted secr model without groups")

@@ -379,13 +379,13 @@ generalsecrloglikfn <- function (
     if (is.function(details$userdist)) {
       noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
       distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                              noneuc[,1], density[,1], miscparm)
+                              noneuc[,1], density[,1], miscparm, detectfn == 20)
     }
     else {
       distmat2 <- data$distmat2
     }
     ## precompute gk, hk for point detectors
-    if (all(data$dettype %in% c(0,1,2,5,8,13))) {
+    if (all(data$dettype %in% c(0,1,2,5,8,13)) || data$HPXpoly) {
         if (!is.null(details$R) && details$R) {
             if (!exists('makegkPointR')) 
                 stop ("R code makegkPointR not available; source makegk.R")  
@@ -448,7 +448,7 @@ generalsecrloglikfn <- function (
         }
     }
     #######################################################################
-    
+
     if (all(data$dettype %in% c(0,1,2,3,4,6,7,8,13))) {
         ## hazard for exclusive detectors or related
         haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval), gkhk$hk, PIA, data$usge)
@@ -458,7 +458,7 @@ generalsecrloglikfn <- function (
         prw <- 1  ## simple if no animals detected
     }
     else {
-        if (all(data$dettype %in% c(0,1,2,8,13))) {
+        if (all(data$dettype %in% c(0,1,2,8,13)) || data$HPXpoly) {
             prw <- allhistsimple (nrow(Xrealparval), haztemp, gkhk, pi.density, PIA, 
                                   data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                                   pID, data$maskusage, 
@@ -477,11 +477,11 @@ generalsecrloglikfn <- function (
                                    debug = details$debug>3)
         }
         else {
-            stop ("this detector type, or mixed detector types, not available yet in secr 4.3")
+            stop ("this detector type, or mixed detector types, not available yet in secr 4.4")
         }
     }    
         ## polygon types
-    if (all(data$dettype %in% c(3,4,6,7))) {
+    if (all(data$dettype %in% c(3,4,6,7)) && !data$HPXpoly) {
         if (learnedresponse) {   ## overwrite gk,hk with model for naive animal
             gkhk <- makegkPolygoncpp (as.integer(detectfn), as.integer(details$grain),
                                       as.matrix(Xrealparval0), as.integer(data$cumk),
@@ -527,12 +527,14 @@ generalsecrloglikfn <- function (
     comp <- matrix(0, nrow = 6, ncol = ngroup)
     for (g in 1:ngroup) {
       ok <- as.integer(data$grp) == g
-      comp[1,g] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw[ok]))
-
+      ## 2021-01-30 avoid logical length > 1
+      # comp[1,g] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw[ok]))
+      comp[1,g] <- if (any(is.na(prw)) || any(prw<=0)) NA else sum(log(prw[ok]))
+      
       ## Adjust for undetected animals unless data includes all-zero histories
       ## (the case for allsighting data when knownmarks = TRUE).
       if (!data$MRdata$sightmodel==5 && !all(data$dettype==13)) {
-          comp[2,g] <- if (any(is.na(pdot) || pdot<=0)) NA else -sum(log(pdot[ok]))
+          comp[2,g] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot[ok]))
       }
       if (!CL && !data$MRdata$allsighting) {
           ng <- sum(ok)

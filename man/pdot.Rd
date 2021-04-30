@@ -81,7 +81,7 @@ For \code{CVpdot}, a named vector with elements `meanpdot' and `CVpdot'.
   \code{\link{pdot.contour}},
   \code{\link{CV}}}
 
-\section{Notes}{
+\note{
 
 \code{CVpdot} computes the mean \eqn{\mu} and variance \eqn{V} of the location-specific overall detection probability \eqn{p.(\mathbf{X})}{p.(X)} as follows.
 

@@ -445,9 +445,10 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 clustok <- as.numeric(clusterID(trps)) == i
                 temptrap <- subset(trps, subset = clustok)
                 
-                gkhk <- makegk (dettype, object$detectfn, temptrap, mask, object$details, sessnum, noneuc, D, miscparm, Xrealparval0)
+                gkhk <- makegk (dettype, object$detectfn, temptrap, mask, object$details, 
+                    sessnum, noneuc, D, miscparm, Xrealparval0)
                 
-                # distmat2 <- getuserdist(temptrap, mask, object$details$userdist, sessnum, noneuc, D, miscparm)
+                # distmat2 <- getuserdist(temptrap, mask, object$details$userdist, sessnum, noneuc, D, miscparm, object$detectfn=20)
                 # gkhk <- makegkPointcpp (as.integer(object$detectfn), as.integer(grain),
                 #                            as.matrix(Xrealparval0), as.matrix(distmat2), miscparm)
                 # if (any(dettype==8)) {   ## capped adjustment Not checked 2019-09-08

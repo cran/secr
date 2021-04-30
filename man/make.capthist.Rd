@@ -116,6 +116,9 @@ object of class c("capthist", "list") comprising a list of single-session
 (text) files, first use \code{read.table} and \code{read.traps}, or try
 \code{\link{read.capthist}} for a one-step solution.
 
+Prior to \pkg{secr} 4.4.0, occasional valid records for "multi" and "single" detectors 
+were rejected as duplicates.
+
 }
 
 \references{

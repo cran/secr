@@ -141,10 +141,11 @@ fastsecrloglikfn <- function (
         if (is.function(details$userdist)) {
           noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
           distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                                  noneuc[,1], density[,1], miscparm)
+                                  noneuc[,1], density[,1], miscparm, detectfn == 20)
         }
-        else
+        else {
             distmat2 <- data$distmat2
+        }
         
         ## precompute gk, hk for point detectors
         if (data$dettype[1] %in% c(0,1,2,5,8)) {
@@ -169,8 +170,11 @@ fastsecrloglikfn <- function (
                                   data$CH0, data$usge, pmixn, details$grain, details$binomN, design$individual)
         
         comp <- matrix(0, nrow = 5, ncol = 1)
-        comp[1,1] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw))
-        comp[2,1] <- if (any(is.na(pdot) || pdot<=0)) NA else -sum(log(pdot))
+        ## 2021-01-30 avoid length > 1
+        # comp[1,1] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw))
+        # comp[2,1] <- if (any(is.na(pdot) || pdot<=0)) NA else -sum(log(pdot))
+        comp[1,1] <- if (any(is.na(prw)) || any(prw<=0)) NA else sum(log(prw))
+        comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot))
         if (!CL) {
             N <- sum(density[,1]) * getcellsize(data$mask)
             meanpdot <- data$nc / sum(1/pdot)

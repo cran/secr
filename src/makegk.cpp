@@ -101,7 +101,12 @@ struct Hckm : public Worker {
         return (R::pnorm(gam,0,1,0,0));    
       }
       else if (detectfn == 19) {  // hazard variable power
-        return (gsbval(c,0) * exp(- pow(r /gsbval(c,1), gsbval(c,2))));
+          return (gsbval(c,0) * exp(- pow(r /gsbval(c,1), gsbval(c,2))));
+      }
+      else if (detectfn == 20) {  // hazard pixelar
+          // if (r < gsbval(c,1)) return (1-exp(-gsbval(c,0)));
+          if (r < gsbval(c,1)) return (gsbval(c,0));
+          else return (0);
       }
       else (stop("unknown or invalid detection function"));
     }

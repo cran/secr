@@ -110,7 +110,6 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
     nvar <- switch(fmt, trapID = 4, XY = 5)
-        
     ext <- tolower(file_ext(captfile))
     if (missing(trapfile) & ext %in% c("xls","xlsx"))
         trapfile <- captfile

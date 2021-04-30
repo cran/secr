@@ -86,6 +86,26 @@ NumericMatrix edist2cpp (
 }
 //--------------------------------------------------------------------------
 
+// [[Rcpp::export]]
+NumericMatrix xydist2cpp (
+        const NumericMatrix &A1,
+        const NumericMatrix &A2)
+    // return squared distance between points in A1
+    // and A2
+{
+    int kk = A1.nrow();
+    int mm = A2.nrow();
+    NumericMatrix d2(kk, mm);
+    for (int k=0; k<kk; k++) {
+        for (int m=0; m<mm; m++) {
+            d2(k,m) =  std::max((A1(k,0) - A2(m,0)) * (A1(k,0) - A2(m,0)),
+                (A1(k,1) - A2(m,1)) * (A1(k,1) - A2(m,1)));
+        }
+    }
+    return(d2);
+}
+//--------------------------------------------------------------------------
+
 // customised dpois 
 double gpois (int count, double lambda, int uselog)
 {

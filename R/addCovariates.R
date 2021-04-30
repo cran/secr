@@ -10,6 +10,7 @@
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
+
   if (!(inherits(object, 'mask') | inherits(object, 'traps')))
         ## stop ("require mask or traps object")
         object <- matrix(unlist(object), ncol = 2)
@@ -21,10 +22,12 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
         nsession <- length(object)
         out <- object
         for (session in 1:nsession) {
-            if (ms(spatialdata))
+            if (ms(spatialdata)) {
                 out[[session]] <- addCovariates(out[[session]], spatialdata[[session]])
-            else
+            }
+            else {
                 out[[session]] <- addCovariates(out[[session]], spatialdata)
+            }
         }
         out
     }

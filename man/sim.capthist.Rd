@@ -16,7 +16,8 @@ sim.capthist(traps, popn = list(D = 5, buffer = 100,
     Ndist = "poisson"), detectfn = 0, detectpar = list(),
     noccasions = 5, nsessions = 1, binomN = NULL, exactN = NULL,
     p.available = 1, renumber = TRUE, seed = NULL,
-    maxperpoly = 100, chulltol = 0.001, userdist = NULL, savepopn = FALSE)
+    maxperpoly = 100, chulltol = 0.001, userdist = NULL, 
+    savepopn = FALSE)
 sim.resight(traps, popn = list(D = 5, buffer = 100, Ndist = "poisson"), ...,
     pID = 1, unmarked = TRUE, nonID = TRUE,  unresolved = FALSE, unsighted = TRUE, 
     pmark = 0.5, Nmark = NULL, markingmask = NULL)

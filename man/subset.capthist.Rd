@@ -61,7 +61,9 @@ selecting traps also reduces the third dimension of the capthist array.
 
 \code{split} generates a list in which each component is a
 \code{capthist} object. Each component corresponds to a level of
-\code{f}.
+\code{f}. Multi-session capthists are accepted in \pkg{secr} >= 4.4.0; 
+\code{f} should then be a list of factors with one component per session 
+and the same levels in all.
 
 To combine (pool) occasions use \code{\link{reduce.capthist}}. There is
 no equivalent of \code{unlist} for lists of \code{capthist} objects.

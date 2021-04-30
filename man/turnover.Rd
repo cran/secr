@@ -19,8 +19,9 @@ Component \tab Description \tab Default \cr
 \code{survmodel} \tab probability model for number of survivors \tab ``binomial" \cr
 \code{lambda} \tab finite rate of increase \eqn{\lambda = N_{t+1} / N_t} \tab none \cr
 \code{recrmodel} \tab probability model for number of recruits \tab ``poisson" \cr
-\code{superN} \tab optional superpopulation size for multinomial recruitment model\tab see below \cr
-\code{movemodel} \tab ``static", ``uncorrelated", ``normal", ``exponential" or ``t2D" \tab ``static" \cr
+\code{superN} \tab optional superpopulation size for `multinomial' recruitment model\tab see below \cr
+\code{Nrecruits} \tab number of recruits to add at t+1 for `specified' recruitment model \tab 0 \cr
+\code{movemodel} \tab ``static", ``uncorrelated", ``normal", ``exponential", ``t2D" or a user function \tab ``static" \cr
 \code{move.a} \tab first parameter of movement kernel (replacing sigma.m) \tab 0 \cr
 \code{move.b} \tab second parameter of movement kernel \tab 1 \cr
 
@@ -47,9 +48,12 @@ Value \tab Probability model \cr
 "poisson" \tab Poisson number of recruits (B ~ pois(\eqn{f N_t})) \cr
 "discrete" \tab Minimum-variance number of recruits (see Survival) \cr
 "multinomial" \tab The POPAN model, conditioning on superpopulation size (e.g., Schwarz and Arnason 1996)) \cr
+"specified" \tab Add the number of recruits specified in Nrecruits (may be vector) \cr
 }
 
 In the case of binomial recruitment there is a maximum of one recruit per existing individual, so lambda <= (phi+1). Multinomial recruitment requires a value for the superpopulation size. This may be provided as the details component "superN". If not specified directly, a value is inferred by projecting a trial initial (simulated) population using the specified phi and lambda.
+
+Specifying the integer number of recruits in each year (recrmodel `specified') overrides the value of lambda, but a non-null value should be given for lambda.
 
 }
 
@@ -71,6 +75,8 @@ In \pkg{secr} <3.2.1 sigma.m was also used to indicate two special cases; these 
 sigma.m = 0 corresponds to movemodel = `static'
 
 sigma.m < 0 corresponds to movemodel = `uncorrelated'
+
+In \pkg{secr} >= 4.4.0, the `movemodel' component may also be a user-provided function with these characteristics: two or three arguments, the first being the number of centres to be moved (e.g., n) and the others parameters of the dispersal distribution (e.g., a,b); the function should return a matrix of n rows and 2 columns, the displacements in the x- and y-directions. The output is a set of random points from the bivariate dispersal kernel. The function will be called with the current number of centres and parameter values move.a and move.b as needed.
 
 If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal), ``normalize'' (truncate kernel and scale probability to 1.0) and ``none" (allow centres outside the buffered area). The ``normalize'' option (new in \pkg{secr} 4.3.3) can take longer as it repeatedly relocates each individual until its destination lies within the bounding box, up to a maximum of 500 attempts.
 

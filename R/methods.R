@@ -1829,7 +1829,9 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
                          " all intervals set to 1.0")
                 intervals(temp) <- rep(1, ncol(temp)-1)
             }
-            sessions <- unique(primarysessions(intervals(temp))[occasions])
+            ## bug fixed 2021-04-22
+            # sessions <- unique(primarysessions(intervals(temp))[occasions])
+            sessions <- unique(primarysessions(interv)[occasions])
             sessionlabels(temp) <- slabels[sessions]
         }
         ################################################
@@ -2408,7 +2410,7 @@ detectpar.secr <- function(object, ..., byclass = FALSE) {
                 a0index <- match ('a0', names(temp))
                 sigmaindex <- match ('sigma', names(temp))
                 lambda0 <- temp[[a0index]] / 2 / pi / temp[[sigmaindex]]^2 * 10000
-                temp[[a0index]] <- if (object$detectfn %in% 14:18) lambda0 else 1-exp(-lambda0)
+                temp[[a0index]] <- if (object$detectfn %in% 14:19) lambda0 else 1-exp(-lambda0)
                 names(temp)[a0index] <- if (object$detectfn %in% 0:8) 'g0'
                 else if (object$detectfn %in% 14:19) 'lambda0'
                 else stop ('invalid combination of param %in% c(3,5) and detectfn')
@@ -2645,8 +2647,10 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
 
         if (byrow) {
             ## need delta-method variance of reals given object$beta.vcv & newdata
-            if (is.null(newdata))
-                newdata <- secr.make.newdata (object)
+            if (is.null(newdata)) {
+              # newdata <- secr.make.newdata (object)
+              newdata <- make.newdata (object)
+            }
             nreal <- length(realnames)
             nbeta <- length(object$fit$par)
 

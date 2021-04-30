@@ -5,6 +5,7 @@
 ## 2016-10-16 secr 3.0
 ## 2017-05-23 markocc argument
 ## 2019-12-29 leadingzero argument
+## 2021-03-26 spacing attribute initially inferred from min(spacex, spacey)
 ###############################################################################
 
 make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NULL, 
@@ -99,6 +100,7 @@ make.grid <- function (nx = 6, ny = 6, spacex = 20, spacey = spacex, spacing=NUL
     attr(grid, 'class')       <- c('traps', 'data.frame')
     attr(grid, 'spacex')      <- spacex
     attr(grid, 'spacey')      <- spacey
+    attr(grid, 'spacing')     <- min(spacex, spacey)  # 2021-03-26
     attr(grid, 'spacing')     <- spacing(grid)  ## reset if NULL
     attr(grid, 'usage')       <- NULL
     attr(grid, 'cluster')     <- NULL

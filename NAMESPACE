@@ -308,7 +308,10 @@ export ('noise<-')
 # export (secr.lpredictor)
 # export (make.lookup)
 
-export (secr.make.newdata)
+export (make.newdata)
+S3method(make.newdata, default)
+S3method(make.newdata, secr)
+
 export (secr.design.MS)
 export (D.designdata)
 export (sim.secr)
@@ -408,4 +411,3 @@ S3method(plot, secrtest)
 useDynLib (secr)
 ## DEBUGGING ONLY (cpp functions not documented)
 ## exportPattern("*cpp")
-

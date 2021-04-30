@@ -91,19 +91,21 @@ getmiscparm <- function(miscparm, detectfn, beta, parindx, cutval) {
     miscparm
 }
 #--------------------------------------------------------------------------------
-getuserdist <- function (traps, mask, userdist, sessnum, noneuc, density, miscparm) {
-    ## Apply user-provided distance function 
-    ## do not use result if detector is one of
-    ## polygonX, polygon, transectX, transect, telemetry
-    m <- nrow(mask)
-    if (any(detector(traps) %in% .localstuff$polydetectors)) {
-        matrix(0, nrow = nrow(traps), ncol = m)
+getuserdist <- function (traps, mask, userdist, sessnum, noneuc, density, miscparm, HPX) {
+    ## Apply user-provided distance function or basic distance function getdistmat2()
+    if (is.null(userdist)) {
+        getdistmat2(traps, mask, NULL, HPX)
     }
-    else if (is.null(userdist)) {
-        edist2cpp(as.matrix(traps), as.matrix(mask))
-    }
+    # 
+    # if (any(detector(traps) %in% .localstuff$polydetectors)) {
+    #     matrix(0, nrow = nrow(traps), ncol = m)
+    # }
+    # else if (is.null(userdist)) {
+    #     edist2cpp(as.matrix(traps), as.matrix(mask))
+    # }
     else {
         userdistnames <- getuserdistnames(userdist)
+        m <- nrow(mask)
         if (is.null(covariates(mask)))
             covariates(mask) <- data.frame(row.names = 1:m)
         if (('noneuc' %in% userdistnames) && !is.null(noneuc))
@@ -224,7 +226,7 @@ makegk <- function(dettype, detectfn, trps, mask, details, sessnum, noneuc, D, m
     if (is.null(details$grain)) details$grain <- 1   ## 2020-05-16 for backward compatibility
     ## precompute gk, hk for point detectors
     if (all(dettype %in% c(0,1,2,5,8,13))) {
-        distmat2 <- getuserdist(trps, mask, details$userdist, sessnum, noneuc, D, miscparm)
+        distmat2 <- getuserdist(trps, mask, details$userdist, sessnum, noneuc, D, miscparm, detectfn == 20)
         gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(details$grain),
                                 as.matrix(realparval), as.matrix(distmat2), miscparm)
         if (any(dettype==8)) {   ## capped adjustment Not checked 2019-09-08

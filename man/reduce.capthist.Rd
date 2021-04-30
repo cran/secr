@@ -15,7 +15,7 @@ between detector types.
 \usage{
 
 \method{reduce}{traps}(object, newtraps = NULL, newoccasions = NULL, span = NULL, 
-    rename = FALSE, \dots)
+    rename = FALSE, newxy = c('mean', 'first'), \dots)
 
 \method{reduce}{capthist}(object, newtraps = NULL, span = NULL, rename =
     FALSE, newoccasions = NULL, by = 1, outputdetector = NULL,
@@ -30,13 +30,15 @@ between detector types.
   \item{newtraps}{ list in which each component is a vector of
   subscripts for detectors to be pooled }
 
+  \item{newoccasions}{ list in which each component is a vector of
+  subscripts for occasions to be pooled }
+
   \item{span}{ numeric maximum span in metres of new detector }
 
   \item{rename}{logical; if TRUE the new detectors will be numbered from
 1, otherwise a name will be constructed from the old detector names}
-  
-  \item{newoccasions}{ list in which each component is a vector of
-  subscripts for occasions to be pooled }
+
+   \item{newxy}{ character; coordinates when detectors grouped with `newtraps'}  
 
   \item{by}{ number of old occasions in each new occasion }
 
@@ -50,7 +52,8 @@ between detector types.
 
   \item{sessions}{ vector of session indices or names (optional) }
 
-  \item{\dots}{ other arguments passed by reduce.traps to hclust }
+  \item{\dots}{ other arguments passed by reduce.capthist to reduce.traps, 
+  or by reduce.traps to hclust }
 
 }
 
@@ -67,6 +70,9 @@ performed with \code{\link{hclust}} and detectors will be assigned to
 groups with \code{\link{cutree}}. The default algorithm in \code{hclust}
 is complete linkage, which tends to yield compact, circular clusters;
 each will have diameter less than or equal to \code{span}.
+
+\code{newxy = 'first'} selects the coordinates of the first detector in a 
+group defined by `newtraps', rather then the average of all detectors in group.
 
 reduce.capthist --
   

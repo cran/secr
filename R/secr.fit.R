@@ -1,10 +1,12 @@
 ################################################################################
-## package 'secr' 4.3
+## package 'secr' 4.4
 ## secr.fit.R
 
-## 2019-08-13, 2019-09-04
 ## 2019-12-03 secr.design.MS uses CL argument
 ## 2020-08-30 check3D restored for secrlinear arvicola example
+## 2021-04-02 allcapped bug fixed  (cannot combine capped, uncapped)
+## 2021-04-25 4.4.0
+
 ###############################################################################
 
 secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -76,7 +78,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     anytelem <- any(detectortype %in% 'telemetry')
     anysingle <- any(detectortype %in% 'single')
     anycapped <- any(detectortype %in% 'capped')
-    allcapped <- any(detectortype %in% 'capped')
+    # allcapped <- any(detectortype %in% 'capped') 
+    # 2021-04-02 bug fixed 
+    allcapped <- all(detectortype %in% 'capped') 
     allpresence <- all(detectortype %in% 'presence')
     anysignal <- any(detectortype %in% 'signal')
     allsignal <- all(detectortype %in% 'signal')
@@ -121,11 +125,10 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         else if (allpresence)
             detectfn <- valid.detectfn(detectfn, 0:8)
         else  if (anypoly | anytrans)
-            detectfn <- valid.detectfn(detectfn, 14:19)  ## 2017-04-04
+            detectfn <- valid.detectfn(detectfn, 14:20)  ## 2017-04-04, 2021-03-30
         else
             detectfn <- valid.detectfn(detectfn)
     }
-    
     #################################################
     if (anysingle) warning ("multi-catch likelihood used for single-catch traps")
     
@@ -357,7 +360,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ## intercept and fix certain models with bad defaults
     model <- updatemodel(model, detectfn, 9, c('g0', 'sigma'), c('b0', 'b1'))
     model <- updatemodel(model, detectfn, 10:13, c('g0', 'sigma'), c('beta0','beta1'))
-    model <- updatemodel(model, detectfn, 14:19, 'g0', 'lambda0')
+    model <- updatemodel(model, detectfn, 14:20, 'g0', 'lambda0')
     
     allvars <- unlist(lapply(model, all.vars))
     learnedresponse <- any(.localstuff$learnedresponses %in% allvars) ## || !is.null(dframe)
@@ -651,7 +654,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             }
         }
     }
-    
     data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
                                groups, fixed, hcov, details)
     
@@ -678,8 +680,11 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             ch <- capthist[[details$autoini]]
             msk <- mask[[details$autoini]]
         }
-        rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
-        if (inherits(rpsv, 'try-error')) rpsv <- NA
+        rpsv <- fixed$sigma   ## 2021-03-31
+        if (is.null(rpsv)) {
+            rpsv <- try(RPSV(ch, TRUE), silent = TRUE)
+            if (inherits(rpsv, 'try-error')) rpsv <- NA
+        }
         start3 <- list(D = NA, g0 = NA, sigma = NA)
         requireautoini <- (is.null(start) | !all(names(parindx) %in% names(start))) & !alltelem
         if (requireautoini) {
@@ -781,6 +786,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             default <- replace(default, startnames, start)
         }
         else startnames <- NULL
+        
         start <- rep(0, NP)
         for ( i in 1:length(parindx) ) {
             start[parindx[[i]][1]] <- getdefault (names(parindx)[i]) 

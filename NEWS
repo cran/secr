@@ -1,4 +1,38 @@
-Changes in version 4.3.3 (2020-12-12)
+Changes in version 4.4.1 (2021-05-01)
+
+Other
+    o   Add final '/' to url in DESCRIPTION and fix typo in secr-package.Rd
+
+
+Changes in version 4.4.0 (2021-05-01)
+
+New features or changed behaviour of old functions
+    o   sim.popn() movement model may be user-provided function
+    o   sim.popn() recrmodel may be 'specified' (add number in details$Nrecruits)
+    o   sim.popn() optional age covariate for multisession populations
+    o   HPX new detectfn (binary detection in polygon)
+    o   plot.traps minor change in colours used with polygon detectors
+    o   split.capthist() accepts multi-session input
+    o   reduce.traps() 'newxy' selects 'mean' or 'first' for coordinates of 
+        new detector from group defined by 'newtraps'
+
+Bugs fixed
+    o   make.capthist() rejected some valid records as duplicates (R. Glennie)
+    o   length > 1 in coercion to logical (internal function sessionLL x2)
+    o   sim.popn() with movement: 'normalize' edgemethod did not normalize
+    o   secr.make.newdata() (and predict.secr()) sometimes ignored all.levels = FALSE
+    o   make.grid() spacing attribute missing in case of single detector
+    o   reduce.capthist() failed with polygon input and nonspatial output
+    o   no warning when attempt to combine capped and other detector types
+    o   subset.capthist() by occasion could return wrong session labels
+
+Other
+    o   Suggests testthat, adds some unit tests in 'tests' folder
+    o   sim.popn() with movement: 'clip' edgemethod works with constantN
+    o   generic make.newdata() replaces secr.make.newdata() (seldom used directly)
+    o   shareFactorLevels() when not multisession now converts ch _covariates_ to factor
+
+Changes in version 4.3.3 (2020-12-11)
 
 New features or changed behaviour of old functions
     o   subset.capthist() all-negative subset argument indicates exclusion

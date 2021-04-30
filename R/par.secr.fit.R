@@ -57,12 +57,7 @@ par.secr.fit <- function (arglist, ncores = 1, seed = NULL,
     arglist <- mapply(nameattr, arglist, names(arglist), SIMPLIFY = FALSE)
     ###################################################
     
-    
-    ## individual fits must use ncores = 1
     if (ncores > 1) {
-        ## force 'ncores' to 1 across all components of arglist
-        ## arglist <- lapply(arglist, function (x) {x$ncores <- 1; x})
-
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
         clusterSetRNGStream(clust, seed)
         clusterExport(clust, c(data, 'secr.fit'), environment())

@@ -364,10 +364,15 @@ RPSV <- function (capthist, CC = FALSE)
         }
         temp <- matrix(unlist(temp), nrow = 3)
         temp <- apply(temp,1,sum, na.rm=T)
-        if (CC)
-            temp <- sqrt((temp[2]+temp[3]) / (2 * temp[1]))
-        else
-            temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
+        if (any(is.na(temp) | temp<0)) {
+            temp <- NA   ## protected 2021-03-31
+        }
+        else {
+            if (CC)
+                temp <- sqrt((temp[2]+temp[3]) / (2 * temp[1]))
+            else
+                temp <- sqrt((temp[2]+temp[3]) / (temp[1]-1))
+        }
         attr(temp,'names') <- NULL
         temp
     }
