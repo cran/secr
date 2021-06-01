@@ -76,7 +76,7 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
         #############################################################
         ## form unified 'newdata' containing all necessary predictors
         # tempnewdata <- lapply (object, secr.make.newdata)
-        tempnewdata <- lapply (object, make.newdata)
+        tempnewdata <- lapply (object, makeNewData)
         ## extract list of columns from all components of 'newdata'
         ## modified 2010 02 14
         column.list <- list(0)
@@ -316,7 +316,7 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
         ## each component of tempnewdata is a data.frame of newdata
         ## for the corresponding model
         # tempnewdata <- lapply (object, secr.make.newdata)
-        tempnewdata <- lapply (object, make.newdata)
+        tempnewdata <- lapply (object, makeNewData)
         ## modified 2010 02 14
         column.list <- list(0)
         for (i in 1:nsecr) column.list[[i]] <- as.list(tempnewdata[[i]])

@@ -540,7 +540,8 @@ sim.capthist <- function (
 
             if (temp$n > 0 && HPXpoly) {
                 ## put XY coordinates in attribute
-                xy(w) <- data.frame(animals[animalID(w, names = TRUE),])
+              ## xy(w) <- data.frame(animals[animalID(w, names = TRUE),])
+              xy(w) <- data.frame(animals[animalID(w, names = TRUE, sortorder = 'ksn'),])
             }
             else {
                 xy(w) <- NULL
@@ -571,6 +572,7 @@ sim.capthist <- function (
             else {
                 polynames <- levels(transectID(traps))
                 nk <- length(polynames)
+                if (nk>1) stop("simulation not working for multiple transects in secr 4.4.3")
                 k <- table(transectID(traps))
                 temp <- trappingtransectX (
                     as.double(df0),
@@ -640,6 +642,7 @@ sim.capthist <- function (
             ##-----------------------------------------------------------------------
             if (detector(traps)[1] == 'transect') {
                 nk <- length(levels(transectID(traps)))
+                if (nk>1) stop("simulation not working for multiple transects in secr 4.4.3")
                 k <- table(transectID(traps))
                 temp <- trappingtransect (
                            as.double(df0),
@@ -966,10 +969,11 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     ############################################################################
     ## transform simulated capthist object into resighting data
 
+    ## 2021-05-19 using ksn as safe universal order regardless of polygon/signal
     df <- data.frame(session  = rep(1,sum(abs(capthist))),
-                     animalID = animalID(capthist), 
-                     occasion = occasion(capthist),
-                     trapID   = trap(capthist), 
+                     animalID = animalID(capthist, sortorder = 'ksn'), 
+                     occasion = occasion(capthist, sortorder = 'ksn'),
+                     trapID   = trap(capthist, sortorder = 'ksn'), 
                      stringsAsFactors = FALSE)
     if (all(detector(traps) %in% c('polygon', 'transect'))) {
         df <- cbind(df[,-4], xy(capthist))
@@ -1042,8 +1046,9 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
         }
         
         if (allsighting) {
-            Tu <- as.matrix(table(factor(trap(capthistU), levels = trapnames),
-                                  factor(occasion(capthistU), levels = 1:S)))
+            Tu <- as.matrix(table(
+              factor(trap(capthistU, sortorder = 'snk'), levels = trapnames),
+              factor(occasion(capthistU, sortorder = 'snk'), levels = 1:S)))
         }
         else {
             Tu <- as.matrix(table(factor(dfunmarked$trapID, levels = trapnames),

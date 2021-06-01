@@ -153,6 +153,7 @@ bothfn <- function(object) {
 test <- secr.test (secrdemo.0, nsim = 19, statfn = bothfn, fit = TRUE)
 test
 plot(test, main = '')
+
 }
 
 }

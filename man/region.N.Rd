@@ -211,10 +211,10 @@ data. \emph{Biometrics} \bold{66}, 310--318.
 
 \examples{
 
-region.N(secrdemo.0)
-
 \dontrun{
-## a couple more routine examples
+
+## routine examples using arbitrary mask from model fit
+region.N(secrdemo.0)
 region.N(secrdemo.CL)
 region.N(ovenbird.model.D)
 

@@ -10,8 +10,8 @@
 \description{
 
 Terse report on the fit of one or more spatially explicit
-capture--recapture models. Models with smaller values of AIC (Akaike's
-Information Criterion) are preferred. Extraction ([) and logLik methods
+capture--recapture models.  Models with smaller values of AIC (Akaike's
+Information Criterion) are preferred.  Extraction ([) and logLik methods
 are included.
 
 }
@@ -40,7 +40,7 @@ secrlist(...)
 \details{
 
 Models to be compared must have been fitted to the same data and use the
-same likelihood method (full vs conditional). From version 4.1 a warning is 
+same likelihood method (full vs conditional).  From version 4.1 a warning is 
 issued if \code{\link{AICcompatible}} reveals a problem.
 
 AIC with small sample adjustment is given by

@@ -210,7 +210,8 @@ rectangularMask <- function (mask) {
         
         # which new points occur in old mask?
         maski <- data.frame(x = round((mask$x-minx)/sp), y = round((mask$y-miny)/sp))
-        maski <- maski$y * (nx1+1) + maski$x
+        # maski <- maski$y * (nx1+1) + maski$x
+        maski <- maski$y * (nx1+1) + maski$x + 1    ## 2021-05-16
         OK <- logical(nrow(temp))
         OK[maski] <- TRUE
         

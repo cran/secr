@@ -215,6 +215,21 @@ summary(mash(tempcapt))
 
 \dontrun{
 
+## compare timings (estimates are near identical)
+tempmask1 <- make.mask(tempgrid, type = "clusterrect",
+    buffer = 200, spacing = 10)
+fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 94 s
+
+tempmask2 <- make.mask(minigrid, spacing = 10)
+fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 1 s
+## density estimate is adjusted automatically
+## for the number of mashed clusters (9)
+
+predict(fit1)
+predict(fit2)
+fit1$proctime
+fit2$proctime
+
 ## GRTS sample of mini-grids within a rectangle
 ## GRTS requires package 'spsurvey' that may be unavailable
 ##  on Mavericks
@@ -239,25 +254,9 @@ if (requireNamespace('spsurvey')) {
     plt = TRUE)
 }
 
-## compare timings (estimates are near identical)
-tempmask1 <- make.mask(tempgrid, type = "clusterrect",
-    buffer = 200, spacing = 10)
-fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 24.34 s
-
-tempmask2 <- make.mask(minigrid, spacing = 10)
-fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 1.01 s
-## density estimate is adjusted automatically
-## for the number of mashed clusters (9)
-
-predict(fit1)
-predict(fit2)
-fit1$proctime
-fit2$proctime
-}
-
 ## two-phase design: preliminary sample across region,
 ## followed by selection of sites for intensive grids
-\dontrun{
+
 arena <- data.frame(x = c(0,2000,2000,0), y = c(0,0,2500,2500))
 t1 <- make.grid(nx = 1, ny = 1)
 t4 <- make.grid(nx = 4, ny = 4, spacing = 50)
@@ -268,6 +267,7 @@ plot(CH, type = "n.per.cluster", title = "Number per cluster")
 temp <- trap.builder(10, frame = traps(CH), cluster = t4,
     ranks = cluster.counts(CH), method = "rank",
     edgemethod = "allowoverlap", plt = TRUE, add = TRUE)
+
 }
 
 }

@@ -523,7 +523,7 @@ List trappingpolygon (
     for (j = 0; j < J; j++) {
       dx = animals(i,0) - traps(j,0);
       dy = animals(i,1) - traps(j,1);
-      d = sqrt(dx*dx + dy*dy);
+      d = std::sqrt(dx*dx + dy*dy);
       if (d > w) w = d;
     }
   } 
@@ -597,27 +597,27 @@ List trappingpolygon (
 
 // [[Rcpp::export]]
 List trappingtransect (
-    const NumericVector &lambda,  // Parameter : expected detection events per hectare 
-    const NumericVector &sigma,   // Parameter : detection scale 
-    const NumericVector &z,       // Parameter : detection shape (hazard) 
-    const int    ntransect,      // number of different transects
-    const IntegerVector &kk,      // number of vertices + 1 (assumed closed) each polygon 
-    const NumericMatrix &animals, // x,y points of animal range centres (first x, then y)  
-    const NumericMatrix &traps,   // x,y polygon vertices (first x, then y)  
-    const NumericMatrix &Tsk,     // ss x kk array of 0/1 usage codes or effort 
-    const int    fn,             // code 0 = halfnormal, 1 = hazard, 2 = exponential 
-    const double w2,             // truncation radius 
-    const IntegerVector &binomN,  // 0 poisson, 1 Bernoulli, or number of binomial trials 
-    const int    maxperpoly  
+    const NumericVector &lambda,   // Parameter : expected detection events per hectare 
+    const NumericVector &sigma,    // Parameter : detection scale 
+    const NumericVector &z,        // Parameter : detection shape (hazard) 
+    const int           ntransect, // number of different transects
+    const IntegerVector &kk,       // number of vertices each transect
+    const NumericMatrix &animals,  // x,y points of animal range centres (first x, then y)  
+    const NumericMatrix &traps,    // x,y transect vertices (first x, then y)  
+    const NumericMatrix &Tsk,      // ss x kk array of 0/1 usage codes or effort 
+    const int           fn,        // code 14 = HHN, 15 = HHR, 16 = HEX
+    const double        w2,        // truncation radius 
+    const IntegerVector &binomN,   // 0 poisson, 1 Bernoulli, or number of binomial trials 
+    const int           maxperpoly  
 )
 {
-  int    ss = Tsk.ncol();    // number of occasions 
-  int    N = animals.nrow();   // number of animals 
+  int    ss = Tsk.ncol();                   // number of occasions 
+  int    N = animals.nrow();                // number of animals 
   int    maxdet;
   maxdet = N * ss * ntransect * maxperpoly;
-  std::vector<int> caught(N);          // caught in session 
+  std::vector<int> caught(N);               // caught in session 
   std::vector<double> detectedXY(maxdet*2); // x,y locations of detections  
-  std::vector<int> value(maxdet*ss);        // return value matrix of trap locations n x s 
+  std::vector<int> value(maxdet*ss);        // return value matrix n x s 
 
   int    i,j,k,l,s,t;
   int    nc = 0;
@@ -649,11 +649,12 @@ List trappingtransect (
   for (k =0; k<ntransect; k++)
     cumk[k+1] = cumk[k] + kk[k];
   sumk = cumk[ntransect];
-  line = (rpoint *) R_alloc(sumk, sizeof(rpoint));
-  cumd = (double *) R_alloc(sumk, sizeof(double));
-  workXY = (double*) R_alloc(maxdet*2, sizeof(double));
-  sortorder = (int*) R_alloc(maxdet, sizeof(int));
-  sortkey = (double*) R_alloc(maxdet, sizeof(double));
+  line      = (rpoint *) R_alloc(sumk, sizeof(rpoint));
+  // cumd      = (double *) R_alloc(sumk, sizeof(double));
+  cumd      = (double *) R_alloc(sumk+1, sizeof(double));
+  workXY    = (double*)  R_alloc(maxdet*2, sizeof(double));
+  sortorder = (int*)     R_alloc(maxdet, sizeof(int));
+  sortkey   = (double*)  R_alloc(maxdet, sizeof(double));
   // ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
   
   // coordinates of vertices 
@@ -662,7 +663,7 @@ List trappingtransect (
     line[i].y = traps[i+sumk];
   }
   
-  // cumulative distance along line 
+  // cumulative distance along lines, transects end on end 
   for (k=0; k<ntransect; k++) {
     cumd[cumk[k]] = 0;
     for (i=cumk[k]; i<(cumk[k+1]-1); i++) {
@@ -767,8 +768,10 @@ List trappingtransect (
               value[ss * ((caught[i]-1) * ntransect + k) + s]++;
               workXY[(nd-1)*2] = xy.x;
               workXY[(nd-1)*2+1] = xy.y;
-              sortkey[nd-1] = (double) (k * N * ss + s * N +
-                caught[i]);
+              sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
+              // 2021-05-17 order by occasion, animal, detector
+              // sortkey[nd-1] = (double) (ntransect * N * s) + ntransect*(caught[i]-1) + k;
+              
             }
           }
         }
@@ -800,7 +803,7 @@ List trappingpolygonX (
     const NumericMatrix &animals, // x,y points of animal range centres (first x, then y)  
     const NumericMatrix &traps,   // x,y polygon vertices (first x, then y)  
     const NumericMatrix &Tsk,     // ss x kk array of 0/1 usage codes or effort 
-    const int    fn,              // code 0 = halfnormal, 1 = hazard, 2 = exponential 
+    const int    fn,              // code 14 = HHN, 15 = HHR, 16 = HEX
     const double w2,              // truncation radius 
     const IntegerVector &binomN   // 0 poisson, 1 Bernoulli, or number of binomial trials 
 )
@@ -844,7 +847,7 @@ List trappingpolygonX (
     for (j = 0; j < J; j++) {
       dx = animals(i,0) - traps(j,0);
       dy = animals(i,1) - traps(j,1);
-      d = sqrt(dx*dx + dy*dy);
+      d = std::sqrt(dx*dx + dy*dy);
       if (d > w) w = d;
     }
   } 
@@ -894,6 +897,9 @@ List trappingpolygonX (
                 workXY[(nd-1)*2] = xy[0];
                 workXY[(nd-1)*2+1] = xy[1];
                 sortkey[nd-1] = (double) (s * N + caught[i]);
+                // 2021-05-17 order by occasion, animal, detector
+                // sortkey[nd-1] = (double) (npoly * N * s) + npoly*(caught[i]-1) + k;
+                
                 break;   // no need to look at more poly 
               }
             }
@@ -922,13 +928,13 @@ List trappingtransectX (
     const NumericVector &lambda,  // Parameter : expected detection events per hectare 
     const NumericVector &sigma,   // Parameter : detection scale 
     const NumericVector &z,       // Parameter : detection shape (hazard) 
-    const int    ntransect,      // number of different transects
-    const IntegerVector &kk,      // number of vertices + 1 (assumed closed) each polygon 
+    const int    ntransect,       // number of different transects
+    const IntegerVector &kk,      // number of vertices each transect
     const NumericMatrix &animals, // x,y points of animal range centres (first x, then y)  
     const NumericMatrix &traps,   // x,y polygon vertices (first x, then y)  
     const NumericMatrix &Tsk,     // ss x kk array of 0/1 usage codes or effort 
-    const int    fn,             // code 0 = halfnormal, 1 = hazard, 2 = exponential 
-    const double w2              // truncation radius 
+    const int    fn,              // code 14 = HHN, 15 = HHR, 16 = HEX
+    const double w2               // truncation radius 
 )
 {
   int    ss = Tsk.ncol();    // number of occasions 
@@ -974,7 +980,7 @@ List trappingtransectX (
     cumk[k+1] = cumk[k] + kk[k];
   sumk = cumk[ntransect];
   line = (rpoint *) R_alloc(sumk, sizeof(rpoint));
-  cumd = (double *) R_alloc(sumk, sizeof(double));
+  cumd = (double *) R_alloc(sumk+1, sizeof(double));
   
   workXY = (double*) R_alloc(maxdet*2, sizeof(double));
   sortorder = (int*) R_alloc(maxdet, sizeof(int));
@@ -1191,6 +1197,9 @@ List trappingsignal (
               worksignal[nd-1] = signalvalue;
               worknoise[nd-1] = noisevalue;
               sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
+              // 2021-05-17 order by occasion, animal, detector
+              // sortkey[nd-1] = (double) (kk * N * s) + kk*(caught[i]-1) + k;
+              
             }
           }
           else {
@@ -1214,6 +1223,7 @@ List trappingsignal (
               value[ss * ((caught[i]-1) * kk + k) + s] = 1;
               worksignal[nd-1] = signalvalue;
               sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
+              // sortkey[nd-1] = (double) (kk * N * s) + kk*(caught[i]-1) + k;
             }
           }
         }
@@ -1313,7 +1323,7 @@ List trappingtelemetry (
           value[ss * (caught[i]-1) + s]++;
           workXY[(nd-1)*2] = xy[0];
           workXY[(nd-1)*2+1] = xy[1];
-          sortkey[nd-1] = (double) (s * N + caught[i]);
+          sortkey[nd-1] = (double) (s * N + caught[i] - 1);
         }
       }
     }

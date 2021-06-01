@@ -8,7 +8,7 @@ Mask Diagnostics
 \description{
 \code{mask.check} evaluates the effect of varying buffer width and
     mask spacing on either the likelihood or density estimates from
-    secr.fit()
+    secr.fit().
 }
 
 \usage{

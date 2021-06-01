@@ -121,7 +121,9 @@ Sturtz, S., Ligges, U. and Gelman, A. (2005) R2WinBUGS: a package for
 }
 
 \seealso{
+
   \code{\link{hornedlizardCH}}, \code{\link{verify}}, \code{\link{capthist}}
+
 }
 
 \examples{
@@ -139,13 +141,15 @@ str(lzdata)
 ## Now convert to capthist
 tempcapt <- read.DA(lzdata, Y = "H", xcoord = "X",
     ycoord = "Y", buffer = 0, units = 100)
-#summary(tempcapt)
 
 \dontrun{
+
 plot(tempcapt)
 secr.fit(tempcapt, trace = FALSE)
 ## etc.
+
 }
+
 }
 
 \keyword{ IO }

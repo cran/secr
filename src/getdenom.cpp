@@ -31,7 +31,7 @@ List getdenomcpp (int fn,
         if ((fabs(miscparm[1]) > 0.5))
           expzj = mask[3 * mm + j];  // exp(covariate val) at mask point j 
         dsq = d2cpp(j, m, mask, mask);
-        if (fn != 14) d = sqrt(dsq);
+        if (fn != 14) d = std::sqrt(dsq);
         if (fn == 14) lam = exp(-dsq / 2 / sigma2);
         else if (fn == 4) lam = (double) (d <= sigma);
         else if (fn == 15) lam = 1 - exp(- pow(d /sigma , - z));

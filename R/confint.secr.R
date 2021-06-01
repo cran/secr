@@ -249,7 +249,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
         if (any(case==1)) {
             if (is.null(newdata)) {
                 # newdata <- secr.make.newdata (object)[1,, drop = FALSE]  ## default base levels
-                newdata <- make.newdata (object)[1,, drop = FALSE]  ## default base levels
+                newdata <- makeNewData (object)[1,, drop = FALSE]  ## default base levels
             }
             if (detector(traps(object$capthist)) %in% c('polygon','polygonX',
                    'transect','transectX','signal','unmarked','presence'))

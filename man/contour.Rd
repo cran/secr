@@ -120,11 +120,6 @@ University of Otago, Dunedin, New Zealand
 
 possumtraps <- traps(possumCH)
 
-plot(possumtraps, border = 270)
-pdot.contour(possumtraps, detectfn = 0, nx = 128, detectpar =
-    detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
-    noccasions = 5, add = TRUE)
-
 ## convex and concave buffers
 plot(possumtraps, border = 270)
 buffer.contour(possumtraps, buffer = 100, add = TRUE, col = "blue")
@@ -144,6 +139,11 @@ buff.concave2 <- buffer.contour(possumtraps, buffer = 100,
 sum (sapply(buff.concave2, polyarea))
 
 \dontrun{
+
+plot(possumtraps, border = 270)
+pdot.contour(possumtraps, detectfn = 0, nx = 128, detectpar =
+    detectpar(possum.model.0), levels = c(0.1, 0.01, 0.001),
+    noccasions = 5, add = TRUE)
 
 ## clipping to polygon
 olddir <- setwd(system.file("extdata", package = "secr"))

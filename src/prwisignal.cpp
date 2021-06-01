@@ -78,10 +78,10 @@ struct signalhistories : public Worker {
     double d2val;
     d2val = dist2(k,m);
     if (spherical <= 0)
-      return (b0 + b1 * sqrt(d2val));
+      return (b0 + b1 * std::sqrt(d2val));
     else {
       if (d2val>1) {
-        return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
+        return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (std::sqrt(d2val)-1)); 
       }
       else
         return (b0);
@@ -95,7 +95,7 @@ struct signalhistories : public Worker {
       const int m)
   {
     double r2 = dist2(k,m);
-    double r = sqrt(r2);
+    double r = std::sqrt(r2);
     double mu, gam;
     double temp;
     if (detectfn == 9) {    // binary signal strength

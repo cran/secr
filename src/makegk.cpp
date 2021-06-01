@@ -52,7 +52,7 @@ struct Hckm : public Worker {
       return (temp);
     }
     else {
-      r = sqrt(r2);
+      r = std::sqrt(r2);
       if ((detectfn == 1) || (detectfn == 15)) {       // hazard rate or hazard hazard rate
         return (gsbval(c,0) * ( 1 - exp(- pow(r /gsbval(c,1), - gsbval(c,2)))));
       }
@@ -75,7 +75,7 @@ struct Hckm : public Worker {
         double CV2, meanlog, sdlog;
         CV2 = gsbval(c,2)*gsbval(c,2)/gsbval(c,1)/gsbval(c,1);
         meanlog = log(gsbval(c,1)) - log(1 + CV2)/2;
-        sdlog = sqrt(log(1 + CV2));
+        sdlog = std::sqrt(log(1 + CV2));
         return (gsbval(c,0) * R::plnorm(r,meanlog,sdlog,0,0)); 
       }
       else if ((detectfn == 8) || (detectfn == 18)) {  // cumulative gamma or hazard cumulative gamma
@@ -152,7 +152,8 @@ List makegkPointcpp (const int detectfn,
     parallelFor(0, dist2.ncol(), hckm, grain);
   }
   else {
-    hckm.operator()(0,dist2.ncol());    // for debugging avoid multithreading to allow R calls
+    // for debugging avoid multithreading to allow R calls
+    hckm.operator()(0,dist2.ncol());    
   }
   return List::create(Named("gk") = gk, Named("hk") = hk);
 }

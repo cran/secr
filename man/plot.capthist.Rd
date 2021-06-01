@@ -150,16 +150,19 @@ temp <- plot(capt, title = "Individuals per cluster",
     type = "n.per.cluster", hidetraps = FALSE,
     gridlines = FALSE, cappar = list(cex = 1.5))
 
+if (interactive()) {
+    ## add legend; click on map to place top left corner
+    legend (locator(1), pch = 21, pt.bg = temp$colour,
+        pt.cex = 1.3, legend = temp$legend, cex = 0.8)
+}
+
 \dontrun{
-## add legend; click on map to place top left corner
-legend (locator(1), pch = 21, pt.bg = temp$colour,
-    pt.cex = 1.3, legend = temp$legend, cex = 0.8)
 
 ## try varying individual colours - requires RColorBrewer
 library(RColorBrewer)
-plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = T,
+plot(infraCH[[2]], icolours = brewer.pal(12, "Set3"), tracks = TRUE,
     bg = "black", cappar = list(cex = 2), border = 10, rad = 2,
-    gridlines=F)
+    gridlines = FALSE)
 
 ## generate telemetry data
 te <- make.telemetry()

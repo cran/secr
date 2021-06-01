@@ -12,17 +12,17 @@
 ## 2017-12-18 all.levels argument
 ## 2021-03-24 fix all.levels = FALSE bug
 ## Create (neutral) design data suitable for 'predict'
-## generic method make.newdata
+## generic method newdata
 ############################################################################################
 
-make.newdata <- function (object, all.levels = FALSE, ...) UseMethod("make.newdata")
+makeNewData <- function (object, all.levels = FALSE, ...) UseMethod("makeNewData")
 
-make.newdata.default <- function (object, all.levels = FALSE, ...) {
-    cat ('no make.newdata method for objects of class', class(object), '\n')
+makeNewData.default <- function (object, all.levels = FALSE, ...) {
+    cat ('no makeNewData method for objects of class', class(object), '\n')
 }
 
 # secr.make.newdata <- function (object, all.levels = FALSE) {
-make.newdata.secr <- function (object, all.levels = FALSE, ...) {
+makeNewData.secr <- function (object, all.levels = FALSE, ...) {
         
     # Session treated separately later
     autovars <- c('g','x','y','x2','y2','xy','session',

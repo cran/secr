@@ -60,16 +60,16 @@ deleteMaskPoints(mask, onebyone = TRUE, add = FALSE, poly = NULL,
 
 \examples{
 
-\dontrun{
-mask0 <- make.mask (traps(captdata))
-## Method 1 - click on each point to remove
-mask1 <- deleteMaskPoints (mask0)
-## Method 2 - click on vertices of removal polygon
-mask2 <- deleteMaskPoints (mask0, onebyone = FALSE)
-## Method 3 - predefined removal polygon
-plot(captdata)
-poly1 <- locator(5)
-mask3 <- deleteMaskPoints (mask0, poly = poly1)
+if (interactive()) {
+    mask0 <- make.mask (traps(captdata))
+    ## Method 1 - click on each point to remove
+    mask1 <- deleteMaskPoints (mask0)
+    ## Method 2 - click on vertices of removal polygon
+    mask2 <- deleteMaskPoints (mask0, onebyone = FALSE)
+    ## Method 3 - predefined removal polygon
+    plot(captdata)
+    poly1 <- locator(5)
+    mask3 <- deleteMaskPoints (mask0, poly = poly1)
 }
 
 }

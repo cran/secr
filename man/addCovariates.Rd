@@ -7,7 +7,7 @@
 
 \description{
 Tools to construct spatial covariates for existing mask or traps objects
-from a spatial data source. Possible sources include GIS data such as
+from a spatial data source.  Possible sources include GIS data such as
 ESRI polygon shapefiles input using \pkg{rgdal}.
 }
 

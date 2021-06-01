@@ -120,6 +120,8 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \examples{
 
+\dontrun{
+
 ## with previously fitted model
 esa.plot(secrdemo.0)
 
@@ -132,6 +134,8 @@ esa.plot(trps,,, msk, 0, detectpar, nocc = 5, col = "green",
     add = TRUE)
 
 esa.plot(trps,,, msk, 0, detectpar, nocc = 5, thin = 0.002, plt = FALSE)
+
+}
 
 }
 \keyword{ hplot }

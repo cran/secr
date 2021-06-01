@@ -9,10 +9,10 @@
 \description{
   
 Animal locations determined by radiotelemetry can be used to augment
-capture--recapture data. The procedure in \pkg{secr} is first to form a
+capture--recapture data.  The procedure in \pkg{secr} is first to form a
 capthist object containing the telemetry data and then to combine this
 with true capture--recapture data (e.g. detections from hair-snag DNA)
-in another capthist object. \code{secr.fit} automatically detects the
+in another capthist object.  \code{secr.fit} automatically detects the
 telemetry data in the new object.
 
 }
@@ -52,15 +52,15 @@ It is assumed that a number of animals have been radiotagged, and their telemetr
 
 A new capthist object is built comprising all the detection
 histories in \code{detectionCH}, plus empty (all-zero) histories for
-every telemetered animal not in \code{detectionCH}. Telemetry is associated with new sampling occasions and a new detector (nominally at the same point as the first in \code{detectionCH}). The number of telemetry fixes of each animal is recorded in the relevant cell of the new capthist object (CH[i, s, K+1] for animal i and occasion s if there were K detectors in detectionCH).
+every telemetered animal not in \code{detectionCH}.  Telemetry is associated with new sampling occasions and a new detector (nominally at the same point as the first in \code{detectionCH}).  The number of telemetry fixes of each animal is recorded in the relevant cell of the new capthist object (CH[i, s, K+1] for animal i and occasion s if there were K detectors in detectionCH).
 
-The new sampling occasion(s) are assigned the detector type `telemetry' in the traps attribute of the output capthist object, and the traps attribute \code{telemetrytype} is set to the value provided. The telemetry type may be ``independent'' (no matching of individuals in captured and telemetered samples), ``dependent'' (telemetered animals are a subset of captured animals) or ``concurrent'' (histories may be capture-only, telemetry-only or both capture and telemetry).
+The new sampling occasion(s) are assigned the detector type `telemetry' in the traps attribute of the output capthist object, and the traps attribute \code{telemetrytype} is set to the value provided.  The telemetry type may be ``independent'' (no matching of individuals in captured and telemetered samples), ``dependent'' (telemetered animals are a subset of captured animals) or ``concurrent'' (histories may be capture-only, telemetry-only or both capture and telemetry).
 
 The telemetry locations are carried over from telemetryCH as attribute `xylist' (each
 component of xylist holds the coordinates of one animal; use
 \code{\link{telemetryxy}} to extract).
 
-The default behaviour of `addTelemetry` is to automatically collapse all telemetry occasions into one. This is computationally more efficient than the alternative, but closes off some possible models.
+The default behaviour of `addTelemetry` is to automatically collapse all telemetry occasions into one.  This is computationally more efficient than the alternative, but closes off some possible models.
 
 \code{xy2CH} partly reverses \code{addTelemetry}: the location
 information in the telemetryxy attribute is converted back to a capthist with

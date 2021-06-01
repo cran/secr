@@ -97,6 +97,8 @@ The coefficient of variation is CV = \eqn{\sqrt{V}/\mu}{sqrt(V)/\mu}.
 
 \examples{
 
+\dontrun{
+
   temptrap <- make.grid()
   ## per-session detection probability for an individual centred
   ## at a corner trap. By default, noccasions = 5.
@@ -106,7 +108,8 @@ The coefficient of variation is CV = \eqn{\sqrt{V}/\mu}{sqrt(V)/\mu}.
   msk <- make.mask(temptrap, buffer = 100)
   CVpdot(msk, temptrap, detectpar = list(g0 = 0.2, sigma = 25),
     noccasions = 5)
-    
+}
+
 }
 
 \keyword{ manip }

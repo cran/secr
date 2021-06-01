@@ -1,3 +1,29 @@
+Changes in version 4.4.4 (2021-05-29)
+
+New features or changed behaviour of old functions
+    o   animalID(), trap() etc. acquire argument 'sortorder' 
+
+Bugs fixed
+    o   erroneous plot(), verify() and RPSV() results for multi-polygon data
+    o   ASAN error: container overflow prwifastproximity.cpp
+    o   rectangularMask() misaligned covariates by one cell, with 
+        consequences for raster method for 'mask' class
+
+Other
+    o   multithreaded Examples now in dontrun{} to avoid TBB library in checks
+    o   interactive dontrun{} Examples trapped to allow R CMD check --run-dontrun
+    o   new text files in extdata for MRCH addSightings example
+    o   flip() arguments changed F to FALSE
+    o   new test: multi-detector polygon likelihood
+    o   new test: join() nonspatial data
+
+Changes in version 4.4.2 (2021-05-04)
+
+Other
+    o   rename generic make.newdata() to makeNewData()
+    o   Imports RcppParallel version >= 5.1.1 to dodge problems in earlier releases
+    o   run tests with Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread") to avoid CRAN errors
+
 Changes in version 4.4.1 (2021-05-01)
 
 Other
@@ -29,7 +55,7 @@ Bugs fixed
 Other
     o   Suggests testthat, adds some unit tests in 'tests' folder
     o   sim.popn() with movement: 'clip' edgemethod works with constantN
-    o   generic make.newdata() replaces secr.make.newdata() (seldom used directly)
+    o   generic make.newdata() replaces secr.make.newdata() (seldom used directly; see 4.4.2)
     o   shareFactorLevels() when not multisession now converts ch _covariates_ to factor
 
 Changes in version 4.3.3 (2020-12-11)

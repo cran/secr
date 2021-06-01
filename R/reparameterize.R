@@ -32,9 +32,10 @@ reparameterize.esa <- function (realparval, mask, traps, detectfn, nocc) {
     fx <- function(g0) {
       ## pdot accounts for 'usage'
       ## pdot selects appropriate g0/lambda0 according to detectfn
+      ## 2021-05-21 remove ncores = 1
       (sum(pdot(mask, traps, detectfn = detectfn,
-                detectpar = list(g0 = g0, lambda0 = g0, sigma = sigma, z = z),
-                noccasions = nocc, ncores = 1)) * cell) - a
+        detectpar = list(g0 = g0, lambda0 = g0, sigma = sigma, z = z),
+        noccasions = nocc)) * cell) - a
     }
     tmp <- try(uniroot(fx, lower=lower, upper=upper), silent = TRUE)
     ## debug if (inherits(tmp, 'try-error')) print(c(fx(lower),fx(upper)))

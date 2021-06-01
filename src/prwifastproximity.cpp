@@ -6,11 +6,14 @@ using namespace Rcpp;
 using namespace RcppParallel;
 
 //==============================================================================
-// 2019-09-05, 
+// 2019-09-05 detector type count
+//            one occasion, binomial size from integer Tsk
+//            no deaths, no groups
 // 2020-04-05 fixed bug in indiv option
-// detector type count
-// one occasion, binomial size from integer Tsk
-// no deaths, no groups
+// 2021-05-11 replaced pm0base.reserve(mm) by pm0base.resize(mm) etc.
+//            this is hoped to avoid test error
+//            ERROR: AddressSanitizer: container-overflow on address 
+//            in pr0()
 
 struct fasthistories : public Worker {
     
@@ -56,17 +59,29 @@ struct fasthistories : public Worker {
         const IntegerVector PIA,
         const IntegerVector Tsk,
         const LogicalMatrix mbool,
-        NumericVector output)    
+        NumericVector output)
         : 
-        mm(mm), nc(nc), cc(cc), grain(grain), 
-        binomN(binomN), indiv(indiv),
-        w(w), ki(ki), gk(gk), hk(hk), density(density), PIA(PIA), Tsk(Tsk), mbool(mbool),
+        mm(mm), 
+        nc(nc), 
+        cc(cc), 
+        grain(grain), 
+        binomN(binomN), 
+        indiv(indiv),
+        w(w), 
+        ki(ki), 
+        gk(gk), 
+        hk(hk), 
+        density(density), 
+        PIA(PIA), 
+        Tsk(Tsk), 
+        mbool(mbool),
         output(output) {
-        kk = Tsk.size();   // assuming single occasion
+        
+        kk = Tsk.size();        // assuming single occasion
+        pm0base.resize(mm);     // for std::vector
+        pm0kbase.resize(kk*mm);
         
         // initialise base value of pm arrays (for n = 0)
-        pm0base.reserve(mm);   // for std::vector
-        pm0kbase.reserve(kk*mm);
         pr0(0, pm0base, pm0kbase);
     }
     //==============================================================================
@@ -106,6 +121,7 @@ struct fasthistories : public Worker {
             for (m=0; m<mm; m++) pm[m] = pm0base[m];
         else 
             for (m=0; m<mm; m++) pm[m] = pm0[m];  
+        
         for (i=0; i<kk; i++) {
             k = ki(n,i);
             if (k<0) break;    // no more sites
@@ -175,7 +191,7 @@ NumericVector fasthistoriescpp (
     fasthistories somehist (mm, nc, cc, grain, binomN, indiv,
                             w, ki, gk, hk,
                             density, PIA, Tsk, mbool, 
-                            //pm0base, pm0kbase, 
+                            // pm0base, pm0kbase, 
                             output); 
     
     if (grain>0) {

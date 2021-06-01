@@ -577,8 +577,8 @@ cluster.counts <- function (object) {
         clust <- factor(1: nrow(traps(object)))
         warning ("clusters not defined, so treating each detector as a cluster")
     }
-    cl <- clust[trap(object, names = FALSE)]
-    tmp <- data.frame(ID=animalID(object), cluster = cl)
+    cl <- clust[trap(object, names = FALSE, sortorder = 'snk')]
+    tmp <- data.frame(ID=animalID(object, sortorder = 'snk'), cluster = cl)
     sapply(split(tmp,tmp$cluster), function(x) length(unique(x$ID)))
 }
 ###############################################################################

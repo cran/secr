@@ -6,7 +6,7 @@ Upload to GPS
 }
 \description{
 
-  Upload a set of point locations as waypoints to a GPS unit connected
+Upload a set of point locations as waypoints to a GPS unit connected
 by USB or via a serial port. Intended primarily for detector locations
 in a traps object. Uses the GPSBabel package which must have been
 installed. Coordinates are first inverse-projected to latitude and
@@ -79,6 +79,10 @@ quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
 
 \dontrun{
 
+## test for availability of GPSBabel
+
+if (nzchar(Sys.which("gpsbabel"))) {
+
 datadir <- system.file("extdata", package = "secr")
 possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
 
@@ -86,7 +90,7 @@ possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)
 
 ## May upload directly to GPS...
-writeGPS(possumgrid, proj = "+proj=nzmg")
+# writeGPS(possumgrid, proj = "+proj=nzmg")
 
 ## ...or save as Mapsource file
 writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
@@ -97,18 +101,20 @@ writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
 ## hypothetical example for New Zealand Transverse Mercator
 ## with datum NZGD2000 (EPSG:2193)
 
-NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
-    "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
-    " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+# NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
+#    "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
+#    " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
-writeGPS(possumgridNZTM, o = "gdb", F = "tempNZTM.txt", 
-    proj = NZTM)
+# writeGPS(possumgridNZTM, o = "gdb", F = "tempNZTM.txt", 
+#    proj = NZTM)
 
 ## Or to upload coordinates from UTM Zone 18 in eastern
 ## Maryland, USA...
 
-writeGPS(MarylandUTMgrid, proj =
-    "+proj=utm +zone=18 +ellps=WGS84")
+# writeGPS(MarylandUTMgrid, proj = 
+#    "+proj=utm +zone=18 +ellps=WGS84")
+
+}
 
 }
 

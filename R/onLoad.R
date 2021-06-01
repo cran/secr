@@ -1,20 +1,28 @@
 ###############################################################################
 ## package 'secr'
 ## onLoad.R
-## 2020-02-21, 2021-03-13, 2021-04-13
+## 2020-02-21, 2021-03-13, 2021-04-13, 2021-05-11, 2021-05-17
 ###############################################################################
 
 .onLoad <- function (libname, pkgname) {
     ## also sets environment variable RCPP_PARALLEL_NUM_THREADS
-    RcppParallel::setThreadOptions(min(2, RcppParallel::defaultNumThreads()))
+    defaultncores <- RcppParallel::defaultNumThreads()
+    if (defaultncores == 1) {
+        RcppParallel::setThreadOptions(1)
+    }
+    else {
+        RcppParallel::setThreadOptions(2)
+    }
     
-    ## following advice of Kevin Ushey 2020-03-18
-    ## to avoid UBSAN errors from parallelFor
+    ## TESTING ONLY 2021-05-17
+    ## RcppParallel::setThreadOptions(7)
+    
+    ## following advice of Kevin Ushey 2020-03-18, 2021-05-04
+    ## to avoid ASAN/UBSAN errors from parallelFor
+    ## use this in CRAN tests see test-initial.R
     ## Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread")
-    
-    ## possible improvement once RcppParallel updated 2021-03-14
-    ## see https://github.com/RcppCore/RcppParallel/pull/133?_pjax=%23js-repo-pjax-container
-    ## Sys.setenv(RCPP_PARALLEL_NUM_THREADS = 2)
+    ## otherwise
+    ## Sys.setenv(RCPP_PARALLEL_BACKEND = "tbb")
     
 }
 

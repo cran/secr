@@ -111,6 +111,7 @@ Ecology} \bold{34}, 356--359. Available on-line at
 summary(stoatCH)
 
 \dontrun{
+
 stoat.model.HN <- secr.fit(stoatCH, buffer = 1000, detectfn = 0)
 
 # this generates an error unless we use biasLimit = NA
@@ -121,6 +122,7 @@ confint(stoat.model.HN, "D")
 ## Profile likelihood interval(s)...
 ##         lcl        ucl
 ## D 0.01275125 0.04055662
+
 }
 
 ## plot fitted detection functions

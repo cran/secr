@@ -265,7 +265,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         detect <- detector(traps(capthist))
         telem <- detect == 'telemetry'
         if (!(any(telem) & !all(telem)))
-            stop ("tt is appropriate only for mixed telemetry data")
+            stop ("tt is appropriate for telemetry data only when mixed with another detector type")
         tt <- factor(c('nontelem','telem'))[telem+1] 
         dframe$tt <- insertdim (tt, c(3,1), dims)
     }

@@ -126,18 +126,16 @@ wild bird populations by mist-netting and banding. \emph{Bird-Banding} \bold{31}
 
 \examples{
 
-\dontrun{
-
 ## commands used to create ovenCH from the input files
 ## "netsites0509.txt" and "ovencapt.txt"
 ## for information only - these files not distributed
-netsites0509 <- read.traps(file = "netsites0509.txt",
-    skip = 1, detector = "proximity")
-temp <- read.table("ovencapt.txt", colClasses=c("character",
-    "character", "numeric", "numeric", "character"))
-ovenCHp <- make.capthist(temp, netsites0509, covnames = "Sex")
-ovenCHp <- reduce(ovenCHp, dropunused = FALSE) # drop repeat detections
-}
+
+# netsites0509 <- read.traps(file = "netsites0509.txt",
+#    skip = 1, detector = "proximity")
+# temp <- read.table("ovencapt.txt", colClasses=c("character",
+#     "character", "numeric", "numeric", "character"))
+# ovenCHp <- make.capthist(temp, netsites0509, covnames = "Sex")
+# ovenCHp <- reduce(ovenCHp, dropunused = FALSE) # drop repeat detections
 
 par(mfrow = c(1,5), mar = c(1,1,4,1))
 plot(ovenCHp, tracks = TRUE, varycol = TRUE)
@@ -146,6 +144,7 @@ par(mfrow = c(1,1), mar = c(5,4,4,2) + 0.1)  ## defaults
 counts(ovenCHp, "n")
 
 \dontrun{
+
 ## trimmed version of data - for consistency with earlier versions
 
 ovenCH <- reduce(ovenCHp, outputdetector = "multi", dropunused = FALSE)

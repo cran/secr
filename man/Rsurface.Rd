@@ -119,10 +119,9 @@ Rs <- Rsurface(msk, sigma = 100, usecov = 'z')
 plot(Rs, plottype = 'contour', col = topo.colors(10))
 lines(possumarea)
 
-\dontrun{
-
-spotHeight(Rs, dec = 2)
-
+if (interactive()) {
+    spotHeight(Rs, dec = 2)
 }
+
 }
 \keyword{ manip }

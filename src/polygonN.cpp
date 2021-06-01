@@ -62,7 +62,7 @@ using namespace Numer;
 //     fnzr = getzfnr(fn);  // 2016-01-02, 2017-03-22
 //     for (i=0; i<n; i++) {
 //         xy[1] = x[i];   // set each y value
-//         d = sqrt ( (xy[1]-my)*(xy[1]-my) + (xy[0]-mx)*(xy[0]-mx) );
+//         d = std::sqrt ( (xy[1]-my)*(xy[1]-my) + (xy[0]-mx)*(xy[0]-mx) );
 //         x[i] = fnzr(gsb, d);   // z(r)
 //     }
 // }
@@ -189,7 +189,7 @@ public:
     double operator()(const double& y) const
     {
         double d;
-        d = sqrt ((y-my)*(y-my) + (x-mx)*(x-mx));
+        d = std::sqrt ((y-my)*(y-my) + (x-mx)*(x-mx));
         return(fnzr(gsb, d));   // z(r)
     }
 };
@@ -231,7 +231,7 @@ private:
         double operator()(const double& y) const
         {
             double d;
-            d = sqrt (pow(y-my,2) + pow(x-mx,2));
+            d = std::sqrt (pow(y-my,2) + pow(x-mx,2));
             return(fnzr(gsb, d));   // z(r)
         }
     };
@@ -346,7 +346,7 @@ private:
             Eigen::VectorXd xy(2);
             xy << x,y;
             if (insidecppC(xy, n1, n2, poly)) {
-                d = sqrt (pow(y-my,2) + pow(x-mx,2));
+                d = std::sqrt (pow(y-my,2) + pow(x-mx,2));
                 return(fnzr(gsb, d));   // z(r)
             }
             else {
@@ -452,7 +452,7 @@ public:
         std::vector<double> cumd (ns,0);
         for (int i=0; i<(ns-1); i++) {
             cumd[i+1] = cumd[i] + 
-                sqrt (pow(line(i,0)-line(i+1,0),2) + 
+                std::sqrt (pow(line(i,0)-line(i+1,0),2) + 
                 pow(line(i,1)-line(i+1,1),2));
         }
         return(cumd);
@@ -476,7 +476,7 @@ public:
         double d;
         rpoint xy;
         xy = getxycpp (x, cumd, line, ns, 0);
-        d = sqrt (pow(xy.x-mx,2) + pow(xy.y-my,2));
+        d = std::sqrt (pow(xy.x-mx,2) + pow(xy.y-my,2));
         return(fnzr(gsb, d));   // z(r) 
     }
 };
@@ -509,7 +509,7 @@ double integral1DNRcpp
     }
     
     for (k=n1+1; k<=n2; k++) {  // upper bound is length of this transect 
-        bx += sqrt( (traps(k,0) - traps(k-1,0)) * (traps(k,0) - traps(k-1,0)) +
+        bx += std::sqrt( (traps(k,0) - traps(k-1,0)) * (traps(k,0) - traps(k-1,0)) +
             (traps(k,1) - traps(k-1,1)) * (traps(k,1) - traps(k-1,1)) );
     }
     int npar = gsbval.ncol();
@@ -553,7 +553,7 @@ public:
     {
         double d;
         if (insidecppC(x, n1, n2, poly)) {
-            d = sqrt (pow(x[0]-mx,2) + pow(x[1]-my,2));
+            d = std::sqrt (pow(x[0]-mx,2) + pow(x[1]-my,2));
             return(fnzr(gsb, d));   // z(r) 
         }
         else

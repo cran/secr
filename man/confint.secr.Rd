@@ -95,9 +95,12 @@ the package \pkg{Bhat} for another \R implementation.
 }
 
 \examples{
+
 \dontrun{
+
 ## Limits for the constant real parameter "D"
 confint(secrdemo.0, "D")   
+
 }
 
 }

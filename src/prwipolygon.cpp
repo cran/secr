@@ -100,7 +100,7 @@ struct polygonhistories : public Worker {
       return (gsbval(c,0) *  exp(-r2 / 2 / gsbval(c,1) / gsbval(c,1)));    
     }
     else {
-      r = sqrt(r2);
+      r = std::sqrt(r2);
       if (detectfn == 15) {  // hazard hazard rate
         return (gsbval(c,0) * ( 1 - exp(- pow(r /gsbval(c,1), - gsbval(c,2)))));
       }
@@ -197,8 +197,8 @@ struct polygonhistories : public Worker {
           for (s=0; s<ss; s++) {  // over occasions
               if (binomN[s] < 0) stop ("negative binomN < 0 not allowed in C++ fn prwpolygon");
               for (k=0; k<nk; k++) {   // over polygons
-                  w3 = i3(n,s,k,nc,ss);
-                  count = w[w3];
+                w3 = i3(n,s,k,nc,ss);
+                count = w[w3];
                   dead = count<0;
                   count = abs(count);
                   c = PIA[w3] - 1;
@@ -214,7 +214,7 @@ struct polygonhistories : public Worker {
                                   // retrieve hint = integral2D(zfn(x) over k)) 
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
                                   for (j=start[w3]; j < start[w3]+count; j++) {
-                                      pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
+                                    pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
                                   }
                               }
                           }

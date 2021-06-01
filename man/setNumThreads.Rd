@@ -65,11 +65,10 @@ The mechanism for setting the number of threads changed between versions 4.1.0 a
 
 setNumThreads()
 
-# set new number of threads
-
-setNumThreads(2)
-
 \dontrun{
+
+# set new number of threads
+setNumThreads(7)
 
 # a call to secr.fit that specifies 'ncores' also sets the 
 # number of threads, as we see here

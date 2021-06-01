@@ -63,8 +63,11 @@ telemetry.LT <- function(CH, detectfn, realparval, PIA,
 
     ## df with one row per detection
     ## i is integer row number within CH
-    df <- data.frame(xy(CH), i=animalID(CH, names = FALSE), s=occasion(CH),
-                     k=trap(CH, names = FALSE))
+    df <- data.frame(xy(CH), 
+        i = animalID(CH, names = FALSE, sortorder = 'snk'), 
+        s = occasion(CH, sortorder = 'snk'),
+        k = trap(CH, names = FALSE, sortorder = 'snk')
+    )
     df <- df[order(df$i, df$s, df$k),]              ## sort by animal, occasion, detector
     ni <- table(df$i)                               ## frequency of ith animal
     df$cx <- rep(tapply(df$x, df$i, mean),ni)       ## centre x

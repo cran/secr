@@ -16,7 +16,7 @@ for a spatially explicit capture-recapture analysis with
 For `single' and `multi' detectors, \code{capthist} is a matrix with one
 row per animal and one column per occasion (i.e. dim(capthist) = c(nc,
 noccasions)); each element is either zero (no detection) or a detector
-number. For other detectors (`proximity', `count', `signal' etc.),
+number.  For other detectors (`proximity', `count', `signal' etc.),
 \code{capthist} is an array of values and dim(capthist) = c(nc,
 noccasions, ntraps); values maybe binary (\{--1, 0, 1\}) or integer
 depending on the detector type.

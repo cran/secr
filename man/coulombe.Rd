@@ -94,13 +94,16 @@ known.sex <- subset(housemouse, !is.na(covariates(housemouse)$sex))
 ## reveal multiple captures
 table(trap(housemouse), occasion(housemouse))
 
-## assess need to distinguish morning and afternoon samples
 \dontrun{
+
+## assess need to distinguish morning and afternoon samples
 housemouse.0 <- secr.fit (housemouse, buffer = 20)
 housemouse.ampm <- secr.fit (housemouse, model = g0~tcov, buffer = 20,
     timecov = c(0,1,0,1,0,1,0,1,0,1))
 AIC(housemouse.0, housemouse.ampm)
+
 }
+
 }
 
 \keyword{datasets}

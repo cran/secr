@@ -4,6 +4,7 @@
 ## 2012-12-10,11,12,13 slice transects into small discrete units
 ## 2017-03-13 snip uses all occasions
 ## 2017-10-25 update for as.data.frame.traps
+## 2021-05-18  sortorder = "ksn"
 ## uses xyontransect from verify.r
 ## transectX, transect
 ###############################################################################
@@ -109,8 +110,19 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
         df
     }
     IDfn <- function(x) {
-        if (length(x) > 1)
-            paste(x[1], sprintf("%04d", as.numeric(x[2])), sep='.')
+        if (length(x) == 2)
+            paste(
+                x[1], 
+                sprintf("%04d", as.numeric(x[2])), 
+                sep='.'
+            )
+        else if (length(x) == 3)
+            paste(
+                x[1], 
+                sprintf("%04d", as.numeric(x[2])), 
+                sprintf("%04d", as.numeric(x[3])),
+                sep='.'
+            )
         else
             x
     }
@@ -118,11 +130,13 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     ## main line
     if (!all(detector(object) %in% c('transect','transectX')))
         stop ("requires 'transect' input")
+    
     ## drop transectID column for new as.data.frame.traps 2017-10-25 
     temp <- split(as.data.frame(object)[,-1], transectID(object))
     temp <- lapply(temp, sliceone)
     temp <- do.call(rbind, temp)
     oldID <- as.numeric(do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1])
+    ## TO BE FIXED 2021-05-20
     ID <- sapply(strsplit(rownames(temp),'.', fixed=T), IDfn)
     temp <- split(temp, ID)
     newobj <- make.transect(transectlist = temp, exclusive =
@@ -166,14 +180,14 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
             newtrap <- factor(newtrap, levels = 1:length(levels(polyID(newtraps))))
             old.row.names <- row.names(object)
             df <- data.frame(
-                             trap = trap(object, names = F),
-                             occ = factor(occasion(object), levels=1:ncol(object)),    ## 2017-03-13 factor
-                             ID = animalID(object, names = F),
-                             alive = alive(object),
-                             x = xy(object)[,1],
-                             y = xy(object)[,2],
-                             newtrap = newtrap)
-
+                trap = trap(object, names = F, sortorder = "ksn"),
+                occ = factor(occasion(object, sortorder = "ksn"), levels=1:ncol(object)),   
+                ID = animalID(object, names = F, sortorder = "ksn"),
+                alive = alive(object, sortorder = "ksn"),
+                x = xy(object)[,1],
+                y = xy(object)[,2],
+                newtrap = newtrap)
+            
             if (all(detector(traps(object)) == 'transect')) {
                 newobj <- table(df$ID, df$occ, df$newtrap)
                 alivesign <- tapply(df$alive, list(df$ID,df$occ,df$newtrap),all)

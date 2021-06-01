@@ -99,7 +99,7 @@ struct polygonfxi : public Worker {
       return (gsbval(c,0) *  exp(-r2 / 2 / gsbval(c,1) / gsbval(c,1)));    
     }
     else {
-      r = sqrt(r2);
+      r = std::sqrt(r2);
       if (detectfn == 15) {  // hazard hazard rate
         return (gsbval(c,0) * ( 1 - exp(- pow(r /gsbval(c,1), - gsbval(c,2)))));
       }

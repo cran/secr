@@ -553,7 +553,7 @@ List simdetectpolycpp (
             for (j = 0; j < J; j++) {
                 dx = animals(i,0) - traps(j,0);
                 dy = animals(i,1) - traps(j,1);
-                d = sqrt(dx*dx + dy*dy);
+                d = std::sqrt(dx*dx + dy*dy);
                 if (d > w) w = d;
             }
         } 

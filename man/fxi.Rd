@@ -144,6 +144,8 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \examples{
 
+\dontrun{
+
 fxi.secr(secrdemo.0, i = 1, X = c(365,605))
 
 ## contour first 5 detection histories
@@ -151,33 +153,31 @@ plot(secrdemo.0$capthist)
 fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
     plotmode = TRUE, drawlabels = FALSE)
 
-\dontrun{
+## extract modes only
+## these are more reliable than those from fit.mode called directly as
+## they use a contour-based approximation for the starting point
+fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
+t(sapply(fxiout, "[[", "mode"))
 
-  ## extract modes only
-  ## these are more reliable than those from fit.mode called directly as
-  ## they use a contour-based approximation for the starting point
-  fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
-  t(sapply(fxiout, "[[", "mode"))
+## using fill colours
+## lty = 0 suppresses contour lines
+## nx = 256 ensures smooth outline
+plot(traps(captdata))
+fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
+    = FALSE, nx = 256, fill = topo.colors(4), lty = 0)
 
-  ## using fill colours
-  ## lty = 0 suppresses contour lines
-  ## nx = 256 ensures smooth outline
-  plot(traps(captdata))
-  fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
-      = FALSE, nx = 256, fill = topo.colors(4), lty = 0)
+## output as SpatialPolygonsDataFrame
+spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
+    nx = 256, SPDF = TRUE, fitmode = TRUE)
 
-  ## output as SpatialPolygonsDataFrame
-  spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
-      nx = 256, SPDF = TRUE, fitmode = TRUE)
+## save as ESRI shapefile test.shp etc.
+## replace tempdir() with your own folder name
+library(rgdal)
+writeOGR(spdf, dsn = tempdir(), layer = 'test', driver="ESRI Shapefile")
 
-  ## save as ESRI shapefile test.shp etc.
-  ## replace tempdir() with your own folder name
-  library(rgdal)
-  writeOGR(spdf, dsn = tempdir(), layer = 'test', driver="ESRI Shapefile")
-
-  ## plot contours and modes
-  plot(spdf)
-  points(data.frame(spdf))
+## plot contours and modes
+plot(spdf)
+points(data.frame(spdf))
 
 }
 

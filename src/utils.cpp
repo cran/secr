@@ -195,7 +195,7 @@ double countp (int count, int binomN, double lambda) {
 
 // use distance1 rather than distance because of clash with std::distance
 double distance1 (const rpoint p1, const rpoint p2) {
-    return(sqrt ((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
+    return(std::sqrt ((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)));
 }
 //--------------------------------------------------------------------------
 
@@ -232,7 +232,7 @@ NumericVector gxy (const int fn, const NumericVector par, const double w) {
     int maxj = 1000000;
     double r;
     for (int j=0; j<maxj; j++) {
-        r = w * sqrt(unif_rand());
+        r = w * std::sqrt(unif_rand());
         if (unif_rand() < zrcpp(r, fn, par)) break;
     }
     double theta = unif_rand() * 2 * M_PI;
@@ -265,7 +265,7 @@ List nearestcpp (
                 (traps(i,1) - xy(j,1)) * (traps(i,1) - xy(j,1));
             if (d2 < d2min) { d2min = d2; id = i; }
         }
-        d[j] = sqrt(d2min);
+        d[j] = std::sqrt(d2min);
         p[j] = id+1;
     }
     return (List::create(Named("distance") = wrap(d), Named("index") = wrap(p)));
@@ -467,8 +467,8 @@ void SegCircle (
     }
     else {
         
-        mu1 = (-b + sqrt(bb4ac)) / (2 * a);
-        mu2 = (-b - sqrt(bb4ac)) / (2 * a);
+        mu1 = (-b + std::sqrt(bb4ac)) / (2 * a);
+        mu2 = (-b - std::sqrt(bb4ac)) / (2 * a);
         
         i1x = *p1x + mu1 * (*p2x - *p1x);
         i1y = *p1y + mu1 * (*p2y - *p1y);
@@ -481,22 +481,22 @@ void SegCircle (
         else {
             if (((mu1<0) && (mu2>1)) || ((mu1>1) && (mu2<0))) {
                 // both inside 
-                *seg = sqrt ((*p1x - *p2x) * (*p1x - *p2x) + 
+                *seg = std::sqrt ((*p1x - *p2x) * (*p1x - *p2x) + 
                     (*p1y - *p2y) * (*p1y - *p2y));
             }
             else {
                 if ((mu1>0) && (mu1<1) && (mu2>0) && (mu2<1)) {
                     // two intersections 
-                    *seg = sqrt ((i1x - i2x) * (i1x - i2x) + 
+                    *seg = std::sqrt ((i1x - i2x) * (i1x - i2x) + 
                         (i1y - i2y) * (i1y - i2y));
                 }
                 else {
                     // one intersection 
-                    d1 = sqrt((i1x - *p1x) * (i1x * *p1x) + 
+                    d1 = std::sqrt((i1x - *p1x) * (i1x * *p1x) + 
                         (i1y - *p1y) * (i1y - *p1y));
-                    d2 = sqrt((i1x - *p2x) * (i1x * *p2x) + 
+                    d2 = std::sqrt((i1x - *p2x) * (i1x * *p2x) + 
                         (i1y - *p2y) * (i1y - *p2y));
-                    i1between = sqrt(a) < (d1 + d2 + 1e-10);
+                    i1between = std::sqrt(a) < (d1 + d2 + 1e-10);
                     if (p1in) {
                         if (i1between) {
                             i2x = *p1x;
@@ -517,7 +517,7 @@ void SegCircle (
                             i1y = *p2y;
                         }
                     }
-                    *seg = sqrt ((i1x - i2x) * (i1x - i2x) + 
+                    *seg = std::sqrt ((i1x - i2x) * (i1x - i2x) + 
                         (i1y - i2y) * (i1y - i2y));
                 }
             }
@@ -563,7 +563,7 @@ double SegCircle2 (
     p2in = ((scx - p2x) * (scx - p2x) + 
         (scy - p2y) * (scy - p2y)) < (r * r);
     if (p1in && p2in) {        
-        seg = sqrt ((p1x - p2x) * (p1x - p2x) + 
+        seg = std::sqrt ((p1x - p2x) * (p1x - p2x) + 
             (p1y - p2y) * (p1y - p2y));
         return (seg);
     }
@@ -584,8 +584,8 @@ double SegCircle2 (
         return (0);   
     }
     
-    mu1 = (-b + sqrt(bb4ac)) / (2 * a);
-    mu2 = (-b - sqrt(bb4ac)) / (2 * a);
+    mu1 = (-b + std::sqrt(bb4ac)) / (2 * a);
+    mu2 = (-b - std::sqrt(bb4ac)) / (2 * a);
     
     i1x = p1x + mu1 * (p2x - p1x);
     i1y = p1y + mu1 * (p2y - p1y);
@@ -599,22 +599,22 @@ double SegCircle2 (
     else {
         if (((mu1<0) && (mu2>1)) || ((mu1>1) && (mu2<0))) {
             // both inside 
-            seg = sqrt ((p1x - p2x) * (p1x - p2x) + 
+            seg = std::sqrt ((p1x - p2x) * (p1x - p2x) + 
                 (p1y - p2y) * (p1y - p2y));
         }
         else {
             if ((mu1>0) && (mu1<1) && (mu2>0) && (mu2<1)) {
                 // two intersections 
-                seg = sqrt ((i1x - i2x) * (i1x - i2x) + 
+                seg = std::sqrt ((i1x - i2x) * (i1x - i2x) + 
                     (i1y - i2y) * (i1y - i2y));
             }
             else {
                 // one intersection 
-                d1 = sqrt((i1x - p1x) * (i1x * p1x) + 
+                d1 = std::sqrt((i1x - p1x) * (i1x * p1x) + 
                     (i1y - p1y) * (i1y - p1y));
-                d2 = sqrt((i1x - p2x) * (i1x * p2x) + 
+                d2 = std::sqrt((i1x - p2x) * (i1x * p2x) + 
                     (i1y - p2y) * (i1y - p2y));
-                i1between = sqrt(a) < (d1 + d2 + 1e-10);
+                i1between = std::sqrt(a) < (d1 + d2 + 1e-10);
                 if (p1in) {
                     if (i1between) {
                         i2x = p1x;
@@ -635,7 +635,7 @@ double SegCircle2 (
                         i1y = p2y;
                     }
                 }
-                seg = sqrt ((i1x - i2x) * (i1x - i2x) + 
+                seg = std::sqrt ((i1x - i2x) * (i1x - i2x) + 
                     (i1y - i2y) * (i1y - i2y));
             }
         }

@@ -1,5 +1,6 @@
 ## 2012-09-17 moved from trap.builder
 ## 2016-06-14 bug fix : remove trapnum
+## 2021-05-19 sortorder ksn for signal, otherwise no effect
 
 mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
 
@@ -22,7 +23,6 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
     }
     else if (ms(object)) {
         out <- lapply(object, mash, origin, clustergroup, ...)
-#        names(out) <- names(clustergroup)
         names(out) <- names(object)
         class(out) <- c('capthist', 'list')
         if (length(out) == 1) out <- out[[1]]
@@ -43,8 +43,8 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
 
         ## how many individuals per cluster?
         ## assign each to the first cluster in which it appears
-        cl <- cluster[trap(object, names = FALSE)]
-        ID <- animalID(object, names = FALSE)
+        cl <- cluster[trap(object, names = FALSE, sortorder = 'ksn')]
+        ID <- animalID(object, names = FALSE, sortorder = 'ksn')
         n.mash <- table (cl[match(unique(ID),ID)])
         class(n.mash) <- 'integer'  ## from 'table'
 
@@ -83,9 +83,9 @@ mash <- function(object, origin = c(0,0), clustergroup = NULL, ...) {
         else {
             tempdf <- data.frame(
                 session = rep(session(object), length(animalID(object))),
-                ID = animalID(object),
-                occ = occasion(object),
-                trap = trapnum[trap(object, names=FALSE)]
+                ID = animalID(object, sortorder = 'ksn'),
+                occ = occasion(object, sortorder = 'ksn'),
+                trap = trapnum[trap(object, names=FALSE, sortorder = 'ksn')]
             )
             if (!is.null(attr(object, 'signalframe'))) {
                 tempdf <- cbind(tempdf, attr(object, 'signalframe'))

@@ -4,10 +4,13 @@
 \alias{insertdim}
 
 \title{ Construct Detection Model Design Matrices and Lookups }
+
 \description{
   Internal functions used by \code{\link{secr.fit}}. 
 }
+
 \usage{
+
 secr.design.MS (capthist, models, timecov = NULL, sessioncov = NULL, 
     groups = NULL, hcov = NULL, dframe = NULL, naive = FALSE, CL = FALSE,
     keep.dframe = FALSE, full.dframe = FALSE, ignoreusage = FALSE, contrasts = NULL, ...)

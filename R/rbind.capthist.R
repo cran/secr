@@ -267,6 +267,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         
         ##################################################
         ## messy problem of correct order of detections
+        ## 2021-05-19 NOT RESOLVED for xy, signal
         if (!is.null(xy(temp)) | !is.null(signalframe(temp))) {
             occ <- unlist(lapply(object, occasion))
             ID  <- lapply(object, animalID, names = FALSE)
@@ -276,10 +277,14 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             uniqueID <- ID + rep(c(0, cumsum(maxID[-length(maxID)])), nID)
             trp <- unlist(lapply(object, trap))
             neworder <- order (occ, uniqueID, trp)
-            if (!is.null(xy(temp)))
+            if (!is.null(xy(temp))) {
+              warning ("secr 4.4.3 rbind.capthist not tested for polygon data")
                 xy(temp) <- xy(temp)[neworder,,drop=F]
-            if (!is.null(signalframe(temp)))
-                signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
+            }
+            if (!is.null(signalframe(temp))) {
+              warning ("secr 4.4.3 rbind.capthist not tested for signal data")
+              signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
+            }
         }
 
         ##################################################

@@ -1,7 +1,8 @@
-\name{make.newdata}
-\alias{make.newdata}
-\alias{make.newdata.secr}
-\alias{make.newdata.default}
+\name{newdata}
+\alias{newdata}
+\alias{makeNewData}
+\alias{makeNewData.secr}
+\alias{makeNewData.default}
 
 \title{
 Create Default Design Data
@@ -15,8 +16,8 @@ for the base levels of all predictors in an secr object.
 }
 
 \usage{
-\method{make.newdata}{default}(object, all.levels = FALSE, ...)
-\method{make.newdata}{secr}(object, all.levels = FALSE, ...)
+\method{makeNewData}{default}(object, all.levels = FALSE, ...)
+\method{makeNewData}{secr}(object, all.levels = FALSE, ...)
 
 }
 
@@ -28,9 +29,9 @@ for the base levels of all predictors in an secr object.
 
 \details{
 
-\code{make.newdata} is used by \code{predict} in lieu of
-user-specified `newdata'. There is seldom any need to call
-\code{make.newdata} directly.
+\code{makeNewData} is used by \code{predict} in lieu of
+user-specified `newdata'. There is seldom any need to call the function 
+\code{makeNewData} directly.
 
 }
 
@@ -50,7 +51,7 @@ predictors used by \code{object$model}.
 \examples{
 
 ## from previously fitted model
-make.newdata(secrdemo.b)
+makeNewData(secrdemo.b)
 
 }
 

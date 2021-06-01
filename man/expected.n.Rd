@@ -85,9 +85,9 @@ one per cluster. For multi-session data, a list of such vectors.
 
 \examples{
 
-expected.n(secrdemo.0)
-
 \dontrun{
+
+expected.n(secrdemo.0)
 expected.n(secrdemo.0, bycluster = TRUE)
 expected.n(ovenbird.model.D)
 

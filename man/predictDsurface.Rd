@@ -102,7 +102,10 @@ title("upper 95\% surface")
 par(mfrow = c(1,1))
 plot(regionPossums, plottype = "shaded", mesh = NA, breaks = 20)
 plot(traps(possumCH), add = TRUE, detpar = list(col = "black"))
-spotHeight(regionPossums, dec = 1, pre = c("lcl","ucl"), cex = 0.8)
+
+if (interactive()) {
+    spotHeight(regionPossums, dec = 1, pre = c("lcl","ucl"), cex = 0.8)
+}
 
 ## perspective plot
 pm <- plot(regionPossums, plottype = "persp", box = FALSE, zlim =

@@ -7,13 +7,13 @@
 
 \description{
 
-From version 4.0 \pkg{secr} uses multi-threading in C++ (package \pkg{RcppParallel}, Allaire et al. 2019) to speed likelihood evaluation and hence model fitting in \code{secr.fit}. Detection histories are distributed over threads. Setting \code{ncores = NULL} in functions with multi-threading uses the existing value from the environment variable RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
+From version 4.0 \pkg{secr} uses multi-threading in C++ (package \pkg{RcppParallel}, Allaire et al. 2021) to speed likelihood evaluation and hence model fitting in \code{secr.fit}. Detection histories are distributed over threads. Setting \code{ncores = NULL} in functions with multi-threading uses the existing value from the environment variable RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
 
 These functions use multi-threading and call \code{setNumThreads} internally:
 \tabular{llll}{
-  Function \cr
   \code{\link{autoini}} \cr
   \code{\link{confint.secr}} \cr
+  \code{\link{derived.secr}} \cr
   \code{\link{derivedSystematic}} \cr
   \code{\link{esa}} \cr
   \code{\link{fxi.secr}} and related functions \cr
@@ -22,6 +22,18 @@ These functions use multi-threading and call \code{setNumThreads} internally:
   \code{\link{score.test}} \cr
   \code{\link{secr.fit}} \cr
 }
+
+
+These functions use multi-threading without calling \code{setNumThreads}:
+\tabular{llll}{
+  \code{\link{LLsurface.secr}} \cr
+  \code{\link{mask.check}} \cr
+  \code{\link{expected.n}} \cr
+  \code{\link{secr.test}} \cr
+  \code{\link{sim.secr}} \cr
+}
+
+Other functions may use multithreading indirectly through a call to one of these functions. Examples are \code{\link{suggest.buffer}} (\code{autoini}), \code{\link{esa.plot}} (\code{pdot}), and \code{\link{bias.D}} (\code{pdot}).
 
 NOTE: The mechanism for setting the number of threads changed between versions 4.1.0 and 4.2.0. The default number of cores is now capped at 2 to meet CRAN requirements. Setting \code{ncores = NULL} previously specified one less than the maximum number of cores.
 
@@ -61,8 +73,8 @@ elapsed processing time when multiple cores are used.
 
 \references{
 
-Allaire, J. J., Francois, R., Ushey, K., Vandenbrouck, G., Geelnard, M. and Intel (2019)
-  RcppParallel: Parallel Programming Tools for 'Rcpp'. R package version 4.4.4.
+Allaire, J. J., Francois, R., Ushey, K., Vandenbrouck, G., Geelnard, M. and Intel (2021)
+  RcppParallel: Parallel Programming Tools for 'Rcpp'. R package version 5.1.2.
   https://CRAN.R-project.org/package=RcppParallel.
 
 }

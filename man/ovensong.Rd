@@ -117,6 +117,7 @@ signal(signalCH)
 signalCH.525 <- subset(signalCH, cutval = 52.5)
 
 \dontrun{
+
 ## models with and without spherical spreading
 omask <- make.mask(traps(signalCH), buffer = 200)
 ostart <- c(log(20), 80, log(0.1), log(2))
@@ -124,6 +125,7 @@ ovensong.model.1 <- secr.fit( signalCH.525, mask = omask,
     start = ostart, detectfn = 11 ) 
 ovensong.model.2 <- secr.fit( signalCH.525, mask = omask, 
     start = ostart, detectfn = 10 ) 
+
 }
 
 ## compare fit of models

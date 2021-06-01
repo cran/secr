@@ -93,7 +93,7 @@ See also the example in \href{https://www.otago.ac.nz/density/pdfs/secr-densitys
 
 ## smooth density surface
 possum.model.sxy <- secr.fit(possumCH, mask = possummask,
-    model = D ~ s(x,y, k = 6, fx = TRUE)), trace = FALSE)
+    model = D ~ s(x,y, k = 6, fx = TRUE), trace = FALSE)
 fittedsurface <- predictDsurface(possum.model.sxy)
 par(mar = c(1,1,1,6))
 plot(fittedsurface)

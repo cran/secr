@@ -46,6 +46,7 @@ that the x-axis is labelled correctly (See the Examples in help for
 \examples{
 
 \dontrun{
+
 tmp <- secr.test(ovenbird.model.1)
 if (inherits(tmp, 'secrtest')) {
     tmp  ## terse print
@@ -54,7 +55,9 @@ if (inherits(tmp, 'secrtest')) {
     plot(tmp, main = '', xlim=c(0,1), breaks=seq(0,1,0.05))
     par(mfrow = c(1,1))    ## reset to default
 }
+
 }
+
 }
 
 \seealso{

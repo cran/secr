@@ -114,19 +114,19 @@ tmpleg <- plot (tempmask, covariate = "circle", dots = FALSE,
 strip.legend (xy = 'topright', col = terrain.colors(10),
     legend = tmpleg, title = "Test plot")
 
-\dontrun{
-## a custom axis using the returned values
-par(mar = c(2,2,2,6))
-plot (tempmask, covariate = "circle", dots = FALSE, 
-    breaks = 10, legend = FALSE)
-b <- strip.legend (locator(1), col = terrain.colors(10),
-    legendtype = "other", legend = "    ", title = "Test plot",
-     height = 0.3, box = NA)
-axis(side = 4, pos = b[2]+5, at = seq(b[4], b[3], length = 3),
-    lab = seq(0,1,0.5), las = 1, tck = -0.02)
-par(mar = c(5,4,4,2) + 0.1)  ## reset to default
-
+if (interactive()) {
+    ## a custom axis using the returned values
+    par(mar = c(2,2,2,6))
+    plot (tempmask, covariate = "circle", dots = FALSE, 
+        breaks = 10, legend = FALSE)
+    b <- strip.legend (locator(1), col = terrain.colors(10),
+        legendtype = "other", legend = "    ", title = "Test plot",
+         height = 0.3, box = NA)
+    axis(side = 4, pos = b[2]+5, at = seq(b[4], b[3], length = 3),
+        lab = seq(0,1,0.5), las = 1, tck = -0.02)
+    par(mar = c(5,4,4,2) + 0.1)  ## reset to default
 }
+
 }
 
 \keyword{ hplot }

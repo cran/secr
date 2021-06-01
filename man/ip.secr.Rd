@@ -229,6 +229,7 @@ from a simple halfnormal model if variances are not required.
 \examples{
 
 \dontrun{
+
 ## these calculations may take several minutes
 
 ## default settings

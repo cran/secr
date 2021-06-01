@@ -308,9 +308,9 @@ export ('noise<-')
 # export (secr.lpredictor)
 # export (make.lookup)
 
-export (make.newdata)
-S3method(make.newdata, default)
-S3method(make.newdata, secr)
+export (makeNewData)
+S3method(makeNewData, default)
+S3method(makeNewData, secr)
 
 export (secr.design.MS)
 export (D.designdata)

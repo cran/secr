@@ -113,6 +113,7 @@ traps(hornedlizardCH)
 head(xy(hornedlizardCH))
 
 \dontrun{
+
 ## Compare default (Poisson) and binomial models for number
 ## caught
 FTHL.fit <- secr.fit(hornedlizardCH)
@@ -124,6 +125,7 @@ collate(FTHL.fit, FTHLbn.fit)[,,,"D"]
 hornedlizardCH.14 <- reduce(hornedlizardCH, newoccasions =
     list(1:14), outputdetector = "polygon")
 FTHL14.fit <- secr.fit(hornedlizardCH.14, binomN = 14)
+
 }
 
 }

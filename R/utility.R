@@ -403,7 +403,6 @@ stdform <- function (flist) {
     }
     RHS <- function (form) {
         trms <- as.character (form)
-        # if (length(trms)==3) as.formula(paste(trms[c(1,3)])) else form
         ## 2020-05-14 for compatibility with R 4.0
         if (length(trms)==3) as.formula(paste(trms[c(1,3)], collapse = " ")) else form
     }
@@ -445,6 +444,8 @@ fixed.string <- function (fixed) {
 ############################################################################################
 
 var.in.model <- function(v,m) v %in% unlist(lapply(m, all.vars))
+
+############################################################################################
 
 get.nmix <- function (model, capthist, hcov) {
     model$D <- NULL  ## ignore density model
@@ -1821,8 +1822,6 @@ xyinpoly <- function (xy, trps) {
         nr <- nrow(polyxy)
         temp <- insidecpp(unlist(xy[i,]), 0, nr-1, as.matrix(polyxy))
     }
-# lxy <- split (trps, levels(polyID(trps)))
-# 2016-05-10
     lxy <- split (trps, polyID(trps))
     firstinside <- function (i) {
         frstk <- 0
@@ -1844,9 +1843,13 @@ addzerodf <- function (df, oldCH, sess) {
     allzero <- apply(oldCH,1,sum)==0
     naz <- sum(allzero)
     if (naz > 0) {
-        df0 <- expand.grid(newID = rownames(oldCH)[allzero], newocc = NA,
-                           newtrap = trap(oldCH)[1], alive = TRUE, sess = sess,
-                           stringsAsFactors = FALSE)
+        df0 <- expand.grid(
+          newID = rownames(oldCH)[allzero], 
+          newocc = NA,
+          newtrap = trap(oldCH)[1], 
+          alive = TRUE, 
+          sess = sess,
+          stringsAsFactors = FALSE)
         df$x <- NULL; df$y <- NULL  ## 2021-04-08
         df <- rbind(df,df0)
         if (!is.null(xy(oldCH))) {
@@ -2085,8 +2088,8 @@ maskboolean <- function (ch, mask, threshold) {
     outlist
   }
   else {
-    id <- animalID(ch, names = FALSE)
-    tr <- trap(ch,names = FALSE)
+    id <- animalID(ch, names = FALSE, sortorder = 'snk')
+    tr <- trap(ch, names = FALSE, sortorder = 'snk')
     trps <- traps(ch)
     m <- nrow(mask)
     if (!is.null(threshold) && all(detector(trps) %in% .localstuff$pointdetectors)) {
@@ -2192,7 +2195,6 @@ selectCHsession <- function(capthist, sessnum) {
 
 stringsAsFactors <- function (DF) {
     # convert any character columns of a data.frame (or list) to factor
-    ## if (is.list(DF)) {
     if (is.list(DF) && length(DF)>0) {    ## bug fix 2020-08-14
         chr <- sapply(DF, is.character)
         DF[chr] <- lapply(DF[chr], as.factor)
@@ -2227,12 +2229,13 @@ getdistmat2 <- function (traps, mask, userdist, HPX = FALSE) {
         else {
             if (any(detector(traps) %in% .localstuff$polydetectors)) {
                 ## do not use result if detector is one of
-                ## polygonX, polygon, transectX, transect, telemetry
+                ## polygonX, polygon, transectX, transect, OR telemetry?
                 matrix(0, nrow = nrow(traps), ncol = nrow(mask))
             }
             else {
                 # Euclidean distance
-                edist2cpp(as.matrix(traps), as.matrix(mask))
+              # edist(as.matrix(traps), as.matrix(mask))^2
+              edist2cpp(as.matrix(traps), as.matrix(mask))
             }
         }
     }

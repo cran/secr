@@ -36,8 +36,9 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
         header <- ifelse (is.character(header), TRUE, header)
         det <- detector(traps(object))
 
-        ID <- animalID(object)
-        occ <- occasion(object)
+        ## use universal sort order; re-sorted at end
+        ID <- animalID(object, sortorder = 'ksn')
+        occ <- occasion(object, sortorder = 'ksn')
         session <- rep(sess,length(ID))
 
         if (det[1] %in% c('polygon','transect','polygonX','transectX')) {
@@ -47,19 +48,19 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
         }
         else if (det[1] %in% c('signal')) {
             signal <- signal(object)
-            trap <- trap(object)
+            trap <- trap(object, sortorder = 'ksn')
             temp <- data.frame (Session=session, ID=ID, Occasion=occ, Detector=trap, Signal=signal)
         }
         else if (all(det %in% c('telemetry'))) {
             xyl <- telemetryxy(object)
             xy <- do.call(rbind, xyl)
             ID <- rep(names(xyl), sapply(xyl, nrow))
-            trap <- trap(object)
+            trap <- trap(object, sortorder = 'ksn')
             temp <- data.frame (Session=session, ID=ID, Occasion=rep(1,nrow(xy)), 
                                 x = round(xy[,1],ndec), y = round(xy[,2],ndec))
         }
         else {
-            trap <- trap(object)
+            trap <- trap(object, sortorder = 'ksn')
             temp <- data.frame (Session=session, ID=ID, Occasion=occ, Detector=trap)
         }
 
@@ -92,6 +93,8 @@ write.captures <- function (object, file='', deblank = TRUE, header = TRUE,
             warning ("truncating long session names")
             temp$Session <- substring(temp$Session,1,17)
         }
+        
+        temp <- temp[order(temp$Session, temp$ID, temp$Occasion), ]
         write.table(temp, file = file, row.names = FALSE, col.names = FALSE,
             append = append, quote = FALSE, ...)
     }

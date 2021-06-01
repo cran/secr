@@ -10,6 +10,12 @@ trapfile <- system.file("extdata", "stoattrap.txt", package = "secr")
 stoatCH <- read.capthist(captfile, trapfile, detector = "proximity")
 summary(stoatCH)
 
+## ----envvar, echo = FALSE-----------------------------------------------------
+## Following is not needed as no multithreaded operations in this vignette 
+## To avoid ASAN/UBSAN errors on CRAN, following advice of Kevin Ushey
+## e.g. https://github.com/RcppCore/RcppParallel/issues/169
+Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread")
+
 ## ----readxl, warning = FALSE--------------------------------------------------
 xlsname <- system.file("extdata", "stoat.xlsx", package = "secr")
 CH <- read.capthist (xlsname, sheet = c("stoatcapt", "stoattrap"), skip = 1,

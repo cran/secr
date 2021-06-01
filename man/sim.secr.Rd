@@ -156,10 +156,10 @@ fitted parameter vector. Alternatives are NULL or \code{object$start}.
 
 \examples{
 
+\dontrun{
+
 ## previously fitted model
 simulate(secrdemo.0, nsim = 2)
-
-\dontrun{
 
 ## The following has been superceded by secr.test()
 

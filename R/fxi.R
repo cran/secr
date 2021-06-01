@@ -118,8 +118,8 @@ fxi.mode <- function (object, i = 1, sessnum = 1, start = NULL, ncores = NULL, .
   start <- unlist(start)
   if (is.null(start)) {
     session.traps <- traps(session.capthist)
-    animal <- animalID(session.capthist, names=F) == i
-    trp <- trap(session.capthist)[animal]
+    animal <- animalID(session.capthist, names = FALSE, sortorder = 'snk') == i
+    trp <- trap(session.capthist, sortorder = 'snk')[animal]
     start <- sapply(traps(session.capthist)[trp,],mean)
   }
   if (is.character(i))

@@ -207,6 +207,13 @@ stoatCH <- read.capthist(captfile, trapfile, detector = "proximity")
 summary(stoatCH)
 ```
 
+```{r envvar, echo = FALSE}
+## Following is not needed as no multithreaded operations in this vignette 
+## To avoid ASAN/UBSAN errors on CRAN, following advice of Kevin Ushey
+## e.g. https://github.com/RcppCore/RcppParallel/issues/169
+Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread")
+```
+
 These results match those from loading the 'stoatCH' dataset provided with **secr** (not shown). The message 'No errors found' is from `verify` which can be switched off (`verify = FALSE` in the call to `read.capthist`). The labels 'n', 'u', 'f', and 'M(t+1)' refer to summary counts from Otis et al. (1978); for a legend see `?summary.capthist`.
 
 Under the default settings of `read.capthist`:

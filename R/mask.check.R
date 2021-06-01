@@ -115,11 +115,7 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 predicted <- predict(object)
 
                 if (MS) {
-## 2011-06-28
-##                    sessnum <- (1:length(predicted))[grepl(session,
-##                        names(predicted))]
-
-## allow for multiple rows; select first
+                    ## allow for multiple rows; select first
                     sessnum <- (1:length(predicted))[grepl(paste('session =',
                         session), names(predicted))][1]
                     predicted <- predicted[[sessnum]]   ## unreliable?
@@ -212,43 +208,6 @@ mask.check <- function (object, buffers = NULL, spacings = NULL, poly = NULL,
                 stop ("mask.check cannot handle models with session structure")
             }
 
-        # if (ncores > 1) {
-        #     sfit <- function (ij) {
-        #         spacing <- ij[1]
-        #         buffer <- ij[2]
-        #         print(spacing)
-        #         msk <- make.mask(traps = trps, buffer = buffer, spacing = spacing,
-        #                          type = 'trapbuffer', poly = poly)
-        #         newcall <- replace(newcall, 'mask', list(quote(msk)))
-        #         if (tracelevel<2) old <- options(warn=-1)
-        #         if (LLonly) {
-        #             do.call(secr.fit, newcall)
-        #         }
-        #         else {
-        #             newfit <- do.call(secr.fit, newcall)
-        #             if (newfit$CL) {
-        #                 tempij <- as.matrix(derived(newfit))
-        #                 c(tempij[1,1], -newfit$fit$minimum, tempij[2,1:2])
-        #             }
-        #             else {
-        #                 c(esa(newfit)[1], -newfit$fit$minimum,
-        #                   unlist(predict(newfit)['D', c('estimate','SE.estimate')]))
-        #             }
-        #         }
-        #     }
-        #     ij.df <- expand.grid (i=spacings, j=buffers)
-        #     clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
-        #     clusterEvalQ(clust, requireNamespace('secr'))
-        #     output <- parRapply(clust, ij.df, sfit)
-        #     stopCluster(clust)
-        # 
-        #     if (LLonly)
-        #         mask.check.output[] <- t(matrix(output, nrow=nspacing, ncol=nbuffer))
-        #     else
-        #         mask.check.output[] <- aperm(array(output, dim=c(4, nspacing, nbuffer)),c(3,1,2))
-        # }
-        # else {
-        
         flush.console()
         for (j in 1:nspacing) {
             spacing <- spacings[j]

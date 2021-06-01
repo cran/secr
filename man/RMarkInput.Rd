@@ -107,8 +107,8 @@ RMarkInput(deermouse.ESG, covariates = TRUE)
 
 \dontrun{
 ## fit robust-design model in RMark (MARK must be  installed)
-## may need to set MarkPath, e.g., MarkPath <- 'c:/MARK'
 library(RMark)
+MarkPath <- 'c:/MARK'    ## adjust for your installation
 ovenRD.data <- process.data(ovenRD, model = "Robust",
     time.interval = attr(ovenRD, "intervals"))
 ovenRD.model <- mark(data = ovenRD.data, model = "Robust",

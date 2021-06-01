@@ -135,6 +135,8 @@ tempmask <- make.mask (temptrap, spacing = 5, type = "trapbuffer")
 plot (tempmask)
 plot (temptrap, add = TRUE)
 
+\dontrun{
+
 ## form mask by "pdot" method
 temptrap <- make.grid(nx = 6, ny = 6)
 tempmask <- make.mask (temptrap, buffer = 150, type = "pdot", 
@@ -147,8 +149,6 @@ plot (temptrap, add = TRUE)
 ## polygons may include multiple islands and holes).
 ## Requires the `rgdal' package of Roger Bivand, Tim Keitt and Barry Rowlingson
 
-\dontrun{
-
 datadir <- system.file("extdata", package = "secr")
 possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
 
@@ -156,14 +156,14 @@ possummask2 <- make.mask(traps(possumCH), spacing = 20,
     buffer = 250, type = "trapbuffer", poly = possumarea)
 par(mar = c(1,6,6,6), xpd = TRUE)
 plot (possummask2, ppoly = TRUE)
-plot(traps(possumCH), add = T)
+plot(traps(possumCH), add = TRUE)
 par(mar = c(5,4,4,2) + 0.1, xpd = FALSE)
 
 ## if the polygon delineates non-habitat ...
 seaPossumMask <- make.mask(traps(possumCH), buffer = 1000, 
     type = "traprect", poly = possumarea, poly.habitat = FALSE)
 plot(seaPossumMask)
-plot(traps(possumCH), add = T)
+plot(traps(possumCH), add = TRUE)
 ## this mask is not useful!
 
 }

@@ -27,6 +27,7 @@
 ## 2019-01-21 poly.habitat argument in pdot.contour and buffer.contour functions etc.
 ## 2019-07-29 C++
 ## 2019-12-28 multithreaded
+## 2021-05-19 cv: pmax protects against negative argument to sqrt          
 ###############################################################################
 
 ## pdot is used in --
@@ -198,7 +199,8 @@ esa.plot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL
 
             ## CV 2018-06-01
             mu <- cumsum(a) / (1:nmask)
-            cv <- sqrt(cumsum(a^2)/(1:nmask) - mu^2)/mu
+            ## 2021-05-19 pmax protects against negative argument to sqrt          
+            cv <- sqrt(pmax(0,cumsum(a^2)/(1:nmask) - mu^2))/mu
             cumcv <- function(n) {
                 an <- a[1:n]
                 fx <- an/sum(an)
@@ -278,7 +280,6 @@ esa.plot.secr <- function (object, max.buffer = NULL, max.mask = NULL,
 
     if (!inherits(object,'secr'))
         stop("require secr object")
-
     MS <- ms(object)
     if (MS) {
         sessnames <- session(object$capthist)

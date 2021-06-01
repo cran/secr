@@ -30,7 +30,7 @@ timevaryingcov <- function (object, ...) UseMethod("timevaryingcov")
 
 rotate     <- function (object, degrees, centrexy=NULL, ...) UseMethod("rotate")
 shift      <- function (object, shiftxy, ...) UseMethod("shift")
-flip       <- function (object, lr=F, tb=F, ...) UseMethod("flip")
+flip       <- function (object, lr = FALSE, tb = FALSE, ...) UseMethod("flip")
 
 ms         <- function (object, ...) UseMethod("ms")
 detectpar  <- function (object, ...) UseMethod("detectpar")
@@ -318,7 +318,7 @@ alongtransect <- function (object, tol = 0.01) {
 #             ## 2015-09-02 change to fix occsim: remove 'S' prefix
 #             lxy <- split (trps, levels(transectID(trps)), prefix = "")
 
-            trans <- trap(object, names = FALSE)
+            trans <- trap(object, names = FALSE, sortorder = 'ksn')
             xyi <- xy(object)
             lxy <- split (trps, transectID(trps))
 
@@ -336,10 +336,10 @@ clusterID <- function (object) {
     else {
         if (inherits(object, 'capthist')) {
             trps <- traps(object)
-            clusterID(trps)[trap(object, names=FALSE)]
+            clusterID(trps)[trap(object, names = FALSE, sortorder = 'snk')]
         }
         else
-            attr(object, 'cluster',exact = TRUE)
+            attr(object, 'cluster', exact = TRUE)
     }
 }
 
@@ -350,7 +350,7 @@ clustertrap <- function (object) {
     else {
         if (inherits(object, 'capthist')) {
             trps <- traps(object)
-            clustertrap(trps)[trap(object, names=FALSE)]
+            clustertrap(trps)[trap(object, names = FALSE, sortorder = 'snk')]
         }
         else
         attr(object, 'clustertrap',exact = TRUE)
@@ -367,7 +367,7 @@ signal.capthist <- function (object, ...) {
     }
     else {
         if (all(detector(traps(object)) %in% c('signal','signalnoise'))) {
-            attr(object, 'signalframe',exact = TRUE)$signal
+            attr(object, 'signalframe', exact = TRUE)$signal
         }
         else
             NULL
@@ -464,7 +464,7 @@ aliveold <- function (object) {
     }
 }
 
-captmatrix <- function (object) {
+captmatrix <- function (object, sortorder = c('snk','ksn')) {
   # 2020-08-27 
   # object is 3-D single-session capthist
   # form a matrix with indices of animalID, occasion and detector
@@ -474,6 +474,7 @@ captmatrix <- function (object) {
         if (length(dim(object))==2)
             object <- array(object, dim=c(dim(object),1))  ## 2020-12-08
     }
+    sortorder <- match.arg(sortorder)
     if (nrow(object)<1) {
         stop ("captmatrix expects at least one row in capthist")      
     }
@@ -483,45 +484,55 @@ captmatrix <- function (object) {
     tmp <- cbind(tmp, as.integer(abs(object)))
     # drop unused combinations
     tmp <- tmp[tmp[,4]>0,, drop = FALSE]
-    # construct index with occasion, animalID, detector ordering, and sort
-    ord <- order(tmp[,2], tmp[,1], tmp[,3])
+
+    # construct index and sort
+    if (sortorder == 'snk') { # occasion, animalID, detector
+      ord <- order(tmp[,2], tmp[,1], tmp[,3])
+    }
+    else if (sortorder == 'ksn') {
+      ord <- order(tmp[,3], tmp[,2], tmp[,1])
+    }
     tmp[ord,, drop = FALSE]
 }
 
-occasion <- function (object) {
-    if (!inherits(object, 'capthist'))
-        stop ("requires 'capthist' object")
-    if (ms(object)) {
-        lapply(object, occasion)
+occasion <- function (object, sortorder = c('snk','ksn')) {
+  if (!inherits(object, 'capthist'))
+    stop ("requires 'capthist' object")
+  sortorder <- match.arg(sortorder)
+  
+  if (ms(object)) {
+    lapply(object, occasion, sortorder = sortorder)
+  }
+  else {
+    if (nrow(object) == 0) {
+      out <- NULL
     }
     else {
-        if (nrow(object) == 0) {
-            out <- NULL
-        }
-        else {
-            values <- 1:dim(object)[2]    # safer than following
-            # values <- as.numeric(dimnames(object)[[2]])
-            tmp <- captmatrix(object)
-            s <- tmp[,2]    # vector of occasion integer values
-            out <- rep(values[s], tmp[,4])
-        }
-        as.numeric(out)
+      values <- 1:dim(object)[2]    # safer than following
+      # values <- as.numeric(dimnames(object)[[2]])
+      tmp <- captmatrix(object, sortorder)
+      s <- tmp[,2]    # vector of occasion integer values
+      out <- rep(values[s], tmp[,4])
     }
+    as.numeric(out)
+  }
 }
 
-alive <- function (object) {
+alive <- function (object, sortorder = c('snk','ksn')) {
     # revised 2020-11-07
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
+  sortorder <- match.arg(sortorder)
+  
     if (ms(object)) {
-        lapply(object, alive)
+        lapply(object, alive, sortorder = sortorder)
     }
     else {
         if (nrow(object) == 0) {
             out <- NULL
         }
         else {
-            tmp <- captmatrix(object)
+            tmp <- captmatrix(object, sortorder)
             temp <- sign(object[tmp[,1:3]]) > 0
             out <- rep(temp, tmp[,4])
         }
@@ -529,11 +540,13 @@ alive <- function (object) {
     }
 }
 
-trap <- function (object, names = TRUE) {
+trap <- function (object, names = TRUE, sortorder = c('snk','ksn')) {
   if (!inherits(object, 'capthist'))
     stop ("requires 'capthist' object")
+  sortorder <- match.arg(sortorder)
+  
   if (ms(object)) {
-    lapply(object, trap, names = names)
+    lapply(object, trap, names = names, sortorder = sortorder)
   }
   else {
     trps <- traps(object)
@@ -551,7 +564,7 @@ trap <- function (object, names = TRUE) {
             else {
                 values <- 1:dim(object)[3]
             }
-            tmp <- captmatrix(object)
+            tmp <- captmatrix(object, sortorder)
             k <- tmp[,3]  # vector of detector ID
             out <- rep(values[k], tmp[,4])
         }
@@ -559,11 +572,12 @@ trap <- function (object, names = TRUE) {
     if (names) as.character(out) else as.numeric(out)
   }
 }
-animalID <- function (object, names = TRUE) {
+animalID <- function (object, names = TRUE, sortorder = c('snk','ksn')) {
   if (!inherits(object, 'capthist'))
     stop ("requires 'capthist' object")
+  sortorder <- match.arg(sortorder)
   if (ms(object)) {
-    lapply(object, animalID, names = names)
+    lapply(object, animalID, names = names, sortorder = sortorder)
   }
   else {
     if (nrow(object) == 0) {
@@ -574,7 +588,7 @@ animalID <- function (object, names = TRUE) {
         values <- row.names(object)
       else
         values <- 1:nrow(object)
-      tmp <- captmatrix(object)
+      tmp <- captmatrix(object, sortorder)
       n <- tmp[,1]  # vector of animalID
       out <- rep(values[n], tmp[,4])
     }
@@ -730,7 +744,7 @@ shift.default <- function (object, shiftxy, ...) {
 }
 ###############################################################################
 
-flip.default <- function (object, lr=F, tb=F, ...) {
+flip.default <- function (object, lr = FALSE, tb = FALSE, ...) {
 ##    if (ms(object)) lapply(object, flip.default, lr=lr, tb=tb, ...)
 ##    else
     object <- as.matrix(object[,1:2])
@@ -1284,7 +1298,7 @@ shift.mask <- function (object, shiftxy, ...)
 }
 ###############################################################################
 
-flip.traps <- function (object, lr=F, tb=F, ...) {
+flip.traps <- function (object, lr = FALSE, tb = FALSE, ...) {
 
 ##    if (ms(object)) lapply(object, flip.traps, lr, tb, ...)
 ##    else
@@ -1337,7 +1351,7 @@ shift.popn <- function (object, shiftxy, ...)
 }
 ###############################################################################
 
-flip.popn <- function (object, lr=F, tb=F, ...) {
+flip.popn <- function (object, lr = FALSE, tb = FALSE, ...) {
     bbox <- attr(object, 'boundingbox',exact = TRUE)
     if (is.logical(lr)) {
         if (lr) object$x <- 2 * mean(bbox$x) - object$x  ## flip about centre
@@ -1628,36 +1642,35 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         #####################################
         ## signaldf is used later...
         if (all(detector %in% c('signal','signalnoise'))) {
-            signaldf <- data.frame(trap = trap(x, names = F),
-                                   occ = occasion(x),
-                                   ID = animalID(x, names = F),
-                                   attr(x, 'signalframe',exact = TRUE))
-        }
-
-        #####################################
-        ## apply signal threshold if relevant
-        if (all(detector %in% c('signal','signalnoise'))) {
-            if (is.null(cutval)) cutval <- attr(x, 'cutval',exact = TRUE)
-            if (cutval < attr(x, 'cutval',exact = TRUE))
-                stop ("cannot decrease 'cutval'")
-
-            if (cutabssignal) {
-                signalOK <- (signal(x) >= cutval)
-            }
-            else {
-                if (is.null(noise(x)))
-                    stop("could not find noise for relative signal cut")
-                signalOK <- ((signal(x)-noise(x)) >= cutval)
-            }
-            signalOK <- ifelse(is.na(signalOK), !dropNAsignals, signalOK)
-            newcount <- table(
-                factor(animalID(x, names = FALSE), levels = 1:nrow(x))[signalOK],
-                factor(occasion(x), levels = 1:ncol(x))[signalOK],
-                factor(trap(x, names = FALSE), levels = 1:nk)[signalOK])
-            if (nrow(x)>0)  ## 2013-08-17
+          trap <- trap(x, names = F, sortorder = 'ksn')
+          occ <- occasion(x, sortorder = 'ksn')
+          ID <- animalID(x, names = F, sortorder = 'ksn')
+          signaldf <- data.frame(trap = trap, occ = occ, ID = ID,
+            attr(x, 'signalframe',exact = TRUE))
+          
+          #####################################
+          ## apply signal threshold if relevant
+          if (is.null(cutval)) cutval <- attr(x, 'cutval',exact = TRUE)
+          if (cutval < attr(x, 'cutval',exact = TRUE))
+            stop ("cannot decrease 'cutval'")
+          
+          if (cutabssignal) {
+            signalOK <- (signal(x) >= cutval)
+          }
+          else {
+            if (is.null(noise(x)))
+              stop("could not find noise for relative signal cut")
+            signalOK <- ((signal(x)-noise(x)) >= cutval)
+          }
+          signalOK <- ifelse(is.na(signalOK), !dropNAsignals, signalOK)
+          newcount <- table(
+            factor(ID, levels = 1:nrow(x))[signalOK],
+            factor(occ, levels = 1:ncol(x))[signalOK],
+            factor(trap, levels = 1:nk)[signalOK])
+          if (nrow(x)>0)  ## 2013-08-17
             x[] <- newcount * sign(x)  ## retain deads, in principle
         }
-
+        
         ###########################
         ## condition missing values
         x[is.na(x)] <- 0
@@ -1803,9 +1816,9 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         ############################################
         ## subset xy of polygon or transect capthist
         if (!is.null(xy(x))) {
-            df <- data.frame(trap=trap(x, names = F),
-                             occ=occasion(x),
-                             ID=animalID(x,names = F),
+            df <- data.frame(trap = trap(x, names = FALSE, sortorder = 'ksn'),
+                             occ = occasion(x, sortorder = 'ksn'),
+                             ID = animalID(x, names = FALSE, sortorder = 'ksn'),
                              x=xy(x)[,1], y=xy(x)[,2])
             ## subset, traps and occasions are logical vectors 2011-01-21, 2011-11-14
             OK <- occasions[df$occ] & subset[df$ID] & traps[df$trap]
@@ -2649,7 +2662,7 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
             ## need delta-method variance of reals given object$beta.vcv & newdata
             if (is.null(newdata)) {
               # newdata <- secr.make.newdata (object)
-              newdata <- make.newdata (object)
+              newdata <- makeNewData (object)
             }
             nreal <- length(realnames)
             nbeta <- length(object$fit$par)

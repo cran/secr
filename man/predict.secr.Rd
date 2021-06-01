@@ -31,7 +31,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
   \item{se.fit}{ logical for whether output should include SE and confidence intervals }
   \item{alpha}{ alpha level for confidence intervals }
   \item{savenew}{ logical for whether newdata should be saved }
-  \item{\dots}{ other arguments passed to \code{\link{make.newdata}} }
+  \item{\dots}{ other arguments passed to \code{\link{newdata}} }
   \item{byclass}{ logical; if TRUE values are returned for each latent
   class in a mixture model, or class in a hybrid mixture (hcov) model}
 }
@@ -48,7 +48,7 @@ the variables in the model (see `vars' component of \code{object}).  If
 Default \code{newdata} are for a naive animal on the first occasion;
 numeric covariates are set to zero and factor covariates to their base
 (first) level. From secr 3.1.4 the argument `all.levels' may be passed 
-to \code{make.newdata}; if TRUE then the default newdata includes 
+to \code{newdata}; if TRUE then the default newdata includes 
 all factor levels.
 
 \code{realnames} may be used to select a subset of parameters.

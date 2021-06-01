@@ -71,10 +71,11 @@ CVa <- function (object, sessnum = 1, ...) {
     # temporary bug fix 2021-01-25
     # dpar <-  detectpar(object, sessnum=sessnum, ..., byclass = TRUE)
     dpar <-  detectpar(object, ..., byclass = TRUE)
+    ## 2021-05-21 remove ncores = 1
     a1 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[1]],
-               noccasions = ncol(capthists), binomN, ncores = 1)
+               noccasions = ncol(capthists), binomN)
     a2 <- pdot(masks, trps, object$detectfn, detectpar = dpar[[2]],
-               noccasions = ncol(capthists), binomN, ncores = 1)
+               noccasions = ncol(capthists), binomN)
     cellsize <- attr(masks, "spacing")^2/10000
     a <- c(a1 = sum(a1), a2 = sum(a2)) * cellsize
     pmix <- sapply(pred, '[[', 'pmix','estimate')

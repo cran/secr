@@ -18,6 +18,7 @@
 ## 2018-01-25 multisession intervals passed through
 ## 2018-05-12 faster handling of 'alive'; bug fixed 2018-06-23 3.1.7
 ## 2019-01-16 bug: clash between usage and markocc in reduce.traps FIXED
+## 2021-05-19 sortorder for animalID etc.
 ############################################################################################
 
 # From (row) To (column)
@@ -439,11 +440,12 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         }
         ####################################
         ## build dataframe of observations
+        ## 2021-05-19 using ksn as safe universal order regardless of polygon/signal/non
         df <- data.frame(
-            trap = trap(object, names = FALSE),
-            occ = occasion(object),
-            ID = animalID(object, names = FALSE),
-            alive = alive(object))
+            trap = trap(object, names = FALSE, sortorder = 'ksn'),
+            occ = occasion(object, sortorder = 'ksn'),
+            ID = animalID(object, names = FALSE, sortorder = 'ksn'),
+            alive = alive(object, sortorder = 'ksn'))
         if (reducetraps)
             df$trap <- newtrapID[df$trap]
         if (any(outputdetector %in% c(polygons, transects))) {

@@ -156,7 +156,9 @@ text(cluster.centres(possumgrid2), levels(clusterID
 ## package `proj4'. Defaults are for a Garmin GPS
 ## connected by USB.
 
-writeGPS(possumgrid, proj = "+proj=nzmg")
+if (interactive()) {
+    writeGPS(possumgrid, proj = "+proj=nzmg")
+}
 
 }
 

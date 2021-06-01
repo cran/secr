@@ -91,8 +91,9 @@ selected.
 \seealso{ \code{\link{capthist}}, \code{\link{rbind.capthist}}, \code{\link{reduce.capthist}} }
 
 \examples{
-tempcapt <- sim.capthist (make.grid(nx=6, ny=6), nocc=6)
-summary(subset(tempcapt, occ=c(1,3,5)))
+
+tempcapt <- sim.capthist (make.grid(nx = 6, ny = 6), noccasions = 6)
+summary(subset(tempcapt, occasions = c(1,3,5)))
 
 ## Consider `proximity' detections at a random subset of detectors
 ## This would not make sense for `multi' detectors, as the 
@@ -100,17 +101,23 @@ summary(subset(tempcapt, occ=c(1,3,5)))
 ## sim.capthist.
 
 tempcapt2 <- sim.capthist (make.grid(nx = 6, ny = 6, 
-    detector = "proximity"), nocc = 6)
+    detector = "proximity"), noccasions = 6)
 tempcapt3 <- subset(tempcapt2, traps = sample(1:36, 18, 
-    replace=FALSE))
+    replace = FALSE))
 summary(tempcapt3)
 plot(tempcapt3)
 
-split (tempcapt2, f = sample (c("A","B"), nrow(tempcapt2), 
-    replace = TRUE))
+tempcapt4 <- split (tempcapt2, f = sample (c("A","B"), 
+    nrow(tempcapt2), replace = TRUE))
+summary(tempcapt4)
 
-## split out captures on alternate rows of a grid
-split(captdata, f = rep(1:2, 50), bytrap = TRUE)
+## Split out captures on alternate rows of a grid
+tempcapt5 <- split(captdata, f = rep(1:2, 50), bytrap = TRUE)
+summary(tempcapt5)
+
+## Divide one session into two by occasion
+tempcapt6 <- split(captdata, f = factor(c(1,1,2,2,2)), byoccasion = TRUE)
+summary(tempcapt6)
 
 ## Applying a covariate criterion across all sessions of a
 ## multi-session capthist object e.g. selecting male ovenbirds from the
@@ -124,13 +131,10 @@ ovenCH.males <- mapply(subset, ovenCH,
 class(ovenCH.males) <- class(ovenCH)
 summary(ovenCH.males, terse = TRUE)
 
-## A simpler approach using the new function option in 3.1.1
+## A simpler approach using a function to define subset
 subsetfn <- function(x, sex) covariates(x)$Sex == sex
 ovenCH.males <- subset(ovenCH, subset = subsetfn, sex = "M")
 summary(ovenCH.males, terse = TRUE)
-
-## Divide one session into two by occasion
-split(captdata, f = factor(c(1,1,2,2,2)), byoccasion = TRUE)
 
 }
 

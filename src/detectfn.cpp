@@ -105,7 +105,7 @@ double zclnr (const NumericVector param, const double r) {
     z = param[2];
     CV2 = z*z/sigma/sigma;
     meanlog = log(sigma) - log(1 + CV2)/2;
-    sdlog = sqrt(log(1 + CV2));
+    sdlog = std::sqrt(log(1 + CV2));
     return (-log(1-g0 * R::plnorm(r,meanlog,sdlog,0,0))); 
 }
 //--------------------------------------------------------------------
@@ -252,10 +252,10 @@ double mufn (
     double d2val;
     d2val = d2cpp(k,m, A1, A2);
     if (spherical <= 0)
-	return (b0 + b1 * sqrt(d2val));
+	return (b0 + b1 * std::sqrt(d2val));
     else {
 	if (d2val>1) {
-	    return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
+	    return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (std::sqrt(d2val)-1)); 
 	}
 	else
 	    return (b0);
@@ -280,10 +280,10 @@ double mufnL (
   double d2val;
   d2val = dist2(k,m);
   if (spherical <= 0)
-    return (b0 + b1 * sqrt(d2val));
+    return (b0 + b1 * std::sqrt(d2val));
   else {
     if (d2val>1) {
-      return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (sqrt(d2val)-1)); 
+      return (b0 - 10 * log ( d2val ) / 2.302585 + b1 * (std::sqrt(d2val)-1)); 
     }
     else
       return (b0);
@@ -335,7 +335,7 @@ double gclns (const std::vector<double> param, const double r) {
     z = param[2];
     CV2 = z*z/sigma/sigma;
     meanlog = log(sigma) - log(1 + CV2)/2;
-    sdlog = sqrt(log(1 + CV2));
+    sdlog = std::sqrt(log(1 + CV2));
     return g0 * R::plnorm(r,meanlog,sdlog,0,0); 
 }
 //--------------------------------------------------------------------
@@ -447,7 +447,7 @@ double pfnS (
         tmp[1] = gsb[1];
         tmp[2] = gsb[2];
         tmp[3] = miscparm[0];
-        p = gfns (tmp, sqrt(d2val));
+        p = gfns (tmp, std::sqrt(d2val));
     }
     return (p);
 }

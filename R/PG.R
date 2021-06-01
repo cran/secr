@@ -35,7 +35,7 @@ PG <- function (CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...) {
         sum(ip)/nrow(xy)
     }
     if (any(detector(traps(CH)) %in% c('polygon','polygonX', 'transect','transectX'))) {
-        xyl <- split(xy(CH), factor(animalID(CH), levels=rownames(CH) ))  ## keeps order?
+        xyl <- split(xy(CH), factor(animalID(CH, sortorder = 'ksn'), levels=rownames(CH) )) 
     }
     else {
         xyl <- telemetryxy(CH, includeNULL=includeNULL)

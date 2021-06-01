@@ -18,10 +18,10 @@
 
 \usage{
 
-animalID(object, names = TRUE)
-occasion(object)
-trap(object, names = TRUE)
-alive(object)
+animalID(object, names = TRUE, sortorder = c("snk", "ksn"))
+occasion(object, sortorder = c("snk", "ksn"))
+trap(object, names = TRUE, sortorder = c("snk", "ksn"))
+alive(object, sortorder = c("snk", "ksn"))
 alongtransect(object, tol = 0.01)
 xy(object)
 xy(object) <- value
@@ -36,6 +36,7 @@ telemetered(object)
   \item{object}{ a `capthist' object }
   \item{names}{ if FALSE the values returned are numeric indices rather
     than names }
+    \item{sortorder}{character code for sort order (see Details)}
   \item{tol}{ tolerance for snapping to transect line (m) }
   \item{value}{ replacement value (see Details) }
   \item{includeNULL}{logical; if TRUE a NULL component is included for
@@ -45,8 +46,13 @@ telemetered(object)
 \details{
 
 These functions extract data on detections, ignoring occasions when an
-animal was not detected. Detections are ordered by occasion, animalID
-and trap.
+animal was not detected. By default, detections are ordered by occasion, animalID
+and trap (\code{sortorder = "snk"}). The alternative is to order by 
+trap, occasion and animalID (\code{sortorder = "ksn"}). (`n', `s' and `k' are the 
+indices used internally for animals, occasions and traps respectively).
+
+For historical reasons, "ksn" is used for locations within polygons and similar 
+(\code{xy}). 
 
 \code{trap} returns polygon or transect numbers if \code{traps(object)}
 has detector type `polygon' or `transect'.

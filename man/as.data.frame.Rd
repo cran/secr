@@ -42,7 +42,9 @@ A data frame or list of data frames (in the case of a multisession input).
 
 For capthist objects --
 
-The core columns are (Session, ID, Occasion, TrapID) or (Session, ID, Occasion, x, y), depending on the value of \code{fmt}. Additional columns for covariates and signal strength (detector `signal') are appended to the right. 
+The core columns are (Session, ID, Occasion, TrapID) or (Session, ID, Occasion, x, y), 
+depending on the value of \code{fmt}.  Additional columns for covariates and signal 
+strength (detector `signal') are appended to the right. 
 
 For traps objects --
 

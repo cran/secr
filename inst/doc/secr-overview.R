@@ -1,5 +1,9 @@
 ## ---- echo=FALSE, eval=TRUE, message=FALSE------------------------------------
 library(secr)
+## Following is not needed as no multithreaded operations in this vignette 
+## To avoid ASAN/UBSAN errors on CRAN, following advice of Kevin Ushey
+## e.g. https://github.com/RcppCore/RcppParallel/issues/169
+Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread")
 
 ## ---- echo=FALSE, eval=TRUE--------------------------------------------------------
 options(digits=6, width=85)

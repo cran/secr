@@ -27,6 +27,7 @@ getxy <- function(dettype, capthist) {
     ## start[z] indexes the first row in xy (or element in signal)
     ## for each possible count z (including zeros), where z is w-order (isk) 
     start <- abs(capthist)
+    ## playing... start <- aperm(start, c(2,1,3))
     start <- head(cumsum(c(0,start)),length(start))
   }
   else {

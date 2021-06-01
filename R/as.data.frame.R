@@ -1,7 +1,8 @@
 ############################################################################################
 ## package 'secr'
 ## as.data.frame.R 
-## last changed 2017-10-25
+## 2017-10-25 changed 
+## 2021-05-19 sortorder ksn for polygon detectors etc.
 ############################################################################################
 
 as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covariates = FALSE, 
@@ -20,8 +21,10 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         S <- ncol(x)
         xname <- deparse(substitute(x), control=NULL)
         
-        ID <- animalID(x)
-        occ <- occasion(x)
+        ID <- animalID(x, sortorder = "ksn")
+        occ <- occasion(x, sortorder = "ksn")
+        session <- rep(session(x),length(ID))
+        
         if (is.null(traps(x))) {
             det <- 0
             trap <- rep('1', length(ID))
@@ -29,11 +32,9 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         }
         else {
             det <- detector(traps(x))  # may be vector...
-            trap <- as.character(trap(x))
-            trapn <- trap(x, names = FALSE)
+            trap <- as.character(trap(x), sortorder = "ksn")
+            trapn <- trap(x, names = FALSE, sortorder = "ksn")
         }
-        
-        session <- rep(session(x),length(ID))
         
         if (det[1] %in% c('polygon','transect','polygonX','transectX')) {
             XY <- xy(x)
@@ -43,10 +44,11 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         else if (det[1] %in% c('signal')) {
             signal <- signal(x)
             if (fmt == "trapID")
-                temp <- data.frame (Session=session, ID=ID, Occasion=occ, TrapID=trap, Signal=signal)
+                temp <- data.frame (Session = session, ID = ID, Occasion = occ, 
+                    TrapID = trap, Signal = signal)
             else
-                temp <- data.frame (Session=session, ID=ID, Occasion=occ, 
-                                    x = traps(x)$x[trapn], y = traps(x)$y[trapn], Signal=signal)
+                temp <- data.frame (Session = session, ID = ID, Occasion = occ, 
+                    x = traps(x)$x[trapn], y = traps(x)$y[trapn], Signal = signal)
         }
         else if (all(det %in% c('telemetry'))) {
             xyl <- telemetryxy(x)

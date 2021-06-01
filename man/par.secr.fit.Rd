@@ -96,6 +96,7 @@ With the introduction of multi-threading in \pkg{secr} 4.0, \code{par.secr.fit} 
 }
 
 \examples{
+
 \dontrun{
 
 fit0 <- list(capthist = 'captdata', model = g0~1) 
@@ -108,6 +109,7 @@ par.derived(fits, se.esa = FALSE)
 par.region.N(fits)
 
 }
+
 }
 \keyword{ model }
 

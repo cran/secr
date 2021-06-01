@@ -24,6 +24,7 @@
 # presence    = 11,
 # signalnoise = 12,
 # telemetry   = 13,
+# index       = 14
 
 #--------------------------------------------------------------------------------
 allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA, 
@@ -448,7 +449,6 @@ generalsecrloglikfn <- function (
         }
     }
     #######################################################################
-
     if (all(data$dettype %in% c(0,1,2,3,4,6,7,8,13))) {
         ## hazard for exclusive detectors or related
         haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval), gkhk$hk, PIA, data$usge)

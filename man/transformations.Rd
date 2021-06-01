@@ -24,15 +24,15 @@ create complex geometries.
 
 \usage{
 
-flip (object, lr = F, tb = F, ...)
+flip (object, lr = FALSE, tb = FALSE, ...)
 rotate (object, degrees, centrexy = NULL, \dots)
 shift (object, shiftxy, ...)
 
-\method{flip}{traps} (object, lr = F, tb = F, ...)
+\method{flip}{traps} (object, lr = FALSE, tb = FALSE, ...)
 \method{rotate}{traps}(object, degrees, centrexy = NULL, \dots)
 \method{shift}{traps}(object, shiftxy, \dots)
 
-\method{flip}{popn} (object, lr = F, tb = F, ...)
+\method{flip}{popn} (object, lr = FALSE, tb = FALSE, ...)
 \method{rotate}{popn}(object, degrees, centrexy = NULL, \dots)
 \method{shift}{popn}(object, shiftxy, \dots)
 

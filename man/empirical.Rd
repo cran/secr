@@ -245,6 +245,8 @@ where \eqn{\widehat{\mbox{var}}(n) = \frac{J}{J-1}
 ## second columns of `temp' hold the estimated effective sampling area
 ## and its standard error.
 
+\dontrun{
+
 signalCH.525 <- subset(signalCH, cutval = 52.5)
 nonzero.counts <- table(substring(rownames(signalCH.525),1,4))
 nj <- c(nonzero.counts, rep(0, 75 - length(nonzero.counts)))
@@ -259,8 +261,6 @@ msk <- ovensong.model.1$mask
 A <- nrow(msk) * attr(msk, "area")
 derivednj (sum(nj), temp["esa",1:2], method = "poisson")
 derivednj (sum(nj), temp["esa",1:2], method = "binomial", area = A)
-
-\dontrun{
 
 ## Set up an array of small (4 x 4) grids,
 ## simulate a Poisson-distributed population,

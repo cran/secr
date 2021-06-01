@@ -3,7 +3,7 @@
 
 \title{Coerce traps object to mask}
 
-\description{This function is used primarily for plotting covariates, for which the plot.mask function has greater functionality than \code{plot.traps}. It also generates pretty maps of grid cells. }
+\description{This function is used primarily for plotting covariates, for which the plot.mask function has greater functionality than \code{plot.traps}.  It also generates pretty maps of grid cells. }
 
 \usage{
 

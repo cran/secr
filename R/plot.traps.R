@@ -103,8 +103,11 @@ plot.traps <- function(x,
         if (!hidetr) {
             if (all(detector(x) %in% c('polygon','polygonX'))) {
                 templist <- split (x, levels(polyID(x)), prefix='')
-                lapply(templist, function (y)
-                    polygon (y$x, y$y, col=detpar$col, density=NA, border=detpar$fg))
+                lapply(templist, function (y) {
+                    polygon (y$x, y$y, col = detpar$col, 
+                        density = if (is.na(detpar$col)) 0 else NA, 
+                        border = detpar$fg)
+                    })
                 if (markvertices > 0) {
                     lapply(templist, plotvertices)
                 }

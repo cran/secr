@@ -155,6 +155,8 @@ temptrap <- make.grid()
 tempmask <- make.mask(temptrap)
 plot (tempmask)
 
+\dontrun{
+
 ## restrict to points over an arbitrary detection threshold,
 ## add covariate, plot image and overlay traps
 
@@ -177,8 +179,6 @@ legend (x = "topright", fill = colourlev, legend = zlev,
 
 title("Colour mask points with p.(X) > 0.001")
 mtext(side=3,line=-1, "g0 = 0.2, sigma = 20, nocc = 5")
-
-\dontrun{
 
 ## Waitarere possum density surface extrapolated across region
 

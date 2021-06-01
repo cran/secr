@@ -122,6 +122,7 @@ RPSV(temp4)
     summary(temp4)$counts
 
 \dontrun{
+
 ## compare two different model fits 
 tempfit3 <- secr.fit(temp3, CL = TRUE, buffer = 150, model = list
     (g0 ~ session, sigma ~ session), trace = FALSE)
@@ -134,6 +135,7 @@ tempfit4 <- secr.fit(temp4, CL = TRUE, buffer = 150, model = list
     (g0 ~ range.size, sigma ~ range.size), trace = FALSE)
 predict(tempfit4, newdata = data.frame(range.size = c("large",
     "small")))
+
 }
 
 }

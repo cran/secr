@@ -70,6 +70,8 @@ discretize(object, spacing = 5, outputdetector = c("proximity", "count", "multi"
 
 \examples{
 
+\dontrun{
+
 ## generate some polygon data
 pol <- make.poly()
 CH <- sim.capthist(pol, popn = list(D = 30), detectfn = 'HHN', 
@@ -90,6 +92,8 @@ newxy <- traps(CH1)[nearesttrap(xy(CH),traps(CH1)),]
 segments(xy(CH)[,1], xy(CH)[,2], newxy[,1], newxy[,2])
 
 plot(traps(CH), add = TRUE)  # original polygon
+
+}
 
 }
 

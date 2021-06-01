@@ -2,6 +2,7 @@
 ## 2015-11-26 adapted to also handle traps objects
 ## 2015-12-06 added transect functionality
 ## 2016-01-07 cell.overlap, type
+## 2021-05-18 sortorder ksn
 
 discretize <- function (object, spacing = 5, outputdetector = c('proximity','count','multi'),
                         tol = 0.001, cell.overlap = FALSE, type = c('centre','any','all'), ...) {
@@ -104,9 +105,9 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
                 trpnum <- nearesttrap(xy(object), trps)
                 df <- data.frame(
                     trap = factor(trpnum, levels =1:nrow(trps)),
-                    occ = factor(occasion(object), levels = 1:ncol(object)),
-                    ID = factor(animalID(object, names = FALSE)),
-                    alive = alive(object))
+                    occ = factor(occasion(object, sortorder = "ksn"), levels = 1:ncol(object)),
+                    ID = factor(animalID(object, names = FALSE, sortorder = "ksn")),
+                    alive = alive(object, sortorder = "ksn"))
 
                 # if (outputdetector %in% c('multi')) {
                 #     alivesign <- df$alive*2 - 1

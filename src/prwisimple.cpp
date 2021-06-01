@@ -37,7 +37,7 @@ NumericVector gethr(
             stop ("telemetry only coded for HHN and HEX");
         for (m=0; m<mm; m++) {
             for (t=0; t<nt; t++) {
-                r = sqrt(d2cpp (m, t, mask, xy)); 
+                r = std::sqrt(d2cpp (m, t, mask, xy)); 
                 hri = i3(c, m, t, cc, mm); 
                 if (hri>1e8) stop ("c,m,t combinations exceed 1e8 in gethr");
                 hr[hri] = zfnr(gsb, r);
@@ -105,11 +105,26 @@ struct simplehistories : public Worker {
         NumericVector output
         )
         : 
-        mm(mm), nc(nc), cc(cc), grain(grain),
-        binomN(binomN), markocc(markocc), firstocc(firstocc), pID(pID), w(w),
-        group(group), gk(gk), hk(hk), 
-        density(density), PIA(PIA), Tsk(Tsk), h(h), hindex(hindex), mbool(mbool),
-        telemhr(telemhr), telemstart(telemstart),
+        mm(mm), 
+        nc(nc), 
+        cc(cc), 
+        grain(grain),
+        binomN(binomN), 
+        markocc(markocc), 
+        firstocc(firstocc), 
+        pID(pID), 
+        w(w),
+        group(group), 
+        gk(gk), 
+        hk(hk), 
+        density(density), 
+        PIA(PIA), 
+        Tsk(Tsk), 
+        h(h), 
+        hindex(hindex), 
+        mbool(mbool),
+        telemhr(telemhr), 
+        telemstart(telemstart),
         output(output) {
         
         // now can initialise these derived counts

@@ -56,7 +56,7 @@ double naivedcpp (
           else
             p1p2 = 0;
           sump  += p1p2;
-          sumdp += p1p2 * sqrt(dij);
+          sumdp += p1p2 * std::sqrt(dij);
         }
       }
     }

@@ -86,6 +86,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     allsignal <- all(detectortype %in% 'signal')
     allsignalnoise <- all(detectortype %in% 'signalnoise')
     anysighting <- any(sighting(traps(capthist)))  # do not confuse 'anysightings' later
+    anyindex <- any(detectortype %in% 'index')
     
     ##############################################
     # check valid analysis in secr

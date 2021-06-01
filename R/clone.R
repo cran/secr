@@ -1,7 +1,8 @@
 ############################################################################################
 ## package 'secr'
 ## clone.R
-## last changed 2016-11-29, 2018-11-16
+## last changed 2016-11-29, 2018-11-16...
+## 2021-05-19 sortorder for polygon data
 ############################################################################################
 
 clone <- function (object, type, ...) UseMethod("clone")
@@ -37,7 +38,7 @@ clone.popn <- function (object, type, ...) {
     }
     else {
         type <- tolower (type)
-	n <- nrow(object)
+        n <- nrow(object)
         if (n == 0) {
             out <- object
         }
@@ -78,7 +79,7 @@ clone.capthist <- function (object, type, ...) {
     }
     else {
         type <- tolower (type)
-	n <- nrow(object)
+        n <- nrow(object)
         if (n == 0) {
             out <- object
         }
@@ -107,18 +108,18 @@ clone.capthist <- function (object, type, ...) {
                 covariates(out) <- covariates(object)[index,,drop = FALSE]
                 rownames(covariates(out)) <- rown
             }
-
+            
             if (!is.null(xy(object)) | !is.null(signalframe(object))) {
                 ## these attributes are defined for each detection
                 ## so we first extract the numeric animal ID for each detection
-                detectionindex <- animalID(object, names = FALSE)
+                detectionindex <- animalID(object, names = FALSE, sortorder = 'ksn')
                 xy(out) <- xy(object)[index[detectionindex]]
                 signalframe(out) <- signalframe(object)[index[detectionindex]]
             }
             attr (out, 'freq') <- freq
             class(out) <- class(object)
         }
-
+        
         out
     }
 }

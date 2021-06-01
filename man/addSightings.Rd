@@ -71,21 +71,31 @@ Arguments \code{unmarked}, \code{nonID}, \code{uncertain} provide data for attri
   
 }
 
-\section{Warning}{** Mark-resight data formats and models are experimental in secr 2.10.0 and subject to change **}
+\section{Warning}{** Mark-resight data formats and models are experimental and subject to change **}
 
 \examples{
 
-\dontrun{
+## construct capthist object MRCH from text files provided in 
+## 'extdata' folder, assigning attribute 'markocc' and add unmarked
+## and marked sightings from respective textfiles
 
-## suppose CH is a capthist object with detector type proximity,
-## attribute 'markocc' is defined for traps(CH), and 
-## unmarkedsightings.txt is a text file with a
-## compatible K x S array of non-negative integer values.
+datadir <- system.file("extdata", package = "secr")
+captfile <- paste0(datadir, '/MRCHcapt.txt')
+trapfile <- paste0(datadir, '/MRCHtrap.txt')
+Tufile <- paste0(datadir, '/Tu.txt')
+Tmfile <- paste0(datadir, '/Tm.txt')
 
-Tu <- read.table('unmarkedsightings.txt')
-CH2 <- addSightings(CH, unmarked = Tu)
+MRCH <- read.capthist(captfile, trapfile, detector = c("multi", 
+    rep("proximity",4)), markocc = c(1,0,0,0,0))
+MRCH1 <- addSightings(MRCH, Tufile, Tmfile)
 
-}
+## alternatively (ignoring marked, not ID sightings)
+
+MRCH <- read.capthist(captfile, trapfile, detector = c("multi", 
+    rep("proximity",4)), markocc = c(1,0,0,0,0))
+Tu <- read.table(Tufile)[,-1]  # drop session column
+MRCH2 <- addSightings(MRCH, unmarked = Tu)
+summary(MRCH2)
 
 }
 

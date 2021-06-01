@@ -122,10 +122,11 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
         }
         if (is.null(mask)) {
             automask <- make.mask(traps, buffer=3*RPSV(capthist, CC = TRUE))
-            start <- unlist(autoini(capthist, automask, ncores = 1))
+            ## 2021-05-21 remove ncores = 1
+            start <- unlist(autoini(capthist, automask))
         }
         else
-            start <- unlist(autoini(capthist, mask, ncores = 1))
+            start <- unlist(autoini(capthist, mask))
         ## ad hoc bias adjustment
         if (detector(traps)[1]=='single')
             start[2] <- invodds(odds(start[2]) * 1.4)

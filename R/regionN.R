@@ -17,7 +17,6 @@ region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = 
            keep.region, nlowerbound, RN.method, pooled.RN, ncores)
 }
 
-
 region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
     keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',

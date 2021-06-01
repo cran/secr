@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 4.4.1\cr
-Date: \tab 2021-05-01\cr
+Version: \tab 4.4.4\cr
+Date: \tab 2021-05-29\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -166,6 +166,7 @@ Tokyo.  Pp. 163--190.
 \code{\link[secr]{mask}}
 }
 \examples{
+
 \dontrun{
 
 ## generate some data & plot
@@ -186,4 +187,5 @@ secr.model <- secr.fit (detections, model = g0~b, mask = mask)
 secr.model
 
 }
+
 }

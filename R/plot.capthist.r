@@ -175,14 +175,15 @@ plot.capthist <- function(x, rad = 5,
                 
             }
             else if (!any(detector(traps(x)) %in% .localstuff$polydetectors)) {
-                trplist <- split(trap(x), animalID(x))
+                ## 2021-05-19 sortorder not material
+                trplist <- split(trap(x, sortorder = 'ksn'), animalID(x, sortorder = 'ksn'))
                 xyl <- lapply(trplist, meanxy)
                 xy <- do.call(rbind, xyl)
             }
             else {
                 xyl <- telemetryxy(x)
                 if (is.null(xyl))
-                    xyl <- split(xy(x), animalID(x))
+                    xyl <- split(xy(x), animalID(x, sortorder = "ksn"))
                 xyl <- lapply(xyl, meanxya)
                 xy <- do.call(rbind, xyl)
             }
@@ -260,21 +261,24 @@ plot.capthist <- function(x, rad = 5,
 
             if ( detectr[1] %in% .localstuff$polydetectors ) {
                 ## occasions not distinguished
-                lxy <- split (xy(x), animalID(x, names=FALSE))
+                lxy <- split (xy(x), animalID(x, names = FALSE, sortorder = "ksn"))
                 mapply (plotpolygoncapt, lxy, 1:length(lxy))
             }
             else if ( detectr[1] %in% c('signal','signalnoise') )
             {
                 .localstuff$i <- 0
-                temp <- data.frame(ID = animalID(x), occ = occasion(x),
-                                   trap=trap(x), signal = signal(x))
-                lsignal <- split(temp, animalID(x, names = FALSE))
+                temp <- data.frame(
+                    ID = animalID(x, sortorder = "ksn"), 
+                    occ = occasion(x, sortorder = "ksn"),
+                    trap = trap(x, sortorder = "ksn"), 
+                    signal = signal(x))
+                lsignal <- split(temp, animalID(x, names = FALSE, sortorder = "ksn"))
                 lapply(lsignal, plotsignal, minsignal = min(temp$signal),
                     maxsignal = max(temp$signal), n=nrow(x))
             }
             else  { 
-                xydf <- as.data.frame(traps(x)[trap(x),])
-                occ <- occasion(x)
+                xydf <- as.data.frame(traps(x)[trap(x, sortorder = 'snk'),])
+                occ <- occasion(x, sortorder = 'snk')
                 OK <- detectr[occ] != 'telemetry'
                 ID <- factor(animalID(x), levels = rownames(x))
                 lxy <- split(xydf[OK,], ID[OK])
@@ -287,7 +291,7 @@ plot.capthist <- function(x, rad = 5,
 
             if (lab1cap) {
                 if ( detectr[1] %in% .localstuff$polydetectors ) {
-                    lxy <- split (xy(x), animalID(x, names = FALSE))
+                    lxy <- split (xy(x), animalID(x, names = FALSE, sortorder = "ksn"))
                     sapply(1:nrow(x), labhead, df=lxy)
                 }
                 else {
@@ -300,7 +304,7 @@ plot.capthist <- function(x, rad = 5,
         else if (type %in% c('n.per.cluster','n.per.detector')) {
             if (type == 'n.per.detector') {
                 ## never yields zeros
-                temp <- table(trap(x), animalID(x))>0
+                temp <- table(trap(x, sortorder = 'snk'), animalID(x, sortorder = 'snk'))>0
                 nj <- apply(temp,1,sum)
                 centres <- traps(x)[names(nj),]
             }
@@ -454,10 +458,10 @@ plotMCP <- function(x, add = FALSE, col = 'black', fill = NA, lab1cap = FALSE,
         xyl <- telemetryxy(x)
         if (is.null(xyl)) {
             if (all(detector(traps(x)) %in% c('polygon','polygonX')))
-                xyl <- split(xy(x), animalID(x))
+                xyl <- split(xy(x), animalID(x, sortorder = 'ksn'))
             else {
-                df <- as.data.frame(traps(x)[trap(x, names=FALSE),])
-                xyl <- split(df, animalID(x))
+                df <- as.data.frame(traps(x)[trap(x, names = FALSE, sortorder = 'snk'),])
+                xyl <- split(df, animalID(x, sortorder = 'snk'))
             }
         }
         if (!add)

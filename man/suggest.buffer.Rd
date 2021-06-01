@@ -155,11 +155,11 @@ The potential components of \code{control} are --
 
 \examples{
 
+\dontrun{
+
 temptraps <- make.grid()
 detpar <-  list(g0 = 0.2, sigma = 25)
 suggest.buffer(temptraps, "halfnormal", detpar, 5)
-
-\dontrun{
 
 suggest.buffer(secrdemo.0)
 

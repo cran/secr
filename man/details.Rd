@@ -207,7 +207,9 @@ capture--recapture. \emph{Methods in Ecology and Evolution} \bold{4}, 520--530.
 }
 
 \examples{
+
 \dontrun{
+
 ## Demo of miscparm and userdist
 ## We fix the usual 'sigma' parameter and estimate the same 
 ## quantity as miscparm[1]. Differences in CI reflect the implied use 
@@ -227,7 +229,9 @@ fit <- secr.fit (captdata, fixed = list(sigma=1), details =
     list(miscparm = c(sig = 20), userdist = mydistfn3))    
 predict(fit0)
 coef(fit)
+
 }
+
 }
 
 \keyword{ models }

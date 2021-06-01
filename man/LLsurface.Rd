@@ -86,8 +86,10 @@ LLsurface(secrdemo.CL, xval = seq(0.16,0.40,0.02),
 
 ## now verify MLE
 ## click on MLE and apparent `peak'
-xy <- locator(2)
-LLsurface(secrdemo.CL, xval = xy$x, yval = xy$y, plot = FALSE)
+if (interactive()) {
+    xy <- locator(2)
+    LLsurface(secrdemo.CL, xval = xy$x, yval = xy$y, plot = FALSE)
+}
 
 }
 }

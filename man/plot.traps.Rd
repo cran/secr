@@ -52,7 +52,7 @@ polygon will be emphasised by overplotting a point symbol
 (detpar$pch). Value may be logical (TRUE, FALSE) or integer (0 = no
 points, 1 = terminal vertices only, 2 = all vertices).
 
-From 4.4.0, polygon detectors are shaded with detpar$col and outlined (border) with detpar$fg.
+From 4.4.0, polygon detectors are shaded with detpar$col and outlined (border) with detpar$fg. Use detpar$col = NA for no shading (transparent polygons).
 
 \code{labelclusters} requires \code{x} to have attributes `clusterID' and
 `clustertrap'.

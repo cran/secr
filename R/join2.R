@@ -9,6 +9,7 @@
 ## 2017-12-23
 ## 2018-05-12 join uses attr() to avoid copying, and 
 ## 2020-04-07 join SIMPLIFY = FALSE in call to mapply(condition.usage...)
+## 2021-05-27 fixed bug in join|onesession for nonspatial data
 #############################################################################
 
 join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
@@ -20,15 +21,21 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
         ## form CH as a dataframe
         CH <- object[[sess]]
         if (drop.sites) attr(CH, 'traps') <- NULL   ## 2018-05-12
-        newID <- animalID(CH)
-        newocc <- occasion(CH) + before[sess]
-        df <- data.frame(newID = newID, newocc = newocc, newtrap = newocc,   # dummy to hold place
-                         alive = alive(CH), sess = rep(sess, length(newID)),
-                         stringsAsFactors = FALSE)
-        if (is.null(traps(CH)))
-            df$newtrap <- rep(1,nrow(df))
-        else 
-            df$newtrap <- trap(CH)
+        ## 2021-05-19 sortorder to match xy
+        newID <- animalID(CH, sortorder = 'ksn')
+        newocc <- occasion(CH, sortorder = 'ksn') + before[sess]
+        newtrap <- if (!is.null(traps(CH))) trap(CH, sortorder = 'ksn')
+        else rep(1,length(newID))  ## 2021-05-27
+        
+        newalive <- alive(CH, sortorder = 'ksn')
+        df <- data.frame(
+            newID = newID, 
+            newocc = newocc, 
+            newtrap = newtrap,
+            alive = newalive, 
+            sess = rep(sess, length(newID)),
+            stringsAsFactors = FALSE
+        )
         if (!is.null(xy(CH)))
             df[,c('x','y')] <- xy(CH)
         if (!is.null(signal(CH)))
@@ -72,7 +79,7 @@ join <- function (object, remove.dupl.sites = TRUE, tol = 0.001,
         T <- attr(CH, type)
         if (!is.null(T)) {
             if (is.matrix(T)) {
-                Tnew <- matrix(0, nrow=nrow(traps(CH)), ncol=nnewocc)
+                Tnew <- matrix(0, nrow = nrow(traps(CH)), ncol = nnewocc)
                 s1 <- c(1, cumsum(nocc)+1)[i]
                 s2 <- cumsum(nocc)[i]
                 Tnew[,s1:s2] <- T
