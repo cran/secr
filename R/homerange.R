@@ -479,12 +479,27 @@ centroids <- function (capthist) {
     if (ms(capthist)) {
         nsess <- length(capthist)
         out <- lapply(capthist, centroids)
+        cov <- lapply(capthist, covariates)
         ID <- unique(unlist(sapply(out, rownames)))
-        IDxy <- array(dim = c(length(ID), 2, nsess), 
+        IDxy <- array(
+            dim = c(length(ID), 2, nsess), 
             dimnames = list(ID, c('meanx','meany'), session(capthist))
         )
-        IDn <- matrix(0, nrow = length(ID), ncol = nsess,
-            dimnames = list(ID, 1:nsess))
+        IDn <- matrix(0, 
+            nrow = length(ID), 
+            ncol = nsess,
+            dimnames = list(ID, 1:nsess)
+        )
+        if (!is.null(cov[[1]])) {
+            IDcov <- data.frame(
+                matrix('', 
+                    nrow = length(ID), 
+                    ncol = ncol(cov[[1]]), 
+                    dimnames = list(ID,names(cov[[1]]))
+                )
+            )
+        }
+            
         for (sess in 1:nsess) {
             IDxy[rownames(out[[sess]]), 1:2, sess] <- out[[sess]]
             IDn[rownames(out[[sess]]), sess] <- attr(out[[sess]], 'Ndetections')
@@ -564,3 +579,48 @@ RPSVxy <- function (xy, CC = F) {
 }
 ##################################################
 
+## not exported secr 4.4.5 2021-07-07
+
+plotmoves <- function (capthist, byanimal = FALSE, withinsession = FALSE, 
+    label = TRUE, arrows = TRUE, ...) {
+    if (!ms(capthist)) {
+        stop("plotmoves expects multi-session capthist")
+    }
+    cen <- centroids(capthist)
+    ct <- attr(cen, 'Ndetections')>0
+    ok <- apply(ct,1,sum)>1   # at least 2 sessions
+    if (!byanimal) {
+        plot(traps(capthist[[1]]), ...)  
+    }
+    for (j in which(ok)) {
+        ch <- suppressWarnings(subset(capthist, rownames(cen)[j]))
+        if (byanimal) {
+            plot(traps(capthist[[1]]), ...)
+            mtext(side=3, rownames(cen)[j], line=0.4, cex=0.7)
+        }
+        if (withinsession) {
+            plot(ch, add=T, tracks = T, varycol=FALSE, title='', subtitle='')
+        }
+        for (i in 1:4) {
+            move2 <- (cen[j,1,i]-cen[j,1,i+1])^2 + (cen[j,2,i+1]-cen[j,2,i])^2 
+            if (!is.na(move2) && move2>0.001 && arrows) {
+                arrows(cen[j,1,i], cen[j,2,i], cen[j,1,i+1], cen[j,2,i+1], 
+                    lwd = 1.5, angle = 15, length=0.15)
+            }
+            else {
+                segments(cen[j,1,i], cen[j,2,i], cen[j,1,i+1], cen[j,2,i+1], 
+                    lwd = 1.5)
+            }
+        }
+        if (label) {
+            points(cen[j,1,], cen[j,2,], pch = 16, col='yellow', cex=2)
+            text(cen[j,1,], cen[j,2,], 1:5, cex=0.9)
+        }
+    }
+    d <- apply(cen, 1, function (xy) (diff(xy[1,])^2 + diff(xy[2,])^2)^0.5)
+    d[!is.na(d)]  # vector of consecutive moves
+}
+
+# par(mfrow=c(3,8), mar=c(2,2,2,2))
+# d <- plotmoves(ovenCHp, label=T, arrows=F)
+# symbols(circles=80, )

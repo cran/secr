@@ -294,7 +294,7 @@ generalsecrloglikfn <- function (
   beta, 
   parindx, 
   link, 
-  fixedpar, 
+  fixed, 
   designD, 
   designNE, 
   design, 
@@ -317,10 +317,11 @@ generalsecrloglikfn <- function (
   
 {
   #--------------------------------------------------------------------------------
-  sessionLL <- function (data, sessnum) {
+  sessionLL <- function (data) {
     ## log likelihood for one session
     ## in multi-session case must get session-specific data from lists
     #---------------------------------------------------
+    sessnum <- data$sessnum  # changed from argument 2021-06-22
     nc1 <- max(data$nc,1)
     PIA <- design$PIA[sessnum, 1:nc1, 1:data$s, 1:data$K, ,drop = FALSE]
     PIA0 <- design0$PIA[sessnum, 1:nc1, 1:data$s, 1:data$K, ,drop = FALSE]
@@ -610,9 +611,13 @@ generalsecrloglikfn <- function (
   
   } ## end sessionLL
   
-  ###############################################################################################
+  ######################################################################################
   ## Main line of generalsecrloglikfn
+  ######################################################################################
+  
+  if (details$debug>4) browser()
   nsession <- length(sessionlevels)
+  
   #--------------------------------------------------------------------
   # Fixed beta
   beta <- fullbeta(beta, details$fixedbeta)
@@ -620,21 +625,21 @@ generalsecrloglikfn <- function (
   # Detection parameters
   detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
   detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
-  realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
-  realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixedpar)
+  realparval  <- makerealparameters (design, beta, detparindx, detlink, fixed)
+  realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixed)
   #--------------------------------------------------------------------
   sessmask <- lapply(data, '[[', 'mask')
   grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
   #---------------------------------
   # Density
-  D.modelled <- !CL & is.null(fixedpar$D)
+  D.modelled <- !CL & is.null(fixed$D)
   if (!CL ) {
-    D <- getD (designD, beta, sessmask, parindx, link, fixedpar,
+    D <- getD (designD, beta, sessmask, parindx, link, fixed,
                grplevels, sessionlevels, parameter = 'D')
   }
   #--------------------------------------------------------------------
   # Non-Euclidean distance parameter
-  NE <- getD (designNE, beta, sessmask, parindx, link, fixedpar,
+  NE <- getD (designNE, beta, sessmask, parindx, link, fixed,
               grplevels, sessionlevels, parameter = 'noneuc')
 
   #--------------------------------------------------------------------
@@ -649,20 +654,21 @@ generalsecrloglikfn <- function (
   #--------------------------------------------------------------------
   # (ii) typical likelihood evaluation
   else {
-    loglik <- sum(mapply (sessionLL, data, 1:nsession))
-    .localstuff$iter <- .localstuff$iter + 1   ## moved outside loop 2011-09-28
-    if (details$trace) {
-      fixedbeta <- data[[1]]$details$fixedbeta
-      if (!is.null(fixedbeta))
-        beta <- beta[is.na(fixedbeta)]
-      cat(format(.localstuff$iter, width=4),
-          formatC(round(loglik,dig), format='f', digits=dig, width=10),
-          formatC(beta, format='f', digits=dig+1, width=betaw),
-          '\n')
-      flush.console()
-    }
-    loglik <- ifelse(is.finite(loglik), loglik, -1e10)
-    ifelse (neglik, -loglik, loglik)
+      # loglik <- sum(mapply (sessionLL, data))
+    loglik <- sum(sapply (data, sessionLL))   ## session num in data 2021-07-07
+    .localstuff$iter <- .localstuff$iter + 1  
+      if (details$trace) {
+          fixedbeta <- details$fixedbeta
+          if (!is.null(fixedbeta))
+              beta <- beta[is.na(fixedbeta)]
+          cat(format(.localstuff$iter, width=4),
+              formatC(round(loglik,dig), format='f', digits=dig, width=10),
+              formatC(beta, format='f', digits=dig+1, width=betaw),
+              '\n')
+          flush.console()
+      }
+      loglik <- ifelse(is.finite(loglik), loglik, -1e10)
+      ifelse (neglik, -loglik, loglik)
   }
 }  ## end of generalsecrloglikfn
 ############################################################################################

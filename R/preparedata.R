@@ -292,16 +292,23 @@ markresightdata <- function (capthist, mask, fixed, chat, control, knownmarks) {
 
 ##############################################################################
 
-prepareSessionData <- function (capthist, mask, maskusage, design, design0, detectfn, groups, 
-    fixedpar, hcov, details, aslist = TRUE) {
+prepareSessionData <- function (capthist, mask, maskusage, 
+    design, design0, detectfn, groups, fixed, hcov, details, 
+    aslist = TRUE, sessnum = 1) {
     ## aslist used internally to determine whether single-session data are wrapped in a list
     if (ms(capthist)) {
         if (!ms(mask)) stop ("expect session-specific mask in prepareSessionData")
         if (is.null(maskusage))
             maskusage <- vector('list', length(capthist))
-        mapply(prepareSessionData, capthist, mask, maskusage,
-            MoreArgs = list(design, design0, detectfn, groups, 
-                fixedpar, hcov, details, FALSE), SIMPLIFY = FALSE)
+        mapply(
+            prepareSessionData, 
+            capthist = capthist, 
+            mask = mask, 
+            maskusage = maskusage,
+            sessnum = 1:length(capthist),
+            MoreArgs = list(design, design0, detectfn, groups, fixed, 
+                hcov, details, FALSE), 
+            SIMPLIFY = FALSE)
     }
     else {
         nc   <- nrow(capthist)
@@ -318,7 +325,7 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
         cumk <- cumsum(c(0,k))[1:length(k)]
         
         ## mark-resight
-        MRdata <- markresightdata(capthist, mask, fixedpar,
+        MRdata <- markresightdata(capthist, mask, fixed,
             details$chat, details$markresight, details$knownmarks)
         # markocc <- markocc(traps(capthist))
         # if (is.null(markocc)) markocc <- rep(1,s)
@@ -367,6 +374,7 @@ prepareSessionData <- function (capthist, mask, maskusage, design, design0, dete
         #####################################################################
         
         data <- list(
+            sessnum = sessnum,    # added 2021-06-22
             CH = CH,
             CH0 = CH0,
             nc = nc,

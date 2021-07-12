@@ -6,7 +6,7 @@
 ## 2020-08-30 check3D restored for secrlinear arvicola example
 ## 2021-04-02 allcapped bug fixed  (cannot combine capped, uncapped)
 ## 2021-04-25 4.4.0
-
+## 2021-06-22 global change fixedpar to fixed for consistency
 ###############################################################################
 
 secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -136,35 +136,36 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     #################################################
     ## Use input 'details' to override various defaults
     
-    defaultdetails <- list(distribution = 'poisson',
-                           hessian = 'auto',
-                           trace = TRUE,
-                           LLonly = FALSE,
-                           centred = FALSE,
-                           binomN = 0,                      ## Poisson
-                           cutval = 0,
-                           minprob = 1e-200,                ## before 2015-05-24 minprob = 1e-50
-                           tx = 'identity',
-                           param = 0,
-                           unmash = FALSE,
-                           telemetryscale = 1,
-                           ignoreusage = FALSE,
-                           debug = 0,
-                           intwidth2 = 0.8,
-                           usecov = NULL,
-                           userdist = NULL,
-                           autoini = 1,
-                           knownmarks = TRUE,
-                           nsim = 0,
-                           chatonly = FALSE,
-                           chat = NULL,
-                           savecall = TRUE,
-                           newdetector = NULL,
-                           contrasts = NULL,
-                           grain = 1,
-                           maxdistance = NULL,
-                           stackSize = "auto",  ## ignored on Windows
-                           fastproximity = TRUE
+    defaultdetails <- list(
+        distribution = 'poisson',
+        hessian = 'auto',
+        trace = TRUE,
+        LLonly = FALSE,
+        centred = FALSE,
+        binomN = 0,                      ## Poisson
+        cutval = 0,
+        minprob = 1e-200,                ## before 2015-05-24 minprob = 1e-50
+        tx = 'identity',
+        param = 0,
+        unmash = FALSE,
+        telemetryscale = 1,
+        ignoreusage = FALSE,
+        debug = 0,
+        intwidth2 = 0.8,
+        usecov = NULL,
+        userdist = NULL,
+        autoini = 1,
+        knownmarks = TRUE,
+        nsim = 0,
+        chatonly = FALSE,
+        chat = NULL,
+        savecall = TRUE,
+        newdetector = NULL,
+        contrasts = NULL,
+        grain = 1,
+        maxdistance = NULL,
+        stackSize = "auto",  ## ignored on Windows
+        fastproximity = TRUE
     )
     if (!is.null(attr(capthist,'cutval'))) {
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -420,11 +421,16 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     ## c fixed by default in sigmak parameterisation
     if (details$param %in% 4:6) {
-        if (! ("c" %in% names(model))) {
-            ## default to fixed c = 0
-            if (!("c" %in% names(fixed)))
-                fixed$c <- 0
-        }
+      if (! ("c" %in% names(model))) {
+        ## default to fixed c = 0
+        if (!("c" %in% names(fixed)))
+          fixed$c <- 0
+      }
+      if (! ("d" %in% names(model))) {
+        ## default to fixed d = 0
+        if (!("d" %in% names(fixed)))
+          fixed$d <- 0
+      }
     }
     
     if (alltelem & !("lambda0" %in% names(fixed))) {
@@ -439,7 +445,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     #################################################
     
     defaultmodel <- list(D=~1, g0=~1, lambda0=~1,  esa=~1, a0=~1,
-                         sigma=~1, sigmak=~1, z=~1, w=~1, c=~1,
+                         sigma=~1, sigmak=~1, z=~1, w=~1, c=~1, d=~1,
                          noneuc=~1, beta0=~1, beta1=~1,
                          sdS=~1, b0=~1, b1=~1, pID=~1, pmix=~1)
     defaultmodel <- replace (defaultmodel, names(model), model)
@@ -468,7 +474,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
         else {
             defaultmodel$pmix <- model$pmix   ## use as-is
-            badvar <- !(pmixvars %in% c('session','Session',sessioncov,'h2','h3'))
+            # 2021-06-17
+            # badvar <- !(pmixvars %in% c('session','Session',sessioncov,'h2','h3'))
+            badvar <- !(pmixvars %in% c('session','Session', names(sessioncov),'h2','h3'))
             if (any(badvar))
                 stop ("formula for pmix may not include ", pmixvars[badvar])
         }
@@ -530,7 +538,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     defaultlink <- list(D='log', g0='logit', lambda0='log', esa='log',
                         a0='log', sigma='log', sigmak='log', z='log',
-                        w='log', c='identity', noneuc='log',
+                        w='log', c='identity', d='log', noneuc='log',
                         beta0='identity', beta1='neglog', sdS='log',
                         b0='log', b1='neglog',  pID='logit',
                         pmix='logit', cut='identity')
@@ -574,11 +582,14 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
         else {
             memo ('Preparing density design matrix', details$trace)
+            ## 2021-06-17 tentative inclusion of session covariates 
+            ## if (!all (all.vars(model$D) %in%
+            ## c('session', 'Session','g')) & details$param %in% c(4,5)) {
             if (!all (all.vars(model$D) %in%
-                      c('session', 'Session','g')) & details$param %in% c(4,5)) {
+                    c('session', 'Session','g', names(sessioncov))) & details$param %in% c(4,5)) {
                 if (is.null(details$userdist))
                     stop ("only session and group models allowed for density when details$param = ",
-                          details$param)
+                        details$param)
             }
             temp <- D.designdata( mask, model$D, grouplevels, session(capthist), sessioncov)
             if (any(smooths(model$D)))
@@ -658,7 +669,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
                                groups, fixed, hcov, details)
     
-    setNumThreads(ncores, stackSize = details$stackSize)
+    oldNumThreads <- setNumThreads(ncores, stackSize = details$stackSize)
     
     ############################################
     # Start values (model-specific)
@@ -704,11 +715,13 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                           "set manually or select different session with details autoini")
                 tempbinomN <- if (details$binomN==1 || details$fastproximity) 
                     max(unlist(usage(traps(capthist)))) else details$binomN
-                start3 <- autoini (ch, msk, 
-                                   binomN = tempbinomN,
-                                   adjustg0 = details$binomN[1]==0 && !details$fastproximity,
-                                   ignoreusage = details$ignoreusage,
-                                   ncores = NULL)   ## use ncores set previously
+                start3 <- autoini (
+                    capthist = ch, 
+                    mask = msk, 
+                    binomN = tempbinomN,
+                    adjustg0 = details$binomN[1]==0 && !details$fastproximity,
+                    ignoreusage = details$ignoreusage,
+                    ncores = NULL)   ## use ncores set previously
                 
                 if (any(is.na(unlist(start3)))) {
                     warning ("'secr.fit' failed because initial values not found",
@@ -754,6 +767,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (details$param %in% 4:6) {
             default$sigmak <- default$sigma * default$D^0.5
             default$c <- 0 ## but problems if take log(c)
+            default$d <- 0.01 
         }
         
         if (detectfn %in% c(6)) {
@@ -819,14 +833,14 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             beta = start,
             parindx    = parindx,
             link       = link,
-            fixedpar   = fixed,
+            fixed      = fixed,
             designD    = designD,
             designNE   = designNE,
             design     = design,
             design0    = design0,
             detectfn   = detectfn,
             learnedresponse = learnedresponse,
-            sessionlevels = session(capthist),
+            sessionlevels = sessionlevels,
             CL         = CL,
             data       = data,
             details = details
@@ -859,7 +873,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                 beta       = start,
                 parindx    = parindx,
                 link       = link,
-                fixedpar   = fixed,
+                fixed      = fixed,
                 designD    = designD,
                 designNE   = designNE,
                 design     = design,
@@ -867,7 +881,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                 CL         = CL,
                 detectfn   = detectfn,
                 learnedresponse = learnedresponse,
-                sessionlevels = session(capthist),
+                sessionlevels = sessionlevels,
                 data = data,
                 details = details
             )
@@ -958,7 +972,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     secrargs <- list(
         parindx    = parindx,
         link       = link,
-        fixedpar   = fixed,
+        fixed      = fixed,
         designD    = designD,
         designNE   = designNE,
         design     = design,
@@ -1131,7 +1145,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     memo(paste('Completed in ', round(output$proctime,2), ' seconds at ',
                format(Sys.time(), "%H:%M:%S %d %b %Y"),
                sep=''), details$trace)
-    
+
     output
 }
 ################################################################################

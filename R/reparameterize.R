@@ -4,22 +4,28 @@
 
 reparameterize.sigmak <- function (realparval, D, linear) {
   ## D,sigmak parameterisation 2014-03-12
+  ## 2021-06-20 included 'd' parameter 
   ## vector D must match rows in realparval
   realnames <- dimnames(realparval)[[2]]
   sigmakindex <- match('sigmak', realnames)
   cindex <- match('c', realnames)
+  dindex <- match('d', realnames)
   if (is.na(cindex))
     cval <- 0
   else
     cval <- realparval[,cindex]
+  if (is.na(dindex))
+    dval <- 0
+  else
+    dval <- realparval[,dindex]
   if (!('sigmak' %in% realnames))
     stop ("'param = 4:6 ' requires 'sigmak' in model")
   if (linear)
-    realparval[,sigmakindex] <- realparval[,sigmakindex] / D + cval
+    realparval[,sigmakindex] <- realparval[,sigmakindex] / (D+dval) + cval
   else
-    realparval[,sigmakindex] <- realparval[,sigmakindex] / D^0.5 + cval
+    realparval[,sigmakindex] <- realparval[,sigmakindex] / (D+dval)^0.5 + cval
   dimnames(realparval)[[2]][sigmakindex] <- 'sigma'
-  realparval <- realparval[, -cindex, drop = FALSE]   ## added 2014-08-18
+  realparval <- realparval[, -c(cindex, dindex), drop = FALSE]   ## added 2014-08-18, modified 2021-06-20
   realparval
 }
 ###############################################################################

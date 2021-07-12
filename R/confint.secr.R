@@ -42,7 +42,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
           
           data <- prepareSessionData(object$capthist, object$mask, object$details$maskusage, 
                                      object$design, object$design0, object$detectfn, object$groups, 
-                                     object$fixedpar, object$hcov, object$details)
+                                     object$fixed, object$hcov, object$details)
           
           allvars <- unlist(lapply(object$model, all.vars))
           learnedresponse <- any(.localstuff$learnedresponses %in% allvars) ## || !is.null(dframe)
@@ -53,7 +53,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
               beta       = beta2,
               parindx    = object$parindx,
               link       = object$link,
-              fixedpar   = object$fixed,
+              fixed      = object$fixed,
               designD    = object$designD,    ## D.designmatrix,
               designNE   = object$designNE,   ## NE.designmatrix,
               design     = object$design,
@@ -76,7 +76,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
                 beta       = .localstuff$beta,
                 parindx    = object$parindx,
                 link       = object$link,
-                fixedpar   = object$fixed,
+                fixed      = object$fixed,
                 designD    = object$designD,    ## D.designmatrix,
                 designNE   = object$designNE,   ## NE.designmatrix,
                 design     = object$design,
@@ -105,7 +105,7 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
             fit <- secr.fit (capthist = object$capthist, mask = object$mask,
                 buffer = object$buffer, CL = object$CL, detectfn = object$detectfn,
                 start = object$fit$par, binomN= details$binomN,
-## link = object$link, fixedpar = object$fixed,  model = object$model,
+## link = object$link, fixed = object$fixed,  model = object$model,
 ## timecov = object$timecov, sessioncov = object$sessioncov,
 ## 2015-12-05
                 link = object$link, fixed = object$fixed, model = object$model,

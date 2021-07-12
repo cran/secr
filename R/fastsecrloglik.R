@@ -68,7 +68,7 @@ fastsecrloglikfn <- function (
     beta, 
     parindx, 
     link, 
-    fixedpar, 
+    fixed, 
     designD, 
     designNE, 
     design, 
@@ -217,15 +217,15 @@ fastsecrloglikfn <- function (
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
     detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
-    realparval  <- makerealparameters (design, beta, detparindx, detlink, fixedpar)
+    realparval  <- makerealparameters (design, beta, detparindx, detlink, fixed)
     
     #--------------------------------------------------------------------
     # Density
-    D.modelled <- !CL & is.null(fixedpar$D)
+    D.modelled <- !CL & is.null(fixed$D)
     if (!CL ) {
         sessmask <- lapply(data, '[[', 'mask')
         grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
-        D <- getD (designD, beta, sessmask, parindx, link, fixedpar,
+        D <- getD (designD, beta, sessmask, parindx, link, fixed,
                    grplevels, sessionlevels, parameter = 'D')
         if (!is.na(sumD <- sum(D)))
             if (sumD <= 0)
@@ -235,14 +235,14 @@ fastsecrloglikfn <- function (
     #--------------------------------------------------------------------
     # Non-Euclidean distance parameter
     sessmask <- lapply(data, '[[', 'mask')
-    NE <- getD (designNE, beta, sessmask, parindx, link, fixedpar,
+    NE <- getD (designNE, beta, sessmask, parindx, link, fixed,
                 levels(data$grp[[1]]), sessionlevels, parameter = 'noneuc')
     #--------------------------------------------------------------------
     # typical likelihood evaluation
     loglik <- sum(mapply (sessionLL, data, 1:nsession))
     .localstuff$iter <- .localstuff$iter + 1   ## moved outside loop 2011-09-28
     if (details$trace) {
-        fixedbeta <- data[[1]]$details$fixedbeta
+        fixedbeta <- details$fixedbeta
         if (!is.null(fixedbeta))
             beta <- beta[is.na(fixedbeta)]
         cat(format(.localstuff$iter, width=4),

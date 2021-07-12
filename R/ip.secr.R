@@ -50,6 +50,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
     if (ncores > 1) {
         clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big')
+        on.exit(stopCluster(clust))
         clusterSetRNGStream(clust, seed)
         clusterEvalQ(clust, requireNamespace('secr', quietly = TRUE))
         clusterExport(clust, c("capthist", "predictorfn", "predictortype",
@@ -256,10 +257,6 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
 
     dimnames(vcov) <- list(pnames, pnames)
     par['g0'] <- invodds(par['g0'])
-
-    if (ncores > 1) {
-        stopCluster(clust)
-    }
 
     list(call = cl,
         IP = data.frame(estimate=unlist(par), SE.estimate=diag(vcov)^0.5),

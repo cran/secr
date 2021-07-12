@@ -32,7 +32,9 @@ as.data.frame.capthist <- function (x, row.names = NULL, optional = FALSE, covar
         }
         else {
             det <- detector(traps(x))  # may be vector...
-            trap <- as.character(trap(x), sortorder = "ksn")
+            # trap <- as.character(trap(x), sortorder = "ksn")
+            # bug fixed 2021-07-10
+            trap <- as.character(trap(x, sortorder = "ksn"))
             trapn <- trap(x, names = FALSE, sortorder = "ksn")
         }
         

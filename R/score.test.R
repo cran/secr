@@ -164,7 +164,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
                beta     = beta,
                parindx  = design$parindx,
                link     = design$link,
-               fixedpar = design$fixed,
+               fixed    = design$fixed,
                designD  = design$D.design,
                designNE = design$NE.design, 
                design   = design$design,
@@ -180,7 +180,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
         }
         data <- prepareSessionData(newsecr$capthist, newsecr$mask, newsecr$details$maskusage, 
                                    newsecr$design, newsecr$design0, newsecr$detectfn, newsecr$groups, 
-                                   newsecr$fixedpar, newsecr$hcov, newsecr$details)
+                                   newsecr$fixed, newsecr$hcov, newsecr$details)
         
         # cat('logLik',loglikfn(beta1, design=newsecr), '\n')   ## testing
         # cat('logmult', newsecr$logmult, '\n')

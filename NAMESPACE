@@ -2,27 +2,27 @@ import(sp)
 import(parallel)
 
 importFrom(abind, "abind")
-importFrom(graphics, ".filled.contour", "abline", "contour", "hist", "lines", "locator",
-           "mtext", "par", "persp", "points", "polygon", "rect", "segments", "strheight",
-           "strwidth", "symbols", "text", "legend", "axis")
-importFrom(grDevices, "chull", "contourLines", "grey", "palette", "terrain.colors",
-           "topo.colors", "rainbow")
+importFrom(graphics, ".filled.contour", "abline", "arrows", "contour", "hist", 
+    "lines", "locator", "mtext", "par", "persp", "points", "polygon", "rect", 
+    "segments", "strheight", "strwidth", "symbols", "text", "legend", "axis")
+importFrom(grDevices, "chull", "contourLines", "grey", "palette", 
+    "terrain.colors", "topo.colors", "rainbow")
 importFrom(MASS, "ginv", "eqscplot")
 importFrom(methods, "as", "is", "Ops", "Math")
 importFrom(mgcv, "gam", "s", "te", "formula.gam", "predict.gam")
 importFrom(nlme, "fdHess")
 importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
-           "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
-           "integrate", "lm", "logLik", "median", "model.matrix", "nlm", "nls", "optim",
-           "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
-           "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", "rnbinom",
-           "rnorm", "rpois", "runif", "sd", "simulate", "smooth.spline", "terms",
-           "uniroot", "update", "update.formula", "var", "vcov")
+    "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
+    "integrate", "lm", "logLik", "median", "model.matrix", "nlm", "nls", "optim",
+    "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
+    "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", 
+    "rnbinom", "rnorm", "rpois", "rt", "runif", "rweibull", "sd", "simulate", 
+    "smooth.spline", "terms", "uniroot", "update", "update.formula", "var", "vcov")
 importFrom(stringr, "str_pad", "str_length")
 importFrom(tools, "file_ext")
 importFrom(utils, "count.fields", "flush.console", "getS3method", "head",
-           "object.size", "packageDescription", "packageVersion", "read.csv",
-           "read.table", "tail", "write.table")   ## "winDialog"
+    "object.size", "packageDescription", "packageVersion", "read.csv",
+    "read.table", "tail", "write.table")   ## "winDialog"
 
 importFrom(raster, "values<-", "values", "clump", "adjacent")
 importClassesFrom(raster, RasterLayer)
@@ -41,9 +41,8 @@ import(RcppNumerical)
 ## importFrom (spsurvey, "total.est", "grts")
 ## importFrom (nnet, "which.is.max")
 ## importFrom (maptools, "unionSpatialPolygons")
-
-## importFrom (mvtnorm, "dmvnorm")
 ## importFrom (gdistance, "transition", "geocorrection", "costDistance")
+## importFrom (mvtnorm, "rmvt") 
 
 export (secr.fit)
 export (par.secr.fit)
@@ -149,6 +148,7 @@ export (make.lookup)
 export (insertdim)
 export (as.mask)
 export (setNumThreads)
+export (extractMoves)
 
 # new generics
 export (reduce)

@@ -58,7 +58,8 @@ par.secr.fit <- function (arglist, ncores = 1, seed = NULL,
     ###################################################
     
     if (ncores > 1) {
-        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', outfile = logfile)
+        clust <- makeCluster(ncores, methods = FALSE, useXDR = .Platform$endian=='big', 
+            outfile = logfile)
         clusterSetRNGStream(clust, seed)
         clusterExport(clust, c(data, 'secr.fit'), environment())
         

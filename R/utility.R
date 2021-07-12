@@ -190,6 +190,7 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
     if (details$param %in% 4:6) {
         pnames[2] <- 'sigmak'
         pnames <- c(pnames, 'c')
+        pnames <- c(pnames, 'd')
     }
     if (!CL)
       pnames <- c('D', pnames)

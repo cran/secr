@@ -1,3 +1,19 @@
+Changes in version 4.4.5 (2021-07-12)
+
+New features or changed behaviour of old functions
+    o   'sigmak' parameterization allows session covariates
+    o   experimental parameter 'd' for parameterization sigma = sigmak/sqrt(D+d) + c
+    o   sim.popn() all movement simulations use polar coords + rgamma, rweibull etc.
+    o   extractMoves() new function for checking movement simulations
+
+Bugs fixed
+    o   as.data.frame.capthist() in 4.4.4 mis-assigned traps to captures
+    o   trivial: bad trace when fixedbeta specified
+
+Other
+    o   'BVN','BVE','BVT' aliases for movemodels 'normal','exponential','t2D'
+    o   suggests package mvtnorm
+
 Changes in version 4.4.4 (2021-05-29)
 
 New features or changed behaviour of old functions

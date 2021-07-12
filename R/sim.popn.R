@@ -24,6 +24,11 @@
 ## 2020-12-11 "normalize" option for edgemethod; internal 'disperse' function
 ## 2021-02-12 "clipandreplace" edgemethod option; clip can be used with constantN
 ## 2021-02-13 corrected bug in "normalize" option for edgemethod
+## 2021-06-01 BVE, BVN, BVT aliases for kernel names
+## 2021-07-12 movement simulations all polar coordinates r,theta:
+## 2021-07-12 BVE simulation uses rgamma
+## 2021-07-12 BVN simulation uses rweibull
+## 2021-07-12 BVT simulation uses inverse distribution function
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -153,47 +158,53 @@ tile <- function (popn, method = "reflect") {
 # see main function sim.popn() for application of edge methods
 disperse <- function (newpopn, turnoverpar, t, core, disp) {
     nsurv <- sum(disp)
+    move.a <- turnoverpar$move.a[t]
+    move.b <- turnoverpar$move.b[t]
+    theta <- runif(nsurv, 0, 2 * pi)
+    
     if (is.function(turnoverpar$movemodel)) {
         f <- formals(turnoverpar$movemodel)
         if (length(f)==2) {
-            a <- turnoverpar$move.a[t]
-            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, a)
+            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, move.a)
         }
         else if (length(f)==3) {
-            a <- turnoverpar$move.a[t]
-            b <- turnoverpar$move.b[t]
-            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, a,b)
+            newpopn[disp,] <- newpopn[disp,] + turnoverpar$movemodel(nsurv, move.a, move.b)
         }
         else stop ("invalid movement function")
     }
-    else if (turnoverpar$movemodel == 'normal') {
-        newpopn[disp,] <- newpopn[disp,] + rnorm (2*nsurv, mean = 0,
-            sd = turnoverpar$move.a[t])
-    }
-    else if (turnoverpar$movemodel == 'exponential') {
-        theta <- runif(nsurv, 0, 2 * pi)
-        r <- rexp(nsurv, rate = 1 / (2 * turnoverpar$move.a[t]))
+    else if (turnoverpar$movemodel %in% c('normal', 'BVN')) {
+        r <- rweibull(nsurv, shape = 2, scale = sqrt(2) * move.a)
         newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
+    }
+    else if (turnoverpar$movemodel %in% c('exponential', 'BVE')) {
+        r <- rgamma(nsurv, shape = 2, scale = move.a)   ## 2021-07-11
+        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
+    }
+    else if (turnoverpar$movemodel %in% c('t2D', 'BVT')) {
+        Finv <- function (u, alpha, beta) sqrt((u^(-1/beta) - 1) * alpha^2)
+        r <- Finv(runif(nsurv), move.a, move.b)
+        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
+        # alternative algorithm not used 2021-07-03
+        # df <- move.b * 2
+        # sigma2 <- move.a^2 / df
+        # if (requireNamespace('mvtnorm')) {
+        #     newpopn[disp,] <- newpopn[disp,] + mvtnorm::rmvt(n = nsurv,
+        #         df = df, sigma = diag(2)*sigma2)
+        # }
     }
     else if (turnoverpar$movemodel == 'radialexp') {
         centre <- apply(core,2,mean)
         dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
-        theta <- atan2(dxy[,2],dxy[,1]) # + pi
-        r <- rexp(nsurv, rate = 1 / (2 * turnoverpar$move.a[t]))
+        theta <- atan2(dxy[,2],dxy[,1]) 
+        r <- rgamma(nsurv, shape = 2, scale = move.a)
         newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
     }
     else if (turnoverpar$movemodel == 'radialnorm') {
         centre <- apply(core,2,mean)
         dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
-        theta <- atan2(dxy[,2],dxy[,1]) # + pi
-        r <- abs(rnorm (nsurv, mean = 0, sd = turnoverpar$move.a[t]))
+        theta <- atan2(dxy[,2],dxy[,1])
+        r <- abs(rnorm (nsurv, mean = 0, sd = move.a))
         newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-    }
-    else if (turnoverpar$movemodel == 't2D') {
-        p <- turnoverpar$move.b[t]
-        alpha <- turnoverpar$move.a[t] * rgamma(nsurv, p) / p
-        newpopn[disp,1] <- newpopn[disp,1] + rnorm(nsurv, mean = 0, sd = alpha)
-        newpopn[disp,2] <- newpopn[disp,2] + rnorm(nsurv, mean = 0, sd = alpha)
     }
     else {
         warning("unsupported movement model ", turnoverpar$movemodel, " ignored")
@@ -267,9 +278,6 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                 survive <- sort(survive)   ## numeric indices
             }
             
-            ## 2017-06-07 newpopn <- subset.popn(oldpopn, subset=survive)
-            
-            ## 2019-05-30 c('static','uncorrelated','normal','exponential', 't2D')
             if (!is.function(turnoverpar$movemodel) &&
                     turnoverpar$movemodel == 'uncorrelated') {
                 newpopn <- sim.popn(D = D, core = core, buffer = buffer,
