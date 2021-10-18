@@ -20,12 +20,42 @@ MATA <- function (wt, est, se, alpha) {
     cbind(lcl, ucl)
 }
 
+modelAverage <- function (..., 
+    realnames = NULL, 
+    betanames = NULL,
+    newdata = NULL, 
+    alpha = 0.05, 
+    dmax = 10, 
+    covar = FALSE, 
+    average = c('link', 'real'), 
+    criterion = c('AICc','AIC'), 
+    CImethod = c('Wald', 'MATA')) {
+    UseMethod("modelAverage") 
+} 
+
+modelAverage.default <- function (object, all.levels = FALSE, ...) {
+    cat ('no modelAverage method for objects of class', class(object), '\n')
+}
+
+# modelAverage.secr <- function (..., realnames = NULL, betanames = NULL,
+#     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
+#         c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
+#         c('Wald', 'MATA')) {
+# modelAverage.secrlist <- function (..., realnames = NULL, betanames = NULL,
+#     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
+#         c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
+#         c('Wald', 'MATA')) {
+
 model.average <- function (..., realnames = NULL, betanames = NULL,
     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
-    c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
-    c('Wald', 'MATA')) {
-
-    ########
+        c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
+        c('Wald', 'MATA')) {
+    
+    # preparing for switchover
+    #.Deprecated("modelAverage", package="secr", "This function has been renamed.", 
+    #    old = as.character(sys.call(sys.parent()))[1L])
+    
+    #########
     ## SETUP
 
     ## match character arguments

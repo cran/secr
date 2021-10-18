@@ -541,7 +541,7 @@ List trappingpolygon (
       for (i=0; i<N; i++) {
         count = rcount (binomN[s], lambda[s], Tski);   // NOT YET DEFINED !!!!
         // require maximum at r=0 
-        if (fn == 6) stop ("annular normal not allowed in trappingpolygon");
+        if (fn == 6) Rcpp::stop ("annular normal not allowed in trappingpolygon");
         gsb(0) = 1;
         for (j=0; j<count; j++) {
           xy = gxy (fn, gsb, ws);            // simulate location 
@@ -718,7 +718,6 @@ List trappingtransect (
               maxg= 1.2 * maxg;               // safety margin 
               if (maxg<=0) maxg=0.0001;         // not found 
             }
-            // stop("stopping"); 
             for (j=0; j<count; j++) {
               gotcha = false;
               l = 0;
@@ -867,7 +866,7 @@ List trappingpolygonX (
       for (i=0; i<N; i++) {
         maybecaught = unif_rand() < g0[s];
         // require maximum at r=0 
-        if (fn == 6) stop ("annular normal not allowed in trappingpolygonX");
+        if (fn == 6) Rcpp::stop ("annular normal not allowed in trappingpolygonX");
         
         gsb(0) = 1;
         
@@ -1300,7 +1299,7 @@ List trappingtelemetry (
         else
           count = rcount (binomN[s], lambda[s], Tski); 
         // require maximum at r=0 
-        if (fn == 6) stop ("annular normal not allowed in trappingtelemetry");
+        if (fn == 6) Rcpp::stop ("annular normal not allowed in trappingtelemetry");
         gsb(0) = 1;
         for (j=0; j<count; j++) {
           xy = gxy (fn, gsb, ws);            // simulate location 

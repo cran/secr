@@ -12,6 +12,7 @@
 ## 2019-12-16 minor changes to suggest.buffer: autoini thin=1; suppress warnings; fix multisession bug
 ## 2020-01-06 bias.D control$ncores defaults to 2 instead of NULL
 ## 2020-01-08 note: potential use of rgeos::gLength for perimeter of polygons
+## 2021-07-20 bias.D spurious warning of variable usage when uniformly >1
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
         if (detectfn == 7) {
@@ -90,7 +91,8 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
     if (!all(detector(traps) %in% .localstuff$individualdetectors))
         stop ("bias.D() requires passive individual detectors (not unmarked or presence)")
     if (!is.null(usage(traps))) {
-        if (any(usage(traps) != 1))
+        # if (any(usage(traps) != 1))
+        if (length(unique(as.numeric(usage(traps))))>1)  # 2021-07-20
         warning ("bias.D() does not allow for variable effort (detector usage)")
     }
 

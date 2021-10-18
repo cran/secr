@@ -72,12 +72,14 @@ probability. \emph{Journal of Wildlife Management} \bold{71}, 1050--1056
 \examples{
 
 \dontrun{
-setwd('d:/density communication/combining telemetry and secr/possums')
+olddir <- setwd('d:/density communication/combining telemetry and secr/possums')
 CvilleCH <- read.capthist('CVILLE summer captures 4occ.txt',
                           'CVILLE detectors summer 4occ.txt',
                           detector = 'single')
 CvilleGPS <- read.telemetry('CVILLE GPS Combined 4occ.txt')
 CvilleGPSnew <- read.telemetry('CVILLE summer GPS New occasions.txt')
+setwd(olddir)
+
 CvilleBoth <- addTelemetry(CvilleCH, CvilleGPSnew)
 plot(CvilleBoth, border = 400)
 PG(CvilleBoth, buffer = 100, convex = TRUE, plt = TRUE, add = TRUE, 

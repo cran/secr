@@ -161,9 +161,6 @@ and more: it splits capthist according to telemetry status and appends
 all-zero histories to the telemetry part for any animals present in
 xylist. The default is `concurrent'. 
 
-\code{details$normalize} = TRUE rescales detection so that individual range use
-sums to 1.0 (cf Royle et al. 2013)
-
 \code{details$usecov} selects the mask covariate to be used for
 normalization. NULL limits denominator for normalization to
 distinguishing habitat from non-habitat.

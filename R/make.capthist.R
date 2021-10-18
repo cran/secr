@@ -11,6 +11,7 @@
 ## 2017-01-11 adjusted for direct input of telemetry
 ## 2019-03-11 transect bug fixed (capttrap order)
 ## 2020-08-27 coerce third column of captures dataframe to integer
+## 2021-09-21 modified for nonspatial detector type
 ############################################################################################
 
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
@@ -82,10 +83,11 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
     {
         ## 2020-08-27 in case has been read as character
         captures[,3] <- as.integer(captures[,3])
-        
         ## 2017-03-28
         ## sort by session, animal & occasion, retaining original order otherwise
         captures <- captures[order(captures[,1], captures[,2], captures[,3]),]
+        if (missing(traps)) traps <- NULL
+        
         if (any(detector(traps) %in% .localstuff$exclusivedetectors)) {
             ## repeated <- duplicated(paste0(captures[,1],captures[,2],captures[,3]))
             ## 2021-01-30 bug fix from Richard Glennie
@@ -107,7 +109,11 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         uniqueID <- unique(captures[,2])
         ## condition inserted 2015-11-03 to avoid need to specify valid trap for noncapt
         validcapt <- uniqueID != noncapt
-        if (all(validcapt)) {
+        
+        if (is.null(traps)) {
+            captTrap <- rep(1, nrow(captures))
+        }
+        else if (all(validcapt)) {
             if (!(fmt %in% c('trapID','XY')))
                 stop ("capture format not recognised")
             if (fmt!='trapID') {
@@ -185,11 +191,12 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         else
             nocc <- max(abs(captures[,3]))
         nocc <- ifelse (is.null(noccasions), nocc, noccasions)
-        if (is.null(detector(traps)))
-            stop ("'traps' must have a detector type e.g. 'multi'")
-        if (is.null(cutval) & any(detector(traps)  %in% c('signal','signalnoise')))
-            stop ("missing 'cutval' (signal threshold) for signal data")
-
+        if (!is.null(traps)) {
+            if (is.null(detector(traps)))
+                stop ("'traps' must have a detector type e.g. 'multi'")
+            if (is.null(cutval) & any(detector(traps)  %in% c('signal','signalnoise')))
+                stop ("missing 'cutval' (signal threshold) for signal data")
+        }
         wout <- NULL
         ID   <- NULL
 
@@ -288,9 +295,12 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
             }
         }
         class (wout) <- 'capthist'
-        traps(wout) <- traps
+        if (!is.null(traps)) {
+            traps(wout) <- traps
+        }
         session(wout)  <- as.character(captures[1,1])
-        if (nrow(wout) > 0) {
+        if (nrow(wout) > 0 && !is.null(traps)) {
+            
             if (all(detector(traps) %in% 'telemetry')) {
                 xyl <- split(captures[,4:5], captures[,2], drop = TRUE)
                 telemetryxy(wout) <- xyl

@@ -124,14 +124,14 @@ validpoly <- function (xy, polyID, nx = 500) {
 xyontransect <- function (xy, trps, tol=0.01) {
   ptontransect <- function (i,k) {
     ## is point i on transect k?
-    transectxy <- as.matrix(lxy[[k]])
-    nr <- nrow(transectxy)
-    ontransectcpp (
-      as.matrix (xy[i,,drop=FALSE]),
-      as.matrix (transectxy),
-      as.integer (0),
-      as.integer (nr-1),
-      as.double (tol))
+      transectxy <- as.matrix(lxy[[k]])
+      nr <- nrow(transectxy)
+      ontransectcpp (
+          as.matrix (xy[i,,drop=FALSE]),
+          as.matrix (transectxy),
+          as.integer (0),
+          as.integer (nr-1),
+          as.double (tol))
   }
   lxy <- split (trps, transectID(trps))
   firsttransect <- function (i) {

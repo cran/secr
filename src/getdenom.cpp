@@ -1,12 +1,10 @@
 #include <Rcpp.h>
-using namespace Rcpp;
-
 #include "secr.h"
 
 // [[Rcpp::export]]
-List getdenomcpp (int fn, 
-                  NumericVector miscparm, 
-                  NumericMatrix mask, 
+Rcpp::List getdenomcpp (int fn, 
+                  Rcpp::NumericVector miscparm, 
+                  Rcpp::NumericMatrix mask, 
                   int mm,
                   double sigma, 
                   double z) 
@@ -37,9 +35,13 @@ List getdenomcpp (int fn,
         else if (fn == 15) lam = 1 - exp(- pow(d /sigma , - z));
         else if (fn == 16) lam = exp(-d / sigma);
         else if (fn == 17) lam = exp(-(d-z)*(d-z) / 2 / sigma2);
-        else if (fn == 18) lam = R::pgamma(d,z,sigma/z,0,0);
+        else if (fn == 18) {
+          // lam = R::pgamma(d,z,sigma/z,0,0);
+          boost::math::gamma_distribution<> gam(z,sigma/z);
+          return (boost::math::cdf(complement(gam,d))); 
+        }
         else if (fn == 19) lam = exp(- pow(d /sigma , z));
-        else stop("unrecognised fn");
+        else Rcpp::stop("unrecognised fn");
         invdenom[m] += lam * expzj;
       }
       denomtot += invdenom[m];
@@ -55,7 +57,7 @@ List getdenomcpp (int fn,
       }
     }
   }	
-  return (List::create(Named("invdenom") = wrap(invdenom), 
-                       Named("scale") = scale));
+  return (Rcpp::List::create(Rcpp::Named("invdenom") = Rcpp::wrap(invdenom), 
+                       Rcpp::Named("scale") = scale));
 }
 //=============================================================

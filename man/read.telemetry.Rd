@@ -49,10 +49,12 @@ coordinates, and a `traps' object with detector type = `telemetry'
 
 \dontrun{
 
-setwd('D:/bears/alberta')
+olddir <- setwd('D:/bears/alberta')
 ## peek at raw data
 head(readLines('gps2008.txt'))
 gps2008CH <- read.telemetry("gps2008.txt")
+setwd(olddir)
+
 plot( gps2008CH, gridsp = 10000)
 head(gps2008CH)
 secr.fit(gps2008CH, start = log(4000), detectfn = 'HHN', 

@@ -21,6 +21,7 @@
 ## 2018-12-29 make.systematic() argument 'chequerboard'
 ## 2019-12-20 make.systematic() arguments 'rotate', 'centrexy'
 ## 2020-01-27 fix bug (saved n = NULL when n missing)
+## 2021-10-18 grts temporarily suspended
 ###############################################################################
 
 ## spsurvey uses sp
@@ -188,17 +189,22 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ####################################
     else if (method == 'GRTS') {
-        if (!requireNamespace ('spsurvey', quietly = TRUE))
-            stop ("package 'spsurvey' required for grts in trap.builder")
-        ## make a list in the format needed by grts()
-        design <- list(None = list(panel = c(Panel1 = n),
-            seltype = "Equal", over = ntrial))
-        src <-ifelse (is.null(frame), 'sp.object', 'att.frame')
-        typ <-ifelse (is.null(frame), 'area', 'finite')
-        GRTS.sites <- spsurvey::grts (design = design, type.frame = typ,
-            src.frame = src, sp.object = region, att.frame = frame,
-            shapefile = FALSE)
-        origins <- coordinates(GRTS.sites)
+        stop ("method = 'GRTS' is unavailable in secr 4.4.7 because of changes in spsurvey 5.0.0")
+        # if (!requireNamespace ('spsurvey', quietly = TRUE))
+        #     stop ("package 'spsurvey' required for grts in trap.builder")
+        # ## make a list in the format needed by grts()
+        # design <- list(None = list(panel = c(Panel1 = n),
+        #     seltype = "Equal", over = ntrial))
+        # src <-ifelse (is.null(frame), 'sp.object', 'att.frame')
+        # typ <-ifelse (is.null(frame), 'area', 'finite')
+        # GRTS.sites <- spsurvey::grts (
+        #     design = design, 
+        #     type.frame = typ,
+        #     src.frame = src, 
+        #     sp.object = region, 
+        #     att.frame = frame,
+        #     shapefile = FALSE)
+        # origins <- coordinates(GRTS.sites)
     }
     ####################################
     else if (method == 'all') {

@@ -15,9 +15,10 @@ importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coe
     "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
     "integrate", "lm", "logLik", "median", "model.matrix", "nlm", "nls", "optim",
     "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
-    "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rmultinom", 
-    "rnbinom", "rnorm", "rpois", "rt", "runif", "rweibull", "sd", "simulate", 
-    "smooth.spline", "terms", "uniroot", "update", "update.formula", "var", "vcov")
+    "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rlnorm", 
+    "rmultinom", "rnbinom", "rnorm", "rpois", "rt", "runif", "rweibull", "sd", 
+    "simulate", "smooth.spline", "terms", "uniroot", "update", "update.formula", 
+    "var", "vcov")
 importFrom(stringr, "str_pad", "str_length")
 importFrom(tools, "file_ext")
 importFrom(utils, "count.fields", "flush.console", "getS3method", "head",
@@ -25,6 +26,7 @@ importFrom(utils, "count.fields", "flush.console", "getS3method", "head",
     "read.table", "tail", "write.table")   ## "winDialog"
 
 importFrom(raster, "values<-", "values", "clump", "adjacent")
+importFrom(raster, "extract")
 importClassesFrom(raster, RasterLayer)
 importMethodsFrom(raster, raster)
 exportMethods(raster)

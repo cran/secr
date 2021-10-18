@@ -12,32 +12,32 @@
 ## 2018-12-16 derivednj and derivedSessions allow weighted option (now R3)
 ## 2018-12-17 derivedStratified moved to its own file
 ## 2018-12-20 derivednj and derivedSessions allow weighted option R2
-############################################################################################
+## 2021-10-18 localvar suspended owing to changes in spsurvey package
 
-## source ('d:\\density secr 2.5\\secr\\r\\empirical.R')
+################################################################################
 
-############################################################################
 
-localvar <- function (z, xy, weights = NULL) {
-    ## z is response variable
-    ## xy is dataframe or list with x, y
-    ## choice of output verified by comparing to
-    ## sum ((nj - n/J)^2) * J / (J-1) for ovensong vector
-    ## with vartype='SRS'
-    if (requireNamespace('spsurvey', quietly = TRUE)) {
-        if (is.null(weights)) weights <- rep(1,length(z))
-        else if (length(weights) != length(z))
-            stop ("weights must be same length as z")
-        temp1 <- spsurvey::total.est(z = z, 
-                                     wgt = weights,
-                                     x = xy[,1], y = xy[,2],
-                                     vartype = "Local")
-    }
-    else
-        stop ("package 'spsurvey' required for local variance")
-
-    temp1[1,4]^2
-}
+# localvar <- function (z, xy, weights = NULL) {
+#     ## z is response variable
+#     ## xy is dataframe or list with x, y
+#     ## choice of output verified by comparing to
+#     ## sum ((nj - n/J)^2) * J / (J-1) for ovensong vector
+#     ## with vartype='SRS'
+#     if (requireNamespace('spsurvey', quietly = TRUE)) {
+#         if (is.null(weights)) weights <- rep(1,length(z))
+#         else if (length(weights) != length(z))
+#             stop ("weights must be same length as z")
+#         temp1 <- spsurvey::total.est(z = z, 
+#                                      wgt = weights,
+#                                      x = xy[,1], y = xy[,2],
+#                                      vartype = "Local")
+#     }
+#     else {
+#         stop ("package 'spsurvey' required for local variance")
+#     }
+# 
+#     temp1[1,4]^2
+# }
 
 # LPMvar <- function (nj, xy, esa) {
 #     # just playing around here
@@ -243,13 +243,16 @@ derivednj <- function ( nj, esa, se.esa = NULL,
         N <- area * n / A
     }
     
-    if ((method=='local') & is.null(xy))
-        stop ("'local' method requires x and y coordinates")
+    if (method=='local') {
+        warning("method = 'local' not available in secr 4.4.7 because of changes in spsurvey 5.0.0")
+        # stop ("'local' method requires x and y coordinates")
+    }
     varn <- switch (method,
         SRS = sum ((nj - n/J)^2) * J / (J-1),
         R2 = sum( esa^2 * (nj/esa - n/A)^2) * J / (J-1), ## Fewster et al 2009 R2
         R3 = A * sum( esa * (nj/esa - n/A)^2) / (J-1),   ## Fewster et al 2009 R3
-        local = localvar (nj, xy),                       ## from total.est in spsurvey, unweighted
+        local = NA,                                      ## suppressed because total.est withdrawn spsurvey 5.0
+        # local = localvar (nj, xy),                     ## from total.est in spsurvey, unweighted
         # local = localvar (nj, xy, 1/esa),              ## from total.est in spsurvey
         poisson = n,                              
         binomial = N * (A / area * (1 - A / area)),

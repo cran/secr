@@ -6,6 +6,7 @@
 ## 2019-12-04 integralprw1 modified to allow for individual covariate
 ## 2020-04-24 learnedresponse bug with multicatch traps fixed
 ## 2020-10-11 knownclass bug when not all classes present in session fixed
+## 2021-08-07 ncores passed to C++ for parallelFor
 ###############################################################################
 
 # dettype
@@ -30,7 +31,7 @@
 allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA, 
                            CH, binomNcode, MRdata, grp, usge, pmixn, pID, maskusage,
                            telemhr = 0, telemstart = 0, telemscale = 0,
-                           grain, R = FALSE, debug = FALSE) {
+                           grain, ncores, R = FALSE, debug = FALSE) {
   nc <- nrow(CH)
   k <- nrow(usge)
   m <- nrow(pi.density)
@@ -58,36 +59,37 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
           }
       } 
       else {
-          temp <- simplehistoriescpp(
-              as.integer(m),
-              as.integer(nc),
-              as.integer(cc),
-              as.integer(grain),
-              as.integer(binomNcode),
-              as.integer(MRdata$markocc),
-              as.integer(MRdata$firstocc),
-              as.double (pID[,x]),
-              as.integer(CH),   
-              as.integer(grp)-1L,
-              as.double (gkhk$gk),     ## precomputed probability 
-              as.double (gkhk$hk),     ## precomputed hazard
-              as.matrix (pi.density),
-              as.integer(PIA[1,,,,x]),
-              as.matrix (usge),
-              as.matrix (hx),                
-              as.matrix (hi),      
-              as.matrix (maskusage),
-              as.double (telemhr),
-              as.integer (telemstart))
+        temp <- simplehistoriescpp(
+          as.integer(m),
+          as.integer(nc),
+          as.integer(cc),
+          as.integer(grain),
+          as.integer(ncores),
+          as.integer(binomNcode),
+          as.integer(MRdata$markocc),
+          as.integer(MRdata$firstocc),
+          as.double (pID[,x]),
+          as.integer(CH),   
+          as.integer(grp)-1L,
+          as.double (gkhk$gk),     ## precomputed probability 
+          as.double (gkhk$hk),     ## precomputed hazard
+          as.matrix (pi.density),
+          as.integer(PIA[1,,,,x]),
+          as.matrix (usge),
+          as.matrix (hx),                
+          as.matrix (hi),      
+          as.matrix (maskusage),
+          as.double (telemhr),
+          as.integer (telemstart))
       }
-    sump   <- sump + pmixn[x,] * temp$prwi
+      sump   <- sump + pmixn[x,] * temp$prwi
   }
   sump 
 }
 #--------------------------------------------------------------------------------
 
 integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0, 
-                          CH0, binomNcode, MRdata, grp, usge, pmixn, pID, grain) {
+  CH0, binomNcode, MRdata, grp, usge, pmixn, pID, grain, ncores) {
     nc <- dim(PIA0)[2]    ## animals
     nr <- nrow(CH0)       ## unique naive animals (1 or nc)
     m <- nrow(pi.density)
@@ -99,26 +101,27 @@ integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0,
         hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## sum_k (hazard)
         hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
         temp <- simplehistoriescpp(
-            as.integer(m),
-            as.integer(nr),
-            as.integer(cc0),
-            as.integer(grain),
-            as.integer(binomNcode),
-            as.integer(MRdata$markocc),
-            as.integer(rep(-1,nr)),                 # MRdata$firstocc  # never marked
-            as.double (pID[,x]),
-            as.integer(CH0),    
-            as.integer(grp)-1L,              # group  
-            as.double (gkhk$gk),        # precomputed probability 
-            as.double (gkhk$hk),        # precomputed hazard
-            as.matrix (pi.density),
-            as.integer(PIA0[1,1:nr,,,x]),
-            as.matrix (usge),
-            as.matrix (hx),                
-            as.matrix (hi),      
-            as.matrix (matrix(TRUE, nrow = nr, ncol = m)),
-            as.double (0),   # no telemetry
-            as.integer(0)    # no telemetry
+          as.integer(m),
+          as.integer(nr),
+          as.integer(cc0),
+          as.integer(grain),
+          as.integer(ncores),
+          as.integer(binomNcode),
+          as.integer(MRdata$markocc),
+          as.integer(rep(-1,nr)),                 # MRdata$firstocc  # never marked
+          as.double (pID[,x]),
+          as.integer(CH0),    
+          as.integer(grp)-1L,              # group  
+          as.double (gkhk$gk),        # precomputed probability 
+          as.double (gkhk$hk),        # precomputed hazard
+          as.matrix (pi.density),
+          as.integer(PIA0[1,1:nr,,,x]),
+          as.matrix (usge),
+          as.matrix (hx),                
+          as.matrix (hi),      
+          as.matrix (matrix(TRUE, nrow = nr, ncol = m)),
+          as.double (0),   # no telemetry
+          as.integer(0)    # no telemetry
         )  
         if (nr == 1) temp$prwi <- rep(temp$prwi, nc)
         for (g in 1:ngroup) {
@@ -169,7 +172,7 @@ expectedmu <- function (cc, haztemp, gkhk, pi.density, Nm, PIA,
 }
 #--------------------------------------------------------------------------------
 
-allhistsignal <- function (detectfn, grain, binomNcode,
+allhistsignal <- function (detectfn, grain, ncores, binomNcode,
                            CH, signal, grp, gk, realparval, dist2, 
                            pi.density, PIA, miscparm, maskusage,
                            pmixn, debug = FALSE) {
@@ -184,6 +187,7 @@ allhistsignal <- function (detectfn, grain, binomNcode,
       as.integer(nc),
       as.integer(detectfn),
       as.integer(grain),
+      as.integer(ncores),
       as.integer(binomNcode),
       as.integer(CH),   
       as.matrix(signal),
@@ -202,7 +206,7 @@ allhistsignal <- function (detectfn, grain, binomNcode,
 #--------------------------------------------------------------------------------
 allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PIA, 
                            CH, xy, binomNcode, grp, usge, mask, pmixn, maskusage,
-                           grain, minprob, debug=FALSE) {
+                           grain, ncores, minprob, debug=FALSE) {
   nc <- nrow(CH)
   m <- nrow(pi.density)
   s <- ncol(usge)
@@ -213,28 +217,29 @@ allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PI
       hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
       hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
       temp <- polygonhistoriescpp(
-      as.integer(nc),
-      as.integer(detectfn[1]),
-      as.integer(grain),
-      as.double(minprob),          
-      as.integer(binomNcode),
-      as.integer(CH),   
-      as.matrix(xy$xy),
-      as.vector(xy$start),
-      as.integer(as.numeric(grp))-1L,
-      as.double(hk),
-      as.double(H),
-      as.matrix(realparval),
-      matrix(1,nrow=s, ncol=nmix),  ## pID?
-      as.matrix(mask),
-      as.matrix (pi.density),
-      as.integer(PIA[1,,,,x]),
-      as.matrix(usge),
-      as.matrix (hx),                
-      as.matrix (hi),      
-      as.matrix(maskusage)
-    )
-    sump <- sump + pmixn[x,] * temp
+        as.integer(nc),
+        as.integer(detectfn[1]),
+        as.integer(grain),
+        as.integer(ncores),
+        as.double(minprob),          
+        as.integer(binomNcode),
+        as.integer(CH),   
+        as.matrix(xy$xy),
+        as.vector(xy$start),
+        as.integer(as.numeric(grp))-1L,
+        as.double(hk),
+        as.double(H),
+        as.matrix(realparval),
+        matrix(1,nrow=s, ncol=nmix),  ## pID?
+        as.matrix(mask),
+        as.matrix (pi.density),
+        as.integer(PIA[1,,,,x]),
+        as.matrix(usge),
+        as.matrix (hx),                
+        as.matrix (hi),      
+        as.matrix(maskusage)
+      )
+      sump <- sump + pmixn[x,] * temp
   }
   if (debug) {
     cat("SUM log(PRWI) ", sum(log(sump)), "\n")
@@ -245,7 +250,7 @@ allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PI
 
 integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density, PIA0, 
                               CH0, xy, binomNcode, grp, usge, mask, pmixn, maskusage,
-                              grain, minprob, debug = FALSE) {
+                              grain, ncores, minprob, debug = FALSE) {
   nc <- dim(PIA0)[2]
   nr <- nrow(CH0)       ## unique naive animals (1 or nc)
   m <- nrow(pi.density)
@@ -263,6 +268,7 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
         as.integer(nr),
         as.integer(detectfn[1]),
         as.integer(grain),
+        as.integer(ncores),
         as.double(minprob),          
         as.integer(binomNcode),
         as.integer(CH0),   
@@ -395,16 +401,24 @@ generalsecrloglikfn <- function (
                 gkhk <- do.call('makegkPointR', list(detectfn, Xrealparval, distmat2, miscparm))
             }
         }
-        else gkhk <- makegkPointcpp (as.integer(detectfn),
-                                 as.integer(details$grain),
-                                 as.matrix(Xrealparval),
-                                 as.matrix(distmat2),
-                                 as.double(miscparm))
-      if (any(data$dettype == 8)) {
-          gkhk <- cappedgkhkcpp (as.integer(nrow(Xrealparval)), as.integer(nrow(data$traps)),
-                                 as.double(attr(data$mask, "area")), as.double(density[,1]), 
-                                 as.double(gkhk$gk), as.double(gkhk$hk))  
-      }
+        else {
+          gkhk <- makegkPointcpp (
+            as.integer(detectfn),
+            as.integer(details$grain),
+            as.integer(details$ncores),
+            as.matrix(Xrealparval),
+            as.matrix(distmat2),
+            as.double(miscparm))
+        }
+        if (any(data$dettype == 8)) {
+            gkhk <- cappedgkhkcpp (
+                as.integer(nrow(Xrealparval)), 
+                as.integer(nrow(data$traps)),
+                as.double(attr(data$mask, "area")), 
+                as.double(density[,1]), 
+                as.double(gkhk$gk), 
+                as.double(gkhk$hk))  
+        }
     }
     ## precompute gk, hk for polygon and transect detectors
     else if (all(data$dettype %in% c(3,4,6,7))) {
@@ -413,9 +427,15 @@ generalsecrloglikfn <- function (
       # 2019-11-25 therefore using repeated 1-D integration
       convexpolygon <- is.null(details$convexpolygon) || details$convexpolygon
       gkhk <- makegkPolygoncpp (
-          as.integer(detectfn), as.integer(dimension), as.logical(convexpolygon), 
-          as.integer(details$grain), as.matrix(Xrealparval), as.integer(data$cumk),
-          as.matrix(data$traps), as.matrix(data$mask))
+        as.integer(detectfn), 
+        as.integer(dimension), 
+        as.logical(convexpolygon), 
+        as.integer(details$grain), 
+        as.integer(details$ncores),
+        as.matrix(Xrealparval), 
+        as.integer(data$cumk),
+        as.matrix(data$traps), 
+        as.matrix(data$mask))
     }
     
     ## telemetry precalculation
@@ -442,11 +462,11 @@ generalsecrloglikfn <- function (
         if (CL)
             stop("simulation for overdispersion requires full likelihood (not CL)")
         else {
-            chat <- unlist(getchat (nrow(realparval0), nrow(data$CH), data$n.distrib,         ## or nc1?
-                                    data$grp, data$usge, pmixn, pID, getcellsize(data$mask), 
-                                    gkhk, pi.density, Dsum, PIA0, data$binomNcode, 
-                                    data$MRdata, miscparm, details$nsim, details$grain))
-            return (chat)         
+          chat <- unlist(getchat (nrow(realparval0), nrow(data$CH), data$n.distrib,         ## or nc1?
+            data$grp, data$usge, pmixn, pID, getcellsize(data$mask), 
+            gkhk, pi.density, Dsum, PIA0, data$binomNcode, 
+            data$MRdata, miscparm, details$nsim, details$grain, details$ncores))
+          return (chat)         
         }
     }
     #######################################################################
@@ -464,17 +484,17 @@ generalsecrloglikfn <- function (
                                   data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                                   pID, data$maskusage, 
                                   telemhr, telemstart, telemscale,
-                                  details$grain, details$R)
+                                  details$grain, details$ncores, details$R)
         }
         else if (all(data$dettype == 5)) {
-            prw <- allhistsignal (detectfn, details$grain, data$binomNcode, data$CH, data$signal$signal,
+            prw <- allhistsignal (detectfn, details$grain, details$ncores, data$binomNcode, data$CH, data$signal$signal,
                                   data$grp, gkhk$gk, Xrealparval, distmat2, pi.density, PIA, 
                                   miscparm, data$maskusage, pmixn)
         }
         else if (all(data$dettype %in% c(3,4,6,7))) {
             prw <- allhistpolygon (detectfn, Xrealparval, haztemp, gkhk$hk, gkhk$H, pi.density, PIA, 
                                    data$CH, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
-                                   pmixn, data$maskusage, details$grain, details$minprob,
+                                   pmixn, data$maskusage, details$grain, details$ncores, details$minprob,
                                    debug = details$debug>3)
         }
         else {
@@ -484,9 +504,14 @@ generalsecrloglikfn <- function (
         ## polygon types
     if (all(data$dettype %in% c(3,4,6,7)) && !data$HPXpoly) {
         if (learnedresponse) {   ## overwrite gk,hk with model for naive animal
-            gkhk <- makegkPolygoncpp (as.integer(detectfn), as.integer(details$grain),
-                                      as.matrix(Xrealparval0), as.integer(data$cumk),
-                                      as.matrix(data$traps), as.matrix(data$mask))
+            gkhk <- makegkPolygoncpp (
+              as.integer(detectfn), 
+              as.integer(details$grain),
+              as.integer(details$ncores),
+              as.matrix(Xrealparval0),
+              as.integer(data$cumk),
+              as.matrix(data$traps),
+              as.matrix(data$mask))
             if (all(data$dettype %in% c(3,4))) {
                 ## hazard for exclusive detectors or related bug fix 2020-04-24
                 haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
@@ -494,7 +519,8 @@ generalsecrloglikfn <- function (
         }
         pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
                                   data$CH0, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
-                                  pmixn, data$maskusage, details$grain, details$minprob, debug = details$debug>3)
+                                  pmixn, data$maskusage, details$grain, details$ncores, details$minprob, 
+          debug = details$debug>3)
     }
     ## point types
     else {
@@ -506,9 +532,13 @@ generalsecrloglikfn <- function (
                     gkhk <- do.call('makegkPointR', list(detectfn, Xrealparval0, distmat2, miscparm))
                 }
             }
-            else gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(details$grain),
-                                    
-                                       as.matrix(Xrealparval0), as.matrix(distmat2), as.double(miscparm))
+            else gkhk <- makegkPointcpp (
+                as.integer(detectfn), 
+                as.integer(details$grain),
+                as.integer(details$ncores),
+                as.matrix(Xrealparval0), 
+                as.matrix(distmat2), 
+                as.double(miscparm))
             ## no capped adjustment as learned response not compatible
             
             if (all(data$dettype %in% c(0,8))) {
@@ -519,7 +549,7 @@ generalsecrloglikfn <- function (
         }
         pdot <- integralprw1 (nrow(Xrealparval0), haztemp, gkhk, pi.density, PIA0, 
                               data$CH0, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
-                            pID, details$grain)
+                            pID, details$grain, details$ncores)
     }
     
     if (details$debug>2) browser()
@@ -614,7 +644,6 @@ generalsecrloglikfn <- function (
   ######################################################################################
   ## Main line of generalsecrloglikfn
   ######################################################################################
-  
   if (details$debug>4) browser()
   nsession <- length(sessionlevels)
   

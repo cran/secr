@@ -2,12 +2,23 @@
 #ifndef __secr_h_INCLUDED__   // if secr.h hasn't been included yet...
 #define __secr_h_INCLUDED__   // #define this so the compiler knows it has been included
 
+//------------------------------------------------------------------------------
+// BOOST used for statistical distributions from secr 4.4.6 October 2021
+// return NAN for invalid inputs
+// see https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/stat_tut/weg/error_eg.html
+// and https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/pol_tutorial/changing_policy_defaults.html
+#define BOOST_MATH_DOMAIN_ERROR_POLICY ignore_error
+// must follow define domain error policy...
+#include <boost/math/distributions.hpp>     
+//------------------------------------------------------------------------------
+
 #include <Rcpp.h>
 #include <RcppParallel.h>
-using namespace Rcpp;
 
 #include <R.h>       // random numbers 
-#include <Rmath.h>   // R math functions e.g. dbinom, dpois 
+
+using namespace Rcpp;
+using namespace RcppParallel;
 
 // constants
 #define fuzz 1e-200
@@ -39,16 +50,9 @@ int i4 (int i, int j, int k, int l, int ii, int jj, int kk);
 //------------------------------------------------------
 typedef double (*fnptr)(const Rcpp::NumericVector, const double);
 typedef double (*fnptrC)(const std::vector<double>, const double);
-// fnptr getgfnr (int fn);
 fnptr getzfnr (int fn);
 fnptrC getgfns (int fn);
 fnptrC getzfnrC (int fn);
-// double pfn (
-//         const int fn, 
-//         const double d2val, 
-//         const Rcpp::NumericVector &gsb,
-//         const Rcpp::NumericVector &miscparm, 
-//         const double w2);
 
 double pfnS (
         const int fn,
@@ -61,12 +65,9 @@ int par3 (int fn);
 
 //--------------------------------------------------------------------------
 
+// not used 2021-10-17
 // customised dnbinom parameterised as size, mu 
-double gnbinom (int count, int size, double mu, int uselog);
-//--------------------------------------------------------------------------
-
-// binomial density allowing non-integer (floating point) size 
-// double gbinomFP (int count, double size, double p, int uselog);
+// double gnbinom (int count, int size, double mu, int uselog);
 //--------------------------------------------------------------------------
 
 // probability of count with distribution specified by binomN 
@@ -135,13 +136,14 @@ void probsort (
 //---------------------------------------------------------------------
 
 double gr (
-    const int fn, Rcpp::NumericVector, 
+    const int fn, 
+    Rcpp::NumericVector gsb, 
     const rpoint xy, 
     const rpoint animal);
 //---------------------------------------------------------------------
 
 // random point from 2-D radial distribution specified by g function 
-NumericVector gxy (const int fn, 
+Rcpp::NumericVector gxy (const int fn, 
     const Rcpp::NumericVector par, 
     const double w);
   
@@ -176,21 +178,14 @@ void geth2 (
     std::vector<double> &h, 
     std::vector<int> &hindex);
 
-// int getstart(
-//     const Rcpp::IntegerVector &detect, 
-//     std::vector<int> &start, 
-//     const int nc1, 
-//     const int nc, 
-//     const int ss, 
-//     const int nk, 
-//     const Rcpp::IntegerVector &w);
-
 //---------------------------------------------------------------------
 // 
 double gpois (int count, double lambda, int uselog);
 double gbinom(int count, int size, double p, int uselog);
-double gbinomFP (int count, double size, double p, int uselog);
 double pski ( int binomN, int count, double Tski, double g, double pI);
+
+// not used 2021-10-17
+// double gbinomFP (int count, double size, double p, int uselog);  
 
 //--------------------------------------------------------------------------
 
@@ -199,56 +194,53 @@ double pski ( int binomN, int count, double Tski, double g, double pI);
 double d2cpp (
     const int k, 
     const int m, 
-    const NumericMatrix &A1, 
-    const NumericMatrix &A2);
+    const Rcpp::NumericMatrix &A1, 
+    const Rcpp::NumericMatrix &A2);
 
-List makelookupcpp (
-    const NumericMatrix &x);  
+Rcpp::List makelookupcpp (
+    const Rcpp::NumericMatrix &x);  
 
 
 // Functions to characterize detector type 
 // polygon, transect and signal detector types must be constant across occasions
 
-bool anyexclusive (const IntegerVector detect);
-bool anycapped (const IntegerVector detect);
-bool anypolygon (const IntegerVector detect);
-bool anytransect (const IntegerVector detect);
-bool anysignal (const IntegerVector detect);
-bool anytelemetry (const IntegerVector detect);
-bool alltelemetry (const IntegerVector detect);
-bool allpobool (const IntegerVector detect, bool allowsignal, bool allowtelem);
-bool allcapped  (const IntegerVector detect);
-bool allmulti (const IntegerVector detect);
-bool allpoint (const IntegerVector detect, bool allowsignal, bool allowtelem);
+bool anyexclusive (const Rcpp::IntegerVector detect);
+bool anycapped (const Rcpp::IntegerVector detect);
+bool anypolygon (const Rcpp::IntegerVector detect);
+bool anytransect (const Rcpp::IntegerVector detect);
+bool anysignal (const Rcpp::IntegerVector detect);
+bool anytelemetry (const Rcpp::IntegerVector detect);
+bool alltelemetry (const Rcpp::IntegerVector detect);
+bool allpobool (const Rcpp::IntegerVector detect, bool allowsignal, bool allowtelem);
+bool allcapped  (const Rcpp::IntegerVector detect);
+bool allmulti (const Rcpp::IntegerVector detect);
+bool allpoint (const Rcpp::IntegerVector detect, bool allowsignal, bool allowtelem);
 
 bool anyvarying (const int nc, const int ss, const int nk, const int nmix,
-                 const IntegerVector &PIA0);
-bool anyb (const NumericMatrix &gsbval, const NumericMatrix &gsb0val);
+                 const Rcpp::IntegerVector &PIA0);
+bool anyb (
+    const Rcpp::NumericMatrix &gsbval, 
+    const Rcpp::NumericMatrix &gsb0val);
 
 // miscellaneous functions
 
-// std::vector<int> fillcumkcpp(
-//     const IntegerVector detect, 
-//     const int ss, 
-//     const IntegerVector kk);
-  
 int nval(int detect0, int nc1, int cc, int ss, int nk);
 
-NumericMatrix makedist2cpp (
-    const NumericMatrix &traps, 
-    const NumericMatrix &mask);
+Rcpp::NumericMatrix makedist2cpp (
+    const Rcpp::NumericMatrix &traps, 
+    const Rcpp::NumericMatrix &mask);
 
-void squaredistcpp (NumericMatrix &dist2);
+void squaredistcpp (Rcpp::NumericMatrix &dist2);
 
 bool insidecpp (
-        const NumericVector &xy,
+        const Rcpp::NumericVector &xy,
         const int    n1,
         const int    n2,
         const Rcpp::NumericMatrix &poly);
 
 void fillngcpp(const int nc, 
                const int gg, 
-               const IntegerVector &grp, 
+               const Rcpp::IntegerVector &grp, 
                std::vector<int> &ng);
 
 //---------------------------------------------------------------
@@ -257,7 +249,7 @@ void fillngcpp(const int nc,
 double classmembership (
     const int n, 
     const int x, 
-    const IntegerVector &knownclass, 
+    const Rcpp::IntegerVector &knownclass, 
     const std::vector<double> &pmixn, 
     const int nmix);
   

@@ -42,6 +42,8 @@ lie outside \code{spatialdata} (mask data sources only)}
   SpatialGridDataFrame then it will be used in an overlay operation as
   described. 
 
+   \code{spatialdata} may also be a RasterLayer from package \pkg{raster} (requires that package to have been installed). If provided \code{counts} should be a single name that will be used for the values (otherwise 'raster' will be used).
+ 
   If \code{spatialdata} is a \code{mask} or \code{traps} object then it
   is searched for the closest point to each point in \code{object}, and
   covariates are drawn from the corresponding rows in

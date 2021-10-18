@@ -2,9 +2,6 @@
 #include <RcppParallel.h>
 #include "secr.h"
 
-using namespace Rcpp;
-using namespace RcppParallel;
-
 //==============================================================================
 // 2019-08-10, 2019-10-18
 // detector types multi, proximity, count, telemetry
@@ -34,12 +31,12 @@ NumericVector gethr(
         if ((fn==14) || (fn==16))
             gsb(0) = telemscale/(2 * M_PI * gsb[1] * gsb[1]);
         else
-            stop ("telemetry only coded for HHN and HEX");
+            Rcpp::stop ("telemetry only coded for HHN and HEX");
         for (m=0; m<mm; m++) {
             for (t=0; t<nt; t++) {
                 r = std::sqrt(d2cpp (m, t, mask, xy)); 
                 hri = i3(c, m, t, cc, mm); 
-                if (hri>1e8) stop ("c,m,t combinations exceed 1e8 in gethr");
+                if (hri>1e8) Rcpp::stop ("c,m,t combinations exceed 1e8 in gethr");
                 hr[hri] = zfnr(gsb, r);
             }	    
         }
@@ -161,7 +158,7 @@ struct simplehistories : public Worker {
             count = w[w3];  // number of telemetry fixes 
             if (count>0) {
                 c = PIA[w3] - 1;                if (c<0) {
-                    stop ("telemetry usage zero on telemetry occasion");
+                    Rcpp::stop ("telemetry usage zero on telemetry occasion");
                 }
                 for (i=cumcount; i<(cumcount+count); i++) {
                     t = telemstart[n] + i;
@@ -394,6 +391,7 @@ List simplehistoriescpp (
         const int nc, 
         const int cc, 
         const int grain,   
+        const int ncores,   
         const IntegerVector binomN, 
         const IntegerVector markocc, 
         const IntegerVector firstocc, 
@@ -421,9 +419,9 @@ List simplehistoriescpp (
                               telemhr, telemstart, 
                               output);
     
-    if (grain>0) {
+    if (ncores>1) {
         // Run operator() on multiple threads
-        parallelFor(0, nc, somehist, grain);
+        parallelFor(0, nc, somehist, grain, ncores);
     }
     else {
         // for debugging avoid multithreading and allow R calls e.g. Rprintf

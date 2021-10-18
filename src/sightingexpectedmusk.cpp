@@ -1,6 +1,5 @@
 #include <Rcpp.h>
 #include "secr.h"
-using namespace Rcpp;
 
 //==============================================================================
 // 2019-09-14
@@ -173,7 +172,6 @@ using namespace Rcpp;
                             }
                             else if (sightmodel==6) {   // all pre-marked, number unknown
                                 Tmmusk(k,s) +=  nc / a0[0] * pi_density(m, group[0]) * hskm(0,s,k,m);
-                                // stop ("not ready");
                             }
                         }
                         Tmmusk(k,s) *= 1-pID[s];   // 2019-12-16

@@ -12,7 +12,7 @@
 ## 2017-12-18 all.levels argument
 ## 2021-03-24 fix all.levels = FALSE bug
 ## Create (neutral) design data suitable for 'predict'
-## generic method newdata
+## generic method makeNewData
 ############################################################################################
 
 makeNewData <- function (object, all.levels = FALSE, ...) UseMethod("makeNewData")
@@ -70,6 +70,10 @@ makeNewData.secr <- function (object, all.levels = FALSE, ...) {
                 return(basevars)
             }
         }
+        
+        ## missing timevarying...
+        ## 2021-07-30
+        
         sessvars <- vars
         
         basevars <- list(session = factor(sessions[session], levels=sessions))

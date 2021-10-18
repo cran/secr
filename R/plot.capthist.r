@@ -46,12 +46,24 @@ plot.capthist <- function(x, rad = 5,
             
             if (!is.null(splitocc)) {
                 colr <- ifelse(occ<splitocc,cappar$col, col2)
+                # trkpar$x <- xy
+                # trkpar$col <- colr
+                # do.call(lines, trkpar)
+                # cappar$x <- xy
+                # cappar$col <- colr
+                # do.call(points, cappar)
                 par(trkpar)
                 if (tracks) lines (xy, col = colr)
                 par(cappar)
                 points (xy, col = colr)
             }
             else {
+                # trkpar$x <- xy
+                # trkpar$col <- colr
+                # do.call(lines, trkpar)
+                # cappar$x <- xy
+                # cappar$col <- colr
+                # do.call(points, cappar)
                 par(trkpar)
                 if (varycol) par(col=icol)   
                 if (tracks) lines (xy)

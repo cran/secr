@@ -108,15 +108,16 @@ NumericVector pdotpointcpp (
         const NumericVector &miscparm,
         const double &w2, 
         const IntegerVector &binomN,
-        const int &grain)
+        const int &grain,
+        const int &ncores)
     
 {
     
     if (anypolygon(detect) || anytransect(detect)) {
-        stop("pdotpoint not for polygon or transect detectors");
+        Rcpp::stop("pdotpoint not for polygon or transect detectors");
     }
     if (fn>20) {
-        stop("pdotpointcpp requires detectfn < 21");
+        Rcpp::stop("pdotpointcpp requires detectfn < 21");
     }
     
     int nxy = xy.nrow();
@@ -124,8 +125,8 @@ NumericVector pdotpointcpp (
     
     pdotpoint ppoint (xy, traps, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, pdot);
     
-    if (grain>0) {
-        parallelFor(0, nxy, ppoint, grain);
+    if (ncores>1) {
+        parallelFor(0, nxy, ppoint, grain, ncores);
     }
     else {
         ppoint.operator()(0,nxy);    // for debugging avoid multithreading to allow R calls
@@ -232,8 +233,9 @@ NumericVector hdotpolycpp (
         const NumericVector &gsb,
         const bool &convex,
         const int &dim,
-        const int &grain)
-{
+        const int &grain,
+        const int &ncores)
+    {
     int nxy = xy.nrow();
     NumericMatrix gsbval(1,gsb.size());
     NumericVector hdot(nxy);
@@ -241,9 +243,8 @@ NumericVector hdotpolycpp (
     
     hdotpoly hpoly (detectfn, convex, dim, gsb, gsbval, cumk, markocc, traps, xy, Tsk, hdot);
     
-    if (grain>0) {
-        // call it with parallelFor
-        parallelFor(0, nxy, hpoly, grain);
+    if (ncores>1) {
+        parallelFor(0, nxy, hpoly, grain, ncores);
     }
     else {
         hpoly.operator()(0,nxy);    // for debugging avoid multithreading to allow R calls

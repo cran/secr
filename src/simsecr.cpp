@@ -2,8 +2,9 @@
 // ******************* indicates weakness
 
 #include <Rcpp.h>
-using namespace Rcpp;
 #include "poly.h"
+using namespace Rcpp;
+
 //==============================================================================
 
 NumericVector getpar (
@@ -51,7 +52,7 @@ int rdiscrete (
     std::vector<double> cumpmix(n+1);
     int x;
     double r;
-    if (n<1) stop ("invalid n in rdiscrete");
+    if (n<1) Rcpp::stop ("invalid n in rdiscrete");
     if (n==1) return (0);
     else {
         cumpmix[0] = 0;
@@ -87,7 +88,7 @@ int bswitch (
     else if (btype == 3) 
         return(caughtbefore[k]);
     else 
-        stop("unrecognised btype in simsecr");
+        Rcpp::stop("unrecognised btype in simsecr");
     return(0);
 }
 //==============================================================================
@@ -179,7 +180,7 @@ List simdetectpointcpp (
     // mixture models 
     if (nmix>1) {
         if (nmix>2)
-            stop("simsecr nmix>2 not implemented");
+            Rcpp::stop("simsecr nmix>2 not implemented");
         for (i=0; i<N; i++) {
             if (knownclass[i] > 1) 
                 x[i] = knownclass[i] - 2;      // knownclass=2 maps to x=0 etc. 
@@ -433,7 +434,7 @@ List simdetectpolycpp (
     int    ss = Tsk.ncol();            // number of animals 
     int    nk = Tsk.nrow();            // number of polygons/transects
     int    N = animals.nrow();         // number of occasions 
-    if (nk!=(kk.size()-1)) stop("Tsk doesn't match kk");
+    if (nk!=(kk.size()-1)) Rcpp::stop("Tsk doesn't match kk");
     int    i,j,k,l,s;
     int    ik;
     int    nc = 0;
@@ -536,7 +537,7 @@ List simdetectpolycpp (
     // mixture models 
     if (nmix>1) {
         if (nmix>2)
-            stop("simsecr nmix>2 not implemented");
+            Rcpp::stop("simsecr nmix>2 not implemented");
         for (i=0; i<N; i++) {
             if (knownclass[i] > 1) 
                 x[i] = knownclass[i] - 2;      // knownclass=2 maps to x=0 etc. 
@@ -939,7 +940,7 @@ List simdetectsignalcpp (
         return(nullresult);
     }                                            // signal only 
     if (!((fn == 10) || (fn == 11)))
-        stop ("simsecr not implemented for this combination of detector & detectfn");
+        Rcpp::stop ("simsecr not implemented for this combination of detector & detectfn");
     work = (double*) R_alloc(maxdet*2, sizeof(double));   /* twice size needed for signal */
     sortorder = (int*) R_alloc(maxdet, sizeof(int));
     sortkey = (double*) R_alloc(maxdet, sizeof(double));
@@ -953,7 +954,7 @@ List simdetectsignalcpp (
     // mixture models 
     if (nmix>1) {
         if (nmix>2)
-            stop("simsecr nmix>2 not implemented");
+            Rcpp::stop("simsecr nmix>2 not implemented");
         for (i=0; i<N; i++) {
             if (knownclass[i] > 1) 
                 x[i] = knownclass[i] - 2;      // knownclass=2 maps to x=0 etc. 

@@ -8,35 +8,36 @@
 #--------------------------------------------------------------------------------
 allhistfast <- function (realparval, gkhk, pi.density, PIA, 
                          nk2ch, usge, pmixn, maskusage,
-                         grain, binomN, indiv) {
+                         grain, ncores, binomN, indiv) {
     nc <- dim(PIA)[2]
     nmix <- dim(PIA)[5]
     m <- length(pi.density)
     sump <- numeric(nc)
     for (x in 1:nmix) {
-        temp <- fasthistoriescpp(
-            as.integer(m),
-            as.integer(nc),
-            as.integer(nrow(realparval)),
-            as.integer(grain),
-            as.integer(binomN),
-            as.logical(indiv),
-            matrix(nk2ch[,,1], nrow=nc),
-            matrix(nk2ch[,,2], nrow=nc),
-            as.double (gkhk$gk),  ## precomputed probability 
-            as.double (gkhk$hk),  ## precomputed hazard 
-            as.double (pi.density),
-            as.integer(PIA[1,,,,x]),
-            as.integer(usge),
-            as.matrix (maskusage))
-        sump <- sump + pmixn[x,] * temp
+      temp <- fasthistoriescpp(
+        as.integer(m),
+        as.integer(nc),
+        as.integer(nrow(realparval)),
+        as.integer(grain),
+        as.integer(ncores),
+        as.integer(binomN),
+        as.logical(indiv),
+        matrix(nk2ch[,,1], nrow=nc),
+        matrix(nk2ch[,,2], nrow=nc),
+        as.double (gkhk$gk),  ## precomputed probability 
+        as.double (gkhk$hk),  ## precomputed hazard 
+        as.double (pi.density),
+        as.integer(PIA[1,,,,x]),
+        as.integer(usge),
+        as.matrix (maskusage))
+      sump <- sump + pmixn[x,] * temp
     }
     sump
 }
 #--------------------------------------------------------------------------------
 
 integralprw1fast <- function (realparval0, gkhk, pi.density, PIA0, 
-                              nk2ch0, usge, pmixn, grain, binomN, indiv) {
+                              nk2ch0, usge, pmixn, grain, ncores, binomN, indiv) {
     nc <- dim(PIA0)[2]
     nr <- nrow(nk2ch0)
     nmix <- dim(PIA0)[5]
@@ -47,8 +48,9 @@ integralprw1fast <- function (realparval0, gkhk, pi.density, PIA0,
             as.integer(m),
             as.integer(nr),    ## 1 
             as.integer(nrow(realparval0)),
-            as.integer(grain),
-            as.integer(binomN),
+          as.integer(grain),
+          as.integer(ncores),
+          as.integer(binomN),
             as.logical(indiv),
             matrix(nk2ch0[,,1], nrow = nr),
             matrix(nk2ch0[,,2], nrow = nr),
@@ -119,7 +121,6 @@ fastsecrloglikfn <- function (
                      "(try smaller stepmax in nlm Newton-Raphson?)")
             return (1e10)
         }
-        
         ## DOES NOT ALLOW FOR GROUP VARIATION IN DENSITY
         ## more thoughts 2015-05-05
         ## could generalize by
@@ -149,11 +150,13 @@ fastsecrloglikfn <- function (
         
         ## precompute gk, hk for point detectors
         if (data$dettype[1] %in% c(0,1,2,5,8)) {
-            gkhk <- makegkPointcpp (as.integer(detectfn),
-                                       as.integer(details$grain),
-                                       as.matrix(Xrealparval),
-                                       as.matrix(distmat2),
-                                       as.double(miscparm))
+            gkhk <- makegkPointcpp (
+                as.integer(detectfn),
+                as.integer(details$grain),
+                as.integer(details$ncores),
+                as.matrix(Xrealparval),
+                as.matrix(distmat2),
+                as.double(miscparm))
             if (details$anycapped) {   ## capped adjustment
               gkhk <- cappedgkhkcpp (
                 as.integer(nrow(Xrealparval)),
@@ -164,10 +167,11 @@ fastsecrloglikfn <- function (
             }
         }
         prw <- allhistfast (Xrealparval, gkhk, pi.density, PIA, 
-                            data$CH, data$usge, pmixn, data$maskusage, 
-                            details$grain, details$binomN, design$individual)
+          data$CH, data$usge, pmixn, data$maskusage, 
+          details$grain, details$ncores, details$binomN, design$individual)
         pdot <- integralprw1fast (Xrealparval, gkhk, pi.density, PIA, 
-                                  data$CH0, data$usge, pmixn, details$grain, details$binomN, design$individual)
+          data$CH0, data$usge, pmixn, details$grain, details$ncores, 
+          details$binomN, design$individual)
         
         comp <- matrix(0, nrow = 5, ncol = 1)
         ## 2021-01-30 avoid length > 1

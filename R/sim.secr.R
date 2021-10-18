@@ -338,6 +338,9 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
     beta <- object$fit$par
     userd <- is.null(object$details$userdist)
     
+    ncores <- setNumThreads()
+    grain <- if (ncores==1) 0 else 1
+    
     ##------------------------------------------
     ## detection parameters for each session, animal, occasion, detector
     ## realparval is lookup table of values,
@@ -523,16 +526,20 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE)
                     object$detectfn == 20)
             }
             ## precompute gk, hk for point detectors
-            gkhk0 <- makegkPointcpp (as.integer(object$detectfn),
-                                        as.integer(object$details$grain),
-                                        as.matrix(Xrealparval0),
-                                        as.matrix(distmat2),
-                                        as.double(object$details$miscparm))
-            gkhk <- makegkPointcpp (as.integer(object$detectfn),
-                                       as.integer(object$details$grain),
-                                       as.matrix(Xrealparval1),
-                                       as.matrix(distmat2),
-                                       as.double(object$details$miscparm))
+            gkhk0 <- makegkPointcpp (
+                as.integer(object$detectfn),
+                as.integer(grain),
+                as.integer(ncores),
+                as.matrix(Xrealparval0),
+                as.matrix(distmat2),
+                as.double(object$details$miscparm))
+            gkhk <- makegkPointcpp (
+                as.integer(object$detectfn),
+                as.integer(grain),
+                as.integer(ncores),
+                as.matrix(Xrealparval1),
+                as.matrix(distmat2),
+                as.double(object$details$miscparm))
             if (any(dettype == 8)) {
                 stop("sim.secr not ready for capped detectors")
                 #     gkhk <- cappedgkhkcpp (as.integer(nrow(Xrealparval1)), as.integer(nrow(session.traps)),

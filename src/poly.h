@@ -2,6 +2,12 @@
 #ifndef __poly_h_INCLUDED__   // if poly.h hasn't been included yet...
 #define __poly_h_INCLUDED__   // #define this so the compiler knows it has been included
 
+// see https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/stat_tut/weg/error_eg.html
+// and https://www.boost.org/doc/libs/1_77_0/libs/math/doc/html/math_toolkit/pol_tutorial/changing_policy_defaults.html
+// return NAN for invalid inputs
+#define BOOST_MATH_DOMAIN_ERROR_POLICY ignore_error
+#include <boost/math/distributions.hpp>       // gamma, normal, lognormal distributions
+
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::depends(RcppNumerical)]]
 // next two lines must be in order (RcppNumerical precedes secr.h)
@@ -9,12 +15,6 @@
 #include "secr.h"
 
 #include <R_ext/Applic.h>    // for Rdqags
-
-bool insidecppC (
-        const Numer::Constvec &xy,
-        const int    &n1,
-        const int    &n2,
-        const RcppParallel::RMatrix<double> &poly);
 
 double integral1DNRcpp
     (const int fn, 

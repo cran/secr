@@ -70,7 +70,8 @@ See also the example in \href{https://www.otago.ac.nz/density/pdfs/secr-densitys
   Setting the intercept of a smooth to zero is not a canned option in
   \pkg{mgcv}, and is not offered in \pkg{secr}. It may be achieved by
   placing a knot at zero and hacking the matrix of basis functions to
-  drop the corresponding column, plus some more \href{https://r.789695.n4.nabble.com/Use-pcls-in-quot-mgcv-quot-package-to-achieve-constrained-cubic-spline-td4660966.html}{jiggling}.
+  drop the corresponding column, plus some more jiggling.
+  %\href{https://r.789695.n4.nabble.com/Use-pcls-in-quot-mgcv-quot-package-to-achieve-constrained-cubic-spline-td4660966.html}{jiggling}. NOT FOUND. TO BE CHECKED
 
 }
 

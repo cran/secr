@@ -11,18 +11,15 @@
 #include <Rcpp.h>
 #include "secr.h"
 
-using namespace std;
-using namespace Rcpp;
-
 //==============================================================================
 
 // [[Rcpp::export]]
 List Tsightinglikcpp (
-        const IntegerMatrix &T,           // sighting count(s)
-        const IntegerVector &markocc,     // distinguish sighting and marking occasions
-        const IntegerVector &binomN, 
-        const NumericMatrix &Tsk,         // usage
-        const NumericMatrix &musk,        // expected count
+        const Rcpp::IntegerMatrix &T,           // sighting count(s)
+        const Rcpp::IntegerVector &markocc,     // distinguish sighting and marking occasions
+        const Rcpp::IntegerVector &binomN, 
+        const Rcpp::NumericMatrix &Tsk,         // usage
+        const Rcpp::NumericMatrix &musk,        // expected count
         const int debug) {
     
     int s,k;
@@ -84,14 +81,21 @@ List Tsightinglikcpp (
                     // binary (multi, proximity) 
                     if (binomN[s]<0) {
                         if (TCsk>1) TCsk = 1;
-                        if (tempmu>0)  
-                            Tlik += R::dbinom(TCsk, 1, 1-exp(-tempmu), 1);
+                        if (tempmu>0) { 
+                            // Tlik += R::dbinom(TCsk, 1, 1-exp(-tempmu), 1);
+                            boost::math::bernoulli_distribution<> bern(1-exp(-tempmu));
+                            Tlik += log(pdf(bern,TCsk));
+                        }
                     }
                     // count 
-                    else
-                        Tlik += R::dpois(TCsk,  tempmu, 1);
-                    if (Tlik < -1e6) {
-                        // Rprintf("very negative Tlik in Tsightinglik\n");
+                    else {
+                        // Tlik += R::dpois(TCsk,  tempmu, 1);
+                        boost::math::poisson_distribution<> pois(tempmu);
+                        Tlik += log(pdf(pois,TCsk));   // tempmu)); bugfix 2021-10-17
+                    }
+                    
+                    if (isnan(Tlik) || (Tlik < -1e6)) {
+                        // Rprintf("very negative or NaN Tlik in Tsightinglik\n");
                         return List::create(Named("resultcode") = 54);
                     }
                 }
@@ -132,20 +136,32 @@ List Tsightinglikcpp (
             if (binomN[firstsightocc] < 0) {  
                 // assume sighting detector same all occasions 
                 // and p constant over occasions (using arithmetic mean here) 
-                if (summuk[k]>0)
-                    Tlik += R::dbinom(T[k],  nusedk[k], summuk[k] / nsight, 1);  // 2017-03-17 
+                if (summuk[k]>0) {
+                    // Tlik += R::dbinom(T[k],  nusedk[k], summuk[k] / nsight, 1);  // 2017-03-17 
+                    boost::math::binomial_distribution<> bin(nusedk[k], summuk[k] / nsight);
+                    Tlik += log(pdf(bin,T[k]));
+                }
             }
-            else
-                Tlik += R::dpois(T[k],  summuk[k], 1);
+            else {
+                // Tlik += R::dpois(T[k],  summuk[k], 1);
+                boost::math::poisson_distribution<> pois(summuk[k]);
+                Tlik += log(pdf(pois,T[k]));
+            }
         }
     }
     else if (TPooled) {
         // first input is the sum over s,k 
         if (debug>0) Rprintf("sumT %4d summu %8.3f nused %4d \n", T[1], summu, nused);
-        if (binomN[firstsightocc] < 0)   // assume sighting detectors same on all occasions 
-            Tlik = R::dbinom(T[1],  nused, summu, 1);  // weird use of summu - to be fixed 
-        else
-            Tlik = R::dpois(T[1],  summu, 1);
+        if (binomN[firstsightocc] < 0) {  // assume sighting detectors same on all occasions 
+            // Tlik = R::dbinom(T[1],  nused, summu, 1);  // weird use of summu - to be fixed 
+            boost::math::binomial_distribution<> bin(nused, summu);
+            Tlik += log(pdf(bin,T[1]));
+        }
+        else {
+            // Tlik = R::dpois(T[1],  summu, 1);
+            boost::math::poisson_distribution<> pois(summu);
+            Tlik += log(pdf(pois,T[1]));
+        }
     } 
     
     return List::create(Named("resultcode") = 0, Named("Tlik") = Tlik);

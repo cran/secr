@@ -143,7 +143,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
 
         newsecr <- prepare (secr, model)
         newsecr$details <- replace (secr$details, 'trace', trace)  ## override
-
+        newsecr$details$ncores <- setNumThreads(ncores)  ## 2021-10-17
         beta0 <- secr$fit$par
         names(beta0) <- secr$betanames
         beta1 <- mapbeta(secr$parindx, newsecr$parindx, beta0, betaindex)
@@ -157,7 +157,6 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
             .localstuff$iter <- 0
             cat('Eval     logLik', formatC(newsecr$betanames, format='f', width=11), '\n')
         }
-        
         loglikfn <- function (beta, design) {
           # Return the negative log likelihood for spatial capture-recapture model
             -generalsecrloglikfn(
@@ -193,7 +192,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
 
         ## score <- try (solve(i.star), silent = TRUE)
         ## use MASS function 2016-03-10
-        score <- try (ginv(i.star), silent = TRUE)
+        score <- try (MASS::ginv(i.star), silent = TRUE)
         if (inherits(score, "try-error")) {
             warning ("could not invert information matrix")
             score <- NA

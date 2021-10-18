@@ -1,7 +1,6 @@
 #include <Rcpp.h>
 #include <RcppParallel.h>
 #include "secr.h"
-// using namespace Rcpp;
 using namespace RcppParallel;
 
 //==============================================================================
@@ -102,7 +101,9 @@ struct signalhistories : public Worker {
       // b0 = gsbval(c,0)
       // b1 = gsbval(c,1)
       temp = -(gsbval(c,0) + gsbval(c,1) * r);
-      return (R::pnorm(temp,0,1,0,0));    // upper
+      // return (R::pnorm(temp,0,1,0,0));    // upper
+      boost::math::normal_distribution<> n;
+      return (boost::math::cdf(complement(n,temp)));    // upper
     }
     else if (detectfn == 10 || detectfn == 11) {   // signal strength, signal strength spherical
       // beta0 = gsbval(c,0)
@@ -114,9 +115,11 @@ struct signalhistories : public Worker {
       else
         mu = gsbval(c,0) + gsbval(c,1) * (r-1) - 10 * log(r*r) / M_LN10;
       gam = (miscparm[0] - mu) / gsbval(c,2);
-      return (R::pnorm(gam,0,1,0,0));
+      // return (R::pnorm(gam,0,1,0,0));
+      boost::math::normal_distribution<> n;
+      return (boost::math::cdf(complement(n,gam)));    // upper
     }
-    else (stop("unknown or invalid detection function"));
+    else (Rcpp::stop("unknown or invalid detection function"));
   }
   void prwsignal (const int n, std::vector<double> &pm) {
     int c, gi, k, m, s, w3, count;
@@ -146,7 +149,9 @@ struct signalhistories : public Worker {
                   // valid measurement of signal
                   mu  = mufnL (k, m, gsbval(c,0), gsbval(c,1), dist2, detectfn==11);
                   sdS = gsbval(c,2);
-                  pm[m] *= R::dnorm((sig - mu), 0, sdS, 0);
+                  // pm[m] *= R::dnorm((sig - mu), 0, sdS, 0);
+                  boost::math::normal_distribution<> n;
+                  pm[m] *= boost::math::pdf(n,(sig - mu)/sdS);   
                 }
                 else  {
                   // signal value missing; detection only
@@ -189,6 +194,7 @@ NumericVector signalhistoriescpp (
     const int nc,
     const int detectfn,
     const int grain,
+    const int ncores,
     const IntegerVector binomN,
     const IntegerVector w,
     const NumericMatrix signal,
@@ -207,9 +213,9 @@ NumericVector signalhistoriescpp (
   signalhistories somehist (mm, nc, detectfn, grain, binomN, w, signal, 
                             group, gk, gsbval, dist2, density, PIA, miscparm, mbool, 
                             output);
-  if (grain>0) {
+  if (ncores>1) {
     // Run operator() on multiple threads
-    parallelFor(0, nc, somehist, grain);
+    parallelFor(0, nc, somehist, grain, ncores);
   }
   else {
     // for debugging avoid multithreading and allow R calls e.g. Rprintf

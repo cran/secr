@@ -162,6 +162,44 @@ using namespace Numer;
 // // end original 2-D code using Rdqags
 // //---------------------------------------------------------------------------------
 
+bool insidecppC (
+    const Numer::Constvec &xy,
+    const int    &n1,
+    const int    &n2,
+    const RcppParallel::RMatrix<double> &poly)
+{
+  // Is point xy inside poly?
+  // Based on contribution on s-news list by Peter Perkins 23/7/96
+  // We assume poly is closed, and in col-major order (x's then y's)
+  
+  double theta = 0;
+  double cutoff = 1e-6;
+  int k;
+  int ns;
+  double N;
+  double d;
+  ns = n2 - n1 + 1;   // number of selected points 
+  std::vector<double> temp((ns+1) * 2);
+  
+  // get & translate to coords centered at each test point 
+  for (k=0; k < ns; k++)
+  {
+    temp[k]      = poly(k + n1,0) - xy[0];    // x 
+    temp[k + ns] = poly(k + n1,1) - xy[1];    // y 
+  }
+  
+  for (k=0; k < (ns-1); k++)
+  {
+    N = temp[k] * temp[k+1 + ns] - temp[k + ns] * temp[k+1];
+    d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];
+    if (fabs(d)>0) { N = N/fabs(d);  d = d/fabs(d); }
+    theta += std::atan2(N, d);
+  }
+  theta = fabs(theta);
+  return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is cmath.h constant 
+}
+//--------------------------------------------------------------------------
+
 //---------------------------------------------------------------------------------
 // 2-D code using repeated 1-D RcppNumerical Numer::integrate Func
 //---------------------------------------------------------------------------------
@@ -497,7 +535,7 @@ double integral1DNRcpp
     double bx=0;
     int k;
     
-    if (gsbval.ncol()>4) stop("bad gsbval matrix");
+    if (gsbval.ncol()>4) Rcpp::stop("bad gsbval matrix");
     std::vector<double> gsb(4);
     // uniform treated separately 
     if (fn == 4) {
@@ -672,7 +710,7 @@ double hintegral1Ncpp (
     // ASSUME gsb[1] is scale
     const double res = integrate(f, 0, 20 * gsb[1], err_est, err_code);
     // Rprintf("res %10.7g err_est %10.7g err_code %4d \n", res, err_est, err_code);
-    if (err_code>0) stop ("err_code>0 in hintegral1Ncpp");
+    if (err_code>0) Rcpp::stop ("err_code>0 in hintegral1Ncpp");
     return (res * 2);
 }
 //===============================================================
@@ -694,7 +732,7 @@ bool ontransectcpp (
     double u;
     rpoint p,p1,p2,p3;
     double minr = 1e20;
-    if (n2>=transect.nrow()) stop ("invalid input ontransectcpp");
+    if (n2>=transect.nrow()) Rcpp::stop ("invalid input ontransectcpp");
     
     p3.x = xy(0);
     p3.y = xy(1);
@@ -745,7 +783,7 @@ double alongtransectcpp (
     rpoint p,p1,p2,p3;
     
     double along=0.0;
-    if (n2>=transect.nrow()) stop ("invalid input alongtransectcpp");
+    if (n2>=transect.nrow()) Rcpp::stop ("invalid input alongtransectcpp");
     p3.x = xy(0);
     p3.y = xy(1);
     

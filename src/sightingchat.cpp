@@ -2,9 +2,6 @@
 #include <RcppParallel.h>
 #include "secr.h"
 
-using namespace Rcpp;
-using namespace RcppParallel;
-
 //==============================================================================
 int discreteN (double N) {
     int tn;
@@ -94,9 +91,9 @@ struct chat : public Worker {
         nmix = pmix.size();
 
         allsighting = (sightmodel >= 5);
-        // if (allsighting) stop ("chat not ready for all occasions sighting occasions");
+        // if (allsighting) Rcpp::stop ("chat not ready for all occasions sighting occasions");
         if (nsim < 2)
-            stop ("nsim for chat must be at least 2, and preferably much more!");
+            Rcpp::stop ("nsim for chat must be at least 2, and preferably much more!");
         if (sightmodel == 1) { // conditional likelihood incompatible with unresolved sightings 
             for (int s=0; s<ss; s++) {
                 if (markocc[s] < 0) resultcode = 2;
@@ -476,13 +473,13 @@ struct chat : public Worker {
     //==============================================================================
 };
 
-
 // [[Rcpp::export]]
 List sightingchatcpp (
         const int           mm, 
         const int           nc, 
         const int           cc0, 
         const int           grain, 
+        const int           ncores, 
         const int           nsim,        // number of replicate simulations for chat 
         const int           sightmodel,  // 5 allsighting known n0, 6 allsighting unknown n0
         const double        sumD,
@@ -508,9 +505,9 @@ List sightingchatcpp (
     
     RNGScope scope;             // Rcpp initialise and finalise random seed 
     
-    if (grain>0) {
+    if (ncores>1) {
         // Run operator() on multiple threads
-        parallelFor(0, nsim, somechat, grain);
+        parallelFor(0, nsim, somechat, grain, ncores);
     }
     else {
         // for debugging avoid multithreading and allow R calls e.g. Rprintf

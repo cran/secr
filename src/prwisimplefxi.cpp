@@ -2,9 +2,6 @@
 #include <RcppParallel.h>
 #include "secr.h"
 
-using namespace Rcpp;
-using namespace RcppParallel;
-
 //==============================================================================
 // 2019-08-10
 
@@ -146,6 +143,7 @@ NumericMatrix simplehistoriesfxicpp (
     const int nc, 
     const int cc, 
     const int grain, 
+    const int ncores, 
     const IntegerVector binomN, 
     const IntegerVector w,
     const IntegerVector group,
@@ -165,9 +163,9 @@ NumericMatrix simplehistoriesfxicpp (
                                binomN, w, group, gk, hk, 
                               density, PIA, Tsk, h, hindex, output);
   
-  if (grain>0) {
+  if (ncores>1) {
     // Run operator() on multiple threads
-    parallelFor(0, nc, somehist, grain);
+    parallelFor(0, nc, somehist, grain, ncores);
   }
   else {
     // for debugging avoid multithreading and allow R calls e.g. Rprintf

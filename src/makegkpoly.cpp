@@ -98,6 +98,7 @@ List makegkPolygoncpp (const int detectfn,
                        const int dim,
                        const bool convex,
                        const int grain,
+                       const int ncores,
                        const NumericMatrix& gsbval, 
                        const IntegerVector& cumk,
                        const NumericMatrix& traps,
@@ -110,9 +111,8 @@ List makegkPolygoncpp (const int detectfn,
   
   Hckmpoly hckm (detectfn, dim, convex, gsbval, cumk, traps, mask, H, gk, hk);
   
-  if (grain>0) {
-      // call it with parallelFor
-      parallelFor(0, mask.nrow(), hckm, grain);
+  if (ncores>1>0) {
+      parallelFor(0, mask.nrow(), hckm, grain, ncores);
   }
   else {
       hckm.operator()(0,mask.nrow());    // for debugging avoid multithreading to allow R calls

@@ -44,26 +44,33 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
       if (!is.null(usage(trps))) PIA0[t(usage(trps)==0)] <- -1
       
       distmat2 <- getdistmat2(trps, mask, NULL, FALSE)
-      gkhk <- makegkPointcpp (as.integer(detectfn), as.integer(grain),
-                                 as.matrix(realparval0), as.matrix(distmat2), as.double(0))
+      gkhk <- makegkPointcpp (
+          as.integer(detectfn), 
+          as.integer(grain), 
+          as.integer(ncores),
+          as.matrix(realparval0), 
+          as.matrix(distmat2), 
+          as.double(0))
       
       if (any(dettype==0)) CH0 <- nullCH (c(nc,s), FALSE)
       else CH0 <- nullCH (c(nc,s,k), FALSE)
       binomNcode <- recodebinomN(dettype, binomN, 0)
       pmixn <- matrix(1, nrow=1, ncol=nc)
-      pdot <- integralprw1 (cc0 = nrow(realparval0), 
-                            haztemp = gethazard(m, binomNcode, nrow(realparval0), gkhk$hk, PIA0, usge), 
-                            gkhk = gkhk, 
-                            pi.density = matrix(1/m, nrow=m, ncol=1), 
-                            PIA0 = PIA0, 
-                            CH0 = CH0, 
-                            binomNcode = binomNcode, 
-                            MRdata = list(markocc = rep(1,s), firstocc = -1),  ## all marking
-                            grp = rep(1,nc), 
-                            usge = usge, 
-                            pmixn = pmixn,
-                            pID = matrix(1, nrow=s, ncol=1),
-                            grain = as.integer(grain))
+      pdot <- integralprw1 (
+          cc0 = nrow(realparval0), 
+          haztemp = gethazard(m, binomNcode, nrow(realparval0), gkhk$hk, PIA0, usge), 
+          gkhk = gkhk, 
+          pi.density = matrix(1/m, nrow=m, ncol=1), 
+          PIA0 = PIA0, 
+          CH0 = CH0, 
+          binomNcode = binomNcode, 
+          MRdata = list(markocc = rep(1,s), firstocc = -1),  ## all marking
+          grp = rep(1,nc), 
+          usge = usge, 
+          pmixn = pmixn,
+          pID = matrix(1, nrow=s, ncol=1),
+          grain = as.integer(grain),
+          ncores = ncores)
       pdot * masksize(mask)
     }
     ##########################
@@ -80,7 +87,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     if (! (detectfn %in% c(0)))
         stop ("only halfnormal detection function implemented in 'autoini'")
 
-    setNumThreads(ncores)
+    ncores <- setNumThreads(ncores)
     grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
     obsRPSV <- RPSV(capthist, CC = TRUE)
 

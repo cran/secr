@@ -5,10 +5,12 @@
 \title{
 Sort Rows of capthist or mask Object
 }
+
 \description{
 Rows are sorted by fields in covariates or by a provided sort key of
 length equal to the number of rows.
 }
+
 \usage{
 
 \method{sort}{capthist}(x, decreasing = FALSE, by = "",
@@ -49,6 +51,5 @@ The attribute markingpoints of a mask object is removed if present, as it is no 
 sort(ovenCH, by = "Sex")
 covariates(ovenCH)[["2005"]]
 covariates(sort(ovenCH, by = "Sex"))[["2005"]]
-
 }
 \keyword{ manip }

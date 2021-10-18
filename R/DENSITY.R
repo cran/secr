@@ -11,6 +11,7 @@
 ##            to be passed through to read.traps
 ## 2017-05-24 replace filetype function with file_ext from tools
 ## 2017-05-24 modified to read Excel files
+## 2021-09-21 modified for nonspatial detector type
 ##
 ## Write capture histories and traps to text files in DENSITY format
 ############################################################################################
@@ -109,7 +110,12 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         stop ("polygon-like detectors require fmt = XY")
     if (length(captfile) != 1)
         stop ("requires single 'captfile'")
-    nvar <- switch(fmt, trapID = 4, XY = 5)
+    if (any(detector=='nonspatial')) {
+        if (!all(detector=='nonspatial'))
+            warning('cannot mix nonspatial and spatial detectors; ignoring the latter')
+        detector <- 'nonspatial'
+    }
+    nvar <- if (detector[1] == 'nonspatial') 3 else switch(fmt, trapID = 4, XY = 5)
     ext <- tolower(file_ext(captfile))
     if (missing(trapfile) & ext %in% c("xls","xlsx"))
         trapfile <- captfile
@@ -136,7 +142,10 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         countargs$file <- captfile
         nfield <- max(do.call(count.fields, countargs))
         
-        if (fmt == 'trapID') {
+        if (detector[1] == 'nonspatial') {
+            colcl <- c('character','character','character', rep(NA,nfield-nvar))
+        }
+        else if (fmt == 'trapID') {
             colcl <- c('character','character','character','character', rep(NA,nfield-nvar))
         }
         else {
@@ -152,7 +161,9 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     }
     
     ## let's be clear about this...
-    if (fmt =='trapID')
+    if (detector[1] =='nonspatial')
+        names(capt)[1:3] <- c('Session','AnimalID','Occ')
+    else if (fmt =='trapID')
         names(capt)[1:4] <- c('Session','AnimalID','Occ','Trap')
     else
         names(capt)[1:5] <- c('Session','AnimalID','Occ','X','Y')
@@ -180,8 +191,10 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         captsess <- split(capt[,4:5], capt[,1])
         trps <- lapply(captsess, maketelemetrytrap)
     }
-    else
-    {
+    else if (detector[1] == 'nonspatial') {
+        trps <- NULL
+    }
+    else {
         ## assumes file= is first argument of read.traps
         ## allows for multiple trap files
         ext <- tolower(file_ext(trapfile[1]))
@@ -213,7 +226,6 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
         }
     }
     if (length(trps)==1) trps <- trps[[1]]
-    
     temp <- make.capthist(capt, trps, fmt = fmt,  noccasions = noccasions,
                           covnames = covnames, sortrows = TRUE, cutval = cutval,
                           noncapt = noncapt, tol = tol, snapXY = snapXY)
@@ -229,7 +241,7 @@ read.capthist <- function (captfile, trapfile, detector = 'multi', fmt = c('trap
     ## 2014-07-27
     attr(temp, 'inject.time') <- inject.time
     
-    if (verify) verify(temp)
+    if (verify && detector[1]!='nonspatial') verify(temp)
     temp
 }
 

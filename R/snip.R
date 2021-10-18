@@ -110,17 +110,28 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
         df
     }
     IDfn <- function(x) {
-        if (length(x) == 2)
+        # if (length(x) == 2)
+        #     paste(
+        #         x[1], 
+        #         sprintf("%04d", as.numeric(x[2])), 
+        #         sep='.'
+        #     )
+        # else if (length(x) == 3)
+        #     paste(
+        #         x[1], 
+        #         sprintf("%04d", as.numeric(x[2])), 
+        #         sprintf("%04d", as.numeric(x[3])),
+        #         sep='.'
+        #     )
+        # else
+        #     x
+        
+        ## REVISED 2021-09-15, reversing change
+        ## UNCLEAR WHY ABOVE WAS INTRODUCED IN 4.4
+        if (length(x) > 1)
             paste(
                 x[1], 
-                sprintf("%04d", as.numeric(x[2])), 
-                sep='.'
-            )
-        else if (length(x) == 3)
-            paste(
-                x[1], 
-                sprintf("%04d", as.numeric(x[2])), 
-                sprintf("%04d", as.numeric(x[3])),
+                sprintf("%04d", as.numeric(x[2])),
                 sep='.'
             )
         else
@@ -136,13 +147,13 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     temp <- lapply(temp, sliceone)
     temp <- do.call(rbind, temp)
     oldID <- as.numeric(do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1])
-    ## TO BE FIXED 2021-05-20
-    ID <- sapply(strsplit(rownames(temp),'.', fixed=T), IDfn)
+    IDcomponents <- strsplit(rownames(temp),'.', fixed = TRUE)
+    ID <- sapply(IDcomponents, IDfn)
     temp <- split(temp, ID)
     newobj <- make.transect(transectlist = temp, exclusive =
                             all(detector(object) == 'transectX'))
     if (!is.null(usage(object))) {
-## TO BE FIXED 2012-12-22
+        ## TO BE FIXED 2012-12-22
         usagematrix <- matrix (0, ndetector(newobj), ncol(usage(object)))
         usagematrix <- matrix(usagematrix, nrow = nrow(newobj))
         usage(newobj) <- usagematrix[oldID,]
@@ -176,7 +187,7 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
         else if (inherits(object, 'capthist')) {
             newtraps <- slice(traps(object), from = from, by = by, length.out =
                               length.out, keep.incomplete = keep.incomplete)
-            newtrap <- xyontransect(xy(object), newtraps)
+            newtrap <- xyontransect(xy(object), newtraps)   # SLOW
             newtrap <- factor(newtrap, levels = 1:length(levels(polyID(newtraps))))
             old.row.names <- row.names(object)
             df <- data.frame(

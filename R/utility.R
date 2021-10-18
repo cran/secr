@@ -1644,7 +1644,6 @@ edist <- function (xy1, xy2) {
 
 ## least cost paths from mask including barriers to movement
 ## use edist for equivalent Euclidean distances
-## requires raster package
 
 nedist <- function (xy1, xy2, mask, inf = Inf, ...) {
     newargs <- list(...)

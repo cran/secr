@@ -7,6 +7,7 @@
 ## 2014-08-05 relax requirement for object to be traps or mask:
 ## 2014-08-05 may now be any numeric vector that can be formed into a 2-column matrix
 ## 2017-03 new argument replace; use readOGR for shapefiles
+## 2021-09-16 allow raster
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
@@ -42,6 +43,8 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
             type <- "mask"
         else if (inherits(spatialdata, "traps"))
             type <- "traps"
+        else if (inherits(spatialdata, "RasterLayer"))
+            type <- "raster"
         else
             stop ("spatialdata type unrecognised or unsupported")
 
@@ -72,6 +75,19 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
             xy <- sp::SpatialPoints(xy)
             sp::proj4string(spatialdata) <- sp::CRS()
             df <- sp::over (xy, spatialdata)
+        }
+        else if (type == "raster") {
+            #if (requireNamespace("raster")) {
+            # df <- data.frame(raster = raster::extract(spatialdata, as.matrix(object)))
+            # raster::extract
+            df <- data.frame(raster = extract(spatialdata, as.matrix(object)))
+            if (!is.null(columns)) {
+                    names(df) <- columns
+                }
+            # }
+            # else {
+            #     stop ("install package raster to add covariate from raster")
+            # }
         }
         else {
             ## nearest point algorithm

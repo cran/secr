@@ -2,9 +2,6 @@
 #include <RcppParallel.h>
 #include "secr.h"
 
-using namespace Rcpp;
-using namespace RcppParallel;
-
 //==============================================================================
 // 2019-09-05 detector type count
 //            one occasion, binomial size from integer Tsk
@@ -174,6 +171,7 @@ NumericVector fasthistoriescpp (
         const int nc, 
         const int cc, 
         const int grain, 
+        const int ncores, 
         const int binomN,
         const bool indiv,
         const IntegerMatrix w,
@@ -194,9 +192,9 @@ NumericVector fasthistoriescpp (
                             // pm0base, pm0kbase, 
                             output); 
     
-    if (grain>0) {
+    if (ncores>1) {
         // Run operator() on multiple threads
-        parallelFor(0, nc, somehist, grain);
+        parallelFor(0, nc, somehist, grain, ncores);
     }
     else {
         // for debugging avoid multithreading and allow R calls e.g. Rprintf

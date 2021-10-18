@@ -187,6 +187,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         details$binomN <- binomN   ## 2011 01 28
     }
     
+    details$ncores <- setNumThreads(ncores, stackSize = details$stackSize)
     if (details$LLonly)  {
         details$trace <- FALSE
     }
@@ -216,9 +217,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             detector(traps(capthist)) <- details$newdetector       
         }
     }
-    
     #################################################
     ## MS - indicator TRUE if multi-session (logical)
+
     ## sessionlevels - names of sessions (character)
     MS <- ms(capthist)
     sessionlevels <- session(capthist)
@@ -413,6 +414,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     else {
         loglikefn <- generalsecrloglikfn
+        
     }
     
     #################################################
@@ -669,8 +671,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
                                groups, fixed, hcov, details)
     
-    oldNumThreads <- setNumThreads(ncores, stackSize = details$stackSize)
-    
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed) or a list 
@@ -721,7 +721,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                     binomN = tempbinomN,
                     adjustg0 = details$binomN[1]==0 && !details$fastproximity,
                     ignoreusage = details$ignoreusage,
-                    ncores = NULL)   ## use ncores set previously
+                    ncores = details$ncores)   ## use ncores set previously
                 
                 if (any(is.na(unlist(start3)))) {
                     warning ("'secr.fit' failed because initial values not found",
@@ -967,7 +967,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (details$trace)
             cat('Eval     Loglik', formatC(betanames, format='f', width=betaw), '\n')
     }
-    
     ## arguments always passed to loglikefn
     secrargs <- list(
         parindx    = parindx,
@@ -988,7 +987,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     ## calls for specific maximisation methods
     ## 2013-04-21
-    
     if (NP == 1) {
         lcmethod <- "optimise"
         signs <- c(-1,1) * sign(start)

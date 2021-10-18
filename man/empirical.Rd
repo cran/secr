@@ -130,7 +130,7 @@ derivedSystematic( object, xy, design = list(), basenx = 10, df = 9, extrapolate
 \code{"SRS"} \tab simple random sampling with identical clusters \cr
 \code{"R2"} \tab variable cluster size cf Thompson (2002:70) estimator for line transects \cr
 \code{"R3"} \tab variable cluster size cf Buckland et al. (2001)\cr
-\code{"local"} \tab neighbourhood variance estimator (Stevens and Olsen 2003) \cr 
+\code{"local"} \tab neighbourhood variance estimator (Stevens and Olsen 2003) SUSPENDED in 4.4.7 \cr 
 \code{"poisson"} \tab theoretical (model-based) variance \cr
 \code{"binomial"} \tab theoretical (model-based) variance in given \code{area}\cr
 }
@@ -211,7 +211,7 @@ Thompson, S. K. (2002) \emph{Sampling}. 2nd edition. Wiley, New York.
 
   \deqn{ \widehat{\mbox{var}}(\hat{D}) = \hat{D}^2
     \{\frac{\widehat{\mbox{var}}(n)}{n^2} +
-    \frac{\widehat{\mbox{var}}(\hat{a})}{\hat{a}}\} }{var(D-hat) =
+    \frac{\widehat{\mbox{var}}(\hat{a})}{\hat{a}^2}\} }{var(D-hat) =
     D-hat^2 (var(n)/n^2 + var(a-hat)/a-hat^2) }
 
 where \eqn{\widehat{\mbox{var}}(n) = \frac{J}{J-1}

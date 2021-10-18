@@ -81,6 +81,10 @@ included in \code{captures} using the animal ID field given by
 NONE 5 1" for a 5-occasion session) (or equivalently "sess1 NONE 5 10
 10" for fmt = XY).
 
+Nonspatial data (Session, AnimalID, Occasion and possibly individual 
+covariates) may be entered by omitting the `traps' argument or setting 
+it to NULL.
+
 }
 
 \value{

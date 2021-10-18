@@ -1,8 +1,6 @@
 #include <Rcpp.h>
 #include <RcppParallel.h>
 #include "secr.h"
-// using namespace Rcpp;
-using namespace RcppParallel;
 
 //==============================================================================
 // 2019-08-19
@@ -112,12 +110,14 @@ struct polygonhistories : public Worker {
                 2 / gsbval(c,1)/ gsbval(c,1)));
       }
       else if (detectfn == 18) {  // hazard cumulative gamma
-        return (gsbval(c,0) * R::pgamma(r,gsbval(c,2),gsbval(c,1)/gsbval(c,2),0,0)); 
+        //return (gsbval(c,0) * R::pgamma(r,gsbval(c,2),gsbval(c,1)/gsbval(c,2),0,0)); 
+        boost::math::gamma_distribution<> gam(gsbval(c,2),gsbval(c,1)/gsbval(c,2));
+        return (gsbval(c,0) * boost::math::cdf(complement(gam,r))); 
       }
       else if (detectfn == 19) {  // hazard variable power
         return (gsbval(c,0) * exp(- pow(r /gsbval(c,1), gsbval(c,2))));
       }
-      else (stop("unknown or invalid detection function"));
+      else (Rcpp::stop("unknown or invalid detection function"));
     }
   }
   
@@ -195,7 +195,7 @@ struct polygonhistories : public Worker {
           double Tski;
           
           for (s=0; s<ss; s++) {  // over occasions
-              if (binomN[s] < 0) stop ("negative binomN < 0 not allowed in C++ fn prwpolygon");
+              if (binomN[s] < 0) Rcpp::stop ("negative binomN < 0 not allowed in C++ fn prwpolygon");
               for (k=0; k<nk; k++) {   // over polygons
                 w3 = i3(n,s,k,nc,ss);
                 count = w[w3];
@@ -244,7 +244,7 @@ struct polygonhistories : public Worker {
           double Tski;
           
           for (s=0; s<ss; s++) {  // over occasions
-              if (binomN[s] < 0) stop ("negative binomN < 0 not allowed in C++ fn prwitransect");
+              if (binomN[s] < 0) Rcpp::stop ("negative binomN < 0 not allowed in C++ fn prwitransect");
               for (k=0; k<nk; k++) {   // over transects
                   w3 = i3(n,s,k,nc,ss);
                   count = w[w3];
@@ -304,6 +304,7 @@ NumericVector polygonhistoriescpp (
     const int           nc,
     const int           detectfn,
     const int           grain,
+    const int           ncores,
     const double        minp,
     const IntegerVector binomN,
     const IntegerVector w,
@@ -330,9 +331,9 @@ NumericVector polygonhistoriescpp (
                              start, group, hk, H, gsbval, pID, mask, density, PIA, Tsk, h, hindex, mbool,
                              output);
   
-  if (grain>0) {
+  if (ncores>1) {
      // Run operator() on multiple threads
-     parallelFor(0, nc, somehist, grain);
+     parallelFor(0, nc, somehist, grain, ncores);
    }
    else {
     // for debugging avoid multithreading and allow R calls e.g. Rprintf

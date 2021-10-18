@@ -29,6 +29,7 @@
 ## 2021-07-12 BVE simulation uses rgamma
 ## 2021-07-12 BVN simulation uses rweibull
 ## 2021-07-12 BVT simulation uses inverse distribution function
+## 2021-09-08 "truncate" as synonym of "normalize"
 ###############################################################################
 
 toroidal.wrap <- function (pop) {
@@ -160,7 +161,6 @@ disperse <- function (newpopn, turnoverpar, t, core, disp) {
     nsurv <- sum(disp)
     move.a <- turnoverpar$move.a[t]
     move.b <- turnoverpar$move.b[t]
-    theta <- runif(nsurv, 0, 2 * pi)
     
     if (is.function(turnoverpar$movemodel)) {
         f <- formals(turnoverpar$movemodel)
@@ -172,42 +172,50 @@ disperse <- function (newpopn, turnoverpar, t, core, disp) {
         }
         else stop ("invalid movement function")
     }
-    else if (turnoverpar$movemodel %in% c('normal', 'BVN')) {
-        r <- rweibull(nsurv, shape = 2, scale = sqrt(2) * move.a)
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-    }
-    else if (turnoverpar$movemodel %in% c('exponential', 'BVE')) {
-        r <- rgamma(nsurv, shape = 2, scale = move.a)   ## 2021-07-11
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-    }
-    else if (turnoverpar$movemodel %in% c('t2D', 'BVT')) {
-        Finv <- function (u, alpha, beta) sqrt((u^(-1/beta) - 1) * alpha^2)
-        r <- Finv(runif(nsurv), move.a, move.b)
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-        # alternative algorithm not used 2021-07-03
-        # df <- move.b * 2
-        # sigma2 <- move.a^2 / df
-        # if (requireNamespace('mvtnorm')) {
-        #     newpopn[disp,] <- newpopn[disp,] + mvtnorm::rmvt(n = nsurv,
-        #         df = df, sigma = diag(2)*sigma2)
-        # }
-    }
-    else if (turnoverpar$movemodel == 'radialexp') {
-        centre <- apply(core,2,mean)
-        dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
-        theta <- atan2(dxy[,2],dxy[,1]) 
-        r <- rgamma(nsurv, shape = 2, scale = move.a)
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-    }
-    else if (turnoverpar$movemodel == 'radialnorm') {
-        centre <- apply(core,2,mean)
-        dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
-        theta <- atan2(dxy[,2],dxy[,1])
-        r <- abs(rnorm (nsurv, mean = 0, sd = move.a))
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
-    }
     else {
-        warning("unsupported movement model ", turnoverpar$movemodel, " ignored")
+        if (turnoverpar$movemodel %in% c('normal', 'BVN')) {
+            r <- rweibull(nsurv, shape = 2, scale = sqrt(2) * move.a)
+        }
+        else if (turnoverpar$movemodel %in% c('exponential', 'BVE')) {
+            r <- rgamma(nsurv, shape = 2, scale = move.a)   
+        }
+        else if (turnoverpar$movemodel %in% c('t2D', 'BVT')) {
+            Finv <- function (u, alpha, beta) sqrt((u^(-1/beta) - 1) * alpha^2)
+            r <- Finv(runif(nsurv), move.a, move.b)
+        }
+        else if (turnoverpar$movemodel %in% c('frE','RDE')) {
+            r <- rexp(nsurv, rate = 1/move.a)  
+        }
+        else if (turnoverpar$movemodel %in% c('frG','RDG')) {
+            r <- rgamma(nsurv, shape = move.b, rate = 1/move.a)   
+        }
+        else if (turnoverpar$movemodel %in% c('frL','RDL')) {
+            mu <- log(move.a)
+            s <- sqrt(log(1 + 1/move.b))
+            r <- rlnorm(nsurv, meanlog = mu, sdlog = s)  
+        }
+        else if (turnoverpar$movemodel %in% c('frZ')) {
+            r <- ifelse(runif(nsurv)<move.b, 0, turnoverpar$d0 + rexp(nsurv, rate = 1/move.a))
+        }
+        else if (turnoverpar$movemodel == 'radialexp') {
+            centre <- apply(core,2,mean)
+            dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
+            theta <- atan2(dxy[,2],dxy[,1]) 
+            r <- rgamma(nsurv, shape = 2, scale = move.a)
+        }
+        else if (turnoverpar$movemodel == 'radialnorm') {
+            centre <- apply(core,2,mean)
+            dxy <- sweep(newpopn[disp,], STATS = centre, FUN = "-", MARGIN = 2)
+            theta <- atan2(dxy[,2],dxy[,1])
+            r <- abs(rnorm (nsurv, mean = 0, sd = move.a))
+        }
+        else {
+            r <- 0
+            warning("unsupported movement model ", turnoverpar$movemodel, " ignored")
+        }
+        
+        theta <- runif(nsurv, 0, 2 * pi)
+        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
     }
     newpopn
 }
@@ -222,12 +230,12 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
     ...)  {
     inside <- function(pop) {
         if (model2D != 'IHP') {
-        bb <- attr(pop, 'boundingbox')
-        xmin <- min(bb$x)
-        xmax <- max(bb$x)
-        ymin <- min(bb$y)
-        ymax <- max(bb$y)
-        (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
+            bb <- attr(pop, 'boundingbox')
+            xmin <- min(bb$x)
+            xmax <- max(bb$x)
+            ymin <- min(bb$y)
+            ymax <- max(bb$y)
+            (pop$x>=xmin) & (pop$x<=xmax) & (pop$y>=ymin) & (pop$y<=ymax)
         }
         else {
             # assuming core is a mask
@@ -279,23 +287,36 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             }
             
             if (!is.function(turnoverpar$movemodel) &&
-                    turnoverpar$movemodel == 'uncorrelated') {
+                    turnoverpar$movemodel %in% c('uncorrelated','IND')) {
                 newpopn <- sim.popn(D = D, core = core, buffer = buffer,
                     model2D = model2D, buffertype = buffertype, poly = poly,
                     covariates = covariates, Ndist = 'specified', Nbuffer = nsurv,
                     nsessions = 1, details = details)
                 row.names(newpopn) <- row.names(oldpopn)[survive]
+                
+                ## 2021-10-15 INDzi
+                if (turnoverpar$zeroinflated) {
+                    stayhome <- runif(nrow(newpopn)) < turnoverpar$move.a[t]
+                    newpopn[stayhome,] <- oldpopn[survive,][stayhome,]
+                }
+                    
             }
             else {
                 newpopn <- subset(oldpopn, subset = survive)
                 if (is.function(turnoverpar$movemodel) || 
-                        !turnoverpar$movemodel %in% c('static','uncorrelated')) {
+                        !turnoverpar$movemodel %in% c('static','uncorrelated', 'IND')) {
                     if (turnoverpar$move.a[t] > 0) {      ## condition revived 2020-11-09
                         oldposition <- newpopn  ## remember starting position
                         dispersing <- rep(TRUE, nsurv)
                         #-------------------------------------------------------
                         newpopn <- disperse(newpopn, turnoverpar, t, core, dispersing)
                         #-------------------------------------------------------
+                        if (turnoverpar$zeroinflated) {
+                            stayhome <- runif(nrow(newpopn)) < turnoverpar$move.b[t]
+                            newpopn[stayhome,] <- oldposition[stayhome,]
+                        }
+                        #-------------------------------------------------------
+                        
                         if (turnoverpar$edgemethod == "wrap") {
                             newpopn <- toroidal.wrap(newpopn)
                         }
@@ -322,7 +343,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                         else if (turnoverpar$edgemethod == "reflect") {
                             newpopn <- reflect(newpopn)
                         }
-                        else if (turnoverpar$edgemethod == "normalize") {
+                        else if (turnoverpar$edgemethod %in% c("normalize", "truncate")) {
                             dispersing <- !inside(newpopn)
                             tries <- 0; maxtries <- 1000
                             while (any(dispersing) && tries <= maxtries) {
@@ -417,7 +438,7 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             ## projected population
             turnoverpar <- list(
                 lambda = NULL, phi = 0.7, movemodel = 'static', sigma.m = 0, 
-                move.a = NULL, move.b = 1, edgemethod = "wrap",  
+                move.a = NULL, move.b = 1, d0 = 0, edgemethod = "wrap",  
                 survmodel = 'binomial', recrmodel = 'poisson', Nrecruits = 0)
             if (!is.null(details$wrap)) {
                 warning("details option 'wrap' is deprecated; using edgemethod = 'wrap' if TRUE")
@@ -432,9 +453,26 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
             if (!is.function(turnoverpar$movemodel) &&
                     turnoverpar$movemodel == 'static' && turnoverpar$move.a != 0) {
                 ## restore default from version < 3.2.1
-                turnoverpar$movemodel <- 'normal'
+                turnoverpar$movemodel <- 'BVN'
             }
-                
+            
+            ################################################### 
+            # 2021-10-15   
+            # strip "zi", record for later
+            if (is.function(turnoverpar$movemodel)) {
+                turnoverpar$zeroinflated <- FALSE
+            }
+            else {
+                turnoverpar$zeroinflated <- grepl('zi', turnoverpar$movemodel)
+            }
+            if (turnoverpar$zeroinflated) {
+                turnoverpar$movemodel <- gsub("zi","",turnoverpar$movemodel)
+                if (!(turnoverpar$movemodel %in% 
+                        c('IND','BVN','BVE','RDE','uncorrelated','frE')))
+                    stop ('zero-inflation not allowed with ', turnoverpar$movemodel)
+            }
+            ################################################### 
+            
             turnoverpar$lambda  <- expands(turnoverpar$lambda, nsessions)
             turnoverpar$phi     <- expands(turnoverpar$phi, nsessions)
             ## turnoverpar$sigma.m <- expands(turnoverpar$sigma.m, nsessions)

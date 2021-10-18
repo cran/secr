@@ -76,16 +76,21 @@ struct Hckm : public Worker {
         CV2 = gsbval(c,2)*gsbval(c,2)/gsbval(c,1)/gsbval(c,1);
         meanlog = log(gsbval(c,1)) - log(1 + CV2)/2;
         sdlog = std::sqrt(log(1 + CV2));
-        return (gsbval(c,0) * R::plnorm(r,meanlog,sdlog,0,0)); 
+        // return (gsbval(c,0) * R::plnorm(r,meanlog,sdlog,0,0)); 
+        boost::math::lognormal_distribution<> ln(meanlog,sdlog);
+        return (gsbval(c,0) * boost::math::cdf(complement(ln,r))); 
       }
       else if ((detectfn == 8) || (detectfn == 18)) {  // cumulative gamma or hazard cumulative gamma
-        return (gsbval(c,0) * R::pgamma(r,gsbval(c,2),gsbval(c,1)/gsbval(c,2),0,0)); 
+        // return (gsbval(c,0) * R::pgamma(r,gsbval(c,2),gsbval(c,1)/gsbval(c,2),0,0)); 
+        boost::math::gamma_distribution<> gam(gsbval(c,2), gsbval(c,1)/gsbval(c,2));
+        return (gsbval(c,0) * boost::math::cdf(complement(gam,r))); 
       }
       else if (detectfn == 9) {                       // binary signal strength
         // b0 = gsbval(c,0)
         // b1 = gsbval(c,1)
         temp = -(gsbval(c,0) + gsbval(c,1) * r);
-        return (R::pnorm(temp,0,1,0,0));    // upper 
+        boost::math::normal_distribution<> n;
+        return (boost::math::cdf(complement(n,temp)));    // upper 
       }
       else if (detectfn == 10 || detectfn == 11) {   // signal strength, signal strength spherical
         double mu, gam;
@@ -98,7 +103,9 @@ struct Hckm : public Worker {
         else
           mu = gsbval(c,0) + gsbval(c,1) * (r-1) - 10 * log(r*r) / M_LN10;
         gam = (miscparm[0] - mu) / gsbval(c,2);
-        return (R::pnorm(gam,0,1,0,0));    
+        // return (R::pnorm(gam,0,1,0,0));    
+        boost::math::normal_distribution<> n;
+        return (boost::math::cdf(complement(n,gam)));
       }
       else if (detectfn == 19) {  // hazard variable power
           return (gsbval(c,0) * exp(- pow(r /gsbval(c,1), gsbval(c,2))));
@@ -108,7 +115,7 @@ struct Hckm : public Worker {
           if (r < gsbval(c,1)) return (gsbval(c,0));
           else return (0);
       }
-      else (stop("unknown or invalid detection function"));
+      else (Rcpp::stop("unknown or invalid detection function"));
     }
   }
   
@@ -136,10 +143,11 @@ struct Hckm : public Worker {
 
 // [[Rcpp::export]]
 List makegkPointcpp (const int detectfn, 
-                     const int grain,
-                     const NumericMatrix& gsbval, 
-                     const NumericMatrix& dist2,
-                     const NumericVector& miscparm
+    const int grain,
+    const int ncores,
+    const NumericMatrix& gsbval, 
+    const NumericMatrix& dist2,
+    const NumericVector& miscparm
 ) 
 {
   NumericVector hk(gsbval.nrow() * dist2.size()); 
@@ -147,9 +155,8 @@ List makegkPointcpp (const int detectfn,
   
   Hckm hckm (detectfn, gsbval, dist2, miscparm, gk, hk);
   
-  if (grain>0) {
-    // call it with parallelFor
-    parallelFor(0, dist2.ncol(), hckm, grain);
+  if (ncores>1) {
+    parallelFor(0, dist2.ncol(), hckm, grain, ncores);
   }
   else {
     // for debugging avoid multithreading to allow R calls

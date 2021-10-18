@@ -130,10 +130,10 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         else {
           NE <- NULL   ## no NE covariates (yet)
           pi.density <- matrix(1/m, nrow=m, ncol=1)
-          setNumThreads(ncores)  
-          grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+          ncores <- setNumThreads(ncores)  
+          grain <- if (ncores==1) 0 else 1
           gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, NE, 
-                          pi.density, miscparm, Xrealparval0)
+                          pi.density, miscparm, Xrealparval0, grain, ncores)
           if (any(dettype==0)) {
               ## CH0 <- nullCH (c(n,s), FALSE)
               CH0 <- nullCH (c(n,s), object$design0$individual)
@@ -146,19 +146,21 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
           pmixn <- getpmix (knownclass, PIA0, Xrealparval0)
           MRdata <- list(markocc = markocc, firstocc=rep(-1,nrow(CH0)))
           pID <- getpID(PIA0, Xrealparval0, MRdata)
-          pdot <- integralprw1 (cc0 = nrow(Xrealparval0),
-                                haztemp = gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
-                                gkhk = gkhk,
-                                pi.density = pi.density,
-                                PIA0 = PIA0,
-                                CH0 = CH0,
-                                binomNcode = binomNcode,
-                                MRdata = MRdata,
-                                grp = rep(1,n),
-                                usge = usge,
-                                pmixn = pmixn,
-                                pID = pID,
-                                grain = grain)
+          pdot <- integralprw1 (
+              cc0 = nrow(Xrealparval0),
+              haztemp = gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
+              gkhk = gkhk,
+              pi.density = pi.density,
+              PIA0 = PIA0,
+              CH0 = CH0,
+              binomNcode = binomNcode,
+              MRdata = MRdata,
+              grp = rep(1,n),
+              usge = usge,
+              pmixn = pmixn,
+              pID = pID,
+              grain = grain,
+              ncores = ncores)
           pdot * cellsize * m
         }
     }

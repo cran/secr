@@ -64,7 +64,6 @@ addSightings <- function (capthist, unmarked = NULL, nonID = NULL, uncertain = N
         if (is.character(uncertain))
             ## discard session column as unused
             uncertain <- read.table(uncertain, ...)[1:K,2:(S+1)]
-        
         Tu(capthist) <- if (is.null(unmarked)) NULL else as.matrix(unmarked)
         Tm(capthist) <- if (is.null(nonID)) NULL else as.matrix(nonID)
         Tn(capthist) <- if (is.null(uncertain)) NULL else as.matrix(uncertain)

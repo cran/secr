@@ -106,11 +106,15 @@ double zclnr (const NumericVector param, const double r) {
     CV2 = z*z/sigma/sigma;
     meanlog = log(sigma) - log(1 + CV2)/2;
     sdlog = std::sqrt(log(1 + CV2));
-    return (-log(1-g0 * R::plnorm(r,meanlog,sdlog,0,0))); 
+    // return (-log(1-g0 * R::plnorm(r,meanlog,sdlog,0,0)));   // upper
+    boost::math::lognormal_distribution<> ln(meanlog, sdlog);
+    return (-log(1-g0 * boost::math::cdf(complement(ln, r)))); 
 }
 //--------------------------------------------------------------------
 double zcgr (const NumericVector param, const double r) {
-    return (-log(1-param[0] * R::pgamma(r,param[2],param[1]/param[2],0,0))); 
+    // return (-log(1-param[0] * R::pgamma(r,param[2],param[1]/param[2],0,0))); // upper
+    boost::math::gamma_distribution<> gam(param[2],param[1]/param[2]);
+    return (-log(1-param[0] * boost::math::cdf(complement(gam,r)))); 
 }
 //--------------------------------------------------------------------
 
@@ -120,7 +124,9 @@ double zsigbinr  (const NumericVector param, const double r) {
     b0 = param[0];
     b1 = param[1];
     gam = -(b0 + b1 * r);
-    return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    // return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    boost::math::normal_distribution<> n;
+    return (-log(1-boost::math::cdf(complement(n,gam))));    // upper 
 }
 //--------------------------------------------------------------------
 
@@ -134,7 +140,9 @@ double zsigr (const NumericVector param, const double r) {
     cut = param[3];
     mu = beta0 + beta1 * r;
     gam = (cut - mu) / sdS;
-    return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    // return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    boost::math::normal_distribution<> n;
+    return (-log(1-boost::math::cdf(complement(n,gam))));    // upper 
 }
 //--------------------------------------------------------------------
 
@@ -148,7 +156,9 @@ double zsigsphr (const NumericVector param, const double r) {
     cut = param[3];
     mu =  beta0 + beta1 * (r-1) - 10 * log(r*r) / M_LN10;
     gam = (cut - mu) / sdS;
-    return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    // return (-log(1-R::pnorm(gam,0,1,0,0)));    // upper 
+    boost::math::normal_distribution<> n;
+    return (-log(1-boost::math::cdf(complement(n,gam))));    // upper 
 }
 //--------------------------------------------------------------------
 
@@ -336,11 +346,16 @@ double gclns (const std::vector<double> param, const double r) {
     CV2 = z*z/sigma/sigma;
     meanlog = log(sigma) - log(1 + CV2)/2;
     sdlog = std::sqrt(log(1 + CV2));
-    return g0 * R::plnorm(r,meanlog,sdlog,0,0); 
+    // return g0 * R::plnorm(r,meanlog,sdlog,0,0); 
+    boost::math::lognormal_distribution<> ln(meanlog,sdlog);
+    return (g0 * boost::math::cdf(complement(ln,r)));    // upper     
 }
 //--------------------------------------------------------------------
 double gcgs (const std::vector<double> param, const double r) {
-    return param[0] * R::pgamma(r,param[2],param[1]/param[2],0,0); 
+    // return param[0] * R::pgamma(r,param[2],param[1]/param[2],0,0);
+    boost::math::gamma_distribution<> gam(param[2],param[1]/param[2]);
+    return (param[0] * boost::math::cdf(complement(gam,r)));
+    
 }
 //--------------------------------------------------------------------
 
@@ -350,7 +365,9 @@ double gsigbins  (const std::vector<double> param, const double r) {
     b0 = param[0];
     b1 = param[1];
     gam = -(b0 + b1 * r);
-    return (R::pnorm(gam,0,1,0,0));    // upper 
+    // return (R::pnorm(gam,0,1,0,0));    // upper 
+    boost::math::normal_distribution<> n;
+    return (boost::math::cdf(complement(n,gam)));   // upper
 }
 //--------------------------------------------------------------------
 
@@ -364,7 +381,9 @@ double gsigs (const std::vector<double> param, const double r) {
     cut = param[3];
     mu = beta0 + beta1 * r;
     gam = (cut - mu) / sdS;
-    return (R::pnorm(gam,0,1,0,0));    // upper 
+    // return (R::pnorm(gam,0,1,0,0));    // upper 
+    boost::math::normal_distribution<> n;
+    return (boost::math::cdf(complement(n,gam)));    // upper
 }
 //--------------------------------------------------------------------
 
@@ -378,7 +397,9 @@ double gsigsphs (const std::vector<double> param, const double r) {
     cut = param[3];
     mu =  beta0 + beta1 * (r-1) - 10 * log(r*r) / M_LN10;
     gam = (cut - mu) / sdS;
-    return (R::pnorm(gam,0,1,0,0));    // upper 
+    // return (R::pnorm(gam,0,1,0,0));    // upper 
+    boost::math::normal_distribution<> n;
+    return (boost::math::cdf(complement(n,gam)));   // upper
 }
 //--------------------------------------------------------------------
 
@@ -495,7 +516,7 @@ fnptrC getgfns (const int fn)
         return(ghvps);
     else if (fn == 20)
         return(ghpxs);
-    else // stop("unknown or invalid detection function");
+    else // Rcpp::stop("unknown or invalid detection function");
         return(ghns);
 }
 //--------------------------------------------------------------------
@@ -543,7 +564,7 @@ fnptr getzfnr (const int fn)
       return(zhvpr);
   else if (fn == 20)
       return(zhpxr);
-  else (stop("unknown or invalid detection function"));
+  else (Rcpp::stop("unknown or invalid detection function"));
   return(zhnr);
 }
 //--------------------------------------------------------------------
@@ -563,7 +584,7 @@ fnptrC getzfnrC (const int fn)
         return(zhcgrC);
     else if (fn == 19)
         return(zhvprC);
-    else (stop("unknown or invalid detection function"));
+    else (Rcpp::stop("unknown or invalid detection function"));
     return(zhhnrC);
 }
 //--------------------------------------------------------------------

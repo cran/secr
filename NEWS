@@ -1,3 +1,28 @@
+Changes in version 4.4.7 (2021-10-18)
+
+Other
+    o   options requiring package 'spsurvey' suspended - trap.builder(method = 
+        'GRTS') and derivednj(method = 'local') - because of changes in spsurvey 5.0.0 
+    o   'spsurvey' removed from Suggests
+        
+Changes in version 4.4.6 (2021-10-18)
+
+New features or changed behaviour of old functions
+    o   sim.popn() exponential (RDE), gamma (RDG) and lognormal (RDL) movement distance
+    o   sim.popn() zero-inflated movement models BVNzi, BVEzi, RDEzi, INDzi
+    o   addCovariates() accepts RasterLayer spatialdata
+    o   make.capthist() and read.capthist() tweaked to allow nonspatial input
+
+Bugs fixed
+    o   snip() failed in recent versions
+    o   secr.fit() and bias.D() spurious warning of variable usage
+
+Other
+    o   Boost math library used for statistical distributions in C++ code
+    o   number of threads explicit in calls to RcppParallel parallelFor
+    o   sim.popn() with movement: edgemethod 'truncate' now synonym 'normalize'
+    o   deprecated and defunct functions handled formally (see e.g., help("secr-defunct")) 
+
 Changes in version 4.4.5 (2021-07-12)
 
 New features or changed behaviour of old functions
@@ -12,7 +37,6 @@ Bugs fixed
 
 Other
     o   'BVN','BVE','BVT' aliases for movemodels 'normal','exponential','t2D'
-    o   suggests package mvtnorm
 
 Changes in version 4.4.4 (2021-05-29)
 

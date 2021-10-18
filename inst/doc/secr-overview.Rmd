@@ -213,7 +213,7 @@ the Windows operating system, its algorithms are not always transparent or
 well-documented, it fits only homogeneous Poisson models, and it omits
 recent advances in SECR.
 
-The R package **secr** was written to address these weaknesses and allow for further development. It implements almost all the methods described by Borchers and Efford (2008), Efford et al. (2009), Efford (2011), Efford and Fewster (2013), Efford et al. (2013) and Efford and Mowat (2014). **secr** 4.4 uses external C++ code via package **Rcpp** for computationally intensive operations (Eddelbuettel and Francois 2011); Multi-threading on multiple CPUs with **RcppParallel** (Allaire et al. 2019) gives major speed gains. [Appendix 1](#appendix1) compares the features of DENSITY and **secr**. The most important functions of **secr** are listed in [Appendix 2](#appendix2).
+The R package **secr** was written to address these weaknesses and allow for further development. It implements almost all the methods described by Borchers and Efford (2008), Efford et al. (2009), Efford (2011), Efford and Fewster (2013), Efford et al. (2013) and Efford and Mowat (2014). **secr** 4.4 uses external C++ code via package **Rcpp** for computationally intensive operations (Eddelbuettel and Francois 2011); Multi-threading on multiple CPUs with **RcppParallel** (Allaire et al. 2021) gives major speed gains. [Appendix 1](#appendix1) compares the features of DENSITY and **secr**. The most important functions of **secr** are listed in [Appendix 2](#appendix2).
 
 # How **secr** works
 
@@ -525,7 +525,7 @@ their output density, SE, and confidence limits.
 
 ## Parallel processing
 
-On processors with multiple cores it is possible to speed up computation by using cores in parallel. In **secr** 4.4 this happens automatically in `secr.fit` and a few other functions using the multi-threading paradigm of **RcppParallel** (Allaire et al. 2019). The number of threads may be set directly with the function `setNumThreads`, or via the 'ncores' argument of several functions. 
+On processors with multiple cores it is possible to speed up computation by using cores in parallel. In **secr** 4.4 this happens automatically in `secr.fit` and a few other functions using the multi-threading paradigm of **RcppParallel** (Allaire et al. 2021). The number of threads may be set directly with the function `setNumThreads`, or via the 'ncores' argument of several functions. 
 
 Earlier versions of **secr** relied on parallel processing with the **parallel** package (invoked when the argument ncores was set greater than 1). The benefits of that form of parallel processing were variable (considerable with simulations in `sim.secr` and `ip.secr`, but otherwise unimpressive). 
 
@@ -548,8 +548,8 @@ envisioned an 'ecological distance' that is a function of landscape covariates. 
 
 # References
 
-Allaire, J. J., Francois, R., Ushey, K., Vandenbrouck, G., Geelnard, M. and Intel (2019)
-  RcppParallel: Parallel Programming Tools for 'Rcpp'. R package version 4.4.4.
+Allaire, J. J., Francois, R., Ushey, K., Vandenbrouck, G., Geelnard, M. and Intel (2021)
+  RcppParallel: Parallel Programming Tools for 'Rcpp'. R package version 5.1.4.
   https://CRAN.R-project.org/package=RcppParallel.
   
 Borchers, D. L., Buckland, S. T. and Zucchini, W. (2002)

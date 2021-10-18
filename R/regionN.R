@@ -315,8 +315,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
     K <- if (length(k)>1) length(k)-1 else k
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## assume session-specific mask...
-    setNumThreads(ncores)
-    grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
+    ncores <- setNumThreads(ncores)
+    grain <- if (ncores==1) 0 else 1
     binomNcode <- recodebinomN(dettype, binomN, telemcode(trps))
     
     ##############################################
@@ -396,33 +396,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
         ## across all traps, regardless of clusters
         
         gkhk <- makegk (dettype, object$detectfn, trps, mask, object$details, sessnum, 
-                        noneuc, D, miscparm, Xrealparval0)
+                        noneuc, D, miscparm, Xrealparval0, grain, ncores)
             
-        # ## precompute gk, hk for point detectors
-        # if (all(dettype %in% c(0,1,2,5,8,13))) {
-        #     distmat2 <- getuserdist(trps, mask, object$details$userdist, sessnum, noneuc, D, miscparm)
-        #     gkhk <- makegkPointcpp (as.integer(object$detectfn), as.integer(grain),
-        #                             as.matrix(Xrealparval0), as.matrix(distmat2), miscparm)
-        #     if (any(dettype==8)) {   ## capped adjustment Not checked 2019-09-08
-        #         gkhk <- cappedgkhkcpp (
-        #             as.integer(nrow(Xrealparval0)),
-        #             as.integer(nrow(trps)),
-        #             as.double(attr(mask, "area")),
-        #             as.double(D),
-        #             as.double(gkhk$gk), as.double(gkhk$hk))  
-        #     }
-        # }
-        # ## precompute gk, hk for polygon and transect detectors
-        # else if (all(dettype %in% c(3,4,6,7))) {
-        #     cumk <- cumsum(c(0,k))[1:length(k)]
-        #     dimension <- (dettype[1] %in% c(3,6)) + 1   ## 1 = 1D, 2 = 2D
-        #     convexpolygon <- is.null(object$details$convexpolygon) || object$details$convexpolygon
-        #     gkhk <- makegkPolygoncpp (
-        #         as.integer(object$detectfn), as.integer(dimension), as.logical(convexpolygon), 
-        #         as.integer(grain), as.matrix(Xrealparval0), as.integer(cumk),
-        #         as.matrix(trps), as.matrix(mask))
-        # }
-        
         haztemp <- gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge)
         #############################################################
         
@@ -443,22 +418,8 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
             if (nclust>1) {
                 clustok <- as.numeric(clusterID(trps)) == i
                 temptrap <- subset(trps, subset = clustok)
-                
                 gkhk <- makegk (dettype, object$detectfn, temptrap, mask, object$details, 
-                    sessnum, noneuc, D, miscparm, Xrealparval0)
-                
-                # distmat2 <- getuserdist(temptrap, mask, object$details$userdist, sessnum, noneuc, D, miscparm, object$detectfn=20)
-                # gkhk <- makegkPointcpp (as.integer(object$detectfn), as.integer(grain),
-                #                            as.matrix(Xrealparval0), as.matrix(distmat2), miscparm)
-                # if (any(dettype==8)) {   ## capped adjustment Not checked 2019-09-08
-                #     gkhk <- cappedgkhkcpp (
-                #         as.integer(nrow(Xrealparval0)),
-                #         as.integer(nrow(trps)),
-                #         as.double(attr(mask, "area")),
-                #         as.double(D),
-                #         as.double(gkhk$gk), as.double(gkhk$hk))  
-                # }
-                
+                    sessnum, noneuc, D, miscparm, Xrealparval0, grain, ncores)
                 usge <- usage(temptrap)
                 haztempc <- gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0[,,,clustok,,drop=FALSE], usge)
             }
@@ -473,19 +434,21 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 CH0 <- nullCH (c(n,s,K), object$design0$individual)
             }
             
-            pd <- integralprw1 (cc0 = nrow(Xrealparval0), 
-                                haztemp = if (nclust>1) haztempc else haztemp, 
-                                gkhk = gkhk, 
-                                pi.density = matrix(1/m, nrow = m, ncol = 1), 
-                                PIA0 = PIA0, 
-                                CH0 = CH0, 
-                                binomNcode = binomNcode, 
-                                MRdata = MRdata,
-                                grp = rep(1,n),    ## dummy single group
-                                usge = usge, 
-                                pmixn = pmixn, 
-                                pID = pID,
-                                grain = grain)
+            pd <- integralprw1 (
+                cc0 = nrow(Xrealparval0), 
+                haztemp = if (nclust>1) haztempc else haztemp, 
+                gkhk = gkhk, 
+                pi.density = matrix(1/m, nrow = m, ncol = 1), 
+                PIA0 = PIA0, 
+                CH0 = CH0, 
+                binomNcode = binomNcode, 
+                MRdata = MRdata,
+                grp = rep(1,n),    ## dummy single group
+                usge = usge, 
+                pmixn = pmixn, 
+                pID = pID,
+                grain = grain,
+                ncores = ncores)
             # else {
             #     pd <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
             #                             data$CH0, data$xy, data$binomNcode, data$grp, data$usge, data$mask,

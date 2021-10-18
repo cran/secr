@@ -30,7 +30,7 @@ double naivedcpp (
   int i,j,n;
   
   if (fn != 0)
-    stop ("invalid detection function in external function naivedcpp");
+    Rcpp::stop ("invalid detection function in external function naivedcpp");
   
   kk = traps.nrow();
   nc = animals.nrow();
@@ -95,9 +95,9 @@ double naivecap3cpp (
     std::vector<double> h(kk,0);
     
     if (fn != 14)
-        stop ("invalid detection function in naivecap3cpp");
+        Rcpp::stop ("invalid detection function in naivecap3cpp");
     if (detect>2) 
-        stop ("unrecognised detector in naivecap3cpp");
+        Rcpp::stop ("unrecognised detector in naivecap3cpp");
     
     for (int m=0; m<mm; m++) {
         for (int k=0; k<kk; k++) {

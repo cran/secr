@@ -50,8 +50,9 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
 
-    setNumThreads(ncores)
-    
+    ncores <- setNumThreads(ncores)
+    grain <- if (ncores==1) 0 else 1
+
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
     if ((detectfn > 9) & (detectfn<14) & is.null(detectpar$cutval))
@@ -87,7 +88,6 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
     dettype <- detectorcode(traps, noccasions = noccasions)
     binomN <- getbinomN (binomN, detector(traps))
     markocc <- markocc(traps)
-    grain <- if (!is.null(ncores) && (ncores==1)) 0 else 1
     
     if (is.null(markocc)) markocc <- rep(1,noccasions)
     if (!inherits(X, 'mask')) {
@@ -107,16 +107,17 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
             
         warning("assuming convex polygons in pdot()")
         temp <- hdotpolycpp (
-            as.matrix(X),
-            as.matrix(traps),
-            as.matrix(usge),
-            as.integer(markocc),
-            as.integer(cumk),
-            as.integer(detectfn),
-            as.double(detectpars),
-            as.logical(convexpolygon),
-            as.integer(dim),
-            as.integer(grain))
+          as.matrix(X),
+          as.matrix(traps),
+          as.matrix(usge),
+          as.integer(markocc),
+          as.integer(cumk),
+          as.integer(detectfn),
+          as.double(detectpars),
+          as.logical(convexpolygon),
+          as.integer(dim),
+          as.integer(grain),
+          as.integer(ncores))
         1 - exp(-temp)   ## probability detected at least once, given total hazard
     }
     else {
@@ -135,7 +136,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         as.double(miscparm),
         as.double(truncate^2),
         as.integer(expandbinomN(binomN, dettype)),
-        as.integer(grain)
+        as.integer(grain),
+        as.integer(ncores)
       )
     }
 }

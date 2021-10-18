@@ -90,6 +90,9 @@ cluster.centres (object)
   which should have length equal to the number of rows in
   \code{frame}; ties are resolved by drawing a site at random.
   
+  WARNING: the GRTS option was suspended in secr 4.4.7 because of changes in 
+  package spsurvey.
+  
   Options for \code{edgemethod} are --
   \tabular{llll}{
   \code{edgemethod} \tab Description\cr
@@ -229,6 +232,8 @@ predict(fit1)
 predict(fit2)
 fit1$proctime
 fit2$proctime
+
+## NOTE: GRTS option was suspended in secr 4.4.7 because of changes in spsurvey
 
 ## GRTS sample of mini-grids within a rectangle
 ## GRTS requires package 'spsurvey' that may be unavailable

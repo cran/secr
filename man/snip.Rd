@@ -67,7 +67,9 @@ tempCH <- snip(tempcapt, by = 20)
 tempCH <- reduce(tempCH, outputdetector = "count")
 
 ## fit secr model and examine H-T estimates of density
-derived(secr.fit(tempCH, buffer = 300, CL = TRUE, trace = FALSE))
+## fails with detectfn = 'HN'
+fit <- secr.fit(tempCH, buffer = 300, CL = TRUE, detectfn = 'HHN', trace = FALSE)
+derived(fit)
 
 ## also, may split an existing transect into equal lengths
 ## same result:

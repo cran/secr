@@ -1,5 +1,6 @@
 // next two lines must be in order (RcppNumerical precedes secr.h)
-#include <RcppNumerical.h>
+// #include <RcppNumerical.h>
+
 #include "secr.h"
 
 using namespace std;
@@ -32,23 +33,6 @@ int i3 (int i, int j, int k, int ii, int jj) {
 int i4 (int i, int j, int k, int l, int ii, int jj, int kk) {
     return (ii *(jj*(kk*l + k) + j) + i);
 }
-//--------------------------------------------------------------------------
-
-// double d2 (
-//     int k,
-//     int m,
-//     double A1[],
-//              double A2[],
-//                       int A1rows,
-//                       int A2rows)
-//   // return squared distance between two points given by row k in A1
-//   // and row m in A2, where A1 and A2 have respectively A1rows and A2rows
-// {
-//   return(
-//     (A1[k] - A2[m]) * (A1[k] - A2[m]) +
-//       (A1[k + A1rows] - A2[m + A2rows]) * (A1[k + A1rows] - A2[m + A2rows])
-//   );
-// }
 //--------------------------------------------------------------------------
 
 double d2cpp (
@@ -115,8 +99,13 @@ double gpois (int count, double lambda, int uselog)
         else
             return (exp(-lambda));
     }
-    else
-        return (R::dpois(count, lambda, uselog));
+    else {
+        // return (R::dpois(count, lambda, uselog));
+        boost::math::poisson_distribution<> pois(lambda);
+        double x = boost::math::pdf(pois, count);
+        if (uselog) x = log(x);
+        return (x);
+    }
 }
 //--------------------------------------------------------------------------
 
@@ -129,37 +118,36 @@ double gbinom(int count, int size, double p, int uselog)
         q = 1 - p;
         x = q;
         for (i=1; i< size; i++) x *= q;
-        if (uselog) x = log(x);
-        return (x);   // faster 
     }
-    else
-        return (R::dbinom (count, size, p, uselog));
+    else {
+        boost::math::binomial_distribution<> bin(size, p);
+        x = boost::math::pdf(bin, count);
+    }
+    if (uselog) x = log(x);
+    return (x);   
 }
 //--------------------------------------------------------------------------
 
+// not used 2021-10-17
 // customised dnbinom parameterised as size, mu 
-double gnbinom (int count, int size, double mu, int uselog)
-{
-    // prob = size / (size + mu) 
-    // changed 2014-09-23 
-    // size = fabs(size);   in case negative 'binomN' passed 
-    size = abs(size);  // in case negative 'binomN' passed 
-    
-    if (count == 0) {  // faster - added 2010-10-11
-        if (uselog) return( log(size/(size+mu)) * log(size) );
-        else return (pow(size/(size+mu), size));
-    }
-    else
-        return (R::dnbinom (count, size, size/(size+mu), uselog));
-}
-//--------------------------------------------------------------------------
-
-// binomial density allowing non-integer (floating point) size 
-// double gbinomFP (int count, double size, double p, int uselog)
+// double gnbinom (int count, int size, double mu, int uselog)
 // {
-// return ( lgamma(size+1) - lgamma(size-count+1) - lgamma(count+1) +
-// count * log(p) + (size - count) * log (1-p) );
-//}
+//     // prob = size / (size + mu) 
+//     // size = fabs(size);   in case negative 'binomN' passed 
+//     size = abs(size);  // in case negative 'binomN' passed 
+//     
+//     if (count == 0) {  // faster - added 2010-10-11
+//         if (uselog) return( log(size/(size+mu)) * log(size) );
+//         else return (pow(size/(size+mu), size));
+//     }
+//     else {
+//         // return (R::dnbinom (count, size, size/(size+mu), uselog));
+//         boost::math::binomial_distribution<> bin(size, size/(size+mu));
+//         double x = boost::math::pdf(bin, count);
+//         if (uselog) x = log(x);
+//         return (x);
+//     }
+// }
 //--------------------------------------------------------------------------
 
 // probability of count with distribution specified by binomN 
@@ -168,9 +156,11 @@ double countp (int count, int binomN, double lambda) {
     if (binomN == 0) {
         if (count == 0) 
             return (exp(-lambda));
-        else
-            return (R::dpois(count, lambda, 0));
-        // return ( gpois (count, lambda, 0)); replaced 2012-12-18 
+        else {
+            // return (R::dpois(count, lambda, 0));
+            boost::math::poisson_distribution<> pois(lambda);
+            return (boost::math::pdf(pois, count));
+        }
     }
     
     // Bernoulli 
@@ -182,14 +172,18 @@ double countp (int count, int binomN, double lambda) {
     }
     
     // negative binomial 
-    else if (binomN < 0)
-        return ( gnbinom (count, binomN, lambda, 0) );
+    else if (binomN < 0) {
+        // return ( gnbinom (count, binomN, lambda, 0) );
+        boost::math::negative_binomial_distribution<> nbin(binomN, lambda);
+        return (boost::math::pdf(nbin, count));
+    }
     
     // binomial 
-    else
-        return ( gbinom (count, binomN, lambda, 0) ); 
-    // return ( pow(lambda, count) * pow(1-lambda, binomN-count) ); experiment 2015-05-24 
-    // return ( gbinom (count, binomN, lambda / binomN, 0) ); replaced 2012-12-23 
+    else {
+        // return ( gbinom (count, binomN, lambda, 0) ); 
+        boost::math::binomial_distribution<> bin(binomN, lambda);
+        return (boost::math::pdf(bin, count));
+    }
 }
 //--------------------------------------------------------------------------
 
@@ -216,12 +210,14 @@ double zrcpp (double r, int detectfn, NumericVector par)
                     2 / par(1)/ par(1)));
         }
         else if (detectfn == 18) {  // hazard cumulative gamma
-            return (R::pgamma(r,par(2),par(1)/par(2),0,0)); 
+            // return (R::pgamma(r,par(2),par(1)/par(2),0,0)); 
+            boost::math::gamma_distribution<> gam(par(2),par(1)/par(2));
+            return (boost::math::cdf(complement(gam,r))); 
         }
         else if (detectfn == 19) {  // hazard variable power
             return (exp(- pow(r /par(1), par(2))));
         }
-        else (stop("unknown or invalid detection function in gxy"));
+        else (Rcpp::stop("unknown or invalid detection function in gxy"));
     }
 }
 
@@ -307,54 +303,16 @@ bool insidecpp (
         theta += atan2(N, d);
     }
     theta = fabs(theta);
-    return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is Rmath.h constant 
-}
-//--------------------------------------------------------------------------
-
-bool insidecppC (
-        const Numer::Constvec &xy,
-        const int    &n1,
-        const int    &n2,
-        const RcppParallel::RMatrix<double> &poly)
-{
-    // Is point xy inside poly?
-    // Based on contribution on s-news list by Peter Perkins 23/7/96
-    // We assume poly is closed, and in col-major order (x's then y's)
-    
-    double theta = 0;
-    double cutoff = 1e-6;
-    int k;
-    int ns;
-    double N;
-    double d;
-    ns = n2 - n1 + 1;   // number of selected points 
-    std::vector<double> temp((ns+1) * 2);
-    
-    // get & translate to coords centered at each test point 
-    for (k=0; k < ns; k++)
-    {
-        temp[k]      = poly(k + n1,0) - xy[0];    // x 
-        temp[k + ns] = poly(k + n1,1) - xy[1];    // y 
-    }
-    
-    for (k=0; k < (ns-1); k++)
-    {
-        N = temp[k] * temp[k+1 + ns] - temp[k + ns] * temp[k+1];
-        d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];
-        if (fabs(d)>0) { N = N/fabs(d);  d = d/fabs(d); }
-        theta += std::atan2(N, d);
-    }
-    theta = fabs(theta);
-    return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is Rmath.h constant 
+    return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is cmath.h constant 
 }
 //--------------------------------------------------------------------------
 
 rpoint getxy(
         const double l, 
         double cumd[], 
-                   const rpoint line[], 
-                                    const int kk, 
-                                    const double offset) {
+        const rpoint line[], 
+        const int kk, 
+        const double offset) {
     // return the xy coordinates of point l metres along a transect 
     // offset is the starting position for this transect 
     int k;
@@ -740,7 +698,7 @@ double rcount (int binomN, double lambda, const double Tsk) {
 // used in simsecr.cpp and trapping.cpp 
 double gr (
         const int fn,
-        const NumericVector gsb,
+        const Rcpp::NumericVector gsb,
         const rpoint xy,
         const rpoint animal) {
     double r;
@@ -963,7 +921,7 @@ int firstkcpp (const int n,
         wxi = i4(n,0,k,x,nc,ss,nk);
     }
     while ((PIA[wxi] == 0) && (k<nk));
-    if (k>=nk)  stop ("no detector used on first occasion? error in getpmix"); 
+    if (k>=nk)  Rcpp::stop ("no detector used on first occasion? error in getpmix"); 
     return(k);
 }
 //=============================================================
@@ -996,7 +954,7 @@ int firstkcpp (const int n,
 //             for (x=0; x<nmix; x++) {
 //                 wxi = i4(n,0,firstkcpp(n,x,nc,ss,nk,PIA),x,nc,ss,nk);
 //                 c = PIA[wxi] - 1;
-//                 if (c<0) stop ("c<0 error in getpmix"); 
+//                 if (c<0) Rcpp::stop ("c<0 error in getpmix"); 
 //                 pmix = gsbval[cc * (gpar-1) + c];  // last column in gsbval 
 //                 
 //                 // group-specific, and overall pmix by class for knownclass case 
@@ -1316,10 +1274,15 @@ double pski ( int binomN,
             result = 1 - g*pI;
     }
     else if (binomN == 0) {                          // count detectors : Poisson 
+        double tmp = Tski * g * pI;
+        //if (tmp<0) result = NAN;
         if (count == 0) 
-            result = exp(-Tski * g * pI);                 // routinely apply Tsk adjustment to cum. hazard 
-        else
-            result = R::dpois(count, Tski * g * pI, 0); 
+            result = exp(-tmp);            // routinely apply Tsk adjustment to cum. hazard 
+        else {
+            // result = R::dpois(count, Tski * g * pI, 0); 
+            boost::math::poisson_distribution<> pois(tmp);
+            result = boost::math::pdf(pois,count); 
+        }
     }
     else if (binomN == 1) {                          // count detectors : Binomial, size from Tsk
         result = gbinom (count, round(Tski), g*pI, 0); 
@@ -1330,7 +1293,7 @@ double pski ( int binomN,
         }
         result = gbinom (count, binomN, g*pI, 0);
     }
-    else stop("binomN < -1 not allowed");  // code multi -2 separately
+    else Rcpp::stop("binomN < -1 not allowed");  // code multi -2 separately
     
     return (result);
 }

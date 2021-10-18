@@ -61,14 +61,22 @@ Specifying the integer number of recruits in each year (recrmodel `specified') o
 
 Individuals may shift their home range centre between sessions. Movement probability is governed by a circular kernel specified by `movemodel' and the parameter values `move.a' and `move.b' (optional). By default there is no movement between sessions (movemodel = "static"). Other options are
 
-\tabular{ll}{
-``uncorrelated" \tab individuals are randomly assigned a new, independent location within the buffered area\cr
-``normal" \tab bivariate normal (Gaussian) kernel with parameter move.a (previously called sigma.m)\cr
-``exponential" \tab negative exponential (Laplace) kernel with parameter move.a \cr
-``t2D" \tab 2-dimensional t-distribution with scale parameter move.a and shape parameter move.b (2Dt of Clark et al. 1999).\cr
+\tabular{lll}{
+``IND" \tab ``uncorrelated" \tab individuals are randomly assigned a new, independent location within the buffered area\cr
+``BVN" \tab ``normal"\tab bivariate normal (Gaussian) kernel with parameter move.a (previously called sigma.m)\cr
+``BVE" \tab ``exponential" \tab negative exponential (Laplace) kernel with parameter move.a \cr
+``BVT" \tab ``t2D"\tab circular 2-dimensional t-distribution with scale parameter move.a and shape parameter move.b = df/2 (2Dt of Clark et al. 1999)\cr
+``RDE" \tab \tab exponential distribution of radial distance (Ergon & Gardner, 2014) \cr
+``RDG" \tab \tab gamma distribution of radial distance (Ergon & Gardner, 2014) \cr
+``RDL" \tab \tab log-normal distribution of radial distance (Ergon & Gardner, 2014) \cr
+\tab \tab  (parameterized with move.a = exp(mu), move.b = 1/CV^2 = 1 / (exp(SD^2) - 1) \cr
+
 }
 
-The package \pkg{openCR} >=1.4.0 provides functions for constructing and plotting these kernels and summarising their properties (\code{make.kernel}; \code{plot} and \code{summary} methods for kernel objects).
+The package \pkg{openCR} >=1.4.0 provides functions for constructing and plotting these kernels and summarising their properties (\code{make.kernel}; \code{plot} and \code{summary} methods for kernel objects). The \pkg{secr} function \code{\link{extractMoves}} is useful for checking simulations of movement.
+
+Models IND, BVN, BVE, and RDE may also be zero-inflated (suffix ``zi"). The parameter `move.a' (INDzi) or `move.b' (BVNzi, BVEzi, RDEzi) is the zero-inflation probability. See Examples.
+
 
 In \pkg{secr} <3.2.1 sigma.m was also used to indicate two special cases; these continue to work but may be discontinued in the future:
 
@@ -78,12 +86,12 @@ sigma.m < 0 corresponds to movemodel = `uncorrelated'
 
 In \pkg{secr} >= 4.4.0, the `movemodel' component may also be a user-provided function with these characteristics: two or three arguments, the first being the number of centres to be moved (e.g., n) and the others parameters of the dispersal distribution (e.g., a,b); the function should return a matrix of n rows and 2 columns, the displacements in the x- and y-directions. The output is a set of random points from the bivariate dispersal kernel. The function will be called with the current number of centres and parameter values move.a and move.b as needed.
 
-If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal), ``normalize'' (truncate kernel and scale probability to 1.0) and ``none" (allow centres outside the buffered area). The ``normalize'' option (new in \pkg{secr} 4.3.3) can take longer as it repeatedly relocates each individual until its destination lies within the bounding box, up to a maximum of 500 attempts.
+If movement takes an animal across the boundary of the arena (buffered area) in \code{sim.popn} the component "edgemethod" comes into play. By default, locations are toroidally wrapped i.e. the animal re-joins the population on the opposing edge. Other options are ``clip'' (discard), ``stop'' (stop just inside the boundary), ``reflect'' (bounce off edges to the limit of the dispersal), ``normalize'' = ``truncate'' (truncate kernel and scale probability to 1.0) and ``none" (allow centres outside the buffered area). The ``normalize'' option (new in \pkg{secr} 4.3.3) can take longer as it repeatedly relocates each individual until its destination lies within the bounding box, up to a maximum of 500 attempts.
 
 }
 
 \seealso{
-  \code{\link{sim.popn} }
+  \code{\link{sim.popn}}, \code{\link{extractMoves}}
 }
 
 \references{
@@ -125,6 +133,13 @@ cols <- c('blue',rep('white',4),'red')
 par (mfrow=c(1,2))
 plot(pop2, collapse = TRUE, seqcol = cols)
 plot(pop3, collapse = TRUE, seqcol = cols)
+
+## zero-inflated movement
+## move.b is zero-inflation probability
+pop5 <- sim.popn (Nbuffer = 1000, core = grid, nsessions = 6,    
+     details = list(lambda = 1, phi = 1, movemodel = 'RDEzi', 
+         move.a = 50, move.b = 0.5, edgemethod = "none"))
+mean(do.call(rbind,extractMoves(pop5))$d)   # approx 50 * 0.5
 
 }
 \keyword{ datagen }
