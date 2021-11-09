@@ -180,12 +180,9 @@ void geth2 (
 
 //---------------------------------------------------------------------
 // 
-double gpois (int count, double lambda, int uselog);
-double gbinom(int count, int size, double p, int uselog);
+double gpois (int count, double lambda);
+double gbinom(int count, int size, double p);
 double pski ( int binomN, int count, double Tski, double g, double pI);
-
-// not used 2021-10-17
-// double gbinomFP (int count, double size, double p, int uselog);  
 
 //--------------------------------------------------------------------------
 

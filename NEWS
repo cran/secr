@@ -1,3 +1,12 @@
+Changes in version 4.4.8 (2021-11-09)
+
+New features or changed behaviour of old functions
+    o   none
+
+Bugs fixed
+    o   'count' detectors failed with Poisson model (reported by Ian Durbach) 
+        owing to problem with switch to Boost statistical distributions in C++
+
 Changes in version 4.4.7 (2021-10-18)
 
 Other

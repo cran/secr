@@ -173,6 +173,8 @@ fastsecrloglikfn <- function (
           data$CH0, data$usge, pmixn, details$grain, details$ncores, 
           details$binomN, design$individual)
         
+        if (details$debug>2) browser()
+        
         comp <- matrix(0, nrow = 5, ncol = 1)
         ## 2021-01-30 avoid length > 1
         # comp[1,1] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw))
@@ -216,7 +218,7 @@ fastsecrloglikfn <- function (
     #--------------------------------------------------------------------
     # Fixed beta
     beta <- fullbeta(beta, details$fixedbeta)
-    
+
     #--------------------------------------------------------------------
     # Detection parameters
     detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]

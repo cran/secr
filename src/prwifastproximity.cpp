@@ -92,9 +92,9 @@ struct fasthistories : public Worker {
             if (c >= 0) {    // ignore unset traps
                 for (m=0; m<mm; m++) {
                     if (binomN==0)
-                        pm0kn[kk * m + k] = gpois (0, Tsk[k]* hk[i3(c, k, m, cc, kk)], 0);
+                        pm0kn[kk * m + k] = gpois (0, Tsk[k] * hk[i3(c, k, m, cc, kk)]);
                     else
-                        pm0kn[kk * m + k] = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)], 0);
+                        pm0kn[kk * m + k] = gbinom (0, Tsk[k], gk[i3(c, k, m, cc, kk)]);
                     pm0n[m] *= pm0kn[kk * m + k];
                 }
             }
@@ -131,10 +131,18 @@ struct fasthistories : public Worker {
                             pm0ktmp = pm0kbase[kk * m + k]; 
                         else 
                             pm0ktmp = pm0k[kk * m + k];
-                        if (binomN==0)
-                            pm[m] *= gpois (w(n,i), Tsk[k]*hk[i3(c, k, m, cc, kk)], 0) / pm0ktmp;
-                        else
-                            pm[m] *= gbinom (w(n,i), Tsk[k], gk[i3(c, k, m, cc, kk)], 0) / pm0ktmp;
+                        if (binomN==0) {
+                            // if (grain==0) {
+                            //     Rprintf("w(n,i) %8.6g, TSKetc %8.6g dpois %8.6g \n", 
+                            //         w(n,i), 
+                            //         Tsk[k] * hk[i3(c, k, m, cc, kk)],
+                            //         gpois (w(n,i), Tsk[k] * hk[i3(c, k, m, cc, kk)]) / pm0ktmp);
+                            // }
+                            pm[m] *= gpois (w(n,i), Tsk[k] * hk[i3(c, k, m, cc, kk)]) / pm0ktmp;
+                        }
+                        else {
+                            pm[m] *= gbinom (w(n,i), Tsk[k], gk[i3(c, k, m, cc, kk)]) / pm0ktmp;
+                        }
                     }
                     else {
                         pm[m] = 0.0; 

@@ -564,7 +564,7 @@ fnptr getzfnr (const int fn)
       return(zhvpr);
   else if (fn == 20)
       return(zhpxr);
-  else (Rcpp::stop("unknown or invalid detection function"));
+  else // Rcpp::stop("unknown or invalid detection function");
   return(zhnr);
 }
 //--------------------------------------------------------------------
@@ -584,7 +584,7 @@ fnptrC getzfnrC (const int fn)
         return(zhcgrC);
     else if (fn == 19)
         return(zhvprC);
-    else (Rcpp::stop("unknown or invalid detection function"));
+    else // Rcpp::stop("unknown or invalid detection function");
     return(zhhnrC);
 }
 //--------------------------------------------------------------------

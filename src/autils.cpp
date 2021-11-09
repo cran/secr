@@ -91,39 +91,41 @@ NumericMatrix xydist2cpp (
 //--------------------------------------------------------------------------
 
 // customised dpois 
-double gpois (int count, double lambda, int uselog)
+double gpois (int count, double lambda)
 {
-    if (count == 0) {
-        if (uselog)
-            return (-lambda);
-        else
-            return (exp(-lambda));
+    double x;
+    if ((count < 0) || (count>0 && lambda <= 0)) {
+        return(0);
+    }
+    else if (count == 0) {
+        return (exp(-lambda));
     }
     else {
-        // return (R::dpois(count, lambda, uselog));
         boost::math::poisson_distribution<> pois(lambda);
-        double x = boost::math::pdf(pois, count);
-        if (uselog) x = log(x);
+        x = boost::math::pdf(pois, count);
         return (x);
     }
 }
 //--------------------------------------------------------------------------
 
 // customised dbinom 
-double gbinom(int count, int size, double p, int uselog)
+double gbinom(int count, int size, double p)
 {
     double x, q;
     int i;
-    if (count == 0) {
+    if ((count < 0) || (count > 0 && p <= 0)) {
+        x = 0;
+    }
+    else if (count == 0) {
         q = 1 - p;
         x = q;
         for (i=1; i< size; i++) x *= q;
     }
     else {
+        // x = R::dbinom(count, size, p, 0);
         boost::math::binomial_distribution<> bin(size, p);
         x = boost::math::pdf(bin, count);
     }
-    if (uselog) x = log(x);
     return (x);   
 }
 //--------------------------------------------------------------------------
@@ -173,14 +175,12 @@ double countp (int count, int binomN, double lambda) {
     
     // negative binomial 
     else if (binomN < 0) {
-        // return ( gnbinom (count, binomN, lambda, 0) );
         boost::math::negative_binomial_distribution<> nbin(binomN, lambda);
         return (boost::math::pdf(nbin, count));
     }
     
     // binomial 
     else {
-        // return ( gbinom (count, binomN, lambda, 0) ); 
         boost::math::binomial_distribution<> bin(binomN, lambda);
         return (boost::math::pdf(bin, count));
     }
@@ -217,7 +217,8 @@ double zrcpp (double r, int detectfn, NumericVector par)
         else if (detectfn == 19) {  // hazard variable power
             return (exp(- pow(r /par(1), par(2))));
         }
-        else (Rcpp::stop("unknown or invalid detection function in gxy"));
+        else 
+            return (NAN);  //Rcpp::stop("unknown or invalid detection function in gxy"));
     }
 }
 
@@ -921,8 +922,8 @@ int firstkcpp (const int n,
         wxi = i4(n,0,k,x,nc,ss,nk);
     }
     while ((PIA[wxi] == 0) && (k<nk));
-    if (k>=nk)  Rcpp::stop ("no detector used on first occasion? error in getpmix"); 
-    return(k);
+    if (k>=nk) return (NAN);  // Rcpp::stop ("no detector used on first occasion? error in getpmix"); 
+    else return(k);
 }
 //=============================================================
 
@@ -1262,6 +1263,7 @@ double pski ( int binomN,
               double g,
               double pI) {
     
+    double lambda;
     double result = 1.0;
     
     if (binomN == -1) {                              // binary proximity detectors : Bernoulli
@@ -1274,26 +1276,29 @@ double pski ( int binomN,
             result = 1 - g*pI;
     }
     else if (binomN == 0) {                          // count detectors : Poisson 
-        double tmp = Tski * g * pI;
-        //if (tmp<0) result = NAN;
-        if (count == 0) 
-            result = exp(-tmp);            // routinely apply Tsk adjustment to cum. hazard 
+        lambda = Tski * g * pI;
+        if ((count < 0) || (count>0 && lambda<=0)) {         
+            result = 0;
+        }
+        else if (count == 0) {
+            result = exp(-lambda);            // routinely apply Tsk adjustment to cum. hazard 
+        }
         else {
-            // result = R::dpois(count, Tski * g * pI, 0); 
-            boost::math::poisson_distribution<> pois(tmp);
-            result = boost::math::pdf(pois,count); 
+            //result = R::dpois(count, Tski * g * pI); 
+            boost::math::poisson_distribution<> pois(lambda);
+            result = boost::math::pdf(pois,count);
         }
     }
     else if (binomN == 1) {                          // count detectors : Binomial, size from Tsk
-        result = gbinom (count, round(Tski), g*pI, 0); 
+        result = gbinom (count, round(Tski), g*pI); 
     }
     else if (binomN > 1) {                           // count detectors : Binomial, specified size 
         if (abs(Tski-1) > 1e-10) {                   // effort not unity, adjust g 
             g = 1 - pow(1 - g, Tski);
         }
-        result = gbinom (count, binomN, g*pI, 0);
+        result = gbinom (count, binomN, g*pI);
     }
-    else Rcpp::stop("binomN < -1 not allowed");  // code multi -2 separately
+    else result = NAN; // Rcpp::stop("binomN < -1 not allowed");  // code multi -2 separately
     
     return (result);
 }

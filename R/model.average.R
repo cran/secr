@@ -8,6 +8,7 @@
 ## 2013-06-10 MATA
 ## 2015-09-30 added annotations
 ## 2015-09-30 fixpmix now done in secr.lpredictor
+## 2021-10-25 see also modelAverage.R
 ############################################################################################
 
 MATA <- function (wt, est, se, alpha) {
@@ -19,32 +20,6 @@ MATA <- function (wt, est, se, alpha) {
     ucl <- uniroot (fn, interval = c(min(est), upper = max(est + 10*se)), lcl = TRUE)$root
     cbind(lcl, ucl)
 }
-
-modelAverage <- function (..., 
-    realnames = NULL, 
-    betanames = NULL,
-    newdata = NULL, 
-    alpha = 0.05, 
-    dmax = 10, 
-    covar = FALSE, 
-    average = c('link', 'real'), 
-    criterion = c('AICc','AIC'), 
-    CImethod = c('Wald', 'MATA')) {
-    UseMethod("modelAverage") 
-} 
-
-modelAverage.default <- function (object, all.levels = FALSE, ...) {
-    cat ('no modelAverage method for objects of class', class(object), '\n')
-}
-
-# modelAverage.secr <- function (..., realnames = NULL, betanames = NULL,
-#     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
-#         c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
-#         c('Wald', 'MATA')) {
-# modelAverage.secrlist <- function (..., realnames = NULL, betanames = NULL,
-#     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
-#         c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
-#         c('Wald', 'MATA')) {
 
 model.average <- function (..., realnames = NULL, betanames = NULL,
     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
