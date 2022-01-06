@@ -15,7 +15,7 @@
 
 \usage{
 
-snip(object, from = 0, by = 1000, length.out = NULL, keep.incomplete = TRUE)
+snip(object, from = 0, by = 1000, length.out = NULL, keep.incomplete = TRUE, tol = 0.01)
 
 }
 
@@ -27,6 +27,7 @@ snip(object, from = 0, by = 1000, length.out = NULL, keep.incomplete = TRUE)
   \item{keep.incomplete}{logical; if TRUE then initial or terminal
   sections of each original transect that are less than `by' will be
   retained in the output}
+  \item{tol}{numeric tolerance for xyontransect (capthist only)}
 }
 
 \details{

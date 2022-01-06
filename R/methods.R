@@ -8,6 +8,7 @@
 ## 2020-08-27 radical revamp of occasion, trap and animalID functions, 
 ##            with unified code
 ## 2020-11-07 alive() rewritten to match preceding
+## 2022-01-05 fixed alive() problem with one animal
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -304,30 +305,77 @@ alongtransect <- function (object, tol = 0.01) {
     }
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
-
+    
     if (ms(object)) {
-        lapply(object, alongtransect)
+        lapply(object, alongtransect, tol = tol)
     }
     else {
         trps <- traps(object)
-
+        
         if (all(detector(trps) %in% c('transectX', 'transect'))) {
-
-#             trans <- trap(object, names = TRUE)
-#             xyi <- xy(object)
-#             ## 2015-09-02 change to fix occsim: remove 'S' prefix
-#             lxy <- split (trps, levels(transectID(trps)), prefix = "")
-
+            
+            #             trans <- trap(object, names = TRUE)
+            #             xyi <- xy(object)
+            #             ## 2015-09-02 change to fix occsim: remove 'S' prefix
+            #             lxy <- split (trps, levels(transectID(trps)), prefix = "")
+            
             trans <- trap(object, names = FALSE, sortorder = 'ksn')
             xyi <- xy(object)
             lxy <- split (trps, transectID(trps))
-
+            
             sapply(1:nrow(xyi), ptalongtransect)
         }
         else
             NULL
     }
 }
+
+# under development 2021-12-11
+distancetotransect <- function (object) {
+    if (!inherits(object, 'capthist'))
+        stop ("requires 'capthist' object")
+    
+    if (ms(object)) {
+        lapply(object, distancetotransect)
+    }
+    else {
+        trps <- traps(object)
+        
+        if (all(detector(trps) %in% c('transectX', 'transect'))) {
+            
+            xyi <- xy(object)
+            
+            if (!requireNamespace('terra', quietly = TRUE)) {
+                stop("snapXY for transects requires package terra")
+            }
+
+            # split by transect
+            lxy <- split (trps, transectID(trps))
+            vlist <- lapply(lxy, as.matrix)
+            
+            # each transect as terra SpatVector
+            vlist <- lapply(vlist, terra::vect, type = 'lines')
+            
+            # combine lines in one SpatVector
+            if (length(vlist) == 1)
+                v <- vlist[[1]]
+            else
+                v <- do.call(rbind, unname(vlist))  # strange need to remove names
+            
+            # closest point on lines
+            xy <- terra::vect(as.matrix(xyi))
+            neari <- terra::nearest(xy, v, centroids = FALSE)
+            
+            # return distances
+            terra::values(neari)[,'distance']       # strange failure to show to_id
+            
+        }
+        else
+            NULL
+    }
+}
+
+
 
 clusterID <- function (object) {
     if (ms(object)) {
@@ -533,7 +581,9 @@ alive <- function (object, sortorder = c('snk','ksn')) {
         }
         else {
             tmp <- captmatrix(object, sortorder)
-            temp <- sign(object[tmp[,1:3]]) > 0
+            ## 2022-01-05 fixed problem with one animal
+            ## temp <- sign(object[tmp[,1:3]]) > 0
+            temp <- sign(object[tmp[,1:3, drop = FALSE]]) > 0
             out <- rep(temp, tmp[,4])
         }
         as.logical(out)
@@ -1577,7 +1627,6 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         return(temp)
     }
     else {
-
         if (is.matrix(x))
             stop("require updated capthist secr >= 3.0")
         trapsx <- secr::traps(x)
@@ -1595,7 +1644,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             stop ("if 'occasions' is logical its length must match number of occasions")
         if (is.logical(traps) & (length(traps) != nk))
             stop ("if 'traps' is logical its length must match number of detectors")
-        if (is.null(occasions)) occasions <- 1:ncol(x)
+        ## 2022-01-04 if (is.null(occasions)) occasions <- 1:ncol(x)
+        if (is.null(occasions)) occasions <- colnum(x)
         if (is.null(traps))  traps <- 1:nk
         if (is.function(subset)) subset <- subset(x, ...)   ## 2017-11-13
         if (is.null(subset)) subset <- 1:nrow(x)
@@ -1611,10 +1661,12 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             subset <- dimnames(x)[[1]] %in% subset
         else {
             if (is.numeric(subset)) {
-                if (all(subset<0))   # negative implies excludion 2020-09-03
-                    subset <- !(1:nrow(x)) %in% abs(subset)
+                if (all(subset<0))   # negative implies exclusion 2020-09-03
+                  ## 2022-01-04 subset <- !(1:nrow(x)) %in% abs(subset)
+                  subset <- !(rownum %in% abs(subset))
                 else
-                    subset <- (1:nrow(x)) %in% subset
+                  ## 2022-01-04 subset <- (1:nrow(x)) %in% subset
+                  subset <- rownum(x) %in% subset
             }
         }
         
@@ -1628,7 +1680,8 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
             traps <- (1:nk) %in% traps
         }
         if (!is.logical(occasions)) {
-            occasions <- (1:ncol(x)) %in% occasions
+          ## 2022-01-04 occasions <- (1:ncol(x)) %in% occasions
+          occasions <- colnum(x) %in% occasions
         }
         
         if (any(detector=='telemetry')) {
@@ -2671,9 +2724,11 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
                 reali <- function (beta, rn) {
                     ## real from all beta pars eval at newdata[i,]
                     par.rn <- object$parindx[[rn]]
-                    mat <- general.model.matrix(object$model[[rn]], data = newdatai,
-                                                gamsmth = object$smoothsetup[[rn]],
-                                                contrasts = object$details$contrasts)
+                    mat <- general.model.matrix(
+                        object$model[[rn]], 
+                        data = newdatai,
+                        gamsmth = object$smoothsetup[[rn]],
+                        contrasts = object$details$contrasts)
                     lp <- mat %*% matrix(beta[par.rn], ncol = 1)
                     untransform (lp, object$link[[rn]])
                 }
@@ -2700,9 +2755,11 @@ vcov.secr <- function (object, realnames = NULL, newdata = NULL, byrow = FALSE, 
                 if (rn == 'pmix')
                     stop("vcov does not work at present when realname == 'pmix'")
                 par.rn <- object$parindx[[rn]]
-                mat <- general.model.matrix(object$model[[rn]], data = newdata,
-                                            gamsmth = object$smoothsetup[[rn]],
-                                            contrasts = object$details$contrasts)
+                mat <- general.model.matrix(
+                    object$model[[rn]], 
+                    data = newdata,
+                    gamsmth = object$smoothsetup[[rn]],
+                    contrasts = object$details$contrasts)
                 lp <- mat %*% matrix(object$fit$par[par.rn], ncol = 1)
                 real <- untransform (lp, object$link[[rn]])
                 real <- as.vector(real)

@@ -239,25 +239,27 @@ fit2$proctime
 ## GRTS requires package 'spsurvey' that may be unavailable
 ##  on Mavericks
 ## edgemethod = "allinside" avoids truncation at edge
-minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
-    detector = "proximity")
+
+# minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
+#    detector = "proximity")
     
-if (requireNamespace('spsurvey')) {
-  tempgrid <- trap.builder (n = 20, cluster = minigrid,
-    method = "GRTS", edgemethod = "allinside", region =
-    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-    plt = TRUE)
-}
+# if (requireNamespace('spsurvey')) {
+#  tempgrid <- trap.builder (n = 20, cluster = minigrid,
+#    method = "GRTS", edgemethod = "allinside", region =
+#    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
+#    plt = TRUE)
+# }
+
 ## GRTS as before, but excluding detectors from a polygon
 
-if (requireNamespace('spsurvey')) {
-  newgrid <- trap.builder (n = 40, cluster = minigrid,
-    method = "GRTS", edgemethod = "allinside", region =
-    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-    exclude = cbind(x = c(3000,7000,7000,3000), y =
-    c(2000,2000,4000,4000)), exclmethod = "alloutside",
-    plt = TRUE)
-}
+# if (requireNamespace('spsurvey')) {
+#  newgrid <- trap.builder (n = 40, cluster = minigrid,
+#    method = "GRTS", edgemethod = "allinside", region =
+#    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
+#    exclude = cbind(x = c(3000,7000,7000,3000), y =
+#    c(2000,2000,4000,4000)), exclmethod = "alloutside",
+#    plt = TRUE)
+# }
 
 ## two-phase design: preliminary sample across region,
 ## followed by selection of sites for intensive grids

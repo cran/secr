@@ -1,6 +1,7 @@
-#include <Rcpp.h>
-#include <RcppParallel.h>
 #include "secr.h"
+
+using namespace Rcpp;
+using namespace RcppParallel;
 
 //==============================================================================
 // 2019-08-19
@@ -26,7 +27,7 @@ struct polygonhistories : public Worker {
   const RMatrix<double> h;
   const RMatrix<int>    hindex;
   
-  const RMatrix<int>    mbool;      // appears cannot use RMatrix<bool>
+  const RMatrix<int>    mbool;    
 
   // working variables
   int  mm, nk, ss, cc;
@@ -66,7 +67,7 @@ struct polygonhistories : public Worker {
     pID(pID), mask(mask), density(density), PIA(PIA), Tsk(Tsk),  h(h), hindex(hindex), mbool(mbool),
     output(output) {
     // now can initialise these derived counts
-    mm = mask.nrow();        // number of polygons (detectors)
+    mm = mask.nrow();       // number of mask points
     nk = Tsk.nrow();        // number of polygons (detectors)
     ss = Tsk.ncol();        // number of occasions
     cc = gsbval.nrow();     // number of parameter combinations
@@ -78,8 +79,8 @@ struct polygonhistories : public Worker {
       const int m,
       const RMatrix<double> &A1,
       const RMatrix<double> &A2)
-    // return squared distance between two points given by row k in A1
-    // and row m in A2, where A1 and A2 have respectively A1rows and A2rows
+    // return squared distance between two points given by 
+    // row k in A1 and row m in A2
   {
     return(
       (A1(k,0) - A2(m,0)) * (A1(k,0) - A2(m,0)) +
@@ -89,11 +90,11 @@ struct polygonhistories : public Worker {
   //--------------------------------------------------------------------------
   
   // hazard (fn 14:19) (distance)
-  double zcpp (const int k, const int m, const int c, const RMatrix<double> &gsbval, 
+  double zcpp (const int j, const int m, const int c, const RMatrix<double> &gsbval, 
                const RMatrix<double> &xy, const RMatrix<double> &mask)
   {
     double r, r2;
-    r2 = d2Rcpp(k, m, xy, mask);
+    r2 = d2Rcpp(j, m, xy, mask);
     if (detectfn == 14) {  // hazard halfnormal
       return (gsbval(c,0) *  exp(-r2 / 2 / gsbval(c,1) / gsbval(c,1)));    
     }
@@ -141,7 +142,6 @@ struct polygonhistories : public Worker {
                   for (m=0; m<mm; m++) {
                       if (mbool(n,m)) {
                           Htemp = h(m, hindex(n,s));
-                          //if (Htemp > fuzz)
                               pm[m] *= exp(-Htemp);
                       }
                       else {
@@ -160,13 +160,11 @@ struct polygonhistories : public Worker {
                               gi  = i3(c,k,m,cc,nk);
                               Htemp = h(m, hindex(n,s));
                               pm[m] *=  Tski * (1-exp(-Htemp)) *  hk[gi] / Htemp;
-                              // if ((grain==0) && (m==1000)) Rprintf("pm[m]  %10.7e \n", pm[m]);
                               // for each detection, pdf(xy) | detected 
                               if (pm[m] > minp) {               // avoid underflow 
                                   // retrieve hint = integral2D(zfn(x) over k)) 
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
                                   pm[m] *= zcpp(start[w3], m, c, gsbval, xy, mask) / hint;
-                                  // if ((grain==0) & (m==1000)) Rprintf("n %4d j %4d pm[m]  %10.7e hint %10.7e with zcpp\n", n, start[i3(n,s,k,nc,ss)], pm[m], hint);
                               }
                           }
                           else {
@@ -197,8 +195,8 @@ struct polygonhistories : public Worker {
           for (s=0; s<ss; s++) {  // over occasions
               if (binomN[s] < 0) Rcpp::stop ("negative binomN < 0 not allowed in C++ fn prwpolygon");
               for (k=0; k<nk; k++) {   // over polygons
-                w3 = i3(n,s,k,nc,ss);
-                count = w[w3];
+                  w3 = i3(n,s,k,nc,ss);
+                  count = w[w3];
                   dead = count<0;
                   count = abs(count);
                   c = PIA[w3] - 1;
@@ -211,59 +209,11 @@ struct polygonhistories : public Worker {
                               
                               // for each detection, pdf(xy) | detected 
                               if ((pm[m] > minp) && (count>0)) {       // avoid underflow
-                                  // retrieve hint = integral2D(zfn(x) over k)) 
+                                  // retrieve hint = integral2D(zfn(x) over k)) OR 1-D integral
                                   hint = hk[gi] / gsbval(c,0) * H[c];  
                                   for (j=start[w3]; j < start[w3]+count; j++) {
                                     pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
-                                  }
-                              }
-                          }
-                          else {
-                              pm[m] = 0.0;
-                          }
-                      }
-                  }
-              }
-              if (dead==1) break;
-          }
-      }
-  }    
-  //==============================================================================
-  void prwtransect (const int n, std::vector<double> &pm) {
-      // Likelihood component due to capture history n (0 <= n < nc)
-      // given that animal's range centre is at m
-      // TRANSECT DETECTOR
-      {
-          int s;   // index of occasion  0 <= s < ss  
-          int k;   // index of part 0 <= k < nk  
-          int j;   // index of xy record 
-          int c, m, w3, gi;
-          long count;
-          bool dead = false;
-          double hint;
-          double Tski;
-          
-          for (s=0; s<ss; s++) {  // over occasions
-              if (binomN[s] < 0) Rcpp::stop ("negative binomN < 0 not allowed in C++ fn prwitransect");
-              for (k=0; k<nk; k++) {   // over transects
-                  w3 = i3(n,s,k,nc,ss);
-                  count = w[w3];
-                  dead = count<0;
-                  count = abs(count);
-                  c = PIA[w3] - 1;
-                  if (c >= 0) {                          // skip if this transect not used 
-                      Tski = Tsk(k,s);
-                      for (m=0; m<mm; m++) {
-                          if (mbool(n,m)) {
-                              gi  = i3(c,k,m,cc,nk);
-                              pm[m] *= pski(binomN[s], count, Tski, hk[gi], 1.0);
-                              
-                              // for each detection, pdf(xy) | detected 
-                              if ((pm[m] > minp) && (count>0)) {       // avoid underflow
-                                  // retrieve hint = integral2D(zfn(x) over k)) 
-                                  hint = hk[gi] / gsbval(c,0) * H[c];  
-                                  for (j=start[w3]; j < start[w3]+count; j++) {
-                                      pm[m] *= zcpp(j, m, c, gsbval, xy, mask) / hint;
+                                      
                                   }
                               }
                           }

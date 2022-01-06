@@ -1,12 +1,7 @@
 #include "poly.h"
-using namespace std;
-using namespace Rcpp;
-using namespace RcppParallel;
-using namespace Numer;
 
 //#include <R_ext/Utils.h>
 //#include <R_ext/Applic.h>
-
 
 // C++ code for R package 'secr' 
 // Murray Efford 
@@ -106,9 +101,9 @@ using namespace Numer;
 // double integral2Dcpp  (const int &fn,
 //                        const int &m,
 //                        const int &c,
-//                        const RMatrix<double> &gsbval,
-//                        const RMatrix<double> &traps,
-//                        const RMatrix<double> &mask,
+//                        const RcppParallel::RMatrix<double> &gsbval,
+//                        const RcppParallel::RMatrix<double> &traps,
+//                        const RcppParallel::RMatrix<double> &mask,
 //                        const int &n1,
 //                        const int &n2,
 //                        double ex[]) {
@@ -132,8 +127,8 @@ using namespace Numer;
 //     // limits from bounding box of this polygon
 //     ns = n2-n1+1;
 //     for (k=0; k<ns; k++) {
-//         ax = R::fmin2(ax, traps[k+n1]);
-//         bx = R::fmax2(bx, traps[k+n1]);
+//         ax = std::min(ax, traps[k+n1]);
+//         bx = std::max(bx, traps[k+n1]);
 //     }
 // 
 //     // pass parameters etc. through pointer
@@ -192,11 +187,11 @@ bool insidecppC (
   {
     N = temp[k] * temp[k+1 + ns] - temp[k + ns] * temp[k+1];
     d = temp[k] * temp[k+1]      + temp[k + ns] * temp[k+1 + ns];
-    if (fabs(d)>0) { N = N/fabs(d);  d = d/fabs(d); }
+    if (std::abs(d)>0) { N = N/std::abs(d);  d = d/std::abs(d); }
     theta += std::atan2(N, d);
   }
-  theta = fabs(theta);
-  return (fabs(theta - 2* M_PI) < cutoff);    // M_PI is cmath.h constant 
+  theta = std::abs(theta);
+  return (std::abs(theta - 2* M_PI) < cutoff);    // M_PI is cmath.h constant 
 }
 //--------------------------------------------------------------------------
 
@@ -204,7 +199,7 @@ bool insidecppC (
 // 2-D code using repeated 1-D RcppNumerical Numer::integrate Func
 //---------------------------------------------------------------------------------
 
-class yslice: public Func
+class yslice: public Numer::Func
 {
 private:
     std::vector<double> gsb;
@@ -214,11 +209,12 @@ private:
     fnptrC fnzr; // = zhnr;
 
 public:
-    yslice(const std::vector<double> gsb,
-           const int fn,
-           const double mx,
-           const double my,
-           const double x)
+    yslice(
+        const std::vector<double> gsb,
+        const int fn,
+        const double mx,
+        const double my,
+        const double x)
         : gsb(gsb), fn(fn), mx(mx), my(my), x(x) {
         // set detection function
         fnzr = getzfnrC(fn);
@@ -232,11 +228,11 @@ public:
     }
 };
 
-class xfn: public Func {
+class xfn: public Numer::Func {
     
 private:
     std::vector<double> gsb;
-    RMatrix<double> poly;
+    RcppParallel::RMatrix<double> poly;
     const int n1;
     const int n2;
     int fn;
@@ -245,13 +241,13 @@ private:
     fnptrC fnzr; // = zhnr;
     int np;
     
-    class yslicei: public Func
+    class yslicei: public Numer::Func
     {
     private:
         const std::vector<double> gsb;
         const int fn;
-        int n1;
-        int n2;
+              int n1;
+              int n2;
         const double mx;
         const double my;
         fnptrC fnzr; // = zhnr;
@@ -269,7 +265,7 @@ private:
         double operator()(const double& y) const
         {
             double d;
-            d = std::sqrt (pow(y-my,2) + pow(x-mx,2));
+            d = std::sqrt (std::pow(y-my,2) + std::pow(x-mx,2));
             return(fnzr(gsb, d));   // z(r)
         }
     };
@@ -277,7 +273,7 @@ private:
 public:
     
     xfn(const std::vector<double> &gsb,
-        const RMatrix<double> &poly,
+        const RcppParallel::RMatrix<double> &poly,
         const int &n1,
         const int &n2,
         const int &fn,
@@ -323,7 +319,7 @@ public:
         yslicei f(gsb, fn, mx, my);
         f.x = x;
         lim = ylim(x);  // refine limits here
-        const double res = integrate(f, lim[0], lim[1], err_est, err_code);
+        const double res = Numer::integrate(f, lim[0], lim[1], err_est, err_code);
         return res;
     }
 };
@@ -332,11 +328,11 @@ public:
 // xfn2 is a version of xfn that uses pointwise insidecppC rather than merely integrating
 // between upper and lower bounds in y dimension
 
-class xfn2: public Func {
+class xfn2: public Numer::Func {
     
 private:
     std::vector<double> gsb;
-    RMatrix<double> poly;
+    RcppParallel::RMatrix<double> poly;
     int n1;
     int n2;
     int fn;
@@ -348,11 +344,11 @@ private:
     fnptrC fnzr; // = zhnr;
     int np;
     
-    class yslicei: public Func
+    class yslicei: public Numer::Func
     {
     private:
         const std::vector<double> gsb;
-        const RMatrix<double> &poly;
+        const RcppParallel::RMatrix<double> &poly;
         const int n1;
         const int n2;
         const int fn;
@@ -367,7 +363,7 @@ private:
         double x=0.0;
         
         yslicei(const std::vector<double> &gsb,
-                const RMatrix<double> &poly,
+                const RcppParallel::RMatrix<double> &poly,
                 const int &n1,
                 const int &n2,
                 const int &fn,
@@ -384,7 +380,7 @@ private:
             Eigen::VectorXd xy(2);
             xy << x,y;
             if (insidecppC(xy, n1, n2, poly)) {
-                d = std::sqrt (pow(y-my,2) + pow(x-mx,2));
+                d = std::sqrt (std::pow(y-my,2) + std::pow(x-mx,2));
                 return(fnzr(gsb, d));   // z(r)
             }
             else {
@@ -396,7 +392,7 @@ private:
 public:
     
     xfn2(const std::vector<double> &gsb,
-        const RMatrix<double> &poly,
+        const RcppParallel::RMatrix<double> &poly,
         const int &n1,
         const int &n2,
         const int &fn,
@@ -418,7 +414,7 @@ public:
         std::vector<double> lim;
         yslicei f(gsb, poly, n1, n2, fn, mx, my, ay, by);
         f.x = x;
-        const double res = integrate(f, ay, by, err_est, err_code);
+        const double res = Numer::integrate(f, ay, by, err_est, err_code);
         return res;
     }
 };
@@ -430,9 +426,9 @@ double integral2DNRcpp
     (const int &fn,
      const int &m,
      const int &c,
-     const RMatrix<double> &gsbval,
-     const RMatrix<double> &poly,
-     const RMatrix<double> &mask,
+     const RcppParallel::RMatrix<double> &gsbval,
+     const RcppParallel::RMatrix<double> &poly,
+     const RcppParallel::RMatrix<double> &mask,
      const int &n1,
      const int &n2,
      const bool &convex)
@@ -460,52 +456,76 @@ double integral2DNRcpp
     // GaussKronrod41 default
     // GaussKronrod15 causes R failure
     // this variation seems slower
-    // res = integrate(f, ax, bx, err_est, err_code, 100, 1e-6, 1e-5, Integrator<double>::GaussKronrod21);
+    // res = Numer::integrate(f, ax, bx, err_est, err_code, 100, 1e-6, 1e-5, Integrator<double>::GaussKronrod21);
     if (convex) {
         xfn f(gsb, poly, n1, n2, fn, mask(m,0), mask(m,1));
-        res = integrate(f, ax, bx, err_est, err_code);
+        res = Numer::integrate(f, ax, bx, err_est, err_code);
     }
     else {
         xfn2 f2(gsb, poly, n1, n2, fn, mask(m,0), mask(m,1), ay, by);
-        res = integrate(f2, ax, bx, err_est, err_code);
+        res = Numer::integrate(f2, ax, bx, err_est, err_code);
     }
     return (res);
 }
 
 //===============================================================
 
+// rpoint defined in secr.h
+
+rpoint getxycpp(
+        const double l, 
+        const std::vector<double> &cumd, 
+        const RcppParallel::RMatrix<double> &line, 
+        const int n1, 
+        const int n2) {
+    // return the xy coordinates of point l metres along a transect 
+    // n1 is the starting position for this transect within 'line'
+    int j;
+    double pr, d, d12;
+    rpoint xy;
+    for (j=1; j<=(n2-n1); j++) {
+        if (cumd[j]>l) break;
+    }
+    d = l - cumd[j-1];  // distance along leg 
+    d12 = cumd[j] - cumd[j-1];
+    if (d12>0)
+        pr = d / d12;
+    else
+        pr = 0;
+    
+    j = j+n1;
+    xy.x = line(j-1,0) + (line(j,0) - line(j-1,0)) * pr;
+    xy.y = line(j-1,1) + (line(j,1) - line(j-1,1)) * pr;
+    return(xy);
+}
+//--------------------------------------------------------------------------
+
 class fx1func: public Numer::Func
 {
 private:
     std::vector<double> gsb;      
-    RMatrix<double> line;
+    RcppParallel::RMatrix<double> line;
+    int n1,n2;
     int fn;
     double mx, my;
-    fnptrC fnzr;
-    int ns;
     std::vector<double> cumd; 
-public:
-    std::vector<double> cumdistance(RMatrix<double> line) {
-        int ns = line.nrow();
-        std::vector<double> cumd (ns,0);
-        for (int i=0; i<(ns-1); i++) {
-            cumd[i+1] = cumd[i] + 
-                std::sqrt (pow(line(i,0)-line(i+1,0),2) + 
-                pow(line(i,1)-line(i+1,1),2));
-        }
-        return(cumd);
-    }
+    fnptrC fnzr;
     
-    fx1func(const std::vector<double> &gsb,
-            const RMatrix<double> &line,
-            const int fn,
-            const double mx,
-            const double my
+public:
+    
+    fx1func(
+        const std::vector<double> &gsb,
+        const RcppParallel::RMatrix<double> &line,
+        const int n1,
+        const int n2,
+        const int fn,
+        const double mx,
+        const double my,
+        const std::vector<double> &cumd
     ) 
-        : gsb(gsb), line(line), fn(fn), mx(mx), my(my) {
+        : gsb(gsb), line(line), n1(n1), n2(n2), fn(fn), mx(mx), my(my), cumd(cumd) 
+    {
         fnzr = getzfnrC(fn);   // set detection function 
-        ns = line.nrow();      // cumulative distance along line 
-        cumd = cumdistance(line);
     }
     
     
@@ -513,8 +533,8 @@ public:
     {
         double d;
         rpoint xy;
-        xy = getxycpp (x, cumd, line, ns, 0);
-        d = std::sqrt (pow(xy.x-mx,2) + pow(xy.y-my,2));
+        xy = getxycpp (x, cumd, line, n1, n2);
+        d = std::sqrt (std::pow(xy.x-mx,2) + std::pow(xy.y-my,2));
         return(fnzr(gsb, d));   // z(r) 
     }
 };
@@ -523,9 +543,9 @@ double integral1DNRcpp
     (const int fn, 
      const int m, 
      const int c, 
-     const RMatrix<double> &gsbval, 
-     const RMatrix<double> &traps,
-     const RMatrix<double> &mask, 
+     const RcppParallel::RMatrix<double> &gsbval, 
+     const RcppParallel::RMatrix<double> &traps,
+     const RcppParallel::RMatrix<double> &mask, 
      const int n1, 
      const int n2)
 {
@@ -533,27 +553,38 @@ double integral1DNRcpp
     int err_code;
     double ax=0;
     double bx=0;
-    int k;
+    double dx;
+    int j;
+    std::vector<double> cumd(n2-n1+1,0);
     
     if (gsbval.ncol()>4) Rcpp::stop("bad gsbval matrix");
     std::vector<double> gsb(4);
+
+    if (n2<=n1) return (0);
+    
     // uniform treated separately 
     if (fn == 4) {
-        for (k=n1+1; k<=n2; k++) {  // upper bound is length of this transect 
-            bx += SegCircle2(traps(k-1,0), traps(k-1,1), traps(k,0), traps(k,1),
+        for (j=n1+1; j<=n2; j++) {  // upper bound is length of this transect 
+            bx += SegCircle2(traps(j-1,0), traps(j-1,1), traps(j,0), traps(j,1),
                              mask(m,0), mask(m,1), gsbval(c,1));
         }
         return (bx);
     }
-    
-    for (k=n1+1; k<=n2; k++) {  // upper bound is length of this transect 
-        bx += std::sqrt( (traps(k,0) - traps(k-1,0)) * (traps(k,0) - traps(k-1,0)) +
-            (traps(k,1) - traps(k-1,1)) * (traps(k,1) - traps(k-1,1)) );
+
+    for (j=n1; j<n2; j++) {  
+        dx = std::sqrt( 
+            std::pow(traps(j+1,0) - traps(j,0), 2) +
+            std::pow(traps(j+1,1) - traps(j,1), 2)
+        );
+        cumd[j-n1+1] = cumd[j-n1] + dx;
     }
+    bx = cumd[n2-n1];  // length of this transect 
+
     int npar = gsbval.ncol();
     for (int i=0; i<npar; i++) gsb[i] = gsbval(c,i);
-    fx1func f(gsb, traps, fn, mask(m,0), mask(m,1));
-    const double res = integrate(f, ax, bx, err_est, err_code);
+    
+    fx1func f(gsb, traps, n1, n2, fn, mask(m,0), mask(m,1), cumd);
+    const double res = Numer::integrate(f, ax, bx, err_est, err_code);
     return (res);
 }
 
@@ -566,7 +597,7 @@ class fx2func: public Numer::MFunc
 {
 private:
     std::vector<double> gsb;
-    RMatrix<double> poly;
+    RcppParallel::RMatrix<double> poly;
     int n1;
     int n2;
     int fn;
@@ -576,7 +607,7 @@ private:
     
 public:
     fx2func(const std::vector<double> &gsb,
-            const RMatrix<double> &poly,
+            const RcppParallel::RMatrix<double> &poly,
             const int &n1,
             const int &n2,
             const int &fn,
@@ -591,7 +622,7 @@ public:
     {
         double d;
         if (insidecppC(x, n1, n2, poly)) {
-            d = std::sqrt (pow(x[0]-mx,2) + pow(x[1]-my,2));
+            d = std::sqrt (std::pow(x[0]-mx,2) + std::pow(x[1]-my,2));
             return(fnzr(gsb, d));   // z(r) 
         }
         else
@@ -603,9 +634,9 @@ public:
 //         const int &fn,
 //         const int &m,
 //         const int &c,
-//         const RMatrix<double> &gsbval,
-//         const RMatrix<double> &poly,
-//         const RMatrix<double> &mask,
+//         const RcppParallel::RMatrix<double> &gsbval,
+//         const RcppParallel::RMatrix<double> &poly,
+//         const RcppParallel::RMatrix<double> &mask,
 //         const int &n1,
 //         const int &n2) 
 // {
@@ -637,14 +668,14 @@ public:
 //     
 //     fx2func f(gsb, poly, n1, n2, fn, mask(m,0), mask(m,1));
 //     
-//     const double res = integrate(f, lower, upper, err_est, err_code);
+//     const double res = Numer::integrate(f, lower, upper, err_est, err_code);
 //     return (res);
 // }
 //===============================================================
 
 // Miscellaneous 1-D integrations
 
-class rgrfn: public Func
+class rgrfn: public Numer::Func
 {
 private:
     std::vector<double> gsb;
@@ -672,12 +703,12 @@ double hintegral2Ncpp (
   double err_est;
   int err_code;
   rgrfn f(gsb, fn);
-  const double res = integrate(f, 0, 20*gsb[1], err_est, err_code);
+  const double res = Numer::integrate(f, 0, 20*gsb[1], err_est, err_code);
   return (res * 2 * M_PI);
 }
 //===============================================================
 
-class grfn: public Func
+class grfn: public Numer::Func
 {
 private:
     std::vector<double> gsb;
@@ -706,9 +737,9 @@ double hintegral1Ncpp (
     grfn f(gsb, fn);
     // infinite limit fails
     // but see https://www.r-bloggers.com/numerical-integration-over-an-infinite-interval-in-rcpp-2/
-    // const double res = integrate(f, 0, R_PosInf, err_est, err_code);
+    // const double res = Numer::integrate(f, 0, R_PosInf, err_est, err_code);
     // ASSUME gsb[1] is scale
-    const double res = integrate(f, 0, 20 * gsb[1], err_est, err_code);
+    const double res = Numer::integrate(f, 0, 20 * gsb[1], err_est, err_code);
     // Rprintf("res %10.7g err_est %10.7g err_code %4d \n", res, err_est, err_code);
     if (err_code>0) Rcpp::stop ("err_code>0 in hintegral1Ncpp");
     return (res * 2);
@@ -750,7 +781,7 @@ bool ontransectcpp (
                 p.x = p1.x + u * (p2.x-p1.x);
                 p.y = p1.y + u * (p2.y-p1.y);
                 r = distance1 (p,p3);
-                minr = R::fmin2(r,minr);
+                minr = std::min(r,minr);
             }
         }
     }
@@ -759,7 +790,7 @@ bool ontransectcpp (
         p1.x = transect(k,0);
         p1.y = transect(k,1);
         r = distance1 (p1,p3);
-        minr = R::fmin2(r,minr);
+        minr = std::min(r,minr);
     }
     return(minr < tol);
 }

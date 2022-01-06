@@ -15,7 +15,13 @@ Data from a study of skinks (\emph{Oligosoma infrapunctatum} and
 
 }
 
-\usage{data(skink)}
+\usage{
+
+infraCH
+lineoCH
+LStraps
+
+}
 
 \details{
 

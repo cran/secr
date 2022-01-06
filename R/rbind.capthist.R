@@ -278,11 +278,11 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
             trp <- unlist(lapply(object, trap))
             neworder <- order (occ, uniqueID, trp)
             if (!is.null(xy(temp))) {
-              warning ("secr 4.4.3 rbind.capthist not tested for polygon data")
+              warning ("secr 4.5 rbind.capthist not tested for polygon data")
                 xy(temp) <- xy(temp)[neworder,,drop=F]
             }
             if (!is.null(signalframe(temp))) {
-              warning ("secr 4.4.3 rbind.capthist not tested for signal data")
+              warning ("secr 4.5 rbind.capthist not tested for signal data")
               signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
             }
         }

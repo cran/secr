@@ -684,7 +684,7 @@ List simdetectpolycpp (
                                     gotcha = true;
                                 l++;
                                 if (l % 10000 == 0)
-                                    R_CheckUserInterrupt();
+                                    Rcpp::checkUserInterrupt();
                                 if (l>1e8) gotcha = true;       // give up and accept anything!!!! 
                             }
                             if (caught[i]==0) {               // first capture of this animal 
@@ -803,7 +803,7 @@ List simdetectpolycpp (
                                     gotcha = true;
                                 l++;
                                 if (l % 10000 == 0)
-                                    R_CheckUserInterrupt();
+                                    Rcpp::checkUserInterrupt();
                                 if (l>1e8) gotcha = true;        // give up and accept anything!!!! 
                             }
                             if (caught[i]==0) {               // first capture of this animal 

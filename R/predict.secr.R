@@ -14,7 +14,6 @@
 ############################################################################################
 predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("response", "link"), se.fit = TRUE,
                           alpha = 0.05, savenew = FALSE, ...) {
-
     if (is.null(object$fit)) {
         warning ("empty (NULL) object")
         return(NULL)
@@ -39,6 +38,15 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
 
     parindices <- object$parindx
     models <- object$model
+    
+    ######################################
+    ## 2021-12-09 pass function in case needed
+    if (!is.null(models$D)) {
+      attr(models$D, '.Environment') <- environment()
+      assign('f', object$details[['f']], envir = attr(models$D, '.Environment'))
+    }
+    ######################################
+    
     smoothsetup <- object$smoothsetup
     if (is.null(smoothsetup)) {
         smoothsetup <- vector(length(models), mode = 'list')
@@ -68,7 +76,7 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
     beta.vcv <- complete.beta.vcv(object)
 
     getfield <- function (x) {
-        if ((x == 'D') & userD(object)) {
+        if ((x == 'D') && userD(object)) {
             ## user-supplied density function
             ## return only intercept
             lpred <- matrix(ncol = 2, nrow = nrow(newdata),
@@ -84,10 +92,17 @@ predict.secr <- function (object, newdata = NULL, realnames = NULL, type = c("re
             ## includes smooth terms and newdata differs from data
             ## (dframe) used to fit model
 
-            secr.lpredictor (formula = models[[x]], newdata = newdata,
-                indx = parindices[[x]], beta = beta, field = x,
-                beta.vcv = beta.vcv, smoothsetup = smoothsetup[[x]],
-                contrasts = object$details$contrasts)
+            secr.lpredictor (
+                formula = models[[x]], 
+                newdata = newdata,
+                indx = parindices[[x]], 
+                beta = beta, 
+                field = x,
+                beta.vcv = beta.vcv, 
+                smoothsetup = smoothsetup[[x]],
+                contrasts = object$details$contrasts,
+                f = object$details[['f']]
+            )
         }
     }
     

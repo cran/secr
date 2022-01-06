@@ -33,11 +33,14 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
                            telemhr = 0, telemstart = 0, telemscale = 0,
                            grain, ncores, R = FALSE, debug = FALSE) {
   nc <- nrow(CH)
+  ## 2022-01-04
+  if (nc<1) return(1)
   k <- nrow(usge)
   m <- nrow(pi.density)
   nmix <- nrow(pmixn)
   ngroup <- length(unique(grp))
   sump <- numeric(nc)
+  
   for (x in 1:nmix) {
       hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
       hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
@@ -249,7 +252,7 @@ allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PI
 #--------------------------------------------------------------------------------
 
 integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density, PIA0, 
-                              CH0, xy, binomNcode, grp, usge, mask, pmixn, maskusage,
+                              CH0, binomNcode, grp, usge, mask, pmixn, maskusage,
                               grain, ncores, minprob, debug = FALSE) {
   nc <- dim(PIA0)[2]
   nr <- nrow(CH0)       ## unique naive animals (1 or nc)
@@ -272,8 +275,8 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
         as.double(minprob),          
         as.integer(binomNcode),
         as.integer(CH0),   
-        as.matrix(xy$xy),
-        as.vector(xy$start),
+        as.matrix(0L),  # empty for null history
+        as.vector(0L),  # empty for null history
         as.integer(g)-1L,
         as.double(hk),
         as.double(H),
@@ -334,6 +337,7 @@ generalsecrloglikfn <- function (
     ## unmodelled beta parameters, if needed
     miscparm <- getmiscparm(details$miscparm, detectfn, beta, parindx, details$cutval)
     #---------------------------------------------------
+    
     density <- getmaskpar(!CL, D, data$m, sessnum, details$unmash, 
                           attr(data$capthist, 'n.mash'))
     if (CL) {
@@ -436,6 +440,9 @@ generalsecrloglikfn <- function (
         as.integer(data$cumk),
         as.matrix(data$traps), 
         as.matrix(data$mask))
+      if (details$debug) {
+          cat("sum(hk) ", sum(gkhk$hk), "\n")  
+      }
     }
     
     ## telemetry precalculation
@@ -498,7 +505,7 @@ generalsecrloglikfn <- function (
                                    debug = details$debug>3)
         }
         else {
-            stop ("this detector type, or mixed detector types, not available yet in secr 4.4")
+            stop ("this detector type, or mixed detector types, not available yet in secr 4.5")
         }
     }    
         ## polygon types
@@ -518,7 +525,7 @@ generalsecrloglikfn <- function (
             }
         }
         pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
-                                  data$CH0, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
+                                  data$CH0, data$binomNcode, data$grp, data$usge, data$mask,
                                   pmixn, data$maskusage, details$grain, details$ncores, details$minprob, 
           debug = details$debug>3)
     }
@@ -646,7 +653,6 @@ generalsecrloglikfn <- function (
   ######################################################################################
   if (details$debug>4) browser()
   nsession <- length(sessionlevels)
-  
   #--------------------------------------------------------------------
   # Fixed beta
   beta <- fullbeta(beta, details$fixedbeta)
@@ -663,7 +669,7 @@ generalsecrloglikfn <- function (
   # Density
   D.modelled <- !CL & is.null(fixed$D)
   if (!CL ) {
-    D <- getD (designD, beta, sessmask, parindx, link, fixed,
+      D <- getD (designD, beta, sessmask, parindx, link, fixed,
                grplevels, sessionlevels, parameter = 'D')
   }
   #--------------------------------------------------------------------
@@ -675,7 +681,8 @@ generalsecrloglikfn <- function (
   # Two types of call
   # (i) overdispersion of sightings simulations only
   if (details$nsim > 0) {   
-    chat <- mapply (sessionLL, data, 1:nsession, SIMPLIFY = FALSE)
+    ## chat <- mapply (sessionLL, data, 1:nsession, SIMPLIFY = FALSE)
+    chat <- mapply (sessionLL, data, SIMPLIFY = FALSE)
     chatmat <- matrix(unlist(chat), ncol = 3, byrow = TRUE)
     dimnames(chatmat) <- list(session = 1:nsession, chat = c('Tu', 'Tm','Tn'))
     return(chatmat)

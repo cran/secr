@@ -61,7 +61,7 @@ argument `criterion'.
 Models for which delta > \code{dmax} are given a weight of zero and are
 excluded from the summation. Model weights may be used to form
 model-averaged estimates of real or beta parameters with
-\code{\link{model.average}} (see also Buckland et al. 1997, Burnham and
+\code{\link{modelAverage}} (see also Buckland et al. 1997, Burnham and
 Anderson 2002).
 
 The argument \code{k} is included for consistency with the generic method \code{AIC}.
@@ -152,7 +152,7 @@ model averaging even when samples are small sizes - Turek and Fletcher
 \seealso{ 
 
 \code{\link{AICcompatible}}, 
-\code{\link{model.average}}, 
+\code{\link{modelAverage}}, 
 \code{\link[stats]{AIC}}, 
 \code{\link{secr.fit}}, 
 \code{\link{print.secr}}, 

@@ -61,6 +61,8 @@ attribute (see \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf
 Models for data from detectors of type `multi', `polygonX' or `transectX' take much
 longer to fit when detector covariates of any sort are used.
 
+Time-varying covariates are not available with the (default) 'fastproximity' option.
+
 See \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-varyingeffort.pdf} for input of detector covariates from a file.
 
 }
@@ -68,7 +70,7 @@ See \href{https://www.otago.ac.nz/density/pdfs/secr-varyingeffort.pdf}{secr-vary
 \examples{
 
 # make a trapping grid with simple covariates
-temptrap <- make.grid(nx = 6, ny = 8, detector = "proximity")
+temptrap <- make.grid(nx = 6, ny = 8, detector = "multi") 
 covariates (temptrap) <- data.frame(matrix(
     c(rep(1,48*3),rep(2,48*2)), ncol = 5))
 head(covariates (temptrap))

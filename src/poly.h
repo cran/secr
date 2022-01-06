@@ -12,6 +12,7 @@
 // [[Rcpp::depends(RcppNumerical)]]
 // next two lines must be in order (RcppNumerical precedes secr.h)
 #include <RcppNumerical.h>
+
 #include "secr.h"
 
 #include <R_ext/Applic.h>    // for Rdqags

@@ -136,15 +136,59 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     }
                 }
                 else if (all(detector(traps) %in% c('transect','transectX'))) {
-                    if (nrow(captures)==0)
+                    if (nrow(captures)==0) {
                         captTrap <- numeric(0)
-                    else
-                        captTrap <- xyontransect(captures[,4:5], traps, tol)
+                    }
+                    else {
+                        captTrap <- xyontransect(captures[,4:5], traps)
+                        
+                        ########################################################
+                        # implement snapXY for transects 2012-12-11
+                        
+                        if (any(captTrap==0) && snapXY) {
+                            
+                            if (!requireNamespace('terra', quietly = TRUE)) {
+                                stop("snapXY for transects requires package terra")
+                            }
+                            
+                            # split by transect
+                            bytransect <- strsplit(rownames(traps),'.', fixed=TRUE)
+                            ID <- do.call(rbind, bytransect)[,1]
+                            vlist <- split(traps, ID)
+                            vlist <- lapply(vlist, as.matrix)
+                            
+                            # each transect as terra SpatVector
+                            vlist <- lapply(vlist, terra::vect, type = 'lines')
+                            
+                            # combine lines in one SpatVector
+                            v <- do.call(rbind, unname(vlist))  # strange need to remove names
+                            
+                            # closest point on lines
+                            xy <- terra::vect(as.matrix(captures[,4:5]))
+                            neari <- terra::nearest(xy, v, centroids = FALSE)
+
+                            # replace XY
+                            distances <- terra::values(neari)[,'distance']
+                            OK <- distances < tol
+                            if (any(!OK)) {
+                                print(cbind(captures, distances)[!OK,])                       
+                            }
+                            captures[OK,4:5] <- terra::values(neari)[OK,c('to_x','to_y')]
+                            warning(call. = FALSE, sum(OK), 
+                                " detection(s) snapped to transect(s), maximum distance ", 
+                                round(max(distances),2), " m")
+
+                            # repeat transect assignment
+                            captTrap <- xyontransect(captures[,4:5], traps)
+                        }
+                        ########################################################
+                    }
                     if (any(captTrap==0)) {
+                        warning (call. = FALSE, sum(captTrap==0), 
+                            " detection(s) with coordinates not on ",
+                            "any transect were dropped")
                         captures <- captures[captTrap>0,]  ## first!! 2019-03-11
                         captTrap <- captTrap[captTrap>0]
-                        warning ("detections with coordinates not on ",
-                                 "any transect were dropped")
                     }
                 }
                 else {

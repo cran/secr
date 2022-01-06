@@ -351,7 +351,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
         ## parameter table 
         realparval0 <- makerealparameters (object$design0, beta,
             object$parindx, object$link, object$fixed)  # naive
-        
         if (!is.null(object$fixed$D))
             Dtemp <- object$fixed$D
         else if (object$CL)
@@ -433,7 +432,6 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 K <- nrow(temptrap)
                 CH0 <- nullCH (c(n,s,K), object$design0$individual)
             }
-            
             pd <- integralprw1 (
                 cc0 = nrow(Xrealparval0), 
                 haztemp = if (nclust>1) haztempc else haztemp, 
@@ -451,11 +449,10 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 ncores = ncores)
             # else {
             #     pd <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
-            #                             data$CH0, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
+            #                             data$CH0, data$binomNcode, data$grp, data$usge, data$mask,
             #                             pmixn, data$maskusage, details$grain, details$minprob, debug = details$debug>3)
             # 
             # }
-            
             ## scale by absolute density (not passed to integralprw1)
             pd <- pd * cellsize * nrow(mask) * mean(D)
             pdot[i] <- length(pd) / sum(1/pd)

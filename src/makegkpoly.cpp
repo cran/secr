@@ -1,7 +1,6 @@
 #include "poly.h"
-#include <algorithm>   // std::min
+// #include <algorithm>  
 
-using namespace std;
 using namespace Rcpp;
 using namespace RcppParallel;
 
@@ -17,18 +16,19 @@ using namespace RcppParallel;
 struct Hckmpoly : public Worker {
   
   // input data
-  const int detectfn;
-  const int dim;
-  const bool convex;
+  const int             detectfn;
+  const int             dim;
+  const int             grain;
+  const bool            convex;
   const RMatrix<double> gsbval;
   const RVector<int>    cumk;
   const RMatrix<double> traps;
   const RMatrix<double> mask;
   
   // output vector to write to
-  RVector<double> H;
-  RVector<double> gk;
-  RVector<double> hk;
+  RVector<double>       H;
+  RVector<double>       gk;
+  RVector<double>       hk;
   
   int cc, kk, nk, mm, npar;
   // ex is used only by Rdqags in integral2Dcpp
@@ -37,26 +37,24 @@ struct Hckmpoly : public Worker {
   // initialize from Rcpp input and output matrixes (the RMatrix class
   // can be automatically converted to from the Rcpp matrix type)
   Hckmpoly(const int detectfn,
-           const int dim,
-           const bool convex,
-           const NumericMatrix gsbval, 
-           const IntegerVector cumk, 
-           const NumericMatrix traps, 
-           const NumericMatrix mask, 
-           NumericVector H,
-           NumericVector gk,
-           NumericVector hk)
-    : detectfn(detectfn), dim(dim), convex(convex), gsbval(gsbval), 
-      cumk(cumk), traps(traps), mask(mask), H(H), gk(gk), hk(hk) {
-    
+      const int dim,
+      const int grain,
+      const bool convex,
+      const NumericMatrix gsbval, 
+      const IntegerVector cumk, 
+      const NumericMatrix traps, 
+      const NumericMatrix mask, 
+      NumericVector H,
+      NumericVector gk,
+      NumericVector hk)
+      : detectfn(detectfn), dim(dim), grain(grain), convex(convex), gsbval(gsbval), 
+          cumk(cumk), traps(traps), mask(mask), H(H), gk(gk), hk(hk) {
+      
     cc = gsbval.nrow();
     kk = traps.nrow();
     mm = mask.nrow();
     nk = cumk.size()-1;
     npar = gsbval.ncol();
-
-    // ex is used only by Rdqags in integral2Dcpp
-    // ex = (double *) R_alloc(10 + 2 * traps.nrow(), sizeof(double));
   }
 
   // function call operator that work for the specified range (begin/end)
@@ -80,12 +78,17 @@ struct Hckmpoly : public Worker {
                   int n1 = cumk[k];
                   int n2 = cumk[k+1]-1;
                   
-                  if (dim==1)
-                      hk[gi] = gsb[0] * integral1DNRcpp (detectfn, m, 0, gsbval, traps, mask, n1, n2) / H[c];
-                  else 
-                      hk[gi] = gsb[0] * integral2DNRcpp (detectfn, m, 0, gsbval, traps, mask, n1, n2, convex) / H[c];
-                      
-                      //hk[gi] = gsb[0] * integral2Dcpp (detectfn, m, 0, gsbval, traps, mask, n1, n2, ex) / H[c];
+                  if (dim==1) {
+                      // hk[gi] = gsb[0] * integral1DNRcpp (detectfn, m, 0, gsbval, traps, mask, n1, n2) / H[c];
+                      hk[gi] = gsb[0] * integral1DNRcpp (detectfn, m, c, gsbval, traps, mask, n1, n2) / H[c];
+                      // if (grain<1 && m==512) Rprintf("c %d k %d m %d n1 %d n2 %d hk[gi] %8.6g \n",
+                      //     c, k, m, n1, n2, hk[gi]);
+                  }
+                  else {
+                      // hk[gi] = gsb[0] * integral2DNRcpp (detectfn, m, 0, gsbval, traps, mask, n1, n2, convex) / H[c];
+                      hk[gi] = gsb[0] * integral2DNRcpp (detectfn, m, c, gsbval, traps, mask, n1, n2, convex) / H[c];
+                  }
+                  
                   gk[gi] = 1 - exp(-hk[gi]);
               }
           }
@@ -109,9 +112,9 @@ List makegkPolygoncpp (const int detectfn,
   NumericVector gk(gsbval.nrow() * (cumk.size()-1) * mask.nrow()); 
   NumericVector hk(gsbval.nrow() * (cumk.size()-1) * mask.nrow()); 
   
-  Hckmpoly hckm (detectfn, dim, convex, gsbval, cumk, traps, mask, H, gk, hk);
+  Hckmpoly hckm (detectfn, dim, grain, convex, gsbval, cumk, traps, mask, H, gk, hk);
   
-  if (ncores>1>0) {
+  if (ncores>1) {
       parallelFor(0, mask.nrow(), hckm, grain, ncores);
   }
   else {

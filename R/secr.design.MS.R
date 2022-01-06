@@ -1,5 +1,5 @@
 ###############################################################################
-## package 'secr' 4.4
+## package 'secr' 4.5
 ## secr.design.MS.R
 
 ## 2019-12-03 replaced bygroup with CL
@@ -563,6 +563,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         tvc <- list(timevaryingcov(trps))
 
     if (!is.null(tvc) & (length(vars)>0)) {
+        
         findvars.traptime (tvc, vars)
     }
     #--------------------------------------------------------------------------

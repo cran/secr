@@ -8,6 +8,8 @@
 ## 2014-08-05 may now be any numeric vector that can be formed into a 2-column matrix
 ## 2017-03 new argument replace; use readOGR for shapefiles
 ## 2021-09-16 allow raster
+## 2021-12-07 experimental SpatRast (terra)
+
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
@@ -45,6 +47,8 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
             type <- "traps"
         else if (inherits(spatialdata, "RasterLayer"))
             type <- "raster"
+        else if (inherits(spatialdata, "SpatRaster"))
+            type <- "SpatRaster"
         else
             stop ("spatialdata type unrecognised or unsupported")
 
@@ -77,17 +81,17 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
             df <- sp::over (xy, spatialdata)
         }
         else if (type == "raster") {
-            #if (requireNamespace("raster")) {
-            # df <- data.frame(raster = raster::extract(spatialdata, as.matrix(object)))
-            # raster::extract
             df <- data.frame(raster = extract(spatialdata, as.matrix(object)))
             if (!is.null(columns)) {
-                    names(df) <- columns
-                }
-            # }
-            # else {
-            #     stop ("install package raster to add covariate from raster")
-            # }
+                names(df) <- columns
+            }
+        }
+        else if (type == "SpatRaster") {
+            # stop ("SpatRaster spatial data is not yet enabled")
+            df <- data.frame(raster = extract(spatialdata, as.matrix(object)))
+            if (!is.null(columns)) {
+                names(df) <- columns
+            }
         }
         else {
             ## nearest point algorithm

@@ -739,7 +739,7 @@ List trappingtransect (
                 }
                 l++;
                 if (l % 10000 == 0)
-                  R_CheckUserInterrupt();
+                  Rcpp::checkUserInterrupt();
                 // give up and accept anything!!!! 
                 // why why why? 
                 if (l>1e6) {
@@ -1069,7 +1069,7 @@ List trappingtransectX (
                 gotcha = (unif_rand() < (grx/maxg));    // rejection sampling 
                 l++;
                 if (l % 10000 == 0)
-                  R_CheckUserInterrupt();
+                  Rcpp::checkUserInterrupt();
                 if (l>1e8) gotcha = true;        // give up and accept anything!!!! 
               }
               if (caught[i]==0) {               // first capture of this animal 

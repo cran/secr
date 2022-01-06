@@ -1,5 +1,7 @@
-\name{model.average}
-\alias{model.average}
+\name{modelAverage}
+\alias{modelAverage}
+\alias{modelAverage.secr}
+\alias{modelAverage.secrlist}
 \alias{collate}
 
 \title{ Averaging of SECR Models Using Akaike's Information Criterion}
@@ -13,7 +15,11 @@ from multiple fitted secr models.
 
 \usage{
 
-model.average(..., realnames = NULL, betanames = NULL, newdata = NULL, 
+\method{modelAverage}{secr}(object, ..., realnames = NULL, betanames = NULL, newdata = NULL, 
+    alpha = 0.05, dmax = 10, covar = FALSE, average = c("link", "real"),
+    criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"))
+
+\method{modelAverage}{secrlist}(object, ..., realnames = NULL, betanames = NULL, newdata = NULL, 
     alpha = 0.05, dmax = 10, covar = FALSE, average = c("link", "real"),
     criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"))
 
@@ -23,7 +29,8 @@ collate (..., realnames = NULL, betanames = NULL, newdata = NULL,
 }
 
 \arguments{
-  \item{\dots}{ \code{secr} or \code{secrlist} objects }
+  \item{object}{secr or secrlist object}
+  \item{\dots}{other secr objects (\code{modelAverage.secr} and \code{collate} only)}
   \item{realnames}{ character vector of real parameter names }
   \item{betanames}{ character vector of beta parameter names }
   \item{newdata}{ optional dataframe of values at which to evaluate models }
@@ -87,7 +94,7 @@ fields ("estimate","SE.estimate","lcl","ucl") by name or number.
 
 \value{
 
-For \code{model.average}, an array of model-averaged estimates, their
+For \code{modelAverage}, an array of model-averaged estimates, their
 standard errors, and a \eqn{100(1-\alpha)}{100(1-alpha)}\% confidence
 interval. The interval for real parameters is backtransformed from the
 link scale. If there is only one row in \code{newdata} or beta
@@ -123,18 +130,18 @@ intervals. \emph{Computational statistics and data analysis} \bold{56},
 
 }
 
-\section{Warning}{\code{model.average} may conflict with a method of the
-same name in \pkg{RMark}}
+\note{\code{modelAverage} replaces the deprecated function \code{model.average} 
+whose name conflicted with a method in \pkg{RMark}.}
 
-\seealso{ \code{\link{AIC.secr}}, \code{\link{secr.fit}}}
+\seealso{ \code{\link{modelAverage}}, \code{\link{AIC.secr}}, \code{\link{secr.fit}}}
 
 \examples{
 ## Compare two models fitted previously
 ## secrdemo.0 is a null model
 ## secrdemo.b has a learned trap response
 
-model.average(secrdemo.0, secrdemo.b)
-model.average(secrdemo.0, secrdemo.b, betanames = c("D","g0","sigma"))
+modelAverage(secrdemo.0, secrdemo.b)
+modelAverage(secrdemo.0, secrdemo.b, betanames = c("D","g0","sigma"))
 
 ## In this case we find the difference was actually trivial...
 ## (subscripting of output is equivalent to setting fields = 1)

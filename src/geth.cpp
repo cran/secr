@@ -1,6 +1,6 @@
-#include <Rcpp.h>
+// #include <Rcpp.h>
 #include "secr.h"
-using namespace std;
+// using namespace std;
 using namespace Rcpp;
 
 // [[Rcpp::export]]

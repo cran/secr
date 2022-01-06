@@ -1,5 +1,5 @@
 ################################################################################
-## package 'secr' 4.4
+## package 'secr' 4.5
 ## secr.fit.R
 
 ## 2019-12-03 secr.design.MS uses CL argument
@@ -69,7 +69,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     # restored 2020-08-30 for secrlinear arvicola example
     capthist <- check3D(capthist) 
-    
     detectortype <- unlist(detector(traps(capthist)))
     anycount <- any(detectortype %in% .localstuff$countdetectors)
     anypoly  <- any(detectortype %in% c('polygon',  'polygonX'))
@@ -164,8 +163,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         contrasts = NULL,
         grain = 1,
         maxdistance = NULL,
-        stackSize = "auto",  ## ignored on Windows
-        fastproximity = TRUE
+        stackSize = "auto",   ## ignored on Windows
+        fastproximity = TRUE,
+        f = NULL              ## optional function f(x)
     )
     if (!is.null(attr(capthist,'cutval'))) {
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -225,10 +225,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
     if (alltelem) CL <- TRUE
-    
+
     #################################################
     ## Optional data check
-    
     if (verify) {
         memo ('Checking data', details$trace)
         test <- verify(capthist, report = 1)
@@ -368,8 +367,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     allvars <- unlist(lapply(model, all.vars))
     learnedresponse <- any(.localstuff$learnedresponses %in% allvars) ## || !is.null(dframe)
     timevarying <- any(c('t', 'T', 'tcov', names(timecov)) %in% allvars) ## || !is.null(dframe)
-    
-    
+    ## 2022-01-05
+    timevarying <- timevarying || any(names(timevaryingcov(traps(capthist))) %in% allvars)
     
     ##############################################
     ## 2019-09-01 fast proximity option
@@ -381,15 +380,16 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     if (details$fastproximity) {
         if (any(unlist(detector(traps(capthist))) == 'count') && 
-            (is.null(details$binomN) || any(details$binomN==0)))
+            (is.null(details$binomN) || any(details$binomN == 0)))
             count.distrib <- 'poisson'
         else
             count.distrib <- 'binomial'
         
         ## ensure single occasion 
         ## do it here so that design etc. use reduced capthist
-        capthist <- reduce(capthist, outputdetector = 'count', by = 'all')
-        
+        ## 2022-01-04 added verify = FALSE, dropunused = FALSE
+        capthist <- reduce(capthist, by = 'all', outputdetector = 'count', 
+            verify = FALSE, dropunused = FALSE)
         if (count.distrib == 'binomial') {
             if (!is.null(details$binomN) && (details$binomN[1]>1)) {
                 ## use explicit binomN
@@ -559,7 +559,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     design0 <- secr.design.MS (capthist, model, timecov, sessioncov, groups, hcov,
                                dframe, ignoreusage = details$ignoreusage, naive = TRUE,
                                CL = CL, contrasts = details$contrasts)
-    
     ############################################
     # Prepare density design matrix
     ############################################
@@ -597,15 +596,34 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             if (any(smooths(model$D)))
                 smoothsetup$D <- gamsetup(model$D, temp)
             ## otherwise, smoothsetup$D remains NULL
+            envD <- attr(model$D, '.Environment')
+            if (!is.null(envD)) {
+              assign('f', identity, envir = envD)
+            }
             designD <- general.model.matrix(model$D, data = temp, gamsmth = smoothsetup$D, 
                                             contrasts = details$contrasts)
             attr(designD, 'dimD') <- attr(temp, 'dimD')
-            
-            Dnames <- colnames(designD)
+            #################################################
+            ## 2021-12-09
+            attr(designD, 'f') <- details[['f']]
+            fterm <- grepl('f(', dimnames(designD)[[2]], fixed = TRUE)
+            if( any(fterm)) {
+                if (is.null(details[['f']])) stop ("f function should be included in details")
+                fcovname <- dimnames(designD)[[2]][fterm][1] # first
+                # fcovname <- substring(fcovname,3,nchar(fcovname))
+                # fcovname <- substring(fcovname,1,nchar(fcovname)-1)
+                attr(designD, 'fcovname') <- fcovname
+                betaarg <- eval( formals( details[['f']] )[[2]])
+                
+                Dnames <- paste0('D', 1:length(eval(formals(details[['f']])[[2]])))
+            }
+            #################################################
+            else {
+                Dnames <- colnames(designD)
+            }
         }
         nDensityParameters <- length(Dnames)
     }
-    
     ############################################
     # Prepare non-Euclidean design matrix
     ############################################
@@ -630,7 +648,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         NEnames <- colnames(designNE)
         nNEParameters <- length(NEnames)
     }
-    
+
     ############################################
     # Parameter mapping (general)
     ############################################
@@ -670,7 +688,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     }
     data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
                                groups, fixed, hcov, details)
-    
+
     ############################################
     # Start values (model-specific)
     # 'start' is vector of beta values (i.e. transformed) or a list 
@@ -801,7 +819,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             default <- replace(default, startnames, start)
         }
         else startnames <- NULL
-        
         start <- rep(0, NP)
         for ( i in 1:length(parindx) ) {
             start[parindx[[i]][1]] <- getdefault (names(parindx)[i]) 

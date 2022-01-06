@@ -1,13 +1,13 @@
-#include <Rcpp.h>
+// #include <Rcpp.h>
 #include "secr.h"
 
 // [[Rcpp::export]]
 Rcpp::List getdenomcpp (int fn, 
-                  Rcpp::NumericVector miscparm, 
-                  Rcpp::NumericMatrix mask, 
-                  int mm,
-                  double sigma, 
-                  double z) 
+  Rcpp::NumericVector miscparm, 
+  Rcpp::NumericMatrix mask, 
+  int mm,
+  double sigma, 
+  double z) 
 
 {
   double sigma2, lam, dsq;
@@ -46,7 +46,7 @@ Rcpp::List getdenomcpp (int fn,
       }
       denomtot += invdenom[m];
       if (m % checkinterval == 0)
-        R_CheckUserInterrupt();
+        Rcpp::checkUserInterrupt();
     }
     // optional scaling 
     if (fabs(miscparm[2]) > 0.5) {

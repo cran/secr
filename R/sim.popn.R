@@ -194,6 +194,9 @@ disperse <- function (newpopn, turnoverpar, t, core, disp) {
             s <- sqrt(log(1 + 1/move.b))
             r <- rlnorm(nsurv, meanlog = mu, sdlog = s)  
         }
+        else if (turnoverpar$movemodel %in% c('uniform','UNI')) {
+            r <- runif(nsurv)^0.5 * move.a
+        }
         else if (turnoverpar$movemodel %in% c('frZ')) {
             r <- ifelse(runif(nsurv)<move.b, 0, turnoverpar$d0 + rexp(nsurv, rate = 1/move.a))
         }
@@ -215,7 +218,16 @@ disperse <- function (newpopn, turnoverpar, t, core, disp) {
         }
         
         theta <- runif(nsurv, 0, 2 * pi)
-        newpopn[disp,] <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
+      
+        # 2021-11-23,28
+        candidates <- newpopn[disp,] + r * cbind(cos(theta), sin(theta))
+        if (inherits(core,'mask') && !is.null(covariates(core)$settle)) {
+            tmp <- addCovariates(candidates, core, 'settle') 
+            # assign 'outside mask' location to animals yet-to-settle
+            candidates[runif(nsurv) > covariates(tmp)$settle,] <- -Inf
+        }
+        
+        newpopn[disp,] <- candidates
     }
     newpopn
 }
@@ -345,6 +357,8 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
                         }
                         else if (turnoverpar$edgemethod %in% c("normalize", "truncate")) {
                             dispersing <- !inside(newpopn)
+                            ## following line needed to return initial escapees 2021-11-23
+                            newpopn[dispersing,] <- oldposition[dispersing,]
                             tries <- 0; maxtries <- 1000
                             while (any(dispersing) && tries <= maxtries) {
                                 newpopn <- disperse(newpopn, turnoverpar, t,
@@ -572,6 +586,14 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         if (model2D %in% c('IHP')) {
             if (!inherits(core, 'mask'))
                 stop ("for model2D = IHP, 'core' should be a habitat mask")
+            if (nsessions>1 && details$movemodel!='static' && 
+                    ('settle' %in% names(covariates(core))) && 
+                    details$edgementhod %in% c('truncate', 'normalize')) 
+            {
+                s <- covariates(core)$settle
+                if (any(is.na(s)) || min(s)<0 || max(s)>1) 
+                    stop('settle covariate should be in range 0-1 with none missing')
+            }
             nm <- getnm('area', 1, D)
             jitter <- matrix ((runif(2*sum(nm))-0.5) * attr(core,'spacing'), ncol = 2)
             animals <- core[rep(1:nrow(core), nm),] + jitter

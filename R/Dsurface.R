@@ -133,29 +133,40 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
-            
-            mat <- general.model.matrix(object$model[[parameter]], data = newdata, 
-                                        gamsmth = object$smoothsetup[[parameter]], 
-                                        contrasts = object$details$contrasts)
-            ## lpred <- mat %*% betaD
-            lpred <- as.numeric(mat %*% betaD)   ## 2018-04-29 drop matrix class, dim attribute
-            temp <- untransform(lpred, object$link[[parameter]])
-            temp <- pmax(temp, 0) / n.clust
-
-            if (se.D | cl.D) {
-                vcv <- beta.vcv [indx,indx]
-                selpred <- sapply(1:nrow(mat), function(i)
-                    mat[i,, drop=F] %*% vcv %*% t(mat[i,, drop=F]))^0.5
-                if (se.D) {
-                    attr(temp, 'SE') <- se.untransform (lpred, selpred, object$link[[parameter]]) / n.clust
-                    attr(temp, 'SE')[temp<=0] <- NA
+            if (is.null(object$details[['f']]) || parameter != 'D') {
+                mat <- general.model.matrix(
+                    object$model[[parameter]], 
+                    data = newdata, 
+                    gamsmth = object$smoothsetup[[parameter]], 
+                    contrasts = object$details$contrasts)
+                lpred <- as.numeric(mat %*% betaD)   ## 2018-04-29 drop matrix class, dim attribute
+                temp <- untransform(lpred, object$link[[parameter]])
+                temp <- pmax(temp, 0) / n.clust
+                
+                if (se.D | cl.D) {
+                    vcv <- beta.vcv [indx,indx]
+                    selpred <- sapply(1:nrow(mat), function(i)
+                        mat[i,, drop=F] %*% vcv %*% t(mat[i,, drop=F]))^0.5
+                    if (se.D) {
+                        attr(temp, 'SE') <- se.untransform (lpred, selpred, object$link[[parameter]]) / n.clust
+                        attr(temp, 'SE')[temp<=0] <- NA
+                    }
+                    if (cl.D) {
+                        z <- abs(qnorm(1-alpha/2))
+                        attr(temp, 'lcl') <- untransform (lpred - z * selpred, object$link[[parameter]]) / n.clust
+                        attr(temp, 'ucl') <- untransform (lpred + z * selpred, object$link[[parameter]]) / n.clust
+                        attr(temp, 'lcl')[temp<=0] <- NA
+                        attr(temp, 'ucl')[temp<=0] <- NA
+                    }
                 }
-                if (cl.D) {
-                    z <- abs(qnorm(1-alpha/2))
-                    attr(temp, 'lcl') <- untransform (lpred - z * selpred, object$link[[parameter]]) / n.clust
-                    attr(temp, 'ucl') <- untransform (lpred + z * selpred, object$link[[parameter]]) / n.clust
-                    attr(temp, 'lcl')[temp<=0] <- NA
-                    attr(temp, 'ucl')[temp<=0] <- NA
+            }
+            else {
+                f <- object$details[['f']]
+                lpred <- f(newdata[, vars[1]], beta[indx])
+                temp <- untransform(lpred, object$link[[parameter]])
+                temp <- pmax(temp, 0) / n.clust
+                if (se.D | cl.D) {
+                    warning("se.D and cl.D not available for user-specified density function")
                 }
             }
             return (temp)

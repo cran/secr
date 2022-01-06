@@ -141,12 +141,17 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
     ## main line
     if (!all(detector(object) %in% c('transect','transectX')))
         stop ("requires 'transect' input")
-    
     ## drop transectID column for new as.data.frame.traps 2017-10-25 
     temp <- split(as.data.frame(object)[,-1], transectID(object))
     temp <- lapply(temp, sliceone)
     temp <- do.call(rbind, temp)
-    oldID <- as.numeric(do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1])
+    # 2021-12-10
+    # oldID <- as.numeric(do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1])
+    #-----------------------------------
+    oldID <- do.call(rbind, strsplit(rownames(temp),'.', fixed=T))[,1]
+    oldID <- match(oldID, unique(oldID))  # numeric
+    #-----------------------------------
+    
     IDcomponents <- strsplit(rownames(temp),'.', fixed = TRUE)
     ID <- sapply(IDcomponents, IDfn)
     temp <- split(temp, ID)
@@ -167,12 +172,12 @@ slice <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomple
 
 ## for 'object' either traps or capthist:
 ## modelled in part on reduce.capthist
-snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplete = TRUE) {
+snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplete = TRUE, tol = 0.01) {
 
     if (ms(object)) {
         ## for each component session
         temp <- lapply (object, snip, from = from, by = by, length.out = length.out,
-                        keep.incomplete = keep.incomplete)
+                        keep.incomplete = keep.incomplete, tol = tol)
         if (inherits(object,'capthist'))
             class(temp) <- c('capthist', 'list')
         else
@@ -181,13 +186,16 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
     }
     else {
 
-        if (inherits(object, 'traps'))
+        if (inherits(object, 'traps')) {
+            transectID(object) <- as.numeric(factor(transectID(object)))
             return (slice(object,  from = from, by = by, length.out = length.out,
                           keep.incomplete = keep.incomplete))
+        }
         else if (inherits(object, 'capthist')) {
+            transectID(traps(object)) <- as.numeric(factor(transectID(traps(object))))
             newtraps <- slice(traps(object), from = from, by = by, length.out =
                               length.out, keep.incomplete = keep.incomplete)
-            newtrap <- xyontransect(xy(object), newtraps)   # SLOW
+            newtrap <- xyontransect(xy(object), newtraps, tol = tol)   # SLOW
             newtrap <- factor(newtrap, levels = 1:length(levels(polyID(newtraps))))
             old.row.names <- row.names(object)
             df <- data.frame(
@@ -198,7 +206,11 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
                 x = xy(object)[,1],
                 y = xy(object)[,2],
                 newtrap = newtrap)
-            
+            if (any(is.na(newtrap))) {
+                warning (call. = FALSE, sum(is.na(newtrap)), " detections dropped because not on transect")
+                df <- df[!is.na(newtrap),]
+            }
+
             if (all(detector(traps(object)) == 'transect')) {
                 newobj <- table(df$ID, df$occ, df$newtrap)
                 alivesign <- tapply(df$alive, list(df$ID,df$occ,df$newtrap),all)
@@ -216,14 +228,19 @@ snip <- function (object, from = 0, by = 1000, length.out = NULL, keep.incomplet
 
             class(newobj) <- 'capthist'
             traps(newobj) <- newtraps
-            rownames(newobj) <- old.row.names
+            
+            # dropped 2021-12-11
+            # rownames(newobj) <- old.row.names
+            
             if (all(detector(traps(object)) == 'transectX'))
                 xy(newobj) <- xy(object)
             else {
                 detectorder <- order(df$newtrap, df$occ, df$ID)
                 xy(newobj) <- df[detectorder,c('x','y'), drop = FALSE]
             }
-            covariates(newobj) <- covariates(object)   # OK because all animals transfer
+            if (!is.null(covariates(object)) && nrow(covariates(object)>0)) {
+                covariates(newobj) <- covariates(object)   # OK because all animals transfer
+            }
             if (!keep.incomplete)
                 newobj <- subset(newobj)   ## drops null capture histories if transects trimmed
             return(newobj)

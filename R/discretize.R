@@ -1,8 +1,8 @@
-
 ## 2015-11-26 adapted to also handle traps objects
 ## 2015-12-06 added transect functionality
 ## 2016-01-07 cell.overlap, type
 ## 2021-05-18 sortorder ksn
+## 2022-01-04 
 
 discretize <- function (object, spacing = 5, outputdetector = c('proximity','count','multi'),
                         tol = 0.001, cell.overlap = FALSE, type = c('centre','any','all'), ...) {
@@ -84,7 +84,7 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
 
         if (all(detector(trps) %in% c('transect', 'transectX'))) {
             ## for transects, snip and reduce do all the work
-            temp <- snip(object, by = spacing, ...)
+            temp <- snip(object, by = spacing, tol = tol, ...)
             if (inherits(object, 'capthist'))
                 temp <- reduce(temp, outputdetector = outputdetector, dropunused = FALSE)
             return(temp)

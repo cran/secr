@@ -30,9 +30,13 @@ confint.secr <- function (object, parm, level = 0.95, newdata = NULL,
     profileInterval <- function (parm, ...) {
 
         predicted <- function (beta) {
-            temp <- secr.lpredictor (formula = object$model[[parm]], newdata = newdata,
+            temp <- secr.lpredictor (
+                formula = object$model[[parm]], newdata = newdata,
                 indx = object$parindx[[parm]], beta = beta, field = parm,
-                smoothsetup = object$smoothsetup[[parm]], contrasts = object$details$contrasts)[1,'estimate']
+                smoothsetup = object$smoothsetup[[parm]], 
+                contrasts = object$details$contrasts,
+                f = object$details[['f']]
+            )[1,'estimate']
             untransform(temp, object$link[[parm]])
         }
         #######################

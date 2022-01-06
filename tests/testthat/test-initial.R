@@ -83,43 +83,8 @@ test_that("join works on nonspatial data", {
     sumcapt <- sum(join(nonspatialCH))
     expect_equal(sumcapt, 190, tolerance = 1e-4, check.attributes = FALSE)
 })
-
-####################################################################
-## Ian Durbach Boost bug with Poisson count data 2021-11-03
-## problem arose from switch to Boost distributions in C++ functions 
-## gpois, pski: when lambda zero Boost result is NAN instead of zero
-## previously returned by dpois
-
-set.seed(123)
-detectors <- make.grid (nx = 6, ny = 8, detector = "count")
-detections <- sim.capthist (detectors, popn = list(D = 10, buffer = 100), 
-    detectpar = list(g0 = 0.2, sigma = 25), noccasions = 1)
-
-test_that("correct likelihood (Poisson count data)", {
-    args <- list(capthist = detections, detectfn = 'HN', buffer = 100, 
-        start = c(2.121835788, -1.040097594,  3.201521728), verify = FALSE)
-    
-    args$details <- list(LLonly = TRUE, fastproximity = TRUE)
-    LL1 <- do.call(secr.fit, args)[1]
-    expect_equal(LL1, -122.138538, tolerance = 1e-4, check.attributes = FALSE)
-    
-    args$details <- list(LLonly = TRUE, fastproximity = FALSE)
-    LL2 <- do.call(secr.fit, args)[1]
-    expect_equal(LL2, -122.1523842, tolerance = 1e-4, check.attributes = FALSE)
-
-    args$detectfn <- 'HHN'  
-    args$start <- c(2.121836235, -1.342742898, 3.201525519)
-    
-    args$details <- list(LLonly = TRUE, fastproximity = TRUE)
-    LL3 <- do.call(secr.fit, args)[1]
-    expect_equal(LL3, -122.1523842, tolerance = 1e-4, check.attributes = FALSE)
-
-    args$details <- list(LLonly = TRUE, fastproximity = FALSE)
-    LL4 <- do.call(secr.fit, args)[1]
-    expect_equal(LL4, -122.3167724, tolerance = 1e-4, check.attributes = FALSE)
-})
-
 ###############################################################################
+
 ## future tests
 
 ## data manipulation

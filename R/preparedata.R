@@ -27,7 +27,6 @@ getxy <- function(dettype, capthist) {
     ## start[z] indexes the first row in xy (or element in signal)
     ## for each possible count z (including zeros), where z is w-order (isk) 
     start <- abs(capthist)
-    ## playing... start <- aperm(start, c(2,1,3))
     start <- head(cumsum(c(0,start)),length(start))
   }
   else {
@@ -110,7 +109,6 @@ nullCH <- function (dimCH, individual) {
 # compress ch (n x k) by animal: list of detectors with non-zero counts, terminated by -1
 # (n x k x 2)
 nk2 <- function(ch) {
-    nk <- dim(ch)[3]
     one <- function(i) {
         wh <- which(ch[i,1,]>0)
         out <- matrix(-1, nrow = nk, ncol = 2)
@@ -119,7 +117,16 @@ nk2 <- function(ch) {
         }
         out
     }
-    aperm(array(sapply(1:nrow(ch), one), dim=c(nk,2,nrow(ch))),c(3,1,2))
+    nk <- dim(ch)[3]
+    ## 2022-01-04 catch zero rows
+    if (nrow(ch) < 1) {
+      array(dim=c(0,nk,2))
+    }
+    else {
+      ch2 <- sapply(1:nrow(ch), one)
+      ch3 <- array(ch2, dim = c(nk,2,nrow(ch)))
+      aperm(ch3, c(3,1,2))
+    }
 }
 #--------------------------------------------------------------------------------
 
@@ -338,7 +345,6 @@ prepareSessionData <- function (capthist, mask, maskusage,
         distmat2 <- getdistmat2(traps, mask, details$userdist, detectfn == 20)
 
         n.distrib <- switch (tolower(details$distribution), poisson=0, binomial=1, 0)
-        
         signal <- getsignal (dettype, capthist, details$tx)
         xy <- getxy (dettype, capthist)
         usge <- usage(traps)
@@ -353,7 +359,6 @@ prepareSessionData <- function (capthist, mask, maskusage,
                 stop ('specified maskusage should be n x m matrix of logical values')
             maskusage[] <- as.logical(maskusage)
         }
-        
         ## Groups
         grp  <- group.factor (capthist, groups)
         if (any(is.na(grp))) {

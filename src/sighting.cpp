@@ -94,7 +94,7 @@ List Tsightinglikcpp (
                         Tlik += log(pdf(pois,TCsk));   // tempmu)); bugfix 2021-10-17
                     }
                     
-                    if (isnan(Tlik) || (Tlik < -1e6)) {
+                    if (std::isnan(Tlik) || (Tlik < -1e6)) {
                         // Rprintf("very negative or NaN Tlik in Tsightinglik\n");
                         return List::create(Named("resultcode") = 54);
                     }

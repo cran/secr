@@ -134,9 +134,7 @@ plot(stoat.model.HN, xval = xv, limits = FALSE, lty = 1, add = TRUE)
 ## review density estimates
 collate(stoat.model.HN, stoat.model.EX,
     realnames = "D", perm = c(2,3,4,1))
-## use secr:: in case of conflicting model.average from RMark
-secr::model.average(stoat.model.HN, stoat.model.EX,
-    realnames = "D")
+modelAverage(stoat.model.HN, stoat.model.EX, realnames = "D")
 
 }
 \keyword{datasets}

@@ -176,7 +176,7 @@ ovenbird.model.h2
 ## compare & average pre-fitted models
 AIC (ovenbird.model.1, ovenbird.model.1b, ovenbird.model.1T,
     ovenbird.model.h2)
-model.average (ovenbird.model.1,ovenbird.model.1b, ovenbird.model.1T,
+modelAverage (ovenbird.model.1,ovenbird.model.1b, ovenbird.model.1T,
     ovenbird.model.h2, realnames = "D")
 
 ## select one year to plot

@@ -147,10 +147,24 @@ getD <- function (designD, beta, mask, parindx, link, fixed,
         D[,,] <- fixed[[parameter]]
     }
     else {
-        if (is.function(designD))
-            D[,,] <- designD(beta[parindx[[parameter]]], mask, ngroup, nsession)
+        if (is.function(designD)) {
+            ## fixed 2021-12-10
+            for (session in 1:nsession) {
+                m <- nrow(mask[[session]])
+                D[1:m,,session] <- designD(beta[parindx[[parameter]]], mask[[session]], ngroup, 1)
+            }
+        }
         else {
-            D[,,] <- designD %*% beta[parindx[[parameter]]]   # linear predictor
+            ## 2021-12-09 f(x)
+            beta <- beta[parindx[[parameter]]]
+            f <- attr(designD, 'f')
+            fcovname <- attr(designD, 'fcovname')
+            if (is.function(f) && fcovname %in% dimnames(designD)[[2]]) {
+                D[,,] <- f(designD[,fcovname], beta)
+            }
+            else {
+                D[,,] <- designD %*% beta  # linear predictor
+            }
             D[,,] <- untransform (D, link[[parameter]])
         }
         # silently truncate D at zero

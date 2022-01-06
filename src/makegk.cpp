@@ -1,5 +1,5 @@
-#include <Rcpp.h>
-#include <RcppParallel.h>
+// #include <Rcpp.h>
+// #include <RcppParallel.h>
 #include "secr.h"
 
 using namespace std;
@@ -44,20 +44,20 @@ struct Hckm : public Worker {
     double temp;
     r2 = dist2(k,m);
     if ((detectfn == 0) || (detectfn == 14)) {        // halfnormal or hazard halfnormal
-      return (gsbval(c,0) * exp(-r2 / 2 / gsbval(c,1)/ gsbval(c,1)));
+      return (gsbval(c,0) * std::exp(-r2 / 2 / gsbval(c,1)/ gsbval(c,1)));
     }
     else if (detectfn == 3) {                         // compound halfnormal
-      temp = gsbval(c,0) * exp(- r2  / 2 / gsbval(c,1) / gsbval(c,1));
+      temp = gsbval(c,0) * std::exp(- r2  / 2 / gsbval(c,1) / gsbval(c,1));
       if (round(gsbval(c,2)) > 1) temp = 1 - pow(1 - temp, gsbval(c,2));
       return (temp);
     }
     else {
       r = std::sqrt(r2);
       if ((detectfn == 1) || (detectfn == 15)) {       // hazard rate or hazard hazard rate
-        return (gsbval(c,0) * ( 1 - exp(- pow(r /gsbval(c,1), - gsbval(c,2)))));
+        return (gsbval(c,0) * ( 1 - std::exp(- pow(r /gsbval(c,1), - gsbval(c,2)))));
       }
       else if ((detectfn == 2) || (detectfn == 16)) {  // exponential or hazard exponential
-        return (gsbval(c,0) * exp(-r / gsbval(c,1)));
+        return (gsbval(c,0) * std::exp(-r / gsbval(c,1)));
       }
       else if (detectfn == 4) {                        // uniform
         if (r<gsbval(c,1)) return (gsbval(c,0));
@@ -65,10 +65,10 @@ struct Hckm : public Worker {
       }
       else if (detectfn == 5) {                        // w exponential
         if (r<gsbval(c,2)) return (gsbval(c,0));
-        else return (gsbval(c,0) * exp(-(r-gsbval(c,2)) / gsbval(c,1)));
+        else return (gsbval(c,0) * std::exp(-(r-gsbval(c,2)) / gsbval(c,1)));
       }
       else if ((detectfn == 6) || (detectfn == 17)) {  // annular normal or hazard annular normal
-        return (gsbval(c,0) * exp(-(r-gsbval(c,2))*(r-gsbval(c,2)) / 2 /
+        return (gsbval(c,0) * std::exp(-(r-gsbval(c,2))*(r-gsbval(c,2)) / 2 /
                 gsbval(c,1) / gsbval(c,1)));
       }
       else if (detectfn == 7) {                        // cumulative lognormal
@@ -108,10 +108,10 @@ struct Hckm : public Worker {
         return (boost::math::cdf(complement(n,gam)));
       }
       else if (detectfn == 19) {  // hazard variable power
-          return (gsbval(c,0) * exp(- pow(r /gsbval(c,1), gsbval(c,2))));
+          return (gsbval(c,0) * std::exp(- pow(r /gsbval(c,1), gsbval(c,2))));
       }
       else if (detectfn == 20) {  // hazard pixelar
-          // if (r < gsbval(c,1)) return (1-exp(-gsbval(c,0)));
+          // if (r < gsbval(c,1)) return (1-std::exp(-gsbval(c,0)));
           if (r < gsbval(c,1)) return (gsbval(c,0));
           else return (0);
       }
@@ -133,7 +133,7 @@ struct Hckm : public Worker {
           }
           else {              // hazard output from zLcpp
             hk[gi] = zLcpp(c, k, m);
-            gk[gi] = 1 - exp(-hk[gi]);
+            gk[gi] = 1 - std::exp(-hk[gi]);
           }
         }
       }
@@ -187,7 +187,7 @@ List cappedgkhkcpp (
         gi = i3(c,k,m, cc,nk);
         H += hk[gi] * D[m] * area;
       }
-      pHH = (1 - exp(-H))/H;
+      pHH = (1 - std::exp(-H))/H;
       for (m=0; m<mm; m++) {
         gi = i3(c,k,m, cc,nk);
         gk[gi] = pHH * hk[gi];

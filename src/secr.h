@@ -118,12 +118,6 @@ rpoint getxy(
     const int kk, 
     const double offset);
 
-rpoint getxycpp(
-        const double l, 
-        const std::vector<double> &cumd, 
-        const RcppParallel::RMatrix<double> &line, 
-        const int kk, 
-        const double offset);
 //---------------------------------------------------------------------
 
 double randomtime (double p);

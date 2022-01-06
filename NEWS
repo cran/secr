@@ -1,3 +1,35 @@
+Changes in version 4.5.0 (2022-01-06)
+
+New features or changed behaviour of old functions
+    o   make.capthist() 'snapXY' also works for points along transects
+    o   modelAverage() new generic supercedes model.average()
+    o   snip() acquires 'tol' argument, now used by discretize()
+    o   new link 'i1000' (identity x 1000) for modelling very low density
+    o   sim.popn() 'UNI' movement model (radius move.a)
+    o   sim.popn() models differential settlement of dispersers (model2D = 'IHP' 
+        and core has covariate 'settle' 0-1)
+    o   f() term in formula for non-linear density models (experimental)
+    
+Bugs fixed
+    o   verify() error 'Duplicated or missing row names (animal ID)'
+        triggered when no live releases
+    o   sim.popn() multi-session movement allowed some animals outside the 
+        boundary on the first step (edgemethod 'truncate')
+    o   secr.fit() failed with data from multiple transects
+    o   snip() and discretize() failed when transectID contained '.'
+    o   nearesttrap, discretize etc. failed if no detections in some sessions
+    o   alive() and reduce.capthist() erroneous when only one animal
+    o   secr.fit() fastproximity failed when no detections in some sessions
+    o   secr.fit() signal detector problem with Boost distribution function 
+        (since 4.4.7 Oct 2021)
+    o   secr.fit() mark resight simulations failed (since 4.4.5 July 2021)
+
+Other
+    o   suggests 'terra' package (potentially supercedes 'raster')
+    o   tests added for transect and signal data
+    o   model.average() deprecated
+    o   update C++ code for BH 1.78
+
 Changes in version 4.4.8 (2021-11-09)
 
 New features or changed behaviour of old functions

@@ -101,6 +101,14 @@ grids) then try the function \code{\link{mash}}.
 
 }
 
+\section{ Set appropriate typsize }{
+
+Setting typsize manually in the call of `secr.fit` can speed up fitting when 
+magnitudes on the link scale are very different (for example, when an identity 
+link is used for density and density is very small or very large).
+
+}
+
 \section{ Simulations }{
 
 Model fitting is not needed to assess power. The precision of estimates

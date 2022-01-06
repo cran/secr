@@ -19,6 +19,7 @@
 ## 2018-05-12 faster handling of 'alive'; bug fixed 2018-06-23 3.1.7
 ## 2019-01-16 bug: clash between usage and markocc in reduce.traps FIXED
 ## 2021-05-19 sortorder for animalID etc.
+## 2022-01-05 fixed alive() problem with one animal
 ############################################################################################
 
 # From (row) To (column)
@@ -349,6 +350,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         return(temp)
     }
     else {
+      
         select <- match.arg(select)
         polygons <- c('polygon','polygonX')
         transects <- c('transect','transectX')
@@ -379,7 +381,6 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
                 warning("reduce.capthist does not yet handle mixed output detector types")
                 outputdetector <- unlist(outputdetector[1])
             }
-
         if (!(outputdetector %in% c(.localstuff$validdetectors, 'nonspatial')))
             stop ("'outputdetector' should be one of ",
                   paste(sapply(.localstuff$validdetectors, dQuote),collapse=','))
@@ -441,6 +442,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         ####################################
         ## build dataframe of observations
         ## 2021-05-19 using ksn as safe universal order regardless of polygon/signal/non
+        ## 2022-01-05 fixed bug in alive() when only one animal
         df <- data.frame(
             trap = trap(object, names = FALSE, sortorder = 'ksn'),
             occ = occasion(object, sortorder = 'ksn'),
@@ -455,57 +457,63 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         if (!is.null(attr(object,'signalframe'))) {
             df <- cbind(df, attr(object,'signalframe'))
         }
-        df$newocc <- newcols[match(df$occ, unlist(newoccasions))]
-        if (dropunused) {
+        if (nrow(df) > 0) {
+          df$newocc <- newcols[match(df$occ, unlist(newoccasions))]
+          if (dropunused) {
             df$newocc <- factor(df$newocc)
             nnew <- length(levels(df$newocc))
-        }
-        df <- df[!is.na(df$newocc),]                   ## drop null obs
-        df$newID <- factor(df$ID)                      ## assign newID
-        if (outputdetector %in% .localstuff$exclusivedetectors) {
+          }
+          df <- df[!is.na(df$newocc),]                   ## drop null obs
+          df$newID <- factor(df$ID)                      ## assign newID
+          if (outputdetector %in% .localstuff$exclusivedetectors) {
             ID.occ <- interaction(df$ID, df$newocc)
             dflist <- split(df, ID.occ)
             dflist <- lapply(dflist, collapse)
             df <- do.call(rbind, dflist)
-        }
-
-        ## 2017-10-20  if (outputdetector %in% c('single')) {
-        if (outputdetector %in% c('single', 'capped')) {
+          }
+          
+          if (outputdetector %in% c('single', 'capped')) {
             occ.trap <- interaction(df$newocc,df$trap)
             dflist <- split(df, occ.trap)
             dflist <- lapply(dflist, collapse)
             df <- do.call(rbind, dflist)
-        }
-        df$newID <- factor(df$ID)                     ## re-assign newID
-
-        ####################################
-        ## build new object
-        validrows <- (1:nrow(object)) %in% df$ID   ## or newID??? 2012-12-12
-        df$trap <- factor(df$trap, levels = 1:ntrap)  ## bug fixed 2017-03-27
-        ## drop any records with missing data - just to be sure
-        df <- df[!apply(df,1,function(x) any(is.na(x))),, drop = FALSE]
-        tempnew <- table(df$newID, df$newocc, df$trap)
-        if (! (outputdetector %in% .localstuff$countdetectors)
+          }
+          df$newID <- factor(df$ID)                     ## re-assign newID
+          
+          ####################################
+          ## build new object
+          validrows <- (1:nrow(object)) %in% df$ID   ## or newID??? 2012-12-12
+          df$trap <- factor(df$trap, levels = 1:ntrap)  ## bug fixed 2017-03-27
+          ## drop any records with missing data - just to be sure
+          df <- df[!apply(df,1,function(x) any(is.na(x))),, drop = FALSE]
+          tempnew <- table(df$newID, df$newocc, df$trap)
+          if (! (outputdetector %in% .localstuff$countdetectors)
             & (length(tempnew)>0)) {
             ## convert 'proximity' and 'signal' to binary
             tempnew[tempnew>0] <- 1
-        }
-
-        # alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
-        # alivesign[is.na(alivesign)] <- TRUE
-        # alivesign <- alivesign * 2 - 1
-        # tempnew <- tempnew * alivesign
-        
-        ## 2018-05-12 faster...
-        ## 2018-06-23 Bug in 3.1.6 because newocc selects non-existent columns
-        ## 2018-06-23 fix by enclosing df$newocc in as.character()
-        
-        ## 2019-11-29 bug fix for count
-        if (outputdetector != 'count') {
+          }
+          
+          # alivesign <- tapply(df$alive, list(df$newID,df$newocc,df$trap),all)
+          # alivesign[is.na(alivesign)] <- TRUE
+          # alivesign <- alivesign * 2 - 1
+          # tempnew <- tempnew * alivesign
+          
+          ## 2018-05-12 faster...
+          ## 2018-06-23 Bug in 3.1.6 because newocc selects non-existent columns
+          ## 2018-06-23 fix by enclosing df$newocc in as.character()
+          
+          ## 2019-11-29 bug fix for count
+          if (outputdetector != 'count') {
             i <- cbind(as.character(df$newID), as.character(df$newocc), as.character(df$trap))
             tempnew[i] <- tempnew[i] * (df$alive * 2 - 1)
+          }
         }
-
+        else { # if (nrow(tempnew) == 0) {
+          # ignores dropunused
+          tempnew <- array(dim=c(0, nnew, ntrap))
+          validrows <- 0
+          df$newocc <- numeric(0)
+        }
         ################################
         ## general attributes
         class(tempnew) <- 'capthist'
@@ -615,7 +623,7 @@ reduce.capthist <- function (object, newtraps = NULL, span = NULL,
         }
         else
             rowname <- NULL
-        
+
         if (nnew>0) {   ## 2020-11-18 for robustness to zero rows
             dimnames(tempnew) <- list(rowname,1:nnew,NULL)   # renew numbering
         }

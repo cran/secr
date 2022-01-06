@@ -9,10 +9,13 @@
 allhistfast <- function (realparval, gkhk, pi.density, PIA, 
                          nk2ch, usge, pmixn, maskusage,
                          grain, ncores, binomN, indiv) {
-    nc <- dim(PIA)[2]
+    nc <- dim(nk2ch)[1] # dim(PIA)[2]
+    ## 2022-01-04
+    if (nc<1) return(1)
     nmix <- dim(PIA)[5]
     m <- length(pi.density)
     sump <- numeric(nc)
+    
     for (x in 1:nmix) {
       temp <- fasthistoriescpp(
         as.integer(m),
@@ -166,24 +169,23 @@ fastsecrloglikfn <- function (
                 as.double(gkhk$gk), as.double(gkhk$hk))  
             }
         }
+        
         prw <- allhistfast (Xrealparval, gkhk, pi.density, PIA, 
           data$CH, data$usge, pmixn, data$maskusage, 
           details$grain, details$ncores, details$binomN, design$individual)
         pdot <- integralprw1fast (Xrealparval, gkhk, pi.density, PIA, 
           data$CH0, data$usge, pmixn, details$grain, details$ncores, 
           details$binomN, design$individual)
-        
         if (details$debug>2) browser()
         
-        comp <- matrix(0, nrow = 5, ncol = 1)
-        ## 2021-01-30 avoid length > 1
-        # comp[1,1] <- if (any(is.na(prw) || prw<=0)) NA else sum(log(prw))
-        # comp[2,1] <- if (any(is.na(pdot) || pdot<=0)) NA else -sum(log(pdot))
+        comp <- matrix(0, nrow = 6, ncol = 1)
         comp[1,1] <- if (any(is.na(prw)) || any(prw<=0)) NA else sum(log(prw))
-        comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot))
+        ## 2022-01-05 catch nc = 0
+        comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else if (data$nc>0) -sum(log(pdot)) else 0
         if (!CL) {
             N <- sum(density[,1]) * getcellsize(data$mask)
-            meanpdot <- data$nc / sum(1/pdot)
+            ## 2022-01-05 catch nc = 0
+            meanpdot <- if (data$nc == 0) pdot else data$nc / sum(1/pdot)
             comp[3,1] <- switch (data$n.distrib+1,
                                  dpois(data$nc, N * meanpdot, log = TRUE),
                                  lnbinomial (data$nc, N, meanpdot),
@@ -203,9 +205,9 @@ fastsecrloglikfn <- function (
             }
         }
         
-        if (details$debug>1) {
+        if (details$debug>=1) {
             comp <- apply(comp,1,sum)
-            cat(comp[1], comp[2], comp[3], comp[4], comp[5], comp[6], '\n')
+            cat(comp[1], comp[2], comp[3], comp[4], comp[5], comp[6], data$logmult, '\n')
         }
         sum(comp) + data$logmult
         
@@ -213,7 +215,6 @@ fastsecrloglikfn <- function (
     
     ###############################################################################################
     ## Main line of fastsecrloglikfn
-
     nsession <- length(sessionlevels)
     #--------------------------------------------------------------------
     # Fixed beta
@@ -237,7 +238,6 @@ fastsecrloglikfn <- function (
             if (sumD <= 0)
                 warning ("invalid density <= 0")
     }
-    
     #--------------------------------------------------------------------
     # Non-Euclidean distance parameter
     sessmask <- lapply(data, '[[', 'mask')

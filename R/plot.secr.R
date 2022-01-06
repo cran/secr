@@ -115,9 +115,11 @@ plot.secr <- function (x, newdata = NULL, add = FALSE,
                     
                     for (rn in parnamvec) {
                         par.rn <- x$parindx[[rn]]
-                        mat <- general.model.matrix(x$model[[rn]], data=newdata[rowi,,drop=FALSE], 
-                                                    gamsmth = x$smoothsetup[[rn]],
-                                                    contrasts = x$details$contrasts)
+                        mat <- general.model.matrix(
+                            x$model[[rn]], 
+                            data = newdata[rowi,,drop=FALSE], 
+                            gamsmth = x$smoothsetup[[rn]],
+                            contrasts = x$details$contrasts)
                         lp <- mat %*% matrix(beta[par.rn], ncol = 1)
                         real[rn] <- untransform (lp, x$link[[rn]])
                     }

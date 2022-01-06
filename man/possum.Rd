@@ -140,7 +140,7 @@ summary(possumCH)
 
 ## compare & average pre-fitted models
 AIC(possum.model.0, possum.model.Ds)
-model.average(possum.model.0, possum.model.Ds)
+modelAverage(possum.model.0, possum.model.Ds)
 
 \dontrun{
 

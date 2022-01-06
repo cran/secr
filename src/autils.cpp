@@ -122,34 +122,11 @@ double gbinom(int count, int size, double p)
         for (i=1; i< size; i++) x *= q;
     }
     else {
-        // x = R::dbinom(count, size, p, 0);
         boost::math::binomial_distribution<> bin(size, p);
         x = boost::math::pdf(bin, count);
     }
     return (x);   
 }
-//--------------------------------------------------------------------------
-
-// not used 2021-10-17
-// customised dnbinom parameterised as size, mu 
-// double gnbinom (int count, int size, double mu, int uselog)
-// {
-//     // prob = size / (size + mu) 
-//     // size = fabs(size);   in case negative 'binomN' passed 
-//     size = abs(size);  // in case negative 'binomN' passed 
-//     
-//     if (count == 0) {  // faster - added 2010-10-11
-//         if (uselog) return( log(size/(size+mu)) * log(size) );
-//         else return (pow(size/(size+mu), size));
-//     }
-//     else {
-//         // return (R::dnbinom (count, size, size/(size+mu), uselog));
-//         boost::math::binomial_distribution<> bin(size, size/(size+mu));
-//         double x = boost::math::pdf(bin, count);
-//         if (uselog) x = log(x);
-//         return (x);
-//     }
-// }
 //--------------------------------------------------------------------------
 
 // probability of count with distribution specified by binomN 
@@ -330,32 +307,6 @@ rpoint getxy(
         pr = 0;
     xy.x = line[k-1].x + (line[k].x - line[k-1].x) * pr;
     xy.y = line[k-1].y + (line[k].y - line[k-1].y) * pr;
-    return(xy);
-}
-//--------------------------------------------------------------------------
-
-rpoint getxycpp(
-        const double l, 
-        const std::vector<double> &cumd, 
-        const RcppParallel::RMatrix<double> &line, 
-        const int kk, 
-        const double offset) {
-    // return the xy coordinates of point l metres along a transect 
-    // offset is the starting position for this transect 
-    int k;
-    double pr, d, d12;
-    rpoint xy;
-    for (k=offset+1; k<(offset+kk); k++) {
-        if (cumd[k]>l) break;
-    }
-    d = l - cumd[k-1];  // distance along leg 
-    d12 = cumd[k] - cumd[k-1];
-    if (d12>0)
-        pr = d / d12;
-    else
-        pr = 0;
-    xy.x = line(k-1,0) + (line(k,0) - line(k-1,0)) * pr;
-    xy.y = line(k-1,1) + (line(k,1) - line(k-1,1)) * pr;
     return(xy);
 }
 //--------------------------------------------------------------------------
@@ -687,7 +638,6 @@ double rcount (int binomN, double lambda, const double Tsk) {
             else
                 return (0);
         }
-        
         // binomial 
         else
             return (R::rbinom(binomN, lambda) );

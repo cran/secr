@@ -121,7 +121,7 @@ validpoly <- function (xy, polyID, nx = 500) {
 }
 ############################################################################################
 
-xyontransect <- function (xy, trps, tol=0.01) {
+xyontransect <- function (xy, trps, tol = 0.01) {
   ptontransect <- function (i,k) {
     ## is point i on transect k?
       transectxy <- as.matrix(lxy[[k]])
@@ -655,11 +655,10 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
         # non-zero detection histories for independent telemetry
         telemOK <- FALSE
     }
-    
     ## 19
-    ## 2021-03-03 added condition so OK when no rows 
+    ## 2021-03-03 added condition so OK when no rows; fixed 2021-11-16
     rownamesOK <- (!any(duplicated(rownames(object))) &&  
-        !is.null(rownames(object))) || (nrow(object)>0) 
+        !is.null(rownames(object))) || (nrow(object)==0) 
     if (!is.null(rownames(object)))
       rownamesOK <- rownamesOK & !any(is.na(rownames(object)))
     

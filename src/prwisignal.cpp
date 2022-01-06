@@ -150,8 +150,8 @@ struct signalhistories : public Worker {
                   mu  = mufnL (k, m, gsbval(c,0), gsbval(c,1), dist2, detectfn==11);
                   sdS = gsbval(c,2);
                   // pm[m] *= R::dnorm((sig - mu), 0, sdS, 0);
-                  boost::math::normal_distribution<> n;
-                  pm[m] *= boost::math::pdf(n,(sig - mu)/sdS);   
+                  boost::math::normal_distribution<> n(0,sdS);
+                  pm[m] *= boost::math::pdf(n,(sig - mu));
                 }
                 else  {
                   // signal value missing; detection only

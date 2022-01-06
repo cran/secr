@@ -204,7 +204,7 @@ consult the Density online help. There are some differences: the M0 and
 Mb estimates of population-size in \code{ip.secr} can take non-integer
 values; the simulation design used by \code{ip.secr} uses odds(g0)
 rather than g0; the default boxsize and CVmax differ from those in
-Density 4.4. There is no provision in \code{ip.secr} for two-phase
+Density 4.5. There is no provision in \code{ip.secr} for two-phase
 estimation, using a different experimental design at the second phase.
 If you wish you can achieve the same effect by using the estimates as
 starting values for a second call of \code{ip.secr} (see examples).

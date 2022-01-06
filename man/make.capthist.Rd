@@ -123,6 +123,8 @@ object of class c("capthist", "list") comprising a list of single-session
 Prior to \pkg{secr} 4.4.0, occasional valid records for "multi" and "single" detectors 
 were rejected as duplicates.
 
+From \pkg{secr} 4.5.0, `snapXY' works for transects as well as point detectors.
+
 }
 
 \references{

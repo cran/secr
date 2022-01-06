@@ -43,7 +43,7 @@ Named logical vector with elements `data', `CL', `groups', `hcov' and `binomN'.
 
 \seealso{ 
 
-\code{\link{AIC.secr}}, \code{\link{model.average}}
+\code{\link{AIC.secr}}, \code{\link{modelAverage}}
 
 }
 

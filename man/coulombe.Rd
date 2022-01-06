@@ -49,20 +49,6 @@ Otis et al. (1978) report various analyses including a closure test on
 the full data, and model selection and density estimation on data from
 the mornings only. 
 
-\tabular{ll}{
-  Object \tab Description \cr
-  housemouse \tab capthist object \cr
-  housemouse.0 \tab fitted secr model -- null \cr
-  housemouse.ampm \tab fitted secr model -- g0 differs morning vs afternoon \cr
-  housemouse.ampmh2h2 \tab fitted secr model -- as above, finite mixture g0, sigma \cr
-  morning.0 \tab fitted secr model -- morning data only, null \cr
-  morning.0h2 \tab fitted secr model -- mornings, null g0, finite mixture sigma \cr
-  morning.b \tab  fitted secr model -- mornings, trap response g0 \cr
-  morning.h2 \tab  fitted secr model -- mornings, finite mixture g0 \cr         
-  morning.h2h2 \tab  fitted secr model -- mornings, finite mixture g0, sigma \cr
-  morning.t \tab  fitted secr model -- mornings, day-specific g0 \cr
-}
-
 }
 
 \source{

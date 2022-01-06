@@ -1,5 +1,5 @@
-#include <Rcpp.h>
-#include <RcppParallel.h>
+// #include <Rcpp.h>
+// #include <RcppParallel.h>
 #include "secr.h"
 
 //==============================================================================

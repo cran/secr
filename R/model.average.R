@@ -11,24 +11,15 @@
 ## 2021-10-25 see also modelAverage.R
 ############################################################################################
 
-MATA <- function (wt, est, se, alpha) {
-    ## Turek and Fletcher 2012 "model-averaged tail area" interval
-    fn <- function (theta, lcl = TRUE) {
-        sum(wt * pnorm((est-theta) / se, lower.tail = lcl )) - alpha/2
-    }
-    lcl <- uniroot (fn, interval = c(min(est - 10*se), max(est)), lcl = FALSE)$root
-    ucl <- uniroot (fn, interval = c(min(est), upper = max(est + 10*se)), lcl = TRUE)$root
-    cbind(lcl, ucl)
-}
-
 model.average <- function (..., realnames = NULL, betanames = NULL,
     newdata = NULL, alpha = 0.05, dmax = 10, covar = FALSE, average =
         c('link', 'real'), criterion = c('AICc','AIC'), CImethod =
         c('Wald', 'MATA')) {
     
     # preparing for switchover
-    #.Deprecated("modelAverage", package="secr", "This function has been renamed.", 
-    #    old = as.character(sys.call(sys.parent()))[1L])
+    
+    .Deprecated("modelAverage", package="secr", "This function has been renamed.", 
+        old = as.character(sys.call(sys.parent()))[1L])
     
     #########
     ## SETUP
@@ -145,10 +136,16 @@ model.average <- function (..., realnames = NULL, betanames = NULL,
     else { ## type == 'real'
         getLP <- function (object1) {  ## predicted values of real parameters
             getfield <- function (x) {
-                 secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
-                    indx = object1$parindx[[x]], beta = object1$fit$par,
+                secr.lpredictor (
+                    formula = object1$model[[x]], 
+                    newdata = newdata,
+                    indx = object1$parindx[[x]], 
+                    beta = object1$fit$par,
                     beta.vcv = object1$beta.vcv, field = x,
-                    smoothsetup = object1$smoothsetup[[x]], contrasts = object1$details$contrasts)
+                    smoothsetup = object1$smoothsetup[[x]], 
+                    contrasts = object1$details$contrasts,
+                    f = object1$details[['f']]
+                )
             }
             ## check added 2016-06-16, fixed 2016-11-08
             if (any(unlist(nclusters(object1$capthist))>1))
@@ -301,11 +298,17 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     getLP <- function (object1) {  ## for predicted values of real parameters
         getfield <- function (x) {
-            secr.lpredictor (formula = object1$model[[x]], newdata = newdata,
-                indx = object1$parindx[[x]], beta = object1$fit$par,
-                beta.vcv = object1$beta.vcv, field = x,
+            secr.lpredictor (
+                formula = object1$model[[x]], 
+                newdata = newdata,
+                indx = object1$parindx[[x]], 
+                beta = object1$fit$par,
+                beta.vcv = object1$beta.vcv, 
+                field = x,
                 smoothsetup = object1$smoothsetup[[x]],
-                contrasts = object1$details$contrasts)
+                contrasts = object1$details$contrasts,
+                f = object1$details[['f']]
+            )
         }
         ## check added 2016-06-16, fixed 2016-11-08
         if (any(unlist(nclusters(object1$capthist))>1))

@@ -14,6 +14,8 @@
 ## 2020-07-14 secr 4.3.0 distmat
 ## 2020-09-05 getknownclass factor bug fixed
 ## 2021-04-25 4.4.0
+## 2021-12-16 tidy up transformations, allow arbitrary link X(), invX(), se.invX()
+## 2022-01-04 4.5.0
 #######################################################################################
 
 # Global variables in namespace
@@ -385,7 +387,6 @@ pad1 <- function (x, n) {
 padarray <- function (x, dims) {
     temp <- array(dim=dims)
     dimx <- dim(x)
-    # condition added 2016-10-01
     if (all(dimx>0)) {
         if (length(dimx)<2 | length(dimx)>3)
             stop ("invalid array")
@@ -396,7 +397,6 @@ padarray <- function (x, dims) {
 }
 
 ## regularize a list of formulae
-## added 2009 08 05
 stdform <- function (flist) {
     LHS <- function (form) {
         trms <- as.character (form)
@@ -807,149 +807,197 @@ gradient <- function (pars, fun, eps=0.001, ...)
 ############################################################################################
 
 distancetopoly <- function (X, traps) {
-    ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coor in col 2
-    
-    X <- matrix(unlist(X), ncol = 2)
-    nxy <- nrow(X)
-    detecttype <- detector(traps)
-    detecttype <- ifelse (is.null(detecttype), "", detecttype)
-    
-    if (!all(detecttype %in% c('polygon', 'polygonX')))
-        stop("distancetopoly is for polygon detectors only")
-    if (!requireNamespace('rgeos', quietly = TRUE))
-        stop("distancetopoly requires rgeos")
-    trps <- split(traps, polyID(traps))
-    polys <- lapply(trps, boundarytoSP)
-    xy <- sp::SpatialPoints(X)
-    dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
-    matrix(unlist(dlist), ncol = length(dlist))
+  ## X should be 2-column dataframe, mask, matrix or similar
+  ## with x coord in col 1 and y coor in col 2
+  
+  if (is.null(X)) return (NULL)  ## 2022-01-04
+  
+  X <- matrix(unlist(X), ncol = 2)
+  nxy <- nrow(X)
+  detecttype <- detector(traps)
+  detecttype <- ifelse (is.null(detecttype), "", detecttype)
+  
+  if (!all(detecttype %in% c('polygon', 'polygonX')))
+    stop("distancetopoly is for polygon detectors only")
+  if (!requireNamespace('rgeos', quietly = TRUE))
+    stop("distancetopoly requires rgeos")
+  trps <- split(traps, polyID(traps))
+  polys <- lapply(trps, boundarytoSP)
+  xy <- sp::SpatialPoints(X)
+  dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
+  matrix(unlist(dlist), ncol = length(dlist))
 }
-    
+
 distancetotrap <- function (X, traps) {
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coor in col 2
 
-    X <- matrix(unlist(X), ncol = 2)
-    nxy <- nrow(X)
-    detecttype <- detector(traps)
-    detecttype <- ifelse (is.null(detecttype), "", detecttype)
-    
-    ## 2020-01-08
-    if (all(detecttype %in% c('polygon', 'polygonX')) && 
-            requireNamespace('rgeos', quietly = TRUE)) {
-        trps <- split(traps, polyID(traps))
-        polys <- lapply(trps, boundarytoSP)
-        xy <- sp::SpatialPoints(X)
-        dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
-        dmat <- matrix(unlist(dlist), ncol = length(dlist))
-        d <- apply(dmat,1,min)
-        return (d)
-    }
-        
-    if (inherits(traps, 'SpatialPolygons')) {
-        if (requireNamespace('rgeos', quietly = TRUE)) {
-            xy <- sp::SpatialPoints(X)
-            d <- rgeos::gDistance(spgeom1 = xy, spgeom2 = traps, byid = TRUE)
-            return (d)
-        }
-        else {
-            trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-            warning("using only first polygon of SpatialPolygons")
-        }
-    }
-    else if (all(detecttype %in% .localstuff$polydetectors)) {
-        ## approximate only
-
-        traps <- split(traps, polyID(traps))
-        trpi <- function (i, n = 100) {
-            intrp <- function (j) {
-                ## 2020-01-08 dodge issue with polyID in as.data.frame
-                ## tmp <- as.data.frame(traps[[i]][j:(j+1),])[,-1]   
-                tmp <- data.frame(x = traps[[i]]$x[j:(j+1)], y = traps[[i]]$y[j:(j+1)])
-                if (tmp$x[1] == tmp$x[2])
-                    data.frame(x=rep(tmp$x[1], n),
-                               y=seq(tmp$y[1], tmp$y[2], length=n))
-                else {
-                    ## 2019-11-30 suppress warnings such as :
-                    ## In regularize.values(x, y, ties, missing(ties)) :
-                    ## collapsing to unique 'x' values
-                    suppressWarnings(data.frame(approx(tmp, n = n)))
-                }
-            }
-            tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)
-            do.call(rbind, tmp)
-        }
-        trps <- do.call(rbind, lapply(1:length(traps), trpi))
-        trps <- matrix(unlist(trps), ncol = 2)
+  if (is.null(X)) return (NULL)  ## 2022-01-04
+  
+  X <- matrix(unlist(X), ncol = 2)
+  nxy <- nrow(X)
+  detecttype <- detector(traps)
+  detecttype <- ifelse (is.null(detecttype), "", detecttype)
+  
+  ## 2020-01-08
+  if (all(detecttype %in% c('polygon', 'polygonX')) && 
+      requireNamespace('rgeos', quietly = TRUE)) {
+    trps <- split(traps, polyID(traps))
+    polys <- lapply(trps, boundarytoSP)
+    xy <- sp::SpatialPoints(X)
+    dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
+    dmat <- matrix(unlist(dlist), ncol = length(dlist))
+    d <- apply(dmat,1,min)
+    return (d)
+  }
+  
+  if (inherits(traps, 'SpatialPolygons')) {
+    if (requireNamespace('rgeos', quietly = TRUE)) {
+      xy <- sp::SpatialPoints(X)
+      d <- rgeos::gDistance(spgeom1 = xy, spgeom2 = traps, byid = TRUE)
+      return (d)
     }
     else {
-        ## 2015-10-18 added protection
-        trps <- matrix(unlist(traps), ncol = 2)
+      trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
+      warning("using only first polygon of SpatialPolygons")
     }
-
-    temp <- nearestcpp(as.matrix(X), as.matrix(trps))
-    if (all(detecttype %in% c('polygon', 'polygonX'))) {
-        inside <- lapply(traps, pointsInPolygon, xy=X)
-        inside <- do.call(rbind, inside)
-        temp$distance [apply(inside,2,any)] <- 0
+  }
+  else if (all(detecttype %in% .localstuff$polydetectors)) {
+    ## approximate only
+    
+    traps <- split(traps, polyID(traps))
+    trpi <- function (i, n = 100) {
+      intrp <- function (j) {
+        ## 2020-01-08 dodge issue with polyID in as.data.frame
+        ## tmp <- as.data.frame(traps[[i]][j:(j+1),])[,-1]   
+        tmp <- data.frame(x = traps[[i]]$x[j:(j+1)], y = traps[[i]]$y[j:(j+1)])
+        if (tmp$x[1] == tmp$x[2])
+          data.frame(x=rep(tmp$x[1], n),
+            y=seq(tmp$y[1], tmp$y[2], length=n))
+        else {
+          ## 2019-11-30 suppress warnings such as :
+          ## In regularize.values(x, y, ties, missing(ties)) :
+          ## collapsing to unique 'x' values
+          suppressWarnings(data.frame(approx(tmp, n = n)))
+        }
+      }
+      tmp <- lapply(1:(nrow(traps[[i]])-1),intrp)
+      do.call(rbind, tmp)
     }
-    temp$distance
+    trps <- do.call(rbind, lapply(1:length(traps), trpi))
+    trps <- matrix(unlist(trps), ncol = 2)
+  }
+  else {
+    ## 2015-10-18 added protection
+    trps <- matrix(unlist(traps), ncol = 2)
+  }
+  
+  temp <- nearestcpp(as.matrix(X), as.matrix(trps))
+  if (all(detecttype %in% c('polygon', 'polygonX'))) {
+    inside <- lapply(traps, pointsInPolygon, xy=X)
+    inside <- do.call(rbind, inside)
+    temp$distance [apply(inside,2,any)] <- 0
+  }
+  temp$distance
 }
 
 nearesttrap <- function (X, traps) {
-    ## X should be 2-column dataframe, mask, matrix or similar
-    ## with x coord in col 1 and y coord in col 2
-    X <- matrix(unlist(X), ncol = 2)
-    nxy <- nrow(X)
-    ## extended from SpatialPolygonsDataFrame 2016-02-17
-    if (inherits(traps, 'SpatialPolygons')) {
-        traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-        warning("using only first polygon of SpatialPolygons")
-    }
-    temp <- nearestcpp(as.matrix(X), as.matrix(traps))
-    temp$index
+  ## X should be 2-column dataframe, mask, matrix or similar
+  ## with x coord in col 1 and y coord in col 2
+  
+  if (is.null(X)) return (NULL)  ## 2022-01-04
+  
+  X <- matrix(unlist(X), ncol = 2)
+  nxy <- nrow(X)
+  ## extended from SpatialPolygonsDataFrame 2016-02-17
+  if (inherits(traps, 'SpatialPolygons')) {
+    traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
+    warning("using only first polygon of SpatialPolygons")
+  }
+  temp <- nearestcpp(as.matrix(X), as.matrix(traps))
+  temp$index
 }
+#-------------------------------------------------------------------------------
+
+# transformation tidy up 2021-12-16
+# arbitrary link function specified with functions X, invX, se.invX
 
 transform <- function (x, link) {
-  switch (link,
-          identity = x,
-          log = log(x),
-          neglog = log(-x),
-          logit = logit(x),
-          odds = odds(x),
-          sin = sine(x)
-  )
+    switch (link,
+        identity = x,
+        i1000 = x * 1000,
+        log = log(x),
+        neglog = log(-x),
+        logit = logit(x),
+        odds = odds(x),
+        sin = sine(x),
+        do.call(link, list(x))
+    )
 }
+#-------------------------------------------------------------------------------
+
+# used only in model.average, modelAverage
+se.transform <- function (real, sereal, link) {
+    switch (link,
+        identity = sereal,
+        i1000 = sereal / 1000,
+        log = log((sereal/real)^2 + 1)^0.5,
+        neglog = log((sereal/-real)^2 + 1)^0.5,
+        logit = sereal / real / (1 - real),
+        sin = NA,
+        do.call(paste0('se.',link), list(real, sereal) )
+    )
+}
+#-------------------------------------------------------------------------------
 
 untransform <- function (beta, link) {
-  switch (link,
-          identity = beta,
-          log = exp(beta),
-          neglog = -exp(beta),
-          logit = invlogit(beta),
-          odds = invodds(beta),
-          sin = invsine(beta))
+    switch (link,
+        identity = beta,
+        i1000 = beta / 1000,
+        log = exp(beta),
+        neglog = -exp(beta),
+        logit = invlogit(beta),
+        odds = invodds(beta),
+        sin = invsine(beta),
+        do.call(paste0('inv',link), list(beta))
+    )
 }
+#-------------------------------------------------------------------------------
 
 se.untransform <- function (beta, sebeta, link) {
-  switch (link,
-          identity = sebeta,
-          log = exp(beta) * sqrt(exp(sebeta^2)-1),
-          neglog = exp(beta) * sqrt(exp(sebeta^2)-1),
-          logit = invlogit(beta) * (1-invlogit(beta)) * sebeta,
-          sin = NA)         ####!!!!
+    # Approximate translation of SE to untransformed scale
+    # Delta method cf Lebreton et al 1992 p 77
+    switch (link,
+        identity = sebeta,
+        i1000 = sebeta / 1000,
+        log = exp(beta) * sqrt(exp(sebeta^2)-1),
+        neglog = exp(beta) * sqrt(exp(sebeta^2)-1),
+        logit = invlogit(beta) * (1-invlogit(beta)) * sebeta,
+        sin = NA,                ####!!!!
+        do.call(paste0('se.inv', link), list(beta=beta, sebeta=sebeta))
+    )
 }
+#-------------------------------------------------------------------------------
 
-# mlogit.untransform <- function (beta, mix) {
-#     ## beta should include values for all classes (mixture components)
-#     nmix <- max(mix)    ## assume zero-based
-#     b <- beta[2:nmix]    ## 2010 02 26
-#     pmix <- numeric(nmix)
-#     pmix[2:nmix] <- exp(b) / (1+sum(exp(b)))
-#     pmix[1] <- 1 - sum(pmix[2:nmix])
-#     pmix[mix]   ## same length as input
-# }
+# vectorized transformations
+Xtransform <- function (real, linkfn, varnames) {
+    mapply(transform, real, linkfn[varnames])
+}
+se.Xtransform <- function (real, sereal, linkfn, varnames) {
+    mapply(se.transform, real, sereal, linkfn[varnames])
+}
+Xuntransform <- function (beta, linkfn, varnames) {
+    mapply(untransform, beta, linkfn[varnames])
+}
+se.Xuntransform <- function (beta, sebeta, linkfn, varnames)
+{
+    if (length(beta)!=length(sebeta))
+        stop ("'beta' and 'sebeta' do not match")
+    if (!all(varnames %in% names(linkfn)))
+        stop ("'linkfn' component missing for at least one real variable")
+    mapply(se.untransform, beta, sebeta, linkfn[varnames])
+}
+#-------------------------------------------------------------------------------
 
 mlogit.untransform <- function (beta, latentmodel) {
     if (!missing(latentmodel)) {
@@ -986,72 +1034,6 @@ mlogit <- function (x) {
     ## return the mlogit of an unscaled vector of positive values
     ## 2013-04-14
     logit(x/sum(x))
-}
-
-# vector version of transform()
-Xtransform <- function (real, linkfn, varnames) {
-  out <- real
-  for (i in 1:length(real)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = real[i],
-                  log = log(real[i]),
-                  neglog = log(-real[i]),
-                  logit = logit(real[i]),
-                  odds = odds(real[i]),
-                  sin = sine(real[i]))
-  }
-  out
-}
-se.Xtransform <- function (real, sereal, linkfn, varnames) {
-  out <- real
-  for (i in 1:length(real)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = sereal[i],
-                  log = log((sereal[i]/real[i])^2 + 1)^0.5,
-                  neglog = log((sereal[i]/-real[i])^2 + 1)^0.5,
-                  logit = sereal[i] / real[i] / (1 - real[i]),
-                  sin = NA)
-  }
-  out
-}
-
-# vector version of untransform()
-Xuntransform <- function (beta, linkfn, varnames) {
-  out <- beta
-  for (i in 1:length(beta)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = beta[i],
-                  log = exp(beta[i]),
-                  neglog = -exp(beta[i]),
-                  logit = invlogit(beta[i]),
-                  odds = invodds(beta[i]),
-                  sin = invsine(beta[i]))
-  }
-  out
-}
-
-se.Xuntransform <- function (beta, sebeta, linkfn, varnames)
-# Approximate translation of SE to untransformed scale
-# Delta method cf Lebreton et al 1992 p 77
-{
-  out <- beta
-  if (length(beta)!=length(sebeta))
-      stop ("'beta' and 'sebeta' do not match")
-  if (!all(varnames %in% names(linkfn)))
-      stop ("'linkfn' component missing for at least one real variable")
-  for (i in 1:length(beta)) {
-      vn <- varnames[i]
-      out[i] <- switch (linkfn[[vn]],
-                  identity = sebeta[i],
-                  log = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
-                  neglog = exp(beta[i]) * sqrt(exp(sebeta[i]^2)-1),
-                  logit = invlogit(beta[i]) * (1-invlogit(beta[i])) * sebeta[i],
-                  sin = NA)         ####!!!!
-  }
-  out
 }
 
 ## End of miscellaneous functions
@@ -1439,7 +1421,8 @@ gamsetup <- function(formula, data, ...) {
 }
 ############################################################################################
 
-general.model.matrix <- function (formula, data, gamsmth = NULL, contrasts = NULL, ...) {
+general.model.matrix <- function (formula, data, gamsmth = NULL, 
+    contrasts = NULL, ...) {
 
     ## A function to compute the design matrix for the model in
     ## 'formula' given the data in 'data'. This is merely the result
@@ -1461,6 +1444,8 @@ general.model.matrix <- function (formula, data, gamsmth = NULL, contrasts = NUL
 
     ## 2014-08-24, 2014-09-09, 2017-11-30
     ## 2019-10-12 drop row names
+    ## 2021-12-09 f optional argument
+    
     dots <- list(...)
 
     if (any(polys(formula)))
@@ -1549,12 +1534,11 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
 ############################################################################################
 
 secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
-                             smoothsetup = NULL, contrasts = NULL) {
+    smoothsetup = NULL, contrasts = NULL, f = NULL) {
     ## form linear predictor for a single 'real' parameter
     ## smoothsetup should be provided whenever newdata differs from
     ## data used to fit model and the model includes smooths from gam
     vars <- all.vars(formula)
-    ## improved message 2015-01-29
     OK <- vars %in% names(newdata)
     if (any(!OK)) {
         missingvars <- paste(vars[!OK], collapse = ', ')
@@ -1566,63 +1550,71 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata), dimnames = list(NULL,c('estimate','se')))
 
-    mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup, contrasts = contrasts)
-    if (nrow(mat) < nrow(newdata))
-        warning ("missing values in predictors?")
-
-    nmix <- 1
-    if (field=='pmix') {
-        ## drop pmix beta0 column from design matrix (always zero)
-        mat <- mat[,-1,drop=FALSE]
-        if ('h2' %in% names(newdata)) nmix <- 2
-        if ('h3' %in% names(newdata)) nmix <- 3
-        mixfield <- c('h2','h3')[nmix-1]
+    if (!is.null(f) && field == 'D') {
+       Yp <- f(newdata[,vars[1]], beta = beta[indx]) 
+       mat <- as.matrix(newdata[,vars[1], drop = FALSE])
     }
-    
-    ###############################
-    Yp <- mat %*% beta[indx]
-    ###############################
-    
-    ## 2018-02-23 another attempt to get this right, following makerealparameters
-    
-    ## A latent model comprises one row for each latent class.
-    ## Back transformation of pmix in mlogit.untransform() requires all rows of 
-    ## each latent model. That function splits vector Yp by latent model.
-    
-    if (field == 'pmix') {
-        nonh <- newdata[, names(newdata) != mixfield, drop = FALSE]
-        latentmodel <- factor(apply(nonh, 1, paste, collapse = ''))
-        refclass <- as.numeric(newdata[, mixfield]) == 1
-        Yp[refclass] <- NA
-        Yp <- mlogit.untransform(Yp, latentmodel)
-        Yp <- logit(Yp)  # return to logit scale for later untransform!
-        if (nmix==2) {
-            h2.1 <- as.numeric(newdata$h2)==1
-            h2.2 <- as.numeric(newdata$h2)==2
-        }
-    }
-    lpred[,1] <- Yp
-    ## 2018-02-23 end of new code
-
-    if (is.null(beta.vcv) | (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
     else {
-        vcv <- beta.vcv[indx,indx, drop = FALSE]
-
-        ## 2017-11-16
-        vcv[is.na(vcv)] <- 0
-
-        nrw <- nrow(mat)
-        vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
-            mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F]))  # link scale
-        vcv <- matrix (vcv, nrow = nrw)
-        ## 2015-09-30
+        
+        mat <- general.model.matrix(formula, data = newdata, gamsmth = smoothsetup, 
+            contrasts = contrasts)
+        if (nrow(mat) < nrow(newdata))
+            warning ("missing values in predictors?")
+        
+        nmix <- 1
         if (field=='pmix') {
-            if (nmix==2)
-                vcv[h2.1,h2.1] <- vcv[h2.2,h2.2]
-            else
-                vcv[,] <- NA
+            ## drop pmix beta0 column from design matrix (always zero)
+            mat <- mat[,-1,drop=FALSE]
+            if ('h2' %in% names(newdata)) nmix <- 2
+            if ('h3' %in% names(newdata)) nmix <- 3
+            mixfield <- c('h2','h3')[nmix-1]
         }
-        lpred[,2] <- diag(vcv)^0.5
+        
+        ###############################
+        Yp <- mat %*% beta[indx]
+        ###############################
+        
+        ## A latent model comprises one row for each latent class.
+        ## Back transformation of pmix in mlogit.untransform() requires all rows of 
+        ## each latent model. That function splits vector Yp by latent model.
+        
+        if (field == 'pmix') {
+            nonh <- newdata[, names(newdata) != mixfield, drop = FALSE]
+            latentmodel <- factor(apply(nonh, 1, paste, collapse = ''))
+            refclass <- as.numeric(newdata[, mixfield]) == 1
+            Yp[refclass] <- NA
+            Yp <- mlogit.untransform(Yp, latentmodel)
+            Yp <- logit(Yp)  # return to logit scale for later untransform!
+            if (nmix==2) {
+                h2.1 <- as.numeric(newdata$h2)==1
+                h2.2 <- as.numeric(newdata$h2)==2
+            }
+        }
+    }
+
+    lpred[,1] <- Yp
+    if (is.null(beta.vcv) || (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
+    else {
+        if (is.null(f) || field != 'D') {
+            vcv <- beta.vcv[indx,indx, drop = FALSE]
+            vcv[is.na(vcv)] <- 0
+            nrw <- nrow(mat)
+            vcv <- apply(expand.grid(1:nrw, 1:nrw), 1, function(ij)
+                mat[ij[1],, drop=F] %*% vcv %*% t(mat[ij[2],, drop=F])) 
+            
+            vcv <- matrix (vcv, nrow = nrw)
+            if (field=='pmix') {
+                if (nmix==2)
+                    vcv[h2.1,h2.1] <- vcv[h2.2,h2.2]
+                else
+                    vcv[,] <- NA
+            }
+            lpred[,2] <- diag(vcv)^0.5
+        }
+        else {
+            vcv <- NULL
+        }
+        
         temp <- cbind(newdata,lpred)
         attr(temp, 'vcv') <- vcv
         return(temp)
@@ -2241,3 +2233,13 @@ getdistmat2 <- function (traps, mask, userdist, HPX = FALSE) {
     }
 }
 #--------------------------------------------------------------------------------
+
+## 2022-01-04 for subset.capthist
+rownum <- function (x) {
+  if (length(dim(x)) < 1 || dim(x)[1] == 0) NULL
+  else 1: (dim(x)[1])
+}
+colnum <- function (x) {
+  if (length(dim(x)) < 2 || dim(x)[2] == 0) NULL
+  else 1: (dim(x)[2])
+}
