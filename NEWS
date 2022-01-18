@@ -1,3 +1,14 @@
+Changes in version 4.5.1 (2022-01-18)
+
+New features or changed behaviour of old functions
+    o   none
+
+Bugs fixed
+    o   secr.fit() hybrid mixture model (hcov with known-class data) 
+        did not use class-dependent detection model, resulting in 
+        erroneous estimate of pmix (secr >= 4.0)
+    o   memory error getxy() C++ (transect simulation; no effect on users)
+
 Changes in version 4.5.0 (2022-01-06)
 
 New features or changed behaviour of old functions

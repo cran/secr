@@ -16,16 +16,19 @@
 ## 2021-04-25 4.4.0
 ## 2021-12-16 tidy up transformations, allow arbitrary link X(), invX(), se.invX()
 ## 2022-01-04 4.5.0
+## 2022-01-18 4.5.1
 #######################################################################################
 
 # Global variables in namespace
 #
-## define a local environment (in namespace?) for temporary variables e.g. iter
+## define a local environment for temporary variables e.g. iter
 ## e.g. Roger Peng https://stat.ethz.ch/pipermail/r-devel/2009-March/052883.html
 
 .localstuff <- new.env()
-#.localstuff$packageType <- ' pre-release'
+
+# .localstuff$packageType <- ' pre-release'
 .localstuff$packageType <- ''
+
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
     'polygonX', 'transectX', 'signal', 'polygon', 'transect', 
     'capped', 'null','null','null','null', 'telemetry', 'signalnoise')
@@ -41,31 +44,31 @@
 .localstuff$iter <- 0   ## counter 1
 .localstuff$iter2 <- 0  ## counter 2
 .localstuff$detectionfunctions <-
-        c('halfnormal',
-      'hazard rate',
-      'exponential',
-      'compound halfnormal',
-      'uniform',
-      'w exponential',
-      'annular normal',
-      'cumulative lognormal',
-      'cumulative gamma',
-      'binary signal strength',
-      'signal strength',
-      'signal strength spherical',
-      'signal-noise',
-      'signal-noise spherical',
-      'hazard halfnormal',
-      'hazard hazard rate',
-      'hazard exponential',
-      'hazard annular normal',
-      'hazard cumulative gamma',
-      'hazard variable power',
-      'hazard pixelar')
+  c('halfnormal',
+    'hazard rate',
+    'exponential',
+    'compound halfnormal',
+    'uniform',
+    'w exponential',
+    'annular normal',
+    'cumulative lognormal',
+    'cumulative gamma',
+    'binary signal strength',
+    'signal strength',
+    'signal strength spherical',
+    'signal-noise',
+    'signal-noise spherical',
+    'hazard halfnormal',
+    'hazard hazard rate',
+    'hazard exponential',
+    'hazard annular normal',
+    'hazard cumulative gamma',
+    'hazard variable power',
+    'hazard pixelar')
 
 .localstuff$DFN <- c('HN', 'HR', 'EX', 'CHN', 'UN', 'WEX', 'ANN', 'CLN', 'CG',
-                     'BSS', 'SS', 'SSS', 'SN', 'SNS',
-                     'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP','HPX')
+  'BSS', 'SS', 'SSS', 'SN', 'SNS',
+  'HHN', 'HHR', 'HEX', 'HAN', 'HCG', 'HVP','HPX')
 
 .localstuff$learnedresponses <- c('b', 'bk', 'B', 'k', 'Bk')   ## Bk added 2020-02-26
 

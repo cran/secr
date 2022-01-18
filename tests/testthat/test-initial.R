@@ -85,6 +85,25 @@ test_that("join works on nonspatial data", {
 })
 ###############################################################################
 
+## pmix bug 2022-01-16
+
+# reported Rebecca Johanna on secrgroup Jan 2022
+# after adjusting code in generalsecrloglik.R and fastsecrloglik.R 
+# to match secr 3.2
+
+test_that("correct likelihood (hcov, pmix with knownclass)", {
+    msk2 <- make.mask(traps(ovenCH[[1]]), buffer = 200, nx = 20, type = 'trapbuffer')
+    args <- list(capthist = ovenCH[[1]], mask = msk2, detectfn = 'HN',
+        CL = TRUE, start = c(-3.5387, 4.1798, 0.3418, 0.1656),
+        model = sigma~h2, hcov = 'Sex', details = list(LLonly = TRUE))
+    expect_equal(do.call(secr.fit, args)[1], -179.0642562, tolerance = 1e-4, 
+        check.attributes = FALSE)
+    args$capthist <- ovenCHp[[1]]
+    expect_equal(do.call(secr.fit, args)[1], -121.4355435 , tolerance = 1e-4, 
+        check.attributes = FALSE)
+})
+###############################################################################
+
 ## future tests
 
 ## data manipulation

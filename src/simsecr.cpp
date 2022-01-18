@@ -512,7 +512,7 @@ List simdetectpolycpp (
     
     if ((detect == 4) || (detect == 7)) {                         // transect only 
         line = (rpoint *) R_alloc(sumk, sizeof(struct rpoint));
-        cumd = (double *) R_alloc(sumk, sizeof(double));
+        cumd = (double *) R_alloc(sumk+1, sizeof(double));
         // coordinates of vertices 
         for (i=0; i<sumk; i++) {
             line[i].x = traps(i,0);
@@ -525,7 +525,6 @@ List simdetectpolycpp (
                 cumd[i+1] = cumd[i] + distance1(line[i], line[i+1]);
             }
         }
-        
     }
     //----------------------------------------------------------------------------
     

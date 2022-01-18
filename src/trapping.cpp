@@ -646,17 +646,16 @@ List trappingtransect (
   
   RNGScope scope;             // Rcpp initialise and finalise random seed 
   cumk[0] = 0;
-  for (k =0; k<ntransect; k++)
+  for (k =0; k<ntransect; k++) {
     cumk[k+1] = cumk[k] + kk[k];
+  }
   sumk = cumk[ntransect];
   line      = (rpoint *) R_alloc(sumk, sizeof(rpoint));
-  // cumd      = (double *) R_alloc(sumk, sizeof(double));
   cumd      = (double *) R_alloc(sumk+1, sizeof(double));
   workXY    = (double*)  R_alloc(maxdet*2, sizeof(double));
   sortorder = (int*)     R_alloc(maxdet, sizeof(int));
   sortkey   = (double*)  R_alloc(maxdet, sizeof(double));
-  // ex = (double *) R_alloc(10 + 2 * maxvertices, sizeof(double));
-  
+
   // coordinates of vertices 
   for (i=0; i<sumk; i++) {
     line[i].x = traps[i];
@@ -670,7 +669,7 @@ List trappingtransect (
       cumd[i+1] = cumd[i] + distance1(line[i], line[i+1]);
     }
   }
-  
+
   for (i=0; i<N; i++) caught[i] = 0;
   for (s=0; s<ss; s++) {                            // each occasion 
     if (lambda[s]>0) {
@@ -999,7 +998,7 @@ List trappingtransectX (
       cumd[i+1] = cumd[i] + distance1(line[i], line[i+1]);
     }
   }
-  
+
   for (s=0; s<ss; s++) {                               // each occasion 
     if (lambda[s]>0) {
       

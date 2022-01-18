@@ -290,16 +290,21 @@ rpoint getxy(
         double cumd[], 
         const rpoint line[], 
         const int kk, 
-        const double offset) {
+        const int offset) {        // double before 2022-01-18
     // return the xy coordinates of point l metres along a transect 
     // offset is the starting position for this transect 
-    int k;
+    int k = 1;    // initialised 2022-01-18
     double pr, d, d12;
     rpoint xy;
     for (k=offset+1; k<(offset+kk); k++) {
         if (cumd[k]>l) break;
     }
+    k = std::min(k, offset+kk-1);   // prevent overshoot 2022-01-18
     d = l - cumd[k-1];  // distance along leg 
+    
+    // debug 2022-01-18
+    // Rprintf("l %10.6g offset %d k %d cumd[k-1] %10.6g cumd[k] %10.6g \n", l, offset, k, cumd[k-1], cumd[k]);
+        
     d12 = cumd[k] - cumd[k-1];
     if (d12>0)
         pr = d / d12;

@@ -199,10 +199,16 @@ fastsecrloglikfn <- function (
             nb <- details$nmix + 1
             nm <- tabulate(data$knownclass, nbins = nb)
             pmix <- attr(pmixn, 'pmix')
-            for (x in 1:details$nmix) {
-                # need group-specific pmix
-                comp[4,1] <- comp[4,1] + nm[x+1] * log(pmix[x]) 
-            }
+            
+            # for (x in 1:details$nmix) {
+            #     # need group-specific pmix
+            #     comp[4,1] <- comp[4,1] + nm[x+1] * log(pmix[x]) 
+            # }
+            
+            ## 2022-01-16 bug fix
+            firstx <- match ((1:details$nmix)+1, data$knownclass)
+            tempsum <- sum(pdot[firstx] * pmix)
+            comp[4,1] <- sum(nm[-1] * log(pdot[firstx] * pmix / tempsum))
         }
         
         if (details$debug>=1) {

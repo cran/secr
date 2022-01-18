@@ -116,7 +116,7 @@ rpoint getxy(
     double cumd[], 
     const rpoint line[], 
     const int kk, 
-    const double offset);
+    const int offset);   // double before 2022-01-18
 
 //---------------------------------------------------------------------
 

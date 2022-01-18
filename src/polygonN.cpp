@@ -480,7 +480,7 @@ rpoint getxycpp(
         const int n2) {
     // return the xy coordinates of point l metres along a transect 
     // n1 is the starting position for this transect within 'line'
-    int j;
+    int j = 1;  // initialised 2022-01-18
     double pr, d, d12;
     rpoint xy;
     for (j=1; j<=(n2-n1); j++) {

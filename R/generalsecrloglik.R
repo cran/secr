@@ -129,7 +129,7 @@ integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0,
         if (nr == 1) temp$prwi <- rep(temp$prwi, nc)
         for (g in 1:ngroup) {
             ok <- as.integer(grp) == g
-            ## sump[ok] <- sump[ok] + pmixn[x,ok] * (1-temp$prwi)   pre 2019-12-08
+            # browser()            
             sump[ok] <- sump[ok] + pmixn[x,ok] * (1-temp$prwi[ok])
         }
     }
@@ -363,6 +363,8 @@ generalsecrloglikfn <- function (
                                    data$mask, data$traps, Dtemp, s)
     Xrealparval0 <- reparameterize (realparval0, detectfn, details,
                                     data$mask, data$traps, Dtemp, s)
+    if (details$debug>2) browser()
+
     ## check valid parameter values
     if (!all(is.finite(Xrealparval))) {
       cat ('beta vector :', beta, '\n')
@@ -559,8 +561,6 @@ generalsecrloglikfn <- function (
                             pID, details$grain, details$ncores)
     }
     
-    if (details$debug>2) browser()
-    
     ngroup <- max(length(levels(data$grp)),1)
     comp <- matrix(0, nrow = 6, ncol = ngroup)
     for (g in 1:ngroup) {
@@ -602,10 +602,16 @@ generalsecrloglikfn <- function (
           nb <- details$nmix + 1
           nm <- tabulate(data$knownclass[ok], nbins = nb)
           pmix <- attr(pmixn, 'pmix')
-          for (x in 1:details$nmix) {
-              # need group-specific pmix
-              comp[4,g] <- comp[4,g] + nm[x+1] * log(pmix[x]) 
-          }
+          # for (x in 1:details$nmix) {
+          #     # need group-specific pmix
+          #     # comp[4,g] <- comp[4,g] + nm[x+1] * log(pmix[x]) 
+          # }
+          
+          ## 2022-01-16
+          firstx <- match ((1:details$nmix)+1, data$knownclass[ok])
+          tempsum <- sum(pdot[ok][firstx] * pmix)
+          comp[4,g] <- sum(nm[-1] * log(pdot[ok][firstx] * pmix / tempsum))
+          
       }
    
       #----------------------------------------------------------------------
