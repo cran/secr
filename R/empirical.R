@@ -244,7 +244,7 @@ derivednj <- function ( nj, esa, se.esa = NULL,
     }
     
     if (method=='local') {
-        warning("method = 'local' not available in secr 4.4.7 because of changes in spsurvey 5.0.0")
+        warning("method = 'local' not available in secr 4.5.3 because of changes in spsurvey")
         # stop ("'local' method requires x and y coordinates")
     }
     varn <- switch (method,

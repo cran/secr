@@ -131,12 +131,6 @@ make.poly <- function (polylist=NULL, x=c(-50,-50,50,50), y=c(-50,50,50,-50),
         vert
     }
 
-    ## defer implementation of sp objects for defining polygons
-    ##    SPDF <- inherits(polylist, "SpatialPolygonsDataFrame")
-    ##    if (SPDF ) {
-    ##        requireNamespace('sp')
-    ##        ...
-    ##    }
     if (is.null(polylist)) polylist <- list(data.frame(x=x,y=y))
     if (is.null(names(polylist))) names(polylist) <- 1:length(polylist)
     grid <- lapply (polylist, makepart)

@@ -7,6 +7,7 @@
 ## 2020-11-04 reliance on dim(PIA0)[2] for number of individuals failed in sumDpdot
 ##            because PIA0 not trimmed to session-specific n; fixed 2020-11-04
 ## 2020-11-04 session names used in output for multi-session data
+## 2022-01-22 fixed bug in sumDpdot that ignored details$ignoreusage
 ############################################################################################
 
 region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = NULL,
@@ -49,8 +50,7 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
     }
     ###########################################################
     if (is.null(region)) {
-        region <- object$mask
-        ## warning ("using entire mask as region")
+        region <- object$mask  # using original mask as region
     }
 
     if (!all(session %in% session(object$capthist)))
@@ -105,34 +105,28 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         else
             mask <- object$mask
         masktype <- if (inherits(mask, "linearmask")) "linearmask" else "mask"
-
+        
         ########################################################
         ## if necessary, convert vector region to raster
         if (inherits(region, 'mask')) {
             ## includes linearmask
             if (ms(region))
-                 regionmask <- region[[session]]
+                regionmask <- region[[session]]
             else
                 regionmask <- region
         }
         else {
             if (is.null(spacing)) {
-                ## use mask spacing by default
+                ## use original mask spacing by default
                 spacing <- spacing(mask)
             }
-            ## 2016-02-17 extended from SpatialPolygonsDataFrame
-            if ((inherits(region, 'SpatialPolygons') & (masktype == "mask")) |
-                (inherits(region, 'SpatialLines') & (masktype == "linearmask"))
-                ) {
-                bbox <- bbox(region)
-            }
-            else {
-                bbox <- apply(region, 2, range)
-            }
             if (masktype == "mask") {
+                # generate mask object from polygon region
+                region <- boundarytoSF(region)
+                bbox <- matrix(st_bbox(region), ncol=2)
                 regionmask <- make.mask(bbox, poly = region, buffer = 0,
-                                        spacing = spacing, type = 'polygon',
-                                        check.poly = FALSE)
+                    spacing = spacing, type = 'polygon',
+                    check.poly = FALSE)
             }
             else {
                 ## dodge circular dependence and anticipate release of secrlinear
@@ -361,8 +355,10 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                                         object$details, mask, trps, Dtemp, s)
         #############################################################
         ## usage
-        if (is.null(usage(trps))) {
-            usage(trps) <- matrix(1, nrow = K, ncol = s)
+        # 2022-01-22
+        # if (is.null(usage(trps))) {
+        if (is.null(usage(trps)) || object$details$ignoreusage) {
+                usage(trps) <- matrix(1, nrow = K, ncol = s)
         }
         used <- (usage(trps) > 1e-10) * 1
         if (any(used==0)) {

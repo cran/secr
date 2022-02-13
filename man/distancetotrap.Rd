@@ -31,9 +31,7 @@ nearest detector in \code{traps}. It may be used to restrict the points
 on a habitat mask.
 
 For traps objects with polygon detector type (polygon, polygonX), and for SpatialPolygons, 
-the function rgeos::gDistance is used internally if the package \pkg{rgeos} is available 
-(from \pkg{secr} 4.2.0). The method is otherwise approximate and uses only 
-the first polygon.
+the function sf::st_distance is used internally(from \pkg{secr} 4.5.2).
 
 }
 

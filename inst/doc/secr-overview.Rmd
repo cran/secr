@@ -22,7 +22,7 @@ NOTE: **secr** was extensively re-written between versions 3.2 and 4.0, but the 
 
 Two add-on packages extend the capability of **secr** and are documented separately. **secrlinear** enables the estimation of linear density (e.g., animals per km) for populations in linear habitats such as stream networks ([secrlinear-vignette.pdf][]). **secrdesign** enables the assessment of alternative study designs by  Monte Carlo simulation; scenarios may differ in detector (trap) layout, sampling intensity, and other characteristics ([secrdesign-vignette.pdf][]).
 
-Spatial open-population capture--recapture models are implemented in the R package **openCR** (Efford and Schofield 2019). Other open-population packages due to Ben Augustine and Richard Glennie are available on GitHub (https://github.com/benaug/OpenPopSCR; https://github.com/r-glennie/openpopscr). 
+Spatial open-population capture--recapture models are implemented in the R package **openCR** (Efford and Schofield 2020). Other open-population packages due to Ben Augustine and Richard Glennie are available on GitHub (https://github.com/benaug/OpenPopSCR; https://github.com/r-glennie/openpopscr). 
 
 # Introduction to SECR
 
@@ -248,7 +248,7 @@ To perform an SECR analysis you explicitly or implicitly construct each of these
 - Each object class (shaded box) comes with methods to display and manipulate the data it contains (e.g. `print`, `summary`, `plot`, `rbind`, `subset`)[^2]. 
 - The function `read.capthist` forms a 'traps' object from the detector layout data and saves it as an attribute, along with capture data read from another file, in a 'capthist' object. 
 - By default, a habitat mask is generated automatically by `secr.fit` using a specified buffer around the detectors (traps). The function `make.mask` gives greater control over this step.
-- Any of the objects input to `secr.fit` (traps, capthist, mask) may include a dataframe of covariates  saved as an attribute. Covariate names may be used in model formulae; the `covariates` method is used to extract or replace covariates.
+- Any of the objects input to `secr.fit` (traps, capthist, mask) may include a dataframe of covariates  saved as an attribute. Covariate names may be used in model formulae; the `covariates` method is used to extract or replace covariates. Use `addCovariates` for covariates from spatial data sources (e.g., shapefile or 'sf' object)
 - Fitted secr models may be manipulated with the methods shown on the right and others listed in [Appendix 3](#appendix3). 
 
 [^2]:Text in this font refers to R objects that are documented in online help for the **secr** package, or in base R.
@@ -303,6 +303,7 @@ Other documentation, in the form of pdf vignettes built with **knitr**,  will be
 | [secr-parameterisations.pdf] | alternative parameterisations of detection|
 | [secr-polygondetectors.pdf] | using polygon and transect detector types |
 | [secr-sound.pdf] | analysing data from microphone arrays|
+| [secr-spatialdata.pdf] | tips on external spatial data and functions|
 | [secr-telemetry.pdf] | analysing combined telemetry and capture--recapture data|
 | [secr-varyingeffort.pdf] | variable effort (usage) in SECR models |
 
@@ -589,6 +590,9 @@ Efford, M. G. and Fewster, R. M. (2013) Estimating population size by spatially 
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in spatially explicit capture--recapture data. *Ecology*  **95**, 1341--1348.
 
+Efford, M. G. and Schofield, M. R. (2020) A spatial open-population capture--recapture model.
+  *Biometrics* **76**, 392--402.
+
 Huggins, R. M. (1989) On the statistical analysis of capture experiments.  *Biometrika* **76**, 133--140.
 
 Laake, J. and Rexstad E. (2014) Appendix C. RMark - an alternative approach to building linear models in MARK. In: Cooch, E. and White, G. (eds) *Program MARK: A Gentle
@@ -713,6 +717,7 @@ These are the core functions of **secr** 4.5 -- the ones that you are most likel
 
 |  Function       | Purpose                                           |
 |-----------------|---------------------------------------------------|
+| `addCovariates`	| add spatial covariates to traps or mask |
 | `AIC`*            | model selection, model weights |
 | `covariates`	    | extract or replace covariates of traps, capthist or mask |
 | `derived`*        | compute density from conditional likelihood models |
@@ -936,6 +941,7 @@ Stoat *Mustela erminea* hair tube DNA data from Matakitaki Valley, South Island,
 [secr-parameterisations.pdf]: https://www.otago.ac.nz/density/pdfs/secr-parameterisations.pdf
 [secr-polygondetectors.pdf]: https://www.otago.ac.nz/density/pdfs/secr-polygondetectors.pdf
 [secr-sound.pdf]: https://www.otago.ac.nz/density/pdfs/secr-sound.pdf
+[secr-spatialdata.pdf]: https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf
 [secr-telemetry.pdf]: https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
 [secr-tutorial.pdf]: https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf
 [secr-troubleshooting.pdf]: https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf

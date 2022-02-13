@@ -330,7 +330,7 @@ alongtransect <- function (object, tol = 0.01) {
     }
 }
 
-# under development 2021-12-11
+# under development 2021-12-11, 2022-02-01
 distancetotransect <- function (object) {
     if (!inherits(object, 'capthist'))
         stop ("requires 'capthist' object")
@@ -345,30 +345,18 @@ distancetotransect <- function (object) {
             
             xyi <- xy(object)
             
-            if (!requireNamespace('terra', quietly = TRUE)) {
-                stop("snapXY for transects requires package terra")
-            }
-
             # split by transect
             lxy <- split (trps, transectID(trps))
             vlist <- lapply(lxy, as.matrix)
             
-            # each transect as terra SpatVector
-            vlist <- lapply(vlist, terra::vect, type = 'lines')
-            
-            # combine lines in one SpatVector
-            if (length(vlist) == 1)
-                v <- vlist[[1]]
-            else
-                v <- do.call(rbind, unname(vlist))  # strange need to remove names
-            
-            # closest point on lines
-            xy <- terra::vect(as.matrix(xyi))
-            neari <- terra::nearest(xy, v, centroids = FALSE)
-            
-            # return distances
-            terra::values(neari)[,'distance']       # strange failure to show to_id
-            
+            # each transect as sfg
+            vlist <- lapply(vlist, st_linestring)
+            # combine linestrings in one sfc
+            v <- st_sfc(vlist)
+            xy <- st_as_sf(as.data.frame(xyi), coords = 1:2)
+            neari <- st_nearest_feature(xy, v)
+            st_distance(xy,v)[,neari]   # distance to nearest feature
+
         }
         else
             NULL
@@ -672,10 +660,14 @@ detectionindex <- function (object) {
 }
 
 polyarea <- function (xy, ha = TRUE) {
-    if (inherits(xy, 'SpatialPolygons')) {
-        if (!requireNamespace('rgeos', quietly = TRUE))
-            stop ("package rgeos is required for area of SpatialPolygons")
-        temparea <- rgeos::gArea(xy)
+    if (inherits(xy, c('sf','sfc','sfg'))) {
+        temparea <- sum(st_area(xy))
+    }
+    else if (inherits(xy, 'SpatialPolygons')) {
+        temparea <- sum(st_area(st_as_sf(xy)))
+    }
+    else if (inherits(xy, 'SpatVector')) {
+        temparea <- sum(st_area(st_as_sf(xy)))
     }
     else {
         nr <- length(xy$x)

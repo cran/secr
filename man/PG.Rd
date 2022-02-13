@@ -22,7 +22,7 @@ PG(CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...)
 
 \arguments{
   \item{CH}{ capthist object including telemetry locations}
-  \item{poly}{ SpatialPolygonsDataFrame object from \pkg{sp}}
+  \item{poly}{ polygon object (see \code{\link{boundarytoSF}}) }
   \item{includeNULL}{ logical; if TRUE then missing values are returned
     for animals without telemetry data}
   \item{plt}{ logical; if TRUE then poly and telemetry locations are plotted}
@@ -55,7 +55,7 @@ PG(CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...)
 
 \seealso{
   
- \code{\link{addTelemetry}},  \code{\link{buffer.contour}}, \code{\link{SpatialPolygonsDataFrame}},
+ \code{\link{addTelemetry}},  \code{\link{buffer.contour}}, 
 \code{\link{pointsInPolygon}}
 
 }
@@ -121,14 +121,11 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
         PG(CH = CH , poly = poly, plt = FALSE, ...)
     }
     set.seed(seed)
-    require(sp)
+    if (!requireNamespace('sf')) stop ("requires package sf")
     if (is.null(poly)) {
         poly <- buffer.contour (traps(CH), ...)
-        srl <- lapply(poly, function(x) Polygon(as.matrix(x)))
-        tmp <- Polygons(srl,1)
-        poly <- SpatialPolygons(list(tmp))
-        poly <- SpatialPolygonsDataFrame(poly, data = data.frame(ID =
-                                               names(poly)))
+        poly <- lapply(poly, as.matrix)
+        poly <- sf::st_sfc(sf::st_polygon(poly))
     }
     xyl <- telemetryxy(CH)
     D <- length(xyl) / maskarea(mask)
@@ -136,7 +133,6 @@ randomPG <- function(CH, poly = NULL, mask, reorient = TRUE, nrepl = 1,
 }
 
 mask <- make.mask (traps(CvilleBoth), buffer = 400, type = "trapbuffer")
-require(sp)
 pg <- randomPG (CvilleBoth, mask = mask, buffer = 100, convex = TRUE,
     nrepl = 20)
 apply(pg, 1, mean)

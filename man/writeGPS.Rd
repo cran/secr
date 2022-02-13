@@ -10,7 +10,7 @@ Upload a set of point locations as waypoints to a GPS unit connected
 by USB or via a serial port. Intended primarily for detector locations
 in a traps object. Uses the GPSBabel package which must have been
 installed. Coordinates are first inverse-projected to latitude and
-longitude using function \code{project} from \pkg{rgdal}.
+longitude using function \code{\link{st_transform}} from \pkg{sf}.
 
 }
 \usage{
@@ -39,8 +39,9 @@ ports, or the name of a file to create.
 % 2020-04-05 https://www.nceas.ucsb.edu/scicomp/recipes/projections not working
 
 The \code{proj} argument may be complex. For further information see the
-Examples and the help for \code{project} in the related package \pkg{rgdal}. If
-\code{proj} is an empty string then coordinates are assumed already to
+Examples and the vignette 
+\href{https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf}{secr-spatialdata.pdf}.
+If \code{proj} is an empty string then coordinates are assumed already to
 be latitudes (column 1) and longitudes (column 2).
 
 Waypoint names are derived from the rownames of \code{xy}.
@@ -83,11 +84,12 @@ quotes). Or ";C:/Program Files/gpsbabel" on 32-bit systems.
 
 if (nzchar(Sys.which("gpsbabel"))) {
 
-datadir <- system.file("extdata", package = "secr")
-possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
+library(sf)
+shpfilename <- system.file("extdata/possumarea.shp", package = "secr")
+possumarea <- st_read(shpfilename)
 
-possumgrid <- make.systematic(spacing = 100, region =
-    possumarea, plt = TRUE)
+possumgrid <- make.systematic(spacing = 100, region = possumarea, 
+    plt = TRUE)
 
 ## May upload directly to GPS...
 # writeGPS(possumgrid, proj = "+proj=nzmg")
@@ -101,9 +103,9 @@ writeGPS(possumgrid, o = "gdb", F = "tempgrid.gdb",
 ## hypothetical example for New Zealand Transverse Mercator
 ## with datum NZGD2000 (EPSG:2193)
 
-# NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
-#    "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
-#    " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+NZTM <- paste("+proj=tmerc +lat_0=0 +lon_0=173 +k=0.9996",
+    "+x_0=1600000 +y_0=10000000 +ellps=GRS80",
+    " +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
 # writeGPS(possumgridNZTM, o = "gdb", F = "tempNZTM.txt", 
 #    proj = NZTM)

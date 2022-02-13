@@ -106,7 +106,7 @@ autoini <- function (capthist, mask, detectfn = 0, thin = 0.2, tol = 0.001,
     
     trps <- traps(capthist)
     usge <- usage(trps)
-    if (is.null(usge) | ignoreusage) {
+    if (is.null(usge) || ignoreusage) {
         ## assuming k = nk i.e. not polygon or transect detector
         usge <- matrix(1, nrow = nrow(trps), ncol = ncol(capthist))
     }

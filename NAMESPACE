@@ -1,50 +1,109 @@
-import(sp)
-import(parallel)
+# 2022-02-02
 
-importFrom(abind, "abind")
-importFrom(graphics, ".filled.contour", "abline", "arrows", "contour", "hist", 
-    "lines", "locator", "mtext", "par", "persp", "points", "polygon", "rect", 
-    "segments", "strheight", "strwidth", "symbols", "text", "legend", "axis")
-importFrom(grDevices, "chull", "contourLines", "grey", "palette", 
-    "terrain.colors", "topo.colors", "rainbow")
-importFrom(MASS, "ginv", "eqscplot")
-importFrom(methods, "as", "is", "Ops", "Math")
-importFrom(mgcv, "gam", "s", "te", "formula.gam", "predict.gam")
-importFrom(nlme, "fdHess")
-importFrom(stats, "AIC", "approx", "approxfun", "as.formula", "chisq.test", "coef",
-    "cutree", "deviance", "df.residual", "dist", "dpois",  "formula", "hclust",
-    "integrate", "lm", "logLik", "median", "model.matrix", "nlm", "nls", "optim",
-    "optimise", "optimize", "pchisq", "pgamma", "plnorm", "pnorm", "poisson",
-    "predict", "qchisq", "qnorm", "rbeta", "rbinom", "rexp", "rgamma", "rlnorm", 
-    "rmultinom", "rnbinom", "rnorm", "rpois", "rt", "runif", "rweibull", "sd", 
-    "simulate", "smooth.spline", "terms", "uniroot", "update", "update.formula", 
-    "var", "vcov")
-importFrom(stringr, "str_pad", "str_length")
-importFrom(tools, "file_ext")
-importFrom(utils, "count.fields", "flush.console", "getS3method", "head",
-    "object.size", "packageDescription", "packageVersion", "read.csv",
-    "read.table", "tail", "write.table")   ## "winDialog"
+import (parallel)
+import (RcppNumerical)
 
-importFrom(raster, "values<-", "values", "clump", "adjacent")
-importFrom(raster, "extract")
-importClassesFrom(raster, RasterLayer)
-importMethodsFrom(raster, raster)
-exportMethods(raster)
+# Base R
 
-importFrom (Rcpp, "evalCpp")
-importFrom (RcppParallel, "RcppParallelLibs", "setThreadOptions", "defaultNumThreads")
-import(RcppNumerical)
+importFrom (graphics, .filled.contour, abline, arrows, contour, hist, 
+    lines, locator, mtext, par, persp, points, polygon, rect, 
+    segments, strheight, strwidth, symbols, text, legend, axis)
+importFrom (grDevices, chull, contourLines, grey, palette, 
+    terrain.colors, topo.colors, rainbow)
+importFrom (methods, as, is, Ops, Math)
+importFrom (stats, AIC, approx, approxfun, as.formula, chisq.test, coef,
+    cutree, deviance, df.residual, dist, dpois,  formula, hclust,
+    integrate, lm, logLik, median, model.matrix, nlm, nls, optim,
+    optimise, optimize, pchisq, pgamma, plnorm, pnorm, poisson,
+    predict, qchisq, qnorm, rbeta, rbinom, rexp, rgamma, rlnorm, 
+    rmultinom, rnbinom, rnorm, rpois, rt, runif, rweibull, sd, 
+    simulate, smooth.spline, terms, uniroot, update, update.formula, 
+    var, vcov)
+importFrom (tools, file_ext)
+importFrom (utils, count.fields, flush.console, getS3method, head,
+    object.size, packageDescription, packageVersion, read.csv,
+    read.table, tail, write.table)   
 
-## suggested packages
-## importFrom (rgdal, "readOGR", "project")
-## importFrom (sp, "SpatialPoints", "proj4string", "over", "CRS")
-## importFrom (readxl, "read_excel")
-## importFrom (rgeos, "gArea","gIntersection", "gBuffer)
-## importFrom (spsurvey, "total.est", "grts")
-## importFrom (nnet, "which.is.max")
-## importFrom (maptools, "unionSpatialPolygons")
-## importFrom (gdistance, "transition", "geocorrection", "costDistance")
-## importFrom (mvtnorm, "rmvt") 
+# Other packages
+
+importFrom (abind, 
+    abind)
+
+importFrom (MASS, 
+    ginv, 
+    eqscplot)
+
+importFrom (mgcv, 
+    gam, 
+    s, 
+    te, 
+    formula.gam, 
+    predict.gam)
+
+importFrom (nlme, 
+    fdHess)
+
+importFrom (raster, 
+    adjacent, 
+    clump, 
+    "values<-", 
+    values)
+
+importMethodsFrom (raster, raster)
+exportMethods     (raster)
+
+importFrom (Rcpp, evalCpp)
+
+importFrom (RcppParallel, 
+    RcppParallelLibs, 
+    setThreadOptions, 
+    defaultNumThreads)
+
+importFrom(sf, 
+    st_area, 
+    st_as_sf, 
+    st_as_sfc, 
+    st_bbox, 
+    st_buffer, 
+    st_cast, 
+    st_centroid, 
+    st_crs, 
+    "st_crs<-", 
+    st_coordinates, 
+    st_distance, 
+    st_drop_geometry,
+    st_geometry, 
+    st_geometry_type, 
+    st_intersection, 
+    st_join,
+    st_length, 
+    st_linestring, 
+    st_nearest_feature, 
+    st_nearest_points, 
+    st_point, 
+    st_polygon,
+    st_read, 
+    st_sample,
+    st_sf,
+    st_sfc, 
+    st_transform, 
+    st_union, 
+    st_within)
+
+importFrom (stringr, 
+    str_pad, 
+    str_length)
+
+importFrom (terra, 
+    extract)
+
+importMethodsFrom (terra, rast)
+exportMethods     (rast)
+
+
+## other suggested packages
+## importFrom (readxl, read_excel)
+## importFrom (gdistance, transition, geocorrection, costDistance)
 
 export (secr.fit)
 export (par.secr.fit)
@@ -218,10 +277,10 @@ S3method(region.N, secr)
 S3method(region.N, secrlist)
 
 export(intervals)
-export ('intervals<-')
+export ("intervals<-")
 S3method(intervals,default)
 export(sessionlabels)
-export ('sessionlabels<-')
+export ("sessionlabels<-")
 S3method(sessionlabels,default)
 
 export (covariates)
@@ -284,27 +343,27 @@ S3method(spacing,default)
 S3method(traps,default)
 S3method(session, default)
 
-export ('covariates<-')
-export ('timevaryingcov<-')
-export ('usage<-')
-export ('markocc<-')
-export ('telemetrytype<-')
-export ('Tu<-')
-export ('Tm<-')
-export ('Tn<-')
-export ('detector<-')
-export ('clusterID<-')
-export ('clustertrap<-')
-export ('spacing<-')
-export ('polyID<-')
-export ('transectID<-')
-export ('traps<-')
-export ('session<-')
-export ('xy<-')
-export ('telemetryxy<-')
-export ('signalframe<-')
-export ('signal<-')
-export ('noise<-')
+export ("covariates<-")
+export ("timevaryingcov<-")
+export ("usage<-")
+export ("markocc<-")
+export ("telemetrytype<-")
+export ("Tu<-")
+export ("Tm<-")
+export ("Tn<-")
+export ("detector<-")
+export ("clusterID<-")
+export ("clustertrap<-")
+export ("spacing<-")
+export ("polyID<-")
+export ("transectID<-")
+export ("traps<-")
+export ("session<-")
+export ("xy<-")
+export ("telemetryxy<-")
+export ("signalframe<-")
+export ("signal<-")
+export ("noise<-")
 
 ## assume these internal fns not needed outside
 # export (group.levels)
@@ -400,7 +459,7 @@ S3method(predict, secrlist)
 S3method(coef, secrlist)
 S3method(AIC, secrlist)
 S3method(AICcompatible, secrlist)
-S3method('[', secrlist)
+S3method("[", secrlist)
 S3method(c, secrlist)
 S3method(modelAverage, secrlist)
 

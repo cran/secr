@@ -22,9 +22,11 @@
 ## 2019-12-20 make.systematic() arguments 'rotate', 'centrexy'
 ## 2020-01-27 fix bug (saved n = NULL when n missing)
 ## 2021-10-18 grts temporarily suspended
+## 2022-02-02 grts revived; use sf
+## 2022-02-05 comprehensive use of sf
 ###############################################################################
 
-## spsurvey uses sp
+## spsurvey uses sf 2022-01-31
 
 trap.builder <- function (n = 10, cluster, region = NULL, frame =
     NULL, method = c("SRS", "GRTS", "all", "rank"), edgemethod =
@@ -34,11 +36,8 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     plt = FALSE, add = FALSE) {
     ## region may be -
     ## matrix x,y
+    ## sf
     ## sp SpatialPolygonsDataFrame object
-
-    ## future: allow
-    ##   minimum separation
-    ##   shapefile
 
     #####################################################
     # 1. form polygon
@@ -47,53 +46,53 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     # 4. optionally clip reject edge clusters
     # 5. rbind
     #####################################################
-
-    .local <- new.env()   ## for clusteri
-    method <- match.arg(method)
-    edgemethod <- match.arg(edgemethod)
-    exclmethod <- match.arg(exclmethod)
+    
     allinside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
-        ## 2014-10-25 polygons() works with both SP and SPDF
-        !any(is.na(sp::over (xy, polygons(region))))
+        xy <- st_as_sf(data.frame(xy), coords=1:2)
+        st_crs(xy) <- st_crs(region)
+        all(st_within(xy, region, sparse = FALSE))
     }
 
     anyinside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
-        any(!is.na(sp::over (xy, polygons(region))))
+        xy <- st_as_sf(data.frame(xy), coords=1:2)
+        st_crs(xy) <- st_crs(region)
+        any(st_within(xy, region, sparse = FALSE))
+    }
+
+    alloutside <- function (xy) {
+        xy <- st_as_sf(data.frame(xy), coords=1:2)
+        st_crs(xy) <- st_crs(exclude)
+        all(!st_within(xy, exclude, sparse = FALSE))
+    }
+
+    anyoutside <- function (xy) {
+        xy <- st_as_sf(data.frame(xy), coords=1:2)
+        st_crs(xy) <- st_crs(exclude)
+        any(!st_within(xy, exclude, sparse = FALSE))
     }
 
     centreinside <- function (xy) {
         xy <- apply(as.matrix(xy),2,mean)
-        xy <- SpatialPoints(matrix(xy, ncol=2), proj4string = CRS())
-        !is.na(sp::over (xy, polygons(region)))
+        xy <- st_as_sf(data.frame(xy), coords = 1:2)
+        st_crs(xy) <- st_crs(region)
+        OK <- st_within(xy, region, sparse = FALSE)
+        apply(OK,1,any)
     }
-
-    alloutside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
-        ## 2014-10-25 polygons() works with both SP and SPDF
-        all(is.na(sp::over (xy, polygons(exclude))))
-    }
-
-    anyoutside <- function (xy) {
-        xy <- SpatialPoints(as.matrix(xy), proj4string = CRS())
-        any(is.na(sp::over (xy, polygons(exclude))))
-    }
-
+    
     centreoutside <- function (xy) {
         xy <- apply(as.matrix(xy),2,mean)
-        xy <- SpatialPoints(matrix(xy, ncol=2), proj4string = CRS())
-        is.na(sp::over (xy, polygons(exclude)))
+        xy <- st_as_sf(data.frame(xy), coords = 1:2)
+        st_crs(xy) <- st_crs(region)
+        OK <- st_within(xy, region, sparse = FALSE)
+        !apply(OK,1,any)
     }
 
     position <- function (i, cluster) {
-        #newtraps <- secr::shift(cluster, origins[i,])
-        newtraps <- shift(cluster, origins[i,])
+        newtraps <- secr::shift(cluster, origins[i,])
         if (!is.null(rotation)) {
             if (rotation<0)
                 rotation <- runif(1) * 360
-            #bnewtraps <- secr::rotate(newtraps, rotation, apply(newtraps,2,mean))
-            newtraps <- rotate(newtraps, rotation, apply(newtraps,2,mean))
+            newtraps <- secr::rotate(newtraps, rotation, apply(newtraps,2,mean))
         }
         i <- .local$clusteri
         .local$clusteri <- .local$clusteri + 1    ## global update!
@@ -102,6 +101,15 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         newtraps
     }
 
+    ## mainline
+    .local <- new.env()   ## for clusteri
+    method <- match.arg(method)
+    edgemethod <- match.arg(edgemethod)
+    exclmethod <- match.arg(exclmethod)
+
+    if (method=="GRTS" && !is.null(exclude)) {
+        stop ("GRTS incompatible with non-null 'exclude'")
+    }    
     ## option for single-trap clusters
     if (missing(cluster))
         cluster <- NULL
@@ -123,62 +131,48 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     if (method == 'all') {
         n <- nrow(frame)
     }
-    if (is.null(region))
+    if (is.null(region)) {
         edgemethod <- 'allowoverlap'
+    }
 
-    SP <- inherits(region, 'SpatialPolygons')
-    SPx <- inherits(exclude, 'SpatialPolygons')
-
+    region <- boundarytoSF(region)   # sfc
+    exclude <- boundarytoSF(exclude) # sfc
+    
     if (is.null(frame)) {
         if (is.null(region)) {
             stop ("specify at least one of 'region' or 'frame'")
         }
 
-        if (SP) {
-            ## spsurvey requires SPDF
-            if ((method == 'GRTS') & (!inherits(region, 'SpatialPolygonsDataFrame'))) {
-                attr <- data.frame(a = 1, row.names = "s1")
-                region <- SpatialPolygonsDataFrame(region, attr)
-            }
-        }
-        else {
-            region <- matrix(unlist(region), ncol = 2)
-            region <- rbind (region, region[1,])  # force closure of polygon
-            region <- boundarytoSPDF(region)
-        }
-        
-        if (!is.null(exclude)) {
-            exclude <- boundarytoSP(exclude)
-        }
-        
         if (plt & !add) {
-            plot(region)
-            if (!is.null(exclude))
-                plot(exclude, col='lightgrey', add=TRUE, border='lightgrey')
+            plot(st_geometry(region))   # use plot method for sfc
+            if (!is.null(exclude)) {
+                plot(st_geometry(exclude), col='lightgrey', add=TRUE, border='lightgrey')
+            }
         }
     }
     else {
         if (plt & !add) {
             if (!is.null(region)) {
-                plot(region)
+                plot(st_geometry(region))   # use plot method for sfc
             }
             else {
                 MASS::eqscplot (frame, axes = F, xlab = '', ylab = '', pch = 1, cex = 0.5)
             }
-            if (!is.null(exclude))
-                plot(exclude, col = 'lightgrey', add = T)
+            if (!is.null(exclude)) {
+                plot(st_geometry(region), border = 'lightgrey', add = TRUE)   # use plot method for sfc
+            }
         }
     }
 
+    # define oversample
     ntrial <- max(n * samplefactor, 5)
-    ## 2018-09-27
-    if (!is.null(region))  proj4string(region) <- CRS()
-    if (!is.null(exclude)) proj4string(exclude) <- CRS()
     
     ####################################
     if (method == 'SRS') {
+        
         if (is.null(frame)) {
-            origins <- coordinates(spsample(region, ntrial, type='random'))
+            pts <- st_sample(region, size = ntrial, type  = "random", exact = TRUE)
+            origins <- st_coordinates(pts)
         }
         else {
             if (ntrial > nrow(frame))
@@ -186,26 +180,43 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             OK <- sample.int(nrow(frame), ntrial, replace = FALSE)
             origins <- as.matrix(frame[OK, ])
         }
+        
     }
     ####################################
     else if (method == 'GRTS') {
-        stop ("method = 'GRTS' is unavailable in secr 4.4.7 because of changes in spsurvey 5.0.0")
-        # if (!requireNamespace ('spsurvey', quietly = TRUE))
-        #     stop ("package 'spsurvey' required for grts in trap.builder")
-        # ## make a list in the format needed by grts()
-        # design <- list(None = list(panel = c(Panel1 = n),
-        #     seltype = "Equal", over = ntrial))
-        # src <-ifelse (is.null(frame), 'sp.object', 'att.frame')
-        # typ <-ifelse (is.null(frame), 'area', 'finite')
-        # GRTS.sites <- spsurvey::grts (
-        #     design = design, 
-        #     type.frame = typ,
-        #     src.frame = src, 
-        #     sp.object = region, 
-        #     att.frame = frame,
-        #     shapefile = FALSE)
-        # origins <- coordinates(GRTS.sites)
+        stop ("method = 'GRTS' is unavailable because of changes in spsurvey")
+        # if (!requireNamespace ('spsurvey', quietly = TRUE)) {
+        #     stop ("package 'spsurvey' required for GRTS in trap.builder")
+        # }
+        # if (!is.null(region)) {
+        #         sf_frame <- st_sf(region)   # sfc to sf
+        # }
+        # else {
+        #     # assume frame of points
+        #     # stop ("GRTS currently disabled for sampling frame of points")
+        #     sf_frame <- st_as_sf(data.frame(frame), coords=1:2)
+        # }
+        # 
+        # # ensure valid crs
+        # if (st_crs(sf_frame)$IsGeographic) {   # most likely EPSG 4326
+        #     sf_frame <- st_transform(sf_frame, crs = "+proj=utm")
+        #     warning ("GRTS used latlon transformed to arbitrary crs (UTM)")
+        # }
+        # else if (is.na(st_crs(sf_frame))) {
+        #     st_crs(sf_frame) <- 2193  # NZTM 2000 - arbitrary!
+        #     warning ("GRTS requires projected coordinates; using arbitrary crs (UTM)")
+        # }
+        # ntrial <- n                   # oversample not allowed
+        # 
+        # GRTS.sites <- spsurvey::grts(
+        #     sframe      = sf_frame, 
+        #     n_base      = ntrial, 
+        #     stratum_var = NULL,       # unstratified
+        #     seltype     = "equal"     # unweighted
+        #     )
+        # origins <- st_coordinates(GRTS.sites$sites_base)
     }
+    
     ####################################
     else if (method == 'all') {
         if (is.null(frame) || (nrow(frame)==0)) {
@@ -252,22 +263,30 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
         traps <- lapply(1:(ntrial), position, cluster)
     }
     ## subset whole clusters
-    if ((edgemethod %in% c('allooutside', 'allinside', 'anyinside', 'centreinside')) | 
-        (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside'))) {
+    if ((edgemethod %in% c('alloutside', 'allinside', 'anyinside', 'centreinside')) || 
+            (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside'))) {
         
         if (edgemethod %in% c('allinside', 'anyinside', 'centreinside')) {
             if (is.null(region)) stop ("'edgemethod' requires 'region'")
+            # if (method == "GRTS") {
+            #     stop ("edge clipping (edgemethod) incompatible with GRTS")
+            # }
             OK <- sapply(traps, edgemethod) 
         }
-        else OK <- rep(TRUE, length(traps)) ## 2018-12-18
-        
-        if (!is.null(exclude) & (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside')))
+        else {
+            OK <- rep(TRUE, length(traps)) ## 2018-12-18
+        }
+        if (!is.null(exclude) & (exclmethod %in% c('alloutside', 'anyoutside', 'centreoutside'))) {
             OK <- OK & sapply(traps, exclmethod)
+        }
 
-        if (method == 'all')
+        if (method == 'all') {
             n <- sum(OK)
-        if (sum(OK) < n)
+        }
+        
+        if (sum(OK) < n) {
             stop ("not enough clusters inside polygon")
+        }
         
         traps <- traps[OK]  ## subset whole clusters
     }
@@ -281,14 +300,19 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     }
     ## drop excluded sites, if requested
     if (edgemethod %in% c('clip', 'centreinside')) {
-        xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
-        OK <- sp::over (xy, polygons(region))
-        traps <- subset(traps, subset = !is.na(OK))
+        xy <- st_as_sf(traps, coords=1:2)
+        st_crs(xy) <- st_crs(region)
+        # OK matrix, rows are points, cols are polygons
+        OK <- st_within(xy, region, sparse = FALSE)  
+        OK <- apply(OK,1,any)
+        traps <- subset(traps, subset = OK)
     }
-    if (!is.null(exclude) & (exclmethod %in% c('clip', 'centreoutside'))) {
-        xy <- SpatialPoints(as.matrix(traps), proj4string = CRS())
-        notOK <- sp::over (xy, polygons(exclude))
-        traps <- subset(traps, subset = is.na(notOK))
+    if (!is.null(exclude) && (exclmethod %in% c('clip', 'centreoutside'))) {
+        xy <- st_as_sf(traps, coords=1:2)
+        st_crs(xy) <- st_crs(exclude)
+        OK <- st_within(xy, exclude, sparse = FALSE)  
+        OK <- !apply(OK,1,any)
+        traps <- subset(traps, subset = OK)
     }
 
     ## renumber clusters
@@ -329,43 +353,32 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 make.systematic <- function (n, cluster, region, spacing = NULL,
     origin = NULL, originoffset = c(0,0), chequerboard = c('all','black','white'), 
     order = c('x', 'y', 'xb', 'yb'), 
-    rotate = 0, centrexy = apply(bbox(region),1,mean), 
+    rotate = 0, centrexy = NULL, 
     keep.design = TRUE, ...) {
     
-    # NOT GOOD IF REGION IS MATRIX NOT SPDF
-
     ## 'cluster' is a traps object for one module
-    ## 'region' is a rectangular survey region
+    ## 'region' is a survey region
     ## ... arguments passed to trap.builder (rotate, detector)
+
     temporigin <- origin
     chequerboard <- match.arg(chequerboard)
     order <- match.arg(order)
-    SP <- inherits(region, "SpatialPolygons")
-    if (SP) {
-        region <- polygons(region)
-    }
-    else{
-        ## convert to SpatialPolygons
-        ## future: recognise & import shapefile
-        region <- matrix(unlist(region), ncol = 2)
-        region <- rbind (region, region[1,])  # force closure of polygon
-        region <- boundarytoSP(region)
-    }
+    
+    region <- boundarytoSF(region)
     
     if (rotate != 0) {
-        if (requireNamespace('maptools', quietly = TRUE)) {
-            region <- maptools::elide(region, rotate = -rotate, center = centrexy)
+        ## 2022-02-01 see utility.R for sfrotate
+        if (is.null(centrexy)) {
+            centrexy <- st_centroid(st_as_sfc(st_bbox(region)))
+            centrexy <- st_coordinates(centrexy)
         }
-        else {
-            warning("install maptools for rotate option in make.systematic")
-        }
+        region <- sfrotate(region, degrees = -rotate, centrexy = centrexy, usecentroid = FALSE)
     }
-    
-    ## 2018-09-27
-    proj4string(region) <- CRS()
 
-    wd <- diff(bbox(region)[1,])
-    ht <- diff(bbox(region)[2,])
+    bbox <- st_bbox(region)    
+    wd <- bbox[3]-bbox[1]
+    ht <- bbox[4]-bbox[2]
+    
     if (missing(cluster)) {
         ## this case is passed to trap builder for single detector placement
         ## if ... does not include detector, detector defaults to 'multi'
@@ -392,7 +405,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
             ny <- n[2]
         }
         else {
-            area <- sum(sapply(region@polygons, function(x) x@area))
+            area <- sum(st_area(region))
             cell <- sqrt(area / n)
             nx <- round ((wd - 2*wx) / cell) 
             ny <- round ((ht - 2*wy) / cell)
@@ -402,30 +415,22 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     }
     rxy <- c(rx,ry)
     
-    minxy <- bbox(region)[,1]
+    minxy <- bbox[1:2]
     if (is.null(origin)) {
         origin <- runif(2) * rxy + minxy + originoffset
         originbox <- data.frame(
             x = minxy[1] + originoffset[1] + c(0,0,rx,rx),
             y = minxy[2] + originoffset[2] + c(0,ry,ry,0))
-        ## originoffset = c(wx,wy) was standard before 3.1.8 2018-10-13
     }
     else {
         origin <- unlist(origin)  ## 2018-12-28
-        ## unnecessary 2018-12-29
-        ## origin <- origin + rxy * floor((minxy - origin) / rxy)
         originbox <- NULL
     }
 
-    ## 2018-12-29
     rowcol <- expand.grid(row = 0:(ny+1), col = 0:(nx+1))
-    # centres <- data.frame(x = rowcol$col * ry + origin[1],
-    #                       y = rowcol$row * rx + origin[2])
-    ## 2019-12-17 apply rx to columns, ry to rows
     centres <- data.frame(x = rowcol$col * rx + origin[1],
                           y = rowcol$row * ry + origin[2])
     ##-----------------------------------------------------------------
-    ## 2019-09-28  alternative cluster sequence
     nx2 <- nx+2; ny2 <- ny+2
     if (order == 'y') temp <- 1:nrow(centres)
     if (order == 'x') temp <- t(matrix(1:nrow(centres), ncol = nx2))
@@ -449,16 +454,15 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
             centres <- centres[!whitesquares,]
     }
     
-    # blocked 2018-12-18; restored 2018-12-24 because NULL clusters not clipped in trap.builder
     args <- list(...)
     if (!is.null(args$edgemethod)) {
         if (args$edgemethod %in% c('allinside', 'centreinside')) {
-            spcentres <- SpatialPoints(as.matrix(centres), proj4string = CRS())
-            OK <- !is.na(sp::over (spcentres, region))
-            centres <- coordinates(spcentres[OK,])
+            sfcentres <- st_as_sf(centres, coords=1:2)
+            st_crs(sfcentres) <- st_crs(region)                       
+            OK <- st_within(sfcentres, region, sparse = FALSE)
+            centres <- st_coordinates(sfcentres)[OK,, drop = FALSE]
         }
     }
-    
     traps <- trap.builder (cluster = cluster, frame = centres, region = region,
         method = 'all', ...)
     
@@ -483,10 +487,9 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         attr(traps, 'originbox') <- originbox
     }
     
-    if (rotate != 0 && requireNamespace('maptools', quietly = TRUE)) {
+    if (rotate != 0) {
         ## reverse rotation applied to region polygon
-        ## silently as any maptools warning issued when rotate first encountered
-        traps <- rotate(traps, rotate, centrexy)
+        traps <- secr::rotate(traps, rotate, centrexy)
     }
     
     traps
@@ -506,24 +509,16 @@ make.lacework <- function (region, spacing = c(100, 20), times = NULL,
     if (length(spacing) != 2) {
         stop("invalid spacing 2-vector in make.lacework")
     }
-    if (inherits(region, 'SpatialPolygons')) {
-        region <- sp::polygons(region)
-    }
-    else {
-        region <- matrix(unlist(region), ncol = 2)
-        region <- rbind (region, region[1,])  # force closure of polygon
-        region <- boundarytoSP(region)
-    }
+    
+    region <- boundarytoSF(region)
+    
     if (rotate != 0) {
-        if (requireNamespace('maptools', quietly = TRUE)) {
-            centrexy <- apply(sp::bbox(region),1,mean)
-            region <- maptools::elide(region, rotate = -rotate, center = centrexy)
-        }
-        else {
-            warning("rotation requires package maptools; not rotated")
-        }
+        centrexy <- st_centroid(st_as_sfc(st_bbox(region)))
+        centrexy <- st_coordinates(centrexy)
+        region <- sfrotate(region, degrees = -rotate, centrexy = centrexy, usecentroid = FALSE)
     }    
-    bbox <- sp::bbox(region)                    ## after rotation
+    
+    bbox <- matrix(st_bbox(region), ncol = 2)                   ## after rotation
     if (is.null(origin)) {
         origin <- bbox[,1]
         origin <- origin - runif(2)*spacing[1]
@@ -555,8 +550,8 @@ make.lacework <- function (region, spacing = c(100, 20), times = NULL,
     }
     rownames(grid) <- sapply(lapply(strsplit(rownames(grid), ".", TRUE), rev), paste, collapse='.')
     if (rotate != 0) {
-        grid <- rotate(grid, degrees = rotate, centrexy = centrexy)
-        crossings <- rotate(crossings, degrees = rotate, centrexy = centrexy)
+        grid <- secr::rotate(grid, degrees = rotate, centrexy = centrexy)
+        crossings <- secr::rotate(crossings, degrees = rotate, centrexy = centrexy)
     }
     attr(grid, 'crossings') <- as.matrix(crossings)
     if (keep.design) {
@@ -598,7 +593,7 @@ cluster.centres <- function (object) {
         warning ("clusters not defined, so treating each detector as a cluster")
     }
     data.frame(x = tapply(object$x,clust,mean),
-               y = tapply(object$y,clust,mean))
+        y = tapply(object$y,clust,mean))
 }
 ###############################################################################
 

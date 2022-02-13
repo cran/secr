@@ -40,6 +40,9 @@ Display animal locations from a \code{popn} object.
   or a vector of two colours, one for the first and one for all later sessions 
   in which each animal was detected. 
   
+  If \dots includes 'col' then 'collapse' must be specified to avoid confusion, 
+  even for single-session data (see Examples).
+  
 }
 
 \seealso{ \code{\link{popn}}, \code{\link{sim.popn}} }
@@ -48,10 +51,10 @@ Display animal locations from a \code{popn} object.
 
 temppopn <- sim.popn(D = 5, expand.grid(
     x = c(0,100), y = c(0,100)))
-plot(temppopn, pch = 16, col = "blue")
+# specify collapse to avoid partial match of col    
+plot(temppopn, pch = 16, collapse = FALSE, col = "blue")
 
-plot(temppopn, circles = 20, bg = "tan", fg =
-    "white")
+plot(temppopn, circles = 20, bg = "tan", fg = "white")
 plot(temppopn, pch = 16, cex = 0.5, add = TRUE)
 
 }

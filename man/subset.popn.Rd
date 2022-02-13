@@ -35,6 +35,10 @@ In the case of a multi-session popn object (a list of populations),
 \code{subset} may be a list with one component for the subscripts in
 each new session.
 
+If \code{poly} is specified, points outside \code{poly} are
+dropped. \code{poly} may be one of the types descrbed in 
+\code{\link{boundarytoSF}}.
+
 }
 
 \value{
@@ -42,12 +46,6 @@ each new session.
 An object of class \code{popn} with only the requested subset of rows.
 Subsetting is applied to the \code{covariates} attribute if this is
 present. Attributes `Ndist' and `model2D' are set to NULL.
-
-If \code{poly} is specified, points outside \code{poly} are
-dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
-of two columns interpreted as x and y coordinates, or \item a
-SpatialPolygonsDataFrame object as defined in the package `sp', possibly
-from reading a shapefile with readOGR() from package `rgdal'.}
 
 }
 

@@ -13,6 +13,7 @@
 \usage{
 
   MS.capthist(...)
+  
   \method{rbind}{capthist}(..., renumber = TRUE, pool = NULL, verify = TRUE)
 
 }
@@ -135,6 +136,15 @@ tempfit4 <- secr.fit(temp4, CL = TRUE, buffer = 150, model = list
     (g0 ~ range.size, sigma ~ range.size), trace = FALSE)
 predict(tempfit4, newdata = data.frame(range.size = c("large",
     "small")))
+
+## polygon data
+pol1 <- make.poly()
+pol2 <- make.poly(x = c(50,50,150,150))
+ch1 <- sim.capthist(pol1, popn = list(D = 30), detectfn = 'HHN', 
+   detectpar = list(lambda0 = 0.3))
+ch2 <- sim.capthist(pol2, popn = list(D = 30), detectfn = 'HHN', 
+   detectpar = list(lambda0 = 0.3))
+plot(ch1); plot(pol2, add = TRUE); plot(ch2, add = TRUE)
 
 }
 

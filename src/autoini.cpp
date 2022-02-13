@@ -4,6 +4,7 @@ using namespace Rcpp;
 
 //==============================================================================
 
+
 // 'naive' functions are used to estimate auto initial values
 
 // 2019-12-08 naivecap3cpp is new, simpler function for expected number of 

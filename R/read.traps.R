@@ -53,12 +53,13 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         out
     }
     else {
-        
+        inputtype <- ""
         ## file input
         if (!is.null(file)) {
             if (tolower(tools::file_ext(file)) %in% c("xls", "xlsx")) {
                 if (!requireNamespace("readxl", quietly = TRUE))
                     stop("package readxl is required for input from Excel spreadsheets")
+                inputtype <- "xls"
                 data <- readxl::read_excel(file, ...)
                 data <- data.frame(data)  # not a tibble
                 nam <- names(data)
@@ -83,7 +84,59 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
                     covnames = covnames, binary.usage = binary.usage)
                 return(out)
             }
+            # experimental 2022-02-10
+            else if (tolower(tools::file_ext(file)) %in% c("shp")) {
+                inputtype <- "shp"
+                sf <- st_read(file, quiet = TRUE)
+                sfc <- st_geometry(sf)
+                if (inherits(sfc, c("sfc_POINT","sfc_MULTIPOINT"))) {
+                    sf <- suppressWarnings(st_cast(sf, "POINT"))
+                    if (!detector %in% c('single','multi','proximity','capped')) {
+                        stop ("input geometry (point) does not match detector ", detector)
+                    }
+                    coord <- data.frame(st_coordinates(sf))
+                    names(coord) <- c('x','y')
+                    out <- read.traps(data = coord, markocc = markocc, 
+                        detector = detector, binary.usage = binary.usage)
+                    df <- st_drop_geometry(sf)
+                    if (!is.null(covnames)) names(df) <- covnames
+                    covariates (out) <- df
+                } 
+                else if (inherits(sfc, c("sfc_POLYGON","sfc_MULTIPOLYGON"))) {
+                    sf <- suppressWarnings(st_cast(sf, "POLYGON"))
+                    if (!detector %in% c('polygon','polygonX')) {
+                        stop ("input geometry (polygon) does not match detector ", detector)
+                    }
+                    coord <- data.frame(st_coordinates(sf))
+                    # derive polyID from L2; see ?sf::st_coordinates
+                    names(coord) <- c('x','y','L1','polyID') 
+                    out <- read.traps(data = coord[,c('polyID','x','y')], 
+                        markocc = markocc, detector = detector,
+                        binary.usage = binary.usage)
+                    df <- st_drop_geometry(sf)
+                    if (!is.null(covnames)) names(df) <- covnames
+                    covariates (out) <- df
+                } 
+                else if (inherits(sfc, c("sfc_LINESTRING","sfc_MULTILINESTRING"))) {
+                    sf <- suppressWarnings(st_cast(sf, "LINESTRING"))
+                    if (!detector %in% c('transect','transectX')) {
+                        stop ("input geometry (line) does not match detector ", detector)
+                    }
+                    coord <- data.frame(st_coordinates(sf))
+                    # derive transectID from L2; see ?sf::st_coordinates
+                    names(coord) <- c('x','y','L1','transectID') 
+                    out <- read.traps(data = coord[,c('transectID','x','y')], 
+                        markocc = markocc, detector = detector,
+                        binary.usage = binary.usage)
+                    df <- st_drop_geometry(sf)
+                    if (!is.null(covnames)) names(df) <- covnames
+                    covariates (out) <- df
+                } 
+                else stop("unrecognised input")
+                return(out)
+            }
             else {
+                inputtype <- "txt"
                 nfld <- count.fields (file, ...)
                 if (min(nfld) < 3)
                     stop ("requires 3 fields (detectorID, x, y)")
@@ -126,6 +179,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         }
         ## dataframe input
         else {
+            inputtype <- "df"
             ## close polygons; tempindex used later to match covariates & usage
             if ('polyID' %in% names(data)) {
                 temp <- split (data[,c('x','y','polyID'),drop=FALSE], data$polyID)
@@ -150,7 +204,7 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
         
         ## 2020-08-26
         temp2 <- NULL
-        if (!is.null(file) && ncol(temp)>2) {
+        if (!is.null(file) && inputtype == "txt" && ncol(temp)>2) {
             if (ncol(temp)>3)
                 temp2 <- apply(temp[,3:ncol(temp),drop=FALSE], 1, paste, collapse=' ')
             else

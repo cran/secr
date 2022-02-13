@@ -1,7 +1,7 @@
 ###############################################################################
 ## package 'secr'
 ## writeGPS.R
-## last changed 2011-08-16 (full argument names)
+## last changed 2022-02-01 (sf)
 ## Write detector locations to GPS format
 ##
 ###############################################################################
@@ -16,16 +16,11 @@ writeGPS <- function (xy, o = "garmin", F = "usb:", proj = '+proj=nzmg')  {
         latlon <- xy
     }
     else {
-        ## express as lat long
-        if (requireNamespace ('rgdal', quietly = TRUE)) {
-            xy <- as.matrix(xy)  ## required by rgdal, not proj4
-            latlon <- rgdal::project (xy, inv = TRUE, proj)
-        }
-        else {
-            stop ("package 'rgdal' required for writeGPS")
-        }
+        ## express as latitude/longitude
+        xy <- sf::st_as_sf(as.data.frame(xy), coords = 1:2, crs = proj)
+        latlon <- sf::st_transform(xy, "epsg:4326")
+        latlon <- sf::st_coordinates(latlon)
     }
-
     latlon <- data.frame(latlon)[,c(2,1)] ## need lat first
     latlon$label <- rownames(xy)
     tempf <- tempfile('waypts')
@@ -33,7 +28,7 @@ writeGPS <- function (xy, o = "garmin", F = "usb:", proj = '+proj=nzmg')  {
     write.table(latlon, quote = FALSE, file = tempf,
         col.names = FALSE, row.names = FALSE, sep = ',')
 
-    ## adapted from maptools `readGPS'
+    ## adapted from maptools::readGPS
     GB <- Sys.which("gpsbabel")
     if (nchar(GB) == 0 || !file.exists(GB))
         stop ("gpsbabel not found")

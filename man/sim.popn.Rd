@@ -142,10 +142,8 @@ the displacement vector is (0,0) and rows are not offset.
 If \code{model2D = "even"} then the buffered area is divided into square cells with side sqrt(10000/D) and one animal is located at a random uniform location within each cell. If the height or width is not an exact multiple of the cell side then one whole extra row or column of cells is added; animals located at random in these cells are discarded if they fall outside the original area.
 
 If \code{poly} is specified, points outside \code{poly} are
-dropped. \code{poly} may be either \itemize{ \item a matrix or dataframe
-of two columns interpreted as x and y coordinates, or \item a
-SpatialPolygonsDataFrame object as defined in the package `sp', possibly
-from reading a shapefile with readOGR() from package `rgdal'.}
+dropped. \code{poly} may be one of the types descrbed in 
+\code{\link{boundarytoSF}}.
 
 The \code{\link{subset}} method is called internally when \code{poly} is used;
 the \dots argument may be used to pass values for \code{keep.poly} and

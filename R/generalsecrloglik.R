@@ -129,7 +129,6 @@ integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0,
         if (nr == 1) temp$prwi <- rep(temp$prwi, nc)
         for (g in 1:ngroup) {
             ok <- as.integer(grp) == g
-            # browser()            
             sump[ok] <- sump[ok] + pmixn[x,ok] * (1-temp$prwi[ok])
         }
     }

@@ -141,39 +141,29 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     }
                     else {
                         captTrap <- xyontransect(captures[,4:5], traps)
-                        
                         ########################################################
-                        # implement snapXY for transects 2012-12-11
+                        # implement snapXY for transects 2021-12-11
                         
                         if (any(captTrap==0) && snapXY) {
-                            
-                            if (!requireNamespace('terra', quietly = TRUE)) {
-                                stop("snapXY for transects requires package terra")
-                            }
-                            
+
                             # split by transect
                             bytransect <- strsplit(rownames(traps),'.', fixed=TRUE)
                             ID <- do.call(rbind, bytransect)[,1]
                             vlist <- split(traps, ID)
                             vlist <- lapply(vlist, as.matrix)
-                            
-                            # each transect as terra SpatVector
-                            vlist <- lapply(vlist, terra::vect, type = 'lines')
-                            
-                            # combine lines in one SpatVector
-                            v <- do.call(rbind, unname(vlist))  # strange need to remove names
-                            
-                            # closest point on lines
-                            xy <- terra::vect(as.matrix(captures[,4:5]))
-                            neari <- terra::nearest(xy, v, centroids = FALSE)
-
-                            # replace XY
-                            distances <- terra::values(neari)[,'distance']
+                            # each transect as sfg
+                            vlist <- lapply(vlist, st_linestring)
+                            # combine linestrings in one sfc
+                            v <- st_sfc(vlist)     
+                            xy <- st_as_sf(captures[,4:5], coords = 1:2)
+                            xy2 <- snap_points (xy, v, max_dist = tol) # see utility.R
+                            distances <- st_distance(xy,v) 
                             OK <- distances < tol
                             if (any(!OK)) {
                                 print(cbind(captures, distances)[!OK,])                       
                             }
-                            captures[OK,4:5] <- terra::values(neari)[OK,c('to_x','to_y')]
+                            captures[OK,4:5] <- st_coordinates(xy2)[OK,]
+                            
                             warning(call. = FALSE, sum(OK), 
                                 " detection(s) snapped to transect(s), maximum distance ", 
                                 round(max(distances),2), " m")

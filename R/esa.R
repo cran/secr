@@ -2,6 +2,7 @@
 ## package 'secr'
 ## esa.R
 ## 2020-05-13 fixed bug that ignored individual covariates by providing only single-row CH0
+## 2022-01-22 fixed bug that ignored details$ignoreusage
 ############################################################################################
 
 esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, ncores = NULL)
@@ -107,14 +108,15 @@ esa <- function (object, sessnum = 1, beta = NULL, real = NULL, noccasions = NUL
         Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
                                         mask, trps, Dtemp, s)
 
-        ## force to binary 2012-12-17
-        ## used <- usage(trps)
         usge <- usage(trps)
-        if (is.null(usge)) {
-            usge <- matrix(1, nrow = K, ncol = s)
+        # if (is.null(usge)) {
+        # 2022-01-22 respect ignore usage cf Greg note
+        if (is.null(usge) || object$details$ignoreusage) {
+                usge <- matrix(1, nrow = K, ncol = s)
             used <- 1
         }
         else {
+            ## force to binary 2012-12-17
             used <- (usge > 1e-10) * 1
         }
         if (any(used == 0))

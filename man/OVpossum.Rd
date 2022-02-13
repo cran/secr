@@ -104,17 +104,16 @@ Ward, G. D. (1978) Habitat use and home range of radio-tagged opossums
 
 \examples{
 
-# This example requires the suggested package rgdal
-
 \dontrun{
+
+library(sf)
 
 summary(OVpossumCH, terse = TRUE)
 ovtrap <- traps(OVpossumCH[[1]])
 
 ## retrieve and plot the forest map
-datadir <- system.file("extdata", package = "secr")
-OVforest <- rgdal::readOGR(dsn = datadir, layer = "OVforest")
-
+OVforest <- st_read(system.file("extdata/OVforest.shp", package = "secr"))
+OVforest <- as(OVforest, "Spatial")
 forestcol <- terrain.colors(6)[c(4,2,2)]
 sp::plot(OVforest, col = forestcol)
 plot(ovtrap, add = TRUE)
@@ -132,7 +131,7 @@ plot(ovmask, covariate = 'forest', dots = FALSE, col = forestcol)
 plot(ovtrap, add = TRUE)
 
 ## add the left bank of the Orongorongo River
-lines(read.table(paste0(datadir,'/leftbank.txt')))
+lines(read.table(system.file("extdata/leftbank.txt", package = "secr")))
 
 }
 

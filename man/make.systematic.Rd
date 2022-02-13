@@ -13,8 +13,8 @@ A rectangular grid of clusters within a polygonal region.
 
 make.systematic(n, cluster, region, spacing = NULL, origin = NULL, 
     originoffset = c(0,0), chequerboard = c('all','black','white'), 
-    order = c('x', 'y', 'xb', 'yb'), rotate = 0,  centrexy = 
-    apply(bbox(region),1,mean), keep.design = TRUE, ...)
+    order = c('x', 'y', 'xb', 'yb'), rotate = 0,  centrexy = NULL,
+    keep.design = TRUE, ...)
 
 }
 
@@ -50,9 +50,10 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
 
 \details{
 
-  \code{region} may be any shape. The \pkg{sp} class
-  SpatialPolygonsDataFrame is useful for complex shapes and input from
-  shapefiles using \pkg{rgdal} (see Examples). Otherwise,
+  \code{region} may be any shape. 
+  
+  \code{region} may be one of the spatial classes described 
+  in \code{\link{boundarytoSF}}. Otherwise,
   \code{region} should be a dataframe with columns `x' and `y'.
 
   \code{spacing} may be a vector with separate values for spacing in x-
@@ -87,7 +88,7 @@ make.systematic(n, cluster, region, spacing = NULL, origin = NULL,
      yb \tab  row-dominant boustrophedonical (alternate rows reversed) \cr
      }
 
-\code{rotate} rotates the array about the given centre (default is centroid of the bounding box of \code{region}). Rotation requires package \pkg{maptools} to have been installed; non-zero values otherwise result in a warning.
+\code{rotate} rotates the array about the given centre (default is centroid of the bounding box of \code{region}). 
 
 }
 
@@ -135,8 +136,9 @@ temp <- make.systematic(c(6, 6), mini, region, plt = TRUE,
 
 \dontrun{
 
-datadir <- system.file("extdata", package = "secr")
-possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
+library(sf)
+shpfilename <- system.file("extdata/possumarea.shp", package = "secr")
+possumarea <- st_read(shpfilename)
 
 possumgrid <- make.systematic(spacing = 100, region =
     possumarea, plt = TRUE)

@@ -18,8 +18,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 4.5.1\cr
-Date: \tab 2022-01-18\cr
+Version: \tab 4.5.3\cr
+Date: \tab 2022-02-14\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -57,6 +57,7 @@ General interest \tab \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-manual.pdf}{secr-manual.pdf} \tab consolidated help pages \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-tutorial.pdf}{secr-tutorial.pdf} \tab introductory tutorial \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-habitatmasks.pdf}{secr-habitatmasks.pdf} \tab buffers and habitat masks \cr
+  \href{https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf}{secr-spatialdata.pdf} \tab using spatial data \cr   
   \href{https://www.otago.ac.nz/density/pdfs/secr-models.pdf}{secr-models.pdf} \tab linear models in \pkg{secr} \cr
   \href{https://www.otago.ac.nz/density/pdfs/secr-troubleshooting.pdf}{secr-troubleshooting.pdf}  \tab problems with secr.fit, including speed issues \cr
 \cr

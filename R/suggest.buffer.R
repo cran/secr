@@ -11,8 +11,8 @@
 ## 2017-03-29 tweaked to allow character detectfn
 ## 2019-12-16 minor changes to suggest.buffer: autoini thin=1; suppress warnings; fix multisession bug
 ## 2020-01-06 bias.D control$ncores defaults to 2 instead of NULL
-## 2020-01-08 note: potential use of rgeos::gLength for perimeter of polygons
 ## 2021-07-20 bias.D spurious warning of variable usage when uniformly >1
+
 bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NULL, control = NULL) {
     gr <- function (r) {
         if (detectfn == 7) {

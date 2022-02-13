@@ -14,18 +14,18 @@ Fewstervarn <- function (nj, xy, design, esa, detectfn, detectpar, nocc,
 
     # design is a list with components --
     #   cluster -- traps object for one cluster
-    #   region  -- SpatialPolygons
+    #   region  -- sfc
     #   spacing -- distance between clusters)
     ## or --
     #   lacework -- logical TRUE
-    #   region  -- SpatialPolygons
+    #   region  -- sfc
     #   spacing -- 2-vector (distance between lines, between detectors along lines)
     # and possibly --
     #   exclude 
     #   edgemethod
     #   exclmethod
-    
-    minxy <- bbox(design$region)[,1]
+    design$region <- boundarytoSF(design$region)
+    minxy <- st_bbox(design$region)[1:2]
     lacework <- !is.null(design$lacework) && design$lacework
     setNumThreads(ncores)  ## for multithreading in pdot
     #########################################################################
@@ -43,8 +43,10 @@ Fewstervarn <- function (nj, xy, design, esa, detectfn, detectpar, nocc,
     #########################################################################
     ## Boxlet centres clipped to region
     
-    boxlets <- make.mask(type = 'polygon', poly = design$region, 
-                         spacing = maskspacing)
+    boxlets <- make.mask(
+        type = 'polygon', 
+        poly = design$region, 
+        spacing = maskspacing)
     ## optionally clip out 'lakes'
     if (!is.null(design$exclude)) {
         boxlets <- subset(boxlets, !pointsInPolygon(boxlets, design$exclude))
@@ -189,9 +191,9 @@ derivedSystematic <- function ( object, xy, design = list(),
     if (is.null(design$region))
         stop ("region not found")
     
-    ## convert matrix to SpatialPolygons if not already
-    design$region <- boundarytoSP(design$region)      ## see utility.R
-    design$exclude <- boundarytoSP(design$exclude)    ## may be NULL
+    ## convert matrix to sfc if not already
+    design$region <- boundarytoSF(design$region)      ## see utility.R
+    design$exclude <- boundarytoSF(design$exclude)    ## may be NULL
 
     #########
     ## var(n)
@@ -263,28 +265,29 @@ plotSystematic <- function (out, dec = 0, legend = TRUE, textcex = 0.6) {
     
     ##################################################
     ## nj
-    plot(design$region)
+    plot(as(design$region, "Spatial"))  # avoid sf::plot
     text (xy[,1], xy[,2], as.character(nj), cex = textcex)
     mtext(side = 3, line = -0.5, 'nj')
     
     ##################################################
     ## nj/esa
-    plot(design$region)
+    plot(as(design$region, "Spatial"))   # avoid sf::plot
     text (xy[,1], xy[,2], as.character(round(nj/esa,1)), cex = textcex)
     mtext(side = 3, line = -0.5, 'nj/esa')
     
     ##################################################
     ## base points b Not reliable for lacework
     opar <- par(mar=c(5,5,1,1))
-    plot(design$region)
-    points(b[,1] + bbox(design$region)['x','min'], 
-           b[,2] + bbox(design$region)['y','min'], xpd = TRUE)
+    plot(as(design$region, "Spatial"))   # avoid sf::plot
+    bbox <- st_bbox(design$region)
+    points(b[,1] + bbox[1], 
+           b[,2] + bbox[2], xpd = TRUE)
     mtext(side = 3, line = -0.5, 'base points b')
     par(opar)
     
     ##################################################
     ## grid for b[1]
-    design$origin <- b[1,] + bbox(design$region)[,'min']
+    design$origin <- b[1,] + bbox[1:2]
     lacework <- !is.null(design$lacework) && design$lacework
     design$lacework <- NULL
     if (lacework) {
@@ -292,7 +295,7 @@ plotSystematic <- function (out, dec = 0, legend = TRUE, textcex = 0.6) {
     }
     else
         trps <- do.call(make.systematic, design)
-    plot(design$region)        
+    plot(as(design$region, "Spatial"))   # avoid sf::plot
     plot(trps, detpar = list(cex=0.7), add = TRUE)
     mtext(side = 3, line = -0.5, 'grid for b[1]')
     
@@ -302,7 +305,7 @@ plotSystematic <- function (out, dec = 0, legend = TRUE, textcex = 0.6) {
     plot(boxlets)
     plot(boxlets, cov = 'pxy4', breaks = 5, add = TRUE, legend = legend)
     mtext(side = 3, line = -0.5, 'pxy * 1E4')
-    plot(design$region, add = TRUE)
+    plot(as(design$region, "Spatial"), add = TRUE)   # avoid sf::plot
 
     ##################################################
     ## E(n|b)

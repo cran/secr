@@ -103,7 +103,7 @@ University of Otago, Dunedin, New Zealand
   arguments of \code{contour} are \code{col} (colour of contour lines)
   and \code{lwd} (line width).
 
-  You may wish to consider function gBuffer in package \pkg{rgeos} as an
+  You may wish to consider function st_buffer in package \pkg{sf} as an
   alternative to \code{buffer.contour}..
 
   \code{buffer.contour} failed with multi-session \code{traps} before

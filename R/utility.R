@@ -17,6 +17,8 @@
 ## 2021-12-16 tidy up transformations, allow arbitrary link X(), invX(), se.invX()
 ## 2022-01-04 4.5.0
 ## 2022-01-18 4.5.1
+## 2022-01-23 uniformusage() function to assign all-ones usage matrix
+## 2022-02-10 4.5.2 shift to sf where possible
 #######################################################################################
 
 # Global variables in namespace
@@ -26,7 +28,7 @@
 
 .localstuff <- new.env()
 
-# .localstuff$packageType <- ' pre-release'
+#.localstuff$packageType <- ' pre-release'
 .localstuff$packageType <- ''
 
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
@@ -569,64 +571,13 @@ spatialscale <- function (object, detectfn, session = '') {
 
 ###############################################################################
 
-pointsInPolygon <- function (xy, poly, logical = TRUE) {
-    xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
-    ##if (inherits(poly, 'SpatialPolygonsDataFrame')) {
-    ## 2016-02-17 includes both SP and SPDF
-    if (inherits(poly, 'SpatialPolygons')) {
-            xy <- SpatialPoints(xy)
-        ## 2013-04-20 update for deprecation of 'overlay'
-        ## OK <- overlay (xy, poly)
-        ## 2014-12-11
-        proj4string(poly) <- CRS()
-        ## 2016-02-24
-        ## coerce to SpatialPolygons
-        ## over() returns numeric vector of polygon number, NA if no overlap
-        poly <- as(poly, 'SpatialPolygons')
-        OK <- sp::over (xy, poly)
-        ## bug fix 2013-11-09; redundant 2016-02-24
-        #         if (!is.null(dim(OK)))
-        #             OK <- OK[,1]
-        !is.na(OK)
-    }
-    else if (inherits(poly, 'mask')) {  # 2012-04-13
-        if (ms(poly))
-            stop ("multi-session masks not supported")
-        sp <- spacing(poly)
-        minx <- min(poly$x, na.rm = TRUE)
-        miny <- min(poly$y, na.rm = TRUE)
-        mask <- sweep(poly, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
-        mask <- round(mask/sp) + 1
-        xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
-        xy <- round(xy/sp) + 1
-        xy[xy<=0] <- NA
-        xy[,1][xy[,1]>max(mask$x, na.rm = TRUE)] <- NA
-        xy[,2][xy[,2]>max(mask$y, na.rm = TRUE)] <- NA
-
-        maskmatrix <- matrix(0, ncol = max(mask$y, na.rm = TRUE), nrow = max(mask$x, na.rm = TRUE))
-        maskmatrix[as.matrix(mask)] <- 1:nrow(mask)
-        inside <- maskmatrix[as.matrix(xy)]
-        inside[is.na(inside)] <- 0
-        if (logical)
-            inside <- inside > 0
-        inside
-    }
-    else {
-        checkone <- function (xy1) {
-            insidecpp(xy1, 0, np-1, as.matrix(poly))
-        }
-        poly <- matrix(unlist(poly), ncol = 2)  ## in case dataframe
-        np <- nrow(poly)
-        apply(xy, 1, checkone)
-    }
-}
 ###############################################################################
 ## logical for whether object specifies userDfn
 
 userD <- function (object) {
-    if (!inherits(object, 'secr'))
-        stop ("requires secr fitted model")
-    !is.null(object$details$userDfn)
+  if (!inherits(object, 'secr'))
+    stop ("requires secr fitted model")
+  !is.null(object$details$userDfn)
 }
 
 ###############################################################################
@@ -811,23 +762,20 @@ gradient <- function (pars, fun, eps=0.001, ...)
 
 distancetopoly <- function (X, traps) {
   ## X should be 2-column dataframe, mask, matrix or similar
-  ## with x coord in col 1 and y coor in col 2
+  ## with x coord in col 1 and y coord in col 2
   
-  if (is.null(X)) return (NULL)  ## 2022-01-04
+  if (is.null(X)) return (NULL) 
   
-  X <- matrix(unlist(X), ncol = 2)
-  nxy <- nrow(X)
   detecttype <- detector(traps)
   detecttype <- ifelse (is.null(detecttype), "", detecttype)
-  
   if (!all(detecttype %in% c('polygon', 'polygonX')))
     stop("distancetopoly is for polygon detectors only")
-  if (!requireNamespace('rgeos', quietly = TRUE))
-    stop("distancetopoly requires rgeos")
+  
+  xy <- st_as_sf(data.frame(X), coords=1:2)
   trps <- split(traps, polyID(traps))
-  polys <- lapply(trps, boundarytoSP)
-  xy <- sp::SpatialPoints(X)
-  dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
+  polys <- lapply(trps, boundarytoSF)
+
+  dlist <- lapply(polys, st_distance, x = xy)
   matrix(unlist(dlist), ncol = length(dlist))
 }
 
@@ -842,28 +790,21 @@ distancetotrap <- function (X, traps) {
   detecttype <- detector(traps)
   detecttype <- ifelse (is.null(detecttype), "", detecttype)
   
-  ## 2020-01-08
-  if (all(detecttype %in% c('polygon', 'polygonX')) && 
-      requireNamespace('rgeos', quietly = TRUE)) {
-    trps <- split(traps, polyID(traps))
-    polys <- lapply(trps, boundarytoSP)
-    xy <- sp::SpatialPoints(X)
-    dlist <- lapply(polys, rgeos::gDistance, spgeom1 = xy, byid = TRUE)
-    dmat <- matrix(unlist(dlist), ncol = length(dlist))
-    d <- apply(dmat,1,min)
-    return (d)
+  if (all(detecttype %in% c('polygon', 'polygonX'))) {
+      trps <- split(traps, polyID(traps))
+      polys <- lapply(trps, boundarytoSF)
+      xy <- st_as_sf(X, coords = 1:2)
+      dlist <- lapply(polys, st_distance, x = xy)
+      dmat <- matrix(unlist(dlist), ncol = length(dlist))
+      d <- apply(dmat,1,min)
+      return (d)
   }
   
   if (inherits(traps, 'SpatialPolygons')) {
-    if (requireNamespace('rgeos', quietly = TRUE)) {
-      xy <- sp::SpatialPoints(X)
-      d <- rgeos::gDistance(spgeom1 = xy, spgeom2 = traps, byid = TRUE)
+      xy <- st_as_sf(X, coords = 1:2)     # POINTS
+      traps <- st_as_sf(traps)
+      d <- st_distance(xy, traps)
       return (d)
-    }
-    else {
-      trps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-      warning("using only first polygon of SpatialPolygons")
-    }
   }
   else if (all(detecttype %in% .localstuff$polydetectors)) {
     ## approximate only
@@ -912,10 +853,10 @@ nearesttrap <- function (X, traps) {
   
   X <- matrix(unlist(X), ncol = 2)
   nxy <- nrow(X)
-  ## extended from SpatialPolygonsDataFrame 2016-02-17
   if (inherits(traps, 'SpatialPolygons')) {
-    traps <- coordinates(traps@polygons[[1]]@Polygons[[1]])
-    warning("using only first polygon of SpatialPolygons")
+    stop ("nearesttrap currently does not accept SpatialPolygons (from 4.5.3)")
+    # traps <- sp::coordinates(traps@polygons[[1]]@Polygons[[1]])
+    # warning("using only first polygon of SpatialPolygons")
   }
   temp <- nearestcpp(as.matrix(X), as.matrix(traps))
   temp$index
@@ -1280,18 +1221,6 @@ xy2CH <- function (CH, inflation = 1e-8) {
         newCH
     }
 }
-###############################################################################
-## return coordinates from simple SpatialPolygons object
-## returns list
-getcoord <- function(obj){
-    if (!inherits(obj, 'SpatialPolygons'))
-        stop ("requires SpatialPolygons object")
-    if (length(obj@polygons) > 1)
-        warning ("using only first 'polygons'")
-    Polygons <- obj@polygons[[1]]
-    lapply(Polygons@Polygons, coordinates)
-}
-
 
 ###############################################################################
 ## moved from mask.check.r 2014-08-28
@@ -1689,6 +1618,7 @@ updatemodel <- function (model, detectfn, detectfns, oldvar, newvar, warn = FALS
 ############################################################################################
 
 ## Manually remove some mask points
+# simplified 2022-02-03
 
 deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
                               poly.habitat = FALSE, ...) {
@@ -1705,12 +1635,6 @@ deleteMaskPoints <- function (mask, onebyone = TRUE, add = FALSE, poly = NULL,
     else {
         plot(mask, add = add, ...)
         if (!is.null(poly)) {
-            ## extended from SpatialPolygonsDataFrame 2016-02-17
-            SP <- inherits(poly, "SpatialPolygons")
-            if (!SP) {
-                poly <- matrix(unlist(poly), ncol = 2)
-                poly <- rbind (poly, poly[1,])  # force closure of poly
-            }
             if (poly.habitat)
                 pointstodrop <- (1:nrow(mask))[!pointsInPolygon(mask, poly)]
             else
@@ -2033,35 +1957,70 @@ secondarysessions <- function(intervals) {
 }
 ############################################################################################
 
-boundarytoSPDF <- function (boundary) {
-    ## build sp SpatialPolygonsDataFrame object
+boundarytoSF <- function (poly) {
+  if (is.null(poly)) {
+    NULL
+  }
+  else if(inherits(poly, c('sf','sfc'))) {
+    poly <- st_geometry(poly) # extract sfc if not already sfc
+    geomtype <- st_geometry_type(poly, by_geometry = FALSE)
+    if (!geomtype %in% c("POLYGON", "MULTIPOLYGON")) {
+      stop ("poly sfc should be of type POLYGON or MULTIPOLYGON")
+    }
+    poly
+  }
+  else if (inherits(poly, 'SpatialPolygons')) {   # also SPDF?
+    st_as_sfc(poly)
+  }
+  else if (inherits(poly, 'SpatVector')) {
+    st_as_sfc(as(poly,"Spatial"))
+  }
+  else if (inherits(poly, c('matrix', 'data.frame'))) {
     ## input is 2-column matrix for a single polygon
-    ## requires package sp
-    Sr1 <- Polygon(boundary)
-    Srs1 <- Polygons(list(Sr1), "s1")
-    SpP <- SpatialPolygons(list(Srs1))
-    attr <- data.frame(a = 1, row.names = "s1")
-    SpatialPolygonsDataFrame(SpP, attr)
+    poly <- matrix(unlist(poly), ncol = 2)
+    poly <- rbind (poly, poly[1,])  ## force closure of polygon
+    st_sfc(st_polygon(list(poly)))
+  }
+  else stop (class(poly), " not valid input to boundarytoSF")
 }
-boundarytoSP <- function (boundary) {
-    ## requires package sp
-    if (is.null(boundary)) {
-        return(NULL)
+###############################################################################
+
+pointsInPolygon <- function (xy, poly, logical = TRUE) {
+  # xy is 2-column matrix or data.frame of coordinates
+  if (inherits(poly, 'mask')) { 
+    if (ms(poly))
+      stop ("multi-session masks not supported")
+    sp <- spacing(poly)
+    minx <- min(poly$x, na.rm = TRUE)
+    miny <- min(poly$y, na.rm = TRUE)
+    mask <- sweep(poly, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
+    mask <- round(mask/sp) + 1
+    xy <- matrix(unlist(xy), ncol = 2)  ## in case dataframe
+    xy <- sweep(xy, MARGIN = 2, FUN = '+', STATS = c(-minx, -miny))
+    xy <- round(xy/sp) + 1
+    xy[xy<=0] <- NA
+    xy[,1][xy[,1]>max(mask$x, na.rm = TRUE)] <- NA
+    xy[,2][xy[,2]>max(mask$y, na.rm = TRUE)] <- NA
+    
+    maskmatrix <- matrix(0, ncol = max(mask$y, na.rm = TRUE), nrow = max(mask$x, na.rm = TRUE))
+    maskmatrix[as.matrix(mask)] <- 1:nrow(mask)
+    inside <- maskmatrix[as.matrix(xy)]
+    inside[is.na(inside)] <- 0
+    if (logical)
+      inside <- inside > 0
+    inside
+  }
+  else {
+    poly <- boundarytoSF(poly)
+    if (inherits(poly, c('sf','sfc'))) {
+      xy <- st_as_sf(data.frame(xy), coords = 1:2)
+      st_crs(xy) <- st_crs(poly)
+      apply(st_within(xy, poly, sparse = FALSE), 1, any)
     }
     else {
-        if (inherits(boundary, 'SpatialPolygons')) {
-            polygons(boundary)
-        }
-        else {
-            ## input is 2-column matrix for a single polygon
-            ## convert to SpatialPolygons
-            boundary <- matrix(unlist(boundary), ncol = 2)
-            boundary <- rbind (boundary, boundary[1,])  ## force closure of polygon
-            Sr1 <- Polygon(boundary)
-            Srs1 <- Polygons(list(Sr1), "s1")
-            SpatialPolygons(list(Srs1))
-        }
+      stop ("unknown input to pointsInPolygon")
     }
+  }
 }
 ###############################################################################
 
@@ -2069,7 +2028,7 @@ boundarytoSP <- function (boundary) {
 firstsk <- function (PIAx) {
   ## PIAx dim n,s,k
   wh <- function(d2) {
-   match(TRUE, d2>0)
+    match(TRUE, d2>0)
   }
   apply(PIAx,1,wh)
 }
@@ -2245,4 +2204,77 @@ rownum <- function (x) {
 colnum <- function (x) {
   if (length(dim(x)) < 2 || dim(x)[2] == 0) NULL
   else 1: (dim(x)[2])
+}
+
+## 2022-01-23
+## function to assign all-ones usage matrix
+
+uniformusage <- function(object, noccasions) {
+  if (inherits(object, 'capthist')) {
+    if (ms(object)) {
+      for (r in 1:length(object)) {
+        ndet <- dim(object[[r]])[3]
+        noccasions <- dim(object[[r]])[2]
+        usage(traps(object[[r]])) <- matrix(1, ndet, noccasions)
+      }
+    }
+    else {
+      ndet <- dim(object)[3]
+      noccasions <- dim(object)[2]
+      usage(traps(object)) <- matrix(1, ndet, noccasions)
+    }
+  }
+  else if (inherits(object, 'traps')) {
+    if (missing(noccasions)) {
+      stop ('noccasions should be specified for traps input')
+    }
+    if (ms(object)) {
+      for (r in 1:length(object)) {
+        ndet <- ndetector(object[[r]])
+        usage(object[[r]]) <- matrix(1, ndet, noccasions)
+      }
+    }
+    else {
+      ndet <- ndetector(object)
+      usage(object) <- matrix(1, ndet, noccasions)
+    }
+  }
+  object
+}
+
+sfrotate <- function (x, degrees, centrexy = NULL, usecentroid = FALSE) {
+    rot = function(a) matrix(c(cos(a), sin(a), -sin(a), cos(a)), 2, 2)
+    gx <- st_geometry(x)
+    if (is.null(centrexy)) {
+        if (usecentroid) {
+            centrexy <- st_centroid(gx)[1,]   # unique centre
+        }
+        else {
+            centrexy <- st_centroid(st_as_sfc(st_bbox(x)))
+        }
+    } 
+    else {
+        centrexy <- st_sfc(st_point(centrexy) )
+    }
+    (gx - centrexy) * rot(degrees/360*2*pi) + centrexy
+}
+
+# Based on Tim Salabim stackoverflow Jul 12 2018
+# https://stackoverflow.com/questions/51292952/snap-a-point-to-the-closest-point-on-a-line-segment-using-sf
+
+snap_points <- function(x, y, max_dist = 1000) {
+    
+    if (inherits(x, "sf")) n = nrow(x)
+    if (inherits(x, "sfc")) n = length(x)
+    
+    out = do.call(c,
+        lapply(seq(n), function(i) {
+            nrst = st_nearest_points(st_geometry(x)[i], y)
+            nrst_len = st_length(nrst)
+            nrst_mn = which.min(nrst_len)
+            if (as.vector(nrst_len[nrst_mn]) > max_dist) return(st_geometry(x)[i])
+            return(st_cast(nrst[nrst_mn], "POINT")[2])
+        })
+    )
+    return(out)
 }

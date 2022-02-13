@@ -137,7 +137,7 @@ derivedSystematic( object, xy, design = list(), basenx = 10, df = 9, extrapolate
 
 The weighted options R2 and R3 substitute \eqn{\hat{a_j}}{a_j-hat} for line length \eqn{l_k}{l_k} in the corresponding formulae of Fewster et al. (2009, Eq 3,5). Density is estimated by \eqn{D = n/A}{\hat D = n/A} where \eqn{A = \sum a_j}{A = \sum a_j}. The variance of \eqn{A} is estimated as the sum of the cluster-specific variances, assuming independence among clusters. Fewster et al. (2009) found that an alternative estimator for line transects derived by Thompson (2002) performed better when there were strong density gradients correlated with line length (R2 in Fewster et al. 2009, Eq 3).
 
-The neighborhood variance estimator is implemented in package \pkg{spsurvey} and was originally proposed for  generalized random tessellation stratified (GRTS) samples.  For `local' variance
+The neighborhood variance estimator is implemented in package \pkg{spsurvey} and was originally proposed for generalized random tessellation stratified (GRTS) samples.  For `local' variance
   estimates, the centre of each replicate must be provided in \code{xy},
   except where centres may be inferred from the data. It is unclear whether `local' can or should be used when clusters vary in size.
 

@@ -84,7 +84,7 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
         ## D. Filling in image
         cellsUnassigned <- (1:n)[is.na(values(clumped))]
         cellsAssigned <- (1:n)[!is.na(values(clumped))]
-        tempadj <- adjacent (clumped, cells = cellsUnassigned, target = cellsAssigned,
+        tempadj <- raster::adjacent (clumped, cells = cellsUnassigned, target = cellsAssigned,
                              directions = 8)
         tempadj <- split(tempadj[,2], tempadj[,1])
         fillinType <- function (adjcells) {
@@ -109,12 +109,12 @@ randomHabitat <- function (mask, p = 0.5, A = 0.5, directions = 4, minpatch = 1,
 
         ## optionally filter small patches
         if (minpatch > 1) {
-            reclumped <- clump(clumped, directions = directions, gaps = FALSE)
+            reclumped <- raster::clump(clumped, directions = directions, gaps = FALSE)
             nperclump <- table(values(reclumped))
             values(clumped)[nperclump[as.character(values(reclumped))] < minpatch] <- 0
             temp <- clumped
             values(temp) <- 1-values(temp)   ## swap 0,1
-            reclumped <- clump(temp   , directions = directions, gaps = FALSE)
+            reclumped <- raster::clump(temp   , directions = directions, gaps = FALSE)
             nperclump <- table(values(reclumped))
             values(clumped)[nperclump[as.character(values(reclumped))] < minpatch] <- 1
         }

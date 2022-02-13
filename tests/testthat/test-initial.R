@@ -38,10 +38,10 @@ test_that("correct likelihood (single session 'single')", {
     expect_equal(LL, -759.02575, tolerance = 1e-4, check.attributes = FALSE)
 })
 
-###############################
+###############################################################################
 ## Check bug fixes 2021 onwards
 
-# make.capthist bug reported by Richard Glennie 2021-01-30
+## make.capthist bug reported by Richard Glennie 2021-01-30
 test_that("correct rejection of duplicates at exclusive detectors", {
     captures <- data.frame(session = c(1, 1, 1), 
         ID = c(1, 11, 1), 
@@ -52,7 +52,7 @@ test_that("correct rejection of duplicates at exclusive detectors", {
 })
 
 
-###############################
+###############################################################################
 ## Multi-polygon bug 2021-05-18
 
 datadir <- system.file("extdata", package = "secr")
@@ -75,7 +75,7 @@ test_that("correct likelihood (multi-detector polygon data)", {
     expect_equal(LL, -2026.92169, tolerance = 1e-4, check.attributes = FALSE)
 })
 
-#################################
+###############################################################################
 ## join nonspatial bug 2021-05-28
 
 nonspatialCH <- reduce(ovenCH, outputdetector = 'nonspatial', verify = FALSE)
@@ -104,23 +104,33 @@ test_that("correct likelihood (hcov, pmix with knownclass)", {
 })
 ###############################################################################
 
-## future tests
+## ignoreusage bug 2022-01-22
 
-## data manipulation
-
-# subset
-# reduce
-# join
-# rbind
-
-## for data types
-# point  
-# polygon
-# transect
-# signal
-
-## using RPSV as test criterion?
-
-## check alongtransect for multi-transect data
-
-## 2021-05-19 known bug: sim.capthist with multiple transects
+test_that("correct likelihood (fastproximity, usage, ignoreusage)", {
+    CH <- ovenCHp[[1]]
+    usage(traps(CH)) <- matrix(1, 44, 9) ## or CH <- secr:::uniformusage(CH)
+    msk <- make.mask(traps(CH), buffer = 200, nx = 20, type = 'trapbuffer')
+    
+    argssecr <- list(capthist = CH, mask = msk, detectfn = 'HHN',
+        start = list(lambda0 = 0.037, sigma = 65.3), CL = TRUE,
+        details = list(LLonly = TRUE, fastproximity = TRUE, ignoreusage = FALSE))
+    
+    # usage uniform 1.0
+    LL1 <- do.call(secr.fit, argssecr)[1]
+    
+    # usage alternate nets 1.0, 0.5 
+    usage(traps(argssecr$capthist))[] <- c(1,0.5)  
+    LL2 <- do.call(secr.fit, argssecr)[1]
+    
+    # ignore varying usage
+    argssecr$details$ignoreusage <- TRUE
+    LL3 <- do.call(secr.fit, argssecr)[1]
+    
+    expect_equal(LL1, -110.5090678, tolerance = 1e-4, check.attributes = FALSE)
+    expect_equal(LL2, -116.2598708, tolerance = 1e-4, check.attributes = FALSE)
+    # secr 4.5.1
+    # expect_equal(LL3, -1e+10, tolerance = 1e-4, check.attributes = FALSE)
+    # secr >=4.5.2
+    expect_equal(LL3, LL1, tolerance = 1e-4, check.attributes = FALSE)
+})
+###############################################################################

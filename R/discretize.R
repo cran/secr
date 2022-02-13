@@ -3,6 +3,7 @@
 ## 2016-01-07 cell.overlap, type
 ## 2021-05-18 sortorder ksn
 ## 2022-01-04 
+## 2022-02-13 sf
 
 discretize <- function (object, spacing = 5, outputdetector = c('proximity','count','multi'),
                         tol = 0.001, cell.overlap = FALSE, type = c('centre','any','all'), ...) {
@@ -43,25 +44,27 @@ discretize <- function (object, spacing = 5, outputdetector = c('proximity','cou
             rownames(temptraps) <- 1:nrow(temptraps)
             if (cell.overlap) {
                 ## cell overlap with polygon
-                spp <- SpatialPolygons(list(Polygons(list(Polygon(as.matrix(trapsCH))), ID=1)))
+                ## using sf 2022-02-13
+                sfp <- st_sfc(st_polygon(list(as.matrix(trapsCH))))
                 cell <- matrix(c(-1,-1,1,1,-1,-1,1,1,-1,-1), ncol = 2) * spacing/2
                 onecell <- function(xy) {
                     cell <- sweep(cell, STATS = xy, FUN = '+', MARGIN = 2)
-                    cell <- SpatialPolygons(list(Polygons(list(Polygon(cell)), ID=1)))
-                    if (!requireNamespace('rgeos', quietly = TRUE))
-                        stop ("package rgeos is required for area of overlap")
-                    rgeos::gArea(rgeos::gIntersection(cell,spp))
+                    cell <- st_sfc(st_polygon(list(cell)))
+                    over <- st_intersection(cell, sfp)
+                    ifelse(length(over)>0, st_area(over), 0)   # area in sq m
                 }
                 overlap <- apply(trps,1,onecell)/spacing^2
+                temptraps <- subset(temptraps, overlap>0)
+                overlap <- overlap[overlap>0]
             }
-            else overlap <- rep(1, nrow(trps))
+            else overlap <- rep(1, nrow(temptraps))
 
             if (!is.null(usage(trapsCH))) {
                 usage(temptraps) <- matrix (usage(trapsCH), byrow = TRUE,
-                                            nrow = nrow(trps), ncol = ncol(object)) * overlap
+                                            nrow = nrow(temptraps), ncol = ncol(object)) * overlap
             }
             else {
-                usage(temptraps) <- matrix (overlap, nrow = nrow(trps), ncol = ncol(object))
+                usage(temptraps) <- matrix (overlap, nrow = nrow(temptraps), ncol = ncol(object))
             }
             if (!is.null(covariates(trapsCH))) {
                 covdf <- as.data.frame(covariates(trapsCH)[rep(1,nrow(temptraps)),])

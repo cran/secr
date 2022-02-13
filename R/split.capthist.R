@@ -164,12 +164,3 @@ extract.estimates <- function (x, simplify = FALSE) {
 }
 ############################################################################################
 
-# extract.estimates(revi)$density
-
-
-# f1 <- c(rep('A', 30), rep('B', nrow(captdata)-30))
-# spltcpt <- split.capthist(captdata, f= f1)
-# lapply(spltcpt, summary)
-# sessionfits <- lapply(spltcpt, secr.fit)
-# extract.estimates (sessionfits)
-

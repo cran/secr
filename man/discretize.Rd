@@ -93,6 +93,25 @@ segments(xy(CH)[,1], xy(CH)[,2], newxy[,1], newxy[,2])
 
 plot(traps(CH), add = TRUE)  # original polygon
 
+## Incomplete overlap
+
+pol <- rotate(make.poly(), 45)
+CH2 <- sim.capthist(pol, popn = list(D = 30), detectfn = 'HHN', 
+   detectpar = list(lambda0 = 0.3))
+plot(CH2, border = 10, gridl = FALSE, varycol = FALSE)
+CH3 <- discretize(CH2, spacing = 10, output = 'count', type = 'any', 
+    cell.overlap = TRUE, tol=0.05)
+    
+plot(CH3, add = TRUE, cappar = list(col = 'orange'), varycol =
+    FALSE, rad = 0)
+plot(traps(CH3), add = TRUE)
+
+# overlay cell boundaries and usage
+msk <- as.mask(traps(CH3))
+covariates(msk) <- data.frame(usage = usage(traps(CH3))[,1])
+plot(msk, dots = FALSE, cov='usage', meshcol = 'green', 
+    add = TRUE)
+    
 }
 
 }

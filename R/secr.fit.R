@@ -1,4 +1,3 @@
-################################################################################
 ## package 'secr' 4.5
 ## secr.fit.R
 
@@ -379,42 +378,40 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         is.null(groups)
     
     if (details$fastproximity) {
-        if (any(unlist(detector(traps(capthist))) == 'count') && 
-            (is.null(details$binomN) || any(details$binomN == 0)))
-            count.distrib <- 'poisson'
-        else
-            count.distrib <- 'binomial'
-        
-        ## ensure single occasion 
-        ## do it here so that design etc. use reduced capthist
-        ## 2022-01-04 added verify = FALSE, dropunused = FALSE
-        capthist <- reduce(capthist, by = 'all', outputdetector = 'count', 
-            verify = FALSE, dropunused = FALSE)
-        if (count.distrib == 'binomial') {
-            if (!is.null(details$binomN) && (details$binomN[1]>1)) {
-                ## use explicit binomN
-                if (ms(capthist)) {
-                    for (r in 1:length(capthist)) {
-                        if (is.null(usage(traps(capthist[[r]])))) {
-                            usage(traps(capthist[[r]])) <- matrix(1,dim(capthist[[r]])[3], 1)
-                        }
-                        usage(traps(capthist[[r]])) <- usage(traps(capthist[[r]])) * details$binomN[1]
-                    }
-                }
-                else {
-                    if (is.null(usage(traps(capthist)))) {
-                        usage(traps(capthist)) <- matrix(1,dim(capthist)[3], 1)
-                    }
-                    usage(traps(capthist)) <- usage(traps(capthist)) * details$binomN[1] 
-                }
+      if (any(unlist(detector(traps(capthist))) == 'count') && 
+          (is.null(details$binomN) || any(details$binomN == 0)))
+        count.distrib <- 'poisson'
+      else
+        count.distrib <- 'binomial'
+      ## ensure single occasion 
+      ## do it here so that design etc. use reduced capthist
+      ## 2022-01-04 added verify = FALSE, dropunused = FALSE
+      ## 2022-01-23 enforce all-ones usage if ignoreusage
+      if (details$ignoreusage) {
+        capthist <- uniformusage(capthist)
+      }
+      capthist <- reduce(capthist, by = 'all', outputdetector = 'count', 
+        verify = FALSE, dropunused = FALSE)
+      
+      if (count.distrib == 'binomial') {
+        if (!is.null(details$binomN) && (details$binomN[1]>1)) {
+          ## use explicit binomN
+          if (ms(capthist)) {
+            for (r in 1:length(capthist)) {
+              usage(traps(capthist[[r]])) <- usage(traps(capthist[[r]])) * details$binomN[1]
             }
-            details$binomN <- 1   ## binomial size from usage
+          }
+          else {
+            usage(traps(capthist)) <- usage(traps(capthist)) * details$binomN[1] 
+          }
         }
-        loglikefn <- fastsecrloglikfn
+        details$ignoreusage <- FALSE  ## 2022-01-22
+        details$binomN <- 1   ## binomial size from usage
+      }
+      loglikefn <- fastsecrloglikfn
     }
     else {
-        loglikefn <- generalsecrloglikfn
-        
+      loglikefn <- generalsecrloglikfn
     }
     
     #################################################

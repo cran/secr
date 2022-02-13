@@ -6,9 +6,10 @@
 }
 
 \description{
+
 Tools to construct spatial covariates for existing mask or traps objects
-from a spatial data source.  Possible sources include GIS data such as
-ESRI polygon shapefiles input using \pkg{rgdal}.
+from a spatial data source.  
+
 }
 
 \usage{
@@ -38,11 +39,11 @@ lie outside \code{spatialdata} (mask data sources only)}
   If \code{spatialdata} is a character value then it is interpreted as
   the name of a polygon shape file (excluding `.shp').
 
-  If \code{spatialdata} is a SpatialPolygonsDataFrame or a
-  SpatialGridDataFrame then it will be used in an overlay operation as
-  described. 
+  If \code{spatialdata} is a SpatialPolygonsDataFrame, 
+  SpatialGridDataFrame or 'sf' object from \pkg{sf} then it will be used 
+  in an overlay operation as described. 
 
-   \code{spatialdata} may also be a RasterLayer from package \pkg{raster} (requires that package to have been installed). If provided \code{counts} should be a single name that will be used for the values (otherwise 'raster' will be used).
+   \code{spatialdata} may also be a RasterLayer from package \pkg{raster} or SpatRaster from \pkg{terra}. If provided \code{counts} should be a single name that will be used for the values (otherwise 'raster' will be used).
  
   If \code{spatialdata} is a \code{mask} or \code{traps} object then it
   is searched for the closest point to each point in \code{object}, and
@@ -69,13 +70,6 @@ lie outside \code{spatialdata} (mask data sources only)}
 
   Use of a SpatialGridDataFrame for \code{spatialdata} is untested.
   
-}
-
-\note{
-
-  The package \pkg{rgdal} is needed to read a shapefile, and the
-  package \pkg{sp} is needed for spatial overlay.
-
 }
 
 \examples{

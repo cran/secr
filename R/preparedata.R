@@ -348,7 +348,7 @@ prepareSessionData <- function (capthist, mask, maskusage,
         signal <- getsignal (dettype, capthist, details$tx)
         xy <- getxy (dettype, capthist)
         usge <- usage(traps)
-        if (is.null(usge) | details$ignoreusage) {
+        if (is.null(usge) || details$ignoreusage) {
             usge <- matrix(1, nrow = K, ncol = s)
         }
         if (is.null(maskusage)) {

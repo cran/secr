@@ -82,7 +82,7 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         if (is.null(names(object)) | any(names(object)==""))
             names(object) <- 1:length(object)
     }
-    
+
     ## Catch singleton - added 2011-09-12
     if ((length(allargs) == 1) & !ms(object) )
         return(object)       ## unchanged!
@@ -188,25 +188,24 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
         
         ##################################################
         ## traps
-        
         trps <- traps(object[[1]])
         mergepoly <- all(detector(trps) %in% c('polygon'))
         if (mergepoly) {
-            srl <- lapply(traps(object), function(x) Polygon(as.matrix(x)))
-            tmp <- Polygons(srl,1)
-            if (!requireNamespace ('maptools', quietly = TRUE))
-                stop("maptools required")
-            tmp2 <- maptools::unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
-            ## tmp2 <- unionSpatialPolygons(SpatialPolygons(list(tmp)), 1)
-            trps <- as.data.frame(getcoord(tmp2)[[1]])
-            rownames(trps) <- 1:nrow(trps)
-            class(trps) <- c('traps', 'data.frame')
-            detector(trps) <- detector( traps(object[[1]]))
-            polyID(trps) <- rep(1,nrow(trps))
-            ## note any covariates have been abandoned
+          
+          ## 2022-02-13  untested
+          matlist <- lapply(traps(object), as.matrix)
+          polys <- st_sfc(st_polygon(matlist))
+          tmp2 <- st_union(polys) # does not dissolve internal boundary
+          trps <- data.frame(st_coordinates(tmp2)[,1:2])
+          names(trps) <- c('x','y')
+          rownames(trps) <- 1:nrow(trps)
+          class(trps) <- c('traps', 'data.frame')
+          detector(trps) <- detector( traps(object[[1]]))
+          polyID(trps) <- rep(1,nrow(trps))
+          ## note any covariates have been abandoned
         }
         traps(temp) <- trps
-
+        
         ##################################################
         ## covariates
         
@@ -286,7 +285,6 @@ rbind.capthist <- function (..., renumber = TRUE, pool = NULL, verify = TRUE)
               signalframe(temp) <- signalframe(temp)[neworder,,drop=F]
             }
         }
-
         ##################################################
         ## name new sessions
         session (temp) <- paste(names(object), collapse='+')

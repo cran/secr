@@ -1,3 +1,26 @@
+Changes in version 4.5.3 (2022-02-14)
+
+New features or changed behaviour of old functions
+    o   more spatial data types for 'poly' and 'region' function arguments
+    o   rast generic method for mask, Dsurface objects creates terra SpatRaster object
+    o   read.traps() accepts ESRI shapefile of point, polygon or line features (experimental)
+    o   fxi.contour() argument 'SPDF' replaced by 'output', with options 'sf', 'SPDF'
+
+Bugs fixed
+    o   moves() failed with empty capthist input when names = FALSE
+    o   details$ignoreusage=TRUE not respected by esa(), derived(), region.N()
+    o   secr.fit() details$ignoreusage=TRUE failed when using 'fastproximity'
+
+Other
+    o   classes (sf, sfc, sfg) and methods (st_) from package 'sf' largely replace 'sp' (now in Suggests)
+    o   trap.builder() SRS sf::st_sample replaces sp::spsample
+    o   imports functions from 'sf' and 'terra'
+    o   no longer suggests maptools, rgeos, rgdal 
+    o   internal function boundarytoSF documented
+    o   new vignette secr-spatialdata.pdf
+    o   revised OVforest shapefile in extdata
+    o   one trap.builder() example moved to \dontrun to save time
+
 Changes in version 4.5.1 (2022-01-18)
 
 New features or changed behaviour of old functions

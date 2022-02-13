@@ -19,7 +19,7 @@
 fxi.contour (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE,
     fitmode = FALSE, plotmode = FALSE, fill = NULL,
-    SPDF = FALSE, ncores = NULL, ...)
+    output = c('list','sf','SPDF'), ncores = NULL, ...)
 fxi.secr(object, i = NULL, sessnum = 1, X = NULL, ncores = NULL)
 fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
 }
@@ -40,7 +40,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
   \item{plotmode}{logical to plot mode of each pdf}
   \item{X}{2-column matrix of x- and y- coordinates (defaults to mask)}
   \item{fill}{ vector of colours to fill contours (optional)}
-  \item{SPDF}{ logical; if TRUE the output is a SpatialPolygonsDataFrame}
+  \item{output}{ character; format of output (list, sf or SpatialPolygonsDataFrame)}
   \item{ncores}{ integer number of threadss to be used for parallel processing}
   \item{start}{ vector of x-y coordinates for maximization }
   \item{\dots}{additional arguments passed to \code{contour} or \code{nlm}}
@@ -87,7 +87,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
 
 \value{
   
-\code{fxi.contour} (SPDF = FALSE) --
+\code{fxi.contour} (output = 'list') --
   
 Coordinates of the plotted contours are returned as a list with one
 component per polygon. The list is returned invisibly if plt = TRUE.
@@ -95,12 +95,14 @@ component per polygon. The list is returned invisibly if plt = TRUE.
 An additional component `mode' reports the x-y coordinates of the
 highest point of each pdf (see Details).
 
-\code{fxi.contour} (SPDF = TRUE) --
+\code{fxi.contour} (output = 'SPDF') --
   
 Contours are returned as a SpatialPolygonsDataFrame (see package
 \pkg{sp}) with one component per animal. The attributes dataframe has two columns, the x-
 and y-coordinates of the mode. The SpatialPolygonsDataFrame is returned
 invisibly if plt = TRUE.
+
+\code{fxi.contour} (output = 'sf') -- simple features 'sf' object, as for SPDF.
 
 \code{fxi.secr} --
 
@@ -168,12 +170,20 @@ fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
 
 ## output as SpatialPolygonsDataFrame
 spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
-    nx = 256, SPDF = TRUE, fitmode = TRUE)
+    nx = 256, output = 'SPDF', fitmode = TRUE)
+
+## output as simple features
+sf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
+    nx = 256, output = 'sf', fitmode = TRUE)
 
 ## save as ESRI shapefile test.shp etc.
 ## replace tempdir() with your own folder name
 library(rgdal)
 writeOGR(spdf, dsn = tempdir(), layer = 'test', driver="ESRI Shapefile")
+
+## or
+library(sf)
+st_write(sf, 'testsf.shp')
 
 ## plot contours and modes
 plot(spdf)

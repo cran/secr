@@ -14,12 +14,11 @@ polyarea(xy, ha = TRUE)
 
 \arguments{
   \item{xy}{dataframe or list with components `x' and `y', or a
-    SpatialPolygons or SpatialPolygonsDataFrame object from package \pkg{sp}}
+    SpatialPolygons or SpatialPolygonsDataFrame object from package \pkg{sp}, or an \pkg{sf} object with polygon data}
   \item{ha}{logical if TRUE output is converted from square metres to hectares}
 }
 \details{
-  For SpatialPolygons or SpatialPolygonsDataFrame objects, the packages
-  \pkg{sp} and \pkg{rgeos} are used.
+  For sf, sfc, SpatialPolygons or SpatialPolygonsDataFrame objects, the package \pkg{sf} is used.
 }
 
 \value{

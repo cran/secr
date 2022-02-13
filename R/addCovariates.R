@@ -8,99 +8,82 @@
 ## 2014-08-05 may now be any numeric vector that can be formed into a 2-column matrix
 ## 2017-03 new argument replace; use readOGR for shapefiles
 ## 2021-09-16 allow raster
-## 2021-12-07 experimental SpatRast (terra)
+## 2021-12-07 SpatRaster (terra)
+## 2022-02-13 Revamped for sf, added tests
 
 ###############################################################################
 
 addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, replace = FALSE) {
 
-  if (!(inherits(object, 'mask') | inherits(object, 'traps')))
-        ## stop ("require mask or traps object")
+    if (!(inherits(object, 'mask') | inherits(object, 'traps')))
         object <- matrix(unlist(object), ncol = 2)
     if (!ms(object) & ms(spatialdata))
         stop ("mismatch of single session object, multisession spatialdata")
 
+    #---------------------------------------------------------------------------
+    # multisession
     if (ms(object)) {
         ## allow multiple sessions, and session-specific data sources
         nsession <- length(object)
         out <- object
         for (session in 1:nsession) {
             if (ms(spatialdata)) {
-                out[[session]] <- addCovariates(out[[session]], spatialdata[[session]])
+                out[[session]] <- addCovariates(out[[session]], spatialdata[[session]], 
+                    columns, strict, replace)
             }
             else {
-                out[[session]] <- addCovariates(out[[session]], spatialdata)
+                out[[session]] <- addCovariates(out[[session]], spatialdata, 
+                    columns, strict, replace)
             }
         }
         out
     }
+    #---------------------------------------------------------------------------
+    # single session
     else {
-        if (is.character(spatialdata))
-            type <- "shapefile"
-        else if (inherits(spatialdata, "SpatialPolygonsDataFrame"))
-            type <- "SPDF"
-        else if (inherits(spatialdata, "SpatialGridDataFrame"))
-            type <- "SGDF"
-        else if (inherits(spatialdata, "mask"))
-            type <- "mask"
-        else if (inherits(spatialdata, "traps"))
-            type <- "traps"
-        else if (inherits(spatialdata, "RasterLayer"))
-            type <- "raster"
-        else if (inherits(spatialdata, "SpatRaster"))
-            type <- "SpatRaster"
-        else
-            stop ("spatialdata type unrecognised or unsupported")
-
-        if (type == "shapefile") {
+        # transform spatial data to sf, SpatRaster, traps or mask
+        if (is.character(spatialdata)) {
             polyfilename <- spatialdata  
-
-            if (!requireNamespace('rgdal', quietly = TRUE)) {
-                stop("package rgdal is required to read shapefiles")
+            isshp <- function(filename) {
+                nch <- nchar(filename)
+                tolower(substring(filename, nch-3,nch)) == ".shp" 
             }
-            else { ## 2020-02-23 placed in 'else'
-                isshp <- function(filename) {
-                    nch <- nchar(filename)
-                    tolower(substring(filename, nch-3,nch)) == ".shp"
-                }
-                if (!isshp(polyfilename)) {
-                    polyfilename <- paste0(polyfilename, ".shp")
-                }
-                spatialdata <- basename(spatialdata)
-                if (isshp(spatialdata)) {
-                    spatialdata <- substring(spatialdata, 1, nchar(spatialdata)-4)
-                }
-                spatialdata <- rgdal::readOGR(dsn = polyfilename, layer = spatialdata)
+            if (!isshp(polyfilename)) {
+                polyfilename <- paste0(polyfilename, ".shp")
             }
-
+            spatialdata <- st_read(polyfilename, quiet = TRUE)   # read sf
         }
-        if (type %in% c("shapefile", "SPDF", "SGDF")) {
-            xy <- matrix(unlist(object), ncol = 2)
-            xy <- sp::SpatialPoints(xy)
-            sp::proj4string(spatialdata) <- sp::CRS()
-            df <- sp::over (xy, spatialdata)
+        else if (inherits(spatialdata, "SpatialPolygonsDataFrame")) {
+            spatialdata <- st_as_sf(spatialdata)
         }
-        else if (type == "raster") {
-            df <- data.frame(raster = extract(spatialdata, as.matrix(object)))
+        else if (inherits(spatialdata, "SpatialGridDataFrame")) {
+            spatialdata <- terra::rast(raster(spatialdata))
+        }
+        else if (inherits(spatialdata, "RasterLayer")) {
+            spatialdata <- terra::rast(spatialdata)
+        }
+        # process each allowed type
+        if (inherits(spatialdata, "sf")) {
+            # POLYGON or MULTIPOLYGON
+            xy <- as.data.frame(object)
+            xy <- st_as_sf(xy, coords=1:2, crs = st_crs(spatialdata))
+            df <- st_join(xy, spatialdata, join = st_within)
+            df <- st_drop_geometry(df)
+        }
+        else if (inherits(spatialdata, "SpatRaster")) {
+            df <- data.frame(raster = terra::extract(spatialdata, as.matrix(object)))
             if (!is.null(columns)) {
                 names(df) <- columns
             }
         }
-        else if (type == "SpatRaster") {
-            # stop ("SpatRaster spatial data is not yet enabled")
-            df <- data.frame(raster = extract(spatialdata, as.matrix(object)))
-            if (!is.null(columns)) {
-                names(df) <- columns
-            }
-        }
-        else {
+        else if (inherits(spatialdata, c("traps", "mask"))) {
             ## nearest point algorithm
             if (is.null(covariates(spatialdata)))
                 stop ("spatialdata does not have covariates")
             index <- nearesttrap(object, spatialdata)
             df <- covariates(spatialdata)[index,, drop=FALSE]
             ## new argument 2014-08-05
-            if (strict & type %in% c("mask")) {
+            if (strict && inherits(spatialdata, "mask")) {
                 incell <- function (xy, m, mask) {
                     sp2 <- spacing(mask) / 2
                     mxy <- mask[m,]
@@ -116,10 +99,14 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
                     warning ("some requested points lie outside mask")
             }
         }
-
+        else {
+            stop ("spatialdata type unrecognised or unsupported")
+        }
+        
         ## select requested columns
-        if (!is.null(columns))
+        if (!is.null(columns)) {
             df <- df[,columns, drop = FALSE]
+        }
 
         ## check new covariates OK
         fn <- function(x) {
@@ -129,9 +116,10 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
                 !any((x == "") | is.na(x))
         }
         OK <- all(apply(df, 2, fn))
-        if (!OK)
+        if (!OK) {
             warning ("missing values among new covariates")
-
+        }
+        
         ## insert new covariates and return object
         rownames(df) <- 1:nrow(df)
         if (is.null(covariates(object)))
@@ -141,6 +129,7 @@ addCovariates <- function (object, spatialdata, columns = NULL, strict = FALSE, 
                 repeated <- names(covariates(object)) %in% names(df)
                 covariates(object) <- covariates(object)[,!repeated]
             }
+            
             covariates(object) <- cbind(covariates(object), df)
         }
         object

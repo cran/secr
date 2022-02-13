@@ -195,7 +195,7 @@ double zrcpp (double r, int detectfn, NumericVector par)
             return (exp(- pow(r /par(1), par(2))));
         }
         else 
-            return (NAN);  //Rcpp::stop("unknown or invalid detection function in gxy"));
+            return (R_NaN);  //Rcpp::stop("unknown or invalid detection function in gxy"));
     }
 }
 
@@ -863,23 +863,24 @@ bool anyb (const NumericMatrix &gsbval, const NumericMatrix &gsb0val) {
 
 //--------------------------------------------------------------------
 
-int firstkcpp (const int n,
-               const int x,  
-               const int nc, 
-               const int ss, 
-               const int nk,  
-               const IntegerVector &PIA) {
-    // return index of first detector for which PIA is non-zero 
-    int wxi;
-    int k=-1;
-    do {
-        k++;
-        wxi = i4(n,0,k,x,nc,ss,nk);
-    }
-    while ((PIA[wxi] == 0) && (k<nk));
-    if (k>=nk) return (NAN);  // Rcpp::stop ("no detector used on first occasion? error in getpmix"); 
-    else return(k);
-}
+// int firstkcpp (const int n,
+//                const int x,  
+//                const int nc, 
+//                const int ss, 
+//                const int nk,  
+//                const IntegerVector &PIA) {
+//     // return index of first detector for which PIA is non-zero 
+//     int wxi;
+//     int k=-1;
+//     do {
+//         k++;
+//         wxi = i4(n,0,k,x,nc,ss,nk);
+//     }
+//     while ((PIA[wxi] == 0) && (k<nk));
+//     if (k>=nk) return (NAN);  // Rcpp::stop ("no detector used on first occasion? error in getpmix"); 
+//     else return(k);
+// }
+
 //=============================================================
 
 // void getpmixcpp(int gpar, 
@@ -930,7 +931,6 @@ int firstkcpp (const int n,
 //         }
 //     }
 // }
-
 //=============================================================
 
 void fillngcpp(
@@ -949,7 +949,6 @@ void fillngcpp(
         ng[g]++;
     }
 }
-
 
 //=============================================================
 

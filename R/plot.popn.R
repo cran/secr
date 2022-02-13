@@ -18,22 +18,22 @@ popIDsplit <- function (pop) {
 }
 
 plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL, ...) {
-    ## 2018-11-28 move dots to position 2 to allow more than one argument... deferred
-    ## plot.popn <- function (x, ..., add = FALSE, frame = TRUE, circles = NULL, collapse = FALSE, seqcol = NULL) {
     if (ms(x)) {
         nsess <- length(x)
         temp <- do.call(rbind, lapply(x, function(y) attr(y,'boundingbox')))
         vertices <- apply(temp,2,range)
-        
         if (collapse) {
             if (!add)  {
                 eqscplot (0,0, xlab='', ylab='', xlim=vertices[,1],
                           ylim = vertices[,2], type='n', axes = FALSE)
             }
-            if (frame) {    ## 2019-05-31
+            if (frame) {    ## 2019-05-31, 2022-02-12
                 if (!is.null(attr(x[[1]],'polygon'))) {
                     poly <- attr(x[[1]],'polygon')
-                    if (inherits(poly, "SpatialPolygons"))
+                    if (inherits(poly, "SpatialPolygons")) {
+                        poly <- st_as_sfc(poly)
+                    }
+                    if (inherits(poly, "sfc"))
                         plot(poly, add = TRUE)
                     else
                         polygon (poly)
@@ -41,7 +41,6 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = 
                 else
                     polygon (attr(x[[1]], 'boundingbox'))   
             }
-            # plot(grid, border=2, bty='o', gridlines=F)
             sid <- popIDsplit(x)
             apply(sid, 1 ,lines, ...)
             if (!is.null(seqcol)) {
@@ -87,13 +86,17 @@ plot.popn <- function (x, add = FALSE, frame = TRUE, circles = NULL, collapse = 
         if (frame) {
             if (!is.null(attr(x,'polygon'))) {
                 poly <- attr(x,'polygon')
-                # modified 2016-09-20 to allow SpatialPolygonsDataFrame
                 # we are assuming that the polygon attribute may be either
-                # a 2-column matrix or a SpatialPolygons object
-                if (inherits(poly, "SpatialPolygons"))
+                # a 2-column matrix or a SpatialPolygons/sfc object
+                if (inherits(poly, "SpatialPolygons")) {
+                    poly <- st_as_sfc(poly)
+                }
+                if (inherits(poly, 'sfc')) {
                     plot(poly, add = TRUE)
-                else
+                }
+                else {
                     polygon (poly)
+                }
             }
             else
                 polygon (vertices)

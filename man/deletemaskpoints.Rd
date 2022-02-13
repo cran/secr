@@ -38,9 +38,8 @@ deleteMaskPoints(mask, onebyone = TRUE, add = FALSE, poly = NULL,
   coincide with mask points.
 
   Defining \code{poly} here is equivalent to calling \code{make.mask}
-  with \code{poly} defined. \code{poly}
-  may be a SpatialPolygonsDataFrame from \pkg{sp}, possibly imported from a polygon shapefile
-  with \code{rgdal::readOGR}. Whether \code{poly} represents habitat or
+  with \code{poly} defined. \code{poly} one of the several types described 
+  in \code{\link{boundarytoSF}}. Whether \code{poly} represents habitat or
   non-habitat is toggled with \code{poly.habitat} -- the default here
   differs from \code{\link{make.mask}}.
 

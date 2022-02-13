@@ -41,7 +41,7 @@ Rcpp::List getdenomcpp (int fn,
           return (boost::math::cdf(complement(gam,d))); 
         }
         else if (fn == 19) lam = exp(- pow(d /sigma , z));
-        else return (NAN);             //Rcpp::stop("unrecognised fn");
+        else return (R_NaN);             //Rcpp::stop("unrecognised fn");
         invdenom[m] += lam * expzj;
       }
       denomtot += invdenom[m];

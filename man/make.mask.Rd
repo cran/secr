@@ -67,7 +67,7 @@ because it starts with a `clusterrect' mask.
 The `rectangular' method constructs a simple rectangular mask with the
 given nx, ny and spacing. 
 
-The `polybuffer' method cnstructs a mask by buffering around the polygon specified in the `poly' argument. If that inherits from `SpatialPolygons' then the buffering is performed with rgeos::gBuffer. Otherwise, buffering is approximate, based on the distance to points on an initial discretized mask enclosed by `poly' (points at half the current `spacing').
+The `polybuffer' method constructs a mask by buffering around the polygon specified in the `poly' argument. If that inherits from `SpatialPolygons' or `sfc' then the buffering is performed with sf::st_buffer. Otherwise, buffering is approximate, based on the distance to points on an initial discretized mask enclosed by `poly' (points at half the current `spacing').
 
 If \code{poly} is specified, points outside \code{poly} are dropped (unless type = "polybuffer"). The default is to require only the centre to lie within \code{poly}; use \code{cell.overlap = "all"} to require all cell corners to lie within \code{poly}, or \code{cell.overlap = "any"} to accept cells with any corner in \code{poly}. The `polygon' method places points on a rectangular grid clipped to the
 polygon (\code{buffer} is not used). Thus `traprect' is equivalent to
@@ -75,8 +75,9 @@ polygon (\code{buffer} is not used). Thus `traprect' is equivalent to
 \itemize{
 \item a matrix or dataframe of two columns interpreted as x and y
 coordinates, or
+\item an object from package `sf' with polygon geometries, or
 \item a SpatialPolygons or SpatialPolygonsDataFrame object as defined in the package `sp',
-possibly imported by reading a shapefile with readOGR() from package rgdal.
+possibly imported by reading a shapefile.
 }
 
 If \code{spacing} is not specified then it is determined by dividing the
@@ -147,10 +148,10 @@ plot (temptrap, add = TRUE)
 
 ## Using an ESRI polygon shapefile for clipping (shapefile
 ## polygons may include multiple islands and holes).
-## Requires the `rgdal' package of Roger Bivand, Tim Keitt and Barry Rowlingson
 
-datadir <- system.file("extdata", package = "secr")
-possumarea <- rgdal::readOGR(dsn = datadir, layer = "possumarea")
+library(sf)
+shpfilename <- system.file("extdata/possumarea.shp", package = "secr")
+possumarea <- st_read(shpfilename)
 
 possummask2 <- make.mask(traps(possumCH), spacing = 20,
     buffer = 250, type = "trapbuffer", poly = possumarea)

@@ -57,7 +57,7 @@ superpopulation of this size, with consequences for the variance of
 density estimates. This can help to reconcile MLE with Bayesian
 estimates using data augmentation.
 
-\code{details$fastproximity} controls special handling of data from binary proximity detectors. If TRUE and other conditions are met (no temporal variation or groups) then capthist is automatically reduced to a binomial count for a single occasion and further compressed by storing only non-zero counts, which can greatly speed up computation of the likelihood (default TRUE).
+\code{details$fastproximity} controls special handling of data from binary proximity and count detectors. If TRUE and other conditions are met (no temporal variation or groups) then a multi-occasion capthist is automatically reduced to a count for a single occasion and further compressed by storing only non-zero counts, which can greatly speed up computation of the likelihood (default TRUE).
 
 \code{details$fixedbeta} may be used to fix values of beta
 parameters. It should be a numeric vector of length equal to the total

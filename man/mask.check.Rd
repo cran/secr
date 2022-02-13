@@ -190,10 +190,8 @@ lapply(mask.check.fit, derived)
 mask.check(ovenbird.model.1, session = c("2005","2009"))
 
 ## clipping mask
-olddir <- setwd(system.file("extdata", package = "secr"))
-possumarea <- read.table("possumarea.txt", header = TRUE)
-setwd(olddir)
-data (possum)
+txtfilename <- system.file("extdata/possumarea.txt", package = "secr")
+possumarea <- read.table(txtfilename, header = TRUE)
 mask.check (possum.model.0, spacings = c(20, 30), buffers =
     c(200, 300), poly = possumarea, LLonly = FALSE,
     file = "temp", CL = TRUE)

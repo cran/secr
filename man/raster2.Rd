@@ -6,11 +6,15 @@
 \alias{raster,mask-method}
 \alias{raster,Dsurface-method}
 
-\title{Create a RasterLayer Object from Mask or Dsurface}
+\alias{rast}
+\alias{rast,mask-method}
+\alias{rast,Dsurface-method}
+
+\title{Create a RasterLayer Or SpatRaster Object from Mask or Dsurface}
 
 \description{
 
-  Methods to convert \pkg{secr} object to a RasterLayer object.
+  Methods to convert \pkg{secr} object to a RasterLayer SpatRaster object.
 
 }
 
@@ -19,6 +23,10 @@
 \S4method{raster}{mask}(x, covariate, values = 1, crs = NA)
 
 \S4method{raster}{Dsurface}(x, covariate, values = 1, crs = NA)
+
+\S4method{rast}{mask}(x, covariate, values = 1, crs = "")
+
+\S4method{rast}{Dsurface}(x, covariate, values = 1, crs = "")
 
 }
 
@@ -47,28 +55,28 @@ the values of the corresponding covariate of the mask or Dsurface are used. Othe
 The resulting RasterLayer may optionally include a PROJ.4 map projection
 defined via \code{crs}. The specification may be very simple (as in the
 example below) or complex, including an explicit datum and other
-arguments. Projections are used by \pkg{raster}, \pkg{sp}, \pkg{rgdal}
-and other packages. See \code{\link[raster]{raster}} for further
-explanation and links.
+arguments. Projections are used by \pkg{sf}, \pkg{terra}, \pkg{raster}, 
+\pkg{sp}, \pkg{rgdal} and other packages. See \code{\link[raster]{raster}} for 
+further explanation and links.
 
 The S3 classes `mask' and `Dsurface' are defined in \pkg{secr} as
 virtual S4 classes. This enables these extensions to the list of S4
-methods defined in \pkg{raster}.
+methods defined in \pkg{terra} and \pkg{raster}.
   
 Although these methods work `standalone', it is currently necessary to
-load the \pkg{raster} package to do much with the result (e.g., plot it).
+load the \pkg{terra} or \pkg{raster} package to do much with the result (e.g., plot it).
 
 }
 
 \value{
   
-RasterLayer
+RasterLayer (raster) or SpatRaster (rast)
 
 }
 
 \seealso{
   
-\code{\link[raster]{raster}}
+\code{\link[raster]{raster}}, \code{\link[terra]{rast}}
 
 }
 

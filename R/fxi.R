@@ -2,33 +2,64 @@
 ## package 'secr'
 ## fxi.R
 ## 2019-08-17 fxi.secr uses C++ call
+## 2022-02-13 'sp' now in suggests
 ###############################################################################
 
 fxi2SPDF <- function (x, ID, levels) {
-  if (missing(ID))
-    ID <- 1:length(x)
-  if (missing(levels))
-    levels <- names(x[[1]])[names(x[[1]]) != 'mode']
-  getxy1 <- function(one)
-    lapply(one[levels], function (xx) Polygon(cbind(xx$x, xx$y)))
-  oneanimal <- function (x,id)
-    Polygons(x, id)
-  xy <- lapply(x[ID], getxy1)
-  modes <- t(sapply(x[ID], '[[', 'mode') )
-  modes <- matrix(unlist(modes), ncol = 2)
-  listSrs <- mapply(oneanimal, xy, ID)
-  SpP <- SpatialPolygons(listSrs)
-  df <- data.frame(modex = modes[,1], modey = modes[,2], row.names = ID)
-  SpatialPolygonsDataFrame(SpP, df)
+  if (requireNamespace('sp')) {
+    if (missing(ID))
+        ID <- 1:length(x)
+    if (missing(levels))
+        levels <- names(x[[1]])[names(x[[1]]) != 'mode']
+    getxy1 <- function(one) {
+        lapply(one[levels], function (xx) sp::Polygon(cbind(xx$x, xx$y)))
+    }
+    oneanimal <- function (x,id) {
+        sp::Polygons(x, id)
+    }
+    xy <- lapply(x[ID], getxy1)
+    modes <- t(sapply(x[ID], '[[', 'mode') )
+    modes <- matrix(unlist(modes), ncol = 2)
+    listSrs <- mapply(oneanimal, xy, ID)
+    SpP <- sp::SpatialPolygons(listSrs)
+    df <- data.frame(modex = modes[,1], modey = modes[,2], row.names = ID)
+    sp::SpatialPolygonsDataFrame(SpP, df)
+  }
+  else {
+    stop ("SPDF output requires package sp")
+  }
 }
+###############################################################################
 
-##    writeSpatialShape(SPDF, ...)
+fxi2sf <- function (x, ID, levels) {
+    if (missing(ID))
+        ID <- 1:length(x)
+    if (missing(levels))
+        levels <- names(x[[1]])[names(x[[1]]) != 'mode']
+    getxy1 <- function(one) {
+        onelist <- lapply(one[levels], function (xx) cbind(xx$x, xx$y)[c(1:length(xx$x),1),])
+        st_polygon(onelist)
+    }
+    xy <- st_sfc(lapply(x[ID], getxy1))
+    
+    modes <- t(sapply(x[ID], '[[', 'mode') )
+    modes <- matrix(unlist(modes), ncol = 2)
 
-fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
-                         levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, fitmode =
-                           FALSE, plotmode = FALSE, fill = NULL, SPDF = FALSE,  ncores = NULL, ...) {
-  if (inherits(object$mask, 'linearmask'))
+    df <- data.frame(ID = ID, modex = modes[,1], modey = modes[,2])
+    st_sf(xy, df)
+}
+###############################################################################
+
+fxi.contour <- function (
+    object, i = 1, sessnum = 1, border = 100, nx = 64,
+    levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE, 
+    fitmode = FALSE, plotmode = FALSE, fill = NULL, 
+    output = c('list','sf','SPDF'), ncores = NULL, ...) {
+    
+    output <- match.arg(output)
+    if (inherits(object$mask, 'linearmask'))
     stop("contouring fxi is not appropriate for linear habitat")
+    
   if (ms(object)) {
     session.traps <- traps(object$capthist)[[sessnum]]
   }
@@ -98,8 +129,12 @@ fxi.contour <- function (object, i = 1, sessnum = 1, border = 100, nx = 64,
     allz <- list(allz)
   temp <- lapply(1:length(allz), fxi)
   
-  if (SPDF)
+  if (output == 'sf') {
+      temp <- fxi2sf(temp)
+  }
+  else if (output == 'SPDF') {
     temp <- fxi2SPDF(temp)
+  }
   
   if (plt)
     invisible(temp)
@@ -272,7 +307,9 @@ fxi.secr <- function (object, i = NULL, sessnum = 1, X = NULL, ncores = NULL) {
   else {
     ok <- i
     if (!is.null(xy)) {
-        xy <- getxy(data$dettype, selectCHsession(subset(object$capthist, ok), sessnum))
+      ## 2022-02-13 don't want 'no detections on occasion x'
+      ch <- suppressWarnings(subset(object$capthist, ok))  
+      xy <- getxy(data$dettype, selectCHsession(ch, sessnum))
     }
   }
   if (length(dim(data$CH)) == 2) {

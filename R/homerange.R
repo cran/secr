@@ -140,7 +140,9 @@ moves <- function (capthist, userdist = NULL, mask = NULL, names = FALSE) {
                 w <- split(trap(capthist, names = FALSE), IDfactor)
                 out <- lapply(w,movex)
             }
-            if (!names) names(out) <- 1:length(out)
+            ## 2022-01-21
+            # if (!names) names(out) <- 1:length(out)
+            if (!names && length(out)>0) names(out) <- 1:length(out)
             out
         }
     }

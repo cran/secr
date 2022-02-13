@@ -35,7 +35,7 @@ cluster.centres (object)
 \arguments{
   \item{n}{ integer number of clusters (ignored if method = "all") }
   \item{cluster}{ traps object }
-  \item{region}{ bounding polygon}
+  \item{region}{ bounding polygon(s)}
   \item{frame}{ data frame of points used as a finite sampling frame }
   \item{method}{ character string (see Details) }
   \item{edgemethod}{character string (see Details) }
@@ -74,11 +74,8 @@ cluster.centres (object)
   using the polygon.
 
   \code{region} and \code{exclude} may be a two-column matrix or
-  dataframe of x-y coordinates for the boundary, or a SpatialPolygons or
-  SpatialPolygonsDataFrame object from \pkg{sp}. A SpatialPolygons
-  object is mostly sufficient, but a full SpatialPolygonsDataFrame
-  object is required for \code{region} when \code{method = "GRTS"} and
-  \code{frame = NULL}.
+  dataframe of x-y coordinates for the boundary, or one of the other polygon 
+  sources listed in \code{\link{boundarytoSF}} (these allow multiple polygons). 
   
   \code{method} may be "SRS", "GRTS", "all" or "rank". "SRS" takes a simple
   random sample (without replacement in the case of a finite sampling
@@ -90,7 +87,7 @@ cluster.centres (object)
   which should have length equal to the number of rows in
   \code{frame}; ties are resolved by drawing a site at random.
   
-  WARNING: the GRTS option was suspended in secr 4.4.7 because of changes in 
+  WARNING: the GRTS option is not available in secr 4.5.3 because of changes in 
   package spsurvey.
   
   Options for \code{edgemethod} are --
@@ -109,10 +106,10 @@ cluster.centres (object)
   allow for replacement of any rejected clusters; otherwise, an error is reported 
   (`not enough clusters within polygon').
   
-  The package \pkg{sp} is required. GRTS samples require function
-  \code{grts} in package \pkg{spsurvey} of Olsen and Kincaid. Much more
-  sophisticated sampling designs may be specified by using \code{grts}
-  directly.
+  % The package \pkg{sp} is required. GRTS samples require function
+  % \code{grts} in package \pkg{spsurvey} of Dumelle et al. (2021). Much more
+  % sophisticated sampling designs may be specified by using \code{grts}
+  % directly.
 
   \code{mash} collapses a multi-cluster capthist object as if all
   detections were made on a single cluster. The new detector coordinates
@@ -137,10 +134,6 @@ cluster.centres (object)
 
   \code{trap.builder} produces an object of class `traps'.
 
-  \code{method = "GRTS"} causes messages to be displayed regarding the
-    stratum (always "None"), and the initial, current and final number
-    of levels from the GRTS algorithm.
-
   \code{plt = TRUE} causes a plot to be displayed, including the polygon
   or finite sampling frame as appropriate.
 
@@ -161,6 +154,9 @@ cluster.centres (object)
 
 \references{
   
+  Dumelle, M., Kincaid, T. M., Olsen, A. R., and Weber, M. H. (2021). 
+  spsurvey: Spatial Sampling Design and Analysis. R package version 5.2.0.
+
   Stevens, D. L., Jr., and Olsen, A. R. (2004) Spatially-balanced
   sampling of natural resources. \emph{Journal of the American
   Statistical Association} \bold{99}, 262--278.
@@ -202,6 +198,8 @@ temp <- trap.builder (frame = XY, method = "all",
 ## same as temp <- read.traps(data = XY)
 plot(temp, border = 0)  ## default grid is 100 m
 
+\dontrun{
+
 ## simulate some data
 ## regular lattice of mini-arrays
 minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
@@ -216,15 +214,13 @@ cluster.centres(tempgrid)
 ## "mash" the CH
 summary(mash(tempcapt))
 
-\dontrun{
-
 ## compare timings (estimates are near identical)
 tempmask1 <- make.mask(tempgrid, type = "clusterrect",
     buffer = 200, spacing = 10)
-fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)         ## 94 s
+fit1 <- secr.fit(tempcapt, mask = tempmask1, trace = FALSE)        
 
 tempmask2 <- make.mask(minigrid, spacing = 10)
-fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)   ## 1 s
+fit2 <- secr.fit(mash(tempcapt), mask = tempmask2, trace = FALSE)  
 ## density estimate is adjusted automatically
 ## for the number of mashed clusters (9)
 
@@ -233,33 +229,14 @@ predict(fit2)
 fit1$proctime
 fit2$proctime
 
-## NOTE: GRTS option was suspended in secr 4.4.7 because of changes in spsurvey
+## SRS excluding detectors from a polygon
 
-## GRTS sample of mini-grids within a rectangle
-## GRTS requires package 'spsurvey' that may be unavailable
-##  on Mavericks
-## edgemethod = "allinside" avoids truncation at edge
-
-# minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
-#    detector = "proximity")
-    
-# if (requireNamespace('spsurvey')) {
-#  tempgrid <- trap.builder (n = 20, cluster = minigrid,
-#    method = "GRTS", edgemethod = "allinside", region =
-#    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-#    plt = TRUE)
-# }
-
-## GRTS as before, but excluding detectors from a polygon
-
-# if (requireNamespace('spsurvey')) {
-#  newgrid <- trap.builder (n = 40, cluster = minigrid,
-#    method = "GRTS", edgemethod = "allinside", region =
-#    cbind(x = c(0,6000,6000,0), y = c(0,0,6000,6000)),
-#    exclude = cbind(x = c(3000,7000,7000,3000), y =
-#    c(2000,2000,4000,4000)), exclmethod = "alloutside",
-#    plt = TRUE)
-# }
+region <- cbind(x = c(0,6000,6000,0,0), y = c(0,0,6000,6000,0))
+exclude <- cbind(x = c(3000,7000,7000,3000,3000), y = c(2000,2000,4000,4000,2000))
+newgrid <- trap.builder (n = 40, cluster = minigrid,
+    method = "SRS", edgemethod = "allinside", region = region,
+    exclude = exclude, exclmethod = "alloutside",
+    plt = TRUE)
 
 ## two-phase design: preliminary sample across region,
 ## followed by selection of sites for intensive grids
@@ -274,6 +251,18 @@ plot(CH, type = "n.per.cluster", title = "Number per cluster")
 temp <- trap.builder(10, frame = traps(CH), cluster = t4,
     ranks = cluster.counts(CH), method = "rank",
     edgemethod = "allowoverlap", plt = TRUE, add = TRUE)
+
+## GRTS disabled 4.5.3
+## GRTS sample of mini-grids within a rectangle
+## GRTS uses package 'spsurvey' 
+## spsurvey requires region has crs; here assign arbitrary UTM
+
+# minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
+#    detector = "proximity")
+# if (requireNamespace('spsurvey')) {
+#  tempgrid <- trap.builder (n = 20, cluster = minigrid,
+#  method = "GRTS", region = region, plt = TRUE)
+# }
 
 }
 

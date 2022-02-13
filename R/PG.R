@@ -1,7 +1,7 @@
 ##############################################################################
 ## package 'secr'
 ## PG.R
-## 2013-11-23, 2017-12-01
+## 2013-11-23, 2017-12-01, 2022-02-13 (sf)
 ##############################################################################
 
 PG <- function (CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...) {
@@ -15,10 +15,8 @@ PG <- function (CH, poly = NULL, includeNULL = FALSE, plt = FALSE, ...) {
                 cbind(x$x, x$y)
         }
         poly <- lapply(poly, clean)
-        srl <- lapply(poly, function(x) Polygon(x))
-        tmp <- Polygons(srl,1)
-        poly <- SpatialPolygons(list(tmp))
-        poly <- SpatialPolygonsDataFrame(poly, data = data.frame(ID = names(poly)))
+        poly <- st_sfc(st_polygon(poly))
+ 
     }
     inpoly <- function (xy) {
         if (is.null(xy)) {

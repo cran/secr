@@ -203,12 +203,14 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
         if (!is.null(attr(x,'polygon')) & ppoly) {
             poly <- attr(x,'polygon')
             if (inherits(poly, "SpatialPolygons")) {
-# plot(poly, col = polycol, add = TRUE)
-# poor control of colours
-                plot(poly, add = TRUE)
+              poly <- st_as_sfc(poly) # then plot as sfc
             }
-            else
+            if (inherits(poly, "sfc")) {
+              plot(poly, border = polycol, add = TRUE)
+            }
+            else {
                 polygon (poly, col = polycol, density = 0)
+            }
         }
         if (is.null(covariate)) {
             if (nrow(x) == 0)
@@ -226,8 +228,7 @@ plot.mask <- function(x, border = 20, add = FALSE, covariate = NULL,
             else {
               covvalue <- covariates(x)[,covariate]
               if (length(breaks) == 1) {
-                ## covrange <- range(covvalue)
-                covrange <- range(covvalue, na.rm = TRUE)   ## na.rm 2014-09-30
+                covrange <- range(covvalue, na.rm = TRUE)
                 rough <- seq(covrange[1], covrange[2], length.out = breaks+1)
                 breaks <- pretty(rough, n = breaks)
               }

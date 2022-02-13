@@ -425,7 +425,7 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
         if (convex) {
             if (!is.null(poly))
                 warning ("'poly' ignored when convex = TRUE")
-            ## could use maptools etc. to get intersection?
+            ## could use sf etc. to get intersection?
             theta <- (2*pi) * (1:ntheta) / ntheta
             if (!add & plt)
                 plot(traps, border = buffer)

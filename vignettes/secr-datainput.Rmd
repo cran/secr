@@ -108,7 +108,10 @@ set manually.
 # Detector layout format
 
 The basic format for a detector (trap) layout file simply gives the x-
-and y-coordinates for each detector, one per line:
+and y-coordinates for each detector, one per line. Coordinates must relate to a 
+Cartesian (rectangular, projected) coordinate system. If your coordinates 
+are geographic (latitude,longitude) then you must first project them 
+(see [secr-spatialdata.pdf]).
 
 ```
 # Detector X Y
@@ -510,3 +513,4 @@ Spatially explicit capture--recapture, an inclusive term
 [secr-telemetry.pdf]: https://www.otago.ac.nz/density/pdfs/secr-telemetry.pdf
 [secr-sound.pdf]: https://www.otago.ac.nz/density/pdfs/secr-sound.pdf
 [simpolyfigure]: simpoly.png
+[secr-spatialdata.pdf]: https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf
