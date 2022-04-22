@@ -1451,6 +1451,7 @@ subset.traps <- function (x, subset = NULL, occasions = NULL, ...) {
             rowsubset <- as.character(polyID(x)) %in% levels(polyID(x))[subset]
         if (all(detector(x) %in% c('transect', 'transectX')))
             rowsubset <- as.character(transectID(x)) %in% levels(transectID(x))[subset]
+        
         ## apply subsetting
         temp <- x[rowsubset,,drop=F]
         class(temp) <- c('traps','data.frame')
@@ -2373,7 +2374,7 @@ trim.secr <- function (object, drop = c('call', 'mask', 'designD', 'designNE',
 }
 ############################################################################################
 
-## 2012-11-14, 2017-10-27, 2017-12-13
+## 2012-11-14, 2017-10-27, 2017-12-13, 2022-04-17
 secrlist <- function(...) {
     dots <- match.call(expand.dots = FALSE)$...
     allargs <- list(...)
@@ -2386,12 +2387,12 @@ secrlist <- function(...) {
             names(allargs) <- sapply(dots2, deparse)
         }
 
-        allargs <- lapply(allargs, function(x) if (inherits(x, 'secr')) list(x) else x)
+        allargs <- lapply(allargs, function(x) if (inherits(x, c('secr','ipsecr'))) list(x) else x)
         temp <- do.call(c, allargs)
         ## added 2013-06-06
         if (is.null(names(temp)))
             names(temp) <- paste("secr", 1:length(temp), sep="")
-        if (!all(sapply(temp, function(x) inherits(x, 'secr'))))
+        if (!all(sapply(temp, function(x) inherits(x, c('secr','ipsecr')))))
             stop ("objects must be of class 'secr' or 'secrlist'")
         class(temp) <- 'secrlist'
         temp

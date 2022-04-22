@@ -10,16 +10,17 @@
 \alias{rast,mask-method}
 \alias{rast,Dsurface-method}
 
-\title{Create a RasterLayer Or SpatRaster Object from Mask or Dsurface}
+\title{Create a RasterLayer Object from Mask or Dsurface}
 
 \description{
 
-  Methods to convert \pkg{secr} object to a RasterLayer SpatRaster object.
+  Methods to convert \pkg{secr} object to a RasterLayer object.
 
 }
 
 
 \usage{
+
 \S4method{raster}{mask}(x, covariate, values = 1, crs = NA)
 
 \S4method{raster}{Dsurface}(x, covariate, values = 1, crs = NA)
@@ -61,7 +62,7 @@ further explanation and links.
 
 The S3 classes `mask' and `Dsurface' are defined in \pkg{secr} as
 virtual S4 classes. This enables these extensions to the list of S4
-methods defined in \pkg{terra} and \pkg{raster}.
+methods defined in \pkg{raster}. % and \pkg{terra}
   
 Although these methods work `standalone', it is currently necessary to
 load the \pkg{terra} or \pkg{raster} package to do much with the result (e.g., plot it).
@@ -70,13 +71,13 @@ load the \pkg{terra} or \pkg{raster} package to do much with the result (e.g., p
 
 \value{
   
-RasterLayer (raster) or SpatRaster (rast)
+RasterLayer (raster) % or SpatRaster (rast)
 
 }
 
 \seealso{
   
-\code{\link[raster]{raster}}, \code{\link[terra]{rast}}
+\code{\link[raster]{raster}} %, \code{\link[terra]{rast}}
 
 }
 

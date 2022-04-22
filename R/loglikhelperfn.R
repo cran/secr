@@ -184,8 +184,11 @@ getmaskpar <- function(OK, D, m, sessnum, unmash, nmash) {
         density <- matrix(D[1:m,,sessnum], nrow = m)
         if (!all(is.finite(density))) {
             cat ('densities :', head(density), '\n')
-            stop ("bad densities in 'secrloglikfn' ",
-                  "(try different optimisation method, link, or model?")
+            ## 2022-03-20
+            warning ("bad densities in 'secrloglikfn' ",
+                "(try different optimisation method, link, or model?)")
+            # stop ("bad densities in 'secrloglikfn' ",
+            #     "(try different optimisation method, link, or model?)")
         }
         ## optional scaling by session-specific number of clusters
         if (unmash) {

@@ -22,7 +22,7 @@ trap.builder (n = 10, cluster, region = NULL, frame = NULL,
     edgemethod = c("clip", "allowoverlap", "allinside", "anyinside", "centreinside"), 
     samplefactor = 2, ranks = NULL, rotation = NULL, detector,
     exclude = NULL, exclmethod = c("clip", "alloutside", "anyoutside", "centreoutside"), 
-    plt = FALSE, add = FALSE)
+    plt = FALSE, add = FALSE, \dots)
 
 mash (object, origin = c(0,0), clustergroup = NULL, \dots)
 
@@ -53,7 +53,8 @@ cluster.centres (object)
   \item{origin}{ new coordinate origin for detector array }
   \item{clustergroup}{ list of vectors subscripting the clusters to be
     mashed }
-  \item{\dots}{other arguments passed by mash to make.capthist (e.g., sortrows)}
+  \item{\dots}{other arguments passed by trap.builder to spsurvey::grts (e.g., mindis) 
+  and by mash to make.capthist (e.g., sortrows)}
 }
 
 \details{
@@ -87,9 +88,6 @@ cluster.centres (object)
   which should have length equal to the number of rows in
   \code{frame}; ties are resolved by drawing a site at random.
   
-  WARNING: the GRTS option is not available in secr 4.5.3 because of changes in 
-  package spsurvey.
-  
   Options for \code{edgemethod} are --
   \tabular{llll}{
   \code{edgemethod} \tab Description\cr
@@ -106,10 +104,9 @@ cluster.centres (object)
   allow for replacement of any rejected clusters; otherwise, an error is reported 
   (`not enough clusters within polygon').
   
-  % The package \pkg{sp} is required. GRTS samples require function
-  % \code{grts} in package \pkg{spsurvey} of Dumelle et al. (2021). Much more
-  % sophisticated sampling designs may be specified by using \code{grts}
-  % directly.
+  GRTS samples require function \code{grts} in version >= 5.3.0 of package \pkg{spsurvey} 
+  (Dumelle et al. 2022). More sophisticated stratified designs may be specified by using \code{grts}
+  directly.
 
   \code{mash} collapses a multi-cluster capthist object as if all
   detections were made on a single cluster. The new detector coordinates
@@ -252,17 +249,24 @@ temp <- trap.builder(10, frame = traps(CH), cluster = t4,
     ranks = cluster.counts(CH), method = "rank",
     edgemethod = "allowoverlap", plt = TRUE, add = TRUE)
 
-## GRTS disabled 4.5.3
 ## GRTS sample of mini-grids within a rectangle
-## GRTS uses package 'spsurvey' 
-## spsurvey requires region has crs; here assign arbitrary UTM
+## GRTS uses package 'spsurvey' >= 5.3.0
 
-# minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
-#    detector = "proximity")
-# if (requireNamespace('spsurvey')) {
-#  tempgrid <- trap.builder (n = 20, cluster = minigrid,
-#  method = "GRTS", region = region, plt = TRUE)
-# }
+minigrid <- make.grid(nx = 3, ny = 3, spacing = 50,
+    detector = "proximity")
+region <- cbind(x = c(0,6000,6000,0,0), y = c(0,0,6000,6000,0))
+
+if (requireNamespace("spsurvey", versionCheck = list(version = ">=5.3.0"))) {
+
+  tempgrid <- trap.builder (n = 20, cluster = minigrid, region = region, 
+      plt = TRUE, method = "GRTS")
+  
+  # specifying minimum distance between cluster origins
+  tempgrid2 <- trap.builder (n = 20, cluster = minigrid, region = region, 
+      plt = TRUE, method = "GRTS", mindis = 500, maxtry = 10)
+  # use spsurvey::warnprnt() to view warnings (e.g., maxtry inadequate)
+  
+}
 
 }
 

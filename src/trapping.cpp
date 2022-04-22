@@ -237,20 +237,20 @@ List trappingmulti (
 
 // [[Rcpp::export]]
 List trappingcapped (    
-    const NumericVector &g0,        // Parameter : detection magnitude  
-    const NumericVector &sigma,     // Parameter : detection scale 
-    const NumericVector &z,         // Parameter : detection shape (hazard) 
-    const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
-    const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
-    const int    fn,        // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
-    const double w2,        // truncation radius 
-    const IntegerVector &binomN  // not used 
+        const NumericVector &g0,        // Parameter : detection magnitude  
+        const NumericVector &sigma,     // Parameter : detection scale 
+        const NumericVector &z,         // Parameter : detection shape (hazard) 
+        const NumericMatrix &dist2,     // distances squared (optional: -1 if unused) 
+        const NumericMatrix &Tsk,       // ss x kk array of 0/1 usage codes or effort 
+        const int    fn,                // code 0 = halfnormal, 1 = hazard, 2 = exponential, 3 uniform 
+        const double w2,                // truncation radius 
+        const IntegerVector &binomN     // not used 
 )
-  
+    
 {
-  int    ss = Tsk.ncol();    // number of occasions 
-  int    kk = dist2.nrow();  // number of traps 
-  int    N  = dist2.ncol();   // number of animals 
+    int    ss = Tsk.ncol();    // number of occasions 
+    int    kk = dist2.nrow();  // number of traps 
+    int    N  = dist2.ncol();   // number of animals 
 
   // return values
   std::vector<int> caught(N);    // caught in session 

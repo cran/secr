@@ -681,7 +681,6 @@ verify.capthist <- function (object, report = 2, tol = 0.01, ...) {
     
     ## 21,22
     if (sighting) {
-      
       Tu <- Tu(object)
       Tm <- Tm(object)
       nocc <- ncol(object)

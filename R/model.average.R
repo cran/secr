@@ -9,6 +9,7 @@
 ## 2015-09-30 added annotations
 ## 2015-09-30 fixpmix now done in secr.lpredictor
 ## 2021-10-25 see also modelAverage.R
+## 2022-04-17 collate tweaked to allow ipsecr models
 ############################################################################################
 
 model.average <- function (..., realnames = NULL, betanames = NULL,
@@ -264,11 +265,11 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     else
         modelnames <- as.character(match.call(expand.dots=FALSE)$...)
 
-    if ( any (!sapply(object, function (x) inherits(x, 'secr'))) )
-        stop ("require fitted secr objects")
+    if ( any (!sapply(object, function (x) inherits(x, c('secr','ipsecr'))) ))
+        stop ("require fitted secr or ipsecr objects")
     if ( length(object) < 2 )
         warning ("only one model")
-    if (!is.list(object) | !inherits(object[[1]], 'secr'))
+    if (!is.list(object) | !inherits(object[[1]], c('secr','ipsecr')))
         stop("object must be secr or list of secr")
 
     type <- 'real'                     ## default
@@ -298,11 +299,12 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
 
     getLP <- function (object1) {  ## for predicted values of real parameters
         getfield <- function (x) {
+            if (is.null(object1$beta)) object1$beta <-  object1$fit$par         
             secr.lpredictor (
                 formula = object1$model[[x]], 
                 newdata = newdata,
                 indx = object1$parindx[[x]], 
-                beta = object1$fit$par,
+                beta = object1$beta,
                 beta.vcv = object1$beta.vcv, 
                 field = x,
                 smoothsetup = object1$smoothsetup[[x]],
@@ -359,7 +361,6 @@ collate <- function (..., realnames = NULL, betanames = NULL, newdata = NULL,
     nr <- nrow(newdata)
     rownames <- apply(newdata, 1, function(x) paste(names(newdata), '=', x, sep='', collapse=','))
     z <- abs(qnorm(1-alpha/2))   ## beware confusion with hazard z!
-
     if (type == 'real') {
 
         predict <- lapply (object, getLP)

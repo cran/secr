@@ -1,10 +1,11 @@
-\name{ip.secr}
+\name{ip.secr-deprecated}
+\alias{ip.secr-deprecated}
 \alias{ip.secr}
 \alias{pfn}
 
 \title{
 
-Spatially Explicit Capture--Recapture by Inverse Prediction
+Deprecated Functions
 
 }
 \description{
@@ -13,6 +14,10 @@ Estimate population density by simulation and inverse prediction (Efford 2004; E
 Dawson & Robbins 2004).  A restricted range of SECR models may be fitted
 (detection functions with more than 2 parameters are not supported, nor
 are covariates).
+
+These functions are replaced by \code{ipsecr.fit} and \code{proxyfn1}
+in the forthcoming package \pkg{ipsecr} (https://github.com/MurrayEfford/ipsecr). 
+They will be removed in future versions of \pkg{secr}.
 
 }
 

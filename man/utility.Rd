@@ -44,7 +44,7 @@ nedist(xy1, xy2, mask, inf = Inf, ...)
 
   \code{nedist} computes the non-Euclidean distance between each point
   in xy1 and each point in xy2, in two dimensions. The calculation uses
-  \pkg{gdistance} (van Etten 2014; see also Csardi \& Nepusz 2006): a
+  \pkg{gdistance} (van Etten 2017; see also Csardi \& Nepusz 2006): a
   transition layer is formed representing the connections between
   adjacent points in \code{mask}. By default, points within a 16-point
   neighbourhood are considered `adjacent'. Distances are obtained by
@@ -85,11 +85,11 @@ Dijkstra, E. W. (1959) A note on two problems in connexion with
 graphs. \emph{Numerische Mathematik}, \bold{1}, 269--271.
 
 Csardi, G. and Nepusz, T. (2006) The igraph software package for complex
-network research. \emph{InterJournal}, \bold{1695}. https://igraph.org.
+network research. \emph{InterJournal}, \bold{1695}. \url{https://igraph.org}
 
-van Etten, J. (2014) gdistance: distances and routes on geographical
-grids. R package version 1.1-5. https://CRAN.R-project.org/package=gdistance
-
+van Etten, J. (2017) R package gdistance: Distances and routes on
+  geographical grids. \emph{Journal of Statistical Software}, \bold{76(1)}, 1--21.
+  \doi{10.18637/jss.v076.i13}
 
 }
 

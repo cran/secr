@@ -57,7 +57,7 @@ No value is returned. The effect is to upload waypoints to an attached
 
 \seealso{
 
-  \code{\link{make.systematic}}, \code{\link[maptools]{readGPS}}
+  \code{\link{make.systematic}}
  
 }
 

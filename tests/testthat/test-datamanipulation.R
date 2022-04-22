@@ -1,8 +1,8 @@
-## Started 2022-01-05
+## 2022-01-05 Started 
+## 2022-03-15 tests using 'terra' suppressed 
 
 library(secr)
 library(sf)
-library(terra)
 
 ## to avoid ASAN/UBSAN errors on CRAN, following advice of Kevin Ushey
 ## e.g. https://github.com/RcppCore/RcppParallel/issues/169
@@ -14,7 +14,7 @@ set.seed(123)
 detectors <- make.grid (nx = 6, ny = 6, detector = "count")
 CH1 <- sim.capthist (detectors, popn = list(D = 0.5, buffer = 100), 
     detectfn = 'HHN', detectpar = list(lambda0 = 0.2, sigma = 25), 
-    noccasions = 4, nsessions = 3)
+    noccasions = 4, nsessions = 3, renumber = FALSE)
 
 test_that("reduce.capthist accepts zero, one, or more animals per session", {
     sum1 <- summary(CH1, terse = TRUE)
@@ -34,7 +34,7 @@ test_that("home range methods work with empty capthist", {
     expect_equal(MMDM(ch0), NA)
     expect_equal(ARL(ch0), NA)
     expect_equal(RPSV(ch0), NA)
-    expect_equal(centroids(ch0), NA)
+    expect_equal(centroids(ch0), NA)  # avoid conflict terra::centroids
     expect_equal(length(moves(ch0)), 0)
 })
 ####################################################################
@@ -58,13 +58,13 @@ test_that("points in polygon", {
     inside3 <- pointsInPolygon(xy, region3)            # sf
     region4 <- as(region3, "Spatial")
     inside4 <- pointsInPolygon(xy, region4)            # SpatialPolygonsDataFrame
-    region5 <- terra::vect(region4)
-    inside5 <- pointsInPolygon(xy, region5)            # SpatVector
+    # region5 <- terra::vect(region4)
+    # inside5 <- pointsInPolygon(xy, region5)            # SpatVector
     expect_equal(inside, inside1) 
     expect_equal(inside, inside2)
     expect_equal(inside, inside3)
     expect_equal(inside, inside4)
-    expect_equal(inside, inside5)
+    # expect_equal(inside, inside5)
 })
 ####################################################################
 
@@ -75,7 +75,7 @@ test_that("addCovariates raster datasource", {
     spatialdata0 <- possummask                                  # mask 
     spatialdata1 <- raster(possummask, cov = 'd.to.shore')      # RasterLayer
     spatialdata2 <- as(spatialdata1, "SpatialGridDataFrame")    # SpatialGridDataFrame
-    spatialdata3 <- rast(possummask, cov = 'd.to.shore')        # SpatRaster
+    # spatialdata3 <- rast(possummask, cov = 'd.to.shore')        # SpatRaster
     
     xy <- data.frame(x = c(2697649, 2698074, 2698438), y = c(6078402, 6078019, 6077678))
     trp <- read.traps(data = xy)
@@ -90,13 +90,13 @@ test_that("addCovariates raster datasource", {
     expect_warning(cov2 <- covariates(addCovariates(trp, spatialdata2))[,1])
     
     # SpatRaster
-    expect_warning(cov3 <- covariates(addCovariates(trp, spatialdata3))[,1])
+    # expect_warning(cov3 <- covariates(addCovariates(trp, spatialdata3))[,1])
     
     target <- c(NA, 416.74212650, 815.38825108)
     expect_equal(cov0, target) 
     expect_equal(cov1, target) 
     expect_equal(cov2, target) 
-    expect_equal(cov3, target) 
+    # expect_equal(cov3, target) 
 })
 ####################################################################
 

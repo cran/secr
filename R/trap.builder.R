@@ -22,8 +22,8 @@
 ## 2019-12-20 make.systematic() arguments 'rotate', 'centrexy'
 ## 2020-01-27 fix bug (saved n = NULL when n missing)
 ## 2021-10-18 grts temporarily suspended
-## 2022-02-02 grts revived; use sf
 ## 2022-02-05 comprehensive use of sf
+## 2022-02-19 grts revived; use sf
 ###############################################################################
 
 ## spsurvey uses sf 2022-01-31
@@ -33,7 +33,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     c("clip", "allowoverlap", "allinside", "anyinside", "centreinside"), 
     samplefactor = 2, ranks = NULL, rotation = NULL, detector, 
     exclude = NULL, exclmethod = c("clip", "alloutside", "anyoutside", "centreoutside"), 
-    plt = FALSE, add = FALSE) {
+    plt = FALSE, add = FALSE, ...) {
     ## region may be -
     ## matrix x,y
     ## sf
@@ -107,7 +107,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     edgemethod <- match.arg(edgemethod)
     exclmethod <- match.arg(exclmethod)
 
-    if (method=="GRTS" && !is.null(exclude)) {
+    if (method == "GRTS" && !is.null(exclude)) {
         stop ("GRTS incompatible with non-null 'exclude'")
     }    
     ## option for single-trap clusters
@@ -180,41 +180,38 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
             OK <- sample.int(nrow(frame), ntrial, replace = FALSE)
             origins <- as.matrix(frame[OK, ])
         }
-        
     }
     ####################################
     else if (method == 'GRTS') {
-        stop ("method = 'GRTS' is unavailable because of changes in spsurvey")
-        # if (!requireNamespace ('spsurvey', quietly = TRUE)) {
-        #     stop ("package 'spsurvey' required for GRTS in trap.builder")
-        # }
-        # if (!is.null(region)) {
-        #         sf_frame <- st_sf(region)   # sfc to sf
-        # }
-        # else {
-        #     # assume frame of points
-        #     # stop ("GRTS currently disabled for sampling frame of points")
-        #     sf_frame <- st_as_sf(data.frame(frame), coords=1:2)
-        # }
-        # 
-        # # ensure valid crs
-        # if (st_crs(sf_frame)$IsGeographic) {   # most likely EPSG 4326
-        #     sf_frame <- st_transform(sf_frame, crs = "+proj=utm")
-        #     warning ("GRTS used latlon transformed to arbitrary crs (UTM)")
-        # }
-        # else if (is.na(st_crs(sf_frame))) {
-        #     st_crs(sf_frame) <- 2193  # NZTM 2000 - arbitrary!
-        #     warning ("GRTS requires projected coordinates; using arbitrary crs (UTM)")
-        # }
-        # ntrial <- n                   # oversample not allowed
-        # 
-        # GRTS.sites <- spsurvey::grts(
-        #     sframe      = sf_frame, 
-        #     n_base      = ntrial, 
-        #     stratum_var = NULL,       # unstratified
-        #     seltype     = "equal"     # unweighted
-        #     )
-        # origins <- st_coordinates(GRTS.sites$sites_base)
+        
+        if (!requireNamespace("spsurvey", versionCheck=list(op=NULL, version = ">=5.3.0"), quietly = TRUE)) {
+            stop ("package 'spsurvey >= 5.3.0' required for GRTS in trap.builder")
+        }
+        if (!is.null(region)) {
+                sf_frame <- st_sf(region)   # sfc to sf
+        }
+        else {
+            # assume frame of points
+            sf_frame <- st_as_sf(data.frame(frame), coords=1:2)
+        }
+
+        # ensure valid crs
+        crs <- st_crs(sf_frame)
+        if (!is.na(crs) && crs$IsGeographic) {   # most likely EPSG 4326
+            stop ("region should use projected (Cartesian) coordinates")
+        }
+        ntrial <- n                   # oversample not allowed
+
+        GRTS.sites <- spsurvey::grts(
+            sframe      = sf_frame,
+            n_base      = ntrial,
+            stratum_var = NULL,        # unstratified
+            seltype     = "equal",     # unweighted
+            projcrs_check = FALSE,     # override check
+            ...
+        )
+        origins <- st_coordinates(GRTS.sites$sites_base)
+
     }
     
     ####################################

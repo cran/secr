@@ -43,8 +43,10 @@ addSightings <- function (capthist, unmarked = NULL, nonID = NULL, uncertain = N
                 stop("number of sessions differs between uncertain and capthist")
         }
         for (i in 1:length(capthist)) {
+            # capthist[[i]] <- addSightings(capthist[[i]], unmarked[[i]], nonID[[i]], uncertain[[i]],
+            #     verify = FALSE)
             capthist[[i]] <- addSightings(capthist[[i]], unmarked[[i]], nonID[[i]], uncertain[[i]],
-                                          verify = FALSE)
+                verify = FALSE, ...)
         }
         if (verify) verify(capthist)
         capthist

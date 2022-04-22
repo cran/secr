@@ -43,7 +43,7 @@ lie outside \code{spatialdata} (mask data sources only)}
   SpatialGridDataFrame or 'sf' object from \pkg{sf} then it will be used 
   in an overlay operation as described. 
 
-   \code{spatialdata} may also be a RasterLayer from package \pkg{raster} or SpatRaster from \pkg{terra}. If provided \code{counts} should be a single name that will be used for the values (otherwise 'raster' will be used).
+   If package \pkg{terra} has been installed then \code{spatialdata} may also be a RasterLayer from package \pkg{raster} or SpatRaster from \pkg{terra}. If provided \code{counts} should be a single name that will be used for the values (otherwise 'raster' will be used).
  
   If \code{spatialdata} is a \code{mask} or \code{traps} object then it
   is searched for the closest point to each point in \code{object}, and

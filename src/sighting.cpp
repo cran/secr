@@ -78,21 +78,26 @@ List Tsightinglikcpp (
                         // Rprintf ("zero sighting probability when T number >0\n");
                         return List::create(Named("resultcode") = 53);
                     }
-                    // binary (multi, proximity) 
-                    if (binomN[s]<0) {
-                        if (TCsk>1) TCsk = 1;
-                        if (tempmu>0) { 
-                            // Tlik += R::dbinom(TCsk, 1, 1-exp(-tempmu), 1);
-                            boost::math::bernoulli_distribution<> bern(1-exp(-tempmu));
-                            Tlik += log(pdf(bern,TCsk));
+                    
+                    // 2022-03-05 new condition to trap zero-usage case
+                    // otherwise no data, none expected, no change (zero usage)
+                    if (tempmu > 0) {
+                        // binary (multi, proximity) 
+                        if (binomN[s]<0) {
+                            if (TCsk>1) TCsk = 1;
+                            if (tempmu>0) { 
+                                // Tlik += R::dbinom(TCsk, 1, 1-exp(-tempmu), 1);
+                                boost::math::bernoulli_distribution<> bern(1-exp(-tempmu));
+                                Tlik += log(pdf(bern,TCsk));
+                            }
                         }
-                    }
-                    // count 
-                    else {
-                        // Tlik += R::dpois(TCsk,  tempmu, 1);
-                        boost::math::poisson_distribution<> pois(tempmu);
-                        Tlik += log(pdf(pois,TCsk));   // tempmu)); bugfix 2021-10-17
-                    }
+                        // count 
+                        else {
+                            // Tlik += R::dpois(TCsk,  tempmu, 1);
+                            boost::math::poisson_distribution<> pois(tempmu);
+                            Tlik += log(pdf(pois,TCsk));   // tempmu)); bugfix 2021-10-17
+                        }
+                    }      
                     
                     if (std::isnan(Tlik) || (Tlik < -1e6)) {
                         // Rprintf("very negative or NaN Tlik in Tsightinglik\n");
@@ -136,6 +141,8 @@ List Tsightinglikcpp (
             if (binomN[firstsightocc] < 0) {  
                 // assume sighting detector same all occasions 
                 // and p constant over occasions (using arithmetic mean here) 
+
+                // 2022-03-05 new condition to trap zero-usage case
                 if (summuk[k]>0) {
                     // Tlik += R::dbinom(T[k],  nusedk[k], summuk[k] / nsight, 1);  // 2017-03-17 
                     boost::math::binomial_distribution<> bin(nusedk[k], summuk[k] / nsight);
@@ -144,8 +151,11 @@ List Tsightinglikcpp (
             }
             else {
                 // Tlik += R::dpois(T[k],  summuk[k], 1);
-                boost::math::poisson_distribution<> pois(summuk[k]);
-                Tlik += log(pdf(pois,T[k]));
+                // 
+                if (summuk[k]>0) {
+                    boost::math::poisson_distribution<> pois(summuk[k]);
+                    Tlik += log(pdf(pois,T[k]));
+                }
             }
         }
     }

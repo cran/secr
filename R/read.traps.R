@@ -5,6 +5,7 @@
 ## 2015-05-04 multi-file input
 ## 2015-10-12 markocc
 ## 2020-08-26 allow usage and covariates with data and xls input
+## 2022-04-06 fix renamepolyrows()
 
 ## Read detector locations from text file in DENSITY format
 ############################################################################################
@@ -12,9 +13,24 @@
 renamepolyrows <- function (tr) {
     # update vertex labels for polygon and transect detectors
     if (all(detector(tr) %in% .localstuff$polydetectors)) {
-        tr.freq <- table(polyID(tr))
-        vertex <- unlist(sapply(tr.freq, function(x) 1:x))
-        rownames(tr) <-  paste(polyID(tr),vertex,sep='.')
+        ## 2022-04-06
+        renum <- function (x) {
+            row.names(x) <- paste(polyID(x), 1:nrow(x), sep='.')
+            x
+        }
+        initialpoly <- polyID(tr)
+        initial <- unlist(split(1:nrow(tr), initialpoly))
+        tr <- split(tr, initialpoly)
+        tr <- lapply(tr, renum)
+        tr$renumber <- FALSE
+        tr$suffix <- FALSE
+        tr <- do.call(rbind, tr)
+        polyID(tr) <- initialpoly[initial]
+        
+        # old code blocked 2022-04-06
+        # tr.freq <- table(polyID(tr))
+        # vertex <- unlist(sapply(tr.freq, function(x) 1:x))
+        # rownames(tr) <-  paste(polyID(tr),vertex,sep='.')
     }
     tr
 }
@@ -23,7 +39,6 @@ read.traps <- function (file = NULL, data = NULL, detector = 'multi', covnames =
     binary.usage = TRUE, markocc = NULL, trapID = NULL, ...)
     ## possibly add sortrows argument, but risk breaking covariates, polygon etc.
 {
-    
     # count.fields(file, sep = "", quote = "\"'", skip = 0, blank.lines.skip = TRUE,
     #     comment.char = "#")
     closepoly <- function (xyi) {    ## close polygon

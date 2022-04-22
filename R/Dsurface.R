@@ -56,7 +56,7 @@ predictD <- function (object, regionmask, group, session,
         n.clust <- 1
 
     ## no density model (conditional likelihood fit)
-    if ((object$CL == TRUE) & (parameter == 'D')) {    ## implies is.null(object$model$D)
+    if (!is.null(object$CL) && object$CL && parameter == 'D') {    ## implies is.null(object$model$D)
         temp <- derived(object, se.D = (se.D | cl.D)) ## inefficient as repeats for each sess
         if (!is.data.frame(temp))
             temp <- temp[[session]]

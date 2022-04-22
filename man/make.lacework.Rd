@@ -41,8 +41,6 @@ make.lacework(region, spacing = c(100, 20), times = NULL, origin = NULL,
 
 \details{
 
-If \code{region} is a SpatialPolygonsDataFrame then function \code{elide} from the package \pkg{maptools} is used for rotation. If rotation is requested when \pkg{maptools} is not available then no rotation is done and a warning is raised.
-
 It is tidy for the major spacing (\code{spacing[1]}) to be a multiple of the minor spacing (\code{spacing[2]}); precisely one detector is then placed at each grid intersection. This outcome may also be achieved by providing only the minor spacing in the \code{spacing} argument and specifying an integer value for \code{times}.
 
 In general it is better not to specify \code{origin}. Specifying both \code{origin} and \code{rotate} may result in incomplete coverage, as the desired grid is relative to the bounding box of the \emph{rotated} region.

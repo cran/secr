@@ -11,6 +11,10 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     min.nsim = 10, max.nsim = 2000, CVmax = 0.002, var.nsim = 1000,
     maxbox = 5, maxtries = 2, ncores = 1, seed = NULL, trace = TRUE, ...) {
 
+    .Deprecated("ipsecr.fit", package = "secr", 
+        "This function will soon be removed from secr. It is superceded by the function ipsecr.fit in the forthcoming package ipsecr", 
+        old = as.character(sys.call(sys.parent()))[1L])
+    
     ## ... passed to sim.popn e.g. buffer = 100, Ndist = 'fixed'
     ## boxsize may be vector of length np
     ## pfn defined below
@@ -35,6 +39,7 @@ ip.secr <- function (capthist, predictorfn = pfn, predictortype = 'null',
     np <- length(pnames)
     traps <- traps(capthist)
     noccasions <- ncol(capthist)
+    
     if (length(boxsize)==1) boxsize1 <- rep(boxsize, np)
     else if (length(boxsize1) != np)
         stop ("invalid boxsize vector")
@@ -475,6 +480,11 @@ pfnold <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")
 }
 ##################################################
 pfn <- function (capthist, N.estimator =  c("n", "null","zippin","jackknife")) {
+    
+    .Deprecated("", package = "secr", 
+        "This function will soon be removed from secr. It is superceded by the function pfn in the forthcoming package ipsecr", 
+        old = as.character(sys.call(sys.parent()))[1L])
+    
     N.estimator <- tolower(N.estimator)
     N.estimator <- match.arg(N.estimator)
     ## capthist single-session only; ignoring deads

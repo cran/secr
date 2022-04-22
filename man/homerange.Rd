@@ -95,7 +95,7 @@ and Casby (1958) with a different denominator --
 	  
 \code{dbar} and \code{RPSV} have a specific role as proxies for
 detection scale in inverse-prediction estimation of density (Efford
-2004; see \code{\link{ip.secr}}).
+2004; see \code{\link{ip.secr-deprecated}}).
 
 \code{RPSV} is used in \code{autoini} to obtain plausible starting
 values for maximum likelihood estimation.

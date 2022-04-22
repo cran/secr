@@ -1,3 +1,23 @@
+Changes in version 4.5.4 (2022-04-22)
+
+New features or changed behaviour of old functions
+    o   reinstate GRTS option in trap.builder()
+    o   makeStart() encapsulates code for initial values
+    o   ip.secr() is deprecated (see new package at https://github.com/MurrayEfford/ipsecr)
+
+Bugs fixed
+    o   distancetotrap() and hence esa.plot() failed with polygon inputs
+    o   addSightings() did not pass extra arguments to read.table() for multisession input
+    o   secr.fit() failed with sighting data when usage 0 for any detector (since 4.4.6 Oct 2021)
+    o   likelihood-only evaluation failed with mark-resight models if chat not initialised
+    o   read.traps() failed for polygon or transect data with non-contiguous data points
+    
+Other
+    o   suggests spsurvey >= 5.3.0 
+    o   bad densities in likelihood give warning, not error
+    o   autoini tweaked to treat 'capped' detector type as 'proximity'
+    o   collate tweaked to allow mixture of secr, ipsecr models
+
 Changes in version 4.5.3 (2022-02-14)
 
 New features or changed behaviour of old functions

@@ -53,7 +53,6 @@ setMethod("raster", signature(x = "Dsurface"),
 
 ## 2022-01-24 terra SpatRaster
 
-
 setMethod("rast", signature(x = "mask"),
     ## define internal function for coercing mask to SpatRaster
     function(x,  covariate, values = 1, crs = "") {
