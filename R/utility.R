@@ -19,6 +19,8 @@
 ## 2022-01-18 4.5.1
 ## 2022-01-23 uniformusage() function to assign all-ones usage matrix
 ## 2022-02-10 4.5.2 shift to sf where possible
+## 2022-04-22 4.5.4
+## 2022-05-31 4.5.5
 #######################################################################################
 
 # Global variables in namespace

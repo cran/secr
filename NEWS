@@ -1,3 +1,19 @@
+Changes in version 4.5.5 (2022-05-31)
+
+New features or changed behaviour of old functions
+    o   verify.capthist() checks nontarget matrix if present
+    o   plot.capthist() new type 'nontarget'
+    o   gridCells() constructs cells around points (e.g., traps)
+
+Bugs fixed
+    o   make.systematic() failed because quantities from sf are class 'units'
+    o   addCovariates could fail when source polygons overlap
+    o   predictDsurface failed with user-provided density function and single-session 
+    o   trap.builder() failed with edgemethod 'centreinside'
+
+Other
+    o   on GitHub at https://github.com/MurrayEfford/secr
+
 Changes in version 4.5.4 (2022-04-22)
 
 New features or changed behaviour of old functions

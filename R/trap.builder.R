@@ -73,6 +73,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
 
     centreinside <- function (xy) {
         xy <- apply(as.matrix(xy),2,mean)
+        xy <- matrix(xy, ncol = 2)  # 2022-05-27
         xy <- st_as_sf(data.frame(xy), coords = 1:2)
         st_crs(xy) <- st_crs(region)
         OK <- st_within(xy, region, sparse = FALSE)
@@ -81,6 +82,7 @@ trap.builder <- function (n = 10, cluster, region = NULL, frame =
     
     centreoutside <- function (xy) {
         xy <- apply(as.matrix(xy),2,mean)
+        xy <- matrix(xy, ncol = 2)  # 2022-05-27
         xy <- st_as_sf(data.frame(xy), coords = 1:2)
         st_crs(xy) <- st_crs(region)
         OK <- st_within(xy, region, sparse = FALSE)
@@ -356,13 +358,11 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     ## 'cluster' is a traps object for one module
     ## 'region' is a survey region
     ## ... arguments passed to trap.builder (rotate, detector)
-
     temporigin <- origin
     chequerboard <- match.arg(chequerboard)
     order <- match.arg(order)
     
     region <- boundarytoSF(region)
-    
     if (rotate != 0) {
         ## 2022-02-01 see utility.R for sfrotate
         if (is.null(centrexy)) {
@@ -372,7 +372,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         region <- sfrotate(region, degrees = -rotate, centrexy = centrexy, usecentroid = FALSE)
     }
 
-    bbox <- st_bbox(region)    
+    bbox <- st_bbox(region)
     wd <- bbox[3]-bbox[1]
     ht <- bbox[4]-bbox[2]
     
@@ -403,15 +403,16 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
         }
         else {
             area <- sum(st_area(region))
-            cell <- sqrt(area / n)
+            ## 2022-04-27 convert to numeric to avoid units
+            cell <- as.numeric(sqrt(area / n))
             nx <- round ((wd - 2*wx) / cell) 
             ny <- round ((ht - 2*wy) / cell)
         }
         rx <- (wd - 2*wx) / nx
         ry <- (ht - 2*wy) / ny
     }
-    rxy <- c(rx,ry)
-    
+    ## 2022-04-27 convert to numeric to avoid units
+    rxy <- as.numeric(c(rx,ry))
     minxy <- bbox[1:2]
     if (is.null(origin)) {
         origin <- runif(2) * rxy + minxy + originoffset
@@ -444,6 +445,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     ##-----------------------------------------------------------------
     
     if (chequerboard != 'all') {
+        if (order != 'y') stop ("chequerboard option requires order = 'y'")
         whitesquares <- trunc(rowcol$row + rowcol$col + 0.1) %% 2L == 1L
         if (chequerboard == 'white')
             centres <- centres[whitesquares,]
@@ -453,7 +455,7 @@ make.systematic <- function (n, cluster, region, spacing = NULL,
     
     args <- list(...)
     if (!is.null(args$edgemethod)) {
-        if (args$edgemethod %in% c('allinside', 'centreinside')) {
+        if (args$edgemethod %in% c('allinside', 'centreinside','allowoverlap')) {
             sfcentres <- st_as_sf(centres, coords=1:2)
             st_crs(sfcentres) <- st_crs(region)                       
             OK <- st_within(sfcentres, region, sparse = FALSE)
