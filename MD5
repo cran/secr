@@ -1,6 +1,6 @@
-72e7482d7acf53bd441d5a177f7f66a1 *DESCRIPTION
-ea31205a0e07fbf646dcce1bc445d954 *NAMESPACE
-18274148f898b48daaca927d69b84731 *NEWS
+ffbe7868a187e3b96bcf0ed3f2697aef *DESCRIPTION
+ad4566f9cc41ebfde6fad300a63e3332 *NAMESPACE
+2c8a16a1ec88ae2be2f2a6db5bd4e335 *NEWS
 423487991cc121445563ffcd5a28f018 *R/AIC.R
 cae7799d4afe4c48e93534165303edde *R/CV.R
 dc4183782e7857ae390e0472e44c6e0c *R/ClosedN.R
@@ -16,7 +16,7 @@ e836c189dc72eef3c209a9f47ade9f62 *R/RMarkInput.R
 4943bac764151c4f4415240b5241f137 *R/RSE.R
 48342be1bc533d0981e4a04c374bab47 *R/RcppExports.R
 c733013dc940c9620d17a7e7e87e84f4 *R/Rsurface.R
-9a302b51f023c0ed4945d4203317b075 *R/addCovariates.R
+8737c707fab907a3e8dd07e22184f052 *R/addCovariates.R
 8c53c548d794b6fcf5f65aeaf76a363e *R/addSightings.R
 5dd1cda9f74e07c06a7adb2cbf2bcc0f *R/addTelemetry.R
 a1961dcf61bf798e1a5ed69e3b4d866e *R/as.data.frame.R
@@ -51,7 +51,7 @@ d1d0d3cc1c4dbeb830d86c64262f4ebe *R/make.tri.R
 affd769c8d83832c9db6f66d1dfab362 *R/makeStart.R
 5e3f405621d745fce9ff848875eb5dc2 *R/mash.r
 8b487fcc7d2a2af58d9c4134fcb194bc *R/mask.check.R
-8c6436a45434e53f65991e8f7090f583 *R/methods.R
+ecef9bfa355c635b0f83e7de2e0b975f *R/methods.R
 d50fa8b5d594507bf7cb06298fb41f96 *R/model.average.R
 6339b2c869b42a4b2c4ecf826d5722cd *R/modelAverage.R
 884e94af0003820c533dc0277d67925d *R/onAttach.R
@@ -75,7 +75,7 @@ b990626c0b3534f1888126a8d10b86a1 *R/predict.secr.R
 996a42275fdd1405c9306fda3abea78d *R/rbind.traps.R
 917d65ac0c7aafe8ecb06be7b2a58ac0 *R/read.traps.R
 56048bd054d170dec697fded1c729cce *R/reduce.R
-0fc69799fd930212c89e372ff291a71d *R/regionN.R
+fec6057f6af26e3ecede805ef98331f1 *R/regionN.R
 7b126f4706b92e91b6de278b6a460d6f *R/reparameterize.R
 2c9d2f860e5db8065b5e334b121cbd76 *R/score.test.R
 755872397aa7eb6f2430b9f52a4c574a *R/secr.design.MS.R
@@ -83,7 +83,7 @@ b990626c0b3534f1888126a8d10b86a1 *R/predict.secr.R
 dd31b161e8add66976374261abb0f355 *R/secr.make.newdata.R
 c7f26e1bc869292282bfc49308c1bfdf *R/secr.test.R
 88ca6628f4354b5580126aaafe8b951b *R/sim.capthist.R
-cc8b771ac676e3998f23d1fea9692f3b *R/sim.popn.R
+0f5a9723e89dde02c613286b36943631 *R/sim.popn.R
 7a58fa9fa99b04ebf236ec27f5d67a0c *R/sim.secr.R
 62daa00b3455bf3f2e398e25dd605372 *R/snip.R
 e450bc6f413837b90c35e7c549dc451d *R/split.capthist.R
@@ -91,6 +91,8 @@ f20c958f5799c408348b56cc7bcb6056 *R/split.mask.R
 9d8cd803a2973814be5b34566de1a86a *R/split.traps.R
 e3a698854e8316b6347df9f757104948 *R/suggest.buffer.R
 deccc9e9a8d6918f457f672e32f33250 *R/summary.capthist.R
+655d4813663b45cf1e96a7eb82136df9 *R/summary.mask.R
+5dade8c328d1e7cae1359d81eb8f060d *R/summary.popn.R
 119e45852e5f00697d3be637aeed12c3 *R/summary.secr.R
 cd73febebe8064c7a430dc864c12f846 *R/summary.traps.R
 a0f95f6276840e543eb74027cc572732 *R/superN.R
@@ -119,10 +121,10 @@ dbc917f082136fa5c257c31e8cca078d *data/skink.RData
 8146275703c1658ef7a1586b36d52160 *inst/doc/index.html
 6a385eee37c1b01e41f48fffcd529184 *inst/doc/secr-datainput.R
 bcf956daff7da613e520f0c980db67d7 *inst/doc/secr-datainput.Rmd
-1c15670441933ea7aedf9e8e70bc9ff8 *inst/doc/secr-datainput.pdf
+c3d752487822fc5e0de1b51695710bff *inst/doc/secr-datainput.pdf
 f5077aad3348b3f871294e56a14a123e *inst/doc/secr-overview.R
 e455a2ff22c6c2f8bc1f61a380bc59a6 *inst/doc/secr-overview.Rmd
-ca4d768776c014d48a0c3a0ced967f51 *inst/doc/secr-overview.pdf
+6cdbd6f401c88f6c4bf20a7648881321 *inst/doc/secr-overview.pdf
 8d0c95ac4088313e10500fa1cf1b6df4 *inst/extdata/MRCHcapt.txt
 3d885c921f7dc20b8c38e90eadcf1d8a *inst/extdata/MRCHtrap.txt
 f71ffe1bec3bc25ff43df7726879bc7e *inst/extdata/OVforest.dbf
@@ -158,9 +160,9 @@ ce5bd37b109bf1fbe5d2d313210abfe2 *man/FAQ.Rd
 4e9f6ba4b470448bcb75dfc0daabc8a8 *man/PG.Rd
 aae72918f71318d39f8726cb29475384 *man/Parallel.Rd
 66c44abafef9acf2156b2b5069b36910 *man/RMarkInput.Rd
-de2ec1a814bf5b0f9af2824b6f167360 *man/RSE.Rd
+8c9afab8ef62b8f86fbab95a4bb40486 *man/RSE.Rd
 942262624b92af6a306faaa64a7b1194 *man/Rsurface.Rd
-567c5d40aa04c7b562fa9cb634b2b435 *man/addCovariates.Rd
+1710a27568231ec666716226e91711f8 *man/addCovariates.Rd
 9c1d669e34f119248c7fd4ef51156877 *man/addSightings.Rd
 20632072b9cd2e94da7d67c1dc221b65 *man/addTelemetry.Rd
 f06a5e228e01ae8e6d20fcf88868daf1 *man/as.data.frame.Rd
@@ -217,7 +219,7 @@ cc41dca995479fea21c128ec53f17038 *man/mask.check.Rd
 aa5cd67d5a90e51ae05ad1d3a14a341f *man/model.average-deprecated.Rd
 3342297408bbe88f3a8ce99633175602 *man/modelAverage.Rd
 5c48010b48ada3702a1bc41749637b99 *man/ms.Rd
-2f1a9f0baabac0794c1792cbc4a281f9 *man/nontarget.Rd
+b858c26a355820693bcae3d77f9473f7 *man/nontarget.Rd
 59f6c6c1d8c9bff950106f95ace628d2 *man/occasionKey.Rd
 b3b2f4d773bc4638f5c14ec0c23f04a9 *man/ovenbird.Rd
 8d0839fbbf704ca52aeaf8c1ae3a4600 *man/ovensong.Rd
@@ -255,7 +257,7 @@ b94b8a89ac2fb9d60d2e703bbe8ae86d *man/rectangularMask.Rd
 c224da562cb5171aa137824a8bc48afa *man/secr-defunct.Rd
 a14ec84330021587117425d560802b60 *man/secr-deprecated.Rd
 d8a56b4e784cd592af7460bc56d75a40 *man/secr-internal.Rd
-c5a562c38e73ab67fcd0e399d85f86c0 *man/secr-package.Rd
+6ad2f86da6fe57ccc728260256ec1482 *man/secr-package.Rd
 7ec1d628a5fa80e32c421f513e81f9f6 *man/secr.design.MS.Rd
 fcae8ddd673b706001953a400a8fc02d *man/secr.fit.Rd
 e8b6fc50e3de639dc67b4c29940db3a0 *man/secr.make.newdata.Rd
@@ -285,7 +287,7 @@ fa5244fadf84f4e8f7703098aa8c303e *man/subset.mask.Rd
 632d371b284ec17785db74d494c4ab59 *man/subset.popn.Rd
 5754af9dd9eacd97c9f04c7e3cb83a9b *man/subset.traps.Rd
 8816af6e10814be32cf67a52ba9ec3bb *man/suggest.buffer.Rd
-b7a8c588a81c5159adbcc017cd931ccf *man/summary.capthist.Rd
+42fcdc2699ab93a83e479a94d48ab6a4 *man/summary.capthist.Rd
 e3ff94e55f0c806643722ae1e0499118 *man/summary.mask.Rd
 f2bf219bda6a312620286a86e8f09d43 *man/summary.popn.Rd
 0475c7ed11a7ea9c3c2ae0d6951bdd66 *man/summary.traps.Rd
@@ -337,6 +339,7 @@ bc568aecd0b892009e2e706c74c9d44a *src/sightingexpectedmusk.cpp
 7f951b06b0a1756cf9ad8d93b8437c39 *tests/testthat/test-datamanipulation.R
 7e62c083ce9d8292887e25c50b9d0f59 *tests/testthat/test-initial.R
 600c8e603ad0b0e4c5f06f12b353117f *tests/testthat/test-markresight.R
+d34642199cdeb975b8703715c03e9f82 *tests/testthat/test-regionN.R
 520dbd17cd94f4d3213c66fecd9c3a3c *tests/testthat/test-signaldetector.R
 aadca8762402bd8b5c2e200577bde463 *tests/testthat/test-transectdetectors.R
 22089c77ab36417eeab0c4e5ed16cca3 *tests/testthat/test-trapbuilder.R
