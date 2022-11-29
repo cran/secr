@@ -1,4 +1,4 @@
-# 2022-08-13
+# 2022-11-18
 
 import (parallel)
 import (RcppNumerical)
@@ -47,7 +47,8 @@ importFrom (raster,
     adjacent, 
     clump, 
     "values<-", 
-    values)
+    values,
+    plot)
 
 importMethodsFrom (raster, raster)
 exportMethods     (raster)
@@ -138,10 +139,13 @@ export (make.mask)
 export (RPSV)
 export (dbar)
 export (moves)
+export (trapsPerAnimal)
 export (MMDM)
 export (ARL)
 export (ORL)
+export (adjustVarD)
 export (centroids)
+export (chat.nk)
 export (circular.r)
 export (circular.p)
 export (autoini)
@@ -161,6 +165,7 @@ export (derivedMash)
 export (derivedExternal)
 export (derivednj)
 export (pdot)
+export (Enk)
 export (esa.plot)
 export (esa.plot.secr)
 export (suggest.buffer)

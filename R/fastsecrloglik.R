@@ -194,8 +194,6 @@ fastsecrloglikfn <- function (
         ## adjustment for mixture probabilities when class known
         known <- sum(data$knownclass>1)
         if (details$nmix>1 && known>0) {
-            # 2020-10-11
-            # nm <- tabulate(data$knownclass, nbins = max(data$knownclass))
             nb <- details$nmix + 1
             nm <- tabulate(data$knownclass, nbins = nb)
             pmix <- attr(pmixn, 'pmix')
@@ -206,9 +204,18 @@ fastsecrloglikfn <- function (
             # }
             
             ## 2022-01-16 bug fix
+            # firstx <- match ((1:details$nmix)+1, data$knownclass)
+            # tempsum <- sum(pdot[firstx] * pmix)
+            # comp[4,1] <- sum(nm[-1] * log(pdot[firstx] * pmix / tempsum))
+            ##
+
+            ## 2022-10-25 bug fix
             firstx <- match ((1:details$nmix)+1, data$knownclass)
-            tempsum <- sum(pdot[firstx] * pmix)
-            comp[4,1] <- sum(nm[-1] * log(pdot[firstx] * pmix / tempsum))
+            pdpmix <- pdot[firstx] * pmix
+            pdpmix <- pdpmix[!is.na(pdpmix)]
+            comp[4,1] <- sum(nm[-1] * log(pdpmix / sum(pdpmix)))
+            ##
+            
         }
         
         if (details$debug>=1) {

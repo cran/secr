@@ -57,6 +57,10 @@ hdotpolycpp <- function(xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, di
     .Call('_secr_hdotpolycpp', PACKAGE = 'secr', xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, dim, grain, ncores)
 }
 
+nkpointcpp <- function(D, mask, traps, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, grain, ncores) {
+    .Call('_secr_nkpointcpp', PACKAGE = 'secr', D, mask, traps, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, grain, ncores)
+}
+
 ontransectcpp <- function(xy, transect, n1, n2, tol) {
     .Call('_secr_ontransectcpp', PACKAGE = 'secr', xy, transect, n1, n2, tol)
 }
@@ -105,8 +109,8 @@ expectedmucpp <- function(nc, cc, Tu, Tm, sightmodel, binomN, markocc, pID, grou
     .Call('_secr_expectedmucpp', PACKAGE = 'secr', nc, cc, Tu, Tm, sightmodel, binomN, markocc, pID, group, gk, hk, pi_density, Nm, PIA, Tsk, h, hindex, a0)
 }
 
-simdetectpointcpp <- function(detect, N, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN) {
-    .Call('_secr_simdetectpointcpp', PACKAGE = 'secr', detect, N, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN)
+simdetectpointcpp <- function(detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN) {
+    .Call('_secr_simdetectpointcpp', PACKAGE = 'secr', detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN)
 }
 
 simdetectpolycpp <- function(detect, fn, nmix, btype, Markov, kk, animals, traps, gsb0val, gsb1val, PIA0, PIA1, knownclass, pmix, Tsk, binomN, maxperpoly) {

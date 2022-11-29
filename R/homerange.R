@@ -149,6 +149,22 @@ moves <- function (capthist, userdist = NULL, mask = NULL, names = FALSE) {
 }
 ############################################################################################
 
+trapsPerAnimal <- function (capthist) {
+    if (inherits (capthist, 'list')) {
+        lapply(capthist, trapsPerAnimal)   ## recursive
+    }
+    else {
+        nki <- apply( apply(abs(capthist), c(1,3), sum)>0, 1, sum)
+        if (length(nki)>0)
+            out <- tabulate (nki, nbins = max(nki))
+        else
+            out <- 0
+        names(out) <- 1:length(out)
+        out
+    }
+}
+############################################################################################
+
 
 ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist = NULL,
                  mask = NULL) {
