@@ -1,8 +1,8 @@
 Package: secr
 Type: Package
 Title: Spatially Explicit Capture-Recapture
-Version: 4.5.8
-Date: 2022-11-29
+Version: 4.5.10
+Date: 2023-03-10
 Description: Functions to estimate the density and size of a spatially 
   distributed animal population sampled with an array of passive detectors, 
   such as traps, or by searching polygons or transects. Models incorporating 
@@ -27,8 +27,8 @@ SystemRequirements: GNU make
 URL: https://www.otago.ac.nz/density/,
         https://github.com/MurrayEfford/secr/
 NeedsCompilation: yes
-Packaged: 2022-11-29 06:37:16 UTC; Murray
+Packaged: 2023-03-09 22:40:29 UTC; Murray
 Author: Murray Efford [aut, cre] (<https://orcid.org/0000-0001-5231-5184>)
 Maintainer: Murray Efford <murray.efford@otago.ac.nz>
 Repository: CRAN
-Date/Publication: 2022-11-29 10:20:02 UTC
+Date/Publication: 2023-03-10 00:10:07 UTC

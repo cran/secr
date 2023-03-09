@@ -1,3 +1,27 @@
+Changes in version 4.5.10 (2023-03-10)
+
+New features or changed behaviour of old functions
+    o   none
+
+Changes in version 4.5.9 (2023-03-09)
+
+New features or changed behaviour of old functions
+    o   none
+
+Bugs fixed
+    o   secr.fit() fitted wrong model for Poisson count detectors when 
+        fastproximity = FALSE, giving bad estimates esp. of detectfn parameters
+    o   make.capthist() failed with points snapped to transects
+    o   sim.popn() model2D 'cluster' mistakenly allowed Ndist = 'fixed'
+    o   region.N() could fail with user-provided distance function or when 
+        detectors varied among sessions
+
+Other
+    o   MS.capthist() help clarified
+    o   ip.secr() and pfn() defunct
+    o   secr.fit() recognises time-covariate model when timecov is a
+        multi-session list, avoiding default to fastproximity
+
 Changes in version 4.5.8 (2022-11-29)
 
 New features or changed behaviour of old functions

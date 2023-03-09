@@ -1659,6 +1659,14 @@ subset.capthist <- function (x, subset=NULL, occasions=NULL, traps=NULL,
         return(temp)
     }
     else {
+        rownum <- function (x) {
+            if (length(dim(x)) < 1 || dim(x)[1] == 0) NULL
+            else 1: (dim(x)[1])
+        }
+        colnum <- function (x) {
+            if (length(dim(x)) < 2 || dim(x)[2] == 0) NULL
+            else 1: (dim(x)[2])
+        }
         if (is.matrix(x))
             stop("require updated capthist secr >= 3.0")
         trapsx <- secr::traps(x)
@@ -2292,8 +2300,9 @@ detectpar.secr <- function(object, ..., byclass = FALSE) {
         names(temp) <- session(object$capthist)
         temp
     }
-    else
+    else {
         extractpar(temppred)
+    }
 }
 
 ############################################################################################
