@@ -2,15 +2,24 @@
 ## package 'secr'
 ## Enk.R
 ## 2022-11-18 cf pdot()
+## 2023-04-28 improve nkpointcpp (allows multi), block unsupported detector types
+## 2023-04-28 simulation option: average nrepl simulations
+## 2023-05-13 nk()
 ###############################################################################
+
+nk <- function(capthist) {
+    if (ms(capthist)) {
+        lapply(capthist, nk)
+    }
+    else {
+        apply(apply(abs(capthist),c(1,3),sum)>0, 2, sum)
+    }
+}
 
 Enk <- function (D, mask, traps, detectfn = 0, 
     detectpar = list(g0 = 0.2, sigma = 25, z = 1),
-    noccasions = NULL, binomN = NULL, userdist = NULL, ncores = NULL) {
-    
-    ncores <- setNumThreads(ncores)
-    grain <- if (ncores==1) 0 else 1
-    
+    noccasions = NULL, binomN = NULL, userdist = NULL, 
+    ncores = NULL, nrepl = NULL) {
     if (is.character(detectfn))
         detectfn <- detectionfunctionnumber(detectfn)
     if ((detectfn > 9) & (detectfn<14) & is.null(detectpar$cutval))
@@ -51,17 +60,33 @@ Enk <- function (D, mask, traps, detectfn = 0,
     if (!inherits(mask, 'mask')) {
         stop("mask input should be a mask object")
     }
-    if (any(detector(traps) %in% c('polygon','polygonX','transect', 'transectX'))) {
-        stop("nkpoint is not ready for polygon-like detectors")
+    if (!is.null(nrepl)) {
+        # simulation option
+        onesimnk <- function (r) {
+            pop <- sim.popn(D, core = mask, model2D = 'IHP')
+            ch <- sim.capthist(
+                traps      = traps, 
+                popn       = pop, 
+                detectfn   = detectfn, 
+                detectpar  = detectpar, 
+                noccasions = noccasions, 
+                nsessions  = 1, 
+                binomN     = binomN)
+            nk(ch)  # individuals per detector
+        }
+        out <- sapply(1:nrepl, onesimnk)
+        apply(out,1,mean)
+    }
+    else if (!all(detector(traps) %in% c('multi','proximity','count'))) {
+        stop("Enk formula available only for multi, proximity and count detectors; try simulation")
     }
     else {
         D <- rep(D * getcellsize(mask), length.out = nrow(mask))  # per cell; includes linear
         distmat2 <- getuserdist (traps, mask, userdist, sessnum = NA, NULL, NULL, miscparm, detectfn == 20)
-        #-------------------------------------------------------------
+        ncores <- setNumThreads(ncores)
+        grain <- if (ncores==1) 0 else 1
         nkpointcpp(
             as.double  (D),
-            as.matrix  (mask),
-            as.matrix  (traps),
             as.matrix  (distmat2),
             as.integer (dettype),
             as.matrix  (usge),

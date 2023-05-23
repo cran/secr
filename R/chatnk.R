@@ -2,59 +2,73 @@
 ## package 'secr'
 ## chatnk.R
 ## 2022-11-18, 29
+## 2023-04-26 to 2023-05-13
 ###############################################################################
 
-chat.nk.sess <- function(object, D, capthist, mask, detpar) {
+chat.nk.sess <- function(object, D, capthist, mask, detpar, nsim, ...) {
     
-    if (ms(object)) {
-        stop("expect single session")
+    ## c-hat for one session
+    
+    ## potential development:
+    ## check PIA0 for variation over occasions, animals, detectors?
+    ## substitute detectpar by lookup of Xrealparval0 with PIA0?
+    
+    noccasions <- dim(capthist)[2]
+    traps <- traps(capthist)
+    expected.nk <- Enk(
+        D          = D, 
+        mask       = mask, 
+        traps      = traps, 
+        detectfn   = object$detectfn, 
+        detectpar  = detpar, 
+        noccasions = noccasions,
+        binomN     = object$binomN, 
+        userdist   = object$details$userdist, 
+        ncores     = NULL,
+        nrepl      = NULL)   # do not simulate expected
+    
+    np <- length(object$betanames)
+    if (np > (nrow(traps)-1)) stop ("c-hat not estimated when np > K-1")
+    
+    observed.nk <- nk(capthist)
+    if (!is.null(nsim) && nsim >= 1) {
+        # simulate a list of 'observed' nk vectors
+        onesimnk <- function (r) {
+            pop <- sim.popn(D, core = mask, model2D = 'IHP')
+            ch <- sim.capthist(
+                traps      = traps, 
+                popn       = pop, 
+                detectfn   = object$detectfn, 
+                detectpar  = detpar, 
+                noccasions = noccasions, 
+                nsessions  = 1, 
+                binomN     = object$binomN)
+            nk(ch)  # individuals per detector
+        }
+        simnk <- lapply(1:nsim, onesimnk)
+        dots <- list(...)
+        type <- dots$type
+        if (is.null(type)) type <- 'Fletcher'
+        else type <- match.arg(type, choices = c('Wedderburn', 'Fletcher'))
+        simchat <- unlist(Fletcher.chat(simnk, expected.nk, np, type = type))
+        obschat <- Fletcher.chat(observed.nk, expected.nk, np, verbose = FALSE, type = type)
+        list(
+            type     = type, 
+            nsim     = nsim,
+            sim.chat = simchat, 
+            chat     = obschat, 
+            p        = 1 - rank(c(obschat, simchat))[1] / (nsim+1))
     }
     else {
-        ## check PIA0 for variation over occasions, animals, detectors?
-        ## substitute detectpar by lookup of Xrealparval0 with PIA0?
-        
-        expected.nk <- Enk(
-            D          = D, 
-            mask       = mask, 
-            traps      = traps(capthist), 
-            detectfn   = object$detectfn, 
-            detectpar  = detpar, 
-            noccasions = dim(capthist)[2],
-            binomN     = object$binomN, 
-            userdist   = object$details$userdist, 
-            ncores     = NULL)
-        
-        nk <- apply(apply(abs(capthist),c(1,3),sum)>0, 2, sum)
-        X2 <- sum((nk - expected.nk)^2 / expected.nk)
-        
-        # number of detectors
-        K <- nrow(traps(capthist))
-        
-        np <- length(object$betanames)
-        if (np > (K-1)) stop ("c-hat not estimated when np > K-1")
-
-        si <- sum((nk - expected.nk) / expected.nk) / K
-        nu <- K-np
-        
-        chat <- X2/nu / (1 + si)
-        list(
-            expected.nk = expected.nk, 
-            nk = nk, 
-            stats = c(
-                expected.nk = mean(expected.nk), 
-                var.expected = sd(expected.nk)^2,
-                mean.nk = mean(nk), 
-                var.nk = sd(nk)^2, 
-                nu = nu,
-                cX2 = X2/nu),
-            chat = chat
-        )
-        ##-------------------------------------------------------------
-        
-    }
+        Fletcher.chat(observed.nk, expected.nk, np, ...)
+    }    
 }
 
-chat.nk <- function(object) {
+chat.nk <- function(object, nsim = NULL, ...) {
+    det <- unlist(detector(traps(object$capthist)))
+    if (!all(det %in% c('multi','proximity','count'))) {
+        stop("chat.nk available only for multi, proximity and count detectors")
+    }
     
     if (ms(object)) {
         if (object$CL) {
@@ -66,15 +80,17 @@ chat.nk <- function(object) {
         else {
             Dlist <- lapply(covariates(predictDsurface(object)), '[[', 'D.0')
         }
-        detparlist <- detectpar(object)
-        ch <- object$capthist
-        object$capthist <- object$capthist[[1]] # to fool not ms
+        getdet <- function(x) {
+            ok <- rownames(x) %in% c('g0','lambda0','sigma','z')
+            as.list(setNames(x[ok,'estimate'], rownames(x)[ok]))
+        }
+        detparlist <- lapply(predict(object), getdet)
         mapply(chat.nk.sess, 
             D = Dlist, 
-            capthist = ch, 
+            capthist = object$capthist,   # 2023-04-23 previously object$capthist[[1]] 
             mask = object$mask, 
             detpar = detparlist, 
-            MoreArgs = list(object = object), 
+            MoreArgs = list(object = object, nsim = nsim, ...), 
             SIMPLIFY = FALSE)
         
     }
@@ -101,7 +117,8 @@ chat.nk <- function(object) {
             D <- derived(object)['D', 'estimate']
         }
         else if (object$model$D == ~1) {
-            D <- predict(object)['D', 'estimate']
+            pred <- predict(object)
+            D <- pred['D', 'estimate']
         }
         else {
             D <- covariates(predictDsurface(object))$D.0
@@ -111,7 +128,7 @@ chat.nk <- function(object) {
         capthist <- object$capthist
         mask <- object$mask
         detpar <- detectpar(object)
-        chat.nk.sess (object, D, capthist, mask, detpar)
+        chat.nk.sess (object, D, capthist, mask, detpar, nsim = nsim, ...)
         
     }
 }
@@ -121,7 +138,7 @@ chat.nk <- function(object) {
 # apply to density linear predictor (on link scale)
 # include in predict.secr?
 
-adjustVarD <- function(object, chatmin = 1.0, alpha = 0.05) {
+adjustVarD <- function(object, chatmin = 1.0, alpha = 0.05, chat = NULL) {
     adjustonesession <- function (pred, chat, chatmin = 1.0, alpha = 0.05) {
         link <- pred['D', 'link']
         if (is.null(link)) link <- 'log'
@@ -137,44 +154,33 @@ adjustVarD <- function(object, chatmin = 1.0, alpha = 0.05) {
         pred['D', 'c-hat'] <- chat
         pred
     }
-    if ('D' %in% names(object$model)) {
-        pred <- predict(object)
+    if (!inherits(object, 'secr')) {
+        # expect dataframe input
+        pred <- list(object['D',])  
+        if (is.null(chat)) stop ("specify chat for data.frame input")
     }
     else {
-        pred <- derived(object, se.esa = FALSE, se.D = TRUE)
+        if ('D' %in% names(object$model)) {
+            pred <- predict(object)
+        }
+        else {
+            pred <- derived(object, se.esa = FALSE, se.D = TRUE)
+        }
+        
+        # chat should be vector with one element per session
+        if (is.null(chat)) {
+            chat <- unlist(chat.nk(object, verbose = FALSE, type = 'Fletcher')) 
+        }
+        # pred should be list with one component per session
+        if (ms(object)) {
+            pred <- lapply(pred, '[', 'D',)
+        }
+        else {
+            pred <- list(pred['D',])
+        }
     }
-    
-    # pred and chat should be lists with one component per session
-    if (ms(object)) {
-        pred <- lapply(pred, '[', 'D',)
-        chat <- sapply(chat.nk(object), '[[', 'chat') # vector of chat
-    }
-    else {
-        pred <- list(pred['D',])
-        chat <- chat.nk(object)$chat
-    }
+    # if (length(pred) != length(chat)) stop ("mismatch of chat vector and predicted values")
     do.call(rbind, mapply(adjustonesession, pred, chat, 
         MoreArgs = list(chatmin = chatmin, alpha = alpha),
         SIMPLIFY = FALSE))
 }
-
-# #-------------------------------------------------------------------------------
-# # cf Paul Hiemstra Aug 23 2012 StackOverFlow
-# binarystring <- function(number, noBits) {
-#     binary_vector = rev(as.numeric(intToBits(number)))
-#     paste(binary_vector[-(1:(length(binary_vector) - noBits))], collapse='')
-# }
-# 
-# # steps towards overdispersion of detection Nov 2022
-# 
-# chat.i <- function (object) {
-#     ch <- object$capthist
-#     noccasions <- ncol(ch)
-#     chis <- apply(abs(ch),1:2,sum)
-#     chis <- pmin(chis,1) # ignore detection at multiple traps
-#     observedCH <- apply(chis,1,paste, collapse='')
-#     possibleCH <- sapply(1:2^noccasions, binarystring,noccasions)
-#     table(factor(observedCH, levels = possibleCH))  
-# }
-# # chat.i(secrdemo.0)
-# #-------------------------------------------------------------------------------

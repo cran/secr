@@ -11,6 +11,7 @@
 ## 2022-01-05 fixed alive() problem with one animal
 ## 2022-08-23 summary.mask and summary.popn removed to separate files
 ## 2022-11-15 read.mask separate file
+## 2023-04-14 trim.secrlist
 ###############################################################################
 
 # Generic methods for extracting attributes etc
@@ -197,18 +198,11 @@ spacing.traps <- function (object, ..., recalculate = FALSE)    {
         }
         else {
             temp <- attr(object,'spacing')
-            # if ((is.null(temp) | recalculate) & (nrow(object)>1)) {
-            #     spacing <- as.matrix(dist(object))
-            #     sp <- apply(spacing,1,function(x) min(x[x>0]))
-            #     mean(sp)
-            # }
-            ## 2019-01-16
-            if (is.null(temp) | recalculate) {
+            if (is.null(temp) || recalculate) {
                 if (nrow(object)>1) {
-                    spacing <- as.matrix(dist(object))
-                    sp <- apply(spacing,1,function(x) min(x[x>0]))
-                    ## 2020-08-25 changed
-                    ## mean(sp)
+                    points <- matrix(unlist(object), ncol=2)
+                    nearest <- nearestcpp(points, points, non_zero = TRUE)
+                    sp <- nearest$distance[nearest$index > -1]
                     median(sp)
                 }
                 else
@@ -222,17 +216,16 @@ spacing.traps <- function (object, ..., recalculate = FALSE)    {
 
 spacing.mask <- function (object, ..., recalculate = FALSE)    {
     if (ms(object)) {
-        sapply(object, spacing.mask, ...)
+        sapply(object, spacing.mask, ..., recalculate = recalculate)
     }
     else {
         if (is.null(object)) NULL
         else {
             temp <- attr(object,'spacing',exact = TRUE)
-            if ((is.null(temp) | recalculate)& (nrow(object)>1) ) {
-                spacing <- as.matrix(dist(object))
-                sp <- apply(spacing,1,function(x) min(x[x>0]))
-                ## 2020-08-25 bug fix
-                ## mean(sp)
+            if ((is.null(temp) || recalculate) && (nrow(object)>1) ) {
+                points <- matrix(unlist(object), ncol=2)
+                nearest <- nearestcpp(points, points, non_zero = TRUE)
+                sp <- nearest$distance[nearest$index > -1]
                 median(sp)
             }
             else
@@ -2181,8 +2174,16 @@ subset.mask <- function (x, subset, ...) {
 ############################################################################################
 
 trim.secr <- function (object, drop = c('call', 'mask', 'designD', 'designNE', 
-                                        'design','design0'), keep = NULL) {
+    'design','design0'), keep = NULL) {
     trim.default(object, drop = drop, keep = keep)
+}
+############################################################################################
+
+trim.secrlist <- function (object, drop = c('call', 'mask', 'designD', 'designNE', 
+    'design','design0'), keep = NULL) {
+    out <- lapply(object, trim, drop = drop, keep = keep)
+    class(out) <- class(object)
+    out
 }
 ############################################################################################
 

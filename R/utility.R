@@ -25,9 +25,10 @@
 ## 2022-10-08 4.5.7
 ## 2022-11-29 4.5.8
 ## 2023-03-09 4.5.9
-## 2023-03-10 4.5.10 
+## 2023-03-10 4.5.11
 ## 2023-03-10 distancetotrap and nearesttrap moved to separate file
 ## 2023-03-10 setNumThreads moved to separate file
+## 2023-05-21 4.6.0
 ################################################################################
 
 # Global variables in namespace
@@ -496,6 +497,7 @@ lnbinomial <- function (x,size,prob) {
 #-------------------------------------------------------------------------------
 
 model.string <- function (model, userDfn) {
+    # 2023-04-16 Note: model should be a list
     if (!is.null(userDfn)) {
         if (!is.null(model$D))
             model$D <- paste('~userD', userDfn('name'), sep='.')
@@ -2120,7 +2122,7 @@ getdistmat2 <- function (traps, mask, userdist, HPX = FALSE) {
             }
             else {
                 # Euclidean distance
-              # edist(as.matrix(traps), as.matrix(mask))^2
+              ## edist(as.matrix(traps), as.matrix(mask))^2
               edist2cpp(as.matrix(traps), as.matrix(mask))
             }
         }

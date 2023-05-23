@@ -19,7 +19,7 @@ boundarytoSF (poly)
 \arguments{
 
   \item{poly}{data to define one or more polygons}
-  
+
 }
 
 \details{
@@ -40,7 +40,7 @@ boundarytoSF (poly)
   }
   
   Matrix input defines a single polygon.
-  
+
   }
 
 \value{
@@ -52,7 +52,9 @@ a geometry set of type POLYGON or MULTIPOLYGON. NULL input results in NULL outpu
 
 \seealso{
 
-\code{\link{pointsInPolygon}}, \href{https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf}{secr-spatialdata.pdf}
+\code{\link{pointsInPolygon}}, \href{https://www.otago.ac.nz/density/pdfs/secr-spatialdata.pdf}{secr-spatialdata.pdf},
+
+\code{\link{chat.nk}}
 
 }
 

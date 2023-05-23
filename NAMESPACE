@@ -1,4 +1,4 @@
-# 2022-11-18
+# 2023-05-22
 
 import (parallel)
 import (RcppNumerical)
@@ -16,7 +16,7 @@ importFrom (stats, AIC, approx, approxfun, as.formula, chisq.test, coef,
     integrate, lm, logLik, median, model.matrix, nlm, nls, optim,
     optimise, optimize, pchisq, pgamma, plnorm, pnorm, poisson,
     predict, qchisq, qnorm, qpois, rbeta, rbinom, rexp, rgamma, rlnorm, 
-    rmultinom, rnbinom, rnorm, rpois, rt, runif, rweibull, sd, 
+    rmultinom, rnbinom, rnorm, rpois, rt, runif, rweibull, sd, setNames,
     simulate, smooth.spline, terms, uniroot, update, update.formula, 
     var, vcov)
 importFrom (tools, file_ext)
@@ -106,8 +106,6 @@ export (par.secr.fit)
 export (par.derived)
 export (par.region.N)
 export (expected.n)
-# export (ip.secr) defunct 4.5.9
-# export (pfn)     defunct 4.5.9
 export (read.traps)
 export (read.telemetry)
 export (make.grid)
@@ -146,6 +144,7 @@ export (ORL)
 export (adjustVarD)
 export (centroids)
 export (chat.nk)
+export (Fletcher.chat)
 export (circular.r)
 export (circular.p)
 export (autoini)
@@ -165,6 +164,7 @@ export (derivedMash)
 export (derivedExternal)
 export (derivednj)
 export (pdot)
+export (nk)
 export (Enk)
 export (esa.plot)
 export (esa.plot.secr)
@@ -455,6 +455,7 @@ S3method(deviance, secr)
 S3method(df.residual, secr)
 S3method(simulate, secr)
 S3method(trim, secr)
+S3method(trim, secrlist)
 S3method(modelAverage, secr)
 
 S3method(print, secrdata)
