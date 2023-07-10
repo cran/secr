@@ -85,7 +85,7 @@ by small expected counts. It is defined by
 \deqn{\hat c = c_X / (1+ \bar s),} 
 where \eqn{\bar s = \sum_k s_k / K} and \eqn{s_k = (n_k - E(n_k)) / E(n_k)}.
 
-\code{chat.nk} may be used to simulate \eqn{\hat c} values under the given model (set nsim > 0).
+\code{chat.nk} may be used to simulate \eqn{\hat c} values under the given model (set nsim > 0). The \dots argument may include 'ncores = x' (x>1) to specify parallel processing of simulations - the speed up is large on unix-like machines for which the cluster type of \code{\link{makeCluster}} is "FORK" rather than "PSOCK". If 'ncores' is not provided then the value returned by \code{setNumThreads()} is used.
 
 No adjustment is made by \code{adjustVarD} when \eqn{\hat c} is less than the 
 minimum. \code{adjustVarD} by default computes Fletcher's `chat' using \code{chat.nk}, 
@@ -163,6 +163,13 @@ method. \emph{Biometrika} \bold{61}, 439--47.
   Enk (D = 5, msk, temptrap, detectpar = list(g0 = 0.2, sigma = 25),
     noccasions = 5)
 
+}
+
+# useful plotting function for simulated chat (nsim>0)
+plotchat <- function(chat, head = '', breaks = seq(0.5,2.5,0.05)) {
+    hist(chat$sim.chat, xlim = range(breaks), main = head, xlab = 'c-hat',
+        breaks = breaks, cex.main = 1, yaxs = 'i')
+    abline(v = chat$chat, lwd = 1.5, col = 'blue')
 }
 
 }

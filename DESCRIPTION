@@ -1,8 +1,8 @@
 Package: secr
 Type: Package
 Title: Spatially Explicit Capture-Recapture
-Version: 4.6.0
-Date: 2023-05-22
+Version: 4.6.1
+Date: 2023-07-10
 Description: Functions to estimate the density and size of a spatially 
   distributed animal population sampled with an array of passive detectors, 
   such as traps, or by searching polygons or transects. Models incorporating 
@@ -13,7 +13,11 @@ Authors@R: c(person("Murray", "Efford",
     role = c("aut","cre"), 
     comment = c(ORCID = "0000-0001-5231-5184")),
     person("Philipp", "Jund", 
-    role = c("ctb")))
+    role = "ctb",
+    comment = "(faster transect search and spacing)"),
+    person("David", "Fletcher",
+    role = "ctb",
+    comment = "(overdispersion)"))
 Depends: R (>= 3.5.0), methods
 Imports: abind, graphics, grDevices, MASS, mgcv, nlme, parallel, raster
         (>= 3.5-15), Rcpp (>= 0.12.14), RcppNumerical, RcppParallel (>=
@@ -29,9 +33,10 @@ SystemRequirements: GNU make
 URL: https://www.otago.ac.nz/density/,
         https://github.com/MurrayEfford/secr/
 NeedsCompilation: yes
-Packaged: 2023-05-22 22:31:56 UTC; murra
+Packaged: 2023-07-10 08:31:57 UTC; murra
 Author: Murray Efford [aut, cre] (<https://orcid.org/0000-0001-5231-5184>),
-  Philipp Jund [ctb]
+  Philipp Jund [ctb] ((faster transect search and spacing)),
+  David Fletcher [ctb] ((overdispersion))
 Maintainer: Murray Efford <murray.efford@otago.ac.nz>
 Repository: CRAN
-Date/Publication: 2023-05-23 04:30:02 UTC
+Date/Publication: 2023-07-10 23:40:02 UTC
