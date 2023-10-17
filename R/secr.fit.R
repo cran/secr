@@ -62,7 +62,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         detailsname <- details; rm(details)
         details <- get(detailsname, pos=-1)
     }
-    
     if (!inherits(capthist, 'capthist'))
         stop ("requires 'capthist' object")
 
@@ -181,7 +180,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         maxdistance = NULL,
         stackSize = "auto",   ## ignored on Windows
         fastproximity = TRUE,
-        f = NULL              ## optional function f(x)
+        Dfn = NULL,              ## optional density reparameterization for trend etc.
+        Dlambda = FALSE
     )
     if (!is.null(attr(capthist,'cutval'))) {
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -489,8 +489,6 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
         else {
             defaultmodel$pmix <- model$pmix   ## use as-is
-            # 2021-06-17
-            # badvar <- !(pmixvars %in% c('session','Session',sessioncov,'h2','h3'))
             badvar <- !(pmixvars %in% c('session','Session', names(sessioncov),'h2','h3'))
             if (any(badvar))
                 stop ("formula for pmix may not include ", pmixvars[badvar])
@@ -596,11 +594,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         }
         else {
             memo ('Preparing density design matrix', details$trace)
-            ## 2021-06-17 tentative inclusion of session covariates 
-            ## if (!all (all.vars(model$D) %in%
-            ## c('session', 'Session','g')) & details$param %in% c(4,5)) {
-            if (!all (all.vars(model$D) %in%
-                    c('session', 'Session','g', names(sessioncov))) & details$param %in% c(4,5)) {
+            sessionDvars <- all.vars(model$D) %in% c('session','Session', 'g', names(sessioncov))
+            if (!all (sessionDvars) && details$param %in% c(4,5)) {
                 if (is.null(details$userdist))
                     stop ("only session and group models allowed for density when details$param = ",
                         details$param)
@@ -612,26 +607,26 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             ## otherwise, smoothsetup$D remains NULL
             envD <- attr(model$D, '.Environment')
             if (!is.null(envD)) {
-              assign('f', identity, envir = envD)
+              assign('Dfn', identity, envir = envD)
             }
             designD <- general.model.matrix(model$D, data = temp, gamsmth = smoothsetup$D, 
                                             contrasts = details$contrasts)
             attr(designD, 'dimD') <- attr(temp, 'dimD')
-            #################################################
-            ## 2021-12-09
-            attr(designD, 'f') <- details[['f']]
-            fterm <- grepl('f(', dimnames(designD)[[2]], fixed = TRUE)
-            if( any(fterm)) {
-                if (is.null(details[['f']])) stop ("f function should be included in details")
-                fcovname <- dimnames(designD)[[2]][fterm][1] # first
-                # fcovname <- substring(fcovname,3,nchar(fcovname))
-                # fcovname <- substring(fcovname,1,nchar(fcovname)-1)
-                attr(designD, 'fcovname') <- fcovname
-                betaarg <- eval( formals( details[['f']] )[[2]])
-                
-                Dnames <- paste0('D', 1:length(eval(formals(details[['f']])[[2]])))
+            if (MS && !is.null(details[['Dlambda']]) && details[['Dlambda']]) {
+                if (all(sessionDvars))
+                    attr(designD, 'Dfn') <- Dfn2
+                else {
+                    stop ("Dlambda does not allow spatial covariates of density in this version")
+                }
             }
-            #################################################
+            else {
+                # may be NULL
+                attr(designD, 'Dfn') <- details[['Dfn']]
+            }
+            if(!is.null(attr(designD, 'Dfn'))) {
+                nDbeta <- attr(designD, 'Dfn')(designD)
+                Dnames <- paste0('D', 1:nDbeta)
+            }
             else {
                 Dnames <- colnames(designD)
             }
@@ -678,9 +673,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     names(parindx) <- names(np)[np>0]
     if (!D.modelled) parindx$D <- NULL
     if (!NE.modelled) parindx$noneuc <- NULL
-    
-    data <- prepareSessionData(capthist, mask, details$maskusage, design, design0, detectfn, 
-                               groups, fixed, hcov, details)
+    data <- prepareSessionData(capthist, mask, details$maskusage, design, 
+                    design0, detectfn, groups, fixed, hcov, details)
 
     ############################################
     # code for start vector shifted to separate function from 4.5.4

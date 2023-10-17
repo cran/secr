@@ -46,6 +46,7 @@ importFrom (nlme,
 importFrom (raster, 
     adjacent, 
     clump, 
+    flip,
     "values<-", 
     values,
     plot)
@@ -206,12 +207,15 @@ export (gridCells)
 export (spotHeight)
 export (strip.legend)
 export (randomHabitat)
+export (randomDensity)
 export (make.lookup)
 export (insertdim)
 export (as.mask)
+export (as.popn)
 export (setNumThreads)
 export (extractMoves)
 export (makeStart)
+export (kfn)
 
 # new generics
 export (reduce)
@@ -370,6 +374,8 @@ export ("telemetryxy<-")
 export ("signalframe<-")
 export ("signal<-")
 export ("noise<-")
+
+export ("predictDlambda")
 
 ## assume these internal fns not needed outside
 # export (group.levels)

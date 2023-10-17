@@ -110,9 +110,9 @@ at a particular detector, on a particular occasion, when the detectors
 are of type `count', `polygon' or `transect':
 
 \itemize{
-\item{binomN > 1} {binomial with size binomN}
-\item{binomN = 1} {binomial with size determined by \link{usage}}
-\item{binomN = 0} {Poisson}
+\item{binomN > 1  --- binomial with size binomN}
+\item{binomN = 1  --- binomial with size determined by \link{usage}}
+\item{binomN = 0  --- Poisson}
 %\item{binomN < 0} {negative binomial with size abs(binomN) -- see 
 %  \code{\link[stats]{NegBinomial}}}
 }
@@ -130,6 +130,8 @@ chat \tab overdispersion of sighting counts Tu, Tm \cr
 chatonly \tab compute overdispersion for Tu and Tm, then exit \cr
 contrasts \tab coding of factor predictors \cr
 convexpolygon \tab allows non-convex polygons (slower) \cr
+Dfn \tab reparameterization of density model (seldom used directly) \cr
+Dlambda \tab switch density reparameterization to trend model \cr
 distribution \tab binomial vs Poisson N\cr
 fastproximity \tab special handling of binary proximity detectors \cr
 fixedbeta \tab specify fixed beta parameter(s)\cr

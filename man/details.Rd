@@ -46,6 +46,10 @@ model fitting.
 values (1,2) and to switch on the R code browser (3). In ordinary use it should not be 
 changed from the default (0).
 
+\code{details$Dfn} is a function for reparameterizing density models; this is set internally when Dlambda = TRUE. Exotic variations may be specified directly by the user when Dlambda = FALSE. The defaults (Dfn = NULL, Dlambda = FALSE) leave the original density model unchanged. Note there is no connection to userDfn (except that the two are incompatible).
+
+\code{Dlambda} if TRUE causes reparameterization of density as the session-on-session finite rate of increase \eqn{lambda}. Details at (\href{https://www.otago.ac.nz/density/pdfs/secr-trend.pdf}{secr-trend.pdf}).
+
 \code{details$distribution} specifies the distribution of the number of
 individuals detected \eqn{n}; this may be conditional on the number in the
 masked area ("binomial") or unconditional ("poisson").
@@ -129,13 +133,13 @@ the detector type is `multi'. This parameterisation was discontinued in 2.10.0.
 (\eqn{esa(g_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014).
 
 \code{details$param = 3} selects parameterisation in terms of
-(\eqn{a_0(lambda0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014). This
+(\eqn{a_0(\lambda_0, \sigma)}, \eqn{\sigma}) (Efford and Mowat 2014). This
 parameterization is used automatically if a0 appears in the model (e.g.,
 a0 ~ 1).
 
 \code{details$param = 4} selects parameterisation of sigma in terms of
 the coefficient sigmak and constant c (sigma = sigmak /
-  D^0.5 + c) (Efford et al. in prep). If c is not included explicitly in
+  D^0.5 + c) (Efford et al. 2016). If c is not included explicitly in
   the model (e.g., c ~ 1) then it is set to zero. This
 parameterization is used automatically if sigmak appears in the model (e.g.,
 sigmak ~ 1)
@@ -165,6 +169,9 @@ xylist. The default is `concurrent'.
 normalization. NULL limits denominator for normalization to
 distinguishing habitat from non-habitat.
 
+\code{details$userDfn} is a user-provided function for modelling a density 
+surface. See \href{https://www.otago.ac.nz/density/pdfs/secr-densitysurfaces.pdf}{secr-densitysurfaces.pdf}
+
 \code{details$userdist} is either a function to compute non-Euclidean
 distances between detectors and mask points, or a pre-computed matrix of
 such distances. The first two arguments of the function should be
@@ -185,6 +192,10 @@ document \href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-
 }
 
 \references{
+
+Efford, M. G., Dawson, D. K., Jhala, Y. V. and Qureshi, Q. (2016) 
+Density-dependent home-range size revealed by spatially explicit 
+capture--recapture. \emph{Ecography} \bold{39}, 676--688.
 
 Efford, M. G. and Mowat, G. (2014) Compensatory heterogeneity in
 capture--recapture data.\emph{Ecology} \bold{95}, 1341--1348.  

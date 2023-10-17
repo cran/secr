@@ -5,17 +5,20 @@
 \title{ Simulate 2-D Population }
 
 \description{
-Simulate a Poisson process representing the locations of individual animals.
+
+Simulate a point process representing the locations of individual animals.
+
 }
 
 \usage{
 
 sim.popn (D, core, buffer = 100, model2D = c("poisson", "cluster",
-  "IHP", "coastal", "hills", "linear", "even"), buffertype = c("rect",
-  "concave", "convex"), poly = NULL, covariates = list(sex = c(M = 0.5,
-  F = 0.5)), number.from = 1, Ndist = c("poisson", "fixed",
-  "specified"), nsessions = 1, details = NULL, seed = NULL, keep.mask =
-  model2D \%in\% c("IHP", "linear"), Nbuffer = NULL, age = FALSE, ...)
+  "IHP", "coastal", "hills", "linear", "even", "rLGCP", "rThomas"), 
+  buffertype = c("rect", "concave", "convex"), poly = NULL, 
+  covariates = list(sex = c(M = 0.5, F = 0.5)), number.from = 1, 
+  Ndist = c("poisson", "fixed", "specified"), nsessions = 1, details = NULL, 
+  seed = NULL, keep.mask = model2D \%in\% c("IHP", "linear"), 
+  Nbuffer = NULL, age = FALSE, ...)
 
 tile(popn, method = "reflect")
 
@@ -81,7 +84,7 @@ with \eqn{\lambda = DA/\mu}{ lambda = DA/mu }
 inside the buffered area
 }
 
-A special cluster option is selected if details$clone = "constant": then each parent is cloned exactly details$mu times (multiple offspring centres are generated at each parent location, with no displacement).
+A special cluster option is selected if details$clone = "constant": then each parent is cloned exactly details$mu times.
 
 Toroidal wrapping is a compromise. The result is more faithful to the
 Neyman-Scott distribution if the buffer is large enough that only a
@@ -145,6 +148,14 @@ the displacement vector is (0,0) and rows are not offset.
 
 If \code{model2D = "even"} then the buffered area is divided into square cells with side sqrt(10000/D) and one animal is located at a random uniform location within each cell. If the height or width is not an exact multiple of the cell side then one whole extra row or column of cells is added; animals located at random in these cells are discarded if they fall outside the original area.
 
+From \pkg{secr} 4.6.2, \code{sim.popn} provides an interface to two simulation functions from \pkg{spatstat} (Baddeley et al. 2015): \code{rLGCP} and \code{rThomas}.
+
+If \code{model2D = "rLGCP"} then a log-gaussian Cox process is simulated within the buffered area. Function \code{rLGCP} in \pkg{spatstat} calls functions from \pkg{RandomFields} (Schlather et al. 2015; see Notes). Certain options are fixed: the correlation function is RMexp from RandomFields, and there is no provision for covariate effects. Clipping to a polygon (poly) and fixed-N (Ndist = "fixed") are not supported. The algorithm first constructs the log spatial intensity as a realisation of a Gaussian random field; one realisation of an IHP with that intensity is then simulated. 
+
+The parameters for \code{model2D = "rLGCP"} are the scalar density (D) and the variance and spatial scale of the random field (passed as details arguments `var' and `scale'). The variance is on the log scale; the mean on the log scale is computed internally as mu = log(D) - var/2. var = 0 results in a random uniform (Poisson) distribution. The discretized intensity function is saved as the attribute "Lambda", a habitat mask with covariate "Lambda" that may be used to construct further IHP realisations (see Examples). 
+
+If \code{model2D = "rThomas"} then a Thomas process is simulated. This is a special case of the Neyman-Scott process in which each parent gives rise to a Poisson number of offspring (see Notes). The expected number of offspring per parent and the spatial scatter about each parent are specified by the details arguments `mu' and `scale'. Argument `kappa' of \code{rThomas} (density of parent process) is computed as D/mu/1e4. Other arguments remain at their defaults, including `expand' (4 * scale).
+
 If \code{poly} is specified, points outside \code{poly} are
 dropped. \code{poly} may be one of the types descrbed in 
 \code{\link{boundarytoSF}}.
@@ -185,17 +196,33 @@ If \code{model2D = "IHP"} or \code{model2D = "linear"} the value of
 
 \references{
 
+Baddeley, A., Rubak, E., and Turner, R. 2015. Spatial Point Patterns: Methodology and Applications with R. Chapman and Hall/CRC Press, London. ISBN 9781482210200, https://www.routledge.com/Spatial-Point-Patterns-Methodology-and-Applications-with-R/Baddeley-Rubak-Turner/p/book/9781482210200/. 
+
   Fewster, R. M. and Buckland, S. T. 2004. Assessment of distance
   sampling estimators. In: S. T. Buckland, D. R. Anderson,
   K. P. Burnham, J. L. Laake, D. L. Borchers and L. Thomas (eds)
   \emph{Advanced distance sampling}. Oxford University Press, Oxford,
   U. K. Pp. 281--306.
   
+  Schlather, M., Malinowski, A., Menck, P. J., Oesting, M. and Strokorb, K. 2015. Analysis, simulation and prediction of multivariate random fields with package RandomFields. \emph{Journal of Statistical Software}, \bold{63}, 1--25. URL
+  https://www.jstatsoft.org/v63/i08/.
+  
 }
 
 \seealso{ \code{\link{popn}}, \code{\link{plot.popn}},
   \code{\link{randomHabitat}}, \link{turnover}, 
   \code{\link[stats]{simulate}} }
+
+\section{Notes}{
+
+Package RandomFields is not currently on CRAN. It may be installed with this code:
+
+\code{install.packages("RandomFields", repos = c("https://spatstat.r-universe.dev", 
+   "https://cloud.r-project.org"))}
+
+\code{model2D = "rThomas"} and \code{model2D = "cluster"} (the builtin Neyman-Scott implementation) are equivalent. There may be some subtle differences. The \pkg{spatstat} implementation is usually to be preferred.
+
+}
 
 \examples{
 
@@ -211,7 +238,7 @@ plot(temppop, pch = 1, cex= 1.5,
 covariates(temppop)$size <- rnorm (nrow(temppop), mean = 15, sd = 3)
 summary(covariates(temppop))
 
-## Neyman-Scott cluster distribution
+## Neyman-Scott cluster distribution (see also rThomas)
 par(xpd = TRUE, mfrow=c(2,3))
 for (h in c(5,15))
 for (m in c(1,4,16)) {
@@ -252,8 +279,8 @@ polygon(cbind(-100,200,200,-100), c(-100,-100,200,200),
     col = "red", density = 0)
 title("reflect")
 
-
 \dontrun{
+
 ## simulate from inhomogeneous fitted density model
 
 regionmask <- make.mask(traps(possumCH), type = "polygon",
@@ -266,10 +293,46 @@ posspop <- sim.popn(D = possD, core = dsurf, model = "IHP")
 plot(regionmask, dots = FALSE, ppoly = FALSE)
 plot(posspop, add = TRUE, frame = FALSE)
 plot(traps(possumCH), add = TRUE)
+
+## randomHabitat demonstration
+## - assumes igraph has been installed
+
+# The wrapper function randomDensity may be passed to generate
+# a new habitat map each time sim.popn is called. The `details' argument
+# of sim.popn is passed to randomDensity as the `parm' argument.
+
+tempmask <- make.mask(nx = 100, ny = 100, spacing = 20)
+pop <- sim.popn(D = randomDensity, core = tempmask, model2D = "IHP",
+    details = list(D = 10, p = 0.4, A = 0.5))
+plot(attr(pop, 'mask'), cov = 'D', dots = FALSE)
+plot(pop, add = TRUE)
+
+## rLGCP demonstration
+## - assumes spatstat and RandomFields have been installed
+
+if (requireNamespace("spatstat") && requireNamespace("RandomFields")) {
+    msk <- make.mask(traps(captdata))
+    # details argument 'spacing' ensures core matches Lambda below
+    pop <- sim.popn(D = 20, core = msk, buffer = 0, 
+        model2D = "rLGCP", details = list(var=1, scale = 30, 
+        spacing = spacing(msk)), seed = 1234)
+    plot(pop)
+    plot(traps(captdata), add = TRUE)
+
+    # another IHP realisation from same LGCP intensity surface
+    lgcp <- attr(pop, 'Lambda')
+    pop2 <- sim.popn(D = 'Lambda', core = lgcp, model2D = "IHP")
+    plot (lgcp, covariate = "Lambda", dots = FALSE)
+    plot (pop2, add = TRUE, frame = FALSE)
+    
+    # check input and output masks match
+    summary(lgcp)
+    summary(msk)
 }
 
 }
 
+}
 
 
 \keyword{ datagen }

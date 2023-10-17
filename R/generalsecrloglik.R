@@ -1,4 +1,3 @@
-###############################################################################
 ## package 'secr'
 ## secrloglik2.R
 ## likelihood evaluation functions
@@ -148,6 +147,7 @@ expectedmu <- function (cc, haztemp, gkhk, pi.density, Nm, PIA,
     for (x in 1:nmix) {
         hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
         hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
+        
         temp <- expectedmucpp(
             as.integer(nc),
             as.integer(cc),
@@ -593,6 +593,13 @@ generalsecrloglikfn <- function (
           else {
               meanpdot <- ng / sum(1/pdot[ok])
           }
+          ## 2023-09-22
+          if (data$n.distrib == 1 && .localstuff$iter == 0 && nonzero>N) {
+              warning("distribution = 'binomial' ",
+                      "but number detected n (", nonzero, 
+                      ") exceeds initial value of N (", round(N,1), ")")
+          }
+              
           comp[3,g] <- if (is.na(meanpdot) || (meanpdot <= 0)) NA 
               else switch (data$n.distrib+1,
                                dpois(nonzero, N * meanpdot, log = TRUE),
@@ -630,6 +637,12 @@ generalsecrloglikfn <- function (
       sightingocc <- data$MRdata$markocc < 1
       if (any(sightingocc)) {
           Nm <- density * getcellsize(data$mask)
+          if (learnedresponse) {
+              stop ("learned response requires that all individuals are identified,",
+                    " and cannot be applied to sighting data")
+              # 2023-10-09 require gkhk was NOT recalculated for learned response naive animal 
+              # and hence still has cc x M x K values in gkhk$hk
+          }
           tmp <- expectedmu (nrow(Xrealparval), haztemp, gkhk, pi.density, Nm, PIA, 
                              data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                              pID, pdot[1])
@@ -707,8 +720,7 @@ generalsecrloglikfn <- function (
   #--------------------------------------------------------------------
   # (ii) typical likelihood evaluation
   else {
-      # loglik <- sum(mapply (sessionLL, data))
-    loglik <- sum(sapply (data, sessionLL))   ## session num in data 2021-07-07
+    loglik <- sum(sapply (data, sessionLL)) 
     .localstuff$iter <- .localstuff$iter + 1  
       if (details$trace) {
           fixedbeta <- details$fixedbeta

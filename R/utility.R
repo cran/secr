@@ -29,6 +29,7 @@
 ## 2023-03-10 distancetotrap and nearesttrap moved to separate file
 ## 2023-03-10 setNumThreads moved to separate file
 ## 2023-05-21 4.6.0
+## 2023-09-17 im2mask converts spatstat im object
 ################################################################################
 
 # Global variables in namespace
@@ -38,8 +39,8 @@
 
 .localstuff <- new.env()
 
-.localstuff$packageType <- ' pre-release'
-##.localstuff$packageType <- ''
+## .localstuff$packageType <- ' pre-release'
+.localstuff$packageType <- ''
 
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
     'polygonX', 'transectX', 'signal', 'polygon', 'transect', 
@@ -1426,7 +1427,7 @@ makerealparameters <- function (design, beta, parindx, link, fixed) {
 #-------------------------------------------------------------------------------
 
 secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
-    smoothsetup = NULL, contrasts = NULL, f = NULL) {
+    smoothsetup = NULL, contrasts = NULL, Dfn = NULL) {
     ## form linear predictor for a single 'real' parameter
     ## smoothsetup should be provided whenever newdata differs from
     ## data used to fit model and the model includes smooths from gam
@@ -1442,8 +1443,10 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     newdata <- as.data.frame(newdata)
     lpred <- matrix(ncol = 2, nrow = nrow(newdata), dimnames = list(NULL,c('estimate','se')))
 
-    if (!is.null(f) && field == 'D') {
-       Yp <- f(newdata[,vars[1]], beta = beta[indx]) 
+    if (!is.null(Dfn) && field == 'D') {
+        warning("secr.lpredictor is not ready for D as function -  do not use estimates")
+       nsess <- length(unique(newdata$session))
+       Yp <- Dfn(newdata[,vars[1]], beta = beta[indx], dimD = c(nrow(newdata)/nsess,1,nsess)) 
        mat <- as.matrix(newdata[,vars[1], drop = FALSE])
     }
     else {
@@ -1487,7 +1490,7 @@ secr.lpredictor <- function (formula, newdata, indx, beta, field, beta.vcv=NULL,
     lpred[,1] <- Yp
     if (is.null(beta.vcv) || (any(is.na(beta[indx])))) return ( cbind(newdata,lpred) )
     else {
-        if (is.null(f) || field != 'D') {
+        if (is.null(Dfn) || field != 'D') {
             vcv <- beta.vcv[indx,indx, drop = FALSE]
             vcv[is.na(vcv)] <- 0
             nrw <- nrow(mat)
@@ -2214,6 +2217,15 @@ snap_points <- function(x, y, max_dist = 1000) {
 # random truncated Poisson
 rtpois <- function(n, lambda) {
     qpois(runif(n, dpois(0, lambda), 1), lambda)
+}
+#-------------------------------------------------------------------------------
+
+im2mask <- function(im) {
+    # spatstat im object to mask
+    df <- as.data.frame(im)
+    names(df) <- c('x','y','Lambda')
+    df$Lambda <- df$Lambda * 1e4   # per hectare
+    read.mask(data = df, spacing = im$xstep)
 }
 #-------------------------------------------------------------------------------
 
