@@ -1,14 +1,14 @@
-## ---- echo=FALSE, eval=TRUE, message=FALSE------------------------------------
+## ----echo=FALSE, eval=TRUE, message=FALSE-------------------------------------
 library(secr)
 ## Following is not needed as no multithreaded operations in this vignette 
 ## To avoid ASAN/UBSAN errors on CRAN, following advice of Kevin Ushey
 ## e.g. https://github.com/RcppCore/RcppParallel/issues/169
 Sys.setenv(RCPP_PARALLEL_BACKEND = "tinythread")
 
-## ---- echo=FALSE, eval=TRUE--------------------------------------------------------
+## ----echo=FALSE, eval=TRUE---------------------------------------------------------
 options(digits=6, width=85)
 
-## ---- echo = FALSE, eval=TRUE, fig.height=3.5, fig.width=7-------------------------
+## ----echo = FALSE, eval=TRUE, fig.height=3.5, fig.width=7--------------------------
 par(mfrow=c(1,2), pty='s', mar=c(2,1,2,2), cex=1.2, las = 1, bty = 'l',
     xpd=T, cex=1.2, xaxs='i', yaxs='i', lwd=1.5)
 
@@ -30,9 +30,9 @@ legend (260,0.15, lwd=2, col=c('blue', 'green'),
     legend=c('halfnormal','exponential'), bty='n')
 text(-450, 0.18,'b.', cex=1.3)
 
-## ---- eval=FALSE-------------------------------------------------------------------
+## ----eval=FALSE--------------------------------------------------------------------
 #  news (package = "secr")
 
-## ---- eval=FALSE-------------------------------------------------------------------
+## ----eval=FALSE--------------------------------------------------------------------
 #  secr.fit(captdata, model = g0~t)
 

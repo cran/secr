@@ -29,7 +29,7 @@
 #--------------------------------------------------------------------------------
 allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA, 
                            CH, binomNcode, MRdata, grp, usge, pmixn, pID, maskusage,
-                           telemhr = 0, telemstart = 0, telemscale = 0,
+                           telemhr = 0, telemstart = 0,
                            grain, ncores, R = FALSE, debug = FALSE) {
   nc <- nrow(CH)
   ## 2022-01-04
@@ -39,7 +39,7 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
   nmix <- nrow(pmixn)
   ngroup <- length(unique(grp))
   sump <- numeric(nc)
-  
+  if (debug) browser()
   for (x in 1:nmix) {
       hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
       hi <- if (any(binomNcode==-2)) haztemp$hindex else -1                   ## index to hx
@@ -47,6 +47,10 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
           if (!exists('simplehistoriesR')) 
               stop ("R code simplehistoriesR not available; source prwisimple.R")  
           else {
+              if (length(telemstart)>1) {
+                  nt <- length(telemhr)/cc/m
+                  telemhr <- array(telemhr, dim = c(cc,m,nt))
+              } 
               temp <- do.call('simplehistoriesR', 
                               list (
                                   x, m, nc, cc,
@@ -57,7 +61,9 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
                                   array(gkhk$hk, dim=c(cc,k,m)),
                                   pi.density,
                                   PIA, usge, hx, hi,
-                                  maskusage))
+                                  maskusage,
+                                  telemstart, 
+                                  telemhr))
           }
       } 
       else {
@@ -362,9 +368,9 @@ generalsecrloglikfn <- function (
     ## allow for scaling of detection
     Dtemp <- if (D.modelled) mean(D[,1,sessnum]) else NA
     Xrealparval <- reparameterize (realparval, detectfn, details,
-                                   data$mask, data$traps, Dtemp, s)
+                                   data$mask, data$traps, Dtemp, data$s)   # was s! 2024-01-29
     Xrealparval0 <- reparameterize (realparval0, detectfn, details,
-                                    data$mask, data$traps, Dtemp, s)
+                                    data$mask, data$traps, Dtemp, data$s)
     if (details$debug>2) browser()
 
     ## check valid parameter values
@@ -392,13 +398,13 @@ generalsecrloglikfn <- function (
     pmixn <- getpmix (data$knownclass, PIA, Xrealparval)  ## membership prob by animal
     
     pID <- getpID(PIA, Xrealparval, data$MRdata)
-    if (is.function(details$userdist)) {
-      noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
-      distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                              noneuc[,1], density[,1], miscparm, detectfn == 20)
+    if (!is.null(details$userdist)) {    # changed from is.function() 2024-02-15
+        noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
+        distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
+                                noneuc[,1], density[,1], miscparm, detectfn == 20)
     }
     else {
-      distmat2 <- data$distmat2
+        distmat2 <- data$distmat2
     }
     ## precompute gk, hk for point detectors
     if (all(data$dettype %in% c(0,1,2,5,8,13)) || data$HPXpoly) {
@@ -465,7 +471,6 @@ generalsecrloglikfn <- function (
     else {
         telemhr <- 0
         telemstart <- 0
-        telemscale <- 0
     }
     #######################################################################
     ## option to estimate sighting overdispersion by simulation and exit */
@@ -494,8 +499,9 @@ generalsecrloglikfn <- function (
             prw <- allhistsimple (nrow(Xrealparval), haztemp, gkhk, pi.density, PIA, 
                                   data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                                   pID, data$maskusage, 
-                                  telemhr, telemstart, telemscale,
-                                  details$grain, details$ncores, details$R)
+                                  telemhr, telemstart, 
+                                  details$grain, details$ncores, details$R, 
+                                  debug = details$debug>=2)
         }
         else if (all(data$dettype == 5)) {
             prw <- allhistsignal (detectfn, details$grain, details$ncores, data$binomNcode, data$CH, data$signal$signal,
@@ -528,10 +534,15 @@ generalsecrloglikfn <- function (
                 haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
             }
         }
-        pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, gkhk$H, pi.density, PIA0, 
-                                  data$CH0, data$binomNcode, data$grp, data$usge, data$mask,
-                                  pmixn, data$maskusage, details$grain, details$ncores, details$minprob, 
-          debug = details$debug>3)
+        if (!is.null(details$externalpdot)) {
+            pdot <- rep(sum(data$externalpdot * pi.density), nc1)
+        }
+        else {
+            pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, 
+                gkhk$H, pi.density, PIA0, data$CH0, data$binomNcode, data$grp, 
+                data$usge, data$mask, pmixn, data$maskusage, details$grain, 
+                details$ncores, details$minprob, debug = details$debug>3)
+        }
     }
     ## point types
     else {
@@ -558,9 +569,14 @@ generalsecrloglikfn <- function (
             }
             
         }
-        pdot <- integralprw1 (nrow(Xrealparval0), haztemp, gkhk, pi.density, PIA0, 
-                              data$CH0, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
-                            pID, details$grain, details$ncores)
+        if (!is.null(details$externalpdot)) {
+            pdot <- rep(sum(data$externalpdot * pi.density), nc1)
+        }
+        else {
+            pdot <- integralprw1 (nrow(Xrealparval0), haztemp, gkhk, 
+                pi.density, PIA0, data$CH0, data$binomNcode, data$MRdata, 
+                data$grp, data$usge, pmixn, pID, details$grain, details$ncores)
+        }
     }
     
     ngroup <- max(length(levels(data$grp)),1)
@@ -573,14 +589,15 @@ generalsecrloglikfn <- function (
       
       #----------------------------------------------------------------------
       ## Adjust for undetected animals unless data includes all-zero histories
-      ## (the case for allsighting data when knownmarks = TRUE).
-      if (!data$MRdata$sightmodel==5 && !all(data$dettype==13)) {
+      ## (the case for allsighting data when knownmarks = TRUE)
+      ## or density relative.
+      if (!data$MRdata$sightmodel==5 && !all(data$dettype==13) && details$relativeD != 1) {
           comp[2,g] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot[ok]))
       }
       
       #----------------------------------------------------------------------
       
-      if (!CL && !data$MRdata$allsighting) {
+      if (!CL && !data$MRdata$allsighting && !details$relativeD) {
           ng <- sum(ok)
           if (any(data$dettype==13))
               nonzero <- sum(apply(data$CH[,data$dettype!=13,,drop=FALSE] != 0,1,sum)[ok]>0)
@@ -700,7 +717,7 @@ generalsecrloglikfn <- function (
   D.modelled <- !CL & is.null(fixed$D)
   if (!CL ) {
       D <- getD (designD, beta, sessmask, parindx, link, fixed,
-               grplevels, sessionlevels, parameter = 'D')
+               grplevels, sessionlevels, parameter = 'D', details$relativeD)
   }
   #--------------------------------------------------------------------
   # Non-Euclidean distance parameter

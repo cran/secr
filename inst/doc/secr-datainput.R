@@ -1,9 +1,9 @@
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  read.capthist(captfile, trapfile, detector = "multi", fmt = c("trapID", "XY"),
 #      noccasions = NULL, covnames = NULL, trapcovnames = NULL, cutval = NULL,
 #      verify = TRUE, noncapt = "NONE", ...)
 
-## ---- message=FALSE-----------------------------------------------------------
+## ----message=FALSE------------------------------------------------------------
 library(secr)
 captfile <- system.file("extdata", "stoatcapt.txt", package = "secr")
 trapfile <- system.file("extdata", "stoattrap.txt", package = "secr")
@@ -26,10 +26,10 @@ summary(CH)
 write.capthist(signalCH, "temp")  ## export data for demo
 tempCH <- read.capthist("tempcapt.txt", "temptrap.txt", detector = "signal", cutval = 52.5)
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  read.capthist("captXY.txt", "perimeter.txt", fmt = "XY", detector = "polygon")
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  temppoly <- read.traps(file = "clipboard", detector = "polygon")
 #  tempcapt <- sim.capthist(temppoly, popn = list(D = 1, buffer = 1000), detectpar =
 #                             list(g0 = 0.5, sigma = 250))

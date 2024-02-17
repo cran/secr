@@ -51,7 +51,7 @@ AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10,
     allargs <- secrlist(object, allargs)
     names(allargs) <- modelnames
     if (!all(AICcompatible(allargs))) {
-        warning ("models not compatible for AIC")
+        warning ("models not compatible for AIC", call. = FALSE)
     }
     AIC(allargs, sort=sort, k=k, dmax=dmax, criterion=criterion, chat=chat)
 }
@@ -62,10 +62,10 @@ AIC.secrlist <- function (object, ..., sort = TRUE, k = 2, dmax = 10,
                           criterion = c('AICc','AIC'), chat = NULL) {
     
     if (k != 2)
-        warning ("k != 2 and AIC.secr output may be mis-labelled")
+        warning ("k != 2 and AIC.secr output may be mis-labelled", call. = FALSE)
     
     if (length(list(...)) > 0)
-        warning ("... argument ignored in 'AIC.secrlist'")
+        warning ("... argument ignored in 'AIC.secrlist'", call. = FALSE)
     
     if (length(object) > 1) {
         ## check added 2013-10-14
@@ -113,16 +113,24 @@ AICcompatible.secrlist <- function(object, ...) {
     }
     stopifnot(inherits(allargs, "secrlist"))
     if (length(allargs)==1) {
-        dataOK <- groupsOK <- CLOK <- hcovOK <- binomNOK <- TRUE   
+        dataOK <- groupsOK <- CLOK <- hcovOK <- binomNOK <- relativeDOK <- TRUE   
     }
     else {
+        identicalNF <- function(a,b) {
+            # NULL as FALSE for logical
+            if (is.logical(a) && !a) a <- NULL
+            if (is.logical(b) && !b) b <- NULL
+            identical(a,b)
+        }
         dataOK <- sapply(allargs[-1], function(x) identical(x$capthist, allargs[[1]]$capthist))
         groupsOK <- sapply(allargs[-1], function(x) identical(x$groups, allargs[[1]]$groups))
         CLOK <- sapply(allargs[-1], function(x) identical(x$CL, allargs[[1]]$CL))
         hcovOK <- sapply(allargs[-1], function(x) identical(x$hcov, allargs[[1]]$hcov))
         binomNOK <- sapply(allargs[-1], function(x) identical(x$details$binomN, allargs[[1]]$details$binomN))
+        relativeDOK <- sapply(allargs[-1], function(x) identicalNF(x$details$relativeD, allargs[[1]]$details$relativeD))
     }
-    c(data=all(dataOK),  CL=all(CLOK), groups=all(groupsOK),hcov=all(hcovOK), binomN =all(binomNOK) ) 
+    c(data = all(dataOK),  CL = all(CLOK), groups = all(groupsOK), hcov = all(hcovOK), 
+      binomN = all(binomNOK), relativeD = all(relativeDOK) ) 
 }
 ############################################################################################
 

@@ -1,4 +1,4 @@
-# 2023-05-22
+# 2023-05-22, 2024-02-17
 
 import (parallel)
 import (RcppNumerical)
@@ -134,6 +134,7 @@ export (sim.resight)
 export (addSightings)
 export (read.mask)
 export (addCovariates)
+export (binCovariate)
 export (make.mask)
 export (RPSV)
 export (dbar)
@@ -186,7 +187,6 @@ export (unRMarkInput)
 export (detectfnplot)
 export (attenuationplot)
 export (counts)
-export (model.average)
 export (collate)
 export (ellipse.secr)
 export (ellipse.bvn)
@@ -216,6 +216,10 @@ export (setNumThreads)
 export (extractMoves)
 export (makeStart)
 export (kfn)
+
+# defunct, still exported
+export (model.average)
+export (ip.secr)
 
 # new generics
 export (reduce)

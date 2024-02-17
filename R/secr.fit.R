@@ -6,6 +6,8 @@
 ## 2021-04-02 allcapped bug fixed  (cannot combine capped, uncapped)
 ## 2021-04-25 4.4.0
 ## 2021-06-22 global change fixedpar to fixed for consistency
+## 2023-12-16 relativeD
+## 2023-12-22 no separate verify for multi-session masks (allows sharefactorLevels warning)
 ###############################################################################
 
 secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -144,8 +146,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             detectfn <- valid.detectfn(detectfn)
     }
     #################################################
-    if (anysingle) warning ("multi-catch likelihood used for single-catch traps")
-    if (anycapped) warning ("capped likelihood is an approximation")
+    if (anysingle) warning ("multi-catch likelihood used for single-catch traps", call. = FALSE)
+    if (anycapped) warning ("capped likelihood is an approximation", call. = FALSE)
     
     #################################################
     ## Use input 'details' to override various defaults
@@ -181,7 +183,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         stackSize = "auto",   ## ignored on Windows
         fastproximity = TRUE,
         Dfn = NULL,              ## optional density reparameterization for trend etc.
-        Dlambda = FALSE
+        Dlambda = FALSE,
+        relativeD = FALSE,
+        externalpdot = NULL
     )
     if (!is.null(attr(capthist,'cutval'))) {
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -243,12 +247,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             stop ("'verify' found errors in 'capthist' argument")
         
         if (!is.null(mask)) {
-            if (MS & ms(mask)) {
-                ## list of masks
-                test <- lapply(mask, verify, report = 1)
-                notOK <- any(unlist(test))
-            }
-            else notOK <- verify(mask, report = 1)$errors
+            notOK <- verify(mask, report = 1)$errors
             if (notOK)
                 stop ("'verify' found errors in 'mask' argument")
         }
@@ -264,7 +263,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         if (is.null(buffer)) {
             buffer <- 100
             if (!allpresence)
-                warning ("using default buffer width 100 m")
+                warning ("using default buffer width 100 m", call. = FALSE)
         }
         makemaskCH <- function (CH, ...) {
             tr <- traps(CH)
@@ -361,7 +360,13 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
-    if (CL) model$D <- NULL
+    if (CL) {
+        model$D <- NULL
+        if (details$relativeD) {
+            details$relativeD <- FALSE
+            warning ("relativeD is ignored when CL = TRUE", call. = FALSE)
+        }
+    }
     if (all(detectortype %in% c('telemetry'))) {
         model$g0 <- NULL
         model$lambda0 <- NULL
@@ -682,7 +687,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     start <- makeStart (start, parindx, capthist, mask, detectfn, link, 
         details, fixed, CL, anypoly, anytrans, alltelem, sighting) 
     if (is.null(start)) return(list(call = cl, fit = NULL))
-    
+  
     ############################################
     # Single evaluation option
     ############################################
@@ -708,7 +713,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
             details    = details
         )
         out <- c(logLik=LL)
-        attr(out, "npar") <- length(unlist(parindx))
+        attr(out, "npar") <- length(unlist(parindx)) # includes fixedbeta
         attr(out, "preptime") <- (prep-ptm)[3]
         attr(out, "LLtime") <- (proc.time() - prep)[3]
         return(out)
@@ -768,11 +773,16 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     NP <- NP + nmiscparm
     stopifnot (length(start) == NP)
-    
+
     ############################################
     # Fixed beta parameters
     ############################################
     fb <- details$fixedbeta
+    if (details$relativeD) {
+        if (is.null(fb)) fb <- rep(NA, NP)
+        fb[parindx$D[1]] <- 0
+        details$fixedbeta <- fb
+    }
     if (!is.null(fb)) {
         if (!(length(fb)== NP))
             stop ("invalid fixed beta - require NP-vector")
@@ -786,10 +796,14 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     # Variable names (general)
     ############################################
     betanames <- unlist(sapply(design$designMatrices, colnames))
+
     names(betanames) <- NULL
     realnames <- names(model)
     ## coefficients for D precede all others
-    if (D.modelled) betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    if (D.modelled && !is.null(Dnames)) {
+        # NULL condition when no density beta (relativeD with D~1)
+        betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    }
     ## coefficients for noneuc follow all others (except model-specific in para below)
     if (NE.modelled) betanames <- c(betanames, paste('noneuc', NEnames, sep='.'))
     betanames <- sub('..(Intercept))','',betanames)

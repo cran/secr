@@ -142,10 +142,10 @@ fastsecrloglikfn <- function (
 
         #####################################################################
         pmixn <- getpmix (data$knownclass, PIA, Xrealparval)  ## membership prob by animal
-        if (is.function(details$userdist)) {
-          noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
-          distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                                  noneuc[,1], density[,1], miscparm, detectfn == 20)
+        if (!is.null(details$userdist)) {    # changed from is.function() 2024-02-15
+            noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
+            distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
+                                    noneuc[,1], density[,1], miscparm, detectfn == 20)
         }
         else {
             distmat2 <- data$distmat2
@@ -173,16 +173,32 @@ fastsecrloglikfn <- function (
         prw <- allhistfast (Xrealparval, gkhk, pi.density, PIA, 
           data$CH, data$usge, pmixn, data$maskusage, 
           details$grain, details$ncores, details$binomN, design$individual)
-        pdot <- integralprw1fast (Xrealparval, gkhk, pi.density, PIA, 
-          data$CH0, data$usge, pmixn, details$grain, details$ncores, 
-          details$binomN, design$individual)
+        if (!is.null(details$externalpdot)) {
+            pdot <- rep(sum(data$externalpdot * pi.density), data$nc)
+        }
+        else {
+            pdot <- integralprw1fast (Xrealparval, gkhk, pi.density, PIA, 
+                  data$CH0, data$usge, pmixn, details$grain, details$ncores, 
+                  details$binomN, design$individual)
+        }
         if (details$debug>2) browser()
         
         comp <- matrix(0, nrow = 6, ncol = 1)
+        
+        #----------------------------------------------------------------------
+        
         comp[1,1] <- if (any(is.na(prw)) || any(prw<=0)) NA else sum(log(prw))
+        
+        #----------------------------------------------------------------------
+        
         ## 2022-01-05 catch nc = 0
-        comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else if (data$nc>0) -sum(log(pdot)) else 0
-        if (!CL) {
+        if (!data$nc<=0 && details$relativeD != 1) {
+            comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot)) 
+        }
+        
+        #----------------------------------------------------------------------
+        
+        if (!CL  && !details$relativeD) {
             N <- sum(density[,1]) * getcellsize(data$mask)
             ## 2022-01-05 catch nc = 0
             meanpdot <- if (data$nc == 0) pdot else data$nc / sum(1/pdot)
@@ -197,6 +213,8 @@ fastsecrloglikfn <- function (
                                  lnbinomial (data$nc, N, meanpdot),
                                  NA)
         }
+        #----------------------------------------------------------------------
+        
         ## adjustment for mixture probabilities when class known
         known <- sum(data$knownclass>1)
         if (details$nmix>1 && known>0) {
@@ -223,6 +241,7 @@ fastsecrloglikfn <- function (
             ##
             
         }
+        #----------------------------------------------------------------------
         
         if (details$debug>=1) {
             comp <- apply(comp,1,sum)
@@ -252,7 +271,7 @@ fastsecrloglikfn <- function (
         sessmask <- lapply(data, '[[', 'mask')
         grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
         D <- getD (designD, beta, sessmask, parindx, link, fixed,
-                   grplevels, sessionlevels, parameter = 'D')
+                   grplevels, sessionlevels, parameter = 'D', details$relativeD)
         if (!is.na(sumD <- sum(D)))
             if (sumD <= 0)
                 warning ("invalid density <= 0")
