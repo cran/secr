@@ -36,7 +36,7 @@ unRMarkInput(df, covariates = TRUE)
   To convert a multi-session object first collapse the sessions with
   \code{\link{join}}.
 
-  If \code{covariates} is TRUE the all columns of individual covariates
+  If \code{covariates} is TRUE then all columns of individual covariates
   in the input are appended as columns in the output. If
   \code{covariates} is a character-valued vector then only the specified
   covariates will be appended.
@@ -66,7 +66,11 @@ unRMarkInput(df, covariates = TRUE)
 
   A single-session capthist object with no traps attribute and hence no
   detector type (i.e. non-spatial capture histories). Covariates are
-  copied as requested.
+  copied as requested. 
+  
+  From \pkg{secr} 4.6.6, missing values (.) in input capture histories are 
+  converted to NA in the output, with a warning. The resulting capthist is 
+  unusable until the NAs are removed.
   
 }
 
@@ -90,7 +94,7 @@ G. (eds) Program MARK: A Gentle Introduction. 6th edition. Available at
   \code{RMarkInput} when grouped = FALSE. Thanks to Jeff Stetz for
   spotting this.
 
-  The default value for \code{grouped} changed to FALSE in secr 2.4.0
+  The default value for \code{grouped} changed to FALSE in secr 2.4.0.
 
 }
 
