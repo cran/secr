@@ -4,6 +4,7 @@
 \alias{masklength}
 \alias{edist}
 \alias{nedist}
+\alias{rlnormCV}
 
 \title{Utility Functions}
 
@@ -19,6 +20,7 @@ maskarea(mask, sessnum = 1)
 masklength(mask, sessnum = 1)
 edist(xy1, xy2)
 nedist(xy1, xy2, mask, inf = Inf, ...)
+rlnormCV(n, mean, cv)
 }
 
 \arguments{ 
@@ -29,6 +31,9 @@ nedist(xy1, xy2, mask, inf = Inf, ...)
   \item{sessnum}{integer; for multi-session masks, the number of the session}
   \item{inf}{numeric value to use for +infinity}
   \item{\dots}{other arguments for \code{\link[gdistance]{transition}}}
+  \item{n}{number of observations}
+  \item{mean}{mean on natural scale}
+  \item{cv}{coefficient of variation on natural scale}
 }
 
 \details{
@@ -63,6 +68,12 @@ nedist(xy1, xy2, mask, inf = Inf, ...)
   \href{https://www.otago.ac.nz/density/pdfs/secr-noneuclidean.pdf}{secr-noneuclidean.pdf}
   for uses of \code{nedist}.
   
+  \code{rlnormCV} is a wrapper for \code{\link{rlnorm}} that computes its 
+  meanlog and sdlog arguments from the mean and CV on the natural scale:
+  
+  \eqn{\mbox{sdlog} = \sqrt{\log(\mbox{CV}^2 + 1)}}, and  
+  
+  \eqn{\mbox{meanlog} = \log(\mbox{mean}) - \mbox{sdlog}^2/2}.
   
 }
 
@@ -77,6 +88,7 @@ nedist(xy1, xy2, mask, inf = Inf, ...)
   
   For \code{edist} and \code{nedist}, a matrix with dim = c(nrow(xy1), nrow(xy2)).
 
+  For \code{rlnormCV} a vector of random deviates.
 }
 
 \references{

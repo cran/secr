@@ -248,7 +248,7 @@ polyID <- function (object)    {
         }
         else
         if (inherits(object,'capthist')) {
-            stop ("use trap() to extract polyID from 'capthist' object")
+            stop ("use polyID(traps(object)) to extract polyID from 'capthist' object")
         }
         else stop ("polyID requires 'traps' object")
     }
@@ -1319,7 +1319,6 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
     y2 <- - x * sin(theta) + y * cos(theta) + centrexy[2]
     c(x2,y2)
   }
-
   if (abs(degrees)>0 && nrow(object)>0) {
     if (is.null(centrexy)) centrexy <- c(mean(object$x), mean(object$y))
     theta <- 2*pi*degrees/360 # convert to radians
@@ -1334,8 +1333,11 @@ rotate.traps <- function (object, degrees, centrexy=NULL, ...)
         covariates(traps2) <- covariates(object)
     if (!is.null(timevaryingcov(object)))
         timevaryingcov(traps2) <- timevaryingcov(object)
-    if (!is.null(polyID(object)))   ## includes transectID
-        polyID(traps2)    <- polyID(object)
+
+    if (!is.null(attr(object,'polyID')))
+      polyID(traps2)    <- polyID(object)   
+    clusterID(traps2)   <- clusterID(object)
+    clustertrap(traps2) <- clustertrap(object)
   }
   else traps2 <- object
   traps2
