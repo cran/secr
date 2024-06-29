@@ -1,6 +1,6 @@
-0db676e58104248e3fde35025d97c2be *DESCRIPTION
+49961e1da430db31fcc64644bfe586b0 *DESCRIPTION
 835c50af711a5848200096a25acfd096 *NAMESPACE
-87a85e88a726667d46e30f7ada380636 *NEWS
+28c52d58e00eb19072b2529c3d315caa *NEWS
 cc9e8662d31f80c6c7e1b96be5330752 *R/AIC.R
 cae7799d4afe4c48e93534165303edde *R/CV.R
 60bc77097dda4874c492746024d3c63f *R/ClosedN.R
@@ -40,9 +40,9 @@ f4dfe03a0c357159ddaa3547e473939f *R/empirical.R
 35d65e810ec4ce1fdd923cf491784e3a *R/esa.R
 15165116a2190893474cbcd07b478612 *R/esa.plot.R
 1734bca36d7a2419553054da4100d47c *R/extractMoves.R
-522c23702fb93191f61446f7ca6d7165 *R/fastsecrloglik.R
+fdf417c5085dfa8776e6e2c877612fd4 *R/fastsecrloglik.R
 b8f0092a65eed3bc6b9b51bf9f78ebca *R/fxi.R
-2b9d814728e75ea4d3ad423630b1989a *R/generalsecrloglik.R
+c2d7e0530bf9db437ae23469981b1470 *R/generalsecrloglik.R
 1f1952f0b72350cb70d4ebffb0e231c4 *R/gridcells.R
 81dd9dd28e51a0f2b800dbeff9cf2e32 *R/head.R
 a7dac275542af9d063af798def30fbcb *R/homerange.R
@@ -92,7 +92,7 @@ dd31b161e8add66976374261abb0f355 *R/secr.make.newdata.R
 93780d3e63de1d9542fa42782f813d0a *R/secr.test.R
 b8a2eb6a067cedf7c557714ec0d94dd8 *R/setNumThreads.R
 18e0d1a3324b31803129e947e1755490 *R/sim.capthist.R
-8d04516c9f5290fb269f8e182163a8c3 *R/sim.popn.R
+77330ff7e58d6f1d7f2eba2cd825934e *R/sim.popn.R
 6f2e7ea7a87c5b1d1fac6ce8f7fc4985 *R/sim.secr.R
 62daa00b3455bf3f2e398e25dd605372 *R/snip.R
 2447a3febbc453275540eb985153becd *R/split.capthist.R
@@ -109,7 +109,7 @@ e733da1dc2459fa08531215b1c307231 *R/telemetry.R
 5e0cbbdda99d308948a365679dc65ad6 *R/trap.builder.R
 4ec530862da000308357839fc99d7f83 *R/trend.R
 fce1c1b883db0d3dd1c286f70913a0b9 *R/usagePlot.R
-9cd535148d00238c82ebb1aebe78f4ae *R/utility.R
+98cf41c90af9b3e417c0abfe0c5b42e2 *R/utility.R
 843f5f3a54292be3a81c5bce996347d1 *R/verify.R
 bac2dea67ba7c218a15346037e2d23a8 *R/write.captures.R
 768b187784ea76238c88331d68021153 *R/write.mask.R
@@ -131,10 +131,10 @@ dbc917f082136fa5c257c31e8cca078d *data/skink.RData
 8146275703c1658ef7a1586b36d52160 *inst/doc/index.html
 f6254f35f36dc318f229c8d67471a5a5 *inst/doc/secr-datainput.R
 bcf956daff7da613e520f0c980db67d7 *inst/doc/secr-datainput.Rmd
-4972dc05296f1df7b47a73dde69995fd *inst/doc/secr-datainput.pdf
+add0f4eaa2587c8f93c2bddb3fd344f7 *inst/doc/secr-datainput.pdf
 d560cd989b00780c20287689928214d5 *inst/doc/secr-overview.R
 6fbd32285c9addaf1dbdafce2b755909 *inst/doc/secr-overview.Rmd
-58d5284ca60cdef72120c975a41d8c7a *inst/doc/secr-overview.pdf
+fe1b1ffcd611dd52c43318cf8a5c779c *inst/doc/secr-overview.pdf
 8d0c95ac4088313e10500fa1cf1b6df4 *inst/extdata/MRCHcapt.txt
 3d885c921f7dc20b8c38e90eadcf1d8a *inst/extdata/MRCHtrap.txt
 f71ffe1bec3bc25ff43df7726879bc7e *inst/extdata/OVforest.dbf
@@ -212,7 +212,7 @@ f12ea3dee1af9f45c3fad7299d209a9a *man/esaplotsecr.Rd
 76194629b819ac7e81ad347b7e2a7dff *man/extractMoves.Rd
 a72f9d5333f754af2c5d8057af95db47 *man/fx.total.Rd
 4562777e62ed92daa42bf978e4ded4ae *man/fxi.Rd
-01846b94d91547c4aac7b48729b47d02 *man/gridcells.Rd
+37bb67d618b88f46380ee06936f2cc97 *man/gridcells.Rd
 b4a374b3e8207ae889925b7671864228 *man/hcov.Rd
 9023f5596658ed2b745a8da21ff0f70f *man/head.Rd
 2aeec63127f24c9bf7883bfb73fe9c24 *man/homerange.Rd
@@ -272,7 +272,7 @@ b94b8a89ac2fb9d60d2e703bbe8ae86d *man/rectangularMask.Rd
 3e3cb1684293e7bb30cd707ee853f7d2 *man/secr-defunct.Rd
 9721be9d14aa8a3734688451b2039d42 *man/secr-deprecated.Rd
 5d3082309b3951bc6f86241ee1b124ea *man/secr-internal.Rd
-06a5a36f09879ecc46036c7112a5c2a1 *man/secr-package.Rd
+2b005729dfc91f4ee7b43957adf6e27b *man/secr-package.Rd
 d5c056636df09dc534f6399dbddd8314 *man/secr.design.MS.Rd
 9d45c3da89d55d0edbefa798dfc84d1a *man/secr.fit.Rd
 e8b6fc50e3de639dc67b4c29940db3a0 *man/secr.make.newdata.Rd
@@ -281,7 +281,7 @@ e8b6fc50e3de639dc67b4c29940db3a0 *man/secr.make.newdata.Rd
 2e9ca9754c335fe858ea043f231928d0 *man/secrdemo.Rd
 58c3f2e6d906fce93a3d4214ba006972 *man/secrtest.Rd
 a0b52acd5d834b9f0acc5ff38a414dfe *man/session.Rd
-e459d9b9c6717ab92ac3187522c902a2 *man/setNumThreads.Rd
+799aedd7989a169bbe10dc212b6c38a1 *man/setNumThreads.Rd
 ca37dfcd0b98567d62e15def2d7fc7d6 *man/sharefactorlevels.Rd
 f4166b7282ce2d6aef1ee72e63d132eb *man/sighting.Rd
 6a2df700037c9ff2e193965e4144af49 *man/signal.Rd
@@ -323,7 +323,7 @@ cbe57aaef6daf88daf64b33150422797 *man/usagePlot.Rd
 be4b002b87f57aadc4f96c7c11960633 *man/vcov.secr.Rd
 d910eeb646d094e7b6a1118d2602a9a5 *man/verify.Rd
 264c94348bbc9b2df1cd522cb76dbdee *man/write.Rd
-b80bed65f8832c771983d4e4b10d8638 *man/writeGPS.Rd
+a507d7b15f22992575c2eaab304044e6 *man/writeGPS.Rd
 87c6bacc2e3e118d8fbdaeedc7ce69d0 *src/Makevars
 5bb30a826b45767dc66c4b30ec706440 *src/Makevars.win
 5a9a9dc73fbee51906f0e4070bdb04e0 *src/RcppExports.cpp

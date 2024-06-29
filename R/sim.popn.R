@@ -7,6 +7,7 @@
 ## 2010-06-14  added Ndist = 'specified', using D to carry N
 ## 2011-03-27  conditional attachment of rownames (correct bug when N = 0)
 ## 2011-04-06  coastal beta option
+## 2011-10-20  poly argument
 ## 2012-04-10  IHP D may be covariate; more checks
 ## 2012-04-10  MRC
 ## 2013-11-23 IHP for Ndist fixed
@@ -599,22 +600,22 @@ sim.popn <- function (D, core, buffer = 100, model2D = c("poisson",
         ## pre-check details$eps
         if (!is.null(details$saveLambda) && details$saveLambda && 
             model2D %in% c("rLGCP", "rThomas","cluster")) {
-          if (is.null(details$eps)) {
-            if (inherits(core, "mask")) {
-              details$eps <- spacing(core)
+            if (is.null(details$eps)) {
+                if (inherits(core, "mask")) {
+                    details$eps <- spacing(core)
+                }
+                else {
+                    dx <- diff(range(core$x)) + 2 * buffer
+                    details$eps <- dx/64
+                }
             }
-            else {
-              dx <- diff(range(core$x)) + 2 * buffer
-              details$eps <- dx/64
+            else if (inherits(core, "mask") && details$eps != spacing(core)) {
+                warning ("requested eps for Lambda differs from core mask")
             }
-          }
-          else if (inherits(core, "mask") && details$eps != spacing(core)) {
-            warning ("requested eps for Lambda differs from core mask")
-          }
         }
         
         if (model2D %in% c("IHP")) {
-          if (!inherits(core, "mask"))
+            if (!inherits(core, "mask"))
                 stop ("for model2D = IHP, core should be a habitat mask")
             # typo fixed 2023-09-17
             if (nsessions>1 && details$movemodel!="static" && 
