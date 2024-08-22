@@ -4,7 +4,8 @@
 ## changed 2014-08-07, 2014-09-07
 ## 2017-07-26 tweaked seed = seed to seed = NULL in sim.secr
 ## 2017-07-27 saved seed attribute from simulate, rather than just input value
-
+## 2024-07-24 keep = 'mask'
+## 2024-08-21 keep = c('mask','designD', 'design0') to cover region.N() for binomial
 ############################################################################################
 
 ## Monte Carlo goodness of fit tests
@@ -20,10 +21,10 @@
 ############################################################################################
 
 secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
-                       ncores = NULL, tracelevel = 1) {
+                       ncores = NULL, tracelevel = 1, ...) {
     summarise <- function (CH.or.secr, sims1) {
-        observed <- statfn(CH.or.secr)
-        simulated <- sapply(sims1, statfn)
+        observed <- statfn(CH.or.secr, ...)
+        simulated <- sapply(sims1, statfn, ...)
         nstat <- length(observed)
         rown <- names(observed)
         if (is.null(rown)) {
@@ -40,12 +41,21 @@ secr.test <- function (object, nsim = 99, statfn, fit = FALSE, seed = NULL,
     sims <- simulate(object = object, nsim = nsim, seed = seed)
 
     if (fit) {
-        if (missing(statfn))
+        if (missing(statfn)) {
             ## object is secr fit
             statfn <- function(object) c(devdf = deviance(object) / df.residual(object))
-        fitted <- sim.secr(object, nsim = nsim, extractfn = trim, seed = NULL,
-                           data = sims, start = object$fit$par, ncores = ncores,
-                           tracelevel = tracelevel)
+        }
+        keep <- if (object$details$distribution != 'binomial') 'mask' else 
+            c('mask', 'designD', 'design0')
+        fitted <- sim.secr(object, 
+                           nsim       = nsim, 
+                           extractfn  = trim, 
+                           seed       = NULL,
+                           data       = sims, 
+                           tracelevel = tracelevel, 
+                           start      = object$fit$par, 
+                           ncores     = ncores,
+                           keep       = keep)
         out <- summarise(object, fitted)
     }
     else {

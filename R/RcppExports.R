@@ -121,6 +121,10 @@ simdetectsignalcpp <- function(detect, nmix, fn, cut, gsb0val, PIA0, pmix, known
     .Call('_secr_simdetectsignalcpp', PACKAGE = 'secr', detect, nmix, fn, cut, gsb0val, PIA0, pmix, knownclass, animals, traps, dist2, Tsk, miscparm)
 }
 
+expdetectpointcpp <- function(detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN) {
+    .Call('_secr_expdetectpointcpp', PACKAGE = 'secr', detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN)
+}
+
 trappingsingle <- function(g0, sigma, z, dist2, Tsk, fn, w2, binomN, bk) {
     .Call('_secr_trappingsingle', PACKAGE = 'secr', g0, sigma, z, dist2, Tsk, fn, w2, binomN, bk)
 }

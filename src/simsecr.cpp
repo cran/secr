@@ -6,6 +6,9 @@
 using namespace Rcpp;
 //==============================================================================
 
+// 2024-08-02 changed output order of 'value' to i,s,k
+//            not clear whether this requires new sortkey for poly, signal
+
 NumericVector getpar (
         const int i, 
         const int s, 
@@ -92,7 +95,6 @@ int bswitch (
 }
 //==============================================================================
 
-
 // [[Rcpp::export]]
 List simdetectpointcpp (
         const int           &detect,      // detector -1 single, 0 multi, 1 proximity, 2 count,... 
@@ -131,6 +133,7 @@ List simdetectpointcpp (
     double runif;
     int    wxi = 0;
     int    c = 0;
+    int    c0 = 0;
     double Tski = 1.0;  
     bool   before;
     
@@ -213,15 +216,13 @@ List simdetectpointcpp (
                     if (fabs(Tski) > 1e-10) {
                         before = bswitch (btype, N, i, k, caughtbefore);
                         wxi =  i4(i, s, k, x[i], N, ss, kk);
-                        if (before)
-                            c = PIA1[wxi] - 1;
-                        else 
-                            c = PIA0[wxi] - 1;
+                        c = PIA1[wxi] - 1;
+                        c0 = PIA0[wxi] - 1;
                         if (c >= 0) {    // ignore unused detectors 
                             if (before)
                                 lambda = hk[i3(c, k, i, cc, kk)];
                             else
-                                lambda = hk0[i3(c, k, i, cc0, kk)];
+                                lambda = hk0[i3(c0, k, i, cc0, kk)];
                             lambda = lambda * Tski;
                             event_time = randomtimel(lambda);
                             if (event_time <= 1) {
@@ -266,7 +267,7 @@ List simdetectpointcpp (
                         nc++;
                         caught[i] = nc;                    // nc-th animal to be captured 
                     }
-                    value[i3(s, intrap[i]-1, caught[i]-1, ss, kk)] = 1;  
+                    value[i3(i, s, intrap[i]-1, N, ss)] = 1;  
                 }
             }
         }
@@ -281,15 +282,13 @@ List simdetectpointcpp (
                     if (fabs(Tski) > 1e-10) {
                         before = bswitch (btype, N, i, k, caughtbefore);
                         wxi =  i4(i, s, k, x[i], N, ss, kk);
-                        if (before)
-                            c = PIA1[wxi] - 1;
-                        else 
-                            c = PIA0[wxi] - 1;
+                        c = PIA1[wxi] - 1;
+                        c0 = PIA0[wxi] - 1;
                         if (c >= 0) {    // ignore unused detectors 
                             if (before)
                                 h[k * N + i] = Tski * hk[i3(c, k, i, cc, kk)];
                             else
-                                h[k * N + i] = Tski * hk0[i3(c, k, i, cc0, kk)];
+                                h[k * N + i] = Tski * hk0[i3(c0, k, i, cc0, kk)];
                             hsum[i] += h[k * N + i];
                         }
                     }
@@ -309,7 +308,7 @@ List simdetectpointcpp (
                     k = 0;
                     // while ((runif > cump[k]) && (k<kk)) k++;   // bug fix 2019-10-04
                     while ((runif > cump[k+1]) && (k<kk)) k++;
-                    value[i3(s, k, caught[i]-1, ss, kk)] = 1;  
+                    value[i3(i, s, k, N, ss)] = 1;  
                 }
             }
         }
@@ -323,15 +322,13 @@ List simdetectpointcpp (
                     if (fabs(Tski) > 1e-10) {
                         before = bswitch (btype, N, i, k, caughtbefore);
                         wxi =  i4(i, s, k, x[i], N, ss, kk);
-                        if (before)
-                            c = PIA1[wxi] - 1;
-                        else 
-                            c = PIA0[wxi] - 1;
+                        c = PIA1[wxi] - 1;
+                        c0 = PIA0[wxi] - 1;
                         if (c >= 0) {    // ignore unused detectors 
                             if (before)
                                 p = gk[i3(c, k, i, cc, kk)];
                             else
-                                p = gk0[i3(c, k, i, cc0, kk)];
+                                p = gk0[i3(c0, k, i, cc0, kk)];
                             if (p < -0.1) { 
                                 return(nullresult);
                             }  
@@ -352,7 +349,7 @@ List simdetectpointcpp (
                                         nc++;
                                         caught[i] = nc;
                                     }
-                                    value[i3(s, k, caught[i]-1, ss, kk)] = count;
+                                    value[i3(i, s, k, N, ss)] = count;
                                 }
                             }
                         }
@@ -368,7 +365,7 @@ List simdetectpointcpp (
                     if (Markov) 
                         caughtbefore[i] = 0;
                     for (k=0; k<kk; k++)
-                        caughtbefore[i] = R::imax2 (value[i3(s, k, i, ss, kk)], caughtbefore[i]);
+                        caughtbefore[i] = R::imax2 (value[i3(i, s, k, N, ss)], caughtbefore[i]);
                 }
             }
             else if (btype == 2) {
@@ -376,9 +373,9 @@ List simdetectpointcpp (
                     for (k=0; k<kk; k++) {
                         ik = k * (N-1) + i;
                         if (Markov) 
-                            caughtbefore[ik] = value[i3(s, k, i, ss, kk)];
+                            caughtbefore[ik] = value[i3(i, s, k, N, ss)];
                         else 
-                            caughtbefore[ik] = R::imax2 (value[i3(s, k, i, ss, kk)], 
+                            caughtbefore[ik] = R::imax2 (value[i3(i, s, k, N, ss)], 
                                                          caughtbefore[ik]);
                     }
                 }
@@ -388,7 +385,7 @@ List simdetectpointcpp (
                     if (Markov) 
                         caughtbefore[k] = 0;
                     for (i=0; i<N; i++) 
-                        caughtbefore[k] = R::imax2 (value[i3(s, k, i, ss, kk)], caughtbefore[k]);
+                        caughtbefore[k] = R::imax2 (value[i3(i, s, k, N, ss)], caughtbefore[k]);
                 }
             }
         }
@@ -596,7 +593,7 @@ List simdetectpolycpp (
                                     caught[i] = nc;
                                 }
                                 nd++;
-                                value[i3(s, k, caught[i]-1, ss, nk)] = 1;  
+                                value[i3(i, s, k, N, ss)] = 1;  
                                 work[(nd-1)*2] = xy[0];
                                 work[(nd-1)*2+1] = xy[1];
                                 sortkey[nd-1] = (double) (s * N + caught[i]);
@@ -693,7 +690,7 @@ List simdetectpolycpp (
                             if (nd >= maxdet) {
                                 return(nullresult);  // error
                             }
-                            value[i3(s, k, caught[i]-1, ss, nk)] = 1;  
+                            value[i3(i, s, k, N, ss)] = 1;  
                             work[(nd-1)*2] = xyp.x;
                             work[(nd-1)*2+1] = xyp.y;
                             sortkey[nd-1] = (double) (s * N + caught[i]);
@@ -737,7 +734,7 @@ List simdetectpolycpp (
                                 if (nd > maxdet) {
                                     return(nullresult);  // error
                                 }
-                                value[i3(s, k, caught[i]-1, ss, nk)]++;
+                                value[i3(i, s, k, N, ss)]++;
                                 work[(nd-1)*2] = xy[0];
                                 work[(nd-1)*2+1] = xy[1];
                                 sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
@@ -812,7 +809,7 @@ List simdetectpolycpp (
                             if (nd >= maxdet) {
                                 return(nullresult);  // error
                             }
-                            value[i3(s,k,caught[i]-1, ss,nk)]++;
+                            value[i3(i,s,k, N, ss)]++;
                             work[(nd-1)*2] = xyp.x;
                             work[(nd-1)*2+1] = xyp.y;
                             sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
@@ -829,7 +826,7 @@ List simdetectpolycpp (
                     if (Markov) 
                         caughtbefore[i] = 0;
                     for (k=0; k<nk; k++)
-                        caughtbefore[i] = R::imax2 (value[i3(s, k, i, ss, nk)], caughtbefore[i]);
+                        caughtbefore[i] = R::imax2 (value[i3(i, s, k, N, ss)], caughtbefore[i]);
                 }
             }
             else if (btype == 2) {
@@ -837,9 +834,9 @@ List simdetectpolycpp (
                     for (k=0; k<nk; k++) {
                         ik = k * (N-1) + i;
                         if (Markov) 
-                            caughtbefore[ik] = value[i3(s, k, i, ss, nk)];
+                            caughtbefore[ik] = value[i3(i, s, k, N, ss)];
                         else 
-                            caughtbefore[ik] = R::imax2 (value[i3(s, k, i, ss, nk)], 
+                            caughtbefore[ik] = R::imax2 (value[i3(i, s, k, N, ss)], 
                                                          caughtbefore[ik]);
                     }
                 }
@@ -849,7 +846,7 @@ List simdetectpolycpp (
                     if (Markov) 
                         caughtbefore[k] = 0;
                     for (i=0; i<N; i++) 
-                        caughtbefore[k] = R::imax2 (value[i3(s, k, i, ss, nk)], 
+                        caughtbefore[k] = R::imax2 (value[i3(i, s, k, N, ss)], 
                                                     caughtbefore[k]);
                 }
             }
@@ -996,7 +993,7 @@ List simdetectsignalcpp (
                                 caught[i] = nc;
                             }
                             nd++;
-                            value[i3(s, k, caught[i]-1, ss, nk)] = 1;
+                            value[i3(i, s, k, N, ss)] = 1;
                             work[nd-1] = signalvalue;
                             sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
                         }
@@ -1009,7 +1006,7 @@ List simdetectsignalcpp (
                                 caught[i] = nc;
                             }
                             nd++;
-                            value[i3(s,k,caught[i]-1,ss,nk)] = 1;
+                            value[i3(i,s,k, N,ss)] = 1;
                             work[nd-1] = signalvalue;
                             noise[nd-1] = noisevalue;
                             sortkey[nd-1] = (double) (k * N * ss + s * N + caught[i]);
@@ -1037,3 +1034,308 @@ List simdetectsignalcpp (
 }
 //==============================================================================
 
+// expected number of detections
+// returns numeric vector with elements of N, ss, kk array of 
+// expected detections
+
+double Ey (
+        const double p,     // gk[i3(c, k, i, cc, kk)] etc.
+        const int binomN, 
+        const int detect, 
+        const double Tski
+)
+{
+    if (p < -0.1) { 
+        return(0.0);
+    }  
+    if (p > 0) {
+        if (detect == 1) {   // binary proximity 
+            if (fabs(Tski-1) > 1e-10)   // adjust for usage only if needed
+                return(1 - pow(1-p, Tski));
+            else
+                return(p);
+        }
+        else if (detect == 2) {       // count proximity 
+            if (binomN == 0)                // Poisson
+                return(-log(1-p) * Tski);
+            else if (binomN == 1)
+                return(Tski*p);             // binomial, size = Tsk
+            else
+                return(binomN * p * Tski);  // binomial, size = binomN
+        }
+    }
+    return(0);
+}
+//==============================================================================
+
+// adjust probability for effort
+double adjustp (
+        const double p,     // gk[i3(c, k, i, cc, kk)] etc.
+        const int binomN, 
+        const int detect, 
+        const double Tski
+)
+{
+    if (p < -0.1) { 
+        return(0.0);
+    }  
+    if (p>0) {
+        if (detect == 1) {   // binary proximity 
+            if (fabs(Tski-1) > 1e-10)   // adjust for usage only if needed
+                return(1 - pow(1-p, Tski));
+            else
+                return(p);
+        }
+        else if (detect == 2) {       // count proximity 
+            if (binomN == 0)                // Poisson
+                return(-log(1-p) * Tski);
+            else if (binomN == 1)
+                return(1 - pow(1-p, Tski));          // binomial, size = Tsk
+            else
+                return(1 - pow(1-p, binomN * Tski));  // binomial, size = binomN
+        }
+    }
+    return(0);
+}
+//==============================================================================
+
+std::vector<double> pbupdate (
+        const int btype, 
+        const int Markov, 
+        const int kk, 
+        std::vector<double> pcaught,
+        std::vector<double> pcb)
+{
+    double pc;
+    int k;
+    if (btype == 0)
+        return(pcb);
+    else if (btype == 1) {
+        pc = 1.0;
+        for (k=0; k<kk; k++)
+            pc *= 1-pcaught[k];
+        pc = 1-pc;
+        if (Markov)
+            pcb[0] = pc;
+        else
+            pcb[0] = pcb[0] + (1-pcb[0]) * pc;
+    }
+    else if (btype == 2) {
+        for (k=0; k<kk; k++) {
+            if (Markov)
+                pcb[k] = pcaught[k];
+            else
+                pcb[k] = pcb[k] + (1-pcb[k]) * pcaught[k];
+        }
+    }
+    else if (btype == 3) 
+        Rcpp::stop("trap learned response not yet programmed here");
+    else 
+        Rcpp::stop("unrecognised btype in simsecr");
+    return(pcb);
+}
+//==============================================================================
+
+double pbstatus (
+        const int btype, 
+        const int k, 
+        const std::vector<double> &pcb)
+{
+    if (btype == 0)
+        return(0);
+    else if (btype == 1) 
+        return(pcb[0]);
+    else if (btype == 2) 
+        return(pcb[k]);
+    else if (btype == 3) 
+        return(pcb[k]);
+    else 
+        Rcpp::stop("unrecognised btype in simsecr");
+    return(0);
+}
+
+//==============================================================================
+
+
+// [[Rcpp::export]]
+NumericVector expdetectpointcpp (
+        const int           &detect,     // detector -1 single, 0 multi, 1 proximity, 2 count,... 
+        const int           &N, 
+        const int           &cc0,
+        const int           &cc,
+        const NumericVector &gk0, 
+        const NumericVector &gk, 
+        const NumericVector &hk0, 
+        const NumericVector &hk, 
+        const IntegerVector &PIA0,       // lookup which g0/sigma/b combination to use for given g, S, K [naive animal] 
+        const IntegerVector &PIA1,       // lookup which g0/sigma/b combination to use for given n, S, K  [caught before] 
+        const int           &nmix,       // number of classes 
+        const IntegerVector &knownclass, // known membership of 'latent' classes 
+        const NumericVector &pmix,       // membership probabilities
+        const NumericMatrix &Tsk,        // ss x kk array of 0/1 usage codes or effort 
+        const int           &btype,      // code for behavioural response  0 none etc. 
+        const int           &Markov,     // learned vs transient behavioural response 0 learned 1 Markov 
+        const IntegerVector &binomN      // number of trials for 'count' detector modelled with binomial 
+)
+{
+    //  detect may take values -
+    //  0  multi-catch traps
+    //  1  binary proximity detectors
+    //  2  count  proximity detectors
+    //            binomN 0 Poisson, 1 Bernoulli, >1 binomial
+    
+    int    kk = Tsk.nrow();            // number of detectors 
+    int    ss = Tsk.ncol();            // number of occasions
+    
+    double p, ps, p0, p1;
+    int    i,ik,k,s,x;
+    int    wxi     = 0;
+    int    c       = 0;
+    int    c0      = 0;
+    double Tski    = 1.0;  
+    
+    NumericMatrix mix (N, nmix);          // initially zero
+    
+    // status of behavioural response
+    // pcb = probability caught before
+    std::vector<double> pcb(kk);          // specific to occasion and latent class
+    std::vector<double> pcaught(kk);      // specific to occasion and latent class
+    
+    // return values
+    NumericVector value (N*ss*kk);        // return value array
+
+    //========================================================
+    // 'multi-catch only' declarations 
+    // occasion-specific, for each anmal
+    std::vector<double> h0(N * kk);        // traps-specific hazard
+    std::vector<double> hsum0(N);          // total hazard
+    std::vector<double> h1(N * kk);        // traps-specific hazard
+    std::vector<double> hsum1(N);          // total hazard
+    
+    //========================================================
+    // MAIN LINE 
+    
+    //--------------------------------------------------------
+    // mixture models 
+    if (nmix>1) {
+        if (nmix>2)
+            Rcpp::stop("nmix>2 not implemented");
+        for (i=0; i<N; i++) {
+            if (knownclass[i] > 1) {
+                mix(i, knownclass[i] - 2) = 1;          // knownclass=2 maps to x=0 etc. 
+            }
+            else {
+                mix(i,0) = pmix[0];
+                mix(i,1) = pmix[1];
+            }
+        }
+    }
+    else {
+        std::fill(mix.begin(), mix.end(), 1);
+    }
+    
+    // ------------------------------------------------------------------------- 
+    // MAIN LOOP 
+    
+    // ------------------------------------------------------------------------- 
+    // multi-catch trap; max one site per animal per occasion 
+    if (detect == 0) {
+        for (i=0; i<N; i++) {
+            std::fill(pcb.begin(), pcb.end(), 0);
+            for (s=0; s<ss; s++) {
+                for (x=0; x<nmix; x++) {
+                    hsum0[i] = 0;
+                    hsum1[i] = 0;
+                    for (k=0; k<kk; k++) {
+                        Tski = Tsk(k,s);
+                        if (fabs(Tski) > 1e-10) {
+                            wxi =  i4(i, s, k, x, N, ss, kk);
+                            c0 = PIA0[wxi] - 1;
+                            c  = PIA1[wxi] - 1;
+                            if (c >= 0) {    // ignore unused detectors 
+                                h0[k * N + i] = Tski * hk0[i3(c0, k, i, cc0, kk)];
+                                hsum0[i] += h0[k * N + i];
+                                if (btype>0) {
+                                    // concern: should this instead be a
+                                    // weighted sum of probabilities?
+                                    h1[k * N + i] = Tski * hk[i3(c, k, i, cc, kk)];
+                                    hsum1[i] += h1[k * N + i];
+                                }
+                            }
+                        }
+                    }
+                    
+                    for (k=0; k<kk; k++) {
+                        if (btype==0) {
+                            value[i3(i, s, k, N, ss)] += mix(i, x) * h0[k * N + i]/hsum0[i];
+                        }
+                        else {
+                            ps = pbstatus(btype, k, pcb);
+                            p = (1-ps) * (1-exp(-hsum0[i])) * h0[k * N + i]/hsum0[i] + 
+                                ps     * (1-exp(-hsum1[i])) * h1[k * N + i]/hsum1[i];
+                            value[i3(i, s, k, N, ss)] += mix(i, x) * p;
+                            // probability caught at k on this occasion
+                            // given in class x
+                            pcaught[k] = p;
+                        }
+                    }
+                    pcb = pbupdate(btype, Markov, kk, pcaught, pcb);
+                }
+            }
+        }
+    }
+    // -------------------------------------------------------------------------------- 
+    // the 'proximity' group of detectors 1:2 - proximity, count
+    
+    // binomN = 0 — Poisson
+    // binomN = 1 — binomial with size determined by usage = Tsk
+    // binomN > 1 — binomial with size binomN
+    
+    else if ((detect == 1) || (detect == 2)) {
+        for (i=0; i<N; i++) {
+            std::fill(pcb.begin(), pcb.end(), 0);
+            for (s=0; s<ss; s++) {
+                for (x=0; x<nmix; x++) {
+                    for (k=0; k<kk; k++) {
+                        Tski = Tsk(k,s);
+                        if (fabs(Tski) > 1e-10) {
+                            wxi =  i4(i, s, k, x, N, ss, kk);
+                            c0 = PIA0[wxi] - 1;
+                            c  = PIA1[wxi] - 1;
+                            if (c >= 0) {    // ignore unused detectors 
+                                p0 = gk0[i3(c0, k, i, cc0, kk)];
+                                p1 = gk[i3(c, k, i, cc, kk)];
+                                if (btype>0) {
+                                    ps = pbstatus(btype, k, pcb);
+                                    // sum, weighted by probability of previous capture
+                                    value[i3(i, s, k, N, ss)] += mix(i,x) * 
+                                        ((1 - ps) * Ey(p0, binomN[s], detect, Tski) +
+                                          ps      * Ey(p1, binomN[s], detect, Tski));
+                                    // probability detected at k on this occasion
+                                    // given in class x
+                                    pcaught[k] = (1-ps) * adjustp(p0, binomN[s], detect, Tski) +
+                                                  ps    * adjustp(p1, binomN[s], detect, Tski);
+                                }
+                                else {
+                                    // naive probability OK for all
+                                    value[i3(i, s, k, N, ss)] += Ey(p0, binomN[s], 
+                                             detect, Tski) * mix(i,x);
+                                }
+                            }
+                        }
+                    }  // loop over k
+                    if (btype>0) {
+                        pcb = pbupdate(btype, Markov, kk, pcaught, pcb);
+                    }
+                }      // loop over x
+            }          // loop over s
+        }              // loop over i
+    }
+    else {
+        Rcpp::stop ("unrecognised or unsupported detector in expdetectpointcpp");
+    }
+    
+    return (value);
+    
+}
+//==============================================================================

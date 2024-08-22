@@ -626,6 +626,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// expdetectpointcpp
+NumericVector expdetectpointcpp(const int& detect, const int& N, const int& cc0, const int& cc, const NumericVector& gk0, const NumericVector& gk, const NumericVector& hk0, const NumericVector& hk, const IntegerVector& PIA0, const IntegerVector& PIA1, const int& nmix, const IntegerVector& knownclass, const NumericVector& pmix, const NumericMatrix& Tsk, const int& btype, const int& Markov, const IntegerVector& binomN);
+RcppExport SEXP _secr_expdetectpointcpp(SEXP detectSEXP, SEXP NSEXP, SEXP cc0SEXP, SEXP ccSEXP, SEXP gk0SEXP, SEXP gkSEXP, SEXP hk0SEXP, SEXP hkSEXP, SEXP PIA0SEXP, SEXP PIA1SEXP, SEXP nmixSEXP, SEXP knownclassSEXP, SEXP pmixSEXP, SEXP TskSEXP, SEXP btypeSEXP, SEXP MarkovSEXP, SEXP binomNSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int& >::type detect(detectSEXP);
+    Rcpp::traits::input_parameter< const int& >::type N(NSEXP);
+    Rcpp::traits::input_parameter< const int& >::type cc0(cc0SEXP);
+    Rcpp::traits::input_parameter< const int& >::type cc(ccSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type gk0(gk0SEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type gk(gkSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type hk0(hk0SEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type hk(hkSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type PIA0(PIA0SEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type PIA1(PIA1SEXP);
+    Rcpp::traits::input_parameter< const int& >::type nmix(nmixSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type knownclass(knownclassSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type pmix(pmixSEXP);
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type Tsk(TskSEXP);
+    Rcpp::traits::input_parameter< const int& >::type btype(btypeSEXP);
+    Rcpp::traits::input_parameter< const int& >::type Markov(MarkovSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type binomN(binomNSEXP);
+    rcpp_result_gen = Rcpp::wrap(expdetectpointcpp(detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN));
+    return rcpp_result_gen;
+END_RCPP
+}
 // trappingsingle
 List trappingsingle(const NumericVector& g0, const NumericVector& sigma, const NumericVector& z, const NumericMatrix& dist2, const NumericMatrix& Tsk, const int fn, const double w2, const IntegerVector& binomN, const bool bk);
 RcppExport SEXP _secr_trappingsingle(SEXP g0SEXP, SEXP sigmaSEXP, SEXP zSEXP, SEXP dist2SEXP, SEXP TskSEXP, SEXP fnSEXP, SEXP w2SEXP, SEXP binomNSEXP, SEXP bkSEXP) {
@@ -880,6 +907,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_secr_simdetectpointcpp", (DL_FUNC) &_secr_simdetectpointcpp, 17},
     {"_secr_simdetectpolycpp", (DL_FUNC) &_secr_simdetectpolycpp, 17},
     {"_secr_simdetectsignalcpp", (DL_FUNC) &_secr_simdetectsignalcpp, 13},
+    {"_secr_expdetectpointcpp", (DL_FUNC) &_secr_expdetectpointcpp, 17},
     {"_secr_trappingsingle", (DL_FUNC) &_secr_trappingsingle, 9},
     {"_secr_trappingmulti", (DL_FUNC) &_secr_trappingmulti, 9},
     {"_secr_trappingcapped", (DL_FUNC) &_secr_trappingcapped, 9},
