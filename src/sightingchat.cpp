@@ -1,6 +1,5 @@
-#include <Rcpp.h>
-#include <RcppParallel.h>
 #include "secr.h"
+#include <RcppParallel.h>
 
 //==============================================================================
 int discreteN (double N) {
@@ -502,8 +501,6 @@ List sightingchatcpp (
     // Construct and initialise
     chat somechat (mm, nc, cc0, grain, nsim, sightmodel, sumD, area, distrib, binomN, markocc, pID, 
                    group, gk0, hk0, density, PIA0, Tsk, pmix, chatmat, chatout);
-    
-    RNGScope scope;             // Rcpp initialise and finalise random seed 
     
     if (ncores>1) {
         // Run operator() on multiple threads

@@ -265,7 +265,7 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
   nr <- nrow(CH0)       ## unique naive animals (1 or nc)
   m <- nrow(pi.density)
   nmix <- nrow(pmixn)
-  if (length(grp)<=1) grp <- rep(1,nc)
+  if (length(grp)<=1) grp <- rep(1,nr)
   s <- ncol(usge)
   ngroup <- length(levels(grp))
   sump <- numeric(nc)
@@ -400,13 +400,13 @@ generalsecrloglikfn <- function (
     if (!is.null(details$userdist)) {    # changed from is.function() 2024-02-15
         noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
         distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                                noneuc[,1], density[,1], miscparm, detectfn == 20)
+                                noneuc[,1], density[,1], miscparm)
     }
     else {
         distmat2 <- data$distmat2
     }
     ## precompute gk, hk for point detectors
-    if (all(data$dettype %in% c(0,1,2,5,8,13)) || data$HPXpoly) {
+    if (all(data$dettype %in% c(0,1,2,5,8,13))) {
         if (!is.null(details$R) && details$R) {
             if (!exists('makegkPointR')) 
                 stop ("R code makegkPointR not available; source makegk.R")  
@@ -494,7 +494,7 @@ generalsecrloglikfn <- function (
         prw <- 1  ## simple if no animals detected
     }
     else {
-        if (all(data$dettype %in% c(0,1,2,8,13)) || data$HPXpoly) {
+        if (all(data$dettype %in% c(0,1,2,8,13))) {
             prw <- allhistsimple (nrow(Xrealparval), haztemp, gkhk, pi.density, PIA, 
                                   data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                                   pID, data$maskusage, 
@@ -518,7 +518,7 @@ generalsecrloglikfn <- function (
         }
     }    
         ## polygon types
-    if (all(data$dettype %in% c(3,4,6,7)) && !data$HPXpoly) {
+    if (all(data$dettype %in% c(3,4,6,7))) {
         if (learnedresponse) {   ## overwrite gk,hk with model for naive animal
             gkhk <- makegkPolygoncpp (
               as.integer(detectfn), 

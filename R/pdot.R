@@ -28,7 +28,10 @@
 ## 2019-07-29 C++
 ## 2019-12-28 multithreaded
 ## 2021-05-19 cv: pmax protects against negative argument to sqrt     
-## 2022-11-19 esa.plot in separate file
+## 2022-11-19 esa.plot in separate file, now esaPlot.R
+## 2024-09-07 pdot accepts vector or matrix detectpar for g0/lambda0 and sigma 
+##            replicated to fill matrix of dimensions ntraps x noccasions (traps are rows)
+## 2024-09-23 pdot.contour and buffer.contour renamed
 ###############################################################################
 
 ## pdot is used in --
@@ -36,12 +39,17 @@
 ## CVa
 ## CVpdot
 ## esa*
-## derivedSystematic* (via Fewstervarn)
-## fx.total*
 ## make.mask (pdotmin option)
 ## reparameterize.esa
-## [bias.D  disabled]
 ## pdot.contour
+## esaPlot
+
+# fixed
+## fxTotal*
+
+# poly supppressed
+## [bias.D  disabled]
+## MCgof
 
 ## * has ncores argument
 
@@ -50,7 +58,6 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
 
     ## X should be 2-column dataframe, mask, matrix or similar
     ## with x coord in col 1 and y coord in col 2
-
     ncores <- setNumThreads(ncores)
     grain <- if (ncores==1) 0 else 1
 
@@ -63,29 +70,28 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
 
     truncate <- ifelse(is.null(detectpar$truncate), 1e+10, detectpar$truncate)
 
-    detectpars <- unlist(detectpar[parnames(detectfn)])
-    if ((detectfn>9) & (detectfn<14))  detectpars <- c(detectpars, detectpar$cutval)
-    if (length(detectpars)<3) detectpars <- c(detectpars,0)
-    miscparm <- numeric(4);   ## dummy
+    ntraps <- ndetector(traps)
+    usge <- usage(traps, noccasions)
+    if (is.null(noccasions)) noccasions <- ncol(usge)
 
-    if (!is.null(usage(traps))) {
-        usge <- usage(traps)
-        if (is.null(noccasions)) {
-            noccasions <- ncol(usage(traps))
-        }
-        else {
-            if (noccasions < ncol(usage(traps))) {
-                warning ("specified noccasions less than ncol of usage matrix")
-            }
-            if (noccasions > ncol(usage(traps)))
-                stop ("specified noccasions exceeds ncol of usage matrix")
-        }
+    detectpars <- detectpar[parnames(detectfn)]
+    gl0 <- detectpars[[1]]   ## g0 or lambda0
+    sig <- detectpars[[2]]   ## sigma
+    
+    ## g0/lambda0 or sigma is a matrix
+    nonscalardetpar <- (is.matrix(gl0) || is.matrix(sig))
+    gl0 <- matrix(gl0, nrow = ntraps, ncol = noccasions)
+    sig <- matrix(sig, nrow = ntraps, ncol = noccasions)
+    
+    otherdetpar <- unlist(detectpar[3:4])  # assume scalar 
+    if ((detectfn>9) & (detectfn<14))  {
+        otherdetpar <- c(otherdetpar, detectpar$cutval)
     }
-    else {
-        if (is.null(noccasions))
-            stop("must specify noccasions when traps does not have usage attribute")
-        usge <- matrix(1, ndetector(traps), noccasions)
-    }
+    otherdetpar <- c(otherdetpar, c(0,0))[1:2]   # pad to length 2
+    
+    miscparm <- numeric(4);   ## dummy
+    
+    
     dettype <- detectorcode(traps, noccasions = noccasions)
     binomN <- getbinomN (binomN, detector(traps))
     markocc <- markocc(traps)
@@ -122,8 +128,8 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         1 - exp(-temp)   ## probability detected at least once, given total hazard
     }
     else {
-      ## distmat2 <- getdistmat2 (traps, X, userdist)
-      distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, miscparm, detectfn == 20)
+        distmat2 <- getuserdist (traps, X, userdist, sessnum = NA, NULL, NULL, 
+                               miscparm)
       #-------------------------------------------------------------
       pdotpointcpp(
         as.matrix(X),
@@ -133,7 +139,9 @@ pdot <- function (X, traps, detectfn = 0, detectpar = list(g0 = 0.2, sigma = 25,
         as.matrix(usge),
         as.integer(markocc),
         as.integer(detectfn),
-        as.double(detectpars),
+        as.matrix(gl0),             # new
+        as.matrix(sig),             # new
+        as.double(otherdetpar),     # new    
         as.double(miscparm),
         as.double(truncate^2),
         as.integer(expandbinomN(binomN, dettype)),
@@ -149,11 +157,23 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
                           noccasions = NULL, binomN = NULL,
                           levels = seq(0.1, 0.9, 0.1),
                           poly = NULL, poly.habitat = TRUE, plt = TRUE, add = FALSE, fill = NULL, ...) {
+    .Deprecated("pdotContour", package="secr", 
+                "pdot.contour has been renamed pdotContour",
+                old = as.character(sys.call(sys.parent()))[1L])
+    pdotContour (traps, border, nx, detectfn, detectpar, noccasions, binomN,
+                  levels, poly, poly.habitat, plt, add, fill, ...)
+    
+}
 
+pdotContour <- function (traps, border = NULL, nx = 64, detectfn = 0,
+    detectpar = list(g0 = 0.2, sigma = 25, z = 1), noccasions = NULL, 
+    binomN = NULL, levels = seq(0.1, 0.9, 0.1), poly = NULL, 
+    poly.habitat = TRUE, plt = TRUE, add = FALSE, fill = NULL, ...) {
+    
     if (ms(traps)) {
         if (length(noccasions) == 1)
             noccasions <- rep(noccasions,length(traps))
-        output <- mapply(pdot.contour, traps, detectpar=detectpar, noccasions=noccasions,
+        output <- mapply(pdotContour, traps, detectpar=detectpar, noccasions=noccasions,
                          MoreArgs = list(border = border, nx = nx,
                          detectfn = detectfn, binomN = binomN,
                          levels = levels, poly = poly, poly.habitat = poly.habitat, plt = plt, add = add, ...))
@@ -201,6 +221,17 @@ pdot.contour <- function (traps, border = NULL, nx = 64, detectfn = 0,
 buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
                             plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE,
                             fill = NULL, ...) {
+    .Deprecated("bufferContour", package="secr", 
+                "buffer.contour has been renamed bufferContour",
+                old = as.character(sys.call(sys.parent()))[1L])
+    bufferContour (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
+                               plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE,
+                               fill = NULL, ...) 
+}
+
+bufferContour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100,
+                            plt = TRUE, add = FALSE, poly = NULL, poly.habitat = TRUE,
+                            fill = NULL, ...) {
     oneconvexbuffer <- function (buffer) {
         temp  <- data.frame(x = apply(expand.grid(traps$x, buffer * cos(theta)),1,sum),
                        y = apply(expand.grid(traps$y, buffer * sin(theta)),1,sum))
@@ -215,7 +246,7 @@ buffer.contour <- function (traps, buffer, nx = 64, convex = FALSE, ntheta = 100
         stop ("requires 'traps' or 'mask' object")
 
     if (ms(traps)) {
-        output <- lapply(traps, buffer.contour, buffer = buffer, nx = nx, convex = convex,
+        output <- lapply(traps, bufferContour, buffer = buffer, nx = nx, convex = convex,
                ntheta = ntheta, plt = plt, add = add, poly = poly, poly.habitat = poly.habitat, ...)
         if (plt)
             invisible(output)

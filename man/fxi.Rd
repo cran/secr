@@ -1,33 +1,40 @@
 \name{fxi}
-\alias{fxi.contour}
-\alias{fxi.mode}
+\alias{fxiContour}
+\alias{fxiMode}
 \alias{fxi.secr}
 \alias{fxi}
 
-\title{ Probability Density of Home Range Centre }
+\title{ Probability Density of Activity Centre }
 
 \description{
   Display contours of the probability density function for the estimated
-  location of one or more range centres, compute values for
+  location of one or more activity centres (AC), compute values for
   particular points X, or compute mode of pdf. The pdf is given by
   \eqn{f(X_j|\omega_i) = \mbox{Pr}(\omega_i|X_j)\pi(X_j)}{f(X_j|\omega_i) =
   Pr(\omega_i|X)\pi(X_j)}, where \eqn{\pi(X)} is the probability density
   of range centres across the mask (Borchers and Efford 2008).
+  
+  These functions were previously named \code{fxi.secr}, \code{fxi.contour} and \code{fxi.mode}. 
+
 }
 
 \usage{
-fxi.contour (object, i = 1, sessnum = 1, border = 100, nx = 64,
+
+\method{fxi}{secr}(object, i = NULL, sessnum = 1, X = NULL, ncores = NULL, ...)
+
+fxiContour (object, i = 1, sessnum = 1, border = 100, nx = 64,
     levels = NULL, p = seq(0.1,0.9,0.1), plt = TRUE, add = FALSE,
     fitmode = FALSE, plotmode = FALSE, fill = NULL,
     output = c('list','sf','SPDF'), ncores = NULL, ...)
-fxi.secr(object, i = NULL, sessnum = 1, X = NULL, ncores = NULL)
-fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
+
+fxiMode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
+
 }
 
 \arguments{
   \item{object}{ a fitted secr model }
-  \item{i}{ integer or character vector of individuals (defaults to all in fxi.secr),
-  or a single individual as input to fxi.mode }
+  \item{i}{ integer or character vector of individuals (defaults to all in \code{fxi}),
+  or a single individual as input to fxiMode }
   \item{sessnum}{ session number if \code{object$capthist} spans
   multiple sessions}
   \item{border}{ width of blank margin around the outermost detectors }
@@ -48,22 +55,22 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
 
 \details{
 
-  \code{fxi.contour} computes contours of probability density for one
+  \code{fxiContour} computes contours of AC probability density for one
   or more detection histories. Increase \code{nx} for smoother
   contours. If \code{levels} is not set, contour levels are set
   to approximate the confidence levels in \code{p}.
   
-  \code{fxi.secr} computes the probability density for one or more
+  \code{fxi} computes the AC probability density for one or more
   detection histories; \code{X} may contain coordinates for one or
   several points; a dataframe or vector (x then y) will be coerced to a
   matrix.
 
-  \code{fxi.mode} attempts to find the x- and y-coordinates
-  corresponding to the maximum of the pdf for a single detection history
-  (i.e. \code{i} is of length 1). \code{fxi.mode} calls
+  \code{fxiMode} attempts to find the x- and y-coordinates
+  corresponding to the maximum of the AC pdf for a single detection history
+  (i.e. \code{i} is of length 1). \code{fxiMode} calls
   \code{\link[stats]{nlm}}.
 
-  \code{fxi.contour} with \code{fitmode = TRUE} calls \code{fxi.mode}
+  \code{fxiContour} with \code{fitmode = TRUE} calls \code{fxiMode}
   for each individual. Otherwise, the reported mode is an approximation
   (mean of coordinates of highest contour).
 
@@ -73,7 +80,7 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
   
   Values of the pdf are normalised by dividing by the
   integral of \eqn{\mbox{Pr}(\omega_i|X)\pi(X)}{Pr(\omega_i|X)\pi(X)}
-  over the habitat mask in \code{object}. (May differ in secr 4.0).
+  over the habitat mask in \code{object}. (In secr >= 4.0 may differ from previous versions).
   
   Setting \code{ncores = NULL} uses the existing value from the environment variable 
   RCPP_PARALLEL_NUM_THREADS (see \code{\link{setNumThreads}}).
@@ -87,7 +94,11 @@ fxi.mode(object, i = 1, sessnum = 1, start = NULL, ncores = NULL, ...)
 
 \value{
   
-\code{fxi.contour} (output = 'list') --
+\code{fxi} --
+
+Vector of probability densities
+
+\code{fxiContour} (output = 'list') --
   
 Coordinates of the plotted contours are returned as a list with one
 component per polygon. The list is returned invisibly if plt = TRUE.
@@ -95,49 +106,45 @@ component per polygon. The list is returned invisibly if plt = TRUE.
 An additional component `mode' reports the x-y coordinates of the
 highest point of each pdf (see Details).
 
-\code{fxi.contour} (output = 'SPDF') --
+\code{fxiContour} (output = 'SPDF') --
   
 Contours are returned as a SpatialPolygonsDataFrame (see package
 \pkg{sp}) with one component per animal. The attributes dataframe has two columns, the x-
 and y-coordinates of the mode. The SpatialPolygonsDataFrame is returned
 invisibly if plt = TRUE.
 
-\code{fxi.contour} (output = 'sf') -- simple features 'sf' object, as for SPDF.
+\code{fxiContour} (output = 'sf') -- simple features 'sf' object, as for SPDF.
 
-\code{fxi.secr} --
-
-Vector of probability densities
-
-\code{fxi.mode} --
+\code{fxiMode} --
 
 List with components `x' and `y'
 
 }
 \references{
 
-  Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
+Borchers, D. L. and Efford, M. G. (2008) Spatially explicit maximum
 likelihood methods for capture--recapture studies. \emph{Biometrics}
 \bold{64}, 377--385.
 
 }
 
 \seealso{
-\code{\link{pdot.contour}}, \code{\link[graphics]{contour}}, \code{\link{fx.total}}
+\code{\link{pdotContour}}, \code{\link[graphics]{contour}}, \code{\link{fxTotal}}
 }
 
 \note{
 
   From \pkg{secr} 2.8.3, these functions work with both homogeneous
-  and inhomogeneous Poisson density models, and \code{fxi.secr} accepts
+  and inhomogeneous Poisson density models, and \code{fxi} accepts
   vector-valued \code{i}.
 
-  See \code{\link{fx.total}} for a surface summed across individuals.
+  See \code{\link{fxTotal}} for a surface summed across individuals.
 
 }
 
 \section{Warnings}{
 
-  \code{fxi.mode} may fail to find the true mode unless a good starting
+  \code{fxiMode} may fail to find the true mode unless a good starting
   point is provided. Note that the distribution may have multiple modes and 
   only one is reported. The default value of \code{start} before \pkg{secr} 2.9.4 
   was the first detected location of the animal. 
@@ -148,28 +155,28 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 
 \dontrun{
 
-fxi.secr(secrdemo.0, i = 1, X = c(365,605))
+fxi(secrdemo.0, i = 1, X = c(365,605))
 
 ## contour first 5 detection histories
 plot(secrdemo.0$capthist)
-fxi.contour (secrdemo.0, i = 1:5, add = TRUE,
+fxiContour (secrdemo.0, i = 1:5, add = TRUE,
     plotmode = TRUE, drawlabels = FALSE)
 
 ## extract modes only
 ## these are more reliable than those from fit.mode called directly as
 ## they use a contour-based approximation for the starting point
-fxiout <- fxi.contour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
+fxiout <- fxiContour (secrdemo.0, i = 1:5, plt = FALSE, fitmode = TRUE)
 t(sapply(fxiout, "[[", "mode"))
 
 ## using fill colours
 ## lty = 0 suppresses contour lines
 ## nx = 256 ensures smooth outline
 plot(traps(captdata))
-fxi.contour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
+fxiContour(secrdemo.0, i = 1:5, add = TRUE, p = c(0.5,0.95), drawlabels
     = FALSE, nx = 256, fill = topo.colors(4), lty = 0)
 
 ## output as simple features
-sf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
+sf <- fxiContour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
     nx = 256, output = 'sf', fitmode = TRUE)
 
 ## save as ESRI shapefile testsf.shp etc.
@@ -180,7 +187,7 @@ plot(st_as_sfc(sf))    # outline only
 points(sf$modex, sf$modey)
 
 ## output as SpatialPolygonsDataFrame
-spdf <- fxi.contour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
+spdf <- fxiContour(secrdemo.0, i = 1:3, plt = FALSE, p = c(0.5,0.95),
     nx = 256, output = 'SPDF', fitmode = TRUE)
 sp::plot(spdf)
 points(data.frame(spdf))
@@ -188,5 +195,3 @@ points(data.frame(spdf))
 }
 
 }
-
-\keyword{ hplot }

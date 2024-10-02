@@ -1,3 +1,32 @@
+Changes in version 5.0.0 (2024-10-02)
+
+New features or changed behaviour of old functions
+    o  MCgof() goodness-of-fit after Choo et al. (2024) DOI: 10.1111/2041-210X.14386
+    o  blackbearCH new dataset of J. Laufenberg, F. van Manen and J. Clark
+    o  default criterion for AIC and modelAverage changed from AICc to AIC
+    o  score.table reports dAIC rather than dAICc
+    o  detectpar() optionally returns values for each detector
+    o  pdot() accepts detector- and occasion-specific detection parameters
+    o  usage() method for traps objects acquires argument 'noccasions' to create from scratch
+
+Other
+    o  internal addzeroCH() ignores covariate dataframe with zero columns
+    o  improved robustness of fxi.secr by setting occasional NaN to zero
+    o  imports from mvtnorm
+    o  list.secr.fit() now works with details$LLonly = TRUE
+    o  trappingtransect, trappingtransectX revert to built-in integration
+    o  some minor functions restricted to point detectors (i.e. not area search)
+       CVa, CVpdot, reparameterize.esa, make.mask(type=pdot)
+    o  derivedSystematic() defunct
+    o  purged unused code
+    o  derived() uses nlme::fdHess for gradients
+    o  esa(), fxTotal(), MCgof() become S3 generic
+    o  unused HPX detectfn removed 
+    o  fxi.secr() becomes S3 generic fxi() with method for secr objects
+    o  other fxi.xxx functions renamed fxiXxx (old ones deprecated for now)
+    o  pdot.contour and buffer.contour renamed pdotContour and bufferContour (old names deprecated for now)
+    o  esa.plot() renamed to esaPlot() to avoid clash with generic
+    
 Changes in version 4.6.10 (2024-08-21)
 
 New features or changed behaviour of old functions

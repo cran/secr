@@ -1,14 +1,17 @@
 \name{derived}
 \alias{derived}
 \alias{esa}
+\alias{esa.secr}
 \alias{derived.secr}
 \alias{derived.secrlist}
 
 \title{ Derived Parameters of Fitted SECR Model }
 
 \description{
+
 Compute derived parameters of spatially explicit capture-recapture model. 
 Density is a derived parameter when a model is fitted by maximizing the conditional likelihood. So also is the effective sampling area (in the sense of Borchers and Efford 2008).
+
 }
 
 \usage{
@@ -23,8 +26,8 @@ derived(object, ...)
     se.esa = FALSE, se.D = TRUE, loginterval = TRUE, distribution = NULL, 
     ncores = NULL, bycluster = FALSE, ...)
 
-esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, 
-    ncores = NULL)
+\method{esa}{secr}(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL, 
+    ncores = NULL, ...)
 
 }
 
@@ -43,7 +46,7 @@ esa(object, sessnum = 1, beta = NULL, real = NULL, noccasions = NULL,
   \item{beta}{ vector of fitted parameters on transformed (link) scale }
   \item{real}{ vector of `real' parameters } 
   \item{noccasions}{ integer number of sampling occasions (see Details) } 
-  \item{...}{other arguments (not used)}
+  \item{...}{other arguments passed to \code{\link[nlme]{fdHess}} or ignored (esa)}
 }
 
 \details{
@@ -119,6 +122,9 @@ suppressed with \code{se.esa} and \code{se.D} as desired.
 For computing \code{derived} across multiple models in parallel see
 \code{\link{par.derived}}.
 
+From \pkg{secr} 5.0.0 the \dots argument may be used to control the step size 
+(.relStep) used by \code{\link[nlme]{fdHess}} when estimating gradients for SE(D) and SE(esa).
+
 }
 
 \value{
@@ -158,7 +164,6 @@ Huggins, R. M. (1989) On the statistical analysis of capture experiments. \emph{
   \code{\link{print.secr}},
   \code{\link{secr.fit}},
   \code{\link{empirical.varD}}
-  \code{\link{par.derived}}
 
 }
 
@@ -197,8 +202,6 @@ esa(secrdemo.CL, real = c(0.2, 25))
 }
 
 }
-
-\keyword{ models }
 
 %varcomp1    \tab variance due to variation in \eqn{n} (Huggins' \eqn{s^2}) \cr
 %varcomp2    \tab variance due to uncertainty in estimates of detection parameters \cr

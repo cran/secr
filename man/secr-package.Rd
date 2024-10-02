@@ -19,8 +19,8 @@
 \tabular{ll}{
 Package: \tab secr\cr
 Type: \tab Package\cr
-Version: \tab 4.6.10\cr
-Date: \tab 2024-08-21\cr
+Version: \tab 5.0.0\cr
+Date: \tab 2024-10-02\cr
 License: \tab GNU General Public License Version 2 or later\cr
 }
 
@@ -162,8 +162,6 @@ arrays. In: A.F. O'Connell, J.D. Nichols and K.U. Karanth (eds)
 Tokyo.  Pp. 163--190.
  
 }
-
-\keyword{ package }
 
 \seealso{
 \code{\link{read.capthist}},

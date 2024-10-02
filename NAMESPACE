@@ -1,4 +1,4 @@
-# 2023-05-22, 2024-02-17, 2024-07-31
+# 2023-05-22, 2024-02-17, 2024-07-31, 2024-09-23
 
 import (parallel)
 import (RcppNumerical)
@@ -31,8 +31,11 @@ importFrom (abind,
 
 importFrom (MASS, 
     ginv, 
-    eqscplot,
-    mvrnorm)
+    eqscplot)
+## ,mvrnorm)  not consistent between platforms
+
+importFrom (mvtnorm, 
+    rmvnorm) 
 
 importFrom (mgcv, 
     gam, 
@@ -99,15 +102,11 @@ importFrom (stringr,
 
 importFrom (terra, 
     extract)
-
 importMethodsFrom (terra, rast)
 exportMethods     (rast)
 
 export (secr.fit)
-export (par.secr.fit)
 export (list.secr.fit)
-export (par.derived)
-export (par.region.N)
 export (expected.n)
 export (read.traps)
 export (read.telemetry)
@@ -161,24 +160,17 @@ export (write.mask)
 export (score.test)
 export (score.table)
 export (LR.test)
-export (esa)
 export (derivedCluster)
 export (derivedSession)
-export (derivedSystematic)
 export (derivedMash)
 export (derivedExternal)
 export (derivednj)
 export (pdot)
 export (nk)
 export (Enk)
-export (esa.plot)
-export (esa.plot.secr)
 export (suggest.buffer)
-export (bias.D)
 export (mask.check)
 export (polyarea)
-export (pdot.contour)
-export (buffer.contour)
 export (distancetotrap)
 export (nearesttrap)
 export (secrlist)
@@ -198,10 +190,7 @@ export (closedN)
 export (read.DA)
 export (write.DA)
 export (logmultinom)
-export (fxi.secr)
-export (fx.total)
-export (fxi.contour)
-export (fxi.mode)
+
 export (pointsInPolygon)
 export (predictDsurface)
 export (rectangularMask)
@@ -211,21 +200,15 @@ export (spotHeight)
 export (strip.legend)
 export (randomHabitat)
 export (randomDensity)
-export (make.lookup)
-export (insertdim)
 export (as.mask)
 export (as.popn)
 export (setNumThreads)
 export (extractMoves)
-export (makeStart)
 export (kfn)
 export (append.capthist)
 
-# defunct, still exported
-export (model.average)
-export (ip.secr)
-
-# new generics
+#---------------------------------------
+# new generics in secr
 export (reduce)
 export (rotate)
 export (shift)
@@ -238,6 +221,7 @@ export (signal)
 export (noise)
 export (clone)
 export (derived)
+export (MCgof)
 export (LLsurface)
 export (region.N)
 export (AICcompatible)
@@ -291,6 +275,9 @@ S3method(LLsurface, secr)
 
 S3method(region.N, secr)
 S3method(region.N, secrlist)
+
+S3method(MCgof, secr)
+S3method(MCgof, secrlist)
 
 export(intervals)
 export ("intervals<-")
@@ -348,6 +335,7 @@ export (session)
 S3method(covariates,default)
 S3method(timevaryingcov,default)
 S3method(usage,default)
+S3method(usage,traps)
 S3method(markocc,default)
 S3method(telemetrytype,default)
 S3method(Tu,default)
@@ -386,24 +374,13 @@ export ("noise<-")
 
 export ("predictDlambda")
 
-## assume these internal fns not needed outside
-# export (group.levels)
-# export (group.factor)
-# export (secr.lpredictor)
-# export (make.lookup)
-
-export (makeNewData)
-S3method(makeNewData, default)
-S3method(makeNewData, secr)
-
-export (secr.design.MS)
-export (D.designdata)
 export (sim.secr)
 export (sim.detect)
 export (secr.test)
 export (getMeanSD)
 export (maskarea)
 export (masklength)
+export (masksize)
 export (edist)
 export (nedist)
 export (deleteMaskPoints)
@@ -493,12 +470,95 @@ S3method(print, Dsurface)
 S3method(plot, Dsurface)
 S3method(summary, Dsurface)
 
+S3method(print, MCgof)
+S3method(plot, MCgof)
+S3method(hist, MCgof)
+S3method(summary, MCgof)
+S3method(print, summary.MCgof)
+
 S3method(plot, Rsurface)
 S3method(print, Rsurface)
 
 S3method(print, secrtest)
 S3method(plot, secrtest)
 
+#---------------------------------------
+# new names 5.0.0 September 2024
+export (fxi)
+export (fxTotal)
+export (esa)
+
+S3method(fxi, secr)
+S3method(fxTotal, secr)
+S3method(esa, secr)
+
+export (fxiContour)
+export (fxiMode)
+export (pdotContour)
+export (bufferContour)
+export (esaPlot)
+
+#---------------------------------------
+# deprecated, still exported 5.0.0
+
+export (par.secr.fit)
+export (par.derived)
+export (par.region.N)
+export (fx.total)
+export (pdot.contour)
+export (buffer.contour)
+export (esa.plot)
+export (fxi.contour)
+export (fxi.mode)
+S3method(esa,plot)
+S3method(fxi,mode)
+S3method(fxi,contour)
+
+#---------------------------------------
+# defunct, still exported 5.0.0
+export (model.average)
+export (ip.secr)
+
+#---------------------------------------
+# deprecated, still exported 5.0.0
+
+#---------------------------------------
+# exported (mostly) internal functions
+
+export (secr.design.MS)        # secr.design.MS.Rd
+export (make.lookup)           # secr.design.MS.Rd
+export (insertdim)             # secr.design.MS.Rd
+
+export (D.designdata)          # D.designdata.Rd
+
+export (makeStart)             # makestart.Rd
+
+export (makeNewData)           # makeNewData.Rd
+S3method(makeNewData, default) # makeNewData.Rd
+S3method(makeNewData, secr)    # makeNewData.Rd
+
+export (bias.D)                # suggest.buffer.Rd    
+
+export (boundarytoSF)          # internal.Rd
+export (Dfn2)                  # internal.Rd
+
+#---------------------------------------
+# internal functions not exported
+
+# export (add.cl)                
+# export (parnames)              
+# export (detectorcode)          
+# export (esaPlotsecr)           
+# export (gethazard)             
+# export (group.factor)
+# export (group.levels)
+# export (prepareSessionData)    
+# export (reparameterize)        
+# export (secr.lpredictor)
+# export (stdform)               
+# export (valid.detectfn)        
+
+# ===========================
 useDynLib (secr)
 ## DEBUGGING ONLY (cpp functions not documented)
 ## exportPattern("*cpp")

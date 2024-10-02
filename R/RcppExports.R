@@ -17,6 +17,10 @@ insidecpp <- function(xy, n1, n2, poly) {
     .Call('_secr_insidecpp', PACKAGE = 'secr', xy, n1, n2, poly)
 }
 
+movematcpp <- function(ntrap, trapno) {
+    .Call('_secr_movematcpp', PACKAGE = 'secr', ntrap, trapno)
+}
+
 naivedcpp <- function(sigma, wt, traps, animals, fn) {
     .Call('_secr_naivedcpp', PACKAGE = 'secr', sigma, wt, traps, animals, fn)
 }
@@ -31,6 +35,10 @@ getdenomcpp <- function(fn, miscparm, mask, mm, sigma, z) {
 
 gethcpp <- function(nc1, cc, nmix, nk, ss, mm, PIA, Tsk, hk) {
     .Call('_secr_gethcpp', PACKAGE = 'secr', nc1, cc, nmix, nk, ss, mm, PIA, Tsk, hk)
+}
+
+hdotpolycpp <- function(xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, dim, grain, ncores) {
+    .Call('_secr_hdotpolycpp', PACKAGE = 'secr', xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, dim, grain, ncores)
 }
 
 makegkPointcpp <- function(detectfn, grain, ncores, gsbval, dist2, miscparm) {
@@ -53,20 +61,8 @@ nkpointcpp <- function(D, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, bi
     .Call('_secr_nkpointcpp', PACKAGE = 'secr', D, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, grain, ncores)
 }
 
-pdotpointcpp <- function(xy, traps, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, grain, ncores) {
-    .Call('_secr_pdotpointcpp', PACKAGE = 'secr', xy, traps, dist2, detect, Tsk, markocc, fn, gsb, miscparm, w2, binomN, grain, ncores)
-}
-
-hdotpolycpp <- function(xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, dim, grain, ncores) {
-    .Call('_secr_hdotpolycpp', PACKAGE = 'secr', xy, traps, Tsk, markocc, cumk, detectfn, gsb, convex, dim, grain, ncores)
-}
-
-ontransectcpp <- function(xy, transect, n1, n2, tol) {
-    .Call('_secr_ontransectcpp', PACKAGE = 'secr', xy, transect, n1, n2, tol)
-}
-
-alongtransectcpp <- function(xy, transect, n1, n2, tol) {
-    .Call('_secr_alongtransectcpp', PACKAGE = 'secr', xy, transect, n1, n2, tol)
+pdotpointcpp <- function(xy, traps, dist2, detect, Tsk, markocc, fn, gl0, sig, otherdetpar, miscparm, w2, binomN, grain, ncores) {
+    .Call('_secr_pdotpointcpp', PACKAGE = 'secr', xy, traps, dist2, detect, Tsk, markocc, fn, gl0, sig, otherdetpar, miscparm, w2, binomN, grain, ncores)
 }
 
 fasthistoriescpp <- function(mm, nc, cc, grain, ncores, binomN, indiv, w, ki, gk, hk, density, PIA, Tsk, mbool) {
@@ -123,6 +119,14 @@ simdetectsignalcpp <- function(detect, nmix, fn, cut, gsb0val, PIA0, pmix, known
 
 expdetectpointcpp <- function(detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN) {
     .Call('_secr_expdetectpointcpp', PACKAGE = 'secr', detect, N, cc0, cc, gk0, gk, hk0, hk, PIA0, PIA1, nmix, knownclass, pmix, Tsk, btype, Markov, binomN)
+}
+
+ontransectcpp <- function(xy, transect, n1, n2, tol) {
+    .Call('_secr_ontransectcpp', PACKAGE = 'secr', xy, transect, n1, n2, tol)
+}
+
+alongtransectcpp <- function(xy, transect, n1, n2, tol) {
+    .Call('_secr_alongtransectcpp', PACKAGE = 'secr', xy, transect, n1, n2, tol)
 }
 
 trappingsingle <- function(g0, sigma, z, dist2, Tsk, fn, w2, binomN, bk) {

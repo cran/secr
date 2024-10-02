@@ -155,7 +155,7 @@ University of Otago, Dunedin, New Zealand. \url{https://www.otago.ac.nz/density/
 }
 
 \seealso{
-\code{\link{esa.plot}}, \code{\link{make.mask}}, \code{\link{secr.fit}} 
+\code{\link{esaPlot}}, \code{\link{make.mask}}, \code{\link{secr.fit}} 
 }
 
 \examples{
@@ -213,4 +213,3 @@ par(mfrow = c(1,1), mar = c(5,4,4,2) + 0.1)    ## defaults
 
 }
 
-\keyword{ manip }

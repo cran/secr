@@ -47,6 +47,11 @@ used on a particular occasion. The per-occasion detection function
 \eqn{p_s}{p_s} is halfnormal (0) by default, and is assumed not to vary
 over the \eqn{S} occasions.
 
+From 4.6.11, the detection parameters g0, lambda0 and sigma for point detectors 
+may be detector- and occasion-specific. This is achieved by providing a vector 
+of values that is replicated internally to fill a matrix with dimensions 
+ntraps x noccasions (i.e. in trap order for occasion 1, then occasion 2 etc.)
+
 For detection functions (10) and (11) the signal threshold `cutval' should be
 included in \code{detectpar}, e.g., \code{detectpar = list(beta0 = 103, beta1
 = -0.11, sdS = 2, cutval = 52.5)}.
@@ -78,7 +83,7 @@ For \code{CVpdot}, a named vector with elements `meanpdot' and `CVpdot'.
   \code{\link{secr}}, 
   \code{\link{make.mask}},
   \code{\link{Detection functions}}, 
-  \code{\link{pdot.contour}},
+  \code{\link{pdotContour}},
   \code{\link{CV}}}
 
 \note{
@@ -112,5 +117,4 @@ The coefficient of variation is CV = \eqn{\sqrt{V}/\mu}{sqrt(V)/\mu}.
 
 }
 
-\keyword{ manip }
 

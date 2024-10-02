@@ -109,11 +109,6 @@ exponential function.
   = \lambda_0 \exp \{ -(^d/_\sigma)^{z} \} }{ \lambda(d) =
   \lambda0 exp(- (d / \sigma)^z) }; \eqn{g(d) = 1-\exp(-\lambda(d))}{g(d) = 1-exp(-\lambda(d))} \cr
  
-20 HPX \tab hazard pixelar \tab lambda0, sigma \tab \eqn{ g(d') = 1-exp(-\lambda(d')), d' <= \sigma;
-  g(d') = 0, \mbox{otherwise}  }{ g(d') = 1-exp(-\lambda(d')), d'\le \sigma; g(d') = 0,
-  otherwise } \cr
- 
-
 }
 
 Functions (1) and (15), the "hazard-rate" detection functions described by Hayes and Buckland
@@ -200,5 +195,4 @@ this case it corresponds to the mean of the threshold variable; the
 standard deviation of the threshold variable (z) determines the shape
 (roughly 1/max(slope)) of the detection function.  }
 
-\keyword{ models }
 

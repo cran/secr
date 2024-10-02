@@ -7,7 +7,7 @@
 
 \description{ 
 
-Various functions called internally by \pkg{secr} and not exported.
+Functions called internally by \pkg{secr} and exported but not usually called by users.
 
 }
 
@@ -26,7 +26,6 @@ Dfn2(designD, beta = NULL, ...)
   \item{designD}{dataframe of density design data (output from \code{\link{D.designdata}})}
   \item{beta}{numeric vector of beta values (see Details for NULL)}
   \item{...}{other arguments (not used)}
-
 
 }
 
@@ -73,7 +72,6 @@ a geometry set of type POLYGON or MULTIPOLYGON. NULL input results in NULL outpu
 
 \code{\link{predictDlambda}},
 \href{https://www.otago.ac.nz/density/pdfs/secr-trend.pdf}{secr-trend.pdf},
-
 
 }
 

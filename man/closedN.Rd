@@ -158,5 +158,3 @@ Collins, Colorado, USA.
 closedN(deermouse.ESG)
 }
 
-\keyword{ models }
-%% \keyword{internal}

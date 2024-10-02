@@ -152,7 +152,7 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
       
       if (!is.null(detector(traps)) &    ## 2017-01-27
           all(detector(traps) %in% c('polygon','polygonX'))) {
-        temp <- buffer.contour(traps, buffer = buffer, nx = nx,
+        temp <- bufferContour(traps, buffer = buffer, nx = nx,
           convex = T, plt = F)
         OK <- array(dim=c(length(x), length(y), length(temp)))
         for (i in 1:length(temp)) {
@@ -183,6 +183,10 @@ make.mask <- function (traps, buffer = 100, spacing = NULL, nx = 64, ny = 64,
     }
     
     if (type=='pdot') {
+      dettype <- detectorcode(traps)
+      if (!all(dettype %in%  c(0,1,2,5,8,13))) {
+          stop ("type pdot is available only for point detectors")
+      }
       OK <- pdot(mask, traps = traps, ...) > pdotmin
       edge <- function (a,b) any (abs(a-b) < (spacing))
       mask <- mask[OK,]

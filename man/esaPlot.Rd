@@ -1,16 +1,21 @@
-\name{esa.plot}
-\alias{esa.plot}
+\name{esaPlot}
+\alias{esaPlot}
 
 \title{
 Mask Buffer Diagnostic Plot
 }
+
 \description{
+
 Plot effective sampling area (Borchers and Efford 2008) as a function of increasing buffer width.
+
+\code{esaPlot} was previously called \code{esa.plot}.
+
 }
 
 \usage{
 
-esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
+esaPlot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
     detectfn, detectpar, noccasions, binomN = NULL, thin = 0.1,
     poly = NULL, poly.habitat = TRUE, session = 1, plt = TRUE, 
     type = c('density', 'esa', 'meanpdot', 'CVpdot'), n = 1, add = FALSE, 
@@ -49,7 +54,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
 
   Effective sampling area (esa) is defined as the integral of net
   capture probability (\eqn{p.(\mathbf{X})}{p.(X)}) over a
-  region. \code{esa.plot} shows the effect of increasing region size on
+  region. \code{esaPlot} shows the effect of increasing region size on
   the value of esa for fixed values of the detection parameters. The
   \code{max.buffer} or \code{max.mask} arguments establish the maximum
   extent of the region; points (cells) within this mask are sorted by
@@ -62,7 +67,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   multiplied by \code{n}; this is on a more familiar scale (the density
   scale) and hence is easier to interpret.
   
-  Because \code{esa.plot} uses the criterion `distance to nearest
+  Because \code{esaPlot} uses the criterion `distance to nearest
   detector', \code{max.mask} should be constructed to include all
   habitable cells within the desired maximum buffer and no others. This
   is achieved with \code{type = "trapbuffer"} in \code{make.mask}. It is
@@ -75,7 +80,7 @@ esa.plot (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
   the result is saved and printed) to generate more legible numerical
   output. Use \code{thin=1} to include all points.
 
-  \code{esa.plot} calls the internal function \code{esa.plot.secr} when
+  \code{esaPlot} calls the internal function \code{esaPlotsecr} when
   \code{object} is a fitted model. In this case \code{detectfn},
   \code{detectpar} and \code{noccasions} are inferred from
   \code{object}. 
@@ -123,19 +128,63 @@ likelihood methods for capture--recapture studies. \emph{Biometrics}
 \dontrun{
 
 ## with previously fitted model
-esa.plot(secrdemo.0)
+esaPlot(secrdemo.0)
 
 ## from scratch
 trps <- make.grid()
 msk <- make.mask(trps, buffer = 200, spacing = 5, type = "trapbuffer")
 detectpar <- list(g0 = 0.2, sigma = 25)
-esa.plot(trps,,, msk, 0, detectpar, nocc = 10, col = "blue")
-esa.plot(trps,,, msk, 0, detectpar, nocc = 5, col = "green",
+esaPlot(trps,,, msk, 0, detectpar, nocc = 10, col = "blue")
+esaPlot(trps,,, msk, 0, detectpar, nocc = 5, col = "green",
     add = TRUE)
 
-esa.plot(trps,,, msk, 0, detectpar, nocc = 5, thin = 0.002, plt = FALSE)
+esaPlot(trps,,, msk, 0, detectpar, nocc = 5, thin = 0.002, plt = FALSE)
 
 }
 
 }
-\keyword{ hplot }
+
+% Not exported
+% 
+% esaPlotsecr (object, max.buffer = NULL, max.mask = NULL,
+%     thin = 0.1, poly = NULL, poly.habitat = TRUE, session = 1, plt = TRUE, 
+%     type = "density", add = FALSE, overlay = TRUE, conditional = FALSE, ...)
+% 
+% }
+% 
+% \arguments{
+% 
+%   \item{object}{\code{secr} object output from \code{secr.fit} }
+%   \item{max.buffer}{ maximum width of buffer in metres }
+%   \item{max.mask}{ \code{\link{mask}} object }
+%   \item{thin}{ proportion of mask points to retain in plot and output}
+%   \item{poly.habitat}{logical as in \code{\link{make.mask}} }
+%   \item{session}{vector of session indices (used if \code{object} spans multiple sessions)}
+%   \item{plt}{ logical to plot results }
+%   \item{type}{ character; see \code{\link{esaPlot}}}
+%   \item{add}{ logical to add line to an existing plot }
+%   \item{overlay}{ logical; if TRUE then automatically \code{add = TRUE}
+%   for plots after the first }
+%   \item{conditional}{logical; see \code{\link{esaPlot}}}
+%   \item{\dots}{ other graphical arguments passed to plot() and lines() (esaPlotsecr)}
+% 
+% }
+% 
+% \details{
+% 
+%   \code{esaPlotsecr} provides a wrapper for \code{\link{esaPlot}}
+%   that is called internally from esaPlot when it is presented with an
+%   secr object. Arguments of \code{esaPlot} such as \code{detectfn} are
+%   inferred from the fitted model.
+% 
+%   The optional `poly' argument of \code{esaPlotsecr} is a matrix of two columns 
+%   interpreted as the x and y coordinates of a bounding polygon.
+% 
+%   If \code{max.mask} is not specified then a maximal mask of type
+%   `trapbuffer' is constructed using \code{max.buffer} and the spacing of
+%   the mask in \code{object}. In this case, if \code{max.buffer} is not
+%   specified then it is set either to the width of the existing plot
+%   (\code{add = TRUE}) or to 10 x sigma-hat from the fitted model in
+%   \code{object} (\code{add = FALSE}).
+% 
+% }

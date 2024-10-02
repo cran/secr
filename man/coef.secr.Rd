@@ -11,7 +11,9 @@
 }
 
 \usage{
+
 \method{coef}{secr} (object, alpha = 0.05, ...)
+
 }
 
 \arguments{
@@ -28,7 +30,7 @@ confidence limits.
 
 }
 
-\seealso{ \code{\link{secr.fit}}, \code{\link{esa.plot}} }
+\seealso{ \code{\link{secr.fit}}, \code{\link{esaPlot}} }
 
 \examples{
 
@@ -37,4 +39,3 @@ coef(secrdemo.0)
 
 }
 
-\keyword{ models }

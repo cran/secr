@@ -18,7 +18,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
 \method{predict}{secrlist}(object, newdata = NULL, realnames = NULL, type = c("response", "link"),
     se.fit = TRUE, alpha = 0.05, savenew = FALSE, \dots)
 
-\method{detectpar}{secr}(object, \dots, byclass = FALSE) 
+\method{detectpar}{secr}(object, \dots, byclass = FALSE, bytrap = FALSE) 
 
 }
 
@@ -34,6 +34,7 @@ Evaluate a spatially explicit capture--recapture model. That is, compute the `re
   \item{\dots}{ other arguments passed to \code{\link{makeNewData}} }
   \item{byclass}{ logical; if TRUE values are returned for each latent
   class in a mixture model, or class in a hybrid mixture (hcov) model}
+  \item{bytrap}{ logical; if TRUE values are returned for each detector}
 }
 \details{
   
@@ -61,7 +62,7 @@ The value of \code{newdata} is optionally saved as an attribute.
 
 \code{detectpar} is used to extract the detection parameter estimates
 from a simple model to pass to functions such as
-\code{esa.plot}. \code{detectpar} calls \code{predict.secr}. Parameters
+\code{esaPlot}. \code{detectpar} calls \code{predict.secr}. Parameters
 will be evaluated by default at base levels of the covariates, although
 this may be overcome by passing a one-line \code{newdata} to
 \code{predict} via the \dots argument. Groups and mixtures are a
@@ -138,5 +139,4 @@ attr(temp, "newdata")
 detectpar(secrdemo.0)
 }
 
-\keyword{ models }
 

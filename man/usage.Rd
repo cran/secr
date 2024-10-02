@@ -1,5 +1,6 @@
 \name{usage}
 \alias{usage}
+\alias{usage.traps}
 \alias{usage<-}
 \alias{effort}
 
@@ -11,11 +12,15 @@
 }
 
 \usage{
-usage(object, \dots)
+% usage(object, \dots)
+
+\method{usage}{traps}(object, noccasions = NULL, \dots)
+
 usage(object) <- value
 }
 \arguments{
   \item{object}{ \code{traps} object }
+  \item{noccasions}{ integer number of occasions (optional)}
   \item{value}{ numeric matrix of detectors x occasions }
   \item{\dots}{ other arguments (not used) }
 }
@@ -52,7 +57,8 @@ usage(object) <- value
 \value{
   
   usage(object) returns the usage matrix of the \code{traps}
-  object. \code{usage(object)} may be NULL.
+  object. \code{usage(object)} may be NULL. If \code{noccasions} is provided 
+  and there is no pre-existing matrix then a matrix of all ones will be generated.
   
 }
 
@@ -90,5 +96,4 @@ usage(traps(ovenCH)) <- c(1,9,10,10,10,10)
 names(ovenCH) <- 2005:2009
 
 }
-\keyword{ manip }
 

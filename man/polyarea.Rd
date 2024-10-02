@@ -26,11 +26,10 @@ polyarea(xy, ha = TRUE)
 }
 
 \seealso{
-  \code{\link{buffer.contour}}
+  \code{\link{bufferContour}}
 }
 
 \examples{
 polyarea(make.grid(hollow = TRUE))
 }
 
-\keyword{ manip }

@@ -16,11 +16,11 @@ from multiple fitted secr models, and the tabulation of estimates.
 
 \method{modelAverage}{secr}(object, ..., realnames = NULL, betanames = NULL, newdata = NULL, 
     alpha = 0.05, dmax = 10, covar = FALSE, average = c("link", "real"),
-    criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"), chat = NULL)
+    criterion = c("AIC","AICc"), CImethod = c("Wald", "MATA"), chat = NULL)
 
 \method{modelAverage}{secrlist}(object, ..., realnames = NULL, betanames = NULL, newdata = NULL, 
     alpha = 0.05, dmax = 10, covar = FALSE, average = c("link", "real"),
-    criterion = c("AICc","AIC"), CImethod = c("Wald", "MATA"), chat = NULL)
+    criterion = c("AIC","AICc"), CImethod = c("Wald", "MATA"), chat = NULL)
 
 }
 
@@ -142,6 +142,4 @@ modelAverage(secrdemo.0, secrdemo.b, betanames = c("D","g0","sigma"))
 ## (subscripting of output is equivalent to setting fields = 1)
 
 }
-
-\keyword{ models }
 

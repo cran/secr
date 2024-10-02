@@ -24,9 +24,7 @@
 \S4method{raster}{mask}(x, covariate, values = 1, crs = NA)
 
 \S4method{raster}{Dsurface}(x, covariate, values = 1, crs = NA)
-
 \S4method{rast}{mask}(x, covariate, values = 1, crs = "")
-
 \S4method{rast}{Dsurface}(x, covariate, values = 1, crs = "")
 
 }
@@ -62,7 +60,7 @@ further explanation and links.
 
 The S3 classes `mask' and `Dsurface' are defined in \pkg{secr} as
 virtual S4 classes. This enables these extensions to the list of S4
-methods defined in \pkg{raster}. % and \pkg{terra}
+methods defined in \pkg{raster} and \pkg{terra}.
   
 Although these methods work `standalone', it is currently necessary to
 load the \pkg{terra} or \pkg{raster} package to do much with the result (e.g., plot it).
@@ -71,13 +69,14 @@ load the \pkg{terra} or \pkg{raster} package to do much with the result (e.g., p
 
 \value{
   
-RasterLayer (raster) % or SpatRaster (rast)
+RasterLayer (raster) \cr
+SpatRaster (rast)
 
 }
 
 \seealso{
   
-\code{\link[raster]{raster}} %, \code{\link[terra]{rast}}
+\code{\link[raster]{raster}}, \code{\link[terra]{rast}}
 
 }
 
@@ -107,10 +106,16 @@ tmp <- raster(shorePossums, "D.0", crs = "+proj=nzmg")
 ## check the projection
 proj4string(tmp)
      
-}
+# mask to rast
+dtsrast <- rast(possummask, covariate = 'd.to.shore')
+plot(dtsrast)
+
+# Dsurface to rast
+class(shorePossums) <- c('mask', 'data.frame') # or change "mask" to "Dsurface" above
+Drast <- rast(shorePossums, covariate = 'D.0')
+plot(Drast)
 
 }
 
-\keyword{methods}
-\keyword{spatial}
+}
 
