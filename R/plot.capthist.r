@@ -6,6 +6,8 @@
 ## 2016-10-08 secr 3.0
 ## 2016-12-08 type = "centres"
 ## 2022-05-11 type = "nontarget"
+## 2024-10-09 new rad warning
+
 ##############################################################################
 
 plot.capthist <- function(x, 
@@ -240,7 +242,22 @@ plot.capthist <- function(x,
         type <- match.arg(type)
         traps <- traps(x)
         detectr <- expanddet(x)
-        ## if (is.null(rownames(x))) { 2020-09-09
+        
+        ## 2024-10-09 new warning
+        if (!is.null(telemetryxy(x))) {
+            xyl <- telemetryxy(x)
+            xy <- do.call(rbind, xyl)
+            telesp <- max(diff(range(xy[,1])), diff(range(xy[,2])))
+        }
+        else {
+            telesp <- 0
+        }
+        trsp <- mean(span(traps(x)))
+        spn <- max(trsp, telesp)
+        if (type == 'petal' && (rad > 0.03*spn)) {
+            warning("rad argument ", rad, " exceeds 3% of detector span ", spn)
+        }
+        
         if (is.null(rownames(x)) && nrow(x)>0) {
                 warning ("capthist has no rownames; using 1:nrow", call. = FALSE)
             rownames(x) <- 1:nrow(x)
