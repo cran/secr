@@ -9,6 +9,7 @@
 ## 2023-12-16 relativeD
 ## 2023-12-22 no separate verify for multi-session masks (allows sharefactorLevels warning)
 ## 2024-07-03 fastproximity losses warning
+## 2024-12-22 relativeD merged with CL
 ###############################################################################
 
 secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
@@ -186,7 +187,8 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
         Dfn = NULL,              ## optional density reparameterization for trend etc.
         Dlambda = FALSE,
         relativeD = FALSE,
-        externalpdot = NULL
+        externalpdot = NULL,
+        externalqx = NULL
     )
     if (!is.null(attr(capthist,'cutval'))) {
         defaultdetails$cutval <- attr(capthist,'cutval')
@@ -360,12 +362,17 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     
     if ('formula' %in% class(model)) model <- list(model)
     model <- stdform (model)  ## named, no LHS
-    if (CL) {
-        model$D <- NULL
-        if (details$relativeD) {
-            details$relativeD <- FALSE
-            warning ("relativeD is ignored when CL = TRUE", call. = FALSE)
-        }
+    if (details$relativeD) {
+        CL <- TRUE
+        if (!is.null(model$D) && model$D == ~1) model$D <- NULL
+    }
+    else if (CL) {
+        if (!is.null(model$D) && model$D == ~1) model$D <- NULL
+        details$relativeD <- !is.null(model$D)
+    }
+    else {
+        # full likelihood
+        details$relativeD <- FALSE   # default
     }
     if (all(detectortype %in% c('telemetry'))) {
         model$g0 <- NULL
@@ -580,7 +587,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     # Prepare density design matrix
     ############################################
-    D.modelled <- !CL & is.null(fixed$D)
+    D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
     smoothsetup <- list(D = NULL, noneuc = NULL)
     if (!D.modelled) {
         designD <- matrix(nrow = 0, ncol = 0)
@@ -606,6 +613,9 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                 if (is.null(details$userdist))
                     stop ("only session and group models allowed for density when details$param = ",
                         details$param)
+            }
+            if (any(sessionDvars) && details$relativeD) {
+                warning("session and group models for relative density may be misleading")
             }
             temp <- D.designdata( mask, model$D, grouplevels, session(capthist), sessioncov)
             if (any(smooths(model$D))) {
@@ -782,7 +792,14 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     fb <- details$fixedbeta
     if (details$relativeD) {
         if (is.null(fb)) fb <- rep(NA, NP)
-        fb[parindx$D[1]] <- 0
+        if (!is.na(fb[parindx$D[1]]))
+            warning ("overriding provided fixedbeta[1] for D")
+        if (link$D == 'log')
+            fb[parindx$D[1]] <- 0
+        else if (link$D =='identity')
+            fb[parindx$D[1]] <- 1
+        else 
+            stop ("density link ", link$D, " not implemented for relativeD")
         details$fixedbeta <- fb
     }
     if (!is.null(fb)) {
@@ -797,10 +814,10 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
     ############################################
     # Variable names (general)
     ############################################
-    betanames <- unlist(sapply(design$designMatrices, colnames))
-
-    names(betanames) <- NULL
     realnames <- names(model)
+    
+    betanames <- unlist(sapply(design$designMatrices, colnames))
+    names(betanames) <- NULL
     ## coefficients for D precede all others
     if (D.modelled && !is.null(Dnames)) {
         # NULL condition when no density beta (relativeD with D~1)
@@ -994,6 +1011,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                     parindx = parindx,
                     model = model,
                     details = details,
+                    method = method,          # new 2024-11-25
                     vars = vars,
                     betanames = betanames,
                     realnames = realnames,
@@ -1005,7 +1023,7 @@ secr.fit <- function (capthist,  model = list(D~1, g0~1, sigma~1), mask = NULL,
                     starttime = starttime,
                     proctime = (proc.time() - ptm)[3]
     )
-    
+
     class(output) <- 'secr'
     
     if (usebuffer & !is.na(biasLimit)) {

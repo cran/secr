@@ -1,3 +1,25 @@
+Changes in version 5.2.0 (2025-01-24)
+
+New features or changed behaviour of old functions
+    o  allows models for relative density with CL = TRUE
+    o  derivedDcoef() and derivedDsurface() for conditional D models
+    
+Bugs fixed
+    o  addCovariates() generated spurious sf warning "attribute variables are 
+       assumed to be spatially constant throughout all geometries "
+    o  region.N() computation of R.N ignored varying density
+    o  derived() miscounted number of individuals when animal with exactly one 
+       capture was lost on another occasion, hence error in D-hat
+    o  sim.capthist() generated captures at some 'unused' multi-catch traps
+    
+Other
+    o  tweaked OVpossum Rd example to avoid 'sp' package
+    o  split.xxxx() functions check for NA values in split factor
+    o  externalqx undocumented details argument
+    o  AICcompatible check moved from AIC.secr to AIC.secrlist
+    o  many minor edits to allow relativeD
+    o  added tests for relativeD
+    
 Changes in version 5.1.0 (2024-11-04)
 
 New features or changed behaviour of old functions

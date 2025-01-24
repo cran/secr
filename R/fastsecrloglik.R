@@ -104,12 +104,17 @@ fastsecrloglikfn <- function (
       PIA <- design$PIA[sessnum, 1:data$nc, 1:data$s, 1:data$K, ,drop=FALSE]
         ## unmodelled beta parameters, if needed
         miscparm <- getmiscparm(details$miscparm, detectfn, beta, parindx, details$cutval)
-        density <- getmaskpar(!CL, D, data$m, sessnum, details$unmash, 
+        D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
+        
+        density <- getmaskpar(D.modelled, D, data$m, sessnum, details$unmash, 
                               attr(data$capthist, 'n.mash'))
-        if (CL) {
+        if (!D.modelled) {
             pi.density <- rep(1/data$m, data$m)  
         }
         else {
+            if (!is.null(details$externalqx)) {
+                density <- density * data$externalqx
+            }
             pi.density <- density / sum(density)
         }
         #---------------------------------------------------
@@ -191,15 +196,13 @@ fastsecrloglikfn <- function (
         
         #----------------------------------------------------------------------
         
-        ## 2022-01-05 catch nc = 0
-        # if (!data$nc<=0 && !details$relativeD) {  ## 2024-06-26
         if (!data$nc<=0) {
             comp[2,1] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot)) 
         }
         
         #----------------------------------------------------------------------
         
-        if (!CL  && !details$relativeD) {
+        if (!CL) {
             N <- sum(density[,1]) * getcellsize(data$mask)
             ## 2022-01-05 catch nc = 0
             meanpdot <- if (data$nc == 0) pdot else data$nc / sum(1/pdot)
@@ -267,12 +270,13 @@ fastsecrloglikfn <- function (
     
     #--------------------------------------------------------------------
     # Density
-    D.modelled <- !CL & is.null(fixed$D)
-    if (!CL ) {
+    D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
+    
+    if (D.modelled) {
         sessmask <- lapply(data, '[[', 'mask')
         grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
         D <- getD (designD, beta, sessmask, parindx, link, fixed,
-                   grplevels, sessionlevels, parameter = 'D', details$relativeD)
+                   grplevels, sessionlevels, parameter = 'D')
         if (!is.na(sumD <- sum(D)))
             if (sumD <= 0)
                 warning ("invalid density <= 0")

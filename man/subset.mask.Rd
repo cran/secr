@@ -23,7 +23,7 @@
   \item{x}{ \code{mask} object }
   \item{subset}{ numeric or logical vector to select rows of mask }
   \item{f}{ factor or object that may be coerced to a factor }
-  \item{drop}{ logical indicating if levels that do not occur should be dropped (if f is a factor) }
+  \item{drop}{ logical; if TRUE then levels that do not occur are dropped (if f is a factor) }
   \item{clusters}{list of traps objects, each defining a cluster (alternative to f)}
   \item{\dots}{ two or more \code{mask} objects (rbind only) }
 }

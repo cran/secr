@@ -34,6 +34,8 @@
 ## 2024-07-31 addzeroCH tweaked to allow zero-row covariate df + drop = FALSE
 ## 2024-09-25 purged a couple of unused fn, moved xy2CH to xy2CH.R
 ## 2024-10-09 span()
+## 2025-01-07 allzero bug fixed
+## 2025-01-10 completeDbeta
 ################################################################################
 
 # Global variables in namespace
@@ -43,8 +45,8 @@
 
 .localstuff <- new.env()
 
-## .localstuff$packageType <- ' pre-release'
-.localstuff$packageType <- ''
+.localstuff$packageType <- ' pre-release'
+## .localstuff$packageType <- ''
 
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
     'polygonX', 'transectX', 'signal', 'polygon', 'transect', 
@@ -177,7 +179,6 @@ valid.detectpar <- function (detectpar, detectfn) {
 #-------------------------------------------------------------------------------
 
 valid.model <- function(model, CL, detectfn, hcov, userdist, sessioncovnames) {
-    ## 2014-08-25
     if (any(sapply(model, badsmooths)))
         warning ("smooth term may be unsuitable for secr: ",
                  "does not specify k or fx where required")
@@ -235,10 +236,13 @@ valid.pnames <- function (details, CL, detectfn, alltelem, sighting, nmix) {
         pnames <- c(pnames, 'c')
         pnames <- c(pnames, 'd')
     }
-    if (!CL)
-      pnames <- c('D', pnames)
-    if ('noneuc' %in% getuserdistnames(details$userdist))
+    if (!CL || details$relativeD) {
+        # include density D if needed
+        pnames <- c('D', pnames)
+    }
+    if ('noneuc' %in% getuserdistnames(details$userdist)) {
       pnames <- c(pnames, 'noneuc')
+    }
     if (sighting)
       pnames <- c(pnames, 'pID')
     # if (alltelem) {
@@ -1094,11 +1098,40 @@ fullbeta <- function (beta, fb) {
     beta
 }
 
+fullbetanames <- function (object) {
+    # 2024-12-23
+    betanames <- unlist(sapply(object$design$designMatrices, colnames))
+    names(betanames) <- NULL
+    if(!is.null(attr(object$designD, 'Dfn'))) {
+        nDbeta <- attr(object$designD, 'Dfn')(object$designD)
+        Dnames <- paste0('D', 1:nDbeta)
+    }
+    else {
+        Dnames <- colnames(object$designD)
+    }
+    ## coefficients for D precede all others
+    D.modelled <- (!object$CL || object$details$relativeD) && is.null(object$fixed$D)
+    # NULL happens when no density beta (relativeD with D~1)
+    if (D.modelled && !is.null(Dnames)) {
+        betanames <- c(paste('D', Dnames, sep='.'), betanames)
+    }
+    NE.modelled <- ('noneuc' %in% getuserdistnames(object$details$userdist)) &
+        is.null(object$fixed$noneuc)
+    if (NE.modelled) {
+        NEnames <- colnames(object$designNE)
+        betanames <- c(betanames, paste('noneuc', NEnames, sep='.'))
+    }
+    betanames <- sub('..(Intercept))','',betanames)
+    betanames
+}
 #-------------------------------------------------------------------------------
 
 complete.beta <- function (object) {
     fb <- object$details$fixedbeta
-    beta <- if (inherits(object, 'secr')) object$fit$par else object$beta
+    if (inherits(object, 'secr')) 
+        beta <- setNames(object$fit$par, object$betanames) 
+    else 
+        beta <- object$beta
     fullbeta(beta, fb)
 }
 
@@ -1118,6 +1151,36 @@ complete.beta.vcv <- function (object) {
 }
 
 #-------------------------------------------------------------------------------
+
+# function to convert fitted single-session CL relative D model to a full model
+# used by region.N
+# variances not reliable
+
+completeDbeta <- function(object, vcv = FALSE) {
+    if (ms(object)) stop ("completeDbeta is not ready for multisession secr")
+    intercept <- unlist(derivedDcoef(object, se = vcv)[1,1:2])
+    Dpar <- object$parindx$D
+    Dpar1 <- Dpar[-length(Dpar)]
+    beta.vcv <- complete.beta.vcv (object)        
+    if (vcv) {
+        if (object$link$D == 'identity') {
+            beta.vcv[Dpar,Dpar] <- beta.vcv[Dpar,Dpar] * intercept[1]^2
+        }
+        beta.vcv[is.na(beta.vcv)] <- 0    # assume zero covariances for now
+        beta.vcv[1,1] <- intercept[2]^2
+    }
+    if (object$link$D == 'identity') {
+        # rescale density coefficients
+        object$fit$par[Dpar1] <- object$fit$par[Dpar1] * intercept[1]
+    }
+    object$beta.vcv <- beta.vcv
+    object$fit$par <- c(intercept[1], object$fit$par)
+    object$fit$estimate <- object$fit$par
+    object$details$fixedbeta[1] <- NA  # inferred, not fixed
+    object$betanames <- c('D', object$betanames)
+    object$CL <- FALSE
+    object
+}
 
 smooths <- function (formula) {
     ## which terms in formula are smooths?
@@ -1503,7 +1566,6 @@ mapbeta <- function (parindx0, parindx1, beta0, betaindex)
 {
     ## list of zeroed vectors, one per real parameter
     beta1 <- lapply(parindx1, function (x) {x[]<-0; x})
-
     if (!is.null(betaindex)) {
         beta1 <- unlist(beta1)
         if (sum(betaindex>0) != length(beta0))
@@ -1732,7 +1794,8 @@ allzero <- function (object) {
     }
     else {
         telemocc <- detector(traps(object))=='telemetry'
-        apply(object[,!telemocc,,drop=FALSE],1,sum)==0
+        # abs() applied 2025-01-07
+        apply(abs(object[,!telemocc,,drop=FALSE]),1,sum)==0
     }
 }
 
@@ -2044,4 +2107,3 @@ span <- function (object, ...) {
     }
 }
 #-------------------------------------------------------------------------------
-

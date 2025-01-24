@@ -107,10 +107,11 @@ summary.secr <- function (object, newdata = NULL, alpha = 0.05, deriv = FALSE, .
     ####################
     ## Model description
 
-    out$modeldetails <- data.frame(CL = if (object$CL) 'TRUE' else 'FALSE',
+    out$modeldetails <- data.frame(CL = as.character(object$CL),
                                    fixed = fixed.string(object$fixed),
                                    distribution = if (!object$CL) object$details$distribution else '',
-                                   hcov = if (!is.null(object$hcov)) object$hcov else '')
+                                   hcov = if (!is.null(object$hcov)) object$hcov else '',
+                                   relativeD = as.character(object$details$relativeD))
 
     out$AICtable <- AIC(object)
 

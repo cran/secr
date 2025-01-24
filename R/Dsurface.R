@@ -24,20 +24,20 @@ predictD <- function (object, regionmask, group, session,
     if (is.null(session))
         session <- sessionlevels[1]
     if (is.null(group))
-        group <- grouplevels[1]
+        groupn <- 1
+    else
+        groupn <- match(group, grouplevels)  # convert to numeric 2024-12-24
     if (is.null(regionmask))
         regionmask <- object$mask
     if (ms(regionmask))
         regionmask <- regionmask[[session]]
-## line commented out 2014-09-20
-## group <- match (group, grouplevels)   ## numeric
 
     ## must use mean and SD for scaling from original mask(s)
     ## this is a list for ms masks
     if (ms(object))
         meanSD <- attr(object$mask[[session]], 'meanSD')
     else
-        meanSD <-attr(object$mask, 'meanSD')
+        meanSD <- attr(object$mask, 'meanSD')
 
     ## 2011-11-08 allow for 'mashing'
     if (ms(object))  {
@@ -55,8 +55,8 @@ predictD <- function (object, regionmask, group, session,
     if (is.null(n.mash) | unmash)
         n.clust <- 1
 
-    ## no density model (conditional likelihood fit)
-    if (!is.null(object$CL) && object$CL && parameter == 'D') {    ## implies is.null(object$model$D)
+    if (is.null(object$model$D) && parameter == 'D') {    ## implies CL && !relativeD
+        ## no density model (conditional likelihood fit)
         temp <- derived(object, se.D = (se.D | cl.D)) ## inefficient as repeats for each sess
         if (!is.data.frame(temp))
             temp <- temp[[session]]
@@ -73,7 +73,7 @@ predictD <- function (object, regionmask, group, session,
     }
 
     ## user-defined density model
-    else if (userD(object) & (parameter == 'D')) {
+    else if (userD(object) && (parameter == 'D')) {
         designD <- object$details$userDfn
         if (!is.function(designD))
             stop ("details$userDfn must be a function")
@@ -88,24 +88,21 @@ predictD <- function (object, regionmask, group, session,
                    'D')
         ###########################################
         ## 2022-05-24 temp fix for unresolved issue
-        ## return(D[,group,session])
-        return(D[,group+1,session])
+        ## return(D[,groupn,session])
+        return(D[,groupn+1,session])
         ###########################################
     }
     ## linear density model on link scale
     else {
-      
+
         newdata <- D.designdata (regionmask, object$model[[parameter]],
              grouplevels, sessionlevels, sessioncov = object$sessioncov,
              meanSD = meanSD)
         dimD <- attr(newdata, "dimD")
         ## if newdata has more than one group or session...
         if (prod(dimD[2:3]) > 1) {
-            ## select a single group
-            # block 2017-02-15
-            # groupOK <- (group == grouplevels) | (dimD[2]==1)
-            # select by group number 2017-02-15
-            groupOK <- (group == (1:length(grouplevels))) | (dimD[2]==1)
+            ## select a single group by number 
+            groupOK <- (groupn == (1:length(grouplevels))) | (dimD[2]==1)
             groupOK <- rep(rep(groupOK, each = dimD[1]), dimD[3])
             ## select a single session
             sessionOK <- if (is.character(session))
@@ -115,12 +112,17 @@ predictD <- function (object, regionmask, group, session,
             sessionOK <- rep(sessionOK, each = prod(dimD[1:2]))
             newdata <- newdata[sessionOK & groupOK,]
         }
+        if (length(grouplevels)>1 && !('g' %in% names(newdata))) {
+            # fiddle to allow groups in derivedDsurface 2024-12-24
+            newdata$g <- rep(group, nrow(newdata))
+            newdata$g <- factor(newdata$g, levels = grouplevels)
+        }
         class(newdata) <- c('mask', 'data.frame')
         attr (newdata, 'area') <- attr(regionmask, 'area')
 
 
         #############################################
-        ## allow for fixed beta parameters 2014-03-18
+        ## allow for fixed beta parameters
         beta <- complete.beta(object)
         beta.vcv <- complete.beta.vcv(object)
         #############################################
@@ -137,6 +139,7 @@ predictD <- function (object, regionmask, group, session,
             if (any(!(vars %in% names(newdata))))
                 stop ("one or more model covariates not found")
             newdata <- as.data.frame(newdata)
+
             if (is.null(object$details[['f']]) || parameter != 'D') {
                 mat <- general.model.matrix(
                     object$model[[parameter]], 
@@ -261,7 +264,6 @@ predictDsurface <- function (object, mask = NULL, se.D = FALSE, cl.D = FALSE, al
     if (is.null(mask))
         mask <- object$mask
     densitylist <- vector('list')
-    ## 2015-12-04 to fix bug found by Rahel Sollmann
     if (ms(mask)) {
         if (is.null(names(mask)))
             names(mask) <- sessionlevels

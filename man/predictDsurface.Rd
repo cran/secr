@@ -4,12 +4,18 @@
 \title{ Predict Density Surface }
 
 \description{
-Predict density at each point on a raster mask from a fitted secr model.
+
+Predict density at each point on a raster mask from an secr model fitted by 
+maximising the full likelihood. \code{\link{derivedDsurface}} is the equivalent 
+function for models fitted by maximising the conditional likelihood.
+
 }
 
 \usage{
+
 predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
 0.05, parameter = c('D', 'noneuc'))
+
 }
 
 \arguments{
@@ -36,6 +42,9 @@ predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
   Density is adjusted automatically for the number of clusters in
   `mashed' models (see \code{\link{mash}}).
 
+  If \code{object} is a relative density model then \code{\link{derivedDsurface}} 
+  first computes the intercept.
+  
 }
 
 \value{
@@ -55,7 +64,10 @@ predictDsurface(object, mask = NULL, se.D = FALSE, cl.D = FALSE, alpha =
 }
 
 \seealso{
-  \code{\link{plot.Dsurface}}, \code{\link{secr.fit}}, \code{\link{predict.secr}}
+  \code{\link{plot.Dsurface}}, 
+  \code{\link{secr.fit}}, 
+  \code{\link{predict.secr}}, 
+  \code{\link{derivedDsurface}}
 }
 
 \examples{

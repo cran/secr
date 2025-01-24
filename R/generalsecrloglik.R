@@ -345,9 +345,9 @@ generalsecrloglikfn <- function (
     ## unmodelled beta parameters, if needed
     miscparm <- getmiscparm(details$miscparm, detectfn, beta, parindx, details$cutval)
     #---------------------------------------------------
-    density <- getmaskpar(!CL, D, data$m, sessnum, details$unmash, 
+    density <- getmaskpar(D.modelled, D, data$m, sessnum, details$unmash, 
                           attr(data$capthist, 'n.mash'))
-    if (CL) {
+    if (!D.modelled) {
       pi.density <- matrix(1/data$m, nrow=data$m, ncol=1)  
     }
     else {
@@ -360,8 +360,13 @@ generalsecrloglikfn <- function (
               warning("invalid distribution for sighting at Eval ", .localstuff$iter)  # changed from stop() 2019-12-15
           }
       }
-      else
+      else {
           pi.density <- sweep(density, MARGIN = 2, STATS = Dsum, FUN = '/')
+      }
+      if (!is.null(details$externalqx)) {
+          pi.density <- pi.density * data$externalqx
+          pi.density <- pi.density/sum(pi.density)
+      }
     }
     #---------------------------------------------------
     ## allow for scaling of detection
@@ -590,14 +595,13 @@ generalsecrloglikfn <- function (
       ## Adjust for undetected animals unless data includes all-zero histories
       ## (the case for allsighting data when knownmarks = TRUE)
       ## or density relative.
-      # if (!data$MRdata$sightmodel==5 && !all(data$dettype==13) && !details$relativeD) {
       if (!data$MRdata$sightmodel==5 && !all(data$dettype==13)) {
           comp[2,g] <- if (any(is.na(pdot)) || any(pdot<=0)) NA else -sum(log(pdot[ok]))
       }
       
       #----------------------------------------------------------------------
       
-      if (!CL && !data$MRdata$allsighting && !details$relativeD) {
+      if (!CL && !data$MRdata$allsighting) {
           ng <- sum(ok)
           if (any(data$dettype==13))
               nonzero <- sum(apply(data$CH[,data$dettype!=13,,drop=FALSE] != 0,1,sum)[ok]>0)
@@ -714,10 +718,10 @@ generalsecrloglikfn <- function (
   grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
   #---------------------------------
   # Density
-  D.modelled <- !CL & is.null(fixed$D)
-  if (!CL ) {
+  D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
+  if (D.modelled) {
       D <- getD (designD, beta, sessmask, parindx, link, fixed,
-               grplevels, sessionlevels, parameter = 'D', details$relativeD)
+               grplevels, sessionlevels, parameter = 'D')
   }
   #--------------------------------------------------------------------
   # Non-Euclidean distance parameter

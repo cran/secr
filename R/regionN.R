@@ -10,15 +10,20 @@
 ## 2022-01-22 fixed bug in sumDpdot that ignored details$ignoreusage
 ## 2022-10-08 fixed bug in region.N when region is mask other than original
 ## 2023-02-06 sumDpdot tweaked for robustness to varying detectors/session
-############################################################################################
+## 2024-12-15 sumDpdot ignored varying relative density
+## 2025-01-09 relativeD tweaks
 
-region.N.secrlist <- function (object, region = NULL, spacing = NULL, session = NULL,
-                               group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
-                               keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',
-                               pooled.RN = FALSE, ncores = NULL, ...) {
-    lapply(object, region.N, region, spacing, session, group, se.N, alpha, loginterval,
-           keep.region, nlowerbound, RN.method, pooled.RN, ncores)
+################################################################################
+
+region.N.secrlist <- function (
+        object, region = NULL, spacing = NULL, session = NULL,
+        group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
+        keep.region = FALSE, nlowerbound = TRUE, RN.method = 'poisson',
+        pooled.RN = FALSE, ncores = NULL, ...) {
+    lapply(object, region.N, region, spacing, session, group, se.N, alpha, 
+           loginterval,keep.region, nlowerbound, RN.method, pooled.RN, ncores)
 }
+################################################################################
 
 region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL,
     group = NULL, se.N = TRUE, alpha = 0.05, loginterval = TRUE,
@@ -34,6 +39,10 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         ## assume single session
         ## indx identifies beta parameters for density D
         object$fit$par[indx] <- betaD
+        if (object$CL) {
+            object <- completeDbeta (object, sessnum)
+            object$CL <- FALSE  # for this call
+        }
         region.N(object, regionmask, spacing = NULL, session = session,
             group = group, se.N = FALSE, keep.region = FALSE,
             pooled.RN = FALSE)
@@ -45,7 +54,12 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         ## assume single session
         ## n, cellsize, sessnum global
         object$fit$par <- beta
-        D <- predictD(object, regionmask, group, session, parameter = 'D')
+        if (object$CL) {
+            D <- covariates(derivedDsurface(object, regionmask, sessnum))$D.0
+        }
+        else {
+            D <- predictD(object, regionmask, group, session, parameter = 'D')
+        }
         noneuc <- predictD(object, regionmask, group, session, parameter = 'noneuc')
         n + sumDpdot (object, sessnum, regionmask, D, noneuc, cellsize,
                   constant = FALSE, oneminus = TRUE, pooled = pooled.RN, ncores = ncores)[1]
@@ -54,7 +68,6 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
     if (is.null(region)) {
         region <- object$mask  # using original mask as region
     }
-
     if (!all(session %in% session(object$capthist)))
         stop ("session incompatible with object ")
 
@@ -162,8 +175,8 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         }
         sessnum <- match (session, session(object$capthist))
         #######################################################
-        ## for conditional likelihood fit,
-        if (object$CL) {
+        ## conditional likelihood fit without density model
+        if (object$CL && is.null(object$model$D)) {
             temp <- derived(object, se.D = se.N) ## inefficient as repeats for each sess
             if (!is.data.frame(temp))
                 temp <- temp[[session]]
@@ -175,11 +188,10 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
         }
 
         #######################################################
-        ## for full likelihood fit...
+        ## full likelihood fit or conditional likelihood with relative density model...
         else {
-            if (is.null(object$model$D) | is.null(object$link$D))
+            if (is.null(object$model$D) || is.null(object$link$D))
                 stop ("model or link function not found in object")
-
             if ((object$model$D == ~1) && !userD(object)) {
                 predicted <- predict(object)
                 if (!is.data.frame(predicted))
@@ -192,14 +204,24 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
                 seEN <- seD * regionsize
             }
             else {
-                D <- predictD (object, regionmask, group, session, parameter = 'D')
+                if (object$CL) {
+                    D <- covariates(derivedDsurface(object, regionmask, sessnum))$D.0
+                }
+                else {
+                    D <- predictD (object, regionmask, group, session, parameter = 'D')
+                }
                 EN <- sum(D) * cellsize
                 if (!se.N) return (EN)    ## and stop here
                 indx <- object$parindx$D
+                
+                if (object$CL) {
+                    # using approximate conversion of conditional to full model for variances
+                    object <- completeDbeta(object, vcv = TRUE)   # vcv unreliable
+                }
                 dENdphi <- nlme::fdHess (object$fit$par[indx],
-                    betaEN, object = object, region = regionmask, group = group,
-                    session = session)$gradient
-                beta.vcv <- object$beta.vcv[indx,indx]
+                                         betaEN, object = object, region = regionmask, group = group,
+                                         session = session)$gradient
+                beta.vcv <- object$beta.vcv[indx,indx, drop = FALSE]
                 seEN <- (dENdphi %*% beta.vcv %*% dENdphi)^0.5
             }
         }
@@ -239,7 +261,10 @@ region.N.secr <- function (object, region = NULL, spacing = NULL, session = NULL
                 seRN <- (seEN^2 - EN)^0.5
             }
         }
-        else { RN <- NA; seRN <- NA }
+        else { 
+            RN <- NA
+            seRN <- NA 
+        }
 
         #######################################################################
         temp <- data.frame(
@@ -428,11 +453,13 @@ sumDpdot <- function (object, sessnum = 1, mask, D, noneuc, cellsize, constant =
                 K <- nrow(temptrap)
                 CH0 <- nullCH (c(n,s,K), object$design0$individual)
             }
+            D <- matrix(D, nrow = m, ncol = 1)
             pd <- integralprw1 (
                 cc0 = nrow(Xrealparval0), 
                 haztemp = if (nclust>1) haztempc else haztemp, 
                 gkhk = gkhk, 
-                pi.density = matrix(1/m, nrow = m, ncol = 1), 
+                # pi.density = matrix(1/m, nrow = m, ncol = 1), 
+                pi.density = D/sum(D), # bug fix 2024-12-15
                 PIA0 = PIA0, 
                 CH0 = CH0, 
                 binomNcode = binomNcode, 
@@ -521,7 +548,7 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
 
         #######################################################
         ## for conditional likelihood fit,
-        if (object$CL) {
+        if (object$CL && is.null(object$model$D)) {
             temp <- derived(object, se.D = FALSE) ## inefficient as repeats for each sess
             if (!is.data.frame(temp))
                 temp <- temp[[session]]
@@ -533,14 +560,17 @@ expected.n <- function (object, session = NULL, group = NULL, bycluster = FALSE,
             if (is.null(object$model$D) | is.null(object$link$D))
                 stop ("model or link function not found in object")
 
-            if (object$model$D == ~1) {
+            if (object$model$D == ~1 && !object$CL) {
                 predicted <- predict(object)
                 if (!is.data.frame(predicted))
                     predicted <- predicted[[1]]
                 D <- rep(predicted['D','estimate'], nrow(mask))
             }
             else {
-                D <- predictD (object, mask, group, session, parameter = 'D')
+                if (object$CL)
+                    D <- covariates(derivedDsurface(object, mask, sessnum))$D.0
+                else
+                    D <- predictD (object, mask, group, session, parameter = 'D')
             }
         }
         #######################################################
