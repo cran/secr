@@ -36,6 +36,7 @@
 ## 2024-10-09 span()
 ## 2025-01-07 allzero bug fixed
 ## 2025-01-10 completeDbeta
+## 2025-03-18 saveprogress()
 ################################################################################
 
 # Global variables in namespace
@@ -45,8 +46,8 @@
 
 .localstuff <- new.env()
 
-.localstuff$packageType <- ' pre-release'
-## .localstuff$packageType <- ''
+# .localstuff$packageType <- ' pre-release'
+.localstuff$packageType <- ''
 
 .localstuff$validdetectors <- c('single','multi','proximity','count', 
     'polygonX', 'transectX', 'signal', 'polygon', 'transect', 
@@ -1098,6 +1099,13 @@ fullbeta <- function (beta, fb) {
     beta
 }
 
+partbeta <- function (beta, fb) {
+    if (!is.null(fb)) {
+        beta <- beta[is.na(fb)] ## partial beta (varying only)
+    }
+    beta
+}
+
 fullbetanames <- function (object) {
     # 2024-12-23
     betanames <- unlist(sapply(object$design$designMatrices, colnames))
@@ -1985,7 +1993,14 @@ getdistmat2 <- function (traps, mask, userdist) {
         NULL   ## compute dynamically later
     }
     else {
-        if (any(detector(traps) %in% .localstuff$polydetectors)) {
+        if (is.matrix(userdist)) {
+            if (nrow(userdist) != nrow(traps) || 
+                ncol(userdist) != nrow(mask))
+                stop("dimensions of userdist matrix should be c(nrow(traps), nrow(mask))")
+            userdist
+            
+        }
+        else if (any(detector(traps) %in% .localstuff$polydetectors)) {
             ## do not use result if detector is one of
             ## polygonX, polygon, transectX, transect, OR telemetry?
             matrix(0, nrow = nrow(traps), ncol = nrow(mask))
@@ -2107,3 +2122,14 @@ span <- function (object, ...) {
     }
 }
 #-------------------------------------------------------------------------------
+
+saveprogress <- function (beta, loglik, filename) {
+    log <- data.frame(
+        eval = .localstuff$iter,
+        loglik = loglik,
+        time = format(Sys.time(), "%H:%M:%S %d %b %Y"))
+    names(beta) <- names(.localstuff$savedinputs$start)
+    log <- cbind(log, as.list(beta))
+    attr(.localstuff$savedinputs, 'log') <- rbind(attr(.localstuff$savedinputs, 'log'), log)
+    saveRDS(.localstuff$savedinputs, file = filename)
+}

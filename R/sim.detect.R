@@ -5,6 +5,7 @@
 ## 2024-07-31 dropzeroCH
 ## 2024-08-02 using revised output order from Rcpp functions (i,s,k)
 ## 2024-08-21 edited for style
+## 2025-03-14 tweaks to handling of miscparm
 ################################################################################
 
 ## utility function used only in sim.detect
@@ -60,7 +61,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     }
     ## --------------------------------------------------------------------
     ## Exclusions
-    
     if (!is.null(object$groups) && (object$details$param>1))
         stop("simulation does not extend to groups when param>1")
     
@@ -72,7 +72,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         unsupported <- paste(unsupported, collapse = ', ')
         stop("detector type ', unsupported, ' is not supported in sim.detect")
     }
-    
     ## --------------------------------------------------------------------
     ## process behavioural responses
     Markov <- any(c('B','Bk','K') %in% object$vars)
@@ -84,10 +83,17 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
   
     ## --------------------------------------------------------------------
     ## setup
-    if (is.null(object$details$ignoreusage))
+    if (is.null(object$details$ignoreusage)) {
         object$details$ignoreusage <- FALSE
-    if (is.null(object$details$miscparm))
+    }
+    # 2025-03-14 set nmiscparm here
+    if (is.null(object$details$miscparm)) {
+        nmiscparm <- 0
         object$details$miscparm <- numeric(4)
+    }
+    else {
+        nmiscparm <- length(object$details$miscparm)
+    }
     N <- sapply(popnlist, nrow)
     nocc <- if(ms(object)) sapply(object$capthist, ncol) else ncol(object$capthist)
     ndet <- if(ms(object)) sapply(traps(object$capthist), nrow) else nrow(traps(object$capthist))
@@ -97,7 +103,9 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     if (!ms(sessmask)) sessmask <- list(sessmask)  ## always a list
     grplevels <- group.levels(object$capthist, object$groups, sep=".")
     beta <- object$fit$par
-    userd <- is.null(object$details$userdist)
+    #2025-03-13
+    # userd <- is.null(object$details$userdist)
+    userd <- !is.null(object$details$userdist) && is.function(object$details$userdist)
     
     ncores <- setNumThreads()
     grain <- if (ncores==1) 0 else 1
@@ -152,7 +160,6 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     }
     realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
                                        object$fixed)
-    
     ##----------------------------------------
     ## real parameter  values for 'caughtbefore'  animals or detectors
     ## -- this  definition of  design1 differs  from that in secr.fit()
@@ -235,14 +242,12 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         ##------------------------------------------
         session.animals <- popnlist[[sessnum]]
         
-        ## pre-compute distances from detectors to animals
-        
         ## pass miscellaneous unmodelled parameter(s)
-        nmiscparm <- length(object$details$miscparm)
         if (nmiscparm > 0) {
             miscindx <- max(unlist(object$parindx)) + (1:nmiscparm)
             attr(session.mask, 'miscparm') <- coef(object)[miscindx, 1]
         }
+        # otherwise attr(session.mask, 'miscparm') remains at pre-set value(s), if set
         
         ##------------------------------------------
         
@@ -282,9 +287,13 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         ## get fixed pmix for each class
         pmix <- getpmixall(design0$PIA, Xrealparval0)
         
+        #---------------------------------------------------------------
         ## TO BE FIXED
         if (length(unique(dettype))>1 || length(unique(binomN))>1)
             stop("simulation not yet updated for varying detector type")
+        #---------------------------------------------------------------
+        
+        ## pre-compute distances from detectors to animals
         
         if (all(dettype %in% c(-1,0,1,2,5,8))) {
             if (is.function(object$details$userdist)) {

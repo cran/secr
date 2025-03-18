@@ -258,8 +258,10 @@ fastsecrloglikfn <- function (
     ###############################################################################################
     ## Main line of fastsecrloglikfn
     nsession <- length(sessionlevels)
+
     #--------------------------------------------------------------------
     # Fixed beta
+    pbeta <- beta   # save varying beta, for trace etc.
     beta <- fullbeta(beta, details$fixedbeta)
 
     #--------------------------------------------------------------------
@@ -288,18 +290,28 @@ fastsecrloglikfn <- function (
                 levels(data$grp[[1]]), sessionlevels, parameter = 'noneuc')
     #--------------------------------------------------------------------
     # typical likelihood evaluation
+    if (!is.null(details$saveprogress) && details$saveprogress>0 &&
+        .localstuff$iter == 0) {
+        saveprogress(pbeta, NA, details$progressfilename)
+    }
+    
     loglik <- sum(mapply (sessionLL, data, 1:nsession))
     .localstuff$iter <- .localstuff$iter + 1   ## moved outside loop 2011-09-28
     if (details$trace) {
-        fixedbeta <- details$fixedbeta
-        if (!is.null(fixedbeta))
-            beta <- beta[is.na(fixedbeta)]
         cat(format(.localstuff$iter, width=4),
             formatC(round(loglik,dig), format='f', digits=dig, width=10),
-            formatC(beta, format='f', digits=dig+1, width=betaw),
+            formatC(pbeta, format='f', digits=dig+1, width=betaw),
             '\n')
         flush.console()
     }
+    #--------------------------------------------------------------------
+    if (!is.null(details$saveprogress) && details$saveprogress>0 &&
+        .localstuff$iter %% details$saveprogress == 0) {
+        saveprogress(pbeta, loglik, details$progressfilename)
+    }
+    
+    #--------------------------------------------------------------------
+    
     loglik <- ifelse(is.finite(loglik), loglik, -1e10)
     ifelse (neglik, -loglik, loglik)
 }  ## end of fastsecrloglikfn
