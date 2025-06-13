@@ -99,7 +99,10 @@ cell-specific densities (animals / hectare),
 \item a constant. 
 }
 
-If a function, \code{D} should take two arguments, a habitat mask and a list of parameter values ('core' and 'details' are passed internally as these arguments).
+If a function, \code{D} should take two arguments, a habitat mask and a list of 
+parameter values ('core' and 'details' are passed internally as these arguments). 
+A function may be given by name (i.e. as a character value); this is required 
+when nsessions>1.
 
 The number
 of individuals in each cell is either (i) Poisson-distributed with mean
@@ -145,13 +148,41 @@ the displacement vector is (0,0) and rows are not offset.
 
 If \code{model2D = "even"} then the buffered area is divided into square cells with side sqrt(10000/D) and one animal is located at a random uniform location within each cell. If the height or width is not an exact multiple of the cell side then one whole extra row or column of cells is added; animals located at random in these cells are discarded if they fall outside the original area.
 
-From \pkg{secr} 4.6.2, \code{sim.popn} provides an interface to two simulation functions from \pkg{spatstat} (Baddeley et al. 2015): \code{rLGCP} and \code{rThomas}.
+From \pkg{secr} 4.6.2, \code{sim.popn} provides an interface to two simulation 
+functions from \pkg{spatstat} (Baddeley et al. 2015): \code{rLGCP} and \code{rThomas}.
 
-If \code{model2D = "rLGCP"} then a log-gaussian Cox process is simulated within the buffered area. Function \code{rLGCP} in \pkg{spatstat} calls functions from \pkg{RandomFields} (Schlather et al. 2015; see Notes). Certain options are fixed: the correlation function is RMexp from RandomFields, and there is no provision for covariate effects. Clipping to a polygon (poly) and fixed-N (Ndist = "fixed") are not supported. The algorithm first constructs the log spatial intensity as a realisation of a Gaussian random field; one realisation of an IHP with that intensity is then simulated. 
+If \code{model2D = "rLGCP"} then a log-gaussian Cox process is simulated within 
+the buffered area. Function \code{rLGCP} in recent versions of \pkg{spatstat} 
+uses internal code rather than Schlather et al. (2015) as previously. 
+The algorithm first constructs the log spatial intensity as a realisation of a 
+Gaussian random field; one realisation of an IHP with that intensity is then simulated. 
 
-The parameters for \code{model2D = "rLGCP"} are the scalar density (D) and the variance and spatial scale of the random field (passed as details arguments `var' and `scale'). The variance is on the log scale; the mean on the log scale is computed internally as mu = log(D) - var/2. var = 0 results in a random uniform (Poisson) distribution. When details$saveLambda = TRUE, the discretized intensity function is saved as the attribute "Lambda", a habitat mask with covariate "Lambda" that may be used to construct further IHP realisations (see Examples). 
+The parameters for \code{model2D = "rLGCP"} are the scalar density (D) and 
+the variance and spatial scale of the random field (passed as details arguments
+`var' and `scale'). The variance is on the log scale; the mean on the log scale 
+is computed internally as mu = log(D) - var/2. var = 0 results in a random uniform 
+(Poisson) distribution. When details$saveLambda = TRUE, the discretized intensity
+function is saved as the attribute "Lambda", a habitat mask with covariate 
+"Lambda" that may be used to construct further IHP realisations (see Examples).
 
-If \code{model2D = "rThomas"} then a Thomas process is simulated. This is a special case of the Neyman-Scott process in which each parent gives rise to a Poisson number of offspring (see Notes). The expected number of offspring per parent and the spatial scatter about each parent are specified by the details arguments `mu' and `scale'. Argument `kappa' of \code{rThomas} (density of parent process) is computed as D/mu/1e4. Other arguments remain at their defaults, including `expand' (4 * scale). A dataframe of parent locations is saved in attribute `parents'. The intensity surface for each realisation is saved in attribute 'Lambda' when details$saveLambda = TRUE.
+If \code{model2D = "rThomas"} then a Thomas process is simulated. This is a special 
+case of the Neyman-Scott process in which each parent gives rise to a Poisson number
+of offspring (see Notes). The expected number of offspring per parent and the 
+spatial scatter about each parent are specified by the details arguments `mu' 
+and `scale'. Argument `kappa' of \code{rThomas} (density of parent process) is 
+computed as D/mu/1e4. Other arguments remain at their defaults, including `expand'
+(4 * scale). A dataframe of parent locations is saved in attribute `parents'.
+The intensity surface for each realisation is saved in attribute 'Lambda' when 
+details$saveLambda = TRUE.
+
+Clipping to a polygon (poly) is supported for both rLGCP and 
+rThomas in secr >= 5.2.2, but care is needed. The boundary coordinates must
+be given anticlockwise and not include duplicates (even first and last).
+
+Conditional simulation (Ndist = 'fixed') is supported for both rLGCP and 
+rThomas in secr >= 5.2.2. The n.cond argument of the respective \pkg{spatstat} 
+functions is set internally by `sim.popn`. The rejection algorithm may fail. 
+Set details$verbose = TRUE for detailed reporting.
 
 If \code{poly} is specified, points outside \code{poly} are
 dropped. \code{poly} may be one of the types descrbed in 
@@ -211,11 +242,6 @@ Baddeley, A., Rubak, E., and Turner, R. 2015. Spatial Point Patterns: Methodolog
   \code{\link[stats]{simulate}} }
 
 \section{Notes}{
-
-Package RandomFields is not currently on CRAN. It may be installed with this code:
-
-\code{install.packages("RandomFields", repos = c("https://spatstat.r-universe.dev", 
-   "https://cloud.r-project.org"))}
 
 \code{model2D = "rThomas"} and \code{model2D = "cluster"} (the builtin Neyman-Scott implementation) are equivalent. There may be some subtle differences. The \pkg{spatstat} implementation is usually to be preferred.
 
@@ -298,16 +324,20 @@ plot(traps(possumCH), add = TRUE)
 # a new habitat map each time sim.popn is called. The `details' argument
 # of sim.popn is passed to randomDensity as the `parm' argument.
 
+if (requireNamespace("igraph")) {
+
 tempmask <- make.mask(nx = 100, ny = 100, spacing = 20)
 pop <- sim.popn(D = randomDensity, core = tempmask, model2D = "IHP",
     details = list(D = 10, p = 0.4, A = 0.5))
 plot(attr(pop, 'mask'), cov = 'D', dots = FALSE)
 plot(pop, add = TRUE)
 
-## rLGCP demonstration
-## - assumes spatstat and RandomFields have been installed
+}
 
-if (requireNamespace("spatstat") && requireNamespace("RandomFields")) {
+## rLGCP demonstration
+## - assumes spatstat has been installed
+
+if (requireNamespace("spatstat")) {
     msk <- make.mask(traps(captdata))
     # details argument 'spacing' ensures core matches Lambda below
     pop <- sim.popn(D = 20, core = msk, buffer = 0, 

@@ -1,8 +1,8 @@
 Package: secr
 Type: Package
 Title: Spatially Explicit Capture-Recapture
-Version: 5.2.1
-Date: 2025-03-18
+Version: 5.2.4
+Date: 2025-06-03
 Description: Functions to estimate the density and size of a spatially 
   distributed animal population sampled with an array of passive detectors, 
   such as traps, or by searching polygons or transects. Models incorporating 
@@ -28,7 +28,7 @@ Imports: abind, graphics, grDevices, MASS, mgcv, mvtnorm, nlme,
         RcppParallel (>= 5.1.1), sf, stats, stringr, terra (>= 1.5-12),
         tools, utils
 Suggests: gdistance, igraph, knitr, readxl, rmarkdown, sp, spatstat (>=
-        3.0-2), spatstat.geom, spatstat.random, spcosa, spsurvey (>=
+        3.3-3), spatstat.geom, spatstat.random, spcosa, spsurvey (>=
         5.3.0), testthat
 LinkingTo: BH, Rcpp, RcppEigen, RcppNumerical, RcppParallel
 VignetteBuilder: knitr
@@ -39,12 +39,13 @@ SystemRequirements: GNU make
 URL: https://www.otago.ac.nz/density/,
         https://github.com/MurrayEfford/secr/
 NeedsCompilation: yes
-Packaged: 2025-03-17 23:11:45 UTC; murra
-Author: Murray Efford [aut, cre] (<https://orcid.org/0000-0001-5231-5184>),
+Packaged: 2025-06-03 09:06:46 UTC; murra
+Author: Murray Efford [aut, cre] (ORCID:
+    <https://orcid.org/0000-0001-5231-5184>),
   Philipp Jund [ctb] (faster transect search and spacing),
   David Fletcher [ctb] (overdispersion),
-  Yan Ru Choo [ctb] (<https://orcid.org/0000-0002-8852-7178>,
+  Yan Ru Choo [ctb] (ORCID: <https://orcid.org/0000-0002-8852-7178>,
     goodness-of-fit)
 Maintainer: Murray Efford <murray.efford@otago.ac.nz>
 Repository: CRAN
-Date/Publication: 2025-03-18 21:50:02 UTC
+Date/Publication: 2025-06-13 08:40:02 UTC
