@@ -9,6 +9,7 @@
 ## 2017-02-06 updated for telemetry (completing job started last month)
 ## 2020-08-31 ORL, centroids
 ## 2021-05-18 sortorder
+## 2025-06-16 t2r2
 ############################################################################################
 
 getID <- function (det, capthist) {
@@ -36,11 +37,11 @@ dbar <- function (capthist, userdist = NULL, mask = NULL) {
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         IDfactor <- getID(det, capthist)
         ## 2014-09-01
         ## NOT USING PARAMETERS noneuc ETC
-        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        distmat <- secr_valid.userdist(userdist, det, traps, traps, mask )
         if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for dbar")
         
@@ -105,9 +106,9 @@ moves <- function (capthist, userdist = NULL, mask = NULL, names = FALSE) {
             sapply(nam, function(x) numeric(0), simplify = FALSE)
         }
         else {
-            det <- expanddet(capthist)
+            det <- secr_expanddet(capthist)
             IDfactor <- getID(det, capthist)
-            distmat <- valid.userdist(userdist, det, traps, traps, mask)
+            distmat <- secr_valid.userdist(userdist, det, traps, traps, mask)
             if (!all(det %in% .localstuff$individualdetectors))
                 stop ("require individual detector type for moves")
             
@@ -187,11 +188,11 @@ ARL <- function (capthist, min.recapt = 1, plt = FALSE, full = FALSE, userdist =
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         IDfactor <- getID(det, capthist)
         if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for ARL")
-        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        distmat <- secr_valid.userdist(userdist, det, traps, traps, mask )
         prox  <- length(dim(capthist)) > 2
         
         if (all(det %in% 'telemetry')) {
@@ -276,9 +277,9 @@ MMDM <- function (capthist, min.recapt = 1, full = FALSE, userdist = NULL, mask 
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         IDfactor <- getID(det, capthist)
-        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        distmat <- secr_valid.userdist(userdist, det, traps, traps, mask )
         if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for MMDM")
         
@@ -354,7 +355,7 @@ RPSV <- function (capthist, CC = FALSE)
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for RPSV")
         IDfactor <- getID(det, capthist)
@@ -448,10 +449,10 @@ ORL <- function (capthist, userdist = NULL, mask = NULL) {
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         if (!all(det %in% .localstuff$individualdetectors))
             stop ("require individual detector type for ARL")
-        distmat <- valid.userdist(userdist, det, traps, traps, mask )
+        distmat <- secr_valid.userdist(userdist, det, traps, traps, mask )
         prox  <- length(dim(capthist)) > 2
         IDfactor <- getID(det, capthist)
         
@@ -539,7 +540,7 @@ centroids <- function (capthist) {
         }
         if (nrow(capthist) < 1) return(NA)
         traps <- traps(capthist)
-        det <- expanddet(capthist)
+        det <- secr_expanddet(capthist)
         IDfactor <- getID(det, capthist)
         
         if (!all(det %in% .localstuff$individualdetectors))
@@ -578,6 +579,96 @@ centroids <- function (capthist) {
         out <- out[,c('meanx','meany')]
         attr(out, 'Ndetections') <- ncapt
         out
+    }
+}
+############################################################################################
+
+## 2025-06-16
+
+t2r2 <- function (capthist)
+{
+    individualdetectors <- c('single','multi','proximity','count',
+                             'polygonX', 'transectX', 'signal', 'signalnoise', 'polygon', 'transect',
+                             'telemetry', 'capped')
+    polydetectors <- c('polygon','transect','polygonX','transectX')
+    getID <- function (det, capthist) {
+        if (all(det %in% polydetectors)) {
+            ID <- animalID(capthist, names = TRUE, sortorder = "ksn")
+        }
+        else {
+            ID <- animalID(capthist, names = TRUE, sortorder = "snk")
+        }
+        factor(ID, levels = rownames(capthist))
+    }
+    
+    if (inherits (capthist, 'list')) {
+        lapply(capthist, t2r2)   ## recursive
+    }
+    else {
+        squares <- function(x,y,n) {
+            ssx <- sum(x^2) - (sum(x))^2/n
+            ssy <- sum(y^2) - (sum(y))^2/n
+            ssdx <- sum(diff(x)^2)
+            ssdy <- sum(diff(y)^2)
+            c(n = n-1, ssx = ssx, ssy = ssy, ssdx = ssdx, ssdy = ssdy)
+        }        
+        t2r2x <- function (cx) {
+            cx <- abs(cx)  # no special trt for deads
+            x <- traps$x[cx]
+            y <- traps$y[cx]
+            n <- length(x)
+            squares(x,y,n)
+        }
+        t2r2xy <- function (xy) {
+            x <- xy[,1]
+            y <- xy[,2]
+            n <- length(x)
+            squares(x,y,n)
+        }
+        if (nrow(capthist) < 1) return(NA)
+        traps <- traps(capthist)
+        det <- secr_expanddet(capthist)
+        if (!all(det %in% individualdetectors))
+            stop ("require individual detector type for t2r2")
+        IDfactor <- getID(det, capthist)
+        
+        if (all(det %in% 'telemetry')) {
+            lxy <- telemetryxy(capthist)
+            if (is.null(lxy))
+                temp <- NA
+            else {
+                temp <- lapply (lxy, t2r2xy)
+            }
+        }
+        else if (all(det %in% polydetectors)) {
+            if (is.null(xy(capthist)))
+                temp <- NA
+            else {
+                lxy <- split ( xy(capthist), IDfactor)
+                temp <- lapply (lxy, t2r2xy)
+            }
+        }
+        else {
+            if (any(det %in% 'telemetry')) {
+                capthist <- subset(capthist, 
+                                   occasions = det != 'telemetry', 
+                                   traps = 1:(nrow(traps(capthist)-1)))
+                IDfactor <- factor(animalID(capthist, names = TRUE), 
+                                   levels = rownames(capthist))
+            }
+            w <- split(trap(capthist, names = FALSE), IDfactor)
+            temp <- lapply(w,t2r2x)
+        }
+        temp <- matrix(unlist(temp), nrow = 5)
+        temp <- apply(temp,1,sum, na.rm=T)
+        if (any(is.na(temp) | temp<0)) {
+            temp <- NA   ## protected 2021-03-31
+        }
+        else {
+            temp <- sum(temp[4:5])/sum(temp[2:3])
+        }
+        attr(temp,'names') <- NULL
+        temp
     }
 }
 ############################################################################################

@@ -27,7 +27,7 @@
 # index       = 14
 
 #--------------------------------------------------------------------------------
-allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA, 
+secr_allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA, ngroup, 
                            CH, binomNcode, MRdata, grp, usge, pmixn, pID, maskusage,
                            telemhr = 0, telemstart = 0,
                            grain, ncores, R = FALSE, debug = FALSE) {
@@ -37,7 +37,6 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
   k <- nrow(usge)
   m <- nrow(pi.density)
   nmix <- nrow(pmixn)
-  ngroup <- length(unique(grp))
   sump <- numeric(nc)
   if (debug) browser()
   for (x in 1:nmix) {
@@ -96,7 +95,7 @@ allhistsimple <- function (cc, haztemp, gkhk, pi.density, PIA,
 }
 #--------------------------------------------------------------------------------
 
-expectedmu <- function (cc, haztemp, gkhk, pi.density, Nm, PIA, 
+expectedmu <- function (cc, haztemp, gkhk, pi.density, Nm, PIA, ngroup,
                           CH, binomNcode, MRdata, grp, usge, pmixn, pID, a0,
                           debug = FALSE) {
     nc <- nrow(CH)
@@ -137,12 +136,11 @@ expectedmu <- function (cc, haztemp, gkhk, pi.density, Nm, PIA,
 
 allhistsignal <- function (detectfn, grain, ncores, binomNcode,
                            CH, signal, grp, gk, realparval, dist2, 
-                           pi.density, PIA, miscparm, maskusage,
+                           pi.density, PIA, ngroup, miscparm, maskusage,
                            pmixn, debug = FALSE) {
   nc <- nrow(CH)
   m <- nrow(pi.density)
   nmix <- nrow(pmixn)
-  ngroup <- length(levels(grp))
   sump <- numeric(nc)
   for (x in 1:nmix) {
     temp <- signalhistoriescpp(
@@ -167,14 +165,13 @@ allhistsignal <- function (detectfn, grain, ncores, binomNcode,
   sump
 }
 #--------------------------------------------------------------------------------
-allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PIA, 
+allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PIA, ngroup,
                            CH, xy, binomNcode, grp, usge, mask, pmixn, maskusage,
                            grain, ncores, minprob, debug=FALSE) {
   nc <- nrow(CH)
   m <- nrow(pi.density)
   s <- ncol(usge)
   nmix <- nrow(pmixn)
-  ngroup <- length(levels(grp))
   sump <- numeric(nc)
   for (x in 1:nmix) {
       hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## lookup sum_k (hazard)
@@ -212,14 +209,13 @@ allhistpolygon <- function (detectfn, realparval, haztemp, hk, H, pi.density, PI
 }
 #--------------------------------------------------------------------------------
 
-integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0, 
+secr_integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0, ngroup,
                           CH0, binomNcode, MRdata, grp, usge, pmixn, pID, grain, ncores) {
     nc <- dim(PIA0)[2]    ## animals
     nr <- nrow(CH0)       ## unique naive animals (1 or nc)
     m <- nrow(pi.density)
     nmix <- nrow(pmixn)
     if (length(grp)<=1) grp <- rep(1,nc)
-    ngroup <- max(length(unique(grp)),1)
     sump <- numeric(nc)
     for (x in 1:nmix) {
         hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## sum_k (hazard)
@@ -257,9 +253,9 @@ integralprw1 <- function (cc0, haztemp, gkhk, pi.density, PIA0,
 }
 #--------------------------------------------------------------------------------
 
-integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density, PIA0, 
-                              CH0, binomNcode, grp, usge, mask, pmixn, maskusage,
-                              grain, ncores, minprob, debug = FALSE) {
+secr_integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, 
+        pi.density, PIA0, ngroup, CH0, binomNcode, grp, usge, mask, pmixn, 
+        maskusage, grain, ncores, minprob, debug = FALSE) {
     
   nc <- dim(PIA0)[2]
   nr <- nrow(CH0)       ## unique naive animals (1 or nc)
@@ -267,7 +263,6 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
   nmix <- nrow(pmixn)
   if (length(grp)<=1) grp <- rep(1,nr)
   s <- ncol(usge)
-  ngroup <- length(levels(grp))
   sump <- numeric(nc)
   for (x in 1:nmix) {
       hx <- if (any(binomNcode==-2)) matrix(haztemp$h[x,,], nrow = m) else -1 ## sum_k (hazard)
@@ -307,7 +302,7 @@ integralprw1poly <- function (detectfn, realparval0, haztemp, hk, H, pi.density,
 #--------------------------------------------------------------------------------
 
 #######################################################################################
-generalsecrloglikfn <- function (
+secr_generalsecrloglikfn <- function (
   beta, 
   parindx, 
   link, 
@@ -338,21 +333,26 @@ generalsecrloglikfn <- function (
     ## log likelihood for one session
     ## in multi-session case must get session-specific data from lists
     #---------------------------------------------------
+
     sessnum <- data$sessnum  # changed from argument 2021-06-22
     nc1 <- max(data$nc,1)
     PIA <- design$PIA[sessnum, 1:nc1, 1:data$s, 1:data$K, ,drop = FALSE]
     PIA0 <- design0$PIA[sessnum, 1:nc1, 1:data$s, 1:data$K, ,drop = FALSE]
     ## unmodelled beta parameters, if needed
-    miscparm <- getmiscparm(details$miscparm, detectfn, beta, parindx, details$cutval)
+    miscparm <- secr_getmiscparm(details$miscparm, detectfn, beta, parindx, details$cutval)
+    
     #---------------------------------------------------
-    density <- getmaskpar(D.modelled, D, data$m, sessnum, details$unmash, 
+    density <- secr_getmaskpar(D.modelled, D, data$m, sessnum, details$unmash, 
                           attr(data$capthist, 'n.mash'))
     if (!D.modelled) {
-      pi.density <- matrix(1/data$m, nrow=data$m, ncol=1)  
+      ## 2025-08-05 ngroup
+        # pi.density <- matrix(1/data$m, nrow=data$m, ncol=1)  
+        pi.density <- matrix(1/data$m, nrow = data$m, ncol = ngroup)  
+        Nm <- matrix(0, data$m, ngroup)
     }
     else {
       Dsum <- apply(density,2,sum)   ## by group
-      Nm <- density * getcellsize(data$mask)
+      Nm <- density * secr_getcellsize(data$mask)
     
       if (data$MRdata$allsighting && data$MRdata$pi.mask[1] != -1) {
           pi.density <- matrix(data$MRdata$pi.mask, ncol = 1)  ## by group=column?
@@ -371,16 +371,16 @@ generalsecrloglikfn <- function (
     #---------------------------------------------------
     ## allow for scaling of detection
     Dtemp <- if (D.modelled) mean(D[,1,sessnum]) else NA
-    Xrealparval <- reparameterize (realparval, detectfn, details,
+    Xrealparval <- secr_reparameterize (realparval, detectfn, details,
                                    data$mask, data$traps, Dtemp, data$s)   # was s! 2024-01-29
-    Xrealparval0 <- reparameterize (realparval0, detectfn, details,
+    Xrealparval0 <- secr_reparameterize (realparval0, detectfn, details,
                                     data$mask, data$traps, Dtemp, data$s)
     if (details$debug>2) browser()
-
+    
     ## check valid parameter values
     if (!all(is.finite(Xrealparval))) {
       cat ('beta vector :', beta, '\n')
-      warning ("extreme 'beta' in 'generalsecrloglikfn' ",
+      warning ("extreme 'beta' in 'secr_generalsecrloglikfn' ",
                "(try smaller stepmax in nlm Newton-Raphson?)")
       return (1e10)
     }
@@ -399,13 +399,12 @@ generalsecrloglikfn <- function (
     ## given mask, model, group matching rule (first, sum, own)
     
     #####################################################################
-    pmixn <- getpmix (data$knownclass, PIA, Xrealparval)  ## membership prob by animal
+    pmixn <- secr_getpmix (data$knownclass, PIA, Xrealparval)  ## membership prob by animal
     
-    pID <- getpID(PIA, Xrealparval, data$MRdata)
+    pID <- secr_getpID(PIA, Xrealparval, data$MRdata)
     if (!is.null(details$userdist)) {    # changed from is.function() 2024-02-15
-        noneuc <- getmaskpar(!is.null(NE), NE, data$m, sessnum, FALSE, NULL)
-        distmat2 <- getuserdist(data$traps, data$mask, details$userdist, sessnum, 
-                                noneuc[,1], density[,1], miscparm)
+        distmat2 <- secr_getuserdist(data$traps, data$mask, details$userdist, sessnum, 
+                    NElist, density[,1], miscparm = miscparm, detectfn = detectfn)
     }
     else {
         distmat2 <- data$distmat2
@@ -483,7 +482,7 @@ generalsecrloglikfn <- function (
             stop("simulation for overdispersion requires full likelihood (not CL)")
         else {
           chat <- unlist(getchat (nrow(realparval0), nrow(data$CH), data$n.distrib,         ## or nc1?
-            data$grp, data$usge, pmixn, pID, getcellsize(data$mask), 
+            data$grp, data$usge, pmixn, pID, secr_getcellsize(data$mask), 
             gkhk, pi.density, Dsum, PIA0, data$binomNcode, 
             data$MRdata, miscparm, details$nsim, details$grain, details$ncores))
           return (chat)         
@@ -492,7 +491,7 @@ generalsecrloglikfn <- function (
     #######################################################################
     if (all(data$dettype %in% c(0,1,2,3,4,6,7,8,13))) {
         ## hazard for exclusive detectors or related
-        haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval), gkhk$hk, PIA, data$usge)
+        haztemp <- secr_gethazard (data$m, data$binomNcode, nrow(Xrealparval), gkhk$hk, PIA, data$usge)
     }
     ## model detection histories (prw) conditional on detection (pdot)
     if (data$nc == 0) {
@@ -500,7 +499,7 @@ generalsecrloglikfn <- function (
     }
     else {
         if (all(data$dettype %in% c(0,1,2,8,13))) {
-            prw <- allhistsimple (nrow(Xrealparval), haztemp, gkhk, pi.density, PIA, 
+            prw <- secr_allhistsimple (nrow(Xrealparval), haztemp, gkhk, pi.density, PIA, ngroup,
                                   data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                                   pID, data$maskusage, 
                                   telemhr, telemstart, 
@@ -509,11 +508,11 @@ generalsecrloglikfn <- function (
         }
         else if (all(data$dettype == 5)) {
             prw <- allhistsignal (detectfn, details$grain, details$ncores, data$binomNcode, data$CH, data$signal$signal,
-                                  data$grp, gkhk$gk, Xrealparval, distmat2, pi.density, PIA, 
+                                  data$grp, gkhk$gk, Xrealparval, distmat2, pi.density, PIA, ngroup,
                                   miscparm, data$maskusage, pmixn)
         }
         else if (all(data$dettype %in% c(3,4,6,7))) {
-            prw <- allhistpolygon (detectfn, Xrealparval, haztemp, gkhk$hk, gkhk$H, pi.density, PIA, 
+            prw <- allhistpolygon (detectfn, Xrealparval, haztemp, gkhk$hk, gkhk$H, pi.density, PIA, ngroup, 
                                    data$CH, data$xy, data$binomNcode, data$grp, data$usge, data$mask,
                                    pmixn, data$maskusage, details$grain, details$ncores, details$minprob,
                                    debug = details$debug>3)
@@ -535,15 +534,16 @@ generalsecrloglikfn <- function (
               as.matrix(data$mask))
             if (all(data$dettype %in% c(3,4))) {
                 ## hazard for exclusive detectors or related bug fix 2020-04-24
-                haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
+                haztemp <- secr_gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
             }
         }
         if (!is.null(details$externalpdot)) {
+            warning("externalpdot is deprecated and will be removed in a coming version")
             pdot <- rep(sum(data$externalpdot * pi.density), nc1)
         }
         else {
-            pdot <- integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, 
-                gkhk$H, pi.density, PIA0, data$CH0, data$binomNcode, data$grp, 
+            pdot <- secr_integralprw1poly (detectfn, Xrealparval0, haztemp, gkhk$hk, 
+                gkhk$H, pi.density, PIA0, ngroup, data$CH0, data$binomNcode, data$grp, 
                 data$usge, data$mask, pmixn, data$maskusage, details$grain, 
                 details$ncores, details$minprob, debug = details$debug>3)
         }
@@ -569,21 +569,22 @@ generalsecrloglikfn <- function (
             
             if (all(data$dettype %in% c(0,8))) {
                 ## hazard for exclusive detectors or related bug fix 2020-04-24
-                haztemp <- gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
+                haztemp <- secr_gethazard (data$m, data$binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, data$usge)
             }
             
         }
         if (!is.null(details$externalpdot)) {
+            warning("externalpdot is deprecated and will be removed in a coming version")
             pdot <- rep(sum(data$externalpdot * pi.density), nc1)
         }
         else {
-            pdot <- integralprw1 (nrow(Xrealparval0), haztemp, gkhk, 
-                pi.density, PIA0, data$CH0, data$binomNcode, data$MRdata, 
+            pdot <- secr_integralprw1 (nrow(Xrealparval0), haztemp, gkhk, 
+                pi.density, PIA0, ngroup, data$CH0, data$binomNcode, data$MRdata, 
                 data$grp, data$usge, pmixn, pID, details$grain, details$ncores)
         }
     }
     
-    ngroup <- max(length(levels(data$grp)),1)
+    # 2025-08-05 ngroup now global to this fn
     comp <- matrix(0, nrow = 6, ncol = ngroup)
     for (g in 1:ngroup) {
       ok <- as.integer(data$grp) == g
@@ -601,31 +602,37 @@ generalsecrloglikfn <- function (
       
       #----------------------------------------------------------------------
       
+      #      if (!CL && !data$MRdata$allsighting) {
+      ng <- sum(ok)
+      if (any(data$dettype==13))
+          nonzero <- sum(apply(data$CH[,data$dettype!=13,,drop=FALSE] != 0,1,sum)[ok]>0)
+      else
+          nonzero <- ng
+      N <- sum(Nm[,g])
+      if (ng == 0) {
+          meanpdot <- pdot
+      }
+      else {
+          meanpdot <- ng / sum(1/pdot[ok])
+      }
+
+      ## 2025-08-05
+      .localstuff$Eng[sessnum, g] <- N * meanpdot      
+  
       if (!CL && !data$MRdata$allsighting) {
-          ng <- sum(ok)
-          if (any(data$dettype==13))
-              nonzero <- sum(apply(data$CH[,data$dettype!=13,,drop=FALSE] != 0,1,sum)[ok]>0)
-          else
-              nonzero <- ng
-          N <- sum(Nm[,g])
-          if (ng == 0) {
-              meanpdot <- pdot
-          }
-          else {
-              meanpdot <- ng / sum(1/pdot[ok])
-          }
+          
           ## 2023-09-22
           if (data$n.distrib == 1 && .localstuff$iter == 0 && nonzero>N) {
               warning("distribution = 'binomial' ",
                       "but number detected n (", nonzero, 
                       ") exceeds initial value of N (", round(N,1), ")")
           }
-              
+          
           comp[3,g] <- if (is.na(meanpdot) || (meanpdot <= 0)) NA 
-              else switch (data$n.distrib+1,
-                               dpois(nonzero, N * meanpdot, log = TRUE),
-                               lnbinomial (nonzero, N, meanpdot),
-                               NA)
+          else switch (data$n.distrib+1,
+                       dpois(nonzero, N * meanpdot, log = TRUE),
+                       secr_lnbinomial (nonzero, N, meanpdot),
+                       NA)
       }
       #----------------------------------------------------------------------
       # adjustment for mixture probabilities when class known
@@ -645,18 +652,18 @@ generalsecrloglikfn <- function (
       # sightings
       sightingocc <- data$MRdata$markocc < 1
       if (any(sightingocc)) {
-          Nm <- density * getcellsize(data$mask)
+          Nm <- density * secr_getcellsize(data$mask)
           if (learnedresponse) {
               stop ("learned response requires that all individuals are identified,",
                     " and cannot be applied to sighting data")
               # 2023-10-09 require gkhk was NOT recalculated for learned response naive animal 
               # and hence still has cc x M x K values in gkhk$hk
           }
-          tmp <- expectedmu (nrow(Xrealparval), haztemp, gkhk, pi.density, Nm, PIA, 
+          tmp <- expectedmu (nrow(Xrealparval), haztemp, gkhk, pi.density, Nm, PIA, ngroup,
                              data$CH, data$binomNcode, data$MRdata, data$grp, data$usge, pmixn, 
                              pID, pdot[1])
-          Tumusk <- tmp$Tumusk ## * sum(density[,g]) * getcellsize(data$mask)
-          Tmmusk <- tmp$Tmmusk ## * sum(density[,g]) * getcellsize(data$mask)
+          Tumusk <- tmp$Tumusk ## * sum(density[,g]) * secr_getcellsize(data$mask)
+          Tmmusk <- tmp$Tmmusk ## * sum(density[,g]) * secr_getcellsize(data$mask)
           if (!is.null(data$MRdata$Tu) && !is.null(Tumusk)) {
               Tu <- data$MRdata$Tu
               Tulik <- Tsightinglikcpp (Tu, data$MRdata$markocc, data$binomNcode,
@@ -677,6 +684,7 @@ generalsecrloglikfn <- function (
           }
       }
       #----------------------------------------------------------------------
+
     }   ## end loop over groups
     if (details$debug>=1) {
         ## display likelihood components summed over groups, and logmultinomial constant
@@ -688,35 +696,39 @@ generalsecrloglikfn <- function (
   } ## end sessionLL
   
   ######################################################################################
-  ## Main line of generalsecrloglikfn
+  ## Main line of secr_generalsecrloglikfn
   ######################################################################################
   if (details$debug>4) browser()
   nsession <- length(sessionlevels)
   #--------------------------------------------------------------------
   # Fixed beta
   pbeta <- beta   # save varying beta, for trace etc.
-  beta <- fullbeta(beta, details$fixedbeta)
+  beta <- secr_fullbeta(beta, details$fixedbeta)
   #--------------------------------------------------------------------
   # Detection parameters
-  detparindx <- parindx[!(names(parindx) %in% c('D', 'noneuc'))]
-  detlink <- link[!(names(link) %in% c('D', 'noneuc'))]
-  realparval  <- makerealparameters (design, beta, detparindx, detlink, fixed)
-  realparval0 <- makerealparameters (design0, beta, detparindx, detlink, fixed)
+  detparindx <- parindx[!(names(parindx) %in% .localstuff$spatialparameters)]
+  detlink <- link[!(names(link) %in% .localstuff$spatialparameters)]
+  realparval  <- secr_makerealparameters (design, beta, detparindx, detlink, fixed)
+  realparval0 <- secr_makerealparameters (design0, beta, detparindx, detlink, fixed)
   #--------------------------------------------------------------------
   sessmask <- lapply(data, '[[', 'mask')
-  grplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
+  grouplevels <- unique(unlist(lapply(data, function(x) levels(x$grp))))
+  ngroup <- length(grouplevels)
   #---------------------------------
+
   # Density
   D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
   if (D.modelled) {
-      D <- getD (designD, beta, sessmask, parindx, link, fixed,
-               grplevels, sessionlevels, parameter = 'D')
+      D <- secr_getD (designD, beta, sessmask, parindx, link, fixed,
+               grouplevels, sessionlevels, parameter = 'D')
   }
   #--------------------------------------------------------------------
-  # Non-Euclidean distance parameter
-  NE <- getD (designNE, beta, sessmask, parindx, link, fixed,
-              grplevels, sessionlevels, parameter = 'noneuc')
 
+  # Non-Euclidean distance parameters
+  # NElist is a list of 3-D arrays (mask,group,session), one for each NE parameter
+  NElist <- mapply(secr_getD, designNE, parameter = names(designNE),
+               MoreArgs = list(beta, sessmask, parindx, link, fixed,
+                         grouplevels, sessionlevels), SIMPLIFY = FALSE)
   #--------------------------------------------------------------------
   # Two types of call
   # (i) overdispersion of sightings simulations only
@@ -732,9 +744,22 @@ generalsecrloglikfn <- function (
   else {
       if (!is.null(details$saveprogress) && details$saveprogress>0 &&
           .localstuff$iter == 0) {
-          saveprogress(pbeta, NA, details$progressfilename)
+          secr_saveprogress(pbeta, NA, details$progressfilename)
       }
+      .localstuff$Eng <- matrix(0, nrow = nsession, ncol = ngroup)
+      ## sessionLL updates .localstuff$Eng for each session and group
       loglik <- sum(sapply (data, sessionLL)) 
+      #---------------------------------------------------------
+      ## 2025-08-05, 2025-08-28
+      ## relative density across sessions
+      if (details$relativeD && nsession>1) {
+          # assume no groups for now, only sessions
+          # add multinomial probability of session counts
+          # first column of Eng has (relative) expected count for group 1
+          loglik <- loglik + secr_multinomLL(sapply(data,'[[','nc'), 
+                                             .localstuff$Eng[,1])
+      }
+      #---------------------------------------------------------
       .localstuff$iter <- .localstuff$iter + 1  
       if (details$trace) {
           cat(format(.localstuff$iter, width=4),
@@ -745,11 +770,11 @@ generalsecrloglikfn <- function (
       }
       if (!is.null(details$saveprogress) && details$saveprogress>0 &&
           .localstuff$iter %% details$saveprogress == 0) {
-          saveprogress(pbeta, loglik, details$progressfilename)
+          secr_saveprogress(pbeta, loglik, details$progressfilename)
       }
       loglik <- ifelse(is.finite(loglik), loglik, -1e10)
       ifelse (neglik, -loglik, loglik)
   }
-}  ## end of generalsecrloglikfn
+}  ## end of secr_generalsecrloglikfn
 ############################################################################################
 

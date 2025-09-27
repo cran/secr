@@ -65,7 +65,7 @@ detectpar.secr <- function(object, ..., byclass = FALSE, bytrap = FALSE) {
     if (!inherits(object,'secr')) stop ("requires 'secr' object")
     if (!is.null(object$fixed) && length(object$fixed)>0) warning("fixed parameters ignored") 
     
-    pnames <- parnames(object$detectfn)
+    pnames <- secr_parnames(object$detectfn)
     nclass <- object$details$nmix
     
     if (object$details$param == 2) pnames[1] <- 'esa'
@@ -115,6 +115,20 @@ detectpar.secr <- function(object, ..., byclass = FALSE, bytrap = FALSE) {
     
     # temppred is a list, one component per session
 
+    #-----------------------------------------
+    # 2025-08-12 apply overall tempxy
+    fixxy <- function (onepred) {
+        if ('sigmaxy'   %in% names(onepred)) onepred$sigma   <- onepred$sigma * onepred$sigmaxy
+        if ('lambda0xy' %in% names(onepred)) onepred$lambda0 <- onepred$lambda0 * onepred$lambda0xy
+        if ('a0xy'      %in% names(onepred)) onepred$a0      <- onepred$a0 * onepred$a0xy
+        if ('sigmakxy'  %in% names(onepred)) onepred$sigmak  <- onepred$sigmak * onepred$sigmakxy
+        onepred
+    }
+    if (any(.localstuff$spatialparameters %in% names(object$model))) {
+        temppred <- lapply(temppred, fixxy)    
+    }
+    #-----------------------------------------
+    
     if (ms(object)) 
         lapply(temppred, extractpar)
     else 
@@ -122,49 +136,3 @@ detectpar.secr <- function(object, ..., byclass = FALSE, bytrap = FALSE) {
 }
 ############################################################################################
 
-# 2024-10-04
-# return parameters for first detection
-# optionally by session, animal, occasion, trap or latent class
-
-detectpar0 <- function(object,
-                       bysession  = TRUE, 
-                       byanimal   = FALSE, 
-                       byoccasion = FALSE, 
-                       bytrap     = FALSE, 
-                       byclass    = FALSE) {
-    beta <- object$fit$par
-    # insert fixed betas as needed
-    beta <- fullbeta(beta, object$details$fixedbeta)
-    # get lookup table 
-    realparval0 <- makerealparameters (
-        object$design0, beta,
-        object$parindx, object$link, object$fixed)  # naive
-    param <- object$details$param
-    if (param>0) {
-        if (param == 3) {
-            realparval0 <- reparameterize(
-                realparval0, object$detectfn, object$details, object$mask, 
-                traps(object$capthist), NA, NA)
-        }
-        else stop ("parameterisation ", param, " not available")
-    }
-    # which indices of PIA do we care about? others use only first element
-    indlist <- as.list(rep(1,5))
-    if (bysession)  indlist[[1]] <- TRUE
-    if (byanimal)   indlist[[2]] <- TRUE 
-    if (byoccasion) indlist[[3]] <- TRUE 
-    if (bytrap)     indlist[[4]] <- TRUE 
-    if (byclass)    indlist[[5]] <- TRUE 
-    # find indices
-    arglist <- c(list(x = object$design0$PIA, drop = FALSE), indlist)
-    selected <- do.call('[', arglist)
-    out <- as.data.frame(realparval0[selected,, drop = FALSE])
-    
-    dd <- lapply(dim(selected), function(x) 1:x)
-    names(dd) <- c('session','animal','occasion','trap','class')
-    id <- do.call(expand.grid, dd)[,sapply(indlist, is.logical), drop = FALSE]
-    cbind(out, id)
-    
-}
-
-############################################################################################

@@ -25,7 +25,7 @@ makeNewData.default <- function (object, all.levels = FALSE, ...) {
 makeNewData.secr <- function (object, all.levels = FALSE, bytrap = FALSE, ...) {
     # Session treated separately later
     autovars <- c('g','x','y','x2','y2','xy','session',
-                  't','T','ts','b','B','bk','Bk','bkc','Bkc','k','K','tcov','kcov','h2','h3')
+                  't','T','ts','b','B','bk','Bk','Br','bkc','Bkc','k','K','tcov','kcov','h2','h3')
     capthist <- object$capthist
     trps <- traps(capthist)
     mask <- object$mask
@@ -39,8 +39,9 @@ makeNewData.secr <- function (object, all.levels = FALSE, bytrap = FALSE, ...) {
     if(is.null(nmix)) nmix <- 1
     mixvar <- switch(nmix, character(0),'h2','h3')
     
-    nocc <- max(n.occasion (capthist))
-    grouplevels <- group.levels(capthist, groups)
+    nocc <- if (ms(capthist)) sapply(capthist, ncol) else ncol(capthist)
+    nocc <- max(nocc)
+    grouplevels <- secr_group.levels(capthist, groups)
     ngrp <- max(1, length(grouplevels))
     sessions <- session(capthist)
     R <- length(sessions)
@@ -87,8 +88,10 @@ makeNewData.secr <- function (object, all.levels = FALSE, bytrap = FALSE, ...) {
             trps <- traps(capthist)
         
         basevars <- list(session = factor(sessions[session], levels=sessions))
-        if (ngrp>1) basevars$g <- factor(grouplevels)
-        if (nmix>1) basevars[mixvar] <- list(h.levels(capthist, hcov, nmix))
+        # if (ngrp>1) basevars$g <- factor(grouplevels)
+        # 2025-08-03
+        if (ngrp>1) basevars$g <- factor(grouplevels, levels = grouplevels)
+        if (nmix>1) basevars[mixvar] <- list(secr_h.levels(capthist, hcov, nmix))
         
         for (v in sessvars) {
             if (v=='x')  basevars$x <- 0     # mean attr(mask,'meanSD')[1,'x']
@@ -104,6 +107,7 @@ makeNewData.secr <- function (object, all.levels = FALSE, bytrap = FALSE, ...) {
             if (v=='B')  basevars$B <- factor(0:1)
             if (v=='bk') basevars$bk <- factor(0:1)
             if (v=='Bk') basevars$Bk <- factor(0:1) 
+            if (v=='Br') basevars$Br <- 0:1
             if (v=='k')  basevars$k <- factor(0:1)
             if (v=='K')  basevars$K <- factor(0:1)
             NSOB <- c('None','Self','Other','Both')
@@ -166,11 +170,11 @@ makeNewData.secr <- function (object, all.levels = FALSE, bytrap = FALSE, ...) {
     # some setup
     if (bytrap) {
         if (ms(capthist)) {
-            ndet <- sapply(traps(capthist), ndetector)
+            ndet <- sapply(traps(capthist), secr_ndetector)
             trapcovnames <- names(covariates(traps(capthist)[[1]]))
         }
         else {
-            ndet <- ndetector(trps)
+            ndet <- secr_ndetector(trps)
             trapcovnames <- names(covariates(traps(capthist)))
         }
     }

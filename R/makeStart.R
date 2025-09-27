@@ -2,6 +2,26 @@
 ## makeStart.R
 ## 2022-04-02, 2023-12-17
 
+#-------------------------------------------------------------------------------
+
+uniquerownames <- function (capthist) {
+    if (!ms(capthist)) {
+        return(capthist)
+    }
+    else {
+        last <- 0
+        for (i in 1:length(capthist)) {
+            nr <- nrow(capthist[[i]])
+            if (nr > 0) {
+                rownames(capthist[[i]]) <- last + (1:nr)
+                last <- last+nr
+            }
+        }
+        capthist
+    }
+}
+#-------------------------------------------------------------------------------
+
 makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link, 
     details = NULL, fixed = NULL, CL = FALSE, anypoly = FALSE, anytrans = FALSE, 
     alltelem = FALSE, sighting = FALSE) {
@@ -9,20 +29,21 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
     ############################################
     # Optionally start from previous fit
     ############################################
-
     if (inherits(start, c('ipsecr', 'secr'))) {
         
         oldbeta <- coef(start)$beta
         fb <- start$details$fixedbeta
         if (is.null(fb)) fb <- rep(NA, length(oldbeta))
-        names(fb)[is.na(fb)] <- start$betanames
-        oldbeta <- fullbeta(oldbeta, fb) # matches start$parindx
+        # 2025-07-27
+        # names(fb)[is.na(fb)] <- start$betanames
+        names(fb) <- secr_fullbetanames(start)
+        oldbeta <- secr_fullbeta(oldbeta, fb) # matches start$parindx
         if (!is.null(details) && !is.null(details$nsim) && details$nsim > 0) {
             start <- oldbeta    ## chat simulations
         }
         else {
             oldnam <- start$betanames
-            start <- mapbeta(start$parindx, parindx, oldbeta, NULL)
+            start <- secr_mapbeta(start$parindx, parindx, oldbeta, NULL)
             
             if (!is.null(details$miscparm)) {
                 nb <- length(start)
@@ -86,7 +107,7 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
         if (requireautoini) {
             ## not for signal attenuation
             if (!(detectfn %in% c(9,10,11,12,13)) & !anypoly & !anytrans) {
-                memo('Finding initial parameter values...', details$trace)
+                secr_memo('Finding initial parameter values...', details$trace)
                 # specific to session, do not use anytelem
                 if (any(detector(traps(ch))=="telemetry")) {
                     if (all(detector(traps(ch))=="telemetry"))
@@ -120,7 +141,7 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
                 }
                 nms <- c('D', 'g0', 'sigma')
                 nms <- paste(nms, '=', round(unlist(start3),5))
-                memo(paste('Initial values ', paste(nms, collapse=', ')),
+                secr_memo(paste('Initial values ', paste(nms, collapse=', ')),
                     details$trace)
             }
             else warning ("using default starting values", call. = FALSE)
@@ -139,6 +160,11 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
             w       = 10,
             pID     = 0.7,
             noneuc  = 50,
+            sigmaxy = ifelse (is.na(start3$sigma), rpsv, start3$sigma),
+            lambda0xy = -log(1-ifelse (is.na(start3$g0), 0.1, start3$g0)),
+            a0xy    = ifelse (is.na(start3$g0), 0.1 * rpsv^2, start3$g0 *
+                                  start3$sigma^2) / 10000 * 2 * pi,
+            sigmakxy = 1,
             beta0   = details$cutval + 30,
             beta1   = -0.2,
             sdS     = 2,
@@ -186,7 +212,7 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
             default <- replace(default, startnames, start)
         }
         else startnames <- NULL
-        
+     
         #########################################
         start <- rep(0, NP)
         for ( i in 1:length(parindx) ) {
@@ -194,6 +220,18 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
         }
         #########################################
 
+        ## set base to zero for spatial parameters sigmaxy etc.
+        ## for tidiness only (secr.fit automatically fixes base betas to zero)
+        for ( j in names(parindx) ) {
+            newxy <- c('sigmaxy','lambda0xy','sigmakxy','a0xy')
+            if (j %in% newxy) {
+                base <- c('sigma','lambda0','sigma','lambda0')
+                base <- base[match (j, newxy)]
+                start[parindx[[base]][1]] <- 0
+            }
+        }
+        #########################################
+        
         if ((details$nmix>1) && !('pmix' %in% names(fixed)) && !('pmix' %in% startnames))
             start[parindx[['pmix']][1]] <- clean.mlogit((1:details$nmix)-0.5)[2]
         
@@ -210,3 +248,4 @@ makeStart <- function (start = NULL, parindx, capthist, mask, detectfn, link,
     }
     start
 }
+

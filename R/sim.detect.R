@@ -20,7 +20,7 @@ getpmixall <- function(PIA, realparval)
     pmix <- 1   ## default single class
     if (nmix>1) {
         # index of first non-missing occasion s and detector k
-        fsk <- firstsk(PIA[1,1,,,1, drop = FALSE])
+        fsk <- secr_firstsk(PIA[1,1,,,1, drop = FALSE])
         kc <- as.vector((fsk-1) %/% k + 1)[1]
         sc <- as.vector((fsk-1) %/% k + 1)[1]
         pmix <- PIA[cbind(1,1,sc,kc,1:nmix)]
@@ -31,8 +31,8 @@ getpmixall <- function(PIA, realparval)
 
 sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE, 
                         expected = FALSE, dropzeroCH = TRUE)
-    ## popnlist is always a list of popn objects, one per session
 {
+    ## popnlist is always a list of popn objects, one per session
     ## we use fake CH to extract parameter value dependent on prev capt
     ## BUT this is slow and clunky...
     dummycapthist<- function (capthist, pop, fillvalue = 1) {
@@ -74,13 +74,14 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     }
     ## --------------------------------------------------------------------
     ## process behavioural responses
+    # 2025-06-17 Br unclear
     Markov <- any(c('B','Bk','K') %in% object$vars)
     btype <- which (c("b", "bk", "k") %in% tolower(object$vars))
     if (length(btype) > 1)
         stop ("all behavioural responses must be of same type in sim.detect")
     if (length(btype) == 0)
         btype <- 0
-  
+    
     ## --------------------------------------------------------------------
     ## setup
     if (is.null(object$details$ignoreusage)) {
@@ -101,12 +102,9 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     nsession <- length(sessionlevels)
     sessmask <- object$mask
     if (!ms(sessmask)) sessmask <- list(sessmask)  ## always a list
-    grplevels <- group.levels(object$capthist, object$groups, sep=".")
-    beta <- object$fit$par
-    #2025-03-13
-    # userd <- is.null(object$details$userdist)
+    grouplevels <- secr_group.levels(object$capthist, object$groups, sep=".")
+    beta <- secr_complete.beta(object) # object$fit$par
     userd <- !is.null(object$details$userdist) && is.function(object$details$userdist)
-    
     ncores <- setNumThreads()
     grain <- if (ncores==1) 0 else 1
     
@@ -150,16 +148,16 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         }
         else {
             ## group identities for simulated animals
-            ## can treat popn as capthist in group.factor if not ms(object)
-            newgroup <- group.factor (popnlist[[i]], object$groups)
+            ## can treat popn as capthist in secr_group.factor if not ms(object)
+            newgroup <- secr_group.factor (popnlist[[i]], object$groups)
             ## here we assume original PIA is for a full-likelihood model with
             ## one row per group
             matchedgroup <- (1:nlevels(newgroup))[as.numeric(newgroup)]
         }
         design0$PIA[i,1:N[i],,,] <- object$design0$PIA[i,matchedgroup,,,]
     }
-    realparval0 <- makerealparameters (design0, beta, object$parindx, object$link,
-                                       object$fixed)
+    realparval0 <- secr_makerealparameters (design0, beta, object$parindx, object$link,
+                                                   object$fixed)
     ##----------------------------------------
     ## real parameter  values for 'caughtbefore'  animals or detectors
     ## -- this  definition of  design1 differs  from that in secr.fit()
@@ -181,7 +179,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
             CL          = object$CL, 
             ignoreusage = object$details$ignoreusage, 
             contrasts   = object$details$contrasts)
-        realparval1 <- makerealparameters (
+        realparval1 <- secr_makerealparameters (
             design1, 
             beta, 
             object$parindx, 
@@ -194,22 +192,49 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
     }
     ##------------------------------------------
     
-    # see loglikhelperfn.R for getD
-    # Density
+    # see loglikhelperfn.R for secr_getD
+    # Density - rarely used?
+    # wasteful because most computed D, NE discarded, but simpler than re-jigging getD
+    indlist <- mapply(nearesttrap, popnlist, sessmask, SIMPLIFY = FALSE)   
+    # select rows of D and NE needed for popnlist?
     if (!object$CL ) {
-        D <- getD (object$designD, beta, sessmask, 
-                   object$parindx, object$link, object$fixed,
-                   grplevels, sessionlevels, 
-                   parameter = 'D')
+        D <- secr_getD (object$designD, beta, sessmask, 
+                               object$parindx, object$link, object$fixed,
+                               grouplevels, sessionlevels, 
+                               parameter = 'D')
+        
+        D2 <- array(dim = c(max(sapply(popnlist,nrow)), 1, length(popnlist)))
+        for (sess in 1:length(popnlist)) {
+            D2[1:nrow(popnlist[[i]]),1,sess] <- D[indlist[[i]],1,sess]
+        }
     }
     # Non-Euclidean distance parameter
-    NE <- getD (object$designNE, beta, sessmask, 
-                object$parindx, object$link, object$fixed,
-                grplevels, sessionlevels, 
-                parameter = 'noneuc')
+    # NEname <- if ('sigmaxy' %in% names(object$parindx)) "sigmaxy" else "noneuc"
+    # 
+    # NE <- secr_getD (object$designNE, beta, sessmask, 
+    #             object$parindx, object$link, object$fixed,
+    #             grouplevels, sessionlevels, 
+    #             parameter = NEname)
+    # if (!is.null(NE)) {
+    #     NE2 <- array(dim = c(max(sapply(popnlist,nrow)), 1, length(popnlist)))
+    #     for (sess in 1:length(popnlist)) {
+    #         NE2[1:nrow(popnlist[[sess]]),1,sess] <- NE[indlist[[sess]],1,sess]
+    #     }
+    # }
     
+    NElist <- mapply(secr_getD, object$designNE, parameter = names(object$designNE),
+                     MoreArgs = list(beta, sessmask, object$parindx, object$link, 
+                                     object$fixed, grouplevels, sessionlevels), 
+                     SIMPLIFY = FALSE)
+    NElist2 <- NElist
+    for (i in names(NElist)) {
+        NElist2[[i]] <- array(dim = c(max(sapply(popnlist,nrow)), 1, length(popnlist)))
+        for (sess in 1:length(popnlist)) {
+            NElist2[[i]][1:nrow(popnlist[[sess]]),1,sess] <- NElist[[i]][indlist[[sess]],1,sess]
+        }
+    }
+
     #--------------------------------------------------------------------
-    
     output <- list()
     for (sessnum in 1:nsession) {
         
@@ -230,15 +255,15 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
             session.mask <- if (userd || (object$details$param %in% c(2,6)))
                 object$mask else NULL
             Dtemp <- if (object$details$param %in% c(4:6)) predict(object)['D','estimate']
-                        else NA
+            else NA
             nmash <- attr(object$capthist, 'n.mash')
         }
-     
-        ## function reparameterize is in reparameterize.R
-        Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
-                                        session.mask, session.traps, Dtemp, s)
-        Xrealparval1 <- reparameterize (realparval1, object$detectfn, object$details,
-                                        session.mask, session.traps, Dtemp, s)
+        
+        ## function secr_reparameterize is in reparameterize.R
+        Xrealparval0 <- secr_reparameterize (realparval0, object$detectfn, object$details,
+                                                    session.mask, session.traps, Dtemp, s)
+        Xrealparval1 <- secr_reparameterize (realparval1, object$detectfn, object$details,
+                                                    session.mask, session.traps, Dtemp, s)
         ##------------------------------------------
         session.animals <- popnlist[[sessnum]]
         
@@ -251,8 +276,8 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         
         ##------------------------------------------
         
-        dettype <- detectorcode(session.traps, MLonly = FALSE, noccasions = nocc[sessnum])
-        binomN <- expandbinomN(object$details$binomN, dettype)
+        dettype <- secr_detectorcode(session.traps, MLonly = FALSE, noccasions = nocc[sessnum])
+        binomN <- secr_expandbinomN(object$details$binomN, dettype)
         if (all(detector(session.traps) %in% .localstuff$polydetectors)) {
             k <- c(table(polyID(session.traps)),0)
             K <- length(k)-1
@@ -282,7 +307,7 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
             object$details$miscparm[2:3] <- beta[max(unlist(object$parindx))+(1:2)]
         }
         ## requires session.animals has covariate named 'hcov'
-        knownclass <- getknownclass(session.animals, object$details$nmix, object$hcov)
+        knownclass <- secr_getknownclass(session.animals, object$details$nmix, object$hcov)
         
         ## get fixed pmix for each class
         pmix <- getpmixall(design0$PIA, Xrealparval0)
@@ -297,21 +322,20 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         
         if (all(dettype %in% c(-1,0,1,2,5,8))) {
             if (is.function(object$details$userdist)) {
-                ## only use of NE in this fn
-                noneuc <- getmaskpar(!is.null(NE), NE, nrow(session.mask), sessnum, FALSE, NULL)
-                density <- getmaskpar(!object$CL, D, nrow(session.mask), sessnum, 
-                                      object$details$unmash, nmash)
-                distmat2 <- getuserdist(
+                density <- secr_getmaskpar(!object$CL, D2, nrow(session.animals), sessnum, 
+                                                  object$details$unmash, nmash)
+                distmat2 <- secr_getuserdist(
                     session.traps, 
                     session.animals, 
                     object$details$userdist, 
                     sessnum, 
-                    noneuc[,1], 
+                    NElist2, 
                     density[,1], 
-                    object$details$miscparm)
+                    miscparm = object$details$miscparm,
+                    detectfn = object$detectfn)
             }
             else {
-                distmat2 <- getdistmat2 (
+                distmat2 <- secr_getdistmat2 (
                     session.traps, 
                     session.animals, 
                     object$details$userdist)
@@ -428,11 +452,11 @@ sim.detect <- function (object, popnlist, maxperpoly = 100, renumber = TRUE,
         if (temp$resultcode != 0) {
             stop ("simulated detection failed, code ", temp$resultcode)
         }
-
+        
         w <- array(temp$value, dim = c(NR, s, K), dimnames = list(NULL,1:s,NULL))
         included <- if (dropzeroCH) apply(w,1,sum)>0 else rep(TRUE, nrow(w))
         w <- w[included,,, drop = FALSE] 
-
+        
         class(w)   <- 'capthist'    # NOT data.frame
         traps(w)   <- session.traps
         session(w) <- sessionlevels[sessnum]

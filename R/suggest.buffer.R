@@ -25,7 +25,6 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
             mu <- detectpar$beta0 - 10 * log ( r^2 ) / 2.302585 + detectpar$beta1 * (r-1)
             mu[r<1] <- detectpar$beta0
         }
-
         switch (detectfn+1,
                 detectpar$g0 * exp(-r^2/2/detectpar$sigma^2),
                 detectpar$g0 * ( 1 - exp(-(r/detectpar$sigma)^-detectpar$z)),
@@ -86,7 +85,7 @@ bias.D <- function (buffer, traps, detectfn, detectpar, noccasions, binomN = NUL
 #        lth(punion2(polys, ntheta))
 #    }
 
-    detectfn <- valid.detectfn(detectfn)
+    detectfn <- secr_valid.detectfn(detectfn)
     if (!all(detector(traps) %in% .localstuff$pointdetectors))
         stop ("bias.D() requires passive point detectors (not polygon or transect)")
     if (!all(detector(traps) %in% .localstuff$individualdetectors))
@@ -265,13 +264,13 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
                     tempmask <- make.mask (traps, buffer = 5*RPSV(object, CC = TRUE))
                     ## thin = 1 specified 2019-12-16
                     detectpar <- autoini (object, tempmask,
-                        ignoreusage = ignoreusage, ncores = ncores, thin = 1)[parnames(0)]
+                        ignoreusage = ignoreusage, ncores = ncores, thin = 1)[secr_parnames(0)]
                     tempdp <- lapply(detectpar,formatC,4)
                     warning ("using automatic 'detectpar' ",
                         paste(names(detectpar), "=", tempdp, collapse=", "),
                         call. = FALSE)
                     if (!is.null(detectfn)) {
-                        detectfn <- valid.detectfn(detectfn)
+                        detectfn <- secr_valid.detectfn(detectfn)
                         ## limited!
                         if (detectfn != 0)
                             warning ("forcing 'detectfn' to halfnormal", call. = FALSE)
@@ -285,10 +284,10 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
             }
         }
         if (is.null(interval)) {
-            interval <- c(1, 100 * spatialscale(detectpar, detectfn))
+            interval <- c(1, 100 * secr_spatialscale(detectpar, detectfn))
         }
-        detectfn <- valid.detectfn(detectfn)
-        detectpar <- valid.detectpar(detectpar, detectfn)
+        detectfn <- secr_valid.detectfn(detectfn)
+        detectpar <- secr_valid.detectpar(detectpar, detectfn)
         
         if (!all(detector(traps) %in% .localstuff$pointdetectors))
             stop ("require passive point detectors (not polygon or transect)")
@@ -312,16 +311,16 @@ suggest.buffer <- function (object, detectfn = NULL, detectpar = NULL, noccasion
     }
 }
 
-bufferbiascheck <- function (output, buffer, biasLimit) {
+bufferBiasCheck <- function (object, buffer, biasLimit) {
     ############################################
     ## buffer bias check
     ## not for polygon & transect detectors
     ############################################
-    capthist <- output$capthist
+    capthist <- object$capthist
     validbiasLimit <- !is.null(biasLimit)
     validbiasLimit <- validbiasLimit & is.finite(biasLimit)
     validbiasLimit <- validbiasLimit & (biasLimit>0)
-    if ((output$fit$value < 1e9) &
+    if ((object$fit$value < 1e9) &
         (all(detector(traps(capthist)) %in% .localstuff$pointdetectors)) &
         !any(detector(traps(capthist)) %in% c('unmarked','presence')) &
         is.null(telemetryxy(capthist)) &
@@ -331,14 +330,14 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
             bias <- numeric(nsess)
             for (i in 1:nsess) {
                 temptrps <- traps(capthist)[[i]]
-                if (output$details$ignoreusage)
+                if (object$details$ignoreusage)
                     usage(temptrps) <- NULL
-                dpar <-  detectpar(output)[[i]]
+                dpar <-  detectpar(object)[[i]]
                 biastemp <- try( bias.D(buffer, temptrps,
-                                        detectfn = output$detectfn,
+                                        detectfn = object$detectfn,
                                         detectpar = dpar,
                                         noccasions = ncol(capthist[[i]]),
-                                        binomN = output$details$binomN) )
+                                        binomN = object$details$binomN) )
                 if (inherits(biastemp, 'try-error'))
                     warning('could not perform bias check', call. = FALSE)
                 else
@@ -347,14 +346,14 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
         }
         else {
             temptrps <- traps(capthist)
-            if (output$details$ignoreusage)
+            if (object$details$ignoreusage)
                 usage(temptrps) <- NULL
-            dpar <-  detectpar(output)
+            dpar <-  detectpar(object)
             bias <- try( bias.D(buffer, temptrps,
-                                detectfn = output$detectfn,
+                                detectfn = object$detectfn,
                                 detectpar = dpar,
                                 noccasions = ncol(capthist),
-                                binomN = output$details$binomN) )
+                                binomN = object$details$binomN) )
             if (inherits(bias, 'try-error')) {
                 warning('could not perform bias check', call. = FALSE)
                 bias <- 0  ## suppresses second message
@@ -365,5 +364,6 @@ bufferbiascheck <- function (output, buffer, biasLimit) {
         if (any(bias > biasLimit))
             warning ("predicted relative bias exceeds ", biasLimit, " with ",
                      "buffer = ", buffer, call. = FALSE)
+        all(bias <= biasLimit)
     }
 }

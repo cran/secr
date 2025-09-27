@@ -14,6 +14,30 @@
 ## 2021-09-21 modified for nonspatial detector type
 ############################################################################################
 
+#-------------------------------------------------------------------------------
+
+# Based on Tim Salabim stackoverflow Jul 12 2018
+# https://stackoverflow.com/questions/51292952/snap-a-point-to-the-closest-point-on-a-line-segment-using-sf
+
+snap_points <- function(x, y, max_dist = 1000) {
+    
+    if (inherits(x, "sf")) n = nrow(x)
+    if (inherits(x, "sfc")) n = length(x)
+    
+    out = do.call(c,
+                  lapply(seq(n), function(i) {
+                      nrst = st_nearest_points(st_geometry(x)[i], y)
+                      nrst_len = st_length(nrst)
+                      nrst_mn = which.min(nrst_len)
+                      if (as.vector(nrst_len[nrst_mn]) > max_dist) return(st_geometry(x)[i])
+                      return(st_cast(nrst[nrst_mn], "POINT")[2])
+                  })
+    )
+    return(out)
+}
+
+#-------------------------------------------------------------------------------
+
 make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions = NULL,
     covnames = NULL, bysession = TRUE, sortrows = TRUE, cutval = NULL, tol = 0.01, 
     snapXY = FALSE, noncapt = 'NONE', signalcovariates = NULL)
@@ -130,7 +154,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                     if (nrow(captures)==0)  ## 2016-01-02
                         captTrap <- numeric(0)
                     else
-                        captTrap <- xyinpoly(captures[,4:5], traps)
+                        captTrap <- secr_xyinpoly(captures[,4:5], traps)
                     if (any(captTrap==0)) {
                         captures <- captures[captTrap>0,]  ## first! 2010-11-17
                         captTrap <- captTrap[captTrap>0]
@@ -159,7 +183,7 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
                             # combine linestrings in one sfc
                             v <- st_sfc(vlist)     
                             xy <- st_as_sf(captures[,4:5, drop = FALSE], coords = 1:2)
-                            xy2 <- snap_points (xy, v, max_dist = tol) # see utility.R
+                            xy2 <- snap_points (xy, v, max_dist = tol) # see above
                             distances <- st_distance(xy,v) 
                             distances <- apply(distances,1,min)   # nearest 2022-12-01
                             OK <- distances < tol
@@ -257,16 +281,16 @@ make.capthist <- function (captures, traps, fmt = c("trapID", "XY"), noccasions 
         if ((length(detector(traps))>1) & (length(detector(traps)) != nocc))
             stop("detector vector of traps object does not match nocc")
             
-        w <- array (0, dim=c(nID, nocc, ndetector(traps)))
+        w <- array (0, dim=c(nID, nocc, secr_ndetector(traps)))
         ## drop rows if dummy input row indicates no captures
         if (any(!validcapt)) {
             if (any(validcapt))
                 stop ("cannot combine data and noncapt")
             w <- w[FALSE, , , drop = FALSE]
-            dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
+            dimnames(w) <- list(NULL, 1:nocc, 1:secr_ndetector(traps))
         }
         else {
-            dimnames(w) <- list(NULL, 1:nocc, 1:ndetector(traps))
+            dimnames(w) <- list(NULL, 1:nocc, 1:secr_ndetector(traps))
             if (nID>0) {
                 dimnames(w)[[1]] <- 1:nID   ## 2016-01-02
                 temp <- table (captID, abs(captures[,3]), captTrap)

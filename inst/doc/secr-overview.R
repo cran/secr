@@ -31,8 +31,5 @@ legend (260,0.15, lwd=2, col=c('blue', 'green'),
 text(-450, 0.18,'b.', cex=1.3)
 
 ## ----eval=FALSE--------------------------------------------------------------------
-#  news (package = "secr")
-
-## ----eval=FALSE--------------------------------------------------------------------
-#  secr.fit(captdata, model = g0~t)
+# news (package = "secr")
 

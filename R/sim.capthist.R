@@ -69,7 +69,7 @@ sim.capthist <- function (
 
     # moved here 2020-12-06
     if (is.character(detectfn)) {
-        detectfn <- detectionfunctionnumber(detectfn)
+        detectfn <- secr_detectionfunctionnumber(detectfn)
     }
 
     if (detectfn %in% c(0:7, 14:20)) {
@@ -112,7 +112,7 @@ sim.capthist <- function (
         #####################################################################
         ## generate population list if not provided
         if (!inherits(popn,'popn')) {
-            popn <- replacedefaults(list(D = 5, buffer = 100,
+            popn <- secr_replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
             ## will fail with multiple traps
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
@@ -347,12 +347,12 @@ sim.capthist <- function (
             else 
                 binomN  ## as input
         }
-        detectpar <- replacedefaults(defaults, detectpar)
+        detectpar <- secr_replacedefaults(defaults, detectpar)
 
         # extended to HPX 2021-03-25
         if (detectfn %in% c(0:7, 14:20)) {
             if (detectfn %in% (0:7)) {
-                g0    <- expandsk(detectpar$g0, s = noccasions, k = ndetector(traps))
+                g0    <- expandsk(detectpar$g0, s = noccasions, k = secr_ndetector(traps))
                 if (any(detector(traps) %in% .localstuff$countdetectors)) {
                     if (detectpar$binomN == 0)
                         validatepar(g0, c(0,Inf))  ## Poisson lambda
@@ -362,7 +362,7 @@ sim.capthist <- function (
                 df0 <- g0
             }
             else  {
-                lambda0 <- expandsk(detectpar$lambda0, s = noccasions, k = ndetector(traps))
+                lambda0 <- expandsk(detectpar$lambda0, s = noccasions, k = secr_ndetector(traps))
                 validatepar(lambda0, c(0,Inf))  ## Poisson lambda
                 df0 <- lambda0
             }
@@ -392,7 +392,7 @@ sim.capthist <- function (
             validatepar(sdN, c(0,Inf))
         }
         else if (detectfn %in% c(9)) {
-            df0 <- expandsk(detectpar$b0, s = noccasions, k = ndetector(traps))
+            df0 <- expandsk(detectpar$b0, s = noccasions, k = secr_ndetector(traps))
             dfs <- expands(detectpar$b1, noccasions)
             dfz <- 0
             cutval <- detectpar$cutval
@@ -422,7 +422,7 @@ sim.capthist <- function (
         #-----------------------------------------------------------------------------#
         if (!inherits(popn,'popn')) # generate if not provided
         {
-            popn <- replacedefaults(list(D = 5, buffer = 100,
+            popn <- secr_replacedefaults(list(D = 5, buffer = 100,
                 Ndist = 'poisson'), popn)
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
                 covariates = NULL, Ndist = popn$Ndist)
@@ -437,7 +437,7 @@ sim.capthist <- function (
             
         ## user-provided distances
         if (is.null(userdist)) {
-            distmat2 <- getdistmat2(traps, popn, NULL)
+            distmat2 <- secr_getdistmat2(traps, popn, NULL)
         }
         else {
             ## move towards IHP/k simulations
@@ -445,7 +445,7 @@ sim.capthist <- function (
             mask <- attr(popn, 'mask')
             ## ASSUME MASK HAS NONEUC REQUIREMENTS 2014-10-30
             ## fails if any(detector %in% .localstuff$polydetectors)
-            distmat2 <- valid.userdist(userdist,
+            distmat2 <- secr_valid.userdist(userdist,
                                   detector(traps),
                                   xy1 = traps,
                                   xy2 = popn,         # animals, 2017-04-06
@@ -462,8 +462,8 @@ sim.capthist <- function (
         N <- nrow(popn)
         
         animals <- as.matrix(popn)
-        K <- ndetector(traps)
-        dettype <- detectorcode(traps, noccasions = noccasions)
+        K <- secr_ndetector(traps)
+        dettype <- secr_detectorcode(traps, noccasions = noccasions)
         simfunctionname <- paste0('trapping', detector(traps))
         if (length(simfunctionname)==1 & noccasions>1)
             simfunctionname <- rep(simfunctionname, noccasions)
@@ -471,7 +471,7 @@ sim.capthist <- function (
             stop("provide one detector name for each occasion")
 
         ## vector binomN
-        detectpar$binomN <- expandbinomN(detectpar$binomN, dettype)
+        detectpar$binomN <- secr_expandbinomN(detectpar$binomN, dettype)
     
         
         if (detectfn %in% c(0:7, 14:20)) {
@@ -855,12 +855,12 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
 
     markocc(traps) <- NULL  ## discard!
     S <- length(markocc)    ## number of sampling occasions
-    K <- ndetector(traps)
+    K <- secr_ndetector(traps)
     allsighting <- !any(markocc>0)
     unres <- markocc == -1
     proximityocc <- any(detector(traps) %in% 'proximity')
 
-    dettype <- detectorcode(traps, MLonly = FALSE, noccasions = S)
+    dettype <- secr_detectorcode(traps, MLonly = FALSE, noccasions = S)
     if (!all(dettype[markocc<1] %in% c(1,2,6,7)))
         stop ("only for sightings at binary or count proximity detectors", 
               " or polygon or transect searches")
@@ -903,7 +903,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
 
     if (!inherits(popn,'popn'))         ## generate popn if not provided
     {
-        popn <- replacedefaults(list(D = 5, buffer = 100,
+        popn <- secr_replacedefaults(list(D = 5, buffer = 100,
                                      Ndist = 'poisson'), popn)
         if (!(distributedmarking & allsighting))
             popn <- sim.popn (popn$D, core = traps, buffer = popn$buffer,
@@ -1015,7 +1015,7 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
                      stringsAsFactors = FALSE)
     if (all(detector(traps) %in% c('polygon', 'transect'))) {
         df <- cbind(df[,-4], xy(capthist))
-        df$trapID <- xyinpoly(df[,4:5], traps(capthist))
+        df$trapID <- secr_xyinpoly(df[,4:5], traps(capthist))
     }
     df <- df[order(df$animalID, df$occasion, df$trapID),]
 
@@ -1062,9 +1062,9 @@ sim.resight <- function (traps, popn = list(D = 5, buffer = 100, Ndist = 'poisso
     ############################################################################
     ## add all-zero histories for animals marked but never sighted (allsighting only)
     if (allsighting & unsighted) {
-        covariates(CH) <- NULL  # beats problem in addzeroCH 2016-11-19
+        covariates(CH) <- NULL  # beats problem in secr_addzeroCH 2016-11-19
         nzero <- nrow(popnM) - nrow(CH)
-        CH <- addzeroCH(CH, nzero)
+        CH <- secr_addzeroCH(CH, nzero)
     }
     ############################################################################
     ## add sightings of unmarked animals

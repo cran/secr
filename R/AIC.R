@@ -17,7 +17,7 @@ oneline.secr <- function (secr, k, chat = NULL) {
     
     ## 2015-03-31, 2017-02-10, 2023-05-21
     if (is.null(chat)) chat <- 1.0
-    Npar <- nparameters(secr)   ## see utility.R
+    Npar <- secr_nparameters(secr)   ## see utility.R
     nLL <- secr$fit$value
     AICval <- 2*nLL/chat + k *Npar
     AICcval <- ifelse ((n - Npar - 1)>0,
@@ -25,8 +25,8 @@ oneline.secr <- function (secr, k, chat = NULL) {
                        NA)
     
     c (
-        model  = model.string(secr$model, secr$details$userDfn),
-        detectfn = detectionfunctionname(secr$detectfn),
+        model  = secr_model.string(secr$model, secr$details$userDfn),
+        detectfn = secr_detectionfunctionname(secr$detectfn),
         npar   = Npar,
         logLik = -secr$fit$value,
         AIC    = round(AICval, 3),
@@ -46,7 +46,11 @@ logLik.secr <- function(object, ...) {
 AIC.secr <- function (object, ..., sort = TRUE, k = 2, dmax = 10, 
                       criterion = c('AIC','AICc'), chat = NULL) {
     allargs <- list(...)
-    modelnames <- (c ( as.character(match.call(expand.dots=FALSE)$object),
+    objectname <- as.character(match.call(expand.dots=FALSE)$object)
+    ## 2025-08-04
+    if (objectname[1] == '[[') objectname <- paste0(objectname[2], '[[',
+                                                    objectname[3],']]')
+    modelnames <- (c ( objectname,
                        as.character(match.call(expand.dots=FALSE)$...) ))
     allargs <- secrlist(object, allargs)
     names(allargs) <- modelnames

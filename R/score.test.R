@@ -4,28 +4,27 @@
 ## score test for secr models
 ############################################################################################
 
-prepare <- function (secr, newmodel) {
+prepare <- function (secr, newmodel, betaindex) {
 
     ## Prepare detection design matrices and lookup
     ## secr provides raw data etc.
 
-    capthist <- secr$capthist
-    mask     <- secr$mask
-    timecov  <- secr$timecov
-    sessioncov <- secr$sessioncov
-    groups   <- secr$groups
-    hcov     <- secr$hcov
-    dframe   <- secr$dframe  ## never used?
-    CL       <- secr$CL
-    detectfn <- secr$detectfn
-    link     <- secr$link
-    details  <- secr$details
-    fixed    <- secr$fixed
+    capthist    <- secr$capthist
+    mask        <- secr$mask
+    timecov     <- secr$timecov
+    sessioncov  <- secr$sessioncov
+    groups      <- secr$groups
+    hcov        <- secr$hcov
+    dframe      <- secr$dframe  ## never used?
+    CL          <- secr$CL
+    detectfn    <- secr$detectfn
+    link        <- secr$link
+    details     <- secr$details
+    fixed       <- secr$fixed
     smoothsetup <- secr$smoothsetup
-    
     sessionlevels <- session(capthist)
     if (is.null(sessionlevels)) sessionlevels <- '1'
-    grouplevels  <- group.levels(capthist, groups)
+    grouplevels  <- secr_group.levels(capthist, groups)
 
     design <- secr.design.MS (capthist, newmodel, timecov, sessioncov, groups, hcov, dframe,
                               ignoreusage = details$ignoreusage, CL = CL, contrasts = details$contrasts)
@@ -33,27 +32,64 @@ prepare <- function (secr, newmodel) {
                                ignoreusage = details$ignoreusage, CL = CL, contrasts = details$contrasts,
                                naive = T)
     D.modelled <- (!CL || details$relativeD) && is.null(fixed$D)
-    NE.modelled <- is.function(details$userdist) & is.null(fixed$noneuc)           
-    sessionlevels <- session(capthist)
-    grouplevels  <- group.levels(capthist, groups)
-    D.designmatrix <- designmatrix (D.modelled, mask, newmodel$D,
+    
+    D.designmatrix <- secr_designmatrix (D.modelled, mask, newmodel$D,
                             grouplevels, sessionlevels, sessioncov, smoothsetup$D, details$contrasts)
-    NE.designmatrix <- designmatrix (NE.modelled, mask, newmodel$noneuc,
-                            grouplevels, sessionlevels, sessioncov, smoothsetup$noneuc, details$contrasts)        
-            
+    
+    
+    #########################
+    # temporary patch
+
+    getNE <- function (NEname) {
+        # needs  model, mask, grouplevels, sessionlevels, sessioncov, smoothsetup, details
+        # secr_memo (paste0('Preparing ', NEname, ' design matrix'), details$trace)
+        modelNE <- newmodel[[NEname]]
+        temp <- D.designdata(mask, modelNE, grouplevels, sessionlevels, sessioncov)
+        if (any(secr_smooths(modelNE))) smoothsetup[[NEname]] <<- secr_gamsetup(modelNE, temp)
+        out <- secr_general.model.matrix(modelNE, 
+                                         data = temp, 
+                                         gamsmth = smoothsetup[[NEname]], 
+                                         contrasts = details$contrasts)
+        attr(out, 'dimD') <- attr(temp, 'dimD')
+        out
+    }
+    # 2025-07-24 does NOT allow for change in details$userdist
+    NE.modelled <- secr_NEmodelled(details, fixed, .localstuff$spatialparameters)
+    designNE <- sapply(.localstuff$spatialparameters[NE.modelled], 
+                       getNE, simplify = FALSE, USE.NAMES = TRUE)
+
+    # beta <- complete.beta(secr)
+    # # NElist is a list of 3-D arrays (mask,group,session), one for each NE parameter
+    # NElist <- mapply(secr_getD, designNE, parameter = names(designNE),
+    #                  MoreArgs = list(beta, mask, parindx, link, fixed,
+    #                                  grouplevels, sessionlevels), SIMPLIFY = FALSE)
+    
     #############################
     # Parameter mapping (general)
     #############################
 
-    np <- sapply(design$designMatrices, ncol)
-    if (D.modelled) np <-  c(D = ncol(D.designmatrix), np)
-    if (NE.modelled) np <-  c(np, noneuc = ncol(NE.designmatrix))
-    
+    if (!is.null(design$designMatrices)) {
+        np <- sapply(design$designMatrices, ncol)
+    }
+    else {
+        np <- c(detectpar = 0)
+    }
+    if (D.modelled)  np <- c(D = ncol(D.designmatrix), np)
+    for (NEname in names(designNE)) {
+        if (!is.null(designNE[[NEname]])) {
+            extra <- colnames(designNE[[NEname]])
+            nextra <- length(extra)
+            names(nextra) <- NEname
+            np <- c(np, nextra) 
+        } 
+    }
     NP <- sum(np)
     parindx <- split(1:NP, rep(1:length(np), np))
     names(parindx) <- names(np)[np>0]
     if (!D.modelled) parindx$D <- NULL
-    if (!NE.modelled) parindx$noneuc <- NULL
+    fb <- secr_mapbeta (secr$parindx, parindx, secr$details$fixedbeta, betaindex, default = NA)
+    # 2025-09-27 nmiscparm assumed zero
+    details$fixedbeta <- secr_setfixedbeta (fb, parindx, link, CL, 0)
     
     ## DOES THIS DEAL WITH SESSION COVARIATES OF DENSITY? 2009 08 16
 
@@ -64,12 +100,15 @@ prepare <- function (secr, newmodel) {
     betanames <- unlist(sapply(design$designMatrices, colnames))
     names(betanames) <- NULL
     if (D.modelled) betanames <- c(paste('D', colnames(D.designmatrix), sep='.'), betanames)
-    if (NE.modelled) betanames <- c(betanames, paste('noneuc', colnames(NE.designmatrix), sep='.'))
+    if (any(NE.modelled)) {
+        cols <- lapply(designNE, colnames)
+        exnames <- paste(rep(names(designNE), sapply(cols, length)), unlist(cols), sep='.')
+        betanames <- c(betanames, exnames)
+    }
     betanames <- sub('..(Intercept))','',betanames)
-    # if (detector(traps(capthist)) %in% .localstuff$simpledetectors)
-    # 2023-12-12
+
     if (all(unlist(detector(traps(capthist))) %in% .localstuff$simpledetectors))
-        savedlogmultinomial <- logmultinom(capthist, group.factor(capthist, groups))
+        savedlogmultinomial <- logmultinom(capthist, secr_group.factor(capthist, groups))
     else
         savedlogmultinomial <- 0
 
@@ -83,7 +122,7 @@ prepare <- function (secr, newmodel) {
        CL        = CL,
        detectfn  = detectfn,
        designD   = D.designmatrix,
-       designNE  = NE.designmatrix,
+       designNE  = designNE,
        design    = design,
        design0   = design0,
        hcov      = hcov,
@@ -104,27 +143,22 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
     setNumThreads(ncores)
     if (length(models)>1) { ##  ) {
         # apply to each component of 'model' list
-
-        score.list <- lapply (models, score.test, secr=secr,
-                            betaindex=betaindex)
+        score.list <- lapply (models, score.test, secr = secr, betaindex = betaindex)
         class(score.list) <- c('score.list', class(score.list))
         score.list
     }
     else {
-        if (is.list(models) & !('formula' %in% class(models[[1]])) )
+        if (is.list(models) && !('formula' %in% class(models[[1]])) )
             model <- models[[1]]
         else
             model <- models
 
         if (inherits (model, 'secr')) model <- model$model
         # model may be incompletely specified
-        model <- stdform (model)
-
+        model <- secr_stdform (model)
         model <- replace (secr$model, names(model), model)
 
-        ## OBSOLETE: 2014-10-25, BUT DOES IT NEED REPLACING?
-        # if (secr$CL) model$D <- NULL
-        if (secr$detectfn!=1) model$z <- NULL
+        if (!(secr$detectfn %in% c(1,3,7,8,15,18,19))) model$z <- NULL
 
         #########################################################
         # check components on which model differs from secr$model
@@ -137,26 +171,20 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
         for (j in 1:length(model)) differ[j] <- secr$model[[j]] != model[[j]]
         if (sum(differ)==0)
             stop ("models are identical")
-
+        
         #########################################################
         # construct essential parts of new secr model
-        newsecr <- prepare (secr, model)
-        newsecr$details <- replace (secr$details, 'trace', trace)  ## override
+        newsecr <- prepare (secr, model, betaindex)
+        newsecr$details <- replace (newsecr$details, 'trace', trace)  ## override
         newsecr$details$ncores <- setNumThreads(ncores)
-        beta0 <- complete.beta(secr) # secr$fit$par
-        names(beta0) <- fullbetanames(secr) # secr$betanames # 
-        beta1 <- mapbeta(secr$parindx, newsecr$parindx, beta0, betaindex)
-        
-        if (newsecr$details$relativeD) {
-            beta1 <- beta1[-1]  # drop intercept (fixed)
-            if (newsecr$link$D == 'log') 
-                D1 <- 0  # log
-            else 
-                D1 <- 1  # identity
-            # does not carry forward previous fixedbeta
-            newsecr$details$fixedbeta <- c(D1, rep(NA, length(beta1)))
-        }
-        
+        beta0 <- secr_complete.beta(secr) 
+        names(beta0) <- secr_fullbetanames(secr) 
+        beta1 <- secr_mapbeta(secr$parindx, newsecr$parindx, beta0, betaindex)
+        names(beta1) <- secr_fullbetanames(newsecr) 
+        if (!is.null(secr$details$fixedbeta))
+            beta0 <- beta0[is.na(secr$details$fixedbeta)]
+        if (!is.null(newsecr$details$fixedbeta))
+            beta1 <- beta1[is.na(newsecr$details$fixedbeta)]
         allvars <- unlist(lapply(model, all.vars))
         learnedresponse <- any(.localstuff$learnedresponses %in% allvars) 
         
@@ -167,7 +195,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
         }
         loglikfn <- function (beta, design) {
           # Return the negative log likelihood for spatial capture-recapture model
-            -generalsecrloglikfn(
+            -secr_generalsecrloglikfn(
                beta     = beta,
                parindx  = design$parindx,
                link     = design$link,
@@ -185,13 +213,12 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
                dig      = 4,
                betaw    = 11)
         }
-        data <- prepareSessionData(newsecr$capthist, newsecr$mask, newsecr$details$maskusage, 
+        data <- secr_prepareSessionData(newsecr$capthist, newsecr$mask, newsecr$details$maskusage, 
                                    newsecr$design, newsecr$design0, newsecr$detectfn, newsecr$groups, 
                                    newsecr$fixed, newsecr$hcov, newsecr$details)
 
         # cat('logLik',loglikfn(beta1, design=newsecr), '\n')   ## testing
         # cat('logmult', newsecr$logmult, '\n')
-  
         ## fdHess is from package nlme
         grad.Hess <- nlme::fdHess(beta1, fun = loglikfn, design = newsecr,
                             .relStep = .relStep, minAbsPar = minAbsPar)
@@ -222,8 +249,8 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
         np  <- c(np0, np1)
         parameter <- c(df = np1-np0)
 
-        H0    <- model.string(secr$model, secr$details$userDfn)
-        H1    <- model.string(model, secr$details$userDfn)
+        H0    <- secr_model.string(secr$model, secr$details$userDfn)
+        H1    <- secr_model.string(model, secr$details$userDfn)
         call0 <-  paste('[', format(secr$call), ']', sep = '')
         AIC   <- c(0, -statistic + 2 * parameter)
         AICc  <- ifelse ((n-np-1)>0,
@@ -237,7 +264,7 @@ score.test <- function (secr, ..., betaindex = NULL, trace = FALSE, ncores = NUL
              parameter = parameter,
              p.value = 1 - pchisq(score, parameter),
              method = 'Score test for two SECR models',
-             data.name = paste(H0, 'vs', H1, call0),
+             data.name = paste(H0, 'vs', H1), #, call0),
              np0 = np0,
              H0 = H0,
              H1 = H1,

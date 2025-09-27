@@ -1,4 +1,4 @@
-# 2023-05-22, 2024-02-17, 2024-07-31, 2024-09-23, 2024-12-23, 2025-03-18
+# 2023-05-22, 2024-02-17, 2024-07-31, 2024-09-23, 2024-12-23, 2025-03-18, 2025-06-16
 
 import (parallel)
 import (RcppNumerical)
@@ -12,8 +12,8 @@ importFrom (grDevices, chull, contourLines, grey, palette,
     terrain.colors, topo.colors, rainbow)
 importFrom (methods, as, is, Ops, Math)
 importFrom (stats, AIC, approx, approxfun, as.formula, chisq.test, coef,
-    cutree, deviance, df.residual, dist, dpois,  formula, hclust,
-    integrate, lm, logLik, median, model.matrix, nlm, nls, optim,
+    cutree, deviance, df.residual, dist, dmultinom, dpois, filter, formula, 
+    hclust, integrate, lm, logLik, median, model.matrix, nlm, nls, optim,
     optimise, optimize, pchisq, pgamma, plnorm, pnorm, poisson,
     predict, qchisq, qnorm, qpois, rbeta, rbinom, rexp, rgamma, rlnorm, 
     rmultinom, rnbinom, rnorm, rpois, rt, runif, rweibull, sd, setNames,
@@ -146,6 +146,7 @@ export (trapsPerAnimal)
 export (MMDM)
 export (ARL)
 export (ORL)
+export (t2r2)
 export (adjustVarD)
 export (centroids)
 export (chat.nk)
@@ -194,7 +195,6 @@ export (write.DA)
 export (logmultinom)
 
 export (pointsInPolygon)
-export (derivedDcoef)
 export (derivedDsurface)
 export (predictDsurface)
 export (rectangularMask)
@@ -210,6 +210,9 @@ export (setNumThreads)
 export (extractMoves)
 export (kfn)
 export (append.capthist)
+
+export (simOU)
+export (simOU.capthist)
 
 #---------------------------------------
 # new generics in secr
@@ -230,6 +233,12 @@ export (LLsurface)
 export (region.N)
 export (AICcompatible)
 export (modelAverage)
+
+export (derivedDcoef)
+export (derivedDfit)
+
+S3method(derivedDcoef, secr)
+S3method(derivedDcoef, secrlist)
 
 S3method(modelAverage, default)
 S3method(collate, default)
@@ -544,6 +553,7 @@ S3method(makeNewData, default) # makeNewData.Rd
 S3method(makeNewData, secr)    # makeNewData.Rd
 
 export (bias.D)                # suggest.buffer.Rd    
+export (bufferBiasCheck)       # suggest.buffer.Rd    
 
 export (boundarytoSF)          # internal.Rd
 export (Dfn2)                  # internal.Rd

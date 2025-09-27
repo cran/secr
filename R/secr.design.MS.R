@@ -1,9 +1,10 @@
 ###############################################################################
-## package 'secr' 4.5
+## package 'secr' 5.3
 ## secr.design.MS.R
 
 ## 2019-12-03 replaced bygroup with CL
 ## 2023-03-10 individualcovariates() moved from utility.R
+## 2025-06-17 tweaks to dframe output
 
 ################################################################################
 
@@ -20,6 +21,21 @@ individualcovariates <- function (PIA) {
     pia <- matrix(aperm(PIA, c(2:5,1)), nrow = dim(PIA)[2])
     n.unique.rows(pia) > 1
 }
+
+padarray <- function (x, dims) {
+    temp <- array(dim=dims)
+    dimx <- dim(x)
+    if (all(dimx>0)) {
+        if (length(dimx)<2 | length(dimx)>3)
+            stop ("invalid array")
+        if (length(dimx)>2) temp[1:dimx[1], 1:dimx[2], 1:dimx[3]] <- x
+        else temp[1:dimx[1], 1:dimx[2]] <- x
+    }
+    temp
+}
+
+#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 
 secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
@@ -30,13 +46,12 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 ## Generate design matrix, reduced parameter array, and parameter index array (PIA)
 ## for detection function parameters
 ## 'capthist' must be of class 'capthist' or 'list'
-## uses pad1 to pad session-specific covar to constant length with first value,
-## pad1 defined in 'utility.R'
+## uses secr_pad1 to pad session-specific covar to constant length with first value,
+## secr_pad1 defined in 'utility.R'
 ##
 ## groups is a vector of factor names whose intersection defines group
 ## groups only defined for CL = FALSE  
 ## use of 'g' requires valid groups definition
-## grouping variables are also added individually to dframe
 
     #--------------------------------------------------------------------------------
     findvars.MS <- function (cov, vars, dimcov) {
@@ -59,7 +74,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                 
                 #############################################
                 ## 2020-05-15 convert all character to factor
-                cov <- lapply(cov, stringsAsFactors)
+                cov <- lapply(cov, secr_stringsAsFactors)
                 #############################################
                 
                 covnames <- lapply(cov, names)
@@ -78,7 +93,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                         }
                     }
                     ## pad on first dimension
-                    vals <- lapply(cov, function(x) pad1(x[,variable], dims[dimcov[1]]))
+                    vals <- lapply(cov, function(x) secr_pad1(x[,variable], dims[dimcov[1]]))
                     vals <- unlist(vals)
                     dframe[,variable] <<- insertdim (vals, dimcov, dims)
                 }
@@ -87,7 +102,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             {
                 #############################################
                 ## 2020-05-15 convert all character to factor
-                cov <- stringsAsFactors(cov)
+                cov <- secr_stringsAsFactors(cov)
                 #############################################
                 
                 found <- names(cov) %in% vars
@@ -112,7 +127,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         ## function to add time-specific trap covariates to a design data frame 'dframe'
         ## covindices should be a list or list of lists, one per session (R > 1),
         ## if list, then require predictors to appear in all sessions
-        ## uses pad1 and insertdim from utility.R
+        ## uses secr_pad1 and insertdim from utility.R
 
         found <- ''
         dimcov <- c(1,4,3) ## session, trap, time
@@ -155,12 +170,11 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     }
     #--------------------------------------------------------------------------------
 
-    models$D <- NULL                          # drop density model
-    models$noneuc <- NULL                     # drop non-Euclidean parameter model
-    npar     <- length(models)                # real parameters
-    grouplevels  <- group.levels(capthist,groups)
-    ngrp    <- max(1,length(grouplevels))
-
+    # drop non-detection models
+    for (nonp in .localstuff$spatialparametersD) models[[nonp]] <- NULL                     
+    
+    npar     <- length(models)                                   # real parameters
+    
     ## 'session-specific' list if MS
     MS   <- ms(capthist) # logical for multi-session
     sessionlevels <- session(capthist)
@@ -170,13 +184,13 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         R <- length(capthist)
         n <- max(sapply(capthist, nrow))                         # max over sessions
         S <- max(sapply(capthist, ncol))                         # max over sessions
-        K <- max(sapply(traps(capthist), ndetector))             # max over sessions
+        K <- max(sapply(traps(capthist), secr_ndetector))        # max over sessions
     }
     else {
         R <- 1
         n <- nrow(capthist)
         S <- ncol(capthist)
-        K <- ndetector(traps(capthist))
+        K <- secr_ndetector(traps(capthist))
     }
     ## cover unmarked case
     if (n == 0) n <- 1
@@ -189,10 +203,10 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         return(list(designMatrices = NULL, parameterTable = NULL, PIA = constantPIA, R = R))
     }
 
-    parnames <- names(models)                 # typically c('g0', 'sigma', 'z')
+    parnames <- names(models)                  # typically c('g0', 'sigma', 'z')
     vars     <- unique (unlist(sapply (models, all.vars)))
-    vars     <- vars[!(vars %in% groups)]     # groups treated separately
-    nmix     <- get.nmix(models, capthist, hcov)
+    vars     <- vars[!(vars %in% groups)]      # groups treated separately
+    nmix     <- secr_get.nmix(models, capthist, hcov)
     trps    <- traps(capthist)                 # session-specific trap array
     used    <- usage(trps)                     # session-specific usage
     if (ignoreusage) used <- NULL
@@ -200,7 +214,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     trapcov <- covariates(trps)                # session-specific trap covariates
 
     if (('g' %in% vars) & is.null(groups))
-        stop ("requires valid 'groups' covariate")
+        stop ("requires valid 'groups' covariates")
 
     #--------------------------------------------------------------------------
     # timecov may be a vector or a dataframe or a list of vectors or a list of data frames
@@ -227,7 +241,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     dims <- c(R,n,S,K,nmix)    # 'virtual' dimensions
     dframenrow <- prod(dims)   # number of rows
     autovars <- c('session','Session','g','t','T', 'ts', 'tt',
-                  'b','bn','B','bk','bkn','Bk', 'k', 'K', 'bkc', 'Bkc',
+                  'b','bn','B','bk','bkn','Bk', 'Br', 'k', 'K', 'bkc', 'Bkc',
                   'kcov','tcov', 'h2', 'h3')
     #--------------------------------------------------------------------------
     # user-specified dframe
@@ -298,7 +312,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         else {
             if (any(sapply(timecov, nrow) < S))
                 stop ("requires valid time covariate 'timecov'")
-            timecov <- lapply (timecov, function(x) pad1(x[,1], S))
+            timecov <- lapply (timecov, function(x) secr_pad1(x[,1], S))
         }
         dframe$tcov <- insertdim (unlist(timecov), c(3,1), dims)
     }
@@ -308,33 +322,19 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
 
         ################
         # add g factor
+        # levels determined by unsorted interaction(groups, drop=TRUE)
 
-        gvar <- group.factor(capthist, groups)          # list if MS
-        if (MS) gvar <- lapply(gvar, pad1, n)           # constant length
-        # by animal within session
-        dframe$g <- insertdim ( unlist(gvar), c(2,1), dims)  ## unlist works on factors, too
+        grp <- secr_group.factor(capthist, groups)         # list if MS
+        if (MS) grp <- lapply(grp, secr_pad1, n)           # constant length
+        grp <- unlist(grp)
+        dframe$g <- insertdim (grp, c(2,1), dims)   ## unlist works on factors, too
 
-        #################################
-        # also add separate group factors
-
-        # Get group membership from covariates(capthist) for each session,
-        # and pad to max(n) if needed
-
-        for (i in groups) {
-            if (MS) {
-                grouping <- lapply(zcov, function(x) x[,i])
-                grouping <- unlist(lapply(grouping, pad1, n))
-            }
-            else grouping <- zcov[,i]
-            ## 2011-11-28 these insertdim seem to do nothing - should assign to dframe column
-            insertdim(grouping, c(2,1), dims)
-        }
     }
     #--------------------------------------------------------------------------
 
     ## behavioural response fields
 
-    if (sum(c('b','bn','B','bk','bkn','Bk','bkc','Bkc', 'k', 'K') %in% vars) > 1)
+    if (sum(c('b','bn','B','bk','bkn','Bk', 'Br','bkc','Bkc', 'k', 'K') %in% vars) > 1)
     stop ("model should not use more than one type of behavioural response")
 
     ## assume sessions are same type
@@ -444,7 +444,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             dframe$bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
         }
     }
-
+    
     #------------------------------------------------
     if ('bkn' %in% vars) {
         if (naive) dframe$bkn <- rep(0, dframenrow)
@@ -472,6 +472,30 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             dframe$Bk <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
        }
     }
+    #------------------------------------------------
+    if ('Br' %in% vars) {
+        if (naive) dframe$Br <- rep(0, dframenrow)
+        else {
+            # see utility.R for captinhood
+            chr <- captinhood(capthist, maxd = .localstuff$neighbourhood)
+            if (!is.null(.localstuff$window)) {
+                w <- min(.localstuff$window, S-1)
+            }
+            else {
+                w <- S-1
+            }
+            prevcapt <- function(x) {
+                c(0, filterw(x[-S], w = w, lambda = 1))
+            }
+            if (MS) {
+                temp <- lapply(chr, makebk)
+                temp <- lapply(temp, padarray, c(n,S,K))
+            }
+            else temp <- makebk(chr)  # one session
+            dframe$Br <- insertdim(as.vector(unlist(temp)), c(2,3,4,1), dims)
+        }
+    }
+    
     #--------------------------------------------------------------------------
 
     if ('bkc' %in% vars) {
@@ -530,8 +554,6 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             prevcapt <- function(x) c(FALSE, x[-S]>0)
             if (MS) {
                 temp <- lapply(capthist, makek)
-                # temp <- lapply(temp, padarray, c(n,S,K))
-                # bug fixed 2012-09-10
                 temp <- lapply(temp, padarray, c(S,K))
             }
             else temp <- makek(capthist)  # one session
@@ -544,7 +566,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             stop ("model uses trap covariates, but valid covariate ",
                   "data not found")
         if (is.data.frame(trapcov)) trapcov <- trapcov[,1,drop=F]  ## retain only first
-        else trapcov <- lapply (trapcov, function(x) pad1(x[,1], K))
+        else trapcov <- lapply (trapcov, function(x) secr_pad1(x[,1], K))
         dframe$kcov <- insertdim(unlist(trapcov), c(4,1), dims)
     }
 
@@ -553,7 +575,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     ## h2 or h3
     if (nmix > 1) {
         mixture <- paste('h',nmix,sep='')
-        classnames <- h.levels(capthist, hcov, nmix)
+        classnames <- secr_h.levels(capthist, hcov, nmix)
         tempclass <- insertdim(classnames, 5, dims)
         dframe[,mixture] <- factor(tempclass)
     }
@@ -611,7 +633,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         else {
             ## see utility.R for general.model.matrix
             ## allows regression splines (mgcv)
-            tempmat <- general.model.matrix(formula, data = dframe, contrasts = contrasts, ...)  ## secr.design.MS contrasts
+            tempmat <- secr_general.model.matrix(formula, data = dframe, contrasts = contrasts, ...)  ## secr.design.MS contrasts
             ## drop pmix beta0 column from design matrix
             if (prefix=='pmix') {
                 tempmat <- tempmat[,-1,drop=FALSE]
@@ -699,15 +721,15 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
     smoothsetup <- vector(length(parnames), mode = 'list')
     names(smoothsetup) <- parnames
     for (i in parnames) {
-        if (any(smooths(models[[i]]))) {
+        if (any(secr_smooths(models[[i]]))) {
             ## collapse data to unique rows
             temp <- make.lookup (dframe)
-            smoothsetup[[i]] <- gamsetup(models[[i]], temp$lookup)
+            smoothsetup[[i]] <- secr_gamsetup(models[[i]], temp$lookup)
         }
     }
     
     #--------------------------------------------------------------------
-        individual <- individualcovariates(PIA)
+    individual <- individualcovariates(PIA)
     #--------------------------------------------------------------------
     if (keep.dframe) {
         ## 2013-03-11
@@ -720,7 +742,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
                 names(inddf) <- c('animal','occasion','detector','mixture')
                 ind <- as.matrix(inddf)
                 x <- x[as.vector(ia[ind]),]
-                x <- cbind(inddf, x)
+                x <- cbind(inddf, session = x)
                 row.names(x) <- 1:nrow(x)
                 x
             }
@@ -731,7 +753,7 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
         if (MS) {
             validdim <- as.list(data.frame(t(matrix(c(sapply(capthist, nrow),
                           sapply(capthist, ncol),
-                          sapply(trps, ndetector),
+                          sapply(trps, secr_ndetector),
                           rep(nmix,R)), nrow = R))))
             names(validdim) <- sessionlevels
         }
@@ -746,9 +768,8 @@ secr.design.MS <- function (capthist, models, timecov = NULL, sessioncov = NULL,
             names(inddf) <- c('animal','occasion','detector','mixture')
             dframe <- cbind(inddf,dframe)
         }
-        ## 2014-08-22
-        ## dframe <- dframe[,c(5,1:4,6:ncol(dframe))]
-        dframe[,1:5] <- dframe[,c(5,1:4)]
+        ## 2025-06-17 session in first column
+        dframe <- cbind(dframe[,5], dframe[,-5])
         list(designMatrices = designMatrices, parameterTable = parameterTable, PIA = PIA, R = R,
              dframe = dframe, validdim = validdim, smoothsetup = smoothsetup,
              individual = individual)

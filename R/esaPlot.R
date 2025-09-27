@@ -68,8 +68,8 @@ esaPlot <- function (object, max.buffer = NULL, spacing = NULL, max.mask = NULL,
                 max.mask <- make.mask (object, max.buffer, spacing,,, 'trapbuffer', poly, poly.habitat)
             }
             nmask <- nrow(max.mask)
-            detectfn <- valid.detectfn(detectfn)
-            binomN <- getbinomN (binomN, detector(object))   ## must now be traps object
+            detectfn <- secr_valid.detectfn(detectfn)
+            binomN <- secr_getbinomN (binomN, detector(object))   ## must now be traps object
             a <- pdot (max.mask, object, detectfn, detectpar, noccasions, binomN)
             d <- distancetotrap(max.mask, object)
             ord <- order(d,a)
@@ -195,7 +195,7 @@ esaPlotsecr <- function (object, max.buffer = NULL, max.mask = NULL,
                 session <- match(session, names(object$capthist))
             }
             detpar <- detectpar(object)[[session]]
-            spscale <- spatialscale(object, object$detectfn, session)
+            spscale <- secr_spatialscale(object, object$detectfn, session)
         }
         else {
             trps <- traps(object$capthist)
@@ -203,7 +203,7 @@ esaPlotsecr <- function (object, max.buffer = NULL, max.mask = NULL,
             nocc <- ncol(object$capthist)
             spacg <- attr(object$mask, 'spacing')
             detpar <- detectpar(object)
-            spscale <- spatialscale(object, object$detectfn)
+            spscale <- secr_spatialscale(object, object$detectfn)
         }
         if (is.null(max.mask)) {
             if (is.null(max.buffer)) {

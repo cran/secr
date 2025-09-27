@@ -6,6 +6,12 @@
 ## 2022-08-08 truncated Poisson, revised 'constant'
 ############################################################################################
 
+# random truncated Poisson
+rtpois <- function(n, lambda) {
+    qpois(runif(n, dpois(0, lambda), 1), lambda)
+}
+#-------------------------------------------------------------------------------
+
 clone <- function (object, type, ...) UseMethod("clone")
 
 clone.default <- function (object,  type, ...)       {
@@ -62,7 +68,7 @@ clone.popn <- function (object, type, ...) {
             
             ## 2018-11-16
             seqn <- unlist(lapply(freq[freq>0], seq, from = 1))
-            seqn <- leadingzero(seqn)
+            seqn <- secr_leadingzero(seqn)
             rown <- paste(rep(rownames(object), freq), seqn, sep='.')
             rownames(out) <- rown
             
@@ -106,7 +112,7 @@ clone.capthist <- function (object, type, ...) {
             else
                 out <- object[index,,,drop = FALSE]
             seqn <- unlist(lapply(freq[freq>0], seq, from = 1))
-            seqn <- leadingzero(seqn)
+            seqn <- secr_leadingzero(seqn)
             rown <- paste(rep(rownames(object), freq), seqn, sep='.')
             rownames(out) <- rown
             traps(out) <- traps(object)

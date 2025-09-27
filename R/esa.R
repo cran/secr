@@ -5,6 +5,7 @@
 ## 2022-01-22 fixed bug that ignored details$ignoreusage
 ## 2024-09-22 S3 method
 ## 2025-01-04 experimental includes density if model$D && Dweight
+## 2025-08-09 set beta when computing D
 ############################################################################################
 
 esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL, 
@@ -26,20 +27,24 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
         return (numeric(0))    
     }
     
-    if (ms(object$mask))
+    if (ms(object$mask)) {
         mask <- object$mask[[sessnum]]
-    else
+    }
+    else {
         mask <- object$mask
+    }
 
-    if (is.null(beta) & is.null(real))
+    if (is.null(beta) & is.null(real)) {
         beta <- object$fit$par
-    beta <- fullbeta(beta, object$details$fixedbeta)
-    trps   <- traps(capthists)  ## need session-specific traps
+    }
+    
+    fullbeta <- secr_fullbeta(beta, object$details$fixedbeta)
+    trps <- traps(capthists)  ## need session-specific traps
     if (!all(detector(trps) %in% .localstuff$individualdetectors))
         stop ("require individual detector type for esa")
     n       <- max(nrow(capthists), 1)
     s       <- ncol(capthists)
-    dettype <- detectorcode(trps, noccasions = s)
+    dettype <- secr_detectorcode(trps, noccasions = s)
     constant <- !is.null(noccasions)    ## fix 2011-04-07
     if (is.null(noccasions)) {
         noccasions <- s
@@ -59,32 +64,37 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
         #object$capthist <- subset(object$capthist, occasions = (markocc>0))
     }
     #----------------------------------------------------------------------
-    nmix    <- getnmix (object$details)
-    knownclass <- getknownclass(capthists, nmix, object$hcov)
-    k <- getk(trps)
+    nmix    <- if (is.null(object$details$nmix)) 1 else object$details$nmix
+    
+    knownclass <- secr_getknownclass(capthists, nmix, object$hcov)
+    k <- secr_getk(trps)
     K <- if (length(k)>1) length(k)-1 else k
     binomN <- object$details$binomN
     m      <- length(mask$x)            ## need session-specific mask...
-    cellsize <- getcellsize(mask)       ## length or area
+    cellsize <- secr_getcellsize(mask)       ## length or area
     
     if (is.null(object$model$D) || !Dweight) {
         D <- rep(1,m)
     }
     else {
-        D <- predictD(object, object$mask, group = NULL, session = sessnum, 
+        if (!is.null(beta)) object$fit$par <- beta
+        D <- secr_predictD(object, mask, group = NULL, session = sessnum, 
                              parameter = 'D')
     }
     pi.density <- matrix(D/sum(D), ncol = 1)       # dim m x 1
+    
+    # Non-Euclidean distance parameters
+    NElist <- secr_makeNElist(object, object$mask, group = NULL, sessnum)
     #----------------------------------------------------------------------
     if (constant) {
         ## assume constant
         if (is.null(beta))
             realparval0 <- detectpar(object)
         else {
-            realparval0 <- makerealparameters (object$design0, beta,
+            realparval0 <- secr_makerealparameters (object$design0, fullbeta,
                 object$parindx, object$link, object$fixed)  # naive
             # realparval0 <- as.list(realparval0)
-            # names(realparval0) <- parnames(object$detectfn)
+            # names(realparval0) <- secr_parnames(object$detectfn)
             ## 2016-11-12
             realparval0 <- as.list(realparval0[1,])
             realparval0$cutval <- attr(object$capthist,'cutval')  ## 2016-05-22 may be NULL
@@ -92,7 +102,7 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
         a <- cellsize * sum(pi.density * pdot(X = mask, traps = trps, detectfn = object$detectfn,
                              detectpar = realparval0, noccasions = noccasions, 
                              ncores = ncores))
-        return(rep(a,n))
+        out <- rep(a,n)
     }
     else {
         if (is.null(beta)) {
@@ -110,16 +120,20 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
                 ## should be constant over sessions
                 PIA0 <- object$design0$PIA[sessnum,,1:s,1:K,,drop = FALSE]
                 ## fill array with PI appropriate to grouping of i-th animal
-                PIA0 <- PIA0[1, group.factor(capthists, object$groups),,,,drop = FALSE]
+                # browser()
+                # # grp for each individual as in preparedata
+                # grp  <- secr_group.factor (capthists, object$groups)
+                # grp  <- factor(grp, levels = unique(grp))
+                # PIA0 <- PIA0[1, as.integer(grp),,,,drop = FALSE]
             }
 
-            realparval0 <- makerealparameters (object$design0, beta,
+            realparval0 <- secr_makerealparameters (object$design0, fullbeta,
                 object$parindx, object$link, object$fixed)  # naive
 
         }
         ## not compatible with sigmak parameterizations
         Dtemp <- NA
-        Xrealparval0 <- reparameterize (realparval0, object$detectfn, object$details,
+        Xrealparval0 <- secr_reparameterize (realparval0, object$detectfn, object$details,
                                         mask, trps, Dtemp, s)
 
         usge <- usage(trps)
@@ -141,32 +155,33 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
 
         ## not if first detector type is telemetry
         if (dettype[1] %in% c(13)) {
-            return(NA)
+            out <- NA
         }
         else {
-          NE <- NULL   ## no NE covariates (yet)
+          # NE <- NULL   ## no NE covariates (yet)
           # pi.density <- matrix(1/m, nrow=m, ncol=1)
           ncores <- setNumThreads(ncores)  
           grain <- if (ncores==1) 0 else 1
-          gkhk <- makegk (dettype, object$detectfn, trps, mask, 
-                                 object$details, sessnum, NE, pi.density, 
+          gkhk <- secr_makegk (dettype, object$detectfn, trps, mask, 
+                                 object$details, sessnum, NElist, pi.density, 
                                  miscparm, Xrealparval0, grain, ncores)
           if (any(dettype==0)) {
-              CH0 <- nullCH (c(n,s), object$design0$individual)
+              CH0 <- secr_nullCH (c(n,s), object$design0$individual)
           }
           else {
-              CH0 <- nullCH (c(n,s,K), object$design0$individual)
+              CH0 <- secr_nullCH (c(n,s,K), object$design0$individual)
           }
-          binomNcode <- recodebinomN(dettype, binomN, telemcode(trps))
-          pmixn <- getpmix (knownclass, PIA0, Xrealparval0)
+          binomNcode <- secr_recodebinomN(dettype, binomN, secr_telemcode(trps))
+          pmixn <- secr_getpmix (knownclass, PIA0, Xrealparval0)
           MRdata <- list(markocc = markocc, firstocc=rep(-1,nrow(CH0)))
-          pID <- getpID(PIA0, Xrealparval0, MRdata)
-          pdot <- integralprw1 (
+          pID <- secr_getpID(PIA0, Xrealparval0, MRdata)
+          pdot <- secr_integralprw1 (
               cc0 = nrow(Xrealparval0),
-              haztemp = gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
+              haztemp = secr_gethazard(m, binomNcode, nrow(Xrealparval0), gkhk$hk, PIA0, usge),
               gkhk = gkhk,
               pi.density = pi.density,
               PIA0 = PIA0,
+              ngroup = 1,
               CH0 = CH0,
               binomNcode = binomNcode,
               MRdata = MRdata,
@@ -176,9 +191,9 @@ esa.secr <- function (object, sessnum = 1, beta = NULL, real = NULL,
               pID = pID,
               grain = grain,
               ncores = ncores)
-          
-          pdot * cellsize * sum(D)
+          out <- pdot * cellsize * sum(D)
         }
     }
+    out
 }
 ############################################################################################
