@@ -1,7 +1,7 @@
 # 2023-05-22, 2024-02-17, 2024-07-31, 2024-09-23, 2024-12-23, 2025-03-18, 2025-06-16
 
 import (parallel)
-import (RcppNumerical)
+import (secrfunc)
 
 # Base R
 
@@ -81,6 +81,7 @@ importFrom(sf,
     st_geometry, 
     st_geometry_type, 
     st_intersection, 
+    st_intersects,
     st_join,
     st_length, 
     st_linestring, 
@@ -561,20 +562,20 @@ export (Dfn2)                  # internal.Rd
 #---------------------------------------
 # internal functions not exported
 
-# export (add.cl)                
-# export (parnames)              
-# export (detectorcode)          
+# export (secr_add.cl)                
+# export (secr_parnames)              
+# export (secr_detectorcode)          
 # export (esaPlotsecr)           
-# export (gethazard)             
-# export (group.factor)
-# export (group.levels)
-# export (prepareSessionData)    
-# export (reparameterize)        
-# export (secr.lpredictor)
-# export (stdform)               
-# export (valid.detectfn)        
+# export (secr_gethazard)             
+# export (secr_group.factor)
+# export (secr_group.levels)
+# export (secr_prepareSessionData)    
+# export (secr_reparameterize)        
+# export (secr_lpredictor)
+# export (secr_stdform)               
+# export (secr_valid.detectfn)        
 
 # ===========================
-useDynLib (secr)
+useDynLib (secr, .registration = TRUE)
 ## DEBUGGING ONLY (cpp functions not documented)
 ## exportPattern("*cpp")

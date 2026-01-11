@@ -39,6 +39,7 @@
 ## 2025-06-25 detectfn 20 OU
 ## 2025-07-20 5.3.0
 ## 2025-07-24 secr_ prefix attached to most functions used in other .R files
+## 2025-11-26 5.4.0
 ################################################################################
 
 # Global variables in namespace
@@ -1998,17 +1999,17 @@ mlogit <- function (x) {
 
 # 2025-09-26 temporary synonyms to not break packages that call these with :::
 
-# ipsecr 1.4.4
+# # ipsecr 1.4.4
 detectorcode <- secr_detectorcode
 parnames <- secr_parnames
 stdform <- secr_stdform
-            
-# secrdesign 2.10.0
-detectionfunctionnumber <- secr_detectionfunctionnumber
-model.string <- secr_model.string
-valid.detectfn <- secr_valid.detectfn
 
-# secrlinear 1.2.4 - none
-
-# openCR 2.2.7
+# # secrdesign 2.10.0
+# detectionfunctionnumber <- secr_detectionfunctionnumber
+# model.string <- secr_model.string
+# valid.detectfn <- secr_valid.detectfn
+# 
+# # secrlinear 1.2.4 - none
+# 
+# # openCR 2.2.7
 getuserdistnames <- secr_getuserdistnames
